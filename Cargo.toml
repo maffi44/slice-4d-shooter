@@ -1,0 +1,36 @@
+[package]
+name = "web-4d-shooter"
+author = "maffi44"
+version = "0.1.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# webrtc = "*"
+# env_logger = "*"
+winit = {version = "0.28"}
+wgpu = { version = "*", features = ["webgl"]}
+bytemuck = { version = "*", features = [ "derive" ] }
+pollster = "*"
+matchbox_socket = "*"
+instant = "*"
+glam = "*"
+log = "*"
+# web-time = "*"
+console_error_panic_hook = "*"
+console_log = "*"
+wasm-bindgen = "*"
+wasm-bindgen-futures = "*"
+web-sys = { version = "*", features = [
+    "Document",
+    "Window",
+    "Element",
+    "console",
+    "Performance"
+]}
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+
