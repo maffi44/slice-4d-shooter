@@ -5,6 +5,8 @@ pub static mut MOVE_LEFT: Action = Action::new();
 pub static mut JUMP: Action = Action::new();
 pub static mut FIRE: Action = Action::new();
 
+use glam::Vec2;
+
 #[derive(Clone)]
 pub struct Action {
     pub is_action_just_pressed: bool,
@@ -14,7 +16,7 @@ pub struct Action {
 }
 
 
-
+#[derive(Clone)]
 pub struct Actions {
     pub move_forward: Action,
     pub move_backward: Action,
@@ -22,6 +24,7 @@ pub struct Actions {
     pub move_left: Action,
     pub jump: Action,
     pub fire: Action,
+    pub axis_input: Vec2,
 }
 
 impl Actions {
@@ -41,6 +44,7 @@ impl Actions {
                 move_left,
                 jump,
                 fire,
+                axis_input: Vec2::ZERO,
             }
         }
     }

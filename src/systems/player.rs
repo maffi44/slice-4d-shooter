@@ -1,4 +1,8 @@
-use glam::Vec4;
+use glam::{
+    Vec4,
+    Mat4,
+
+};
 
 const MAX_SPEED : f32 = 100.0;
 const MAX_ACCEL : f32 = 100.0;
@@ -7,17 +11,16 @@ const HEALTH: i32 = 100_i32;
 use super::{
     devices::{Device, DeviceType, DefaultPistol},
     engine_handle::EngineHandle,
-};
-
-use crate::common_systems::{
-    actions::Actions,
-    transform::{Transform, self}, physics_system::collisions::{Collision, DynamicCollision},
+    transform::Transform,
+    player_input_master::InputMaster,
+    physics::collisions::DynamicCollision,
 };
 
 pub type PlayerID = u32;
 pub struct PlayerInnerState {
     pub collision: DynamicCollision,
     pub hp: i32,
+    pub rotation_mat: Mat4
 }
 
 impl PlayerInnerState {
@@ -29,6 +32,7 @@ impl PlayerInnerState {
                 MAX_ACCEL,
             ),
             hp: HEALTH,
+            rotation_mat: Mat4::IDENTITY,
         }
     }
 }
@@ -64,11 +68,13 @@ pub struct Player {
     hands_slot_3: Option<Box<dyn Device>>,
 
     devices: [Option<Box<dyn Device>>; 4],
+
+    pub master: InputMaster,
 }
 
 impl Player {
 
-    pub fn new(id: PlayerID) -> Self {
+    pub fn new(id: PlayerID, master: InputMaster) -> Self {
         Player {
             id,
 
@@ -80,8 +86,27 @@ impl Player {
             hands_slot_2: None,
             hands_slot_3: None,
 
-            devices: [None, None, None, None]
+            devices: [None, None, None, None],
+
+            master,
         }
+    }
+
+
+    pub fn get_collider(&self) -> &DynamicCollision {
+        &self.inner_state.collision
+    }
+
+    pub fn get_mut_collider(&mut self) -> &mut DynamicCollision {
+        &mut self.inner_state.collision
+    }
+
+    pub fn get_position(&self) -> Vec4 {
+        self.get_collider().transform.get_position()
+    }
+
+    pub fn get_rotation_matrix(&self) -> Mat4 {
+        self.inner_state.rotation_mat
     }
 
     pub fn recieve_message(&mut self, from: PlayerID, message: Message, engine_handle: &mut EngineHandle) {
@@ -92,32 +117,54 @@ impl Player {
         }
     }
 
-    pub fn process_input(&mut self, input: &mut Actions, engine_handle: &mut EngineHandle) {
+    pub fn process_input(&mut self, engine_handle: &mut EngineHandle) {
+
+        let mut input = match &mut self.master {
+            InputMaster::LocalMaster(master) => {
+                master.current_input.clone()
+            }
+            InputMaster::RemoteMaster(master) => {
+                master.current_input.clone()
+            }
+        };
+
+        let x = input.axis_input.x;
+        let y = input.axis_input.y;
+
+        let new_rotation_matrix = Mat4::from_cols_slice(&[
+            x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
+            0.0,        y.cos(),            -y.sin(),           0.0,
+            -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
+            0.0,        0.0,                0.0,                1.0
+        ]);
+
+        self.inner_state.rotation_mat = new_rotation_matrix * self.inner_state.rotation_mat;
+
 
         match self.active_hands_slot {
             ActiveHandsSlot::Zero => {
-                self.hands_slot_0.process_input(self.id, &mut self.inner_state, input, engine_handle);
+                self.hands_slot_0.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
             },
             ActiveHandsSlot::First => {
                 if let Some(device) = self.hands_slot_1.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
                 }
             },
             ActiveHandsSlot::Second => {
                 if let Some(device) = self.hands_slot_2.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
                 }
             },
             ActiveHandsSlot::Third => {
                 if let Some(device) = self.hands_slot_3.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
                 }
             }
         }
 
         for device in self.devices.iter_mut() {
             if let Some(device) = device {
-                device.process_input(self.id, &mut self.inner_state, input, engine_handle);
+                device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
             }
         }
 
@@ -149,7 +196,7 @@ impl Player {
             movement_vec += Vec4::new(-1.0, 0.0, 0.0, 0.0);
         }
 
-        
+        movement_vec = self.inner_state.rotation_mat * movement_vec;
 
         self.inner_state.collision.add_wish_direction(movement_vec)
 

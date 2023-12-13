@@ -2,10 +2,23 @@ use std::collections::HashMap;
 
 use winit::event::{KeyboardInput, VirtualKeyCode, ElementState, MouseButton};
 
-use crate::common_systems::actions;
+use super::{
+    actions,
+    net::NetSystem,
+    player_input_master::InputMaster::{
+        LocalMaster,
+        RemoteMaster,
+    },
+    world::World,
+};
 
 use actions::Action;
 use actions::Actions;
+
+pub enum MouseAxis {
+    X,
+    Y
+}
 
 pub struct InputSystem {
     actions_table: HashMap<SomeButton, &'static mut Action>,
@@ -25,7 +38,7 @@ impl InputSystem {
     pub fn new() -> Self {
         let mut actions_table = HashMap::new();
 
-        let mut actions = Actions::new();
+        let actions = Actions::new();
 
         unsafe {
             actions_table.insert(
@@ -57,7 +70,37 @@ impl InputSystem {
         InputSystem {actions_table, actions}
     }
 
-    pub fn get_keyboard_input(&mut self, input: &KeyboardInput) {
+    pub fn get_input(&mut self, world: &mut World ,net: &mut NetSystem) {
+
+        for (_, player) in world.pool_of_players.iter_mut() {
+            match &mut player.master {
+                LocalMaster(master) => {
+                    master.current_input = self.actions.clone();
+                }
+                RemoteMaster(master) => {
+                    // Didn't implement yet
+                }
+            }
+        }
+    }
+
+
+    pub fn reset_axis_input(&mut self) {
+        self.actions.axis_input = glam::Vec2::ZERO;
+    }
+
+    pub fn add_axis_motion(&mut self, axis: MouseAxis, value: f64) {
+        match axis {
+            MouseAxis::X => {
+                self.actions.axis_input.x += value as f32;
+            }
+            MouseAxis::Y => {
+                self.actions.axis_input.y += value as f32;
+            }
+        }
+    }
+
+    pub fn set_keyboard_input(&mut self, input: &KeyboardInput) {
         if let Some(keycode) = input.virtual_keycode {
             if let Some(action) =
                 self.actions_table.get_mut(&SomeButton::VirtualKeyCode(keycode)) {
@@ -82,7 +125,7 @@ impl InputSystem {
         }
     }
 
-    pub fn get_mouse_button_input(&mut self, button: &MouseButton, state: &ElementState) {
+    pub fn set_mouse_button_input(&mut self, button: &MouseButton, state: &ElementState) {
         match button {
             MouseButton::Left => {
                 if let Some(action) =

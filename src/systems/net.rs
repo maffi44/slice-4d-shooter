@@ -7,6 +7,19 @@
 //     message::RTCDataChannelMessage,
 // };
 
+
+pub struct NetSystem {
+
+}
+
+impl NetSystem {
+    pub fn new() -> Self {
+        NetSystem {
+            
+        }
+    }
+}
+
 /*
 use std::net::{
     SocketAddr, SocketAddrV4, Ipv4Addr,

@@ -1,8 +1,8 @@
 
-use crate::common_systems::{
-    physics_system::collisions::{
+use super::{
+    physics::collisions::{
         Collision,
-        DynamicCollision, DynamicArea,
+        DynamicArea,
     },
     transform::Transform,
 };

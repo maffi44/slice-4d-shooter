@@ -1,12 +1,7 @@
-// Make it simple!
-// use web_time::{Instant, Duration};
-
 use super::{
     engine::Engine,
-    render_system::{
-        RenderSystem,
-        FrameRenderData,
-    },
+    render::FrameRenderData,
+    input::MouseAxis, player_input_master::{InputMaster, LocalMaster},
 };
 
 use instant::Instant;
@@ -34,23 +29,19 @@ impl MainLoop {
     pub async fn run(
         self,
         mut systems : Engine,
-        // mut runtime: RuntimeSystem,
-    ) {
-        #[cfg(debug_assertions)]
-        {
-            #[cfg(target_arch = "wasm32")]
-            {
-                std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-                // console_log::init_with_level(log::Level::Warn).expect("Couldn't initialize logger");
-            }
-            // #[cfg(not(target_arch = "wasm32"))]
-            // env_logger::init(); //need for wgpu logging
-        }
-        
+    ) {        
         let _ = self.event_loop.run(move |event, _, cntrl_flow| {
 
             
             let systems = &mut systems;
+
+            let main_player = systems.world.add_and_spawn_new_player(
+                InputMaster::LocalMaster(
+                    LocalMaster::new(systems.input.actions.clone())
+                )
+            );
+
+            systems.world.main_camera_from = main_player;
 
             let mut ready_to_engine_tick = true;
             
@@ -107,10 +98,6 @@ impl MainLoop {
                         ready_to_engine_tick = false;
                         
                         main_loop(systems);
-                        *cntrl_flow = 
-                            ControlFlow::WaitUntil(
-                                Instant::now() + systems.time.target_frame_duration
-                            );
                     };
                 }
                 Event::WindowEvent {
@@ -129,12 +116,34 @@ impl MainLoop {
                         },
                         
                         WindowEvent::KeyboardInput {input,..} => {
-                            systems.input.get_keyboard_input(input);
+                            systems.input.set_keyboard_input(input);
                         },
 
                         WindowEvent::MouseInput {button, state,..} => {
-                            systems.input.get_mouse_button_input(button, state);
+                            systems.input.set_mouse_button_input(button, state);
+                            
                         },
+                        WindowEvent::AxisMotion { axis, value, ..} => {
+                            match *axis {
+                                0 => {
+                                    systems.input.add_axis_motion(MouseAxis::X, *value)
+                                }
+                                1 => {
+                                    systems.input.add_axis_motion(MouseAxis::Y, *value)
+                                }
+                                _ => {}
+                            }
+                        },
+                        // WindowEvent::Focused(is_focus) => {
+                        //     if *is_focus {
+                        //         systems.render.window.set_cursor_grab(
+                        //             winit::window::CursorGrabMode::L
+                        //         );
+                        //         systems.render.window.set_cursor_visible(
+                        //             true
+                        //         )
+                        //     }
+                        // }
                         _ => {},
                     }
                 }
@@ -155,7 +164,20 @@ fn main_loop(
 ) {
     systems.time.start_of_frame();
 
-    systems.render.render_frame(FrameRenderData::new());
+    systems.input.get_input(&mut systems.world, &mut systems.net);
+
+    systems.world.process_input(&mut systems.engine_handle);
+
+    systems.world.process_commands(&mut systems.engine_handle);
+
+    systems.physic.process_physics(
+        &mut systems.world, 
+        systems.time.target_frame_duration.as_secs_f32()
+    );
+
+    systems.render.render_frame(&mut systems.world);
+
+    systems.input.reset_axis_input();
 
     systems.time.end_of_frame(); 
 

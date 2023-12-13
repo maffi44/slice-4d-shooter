@@ -106,11 +106,7 @@ impl Renderer {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
         let already_rendered = self.already_rendered.clone();
-        
-        // self.queue.on_submitted_work_done(move || {
-        //     output.present();
-        //     *(already_rendered.lock().unwrap()) = true;
-        // });
+
         Ok(())
     }
 

@@ -1,6 +1,4 @@
-use super::transform::{
-    Position,
-};
+use super::world::World;
 
 use glam::Vec4;
 
@@ -37,8 +35,12 @@ impl PhysicsSystem {
         }
     }
 
-    pub fn simulate_physics() {
-
+    pub fn process_physics(&mut self, world: &mut World, dt: f32) {
+        for player_id in world.spawned_players.iter() {
+            if let Some(player) = world.pool_of_players.get_mut(player_id) {
+                player.get_mut_collider().physics_tick(dt)
+            }
+        }
     }
 
 

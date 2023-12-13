@@ -22,6 +22,7 @@ console_error_panic_hook = "*"
 console_log = "*"
 wasm-bindgen = "*"
 wasm-bindgen-futures = "*"
+getrandom = { version = "*", features = [ "js" ] }
 web-sys = { version = "*", features = [
     "Document",
     "Window",

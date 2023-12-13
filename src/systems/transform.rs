@@ -18,8 +18,8 @@ impl Transform {
         self.position += addition;
     }
 
-    pub fn get_position(&mut self) -> Vec4 {
-        Vec4::ZERO
+    pub fn get_position(&self) -> Vec4 {
+        self.position
     }
 
     pub fn get_direction(&mut self) -> Vec4 {

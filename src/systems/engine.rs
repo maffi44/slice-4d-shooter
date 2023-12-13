@@ -1,17 +1,15 @@
-use web_sys::HtmlCanvasElement;
-use winit::{window::WindowBuilder, dpi::LogicalSize};
+use winit::window::WindowBuilder;
 
 use winit::dpi::PhysicalSize;
 
-use crate::common_systems::{
-    physics_system::PhysicsSystem,
-    timeSystem::TimeSystem,
-};
-
 use super::{
-    render_system::RenderSystem,
+    render::RenderSystem,
     main_loop::MainLoop,
-    input_system::InputSystem,
+    input::InputSystem,
+    physics::PhysicsSystem,
+    time::TimeSystem,
+    world::World,
+    engine_handle::EngineHandle, net::NetSystem,
 };
 
 pub struct Engine {
@@ -19,6 +17,9 @@ pub struct Engine {
     pub input: InputSystem,
     pub physic: PhysicsSystem,
     pub time: TimeSystem,
+    pub world: World,
+    pub engine_handle: EngineHandle,
+    pub net: NetSystem,
     // pub runtime: RuntimeSystem,
     // pub net: ClientNetSystem,
 }
@@ -58,12 +59,20 @@ impl Engine {
 
         let time = TimeSystem::new(60_u32);
 
+        let world = World::new();
+
+        let engine_handle = EngineHandle::new();
+
+        let net = NetSystem::new();
+
         Engine {
             physic,
             input,
             render,
             time,
-            // net,
+            world,
+            engine_handle,
+            net,
         }
     }
 }

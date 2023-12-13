@@ -1,6 +1,6 @@
 use glam::Vec4;
 
-use crate::common_systems::transform::{Transform, self};
+use super::super::transform::Transform;
 
 pub enum Collision<'a> {
     Static(&'a mut StaticCollision),
