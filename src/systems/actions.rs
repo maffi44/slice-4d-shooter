@@ -4,6 +4,7 @@ pub static mut MOVE_RIGHT: Action = Action::new();
 pub static mut MOVE_LEFT: Action = Action::new();
 pub static mut JUMP: Action = Action::new();
 pub static mut FIRE: Action = Action::new();
+pub static mut AXIS_INPUT: Vec2 = Vec2::ZERO;
 
 use glam::Vec2;
 
@@ -36,6 +37,8 @@ impl Actions {
             let move_left = MOVE_FORWARD.clone();
             let jump = MOVE_FORWARD.clone();
             let fire = MOVE_FORWARD.clone();
+            let axis_input = AXIS_INPUT.clone();
+
             
             Actions {
                 move_forward,
@@ -44,7 +47,7 @@ impl Actions {
                 move_left,
                 jump,
                 fire,
-                axis_input: Vec2::ZERO,
+                axis_input,
             }
         }
     }

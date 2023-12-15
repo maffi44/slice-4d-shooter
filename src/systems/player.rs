@@ -11,7 +11,7 @@ const HEALTH: i32 = 100_i32;
 use super::{
     devices::{Device, DeviceType, DefaultPistol},
     engine_handle::EngineHandle,
-    transform::Transform,
+    transform::{Transform, self},
     player_input_master::InputMaster,
     physics::collisions::DynamicCollision,
 };
@@ -53,6 +53,7 @@ pub enum PlayersDeviceSlotNumber {
 
 pub enum Message {
     DealDamage(u32),
+    SetTransform(Transform),
 }
 
 pub struct Player {
@@ -114,6 +115,9 @@ impl Player {
             Message::DealDamage(damage) => {
                 self.inner_state.hp -= damage as i32;
             },
+            Message::SetTransform(transform) => {
+                self.inner_state.collision.transform = transform;
+            }
         }
     }
 
@@ -121,10 +125,10 @@ impl Player {
 
         let mut input = match &mut self.master {
             InputMaster::LocalMaster(master) => {
-                master.current_input.clone()
+                &mut master.current_input
             }
             InputMaster::RemoteMaster(master) => {
-                master.current_input.clone()
+                &mut master.current_input
             }
         };
 
@@ -143,28 +147,28 @@ impl Player {
 
         match self.active_hands_slot {
             ActiveHandsSlot::Zero => {
-                self.hands_slot_0.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                self.hands_slot_0.process_input(self.id, &mut self.inner_state, input, engine_handle);
             },
             ActiveHandsSlot::First => {
                 if let Some(device) = self.hands_slot_1.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, input, engine_handle);
                 }
             },
             ActiveHandsSlot::Second => {
                 if let Some(device) = self.hands_slot_2.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, input, engine_handle);
                 }
             },
             ActiveHandsSlot::Third => {
                 if let Some(device) = self.hands_slot_3.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, input, engine_handle);
                 }
             }
         }
 
         for device in self.devices.iter_mut() {
             if let Some(device) = device {
-                device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                device.process_input(self.id, &mut self.inner_state, input, engine_handle);
             }
         }
 

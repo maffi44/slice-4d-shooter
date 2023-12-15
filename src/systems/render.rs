@@ -1,33 +1,13 @@
+pub mod render_data;
 mod renderer;
 
+use self::render_data::CameraUniform;
+
+use super::{world::World, time::TimeSystem};
 use renderer::Renderer;
-
+use render_data::FrameRenderData;
 use winit::window::Window;
-
 use glam::{Vec4, Mat4};
-
-use super::{
-    world::World,
-};
-
-#[derive(Clone, Copy)]
-pub struct FrameRenderData {
-    cam_position: Vec4,
-    cam_rotation: Mat4,
-
-}
-
-impl FrameRenderData {
-    pub fn new(
-        cam_position: Vec4,
-        cam_rotation: Mat4,
-    ) -> Self {
-        FrameRenderData {
-            cam_position,
-            cam_rotation
-        }
-    }
-}
 
 pub struct RenderSystem {
     pub window: Window,
@@ -46,25 +26,50 @@ impl RenderSystem {
         }
     }
 
-    pub fn render_frame(&mut self, world: &mut World) {
+    pub fn render_frame(&mut self, world: &mut World, time: &mut TimeSystem) {
         
-        let position;
-        let rot_matrix;
+        let cam_pos;
+        let cam_rot;
         
         if let Some(main_player) = world.pool_of_players.get(&world.main_camera_from) {
-            position = main_player.get_position();
-            rot_matrix = main_player.get_rotation_matrix();
+            cam_pos = main_player.get_position();
+            cam_rot = main_player.get_rotation_matrix();
         } else {
-            position = Vec4::ZERO;
-            rot_matrix = Mat4::IDENTITY;
+            cam_pos = Vec4::ZERO;
+            cam_rot = Mat4::IDENTITY;
         }
 
-        let render_data = FrameRenderData::new(
-            position,
-            rot_matrix,
+        let aspect = {
+            let size = self.window.inner_size();
+            (size.width / size.height) as f32
+        };
+
+        let mut rot_mat_slice: [f32;16] = [0.0; 16];
+
+        cam_rot.write_cols_to_slice(&mut rot_mat_slice);
+
+        let render_data = FrameRenderData {
+            camera_uniform: CameraUniform {
+                cam_pos: cam_pos.into(),
+                cam_rot: rot_mat_slice,
+                aspect: [aspect, 0.0, 0.0, 0.0],
+            },
+            time: time.timestamp_of_main_loop_start.elapsed().as_secs_f32()
+        };
+
+        self.renderer.queue.write_buffer(
+            &self.renderer.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[render_data.camera_uniform]),
         );
 
-        if let Err(err) = self.renderer.render(render_data) {
+        self.renderer.queue.write_buffer(
+            &self.renderer.time_buffer,
+            0,
+            bytemuck::cast_slice(&[render_data.time]),
+        );
+
+        if let Err(err) = self.renderer.render() {
             match err {
                 wgpu::SurfaceError::Lost => self.resize_frame_buffer(),
 

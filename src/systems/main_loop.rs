@@ -1,7 +1,16 @@
 use super::{
     engine::Engine,
-    render::FrameRenderData,
-    input::MouseAxis, player_input_master::{InputMaster, LocalMaster},
+    input::MouseAxis,
+    player::Message,
+    transform::Transform,
+    player_input_master::{
+        InputMaster,
+        LocalMaster
+    },
+    engine_handle::{
+        Command,
+        CommandType,
+    }, actions::Actions,
 };
 
 use instant::Instant;
@@ -37,8 +46,20 @@ impl MainLoop {
 
             let main_player = systems.world.add_and_spawn_new_player(
                 InputMaster::LocalMaster(
-                    LocalMaster::new(systems.input.actions.clone())
+                    LocalMaster::new(Actions::new())
                 )
+            );
+
+            systems.engine_handle.send_command(
+                Command {
+                    sender: 0_u32,
+                    command_type: CommandType::SendMessage(
+                        main_player,
+                        Message::SetTransform(
+                            Transform::new(0.0, -2.0, 0.0, 0.0),
+                        )
+                    )
+                }
             );
 
             systems.world.main_camera_from = main_player;
@@ -64,7 +85,7 @@ impl MainLoop {
                             // set wake up time gof the next interation
                             *cntrl_flow = ControlFlow::WaitUntil(
                                 Instant::from(
-                                    systems.time.timestamp_of_start_of_main_loop +
+                                    systems.time.timestamp_of_main_loop_start +
                                     Duration::from_secs_f64(
                                         systems.time.target_frame_duration.as_secs_f64() *
                                         (systems.time.frame_counter + 1) as f64
@@ -175,7 +196,7 @@ fn main_loop(
         systems.time.target_frame_duration.as_secs_f32()
     );
 
-    systems.render.render_frame(&mut systems.world);
+    systems.render.render_frame(&mut systems.world, &mut systems.time);
 
     systems.input.reset_axis_input();
 

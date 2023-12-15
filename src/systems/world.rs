@@ -113,6 +113,7 @@ impl World {
             let player = self.pool_of_players.get_mut(player_id);
 
             if let Some(player) = player {
+                log::info!("process player input");
                 player.process_input(engine_handle);
             }
         }

@@ -22,7 +22,6 @@ pub enum MouseAxis {
 
 pub struct InputSystem {
     actions_table: HashMap<SomeButton, &'static mut Action>,
-    pub actions: Actions,
 }
 
 
@@ -67,7 +66,7 @@ impl InputSystem {
             );
         }
         
-        InputSystem {actions_table, actions}
+        InputSystem {actions_table}
     }
 
     pub fn get_input(&mut self, world: &mut World ,net: &mut NetSystem) {
@@ -75,7 +74,7 @@ impl InputSystem {
         for (_, player) in world.pool_of_players.iter_mut() {
             match &mut player.master {
                 LocalMaster(master) => {
-                    master.current_input = self.actions.clone();
+                    master.current_input = Actions::new();
                 }
                 RemoteMaster(master) => {
                     // Didn't implement yet
@@ -85,26 +84,38 @@ impl InputSystem {
     }
 
 
+
+
     pub fn reset_axis_input(&mut self) {
-        self.actions.axis_input = glam::Vec2::ZERO;
+        unsafe {actions::AXIS_INPUT = glam::Vec2::ZERO};
     }
 
     pub fn add_axis_motion(&mut self, axis: MouseAxis, value: f64) {
-        match axis {
-            MouseAxis::X => {
-                self.actions.axis_input.x += value as f32;
-            }
-            MouseAxis::Y => {
-                self.actions.axis_input.y += value as f32;
+        unsafe {
+            match axis {
+                MouseAxis::X => {
+                    actions::AXIS_INPUT.x += value as f32;
+                }
+                MouseAxis::Y => {
+                    actions::AXIS_INPUT.y += value as f32;
+                }
             }
         }
     }
 
     pub fn set_keyboard_input(&mut self, input: &KeyboardInput) {
+        
+        log::info!("Get some keyboard input");
+    
         if let Some(keycode) = input.virtual_keycode {
+    
+            log::info!("Get keyboard input as virtual keycode");
+
             if let Some(action) =
                 self.actions_table.get_mut(&SomeButton::VirtualKeyCode(keycode)) {
 
+                log::info!("Get keyboard input as action");
+                
                 match input.state {
                     ElementState::Pressed => {
                         if action.is_action_pressed == false {

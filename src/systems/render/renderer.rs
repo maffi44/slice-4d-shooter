@@ -1,7 +1,10 @@
-use super::FrameRenderData;
+use super::render_data::{
+    FrameRenderData,
+    CameraUniform,
+};
 // use winit::{window::Window, raw_window_handle::{HasRawDisplayHandle, HasDisplayHandle}, dpi::PhysicalSize};
 use winit::window::Window;
-use wgpu::util::DeviceExt;
+use wgpu::{util::{DeviceExt, BufferInitDescriptor}, BindGroupDescriptor, BindGroupLayout, BufferUsages, BindGroupLayoutDescriptor, Buffer, BindGroup};
 
 use std::sync::{Arc, Mutex};
 
@@ -9,12 +12,11 @@ use std::sync::{Arc, Mutex};
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
     position: [f32; 3],
-    coordinates: [f32; 2],
 }
 
 impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 2] =
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2];
+    const ATTRIBS: [wgpu::VertexAttribute; 1] =
+        wgpu::vertex_attr_array![0 => Float32x3];
 
     fn desc() -> wgpu::VertexBufferLayout<'static> {
         use std::mem;
@@ -29,26 +31,29 @@ impl Vertex {
 
 
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [-1.0, 1.0, 0.0], coordinates: [0.0, 1.0] },
-    Vertex { position: [1.0, 1.0, 0.0], coordinates: [1.0, 1.0] },
-    Vertex { position: [-1.0, -1.0, 0.0], coordinates: [0.0, 0.0] },
-    Vertex { position: [1.0, -1.0, 0.0], coordinates: [1.0, 0.0] },
+    Vertex { position: [-1.0, 3.0, 0.0]},
+    Vertex { position: [3.0, -1.0, 0.0]},
+    Vertex { position: [-1.0, -1.0, 0.0]},
 ];
 
-const INDICES: &[u16] = &[0, 2, 1, 1, 2, 3,];
+const INDICES: &[u16] = &[0, 2, 1];
+
 
 pub struct Renderer {
     surface: wgpu::Surface,
     pub device: wgpu::Device,
-    queue: wgpu::Queue,
+    pub queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
+    pub camera_buffer: Buffer,
+    pub time_buffer: Buffer,
+    uniform_bind_group: BindGroup,
     // time: std::time::SystemTime,
-    already_rendered: Arc<Mutex<bool>>,
+    // already_rendered: Arc<Mutex<bool>>,
 }
 
 impl Renderer {
@@ -61,13 +66,13 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, _data: FrameRenderData) -> Result<(), wgpu::SurfaceError> {
-        self.device.poll(wgpu::MaintainBase::Poll);
-        if *(self.already_rendered.lock().unwrap()) == true {
-            *(self.already_rendered.lock().unwrap()) = false
-        } else {
-            return Ok(());
-        }
+    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+        // self.device.poll(wgpu::MaintainBase::Poll);
+        // if *(self.already_rendered.lock().unwrap()) == true {
+        //     *(self.already_rendered.lock().unwrap()) = false
+        // } else {
+        //     return Ok(());
+        // }
         
         let output = self.surface.get_current_texture()?;
         let view = output
@@ -98,6 +103,7 @@ impl Renderer {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
@@ -105,7 +111,7 @@ impl Renderer {
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
-        let already_rendered = self.already_rendered.clone();
+        // let already_rendered = self.already_rendered.clone();
 
         Ok(())
     }
@@ -159,10 +165,12 @@ impl Renderer {
         // Shader code in this tutorial assumes an sRGB surface texture. Using a different
         // one will result all the colors coming out darker. If you want to support non
         // sRGB surfaces, you'll need to account for that when drawing to the frame.
-        let surface_format = surface_caps.formats[0]; /*surface_caps.formats.iter()
-                                                      .copied()
-                                                      .find(|f| f.describe().srgb)
-                                                      .unwrap_or(surface_caps.formats[0]);*/
+        let surface_format = surface_caps
+        .formats
+        .iter()
+        .copied()
+        .find(|f| f.is_srgb())
+        .unwrap_or(surface_caps.formats[0]);
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -182,10 +190,77 @@ impl Renderer {
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader.wgsl").into()),
         });
 
+        let init_camera_unitform = CameraUniform {
+            cam_pos: [0.0, 0.0, 0.0, 0.0],
+            cam_rot: [
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 0.0, 1.0,
+            ],
+            aspect: [1.0, 0.0, 0.0, 0.0],
+        };
+
+        let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("camera_buffer"),
+            contents: bytemuck::cast_slice(&[init_camera_unitform]),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+        
+        let init_time = 0.0001_f32;
+
+        let time_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("time_buffer"),
+            contents: bytemuck::cast_slice(&[init_time]),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+
+        let uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    }
+                ],
+                label: Some("uniform_bind_group_layout"),
+            });
+        
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &uniform_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: camera_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: time_buffer.as_entire_binding(),
+                }],
+            
+            label: Some("camera_bind_group"),
+        });
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[],
+            bind_group_layouts: &[&uniform_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -245,6 +320,7 @@ impl Renderer {
             }
         );
 
+        
         let num_indices = INDICES.len() as u32;
 
         Renderer {
@@ -257,8 +333,11 @@ impl Renderer {
             num_indices,
             vertex_buffer,
             index_buffer,
+            camera_buffer,
+            time_buffer,
+            uniform_bind_group,
             // time: std::time::SystemTime::now(),
-            already_rendered: Arc::new(Mutex::new(true)),
+            // already_rendered: Arc::new(Mutex::new(true)),
         }
     }
 }
