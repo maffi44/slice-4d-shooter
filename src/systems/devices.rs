@@ -9,7 +9,7 @@ use super::{
         Message,
         PlayerID,
     },
-    actions::Actions,
+    input::ActionsFrameState,
     effects::EffectType,
 };
 
@@ -38,7 +38,7 @@ impl Device for DefaultPistol {
             &mut self,
             player_id: PlayerID,
             player: &mut PlayerInnerState,
-            input: &mut Actions,
+            input: &mut ActionsFrameState,
             engine_handle: &mut EngineHandle
         ) {
         if input.fire.is_action_just_pressed() {
@@ -89,7 +89,7 @@ pub trait Device {
         &mut self,
         player_id: PlayerID,
         player: &mut PlayerInnerState,
-        input: &mut Actions,
+        input: &mut ActionsFrameState,
         engine_handle: &mut EngineHandle
     ) {}
 

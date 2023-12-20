@@ -1,6 +1,7 @@
-use winit::window::WindowBuilder;
+use winit::{window::WindowBuilder, platform::web::WindowBuilderExtWebSys};
 
 use winit::dpi::PhysicalSize;
+use wasm_bindgen::{JsValue, convert::IntoWasmAbi};
 
 use super::{
     render::RenderSystem,
@@ -30,24 +31,32 @@ impl Engine {
         // async_runtime: &Runtime,
     ) -> Engine {
 
+        let document = web_sys::window().unwrap().document().unwrap();
+        let canvas = document.get_element_by_id("game_canvas").unwrap();
+        let canvas: web_sys::HtmlCanvasElement = JsValue::from(canvas).into();
+
+
+
         let window_builder = WindowBuilder::new();
+
         let window = window_builder
+            .with_canvas(Some(canvas))
             .with_inner_size(PhysicalSize::new(450, 400))
             .build(&cleint_main_loop.event_loop)
             .unwrap();
 
         // window.set_resize_increments(PhysicalSize::new(450, 400).into());
 
-        use winit::platform::web::WindowExtWebSys;
-        web_sys::window()
-            .and_then(|win| win.document())
-            .and_then(|doc| {
-                let dst = doc.get_element_by_id("4d-shooter")?;
-                let canvas = web_sys::Element::from(window.canvas());
-                dst.append_child(&canvas).ok()?;
-                Some(())
-            })
-            .expect("Couldn't append canvas to document body.");
+        // use winit::platform::web::WindowExtWebSys;
+        // web_sys::window()
+        //     .and_then(|win| win.document())
+        //     .and_then(|doc| {
+        //         let dst = doc.get_element_by_id("4d-shooter")?;
+        //         let canvas = web_sys::Element::from(window.canvas());
+        //         dst.append_child(&canvas).ok()?;
+        //         Some(())
+        //     })
+        //     .expect("Couldn't append canvas to document body.");
 
         let physic = PhysicsSystem::new();
         

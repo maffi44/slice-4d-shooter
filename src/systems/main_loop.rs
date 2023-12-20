@@ -1,21 +1,25 @@
 use super::{
     engine::Engine,
-    input::MouseAxis,
-    player::Message,
-    transform::Transform,
-    player_input_master::{
-        InputMaster,
-        LocalMaster
+    input::{
+        MouseAxis,
+        ActionsFrameState,
     },
+    player::{
+        Message,
+        player_input_master::{
+            InputMaster,
+            LocalMaster
+        },
+    },
+    transform::Transform,
     engine_handle::{
         Command,
         CommandType,
-    }, actions::Actions,
+    },
 };
 
-use instant::Instant;
-
 use std::time::Duration;
+use web_time::Instant;
 
 use winit::{
     event::*,
@@ -31,7 +35,7 @@ impl MainLoop {
 
     pub fn new() -> Self {
         MainLoop {
-            event_loop: EventLoop::new(),
+            event_loop: EventLoop::new().unwrap(),
         }
     }
 
@@ -39,14 +43,14 @@ impl MainLoop {
         self,
         mut systems : Engine,
     ) {        
-        let _ = self.event_loop.run(move |event, _, cntrl_flow| {
+        let _ = self.event_loop.run(move |event, elwt|{
 
             
             let systems = &mut systems;
 
             let main_player = systems.world.add_and_spawn_new_player(
                 InputMaster::LocalMaster(
-                    LocalMaster::new(Actions::new())
+                    LocalMaster::new(ActionsFrameState::empty())
                 )
             );
 
@@ -72,9 +76,9 @@ impl MainLoop {
                         StartCause::Init => {
                             systems.time.init();
 
-                            *cntrl_flow = ControlFlow::WaitUntil(
+                            elwt.set_control_flow(ControlFlow::WaitUntil(
                                 Instant::now() + systems.time.target_frame_duration
-                            );
+                            ));
                         }
                         StartCause::ResumeTimeReached {
                             start,
@@ -83,7 +87,7 @@ impl MainLoop {
                             ready_to_engine_tick = true;
 
                             // set wake up time gof the next interation
-                            *cntrl_flow = ControlFlow::WaitUntil(
+                            elwt.set_control_flow(ControlFlow::WaitUntil(
                                 Instant::from(
                                     systems.time.timestamp_of_main_loop_start +
                                     Duration::from_secs_f64(
@@ -91,7 +95,7 @@ impl MainLoop {
                                         (systems.time.frame_counter + 1) as f64
                                     )
                                 )
-                            )
+                            ));
                         }
                         StartCause::WaitCancelled {
                             start,
@@ -113,7 +117,7 @@ impl MainLoop {
                 Event::Resumed => {
 
                 }
-                Event::MainEventsCleared => {
+                Event::AboutToWait => {
                     // engine main loop here
                     if ready_to_engine_tick {
                         ready_to_engine_tick = false;
@@ -126,7 +130,7 @@ impl MainLoop {
                     ..
                 } => {
                     match event {
-                        WindowEvent::CloseRequested => *cntrl_flow = ControlFlow::Exit,
+                        WindowEvent::CloseRequested => elwt.exit(),
 
                         WindowEvent::Resized(_) => {
                             systems.render.resize_frame_buffer();
@@ -136,8 +140,8 @@ impl MainLoop {
                             systems.render.resize_frame_buffer();
                         },
                         
-                        WindowEvent::KeyboardInput {input,..} => {
-                            systems.input.set_keyboard_input(input);
+                        WindowEvent::KeyboardInput {event,..} => { 
+                            systems.input.set_keyboard_input(event);
                         },
 
                         WindowEvent::MouseInput {button, state,..} => {
@@ -187,7 +191,7 @@ fn main_loop(
 
     systems.input.get_input(&mut systems.world, &mut systems.net);
 
-    systems.world.process_input(&mut systems.engine_handle);
+    // systems.world.process_input(&mut systems.engine_handle);
 
     systems.world.process_commands(&mut systems.engine_handle);
 
@@ -201,5 +205,6 @@ fn main_loop(
     systems.input.reset_axis_input();
 
     systems.time.end_of_frame(); 
+
 
 }

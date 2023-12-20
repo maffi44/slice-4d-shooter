@@ -1,5 +1,6 @@
 use std::time::Duration;
-use instant::Instant;
+use web_time::Instant;
+
 pub struct TimeSystem {
     pub target_frame_duration: Duration,
     pub prev_frame_duration: f64,
@@ -35,6 +36,8 @@ impl TimeSystem {
     pub fn start_of_frame(&mut self) {
         self.average_frame_duration =
             self.timestamp_of_main_loop_start.elapsed().as_secs_f64() / self.frame_counter as f64;
+        
+        log::info!("avarange frame duration is {}", self.average_frame_duration)
     }
 
     #[inline]

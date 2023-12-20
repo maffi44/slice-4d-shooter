@@ -39,8 +39,10 @@ impl RenderSystem {
             cam_rot = Mat4::IDENTITY;
         }
 
+        log::info!("camera position is {}", cam_pos);
+
         let aspect = {
-            let size = self.window.inner_size();
+            let size = winit::dpi::PhysicalSize::new(450, 400);
             (size.width / size.height) as f32
         };
 

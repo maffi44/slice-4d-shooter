@@ -1,12 +1,15 @@
-use super::render_data::{
-    FrameRenderData,
-    CameraUniform,
-};
-// use winit::{window::Window, raw_window_handle::{HasRawDisplayHandle, HasDisplayHandle}, dpi::PhysicalSize};
+use super::render_data::CameraUniform;
 use winit::window::Window;
-use wgpu::{util::{DeviceExt, BufferInitDescriptor}, BindGroupDescriptor, BindGroupLayout, BufferUsages, BindGroupLayoutDescriptor, Buffer, BindGroup};
-
-use std::sync::{Arc, Mutex};
+use wgpu::{
+    util::{
+        DeviceExt,
+        BufferInitDescriptor
+    },
+    BufferUsages,
+    Buffer,
+    BindGroup
+};
+use web_sys::HtmlCanvasElement;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -110,8 +113,13 @@ impl Renderer {
         }
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
-        output.present();
+
+        let instant = web_time::Instant::now();
+        self.queue.on_submitted_work_done(move || {
+            log::info!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
+        });
         // let already_rendered = self.already_rendered.clone();
+        output.present();
 
         Ok(())
     }
@@ -119,7 +127,7 @@ impl Renderer {
 
     pub async fn new(window: &Window) -> Self {
         // let size = PhysicalSize::new(4, 4);
-        let size = window.inner_size();
+        let size = winit::dpi::PhysicalSize::new(450, 400);
 
         // The imnstance is a handle to our GPU
         // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU

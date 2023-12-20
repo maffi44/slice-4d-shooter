@@ -1,10 +1,14 @@
 use std::collections::HashMap;
 
 use super::{
-    player::{Player, PlayerID, Message},
+    player::{
+        Player,
+        PlayerID,
+        Message,
+        player_input_master::InputMaster,
+    },
     engine_handle::EngineHandle,
     projectiles::ProjectileType,
-    player_input_master::InputMaster,
     engine_handle::CommandType::{
         SendMessage,
         SpawnEffect,
@@ -113,7 +117,6 @@ impl World {
             let player = self.pool_of_players.get_mut(player_id);
 
             if let Some(player) = player {
-                log::info!("process player input");
                 player.process_input(engine_handle);
             }
         }

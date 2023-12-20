@@ -1,4 +1,4 @@
-use super::actions::Actions;
+use crate::systems::input::ActionsFrameState;
 
 const MAX_INPUTS_CAPASITY: usize = 20;
 
@@ -10,11 +10,11 @@ pub enum InputMaster {
 }
 
 pub struct LocalMaster {
-    pub current_input: Actions
+    pub current_input: ActionsFrameState
 }
 
 impl LocalMaster {
-    pub fn new(init_atctions: Actions) -> Self {
+    pub fn new(init_atctions: ActionsFrameState) -> Self {
 
         LocalMaster {
             current_input: init_atctions,
@@ -25,7 +25,7 @@ impl LocalMaster {
 
 
 pub struct RemoteMaster {
-    pub current_input: Actions
+    pub current_input: ActionsFrameState
 }
 
 
