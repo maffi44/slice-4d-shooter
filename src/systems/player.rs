@@ -140,16 +140,16 @@ impl Player {
         let x = input.mouse_axis.x;
         let y = input.mouse_axis.y;
 
-        // let new_rotation_matrix = Mat4::from_cols_slice(&[
-        //     x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
-        //     0.0,        y.cos(),            -y.sin(),           0.0,
-        //     -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
-        //     0.0,        0.0,                0.0,                1.0
-        // ]);
+        log::info!("~~~~~~~~~~~mouse input is {x} {y}");
 
-        // self.inner_state.collision.transform.rotation =
-        //     self.inner_state.collision.transform.rotation *
-        //     new_rotation_matrix;
+        let new_rotation_matrix = Mat4::from_cols_slice(&[
+            x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
+            0.0,        y.cos(),            -y.sin(),           0.0,
+            -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
+            0.0,        0.0,                0.0,                1.0
+        ]);
+
+        self.inner_state.collision.transform.rotation *= new_rotation_matrix;
 
         match self.active_hands_slot {
             ActiveHandsSlot::Zero => {
@@ -179,38 +179,37 @@ impl Player {
         }
 
 
-        // process movement
         let mut movement_vec = Vec4::ZERO;
 
         if input.move_forward.is_action_pressed() {
-            // input.move_forward.capture_action();
+            input.move_forward.capture_action();
 
             movement_vec += Vec4::new(0.0, 0.0, 1.0, 0.0);
         }
 
         if input.move_backward.is_action_pressed() {
-            // input.move_backward.capture_action();
+            input.move_backward.capture_action();
 
             movement_vec += Vec4::new(0.0, 0.0, -1.0, 0.0);
         }
 
         if input.move_right.is_action_pressed() {
-            // input.move_right.capture_action();
+            input.move_right.capture_action();
 
             movement_vec += Vec4::new(1.0, 0.0, 0.0, 0.0);
         }
 
         if input.move_left.is_action_pressed() {
-            // input.move_left.capture_action();
+            input.move_left.capture_action();
 
             movement_vec += Vec4::new(-1.0, 0.0, 0.0, 0.0);
         }
 
-        // movement_vec = self.get_rotation_matrix() * movement_vec;
+        movement_vec = self.get_rotation_matrix() * movement_vec;
 
-        // log::info!("movement vec is {}", movement_vec);
+        // log::info!("--------> movement vec is {}", movement_vec);
 
-        // self.inner_state.collision.set_wish_direction(movement_vec)
+        self.inner_state.collision.set_wish_direction(movement_vec)
 
     }
 

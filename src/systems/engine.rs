@@ -41,11 +41,13 @@ impl Engine {
 
         let window = window_builder
             .with_canvas(Some(canvas))
-            .with_inner_size(PhysicalSize::new(450, 400))
+            .with_active(true)
+            .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
+            .with_inner_size(PhysicalSize::new(800, 600))
             .build(&cleint_main_loop.event_loop)
             .unwrap();
 
-        // window.set_resize_increments(PhysicalSize::new(450, 400).into());
+        // window.set_resize_increments(PhysicalSize::new(800, 600).into());
 
         // use winit::platform::web::WindowExtWebSys;
         // web_sys::window()

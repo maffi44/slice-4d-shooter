@@ -127,7 +127,7 @@ impl Renderer {
 
     pub async fn new(window: &Window) -> Self {
         // let size = PhysicalSize::new(4, 4);
-        let size = winit::dpi::PhysicalSize::new(450, 400);
+        let size = winit::dpi::PhysicalSize::new(800, 600);
 
         // The imnstance is a handle to our GPU
         // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU

@@ -188,15 +188,8 @@ impl InputSystem {
         self.mouse_axis = Vec2::ZERO;
     }
 
-    pub fn add_axis_motion(&mut self, axis: MouseAxis, value: f64) {
-        match axis {
-            MouseAxis::X => {
-                self.mouse_axis.x += value as f32;
-            }
-            MouseAxis::Y => {
-                self.mouse_axis.y += value as f32;
-            }
-        }
+    pub fn add_mouse_delta(&mut self, delta: Vec2) {
+        self.mouse_axis += delta;
     }
 
     pub fn set_keyboard_input(&mut self, input: &KeyEvent) {

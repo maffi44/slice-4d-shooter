@@ -20,6 +20,7 @@ use super::{
 
 use std::time::Duration;
 use web_time::Instant;
+use glam::Vec2;
 
 use winit::{
     event::*,
@@ -42,34 +43,30 @@ impl MainLoop {
     pub async fn run(
         self,
         mut systems : Engine,
-    ) {        
-        let _ = self.event_loop.run(move |event, elwt|{
+    ) {
+        let main_player = systems.world.add_and_spawn_new_player(
+            InputMaster::LocalMaster(
+                LocalMaster::new(ActionsFrameState::empty())
+            )
+        );
 
-            
-            let systems = &mut systems;
-
-            let main_player = systems.world.add_and_spawn_new_player(
-                InputMaster::LocalMaster(
-                    LocalMaster::new(ActionsFrameState::empty())
-                )
-            );
-
-            systems.engine_handle.send_command(
-                Command {
-                    sender: 0_u32,
-                    command_type: CommandType::SendMessage(
-                        main_player,
-                        Message::SetTransform(
-                            Transform::new(0.0, -2.0, 0.0, 0.0),
-                        )
+        systems.engine_handle.send_command(
+            Command {
+                sender: 0_u32,
+                command_type: CommandType::SendMessage(
+                    main_player,
+                    Message::SetTransform(
+                        Transform::new(0.0, -2.0, 0.0, 0.0),
                     )
-                }
-            );
+                )
+            }
+        );
 
-            systems.world.main_camera_from = main_player;
+        systems.world.main_camera_from = main_player;
 
-            let mut ready_to_engine_tick = true;
-            
+        let systems = &mut systems;
+
+        let _ = self.event_loop.run(move |event, elwt|{
             match event {
                 Event::NewEvents(cause) => {
                     match cause {
@@ -84,7 +81,8 @@ impl MainLoop {
                             start,
                             requested_resume
                         } => {
-                            ready_to_engine_tick = true;
+                            
+                            main_loop(systems);
 
                             // set wake up time gof the next interation
                             elwt.set_control_flow(ControlFlow::WaitUntil(
@@ -118,12 +116,7 @@ impl MainLoop {
 
                 }
                 Event::AboutToWait => {
-                    // engine main loop here
-                    if ready_to_engine_tick {
-                        ready_to_engine_tick = false;
-                        
-                        main_loop(systems);
-                    };
+
                 }
                 Event::WindowEvent {
                     ref event,
@@ -148,31 +141,21 @@ impl MainLoop {
                             systems.input.set_mouse_button_input(button, state);
                             
                         },
-                        WindowEvent::AxisMotion { axis, value, ..} => {
-                            match *axis {
-                                0 => {
-                                    systems.input.add_axis_motion(MouseAxis::X, *value)
-                                }
-                                1 => {
-                                    systems.input.add_axis_motion(MouseAxis::Y, *value)
-                                }
-                                _ => {}
-                            }
-                        },
-                        // WindowEvent::Focused(is_focus) => {
-                        //     if *is_focus {
-                        //         systems.render.window.set_cursor_grab(
-                        //             winit::window::CursorGrabMode::L
-                        //         );
-                        //         systems.render.window.set_cursor_visible(
-                        //             true
-                        //         )
-                        //     }
-                        // }
                         _ => {},
                     }
-                }
-                
+                },
+                Event::DeviceEvent {
+                    device_id, event
+                } => {
+                    match event {
+                        DeviceEvent::MouseMotion {delta} => {
+                            let (x,y) = delta;
+                            systems.input.add_mouse_delta(Vec2::new(x as f32, y as f32))
+        
+                        },
+                        _ => {}
+                    }
+                },
                 Event::UserEvent(event) => {
 
                 },
@@ -191,7 +174,7 @@ fn main_loop(
 
     systems.input.get_input(&mut systems.world, &mut systems.net);
 
-    // systems.world.process_input(&mut systems.engine_handle);
+    systems.world.process_input(&mut systems.engine_handle);
 
     systems.world.process_commands(&mut systems.engine_handle);
 

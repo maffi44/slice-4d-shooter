@@ -55,7 +55,7 @@ impl World {
                         to,
                         message,
                         engine_handle
-                    )
+                    );
                 }
                 SpawnEffect(_) => {}
                 SpawnProjectile(_) => {}
