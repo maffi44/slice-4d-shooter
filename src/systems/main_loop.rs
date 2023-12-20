@@ -1,9 +1,6 @@
 use super::{
     engine::Engine,
-    input::{
-        MouseAxis,
-        ActionsFrameState,
-    },
+    input::ActionsFrameState,
     player::{
         Message,
         player_input_master::{
@@ -56,7 +53,7 @@ impl MainLoop {
                 command_type: CommandType::SendMessage(
                     main_player,
                     Message::SetTransform(
-                        Transform::new(0.0, -2.0, 0.0, 0.0),
+                        Transform::new(0.0, 2.0, 0.0, 0.0),
                     )
                 )
             }

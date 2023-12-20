@@ -9,7 +9,6 @@ use wgpu::{
     Buffer,
     BindGroup
 };
-use web_sys::HtmlCanvasElement;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]

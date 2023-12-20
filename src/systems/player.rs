@@ -1,9 +1,11 @@
 pub mod player_input_master;
 
+use std::f32::consts::PI;
+
 use glam::{
+    Vec2,
     Vec4,
     Mat4,
-
 };
 
 const MAX_SPEED : f32 = 100.0;
@@ -23,6 +25,7 @@ pub type PlayerID = u32;
 pub struct PlayerInnerState {
     pub collision: DynamicCollision,
     pub hp: i32,
+    pub view_angle: Vec2,
 }
 
 impl PlayerInnerState {
@@ -34,6 +37,7 @@ impl PlayerInnerState {
                 MAX_ACCEL,
             ),
             hp: HEALTH,
+            view_angle: Vec2::ZERO,
         }
     }
 }
@@ -137,19 +141,22 @@ impl Player {
             }   
         };
 
-        let x = input.mouse_axis.x;
-        let y = input.mouse_axis.y;
+        let prev_x = self.inner_state.view_angle.x;
+        let prev_y = self.inner_state.view_angle.y;
 
-        log::info!("~~~~~~~~~~~mouse input is {x} {y}");
+        let x = input.mouse_axis.x + prev_x;
+        let y = (input.mouse_axis.y + prev_y).clamp(-PI/2.0, PI/2.0);
 
-        let new_rotation_matrix = Mat4::from_cols_slice(&[
+        self.inner_state.collision.transform.rotation = Mat4::from_cols_slice(&[
             x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
             0.0,        y.cos(),            -y.sin(),           0.0,
             -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
             0.0,        0.0,                0.0,                1.0
         ]);
 
-        self.inner_state.collision.transform.rotation *= new_rotation_matrix;
+        self.inner_state.view_angle = Vec2::new(x, y);
+
+        // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
 
         match self.active_hands_slot {
             ActiveHandsSlot::Zero => {
@@ -184,13 +191,13 @@ impl Player {
         if input.move_forward.is_action_pressed() {
             input.move_forward.capture_action();
 
-            movement_vec += Vec4::new(0.0, 0.0, 1.0, 0.0);
+            movement_vec += Vec4::new(0.0, 0.0, -1.0, 0.0);
         }
 
         if input.move_backward.is_action_pressed() {
             input.move_backward.capture_action();
 
-            movement_vec += Vec4::new(0.0, 0.0, -1.0, 0.0);
+            movement_vec += Vec4::new(0.0, 0.0, 1.0, 0.0);
         }
 
         if input.move_right.is_action_pressed() {

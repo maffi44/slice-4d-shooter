@@ -1,7 +1,7 @@
 use winit::{window::WindowBuilder, platform::web::WindowBuilderExtWebSys};
 
 use winit::dpi::PhysicalSize;
-use wasm_bindgen::{JsValue, convert::IntoWasmAbi};
+use wasm_bindgen::JsValue;
 
 use super::{
     render::RenderSystem,
@@ -42,7 +42,7 @@ impl Engine {
         let window = window_builder
             .with_canvas(Some(canvas))
             .with_active(true)
-            .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
+            // .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
             .with_inner_size(PhysicalSize::new(800, 600))
             .build(&cleint_main_loop.event_loop)
             .unwrap();

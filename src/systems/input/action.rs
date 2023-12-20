@@ -1,5 +1,3 @@
-use glam::Vec2;
-
 #[derive(Clone, Debug)]
 pub struct Action {
     pub is_action_just_pressed: bool,

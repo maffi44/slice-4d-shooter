@@ -14,7 +14,6 @@ use winit::{
     },
 };
 
-
 use super::{
     net::NetSystem,
     player::player_input_master::InputMaster::{
@@ -27,6 +26,9 @@ use super::{
 use action::Action;
 
 use glam::Vec2;
+
+
+const MOUSE_SENSITIVITY: f32 = 0.01;
 
 #[derive(Clone)]
 pub struct ActionsFrameState {
@@ -47,7 +49,7 @@ impl ActionsFrameState {
         let mut move_left = Action::new();
         let mut jump = Action::new();
         let mut fire = Action::new();
-        let mut mouse_axis = mouse_axis;
+        let mouse_axis = mouse_axis;
         
         for (_, (button_action, action)) in actions_table.iter() {
             match button_action {
@@ -72,13 +74,13 @@ impl ActionsFrameState {
     }
 
     pub fn empty() -> Self {
-        let mut move_forward = Action::new();
-        let mut move_backward = Action::new();
-        let mut move_right = Action::new();
-        let mut move_left = Action::new();
-        let mut jump = Action::new();
-        let mut fire = Action::new();
-        let mut mouse_axis = Vec2::ZERO;
+        let move_forward = Action::new();
+        let move_backward = Action::new();
+        let move_right = Action::new();
+        let move_left = Action::new();
+        let jump = Action::new();
+        let fire = Action::new();
+        let mouse_axis = Vec2::ZERO;
 
         ActionsFrameState {
             move_forward,
@@ -189,7 +191,7 @@ impl InputSystem {
     }
 
     pub fn add_mouse_delta(&mut self, delta: Vec2) {
-        self.mouse_axis += delta;
+        self.mouse_axis += delta * MOUSE_SENSITIVITY;
     }
 
     pub fn set_keyboard_input(&mut self, input: &KeyEvent) {

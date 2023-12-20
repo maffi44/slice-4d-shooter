@@ -290,11 +290,12 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32> ) -> vec2<f32>
 
 
 struct VertexInput {
-    @location(0) position: vec3<f32>,
+    @location(0) @interpolate(perspective) position: vec3<f32>,
 };
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
+    @location(0) position: vec3<f32>
 };
 //     in vec2 position;
 //     in vec2 coordinates;
@@ -306,6 +307,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4<f32>(model.position, 1.0);
+    out.position = model.position;
     return out;
 }
 //     void main() {
@@ -316,8 +318,14 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var uv: vec2<f32> = in.clip_position.xy / 2. + 0.5;
-    uv.x *= camera_uni.aspect;
+    // var uv: vec2<f32> = in.clip_position.xy / vec2<f32>(800.0, 600.0) - 0.5;
+    // var uv: vec2<f32>;
+    // uv.x = in.position.y / 2.0;
+    // uv.y = in.position.x / 2.0;
+    var uv: vec2<f32> = in.position.xy / 2.0;
+    
+    // uv.x *= -camera_uni.aspect;
+    // uv.y *= -1.0;
 
     var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, 1.0, 0.0));
     ray_direction *= camera_uni.cam_rot;
@@ -343,7 +351,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // }
 
     return vec4<f32>(color, 1.0);
-    // return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    // return vec4<f32>(in.clip_position - 100.0);
 }
 // void main() {
 //     vec2<f32> uv = (fragCoord / iResolution.xy - 0.5) * 2.;
