@@ -42,7 +42,7 @@ impl RenderSystem {
         log::info!("camera position is {}", cam_pos);
 
         let aspect = {
-            let size = winit::dpi::PhysicalSize::new(800, 600);
+            let size = winit::dpi::PhysicalSize::new(1200, 800);
             (size.width / size.height) as f32
         };
 

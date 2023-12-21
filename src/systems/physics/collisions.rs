@@ -34,21 +34,22 @@ impl DynamicCollision {
         self.wish_direction = wish_direction
     }
 
-    pub fn physics_tick(&mut self, frame_dur: f32) {
+    pub fn physics_tick(&mut self, delta: f32) {
 
-        // if self.wish_direction.length() > 0.0 {
-        //     self.wish_direction = self.wish_direction.normalize();
+        if self.wish_direction.length() > 0.0 {
+            // self.wish_direction = self.wish_direction.normalize();
 
-        //     let current_speed_in_wishdir = self.current_velocity.dot(self.wish_direction);
+            let current_speed_in_wishdir = self.current_velocity.dot(self.wish_direction);
 
-        //     let speed = self.max_speed - current_speed_in_wishdir;
+            let speed = self.max_speed - current_speed_in_wishdir;
 
-        //     let add_speed = 0.0_f32.max(speed.min(self.max_accel * frame_dur));
+            let add_speed = 0.0_f32.max(speed.min(self.max_accel * delta));
 
-        //     self.current_velocity += self.wish_direction * add_speed;
-        // }
+            self.current_velocity += self.wish_direction * add_speed;
+        }
 
-        self.transform.increment_position(self.wish_direction);
+        self.transform.increment_position(self.current_velocity * delta);
+        self.current_velocity *= 1.0 - delta*4.0;
         self.wish_direction = Vec4::ZERO;
     }
 }

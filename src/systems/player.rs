@@ -8,8 +8,8 @@ use glam::{
     Mat4,
 };
 
-const MAX_SPEED : f32 = 100.0;
-const MAX_ACCEL : f32 = 100.0;
+const MAX_SPEED : f32 = 8.0;
+const MAX_ACCEL : f32 = 15.0;
 const HEALTH: i32 = 100_i32;
 
 use player_input_master::InputMaster;
@@ -147,12 +147,12 @@ impl Player {
         let x = input.mouse_axis.x + prev_x;
         let y = (input.mouse_axis.y + prev_y).clamp(-PI/2.0, PI/2.0);
 
-        self.inner_state.collision.transform.rotation = Mat4::from_cols_slice(&[
+        self.set_rotation_matrix(Mat4::from_cols_slice(&[
             x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
             0.0,        y.cos(),            -y.sin(),           0.0,
             -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
             0.0,        0.0,                0.0,                1.0
-        ]);
+        ]));
 
         self.inner_state.view_angle = Vec2::new(x, y);
 
@@ -212,7 +212,12 @@ impl Player {
             movement_vec += Vec4::new(-1.0, 0.0, 0.0, 0.0);
         }
 
-        movement_vec = self.get_rotation_matrix() * movement_vec;
+        if let Some(vec) = movement_vec.try_normalize() {
+            movement_vec = vec;
+        }
+
+        movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+        // movement_vec *= Vec4::new(-1.0, 1.0, -1.0, 1.0);
 
         // log::info!("--------> movement vec is {}", movement_vec);
 

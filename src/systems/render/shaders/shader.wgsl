@@ -24,9 +24,9 @@ struct CamerUniform {
 // uniform f32 iFrameRate;
 // uniform vec4<f32> iMouse;
 
-const MAX_STEPS: i32 = 70;
+const MAX_STEPS: i32 = 60;
 const PI: f32 = 3.1415926535897;
-const MIN_DIST: f32 = 0.003;
+const MIN_DIST: f32 = 0.01;
 const MAX_DIST: f32 = 40.0;
 // #define MAX_STEPS 70
 // #define PI 3.1415926535897
@@ -322,25 +322,25 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // var uv: vec2<f32>;
     // uv.x = in.position.y / 2.0;
     // uv.y = in.position.x / 2.0;
-    var uv: vec2<f32> = in.position.xy / 2.0;
-    
-    // uv.x *= -camera_uni.aspect;
-    // uv.y *= -1.0;
+    var uv: vec2<f32> = in.position.xy * 0.7;
+    uv.x *= 1.5;
 
-    var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, 1.0, 0.0));
+    var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
     ray_direction *= camera_uni.cam_rot;
 
     let camera_position = camera_uni.cam_pos;
 
-    var cam_pos: vec4<f32> = vec4<f32>(camera_position.xyz, camera_position.y * 0.8);
+    let cam_pos: vec4<f32> = vec4<f32>(camera_position.xyz, camera_position.y * 0.8);
 
-    var dist_and_depth: vec2<f32> = ray_march(cam_pos, ray_direction); 
+    let dist_and_depth: vec2<f32> = ray_march(cam_pos, ray_direction); 
 
-    var normal: vec3<f32> = get_normal(dist_and_depth.x * ray_direction + cam_pos);
+    let normal: vec3<f32> = get_normal(dist_and_depth.x * ray_direction + cam_pos);
 
-    var shade: f32 = dot(normal, normalize(vec3<f32>(0.2, 1., 0.5)));
+    let shade: f32 = dot(normal, normalize(vec3<f32>(0.2, 1., 0.5)));
 
     var color: vec3<f32> = vec3<f32>(shade * 1.33) + (dist_and_depth.x / MAX_DIST);
+
+    color = mix(color, vec3<f32>(1.0, 1.0, 1.0), dist_and_depth.x / MAX_DIST);
 
     var c = dist_and_depth.y / f32(f32(MAX_STEPS) / 3.0);
     color.g -= c;
@@ -351,7 +351,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // }
 
     return vec4<f32>(color, 1.0);
-    // return vec4<f32>(in.clip_position - 100.0);
+    // return vec4<f32>(in.position.xy + 1.0, 0.0, 1.0);
 }
 // void main() {
 //     vec2<f32> uv = (fragCoord / iResolution.xy - 0.5) * 2.;

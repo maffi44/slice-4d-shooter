@@ -28,7 +28,7 @@ use action::Action;
 use glam::Vec2;
 
 
-const MOUSE_SENSITIVITY: f32 = 0.01;
+const MOUSE_SENSITIVITY: f32 = 0.003;
 
 #[derive(Clone)]
 pub struct ActionsFrameState {
@@ -191,7 +191,7 @@ impl InputSystem {
     }
 
     pub fn add_mouse_delta(&mut self, delta: Vec2) {
-        self.mouse_axis += delta * MOUSE_SENSITIVITY;
+        self.mouse_axis += delta * -MOUSE_SENSITIVITY;
     }
 
     pub fn set_keyboard_input(&mut self, input: &KeyEvent) {

@@ -5,16 +5,25 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Learn WGPU</title>
+    <title>4D Shooter</title>
     <style>
         canvas {
-            background-color: black;
+            padding: 0;
+            margin: auto;
+            display: block;
+            width: 1200px;
+            height: 800px;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
         }
     </style>
 </head>
 
 <body id="4d-shooter">
-    <canvas id="game_canvas" width="600" height="600">
+    <canvas id="game_canvas" width="1200" height="800">
     </canvas> 
     <script type="module">
         import init from "./web_4d_shooter.js";
