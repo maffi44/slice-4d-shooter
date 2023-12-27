@@ -70,7 +70,7 @@ impl Engine {
 
         let time = TimeSystem::new(60_u32);
 
-        let world = World::new();
+        let world = World::new().await;
 
         let engine_handle = EngineHandle::new();
 

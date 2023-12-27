@@ -1,4 +1,4 @@
-use super::render_data::CameraUniform;
+use super::render_data::{CameraUniform, FrameRenderData, TimeUniform};
 use winit::window::Window;
 use wgpu::{
     util::{
@@ -197,7 +197,7 @@ impl Renderer {
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader.wgsl").into()),
         });
 
-        let init_camera_unitform = CameraUniform {
+        let init_camera_uniform = CameraUniform {
             cam_pos: [0.0, 0.0, 0.0, 0.0],
             cam_rot: [
                 1.0, 0.0, 0.0, 0.0,
@@ -207,18 +207,23 @@ impl Renderer {
             ],
             aspect: [1.0, 0.0, 0.0, 0.0],
         };
+        
+        let init_time = TimeUniform::new_zero();
+
+        // let frame_data = FrameRenderData {
+        //     camera_uniform: init_camera_uniform,
+        //     time: init_time,
+        // };
 
         let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("camera_buffer"),
-            contents: bytemuck::cast_slice(&[init_camera_unitform]),
+            contents: bytemuck::cast_slice(&[init_camera_uniform]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
-        
-        let init_time = 0.0001_f32;
 
         let time_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[init_time]),
+            contents: bytemuck::cast_slice(&[init_time.time]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 

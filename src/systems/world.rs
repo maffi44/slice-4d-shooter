@@ -1,4 +1,7 @@
+mod map;
+
 use std::collections::HashMap;
+
 
 use super::{
     player::{
@@ -14,6 +17,7 @@ use super::{
         SpawnEffect,
         SpawnProjectile,
     },
+    static_obj::StaticObject,
 };
 
 use getrandom;
@@ -23,24 +27,35 @@ pub enum PlayerAccessError {
     HaveNotPlayer
 }
 
-
 pub struct World {
     pub pool_of_players: HashMap<PlayerID, Player>,
     pub spawned_players: Vec<PlayerID>,
     pub main_camera_from: PlayerID,
+    pub map: Vec<StaticObject>,
     // fx_pool
     // devices_pool
     // projectiles_pool
 }
 
+
+// use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::JsFuture;
+// use web_sys::{Request, RequestInit, RequestMode, Response};
+
 impl World {
 
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
+
+        let map = map::load_map().await;
+
+        log::warn!("MAP IS {:?}", &map);
+
         World {
             pool_of_players: HashMap::with_capacity(2),
             // pool_of_rockets: Vec::
             spawned_players: Vec::with_capacity(2),
             main_camera_from: 0,
+            map,
         }
     }
 

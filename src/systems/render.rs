@@ -1,6 +1,8 @@
 pub mod render_data;
 mod renderer;
 
+use crate::systems::render::render_data::TimeUniform;
+
 use self::render_data::CameraUniform;
 
 use super::{world::World, time::TimeSystem};
@@ -56,7 +58,7 @@ impl RenderSystem {
                 cam_rot: rot_mat_slice,
                 aspect: [aspect, 0.0, 0.0, 0.0],
             },
-            time: time.timestamp_of_main_loop_start.elapsed().as_secs_f32()
+            time: TimeUniform::new_val(time.timestamp_of_main_loop_start.elapsed().as_secs_f32()),
         };
 
         self.renderer.queue.write_buffer(

@@ -12,3 +12,4 @@ pub mod engine_handle;
 pub mod devices;
 pub mod player;
 pub mod projectiles;
+pub mod static_obj;

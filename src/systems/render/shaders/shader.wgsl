@@ -7,7 +7,7 @@ struct CamerUniform {
 }
 
 @group(0) @binding(0) var<uniform> camera_uni: CamerUniform;
-@group(0) @binding(1) var<uniform> time: f32;
+@group(0) @binding(1) var<uniform> time: vec4<f32>;
 // @group(0) @binding(3) var<uniform> resolution: vec3<f32>;
 // @group(0) @binding(5) var<uniform> iTimeDelta: f32;
 // @group(0) @binding(6) var<uniform> iFrame: i32;
@@ -24,10 +24,10 @@ struct CamerUniform {
 // uniform f32 iFrameRate;
 // uniform vec4<f32> iMouse;
 
-const MAX_STEPS: i32 = 60;
+const MAX_STEPS: i32 = 100;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
-const MAX_DIST: f32 = 40.0;
+const MAX_DIST: f32 = 70.0;
 // #define MAX_STEPS 70
 // #define PI 3.1415926535897
 // #define MIN_DIST 0.003
@@ -155,20 +155,27 @@ fn map(p: vec4<f32>) -> f32 {
     // f32 d = sd_sphere(p - vec4<f32>(0, 1, 0, 2), 1.0);
     // = sd_inf_sphere(p - vec4<f32>(-3, 0, 4, 0.5), 1.0);
     // vec4<f32> pr = p - vec4<f32>(2, 2, 2, 3);
-    var pr: vec4<f32> = p - vec4<f32>(2., 2., 2., 2.);
-    
-    // var xw = pr.xw;
-    // xw *= rotate(time);
-    // pr.xw = xw;
-
-    // pr.xw *= rotate(time);
-    // pr.yw *= rotate(time);
-    // pr.zw *= rotate(time);
-    d = min(sd_box(p - vec4<f32>(1., 1., 2., 1.), vec4<f32>(1., 0.2, 1., 0.5)), d);
-    // d = min(sd_box(pr, vec4<f32>(1, 1, 1, 1)), d);
     d = min(sd_inf_box(p - vec4<f32>(-2., 2., -2., 0.), vec3<f32>(2., 2., 1.)), d);
-    // d = min(sd_sphere(p - vec4<f32>(1, 1, 1, 0), 1.2), d);
     d = max(-sd_sph_inf_box(p - vec4<f32>(-2., 2., -2., 1.5), vec4<f32>(1., 1., 1., 1.)), d);
+
+    var pr: vec4<f32> = p - vec4<f32>(-2., 2., 2., 2.);
+
+    var r = pr.xw * rotate(time.x);
+    pr.x = r.x;
+    pr.w = r.y;
+
+    r = pr.yw * rotate(time.x);
+    pr.y = r.x;
+    pr.w = r.y;
+
+    r = pr.zw * rotate(time.x);
+    pr.z = r.x;
+    pr.w = r.y;
+
+    d = min(sd_box(pr, vec4<f32>(1., 1., 1., 1.)), d);
+
+    d = min(sd_box(p - vec4<f32>(1., 1., 2., 1.), vec4<f32>(1., 0.2, 1., 0.5)), d);
+    // d = min(sd_sphere(p - vec4<f32>(1, 1, 1, 0), 1.2), d);
     // d = min(sd_sph_box(p - vec4<f32>(3, 1.5, 3, 2), vec4<f32>(1)), d);
     // d = min(sd_box_sph(p - vec4<f32>(3, 1.5, -3, 2), vec4<f32>(0.5, 0.5, 0.5, 1)), d);
     return d;
@@ -330,7 +337,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let camera_position = camera_uni.cam_pos;
 
-    let cam_pos: vec4<f32> = vec4<f32>(camera_position.xyz, camera_position.y * 0.8);
+    let cam_pos: vec4<f32> = vec4<f32>(camera_position.xyz, camera_position.y * 0.4);
 
     let dist_and_depth: vec2<f32> = ray_march(cam_pos, ray_direction); 
 
@@ -340,7 +347,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var color: vec3<f32> = vec3<f32>(shade * 1.33) + (dist_and_depth.x / MAX_DIST);
 
-    color = mix(color, vec3<f32>(1.0, 1.0, 1.0), dist_and_depth.x / MAX_DIST);
+    color = mix(color, vec3<f32>(0.9, 1., 1.), clamp((dist_and_depth.x / (0.7*MAX_DIST)), 0.0, 1.0));
 
     var c = dist_and_depth.y / f32(f32(MAX_STEPS) / 3.0);
     color.g -= c;

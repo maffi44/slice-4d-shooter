@@ -53,7 +53,7 @@ impl MainLoop {
                 command_type: CommandType::SendMessage(
                     main_player,
                     Message::SetTransform(
-                        Transform::new(-3.0, 0.0, 0.0, 0.0),
+                        Transform::new(-3.0, 1.0, 0.0, 0.0),
                     )
                 )
             }
