@@ -10,7 +10,7 @@ use glam::{
     Vec4,
 };
 use wasm_bindgen_futures::JsFuture;
-use rustc_serialize::json::{Json, Array, Object, self};
+use serde_json::Value;
 
 
 pub async fn load_map() -> Vec<StaticObject> {
@@ -31,7 +31,7 @@ pub async fn load_map() -> Vec<StaticObject> {
             
             match json_text {
                 Ok(text) => {
-                    let json_map = Json::from_str(&text.as_string().unwrap()).unwrap();
+                    let json_map = serde_json::from_str(&text.as_string().unwrap()).unwrap();
                     
                     parse_json_into_map(json_map)
                 },
@@ -54,36 +54,55 @@ pub async fn load_map() -> Vec<StaticObject> {
     map
 }
 
-fn parse_json_into_map(json_map: Json) -> Vec<StaticObject> {
-    let map: Vec<StaticObject> = Vec::with_capacity(40);
+fn parse_json_into_map(mut json_map: Value) -> Vec<StaticObject> {
+    let mut map: Vec<StaticObject> = Vec::with_capacity(40);
 
     let array = json_map
-        .as_array_mut()
+        .as_array()
         .expect("Wrong JSON map format. Array elements must be objects");
 
     for object in array {
         
         let object = object
-            .as_object_mut()
+            .as_object()
             .expect("Wrong JSON map format, all shape must be json objects");
 
 
         for (name, content) in object {
-            match &name {
+            match name.as_str() {
                 "cube" => {
                     let shape_name = "cube shape";
 
                     let content = content
-                        .as_object_mut()
-                        .expect("Wrong JSON map format, all shape must be json objects in " + shape_name);
+                        .as_object()
+                        .expect(
+                            &format!
+                            (
+                                "Wrong JSON map format, all shape must be json objects in {}",
+                                shape_name
+                            )
+                        );
 
                     let json_transform = content
-                        .get_mut("transform")
-                        .expect("Wrong JSON map format, transform property is not exist in " + shape_name);
+                        .get("transform")
+                        .expect(
+                            &format!
+                            (
+                                "Wrong JSON map format, transform property is not exist in {}",
+                                shape_name
+                            )
+                        );
+
 
                     let json_size = content
-                        .get_mut("size")
-                        .expect("Wrong JSON map format, size property is not exist in " + shape_name);
+                        .get("size")
+                        .expect(
+                            &format!
+                            (
+                                "Wrong JSON map format, size property is not exist in {}",
+                                shape_name
+                            )
+                        );
 
                     let transform = parse_json_into_transform(json_transform, shape_name);
 
@@ -104,7 +123,7 @@ fn parse_json_into_map(json_map: Json) -> Vec<StaticObject> {
                 //     let shape = StaticObject::Cube((), ());
                 // },
                 _ => {
-                    panic!()
+                    // panic!()
                 }
             }
         }
@@ -114,69 +133,160 @@ fn parse_json_into_map(json_map: Json) -> Vec<StaticObject> {
 }
 
 
-fn parse_json_into_transform(json: Json, shape_name: &'static str) -> Transform {
+fn parse_json_into_transform(json: &Value, shape_name: &'static str) -> Transform {
 
     let json_transform = json
-        .as_object_mut()
-        .expect("Wrong JSON map format, transform property is not json object in " + shape_name);
+        .as_object()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, transform property is not json object in {}",
+                shape_name
+            )
+        );
 
     let json_position = json_transform
-        .get_mut("position")
-        .expect("Wrong JSON map format, position property is not exist in transform in " + shape_name)
-        .as_object_mut()
-        .expect("Wrong JSON map format, position property is not json object in " + shape_name);
+        .get("position")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, position property is not exist in transform in {}",
+                shape_name
+            )
+        )
+        .as_object()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, position property is not json object in {}",
+                shape_name
+            )
+        );
+            
 
     let x = json_position
-        .get_mut("x")
-        .expect("Wrong JSON map format, x property is not json object in " + shape_name)
+        .get("x")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, x property is not json object in {}",
+                shape_name
+            )
+        )
         .as_f64()
-        .expect("Wrong JSON map format, value of x property of transform property is not float number type in " + shape_name);
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, value of x property of transform property is not float number type in {}",
+                shape_name
+            )
+        );
 
     let y = json_position
-        .get_mut("y")
-        .expect("Wrong JSON map format, y property is not json object in " + shape_name)
+        .get("y")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, y property is not json object in {}",
+                shape_name
+            )
+        )
         .as_f64()
-        .expect("Wrong JSON map format, value of y property of transform property is not float number type in " + shape_name);
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, value of y property of transform property is not float number type in {}",
+                shape_name
+            )
+        );
 
     let z = json_position
-        .get_mut("z")
-        .expect("Wrong JSON map format, z property is not json object in " + shape_name)
+        .get("z")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, z property is not json object in {}",
+                shape_name
+            )
+        )
         .as_f64()
-        .expect("Wrong JSON map format, value of z property of transform property is not float number type in " + shape_name);
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, value of z property of transform property is not float number type in {}",
+                shape_name
+            )
+        );
 
     let w = json_position
-        .get_mut("w")
-        .expect("Wrong JSON map format, w property is not json object in " + shape_name)
+        .get("w")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, w property is not json object in {}",
+                shape_name
+            )
+        )
         .as_f64()
-        .expect("Wrong JSON map format, value of w property of transform property is not float number type in " + shape_name);
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, value of w property of transform property is not float number type in {}",
+                shape_name
+            )
+        );
     
-    Transform::new(x, y, z, w)
+    Transform::new(x as f32, y as f32, z as f32, w as f32)
 }
 
 
 
-fn parse_json_into_size(json: Json, shape_name: &'static str) -> Size {
+fn parse_json_into_size(json: &Value, shape_name: &'static str) -> Size {
 
     let json_size = json
-        .as_object_mut()
-        .expect("Wrong JSON map format, size property is not json object in " + shape_name);
+        .as_object()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, size property is not json object in {}",
+                shape_name
+            )
+        );
 
 
     let x = json_size
-        .get_mut("x")
-        .expect("Wrong JSON map format, x property is not json object in " + shape_name)
+        .get("x")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, x property is not json object in {}",
+                shape_name
+            )
+        )
         .as_f64()
-        .expect("Wrong JSON map format, value of x property of size property is not float number type in " + shape_name);
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, value of x property of size property is not float number type in {}",
+                shape_name
+            )
+        );
 
     
     let y;
     let y_obj = json_size
-        .get_mut("y");
+        .get("y");
     
     if let Some(y_json) = y_obj {
         y = y_json
             .as_f64()
-            .expect("Wrong JSON map format, value of y property of size property is not float number type in " + shape_name);
+            .expect(
+                &format!
+                (
+                    "Wrong JSON map format, value of y property of size property is not float number type in {}",
+                    shape_name
+                )
+            );
     } else {
 
         return Size::X(x as f32);
@@ -185,12 +295,18 @@ fn parse_json_into_size(json: Json, shape_name: &'static str) -> Size {
 
     let z;
     let z_obj = json_size
-        .get_mut("z");
+        .get("z");
     
     if let Some(z_json) = z_obj {
         z = z_json
             .as_f64()
-            .expect("Wrong JSON map format, value of z property of size property is not float number type in " + shape_name);
+            .expect(
+                &format!
+                (
+                    "Wrong JSON map format, value of z property of size property is not float number type in {}",
+                    shape_name
+                )
+            );
     } else {
 
         return Size::XY( Vec2::new(x as f32, y as f32) );
@@ -199,12 +315,18 @@ fn parse_json_into_size(json: Json, shape_name: &'static str) -> Size {
 
     let w;
     let w_obj = json_size
-        .get_mut("w");
+        .get("w");
     
     if let Some(w_json) = w_obj {
         w = w_json
             .as_f64()
-            .expect("Wrong JSON map format, value of w property of size property is not float number type in " + shape_name);
+            .expect(
+                &format!
+                (
+                    "Wrong JSON map format, value of w property of size property is not float number type in {}",
+                    shape_name
+                )
+            );
     } else {
          
         return Size::XYZ( Vec3::new(x as f32, y as f32, z as f32) );

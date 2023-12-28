@@ -48,7 +48,7 @@ impl World {
 
         let map = map::load_map().await;
 
-        log::warn!("MAP IS {:?}", &map);
+        log::error!("MAP IS {:?}", &map);
 
         World {
             pool_of_players: HashMap::with_capacity(2),
