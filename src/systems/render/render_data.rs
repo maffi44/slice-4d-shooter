@@ -48,3 +48,24 @@ pub struct CameraUniform {
     // to align struct layout in GPU memroy
     pub aspect: [f32; 4], 
 }
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ShapesArrayMetadataUniform {
+    pub spheres: [u32;2],
+    pub cubes: [u32;2],
+    pub cubes_inf_w: [u32;2],
+    
+    pub empty_bytes_for_aligment: [u32;2]
+}
+
+impl ShapesArrayMetadataUniform {
+    pub fn new_zero() -> Self {
+        ShapesArrayMetadataUniform {
+            spheres: [0,0],
+            cubes: [0,0],
+            cubes_inf_w: [0,0],
+            empty_bytes_for_aligment: [0,0],
+        }
+    }
+}

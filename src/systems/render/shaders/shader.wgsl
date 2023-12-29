@@ -6,8 +6,30 @@ struct CamerUniform {
     aspect: f32,
 }
 
+struct Shape {
+    pos: vec4<f32>,
+    size: vec4<f32>,
+}
+
+struct SpecificShapeMetadata {
+    first_index: u32,
+    amount: u32,
+
+    empty_bytes: vec2<u32>,
+}
+
+struct ShapesArrayMetadata {
+    spheres: SpecificShapeMetadata,
+    cubes: SpecificShapeMetadata,
+    cubes_inf_w: SpecificShapeMetadata,
+
+    // empty_bytes: SpecificShapeMetadata,
+}
+
 @group(0) @binding(0) var<uniform> camera_uni: CamerUniform;
 @group(0) @binding(1) var<uniform> time: vec4<f32>;
+@group(0) @binding(2) var<uniform> shapes_array_metadata: ShapesArrayMetadata;
+@group(0) @binding(3) var<storage, read> shapes: array<Shape>;
 // @group(0) @binding(3) var<uniform> resolution: vec3<f32>;
 // @group(0) @binding(5) var<uniform> iTimeDelta: f32;
 // @group(0) @binding(6) var<uniform> iFrame: i32;

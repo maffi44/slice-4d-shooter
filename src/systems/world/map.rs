@@ -1,5 +1,3 @@
-use crate::systems::transform::{self, Position};
-
 use super::super::{
     static_obj::StaticObject,
     transform::Transform,
@@ -54,7 +52,7 @@ pub async fn load_map() -> Vec<StaticObject> {
     map
 }
 
-fn parse_json_into_map(mut json_map: Value) -> Vec<StaticObject> {
+fn parse_json_into_map(json_map: Value) -> Vec<StaticObject> {
     let mut map: Vec<StaticObject> = Vec::with_capacity(40);
 
     let array = json_map
@@ -68,62 +66,58 @@ fn parse_json_into_map(mut json_map: Value) -> Vec<StaticObject> {
             .expect("Wrong JSON map format, all shape must be json objects");
 
 
-        for (name, content) in object {
+        for (name, shape) in object {
             match name.as_str() {
                 "cube" => {
                     let shape_name = "cube shape";
 
-                    let content = content
-                        .as_object()
-                        .expect(
-                            &format!
-                            (
-                                "Wrong JSON map format, all shape must be json objects in {}",
-                                shape_name
-                            )
-                        );
+                    let transform = parse_json_into_transform(shape, shape_name);
 
-                    let json_transform = content
-                        .get("transform")
-                        .expect(
-                            &format!
-                            (
-                                "Wrong JSON map format, transform property is not exist in {}",
-                                shape_name
-                            )
-                        );
+                    let size = parse_json_into_size(shape, shape_name);
 
-
-                    let json_size = content
-                        .get("size")
-                        .expect(
-                            &format!
-                            (
-                                "Wrong JSON map format, size property is not exist in {}",
-                                shape_name
-                            )
-                        );
-
-                    let transform = parse_json_into_transform(json_transform, shape_name);
-
-                    let size = parse_json_into_size(json_size, shape_name);
-
-                    let size = match size {
-                        Size::XYZW(size) => size,
-                        _ => panic!("Wrong JSON map format, shape cube must have 4 dimensions size")
-                    };
+                    // let size = match size {
+                    //     Size::XYZW(size) => size,
+                    //     _ => panic!("Wrong JSON map format, shape cube must have 4 dimensions size")
+                    // };
 
                     let shape = StaticObject::Cube(transform, size);
 
                     map.push(shape);
                 },
-                // "cube_w_inf" => {
-                //     let transform = Transform::new_zero();
+                "cube_w_inf" => {
+                    let shape_name = "cube_w_inf";
 
-                //     let shape = StaticObject::Cube((), ());
-                // },
+                    let transform = parse_json_into_transform(shape, shape_name);
+
+                    let size = parse_json_into_size(shape, shape_name);
+
+                    // let size = match size {
+                    //     Size::XYZ(size) => size,
+                    //     _ => panic!("Wrong JSON map format, shape cube must have 4 dimensions size")
+                    // };
+
+                    let shape = StaticObject::CubeInfW(transform, size);
+
+                    map.push(shape);
+                },
+                "sphere" => {
+                    let shape_name = "sphere";
+
+                    let transform = parse_json_into_transform(shape, shape_name);
+
+                    let size = parse_json_into_size(shape, shape_name);
+
+                    // let size = match size {
+                    //     Size::XYZ(size) => size,
+                    //     _ => panic!("Wrong JSON map format, shape cube must have 4 dimensions size")
+                    // };
+
+                    let shape = StaticObject::Sphere(transform, size);
+
+                    map.push(shape);
+                },
                 _ => {
-                    // panic!()
+                    panic!("Wrong JSON map format, unexpected shape {} in map", name)
                 }
             }
         }
@@ -133,9 +127,29 @@ fn parse_json_into_map(mut json_map: Value) -> Vec<StaticObject> {
 }
 
 
-fn parse_json_into_transform(json: &Value, shape_name: &'static str) -> Transform {
+fn parse_json_into_transform(shape: &Value, shape_name: &'static str) -> Transform {
 
-    let json_transform = json
+    let shape = shape
+        .as_object()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, all shape must be json objects in {}",
+                shape_name
+            )
+        );
+
+    let json_transform = shape
+        .get("transform")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, transform property is not exist in {}",
+                shape_name
+            )
+        );
+
+    let json_transform = json_transform
         .as_object()
         .expect(
             &format!
@@ -169,7 +183,7 @@ fn parse_json_into_transform(json: &Value, shape_name: &'static str) -> Transfor
         .expect(
             &format!
             (
-                "Wrong JSON map format, x property is not json object in {}",
+                "Wrong JSON map format, x property is not exist in transform in {}",
                 shape_name
             )
         )
@@ -187,7 +201,7 @@ fn parse_json_into_transform(json: &Value, shape_name: &'static str) -> Transfor
         .expect(
             &format!
             (
-                "Wrong JSON map format, y property is not json object in {}",
+                "Wrong JSON map format, y property is not exist in transform in{}",
                 shape_name
             )
         )
@@ -205,7 +219,7 @@ fn parse_json_into_transform(json: &Value, shape_name: &'static str) -> Transfor
         .expect(
             &format!
             (
-                "Wrong JSON map format, z property is not json object in {}",
+                "Wrong JSON map format, z property is not exist in transform in {}",
                 shape_name
             )
         )
@@ -223,7 +237,7 @@ fn parse_json_into_transform(json: &Value, shape_name: &'static str) -> Transfor
         .expect(
             &format!
             (
-                "Wrong JSON map format, w property is not json object in {}",
+                "Wrong JSON map format, w property is not exist in transform in {}",
                 shape_name
             )
         )
@@ -241,9 +255,29 @@ fn parse_json_into_transform(json: &Value, shape_name: &'static str) -> Transfor
 
 
 
-fn parse_json_into_size(json: &Value, shape_name: &'static str) -> Size {
+fn parse_json_into_size(shape: &Value, shape_name: &'static str) -> Vec4 {
 
-    let json_size = json
+    let shape = shape
+        .as_object()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, all shape must be json objects in {}",
+                shape_name
+            )
+        );
+
+    let json_size = shape
+        .get("size")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, size property is not exist in {}",
+                shape_name
+            )
+        );
+
+    let json_size = json_size
         .as_object()
         .expect(
             &format!
@@ -259,7 +293,7 @@ fn parse_json_into_size(json: &Value, shape_name: &'static str) -> Size {
         .expect(
             &format!
             (
-                "Wrong JSON map format, x property is not json object in {}",
+                "Wrong JSON map format, x property is not exist in size in {}",
                 shape_name
             )
         )
@@ -289,7 +323,7 @@ fn parse_json_into_size(json: &Value, shape_name: &'static str) -> Size {
             );
     } else {
 
-        return Size::X(x as f32);
+        return Vec4::new(x as f32, 0., 0., 0.);
     }
 
 
@@ -309,7 +343,7 @@ fn parse_json_into_size(json: &Value, shape_name: &'static str) -> Size {
             );
     } else {
 
-        return Size::XY( Vec2::new(x as f32, y as f32) );
+        return Vec4::new(x as f32, y as f32, 0., 0.);
     }
 
 
@@ -329,11 +363,11 @@ fn parse_json_into_size(json: &Value, shape_name: &'static str) -> Size {
             );
     } else {
          
-        return Size::XYZ( Vec3::new(x as f32, y as f32, z as f32) );
+        return Vec4::new(x as f32, y as f32, z as f32, 0.);
+
     }
 
-
-    Size::XYZW( Vec4::new(x as f32, y as f32, z as f32, w as f32) )
+    Vec4::new(x as f32, y as f32, z as f32, w as f32)
 
 }
 

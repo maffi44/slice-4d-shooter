@@ -1,4 +1,13 @@
-use super::render_data::{CameraUniform, FrameRenderData, TimeUniform};
+use std::num::{
+    NonZeroU32,
+    NonZeroU64
+};
+
+use super::render_data::{
+    CameraUniform,
+    TimeUniform,
+    ShapesArrayMetadataUniform,
+};
 use winit::window::Window;
 use wgpu::{
     util::{
@@ -210,10 +219,7 @@ impl Renderer {
         
         let init_time = TimeUniform::new_zero();
 
-        // let frame_data = FrameRenderData {
-        //     camera_uniform: init_camera_uniform,
-        //     time: init_time,
-        // };
+        let shapes_array_metadata_init = ShapesArrayMetadataUniform::new_zero();
 
         let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("camera_buffer"),
@@ -226,6 +232,20 @@ impl Renderer {
             contents: bytemuck::cast_slice(&[init_time.time]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
+
+
+        let shapes_array_metadata_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("time_buffer"),
+            contents: bytemuck::cast_slice(&[shapes_array_metadata_init]),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+
+        let shapes_array_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("time_buffer"),
+            contents: bytemuck::cast_slice(&[[0u32,0u32,0u32,0u32, 0u32,0u32,0u32,0u32]]),
+            usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
+        });
+
 
         let uniform_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -249,6 +269,26 @@ impl Renderer {
                             min_binding_size: None,
                         },
                         count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: Some(NonZeroU64::new(8).unwrap()),
+                        },
+                        count: Some(NonZeroU32::new(100).unwrap()),
                     }
                 ],
                 label: Some("uniform_bind_group_layout"),
@@ -264,9 +304,17 @@ impl Renderer {
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: time_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: shapes_array_metadata_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: shapes_array_buffer.as_entire_binding(),
                 }],
             
-            label: Some("camera_bind_group"),
+            label: Some("shader_unforms_and_storge_bind_group"),
         });
 
         let render_pipeline_layout =
