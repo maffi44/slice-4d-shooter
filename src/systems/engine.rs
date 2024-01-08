@@ -35,10 +35,7 @@ impl Engine {
         let canvas = document.get_element_by_id("game_canvas").unwrap();
         let canvas: web_sys::HtmlCanvasElement = JsValue::from(canvas).into();
 
-
-
         let window_builder = WindowBuilder::new();
-
         let window = window_builder
             .with_canvas(Some(canvas))
             .with_active(true)
@@ -47,22 +44,11 @@ impl Engine {
             .build(&cleint_main_loop.event_loop)
             .unwrap();
 
-        // window.set_resize_increments(PhysicalSize::new(1200, 800).into());
-
-        // use winit::platform::web::WindowExtWebSys;
-        // web_sys::window()
-        //     .and_then(|win| win.document())
-        //     .and_then(|doc| {
-        //         let dst = doc.get_element_by_id("4d-shooter")?;
-        //         let canvas = web_sys::Element::from(window.canvas());
-        //         dst.append_child(&canvas).ok()?;
-        //         Some(())
-        //     })
-        //     .expect("Couldn't append canvas to document body.");
-
         let physic = PhysicsSystem::new();
+
+        let world = World::new().await;
         
-        let render = RenderSystem::new(window).await;
+        let render = RenderSystem::new(window, &world).await;
  
         // let net = ClientNetSystem::new().await;
         
@@ -70,7 +56,7 @@ impl Engine {
 
         let time = TimeSystem::new(60_u32);
 
-        let world = World::new().await;
+        
 
         let engine_handle = EngineHandle::new();
 

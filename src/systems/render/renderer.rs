@@ -1,12 +1,9 @@
-use std::num::{
-    NonZeroU32,
-    NonZeroU64
-};
+use crate::systems::world::World;
 
 use super::render_data::{
     CameraUniform,
     TimeUniform,
-    ShapesArrayMetadataUniform,
+    ShapesArrayMetadataUniform, ShapesArrayUniformData,
 };
 use winit::window::Window;
 use wgpu::{
@@ -126,28 +123,20 @@ impl Renderer {
         self.queue.on_submitted_work_done(move || {
             log::info!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
         });
-        // let already_rendered = self.already_rendered.clone();
         output.present();
 
         Ok(())
     }
 
 
-    pub async fn new(window: &Window) -> Self {
-        // let size = PhysicalSize::new(4, 4);
+    pub async fn new(window: &Window, world: &World) -> Self {
         let size = winit::dpi::PhysicalSize::new(1200, 800);
 
-        // The imnstance is a handle to our GPU
-        // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
         });
 
-        // # Safety
-        //
-        // The surface needs to live as long as the window that created it.
-        // State owns the window so this should be safe.
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
 
         let adapter = instance
@@ -219,7 +208,7 @@ impl Renderer {
         
         let init_time = TimeUniform::new_zero();
 
-        let shapes_array_metadata_init = ShapesArrayMetadataUniform::new_zero();
+        let shapes_array_data = ShapesArrayUniformData::new(world);
 
         let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("camera_buffer"),
@@ -236,14 +225,14 @@ impl Renderer {
 
         let shapes_array_metadata_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_metadata_init]),
+            contents: bytemuck::cast_slice(&[shapes_array_data.metadata]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let shapes_array_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[[0u32,0u32,0u32,0u32, 0u32,0u32,0u32,0u32]]),
-            usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
+            contents: bytemuck::cast_slice(&[shapes_array_data.shapes]),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
 
@@ -284,11 +273,11 @@ impl Renderer {
                         binding: 3,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
-                            min_binding_size: Some(NonZeroU64::new(8).unwrap()),
+                            min_binding_size: None,
                         },
-                        count: Some(NonZeroU32::new(100).unwrap()),
+                        count: None,
                     }
                 ],
                 label: Some("uniform_bind_group_layout"),

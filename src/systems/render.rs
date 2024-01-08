@@ -5,7 +5,11 @@ use crate::systems::render::render_data::TimeUniform;
 
 use self::render_data::CameraUniform;
 
-use super::{world::World, time::TimeSystem};
+use super::{
+    world::World,
+    time::TimeSystem
+};
+
 use renderer::Renderer;
 use render_data::FrameRenderData;
 use winit::window::Window;
@@ -19,8 +23,11 @@ pub struct RenderSystem {
 impl RenderSystem {
     pub async fn new(
         window: Window,
+        world: &World
     ) -> Self {
-        let renderer = Renderer::new(&window).await;
+
+
+        let renderer = Renderer::new(&window, world).await;
 
         RenderSystem {
             window,
@@ -40,8 +47,6 @@ impl RenderSystem {
             cam_pos = Vec4::ZERO;
             cam_rot = Mat4::IDENTITY;
         }
-
-        log::info!("camera position is {}", cam_pos);
 
         let aspect = {
             let size = winit::dpi::PhysicalSize::new(1200, 800);
@@ -77,7 +82,7 @@ impl RenderSystem {
             match err {
                 wgpu::SurfaceError::Lost => self.resize_frame_buffer(),
 
-                // The system is out of memory, we should probably qui
+                // The system is out of memory, we should probably quit
                 wgpu::SurfaceError::OutOfMemory => panic!("Out of GPU memory"),
 
                 // All other errors (Outdated, Timeout) should be resolved by the next frame

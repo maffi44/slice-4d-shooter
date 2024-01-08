@@ -75,12 +75,9 @@ fn parse_json_into_map(json_map: Value) -> Vec<StaticObject> {
 
                     let size = parse_json_into_size(shape, shape_name);
 
-                    // let size = match size {
-                    //     Size::XYZW(size) => size,
-                    //     _ => panic!("Wrong JSON map format, shape cube must have 4 dimensions size")
-                    // };
+                    let is_positive = parse_json_into_is_positive(shape, shape_name);
 
-                    let shape = StaticObject::Cube(transform, size);
+                    let shape = StaticObject::Cube(transform, size, is_positive);
 
                     map.push(shape);
                 },
@@ -91,12 +88,9 @@ fn parse_json_into_map(json_map: Value) -> Vec<StaticObject> {
 
                     let size = parse_json_into_size(shape, shape_name);
 
-                    // let size = match size {
-                    //     Size::XYZ(size) => size,
-                    //     _ => panic!("Wrong JSON map format, shape cube must have 4 dimensions size")
-                    // };
+                    let is_positive = parse_json_into_is_positive(shape, shape_name);
 
-                    let shape = StaticObject::CubeInfW(transform, size);
+                    let shape = StaticObject::CubeInfW(transform, size, is_positive);
 
                     map.push(shape);
                 },
@@ -107,12 +101,22 @@ fn parse_json_into_map(json_map: Value) -> Vec<StaticObject> {
 
                     let size = parse_json_into_size(shape, shape_name);
 
-                    // let size = match size {
-                    //     Size::XYZ(size) => size,
-                    //     _ => panic!("Wrong JSON map format, shape cube must have 4 dimensions size")
-                    // };
+                    let is_positive = parse_json_into_is_positive(shape, shape_name);
 
-                    let shape = StaticObject::Sphere(transform, size);
+                    let shape = StaticObject::Sphere(transform, size, is_positive);
+
+                    map.push(shape);
+                },
+                "sph_cube" => {
+                    let shape_name = "sph_cube";
+
+                    let transform = parse_json_into_transform(shape, shape_name);
+
+                    let size = parse_json_into_size(shape, shape_name);
+
+                    let is_positive = parse_json_into_is_positive(shape, shape_name);
+
+                    let shape = StaticObject::SphCube(transform, size, is_positive);
 
                     map.push(shape);
                 },
@@ -369,6 +373,41 @@ fn parse_json_into_size(shape: &Value, shape_name: &'static str) -> Vec4 {
 
     Vec4::new(x as f32, y as f32, z as f32, w as f32)
 
+}
+
+fn parse_json_into_is_positive(shape: &Value, shape_name: &'static str) -> bool {
+
+    let shape = shape
+        .as_object()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, all shape must be json objects in {}",
+                shape_name
+            )
+        );
+
+    let json_is_positive = shape
+        .get("is_positive")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, is_positive property is not exist in {}",
+                shape_name
+            )
+        );
+
+    let is_positive = json_is_positive
+        .as_bool()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, size property is not boolean type in {}",
+                shape_name
+            )
+        );
+    
+    is_positive
 }
 
 enum Size {

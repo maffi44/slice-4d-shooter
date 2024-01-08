@@ -212,20 +212,23 @@ impl Player {
             movement_vec += Vec4::new(-1.0, 0.0, 0.0, 0.0);
         }
 
+        if input.jump.is_action_pressed() {
+            input.jump.capture_action();
+
+            movement_vec += Vec4::new(0.0, 0.0, 0.0, 1.0);
+        }
+
+        if input.crouch.is_action_pressed() {
+            input.crouch.capture_action();
+
+            movement_vec += Vec4::new(0.0, 0.0, 0.0, -1.0);
+        }
+
         if let Some(vec) = movement_vec.try_normalize() {
             movement_vec = vec;
         }
 
         movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
-
-        if input.jump.is_action_pressed() {
-            input.move_left.capture_action();
-
-            movement_vec += Vec4::new(0.0, 0.0, 0.0, 1.0);
-        }
-        // movement_vec *= Vec4::new(-1.0, 1.0, -1.0, 1.0);
-
-        // log::info!("--------> movement vec is {}", movement_vec);
 
         self.inner_state.collision.set_wish_direction(movement_vec)
 

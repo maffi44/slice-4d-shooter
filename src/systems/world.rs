@@ -39,7 +39,6 @@ pub struct World {
 
 
 // use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
 // use web_sys::{Request, RequestInit, RequestMode, Response};
 
 impl World {
@@ -47,8 +46,6 @@ impl World {
     pub async fn new() -> Self {
 
         let map = map::load_map().await;
-
-        log::error!("MAP IS {:?}", &map);
 
         World {
             pool_of_players: HashMap::with_capacity(2),
