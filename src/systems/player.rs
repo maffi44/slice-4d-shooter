@@ -11,8 +11,12 @@ use glam::{
 const MAX_SPEED : f32 = 8.0;
 const MAX_ACCEL : f32 = 15.0;
 const HEALTH: i32 = 100_i32;
+const JUMP_Y_SPEED: f32 = 0.1;
+const JUMP_W_SPEED: f32 = 0.1;
 
 use player_input_master::InputMaster;
+
+use self::player_input_master::LocalMaster;
 
 use super::{
     devices::{Device, DeviceType, DefaultPistol},
@@ -75,12 +79,12 @@ pub struct Player {
 
     devices: [Option<Box<dyn Device>>; 4],
 
-    pub master: InputMaster,
+    pub master: LocalMaster,
 }
 
 impl Player {
 
-    pub fn new(id: PlayerID, master: InputMaster) -> Self {
+    pub fn new(id: PlayerID, master: LocalMaster) -> Self {
         Player {
             id,
 
@@ -132,20 +136,20 @@ impl Player {
 
     pub fn process_input(&mut self, engine_handle: &mut EngineHandle) {
 
-        let mut input = match &self.master {
-            InputMaster::LocalMaster(master) => {
-                master.current_input.clone()
-            }
-            InputMaster::RemoteMaster(master) => {
-                master.current_input.clone()
-            }   
-        };
+        // let input = match &self.master {
+        //     InputMaster::LocalMaster(master) => {
+        //         &master.current_input
+        //     }
+        //     InputMaster::RemoteMaster(master) => {
+        //        &master.current_input
+        //     }   
+        // };
 
         let prev_x = self.inner_state.view_angle.x;
         let prev_y = self.inner_state.view_angle.y;
 
-        let x = input.mouse_axis.x + prev_x;
-        let y = (input.mouse_axis.y + prev_y).clamp(-PI/2.0, PI/2.0);
+        let x = self.master.current_input.mouse_axis.x + prev_x;
+        let y = (self.master.current_input.mouse_axis.y + prev_y).clamp(-PI/2.0, PI/2.0);
 
         self.set_rotation_matrix(Mat4::from_cols_slice(&[
             x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
@@ -154,83 +158,75 @@ impl Player {
             0.0,        0.0,                0.0,                1.0
         ]));
 
+        let xz_player_rotation = Mat4::from_rotation_y(x);
+
         self.inner_state.view_angle = Vec2::new(x, y);
 
         // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
 
         match self.active_hands_slot {
             ActiveHandsSlot::Zero => {
-                self.hands_slot_0.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                self.hands_slot_0.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
             },
             ActiveHandsSlot::First => {
                 if let Some(device) = self.hands_slot_1.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
                 }
             },
             ActiveHandsSlot::Second => {
                 if let Some(device) = self.hands_slot_2.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
                 }
             },
             ActiveHandsSlot::Third => {
                 if let Some(device) = self.hands_slot_3.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
                 }
             }
         }
 
         for device in self.devices.iter_mut() {
             if let Some(device) = device {
-                device.process_input(self.id, &mut self.inner_state, &mut input, engine_handle);
+                device.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
             }
         }
 
 
         let mut movement_vec = Vec4::ZERO;
 
-        if input.move_forward.is_action_pressed() {
-            input.move_forward.capture_action();
-
-            movement_vec += Vec4::new(0.0, 0.0, -1.0, 0.0);
+        if self.master.current_input.move_forward.is_action_pressed() {
+            movement_vec += Vec4::NEG_Z;
         }
 
-        if input.move_backward.is_action_pressed() {
-            input.move_backward.capture_action();
-
-            movement_vec += Vec4::new(0.0, 0.0, 1.0, 0.0);
+        if self.master.current_input.move_backward.is_action_pressed() {
+            movement_vec += Vec4::Z;
         }
 
-        if input.move_right.is_action_pressed() {
-            input.move_right.capture_action();
-
-            movement_vec += Vec4::new(1.0, 0.0, 0.0, 0.0);
+        if self.master.current_input.move_right.is_action_pressed() {
+            movement_vec += Vec4::X;
         }
 
-        if input.move_left.is_action_pressed() {
-            input.move_left.capture_action();
-
-            movement_vec += Vec4::new(-1.0, 0.0, 0.0, 0.0);
-        }
-
-        if input.jump.is_action_pressed() {
-            input.jump.capture_action();
-
-            movement_vec += Vec4::new(0.0, 0.0, 0.0, 1.0);
-        }
-
-        if input.crouch.is_action_pressed() {
-            input.crouch.capture_action();
-
-            movement_vec += Vec4::new(0.0, 0.0, 0.0, -1.0);
+        if self.master.current_input.move_left.is_action_pressed() {
+            movement_vec += Vec4::NEG_X;
         }
 
         if let Some(vec) = movement_vec.try_normalize() {
             movement_vec = vec;
         }
 
-        movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+        movement_vec = xz_player_rotation * movement_vec;
 
-        self.inner_state.collision.set_wish_direction(movement_vec)
+        self.inner_state.collision.set_horizontal_wish_direction(movement_vec);
+
+
+        if self.master.current_input.jump.is_action_just_pressed() {
+            log::warn!("IM JUMP!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            self.inner_state.collision.add_force(Vec4::Y * JUMP_Y_SPEED);
+        }
+
+        if self.master.current_input.crouch.is_action_just_pressed() {
+            self.inner_state.collision.add_force(Vec4::W * JUMP_W_SPEED);
+        };
 
     }
 

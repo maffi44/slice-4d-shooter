@@ -8,7 +8,7 @@ use super::{
         Player,
         PlayerID,
         Message,
-        player_input_master::InputMaster,
+        player_input_master::{InputMaster, LocalMaster},
     },
     engine_handle::EngineHandle,
     projectiles::ProjectileType,
@@ -91,7 +91,7 @@ impl World {
 
     }
 
-    pub fn add_new_player(&mut self, master: InputMaster) -> PlayerID {
+    pub fn add_new_player(&mut self, master: LocalMaster) -> PlayerID {
 
         let mut id: PlayerID = make_random_id();
 
@@ -116,7 +116,7 @@ impl World {
         }
     }
 
-    pub fn add_and_spawn_new_player(&mut self, master: InputMaster) -> PlayerID {
+    pub fn add_and_spawn_new_player(&mut self, master: LocalMaster) -> PlayerID {
         let id = self.add_new_player(master);
         match self.spawn_player_from_pool(id) {
             Ok(()) => return id,

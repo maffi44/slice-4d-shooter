@@ -38,12 +38,10 @@ impl Device for DefaultPistol {
             &mut self,
             player_id: PlayerID,
             player: &mut PlayerInnerState,
-            input: &mut ActionsFrameState,
+            input: &ActionsFrameState,
             engine_handle: &mut EngineHandle
         ) {
         if input.fire.is_action_just_pressed() {
-            input.fire.capture_action();
-
             let hit = engine_handle.physics_state.ray_cast(
                 player.collision.transform.get_position(),
                 player.collision.transform.get_direction(),
@@ -89,7 +87,7 @@ pub trait Device {
         &mut self,
         player_id: PlayerID,
         player: &mut PlayerInnerState,
-        input: &mut ActionsFrameState,
+        input: &ActionsFrameState,
         engine_handle: &mut EngineHandle
     ) {}
 

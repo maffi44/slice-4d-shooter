@@ -156,7 +156,7 @@ fn sd_octahedron(point: vec4<f32>, s: f32) -> f32 {
 // }
 
 fn map(p: vec4<f32>) -> f32 {
-    var d = MAX_DIST * 2.;
+    var d = MAX_DIST * 2.2;
 
     for (var i = 0u; i < shapes_array_metadata.cubes.amount; i++) {
         var index = i + shapes_array_metadata.cubes.first_index;

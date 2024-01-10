@@ -42,6 +42,17 @@ pub struct ActionsFrameState {
     pub mouse_axis: Vec2,
 }
 
+pub struct Actions<'a> {
+    pub move_forward: &'a Action,
+    pub move_backward: &'a Action,
+    pub move_right: &'a Action,
+    pub move_left: &'a Action,
+    pub crouch: &'a Action,
+    pub jump: &'a Action,
+    pub fire: &'a Action,
+    pub mouse_axis: Vec2,
+}
+
 impl ActionsFrameState {
     fn current(actions_table: &HashMap<SomeButton, (ButtonActions, Action)>, mouse_axis: Vec2) -> Self {
         let mut move_forward = Action::new();
@@ -157,11 +168,11 @@ impl InputSystem {
             (ButtonActions::MoveLeft, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyQ),
+            SomeButton::KeyCode(KeyCode::ShiftLeft),
             (ButtonActions::Crouch, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyE),
+            SomeButton::KeyCode(KeyCode::Space),
             (ButtonActions::Jump, Action::new())
         );
         actions_table.insert(
@@ -175,30 +186,71 @@ impl InputSystem {
         }
     }
 
+    pub fn get_current_input<'a>(&self) -> Actions<'a> {
+        let mut move_forward;
+        let mut move_backward;
+        let mut move_right;
+        let mut move_left;
+        let mut crouch;
+        let mut jump;
+        let mut fire;
+        let mouse_axis = self.mouse_axis;
+        
+        for (_, (button_action, action)) in self.actions_table.iter() {
+            match button_action {
+                ButtonActions::MoveForward => move_forward = action,
+                ButtonActions::MoveBackward => move_backward = action,
+                ButtonActions::MoveRight => move_right = action,
+                ButtonActions::MoveLeft => move_left = action,
+                ButtonActions::Crouch => crouch = action,
+                ButtonActions::Jump => jump = action,
+                ButtonActions::Fire => fire = action,
+            }
+        }
+
+        Actions {
+            move_forward,
+            move_backward,
+            move_right,
+            move_left,
+            crouch,
+            jump,
+            fire,
+            mouse_axis
+        }    
+    }
+
+    pub fn reset_input(&mut self) {
+        for (_, (_, action)) in self.actions_table.iter_mut() {
+            action.already_set_in_current_frame = false;
+        }
+
+        self.mouse_axis = Vec2::ZERO;
+    }
+
     pub fn get_input(&mut self, world: &mut World ,net: &mut NetSystem) {
 
         for (_, player) in world.pool_of_players.iter_mut() {
-            match &mut player.master {
-                LocalMaster(master) => {
-                    master.current_input =
-                        ActionsFrameState::current(
-                            &self.actions_table,
-                            self.mouse_axis
-                        );
-                    // log::info!("current input is {:?}", master.current_input);
-                }
-                RemoteMaster(master) => {
-                    // Didn't implement yet
-                }
-            }
+            // match &mut player.master {
+            //     LocalMaster(master) => {
+            //         master.current_input =
+            //             ActionsFrameState::current(
+            //                 &self.actions_table,
+            //                 self.mouse_axis
+            //             );
+            //         // log::info!("current input is {:?}", master.current_input);
+            //     }
+            //     RemoteMaster(master) => {
+            //         // Didn't implement yet
+            //     }
+            // }
+            player.master.current_input =
+                ActionsFrameState::current(
+                    &self.actions_table,
+                    self.mouse_axis
+                );
+        
         }
-    }
-
-
-
-
-    pub fn reset_axis_input(&mut self) {
-        self.mouse_axis = Vec2::ZERO;
     }
 
     pub fn add_mouse_delta(&mut self, delta: Vec2) {
@@ -215,19 +267,30 @@ impl InputSystem {
                 match input.state {
                     ElementState::Pressed => {
                         if action.is_action_pressed == false {
+
                             action.is_action_just_pressed = true;
                             action.is_action_pressed = true;
                         } else {
-                            action.is_action_just_pressed = false;
-                            action.is_action_pressed = true;
+                            if !action.already_set_in_current_frame {
+                                
+                                action.is_action_just_pressed = false;
+                                action.is_action_pressed = true;
+                            } else {
+                                action.is_action_pressed = true;
+                            }
                         }
-                    },
+                    }
+
                     ElementState::Released => {
+
+                        log::warn!("RELEASED");
+
                         action.is_action_just_pressed = false;
                         action.is_action_pressed = false;
                     }
                 }
-                // action.already_captured = false;
+                
+                action.already_set_in_current_frame = true;
             }
         }
     }
@@ -241,20 +304,24 @@ impl InputSystem {
                     match state {
                         ElementState::Pressed => {
                             if action.is_action_pressed == false {
+    
                                 action.is_action_just_pressed = true;
                                 action.is_action_pressed = true;
                             } else {
-                                action.is_action_just_pressed = false;
-                                action.is_action_pressed = true;
+                                log::warn!("11111111111111111111111111");
+                                if !action.already_set_in_current_frame {
+                                    
+                                    action.is_action_just_pressed = false;
+                                }
                             }
-                        },
+                        }
+    
                         ElementState::Released => {
                             action.is_action_just_pressed = false;
                             action.is_action_pressed = false;
-                        },
+                        }
                     }
-
-                    // action.already_captured = false;
+                    action.already_set_in_current_frame = true;
                 }
             },
             MouseButton::Middle => {
@@ -264,41 +331,49 @@ impl InputSystem {
                     match state {
                         ElementState::Pressed => {
                             if action.is_action_pressed == false {
+    
                                 action.is_action_just_pressed = true;
                                 action.is_action_pressed = true;
                             } else {
-                                action.is_action_just_pressed = false;
-                                action.is_action_pressed = true;
+                                if !action.already_set_in_current_frame {
+                                    
+                                    action.is_action_just_pressed = false;
+                                }
                             }
-                        },
+                        }
+    
                         ElementState::Released => {
                             action.is_action_just_pressed = false;
                             action.is_action_pressed = false;
-                        },
+                        }
                     }
-                    // action.already_captured = false;
+                    action.already_set_in_current_frame = true;
                 }
             },
             MouseButton::Right => {
                 if let Some((_,action)) =
                     self.actions_table.get_mut(&SomeButton::MouseButton(MouseButton::Right)) {
-                    
+
                     match state {
                         ElementState::Pressed => {
                             if action.is_action_pressed == false {
+    
                                 action.is_action_just_pressed = true;
                                 action.is_action_pressed = true;
                             } else {
-                                action.is_action_just_pressed = false;
-                                action.is_action_pressed = true;
+                                if !action.already_set_in_current_frame {
+                                    
+                                    action.is_action_just_pressed = false;
+                                }
                             }
-                        },
+                        }
+    
                         ElementState::Released => {
                             action.is_action_just_pressed = false;
                             action.is_action_pressed = false;
-                        },
+                        }
                     }
-                    // action.already_captured = false;
+                    action.already_set_in_current_frame = true;
                 }
             },
             MouseButton::Other(code) => {
@@ -308,19 +383,23 @@ impl InputSystem {
                     match state {
                         ElementState::Pressed => {
                             if action.is_action_pressed == false {
+    
                                 action.is_action_just_pressed = true;
                                 action.is_action_pressed = true;
                             } else {
-                                action.is_action_just_pressed = false;
-                                action.is_action_pressed = true;
+                                if !action.already_set_in_current_frame {
+                                    
+                                    action.is_action_just_pressed = false;
+                                }
                             }
-                        },
+                        }
+    
                         ElementState::Released => {
                             action.is_action_just_pressed = false;
                             action.is_action_pressed = false;
-                        },
+                        }
                     }
-                    // action.already_captured = false;
+                    action.already_set_in_current_frame = true;
                 }
             },
             MouseButton::Back => {},

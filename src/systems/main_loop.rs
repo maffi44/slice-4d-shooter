@@ -16,6 +16,7 @@ use super::{
 };
 
 use std::time::Duration;
+use web_sys::js_sys::is_finite;
 use web_time::Instant;
 use glam::Vec2;
 
@@ -42,9 +43,7 @@ impl MainLoop {
         mut systems : Engine,
     ) {
         let main_player = systems.world.add_and_spawn_new_player(
-            InputMaster::LocalMaster(
-                LocalMaster::new(ActionsFrameState::empty())
-            )
+            LocalMaster::new(ActionsFrameState::empty())
         );
 
         systems.engine_handle.send_command(
@@ -130,7 +129,10 @@ impl MainLoop {
                             systems.render.resize_frame_buffer();
                         },
                         
-                        WindowEvent::KeyboardInput {event,..} => { 
+                        WindowEvent::KeyboardInput {event,is_synthetic, ..} => { 
+                            if *is_synthetic {
+                                log::warn!("IS SINTHETIC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                            }
                             systems.input.set_keyboard_input(event);
                         },
 
@@ -182,7 +184,7 @@ fn main_loop(
 
     systems.render.render_frame(&mut systems.world, &mut systems.time);
 
-    systems.input.reset_axis_input();
+    systems.input.reset_input();
 
     systems.time.end_of_frame(); 
 
