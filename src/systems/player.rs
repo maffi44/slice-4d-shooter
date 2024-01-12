@@ -63,6 +63,7 @@ pub enum PlayersDeviceSlotNumber {
 pub enum Message {
     DealDamage(u32),
     SetTransform(Transform),
+    EnableCollider(bool)
 }
 
 pub struct Player {
@@ -79,12 +80,12 @@ pub struct Player {
 
     devices: [Option<Box<dyn Device>>; 4],
 
-    pub master: LocalMaster,
+    pub master: InputMaster,
 }
 
 impl Player {
 
-    pub fn new(id: PlayerID, master: LocalMaster) -> Self {
+    pub fn new(id: PlayerID, master: InputMaster) -> Self {
         Player {
             id,
 
@@ -131,25 +132,28 @@ impl Player {
             Message::SetTransform(transform) => {
                 self.inner_state.collision.transform = transform;
             }
+            Message::EnableCollider(enable) => {
+                self.get_mut_collider().is_enable = enable;
+            }
         }
     }
 
     pub fn process_input(&mut self, engine_handle: &mut EngineHandle) {
 
-        // let input = match &self.master {
-        //     InputMaster::LocalMaster(master) => {
-        //         &master.current_input
-        //     }
-        //     InputMaster::RemoteMaster(master) => {
-        //        &master.current_input
-        //     }   
-        // };
+        let input = match &self.master {
+            InputMaster::LocalMaster(master) => {
+                master.current_input.clone()
+            }
+            InputMaster::RemoteMaster(master) => {
+               master.current_input.clone()
+            }   
+        };
 
         let prev_x = self.inner_state.view_angle.x;
         let prev_y = self.inner_state.view_angle.y;
 
-        let x = self.master.current_input.mouse_axis.x + prev_x;
-        let y = (self.master.current_input.mouse_axis.y + prev_y).clamp(-PI/2.0, PI/2.0);
+        let x = input.mouse_axis.x + prev_x;
+        let y = input.mouse_axis.y + prev_y.clamp(-PI/2.0, PI/2.0);
 
         self.set_rotation_matrix(Mat4::from_cols_slice(&[
             x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
@@ -166,47 +170,47 @@ impl Player {
 
         match self.active_hands_slot {
             ActiveHandsSlot::Zero => {
-                self.hands_slot_0.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
+                self.hands_slot_0.process_input(self.id, &mut self.inner_state, &input, engine_handle);
             },
             ActiveHandsSlot::First => {
                 if let Some(device) = self.hands_slot_1.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, &input, engine_handle);
                 }
             },
             ActiveHandsSlot::Second => {
                 if let Some(device) = self.hands_slot_2.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, &input, engine_handle);
                 }
             },
             ActiveHandsSlot::Third => {
                 if let Some(device) = self.hands_slot_3.as_mut() {
-                    device.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
+                    device.process_input(self.id, &mut self.inner_state, &input, engine_handle);
                 }
             }
         }
 
         for device in self.devices.iter_mut() {
             if let Some(device) = device {
-                device.process_input(self.id, &mut self.inner_state, &self.master.current_input, engine_handle);
+                device.process_input(self.id, &mut self.inner_state, &input, engine_handle);
             }
         }
 
 
         let mut movement_vec = Vec4::ZERO;
 
-        if self.master.current_input.move_forward.is_action_pressed() {
+        if input.move_forward.is_action_pressed() {
             movement_vec += Vec4::NEG_Z;
         }
 
-        if self.master.current_input.move_backward.is_action_pressed() {
+        if input.move_backward.is_action_pressed() {
             movement_vec += Vec4::Z;
         }
 
-        if self.master.current_input.move_right.is_action_pressed() {
+        if input.move_right.is_action_pressed() {
             movement_vec += Vec4::X;
         }
 
-        if self.master.current_input.move_left.is_action_pressed() {
+        if input.move_left.is_action_pressed() {
             movement_vec += Vec4::NEG_X;
         }
 
@@ -214,17 +218,21 @@ impl Player {
             movement_vec = vec;
         }
 
-        movement_vec = xz_player_rotation * movement_vec;
+        if self.get_collider().is_enable {
+            movement_vec = xz_player_rotation * movement_vec;
+        } else {
+            movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+        }
 
-        self.inner_state.collision.set_horizontal_wish_direction(movement_vec);
+        self.inner_state.collision.set_wish_direction(movement_vec);
 
 
-        if self.master.current_input.jump.is_action_just_pressed() {
+        if input.jump.is_action_just_pressed() {
             log::warn!("IM JUMP!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             self.inner_state.collision.add_force(Vec4::Y * JUMP_Y_SPEED);
         }
 
-        if self.master.current_input.crouch.is_action_just_pressed() {
+        if input.crouch.is_action_just_pressed() {
             self.inner_state.collision.add_force(Vec4::W * JUMP_W_SPEED);
         };
 

@@ -43,7 +43,9 @@ impl MainLoop {
         mut systems : Engine,
     ) {
         let main_player = systems.world.add_and_spawn_new_player(
-            LocalMaster::new(ActionsFrameState::empty())
+            InputMaster::LocalMaster(
+                LocalMaster::new(ActionsFrameState::empty())
+            )
         );
 
         systems.engine_handle.send_command(
@@ -53,6 +55,18 @@ impl MainLoop {
                     main_player,
                     Message::SetTransform(
                         Transform::new(-3.0, 1.0, 0.0, 0.0),
+                    )
+                )
+            }
+        );
+
+        systems.engine_handle.send_command(
+            Command {
+                sender: 0_u32,
+                command_type: CommandType::SendMessage(
+                    main_player,
+                    Message::EnableCollider(
+                        false
                     )
                 )
             }

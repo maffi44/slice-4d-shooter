@@ -91,7 +91,7 @@ impl World {
 
     }
 
-    pub fn add_new_player(&mut self, master: LocalMaster) -> PlayerID {
+    pub fn add_new_player(&mut self, master: InputMaster) -> PlayerID {
 
         let mut id: PlayerID = make_random_id();
 
@@ -116,7 +116,7 @@ impl World {
         }
     }
 
-    pub fn add_and_spawn_new_player(&mut self, master: LocalMaster) -> PlayerID {
+    pub fn add_and_spawn_new_player(&mut self, master: InputMaster) -> PlayerID {
         let id = self.add_new_player(master);
         match self.spawn_player_from_pool(id) {
             Ok(()) => return id,
