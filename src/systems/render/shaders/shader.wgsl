@@ -73,14 +73,6 @@ fn sd_sph_inf_box(p: vec4<f32>, b: vec4<f32>) -> f32 {
     var d: vec2<f32> = abs(p.xy) - b.xy;
     return max(d1,max(d2,min(max(d.x,d.y),0.0) + length(max(d,vec2<f32>(0.0)))));
 }
-// f32 sd_sph_inf_box(vec4<f32> p, vec4<f32> b) {
-//     f32 d1 = length(p.wx) - b.x;
-//     f32 d2 = length(p.wy) - b.y;
-//     // f32 d3 = length(p.wz) - b.z;
-//     vec2<f32> d = abs(p.xy) - b.xy;
-//     return max(d1,max(d2,min(max(d.x,d.y),0.0) + length(max(d,0.0))));
-//     // return max(d1,max(d2, d3));
-// }
 
 fn sd_sph_box(p: vec4<f32>, b: vec4<f32>) -> f32 {
     var d1: f32 = length(p.xy) - b.x;
@@ -91,26 +83,12 @@ fn sd_sph_box(p: vec4<f32>, b: vec4<f32>) -> f32 {
     var d6: f32 = length(p.wz) - b.w;
     return max(d6,max(d5,max(d4,max(d1,max(d2, d3)))));
 }
-// f32 sd_sph_box(vec4<f32> p, vec4<f32> b) {
-//     f32 d1 = length(p.xy) - b.x;
-//     f32 d2 = length(p.xz) - b.y;
-//     f32 d3 = length(p.yz) - b.z;
-//     f32 d4 = length(p.wx) - b.w;
-//     f32 d5 = length(p.wy) - b.w;
-//     f32 d6 = length(p.wz) - b.w;
-//     return max(d6,max(d5,max(d4,max(d1,max(d2, d3)))));
-// }
 
 fn sd_box_sph(p: vec4<f32>, b: vec4<f32>) -> f32 {
     var ds: f32 = length(p) - b.w;
     var d: vec4<f32> = abs(p) - b;
     return max(ds, (min(max(d.x,max(d.y,max(d.z, d.w))),0.0) + length(max(d,vec4<f32>(0.0)))));
 }
-// f32 sd_box_sph(vec4<f32> p, vec4<f32> b) {
-//     f32 ds = length(p) - b.w;
-//     vec4<f32> d = abs(p) - b;
-//     return max(ds, (min(max(d.x,max(d.y,max(d.z, d.w))),0.0) + length(max(d,0.0))));
-// }
 
 fn sd_solid_angle(p: vec4<f32>, c: vec2<f32>, ra: f32) -> f32 {
     var q: vec2<f32> = vec2<f32>( length(p.xz), p.y );
@@ -123,37 +101,6 @@ fn sd_octahedron(point: vec4<f32>, s: f32) -> f32 {
     var p = abs(point);
     return (p.x+p.y+p.z+p.w-s)*0.57735027;
 }
-
-// fn map(p: vec4<f32>) -> f32 {
-//     var d: f32 = sd_inf_box(p - vec4<f32>(0.0, 0.0, 0.0, 0.0), vec3<f32>(3., 0.1, 3.));
-//     // f32 d = sd_sphere(p - vec4<f32>(0, 1, 0, 2), 1.0);
-//     // = sd_inf_sphere(p - vec4<f32>(-3, 0, 4, 0.5), 1.0);
-//     // vec4<f32> pr = p - vec4<f32>(2, 2, 2, 3);
-//     d = min(sd_inf_box(p - vec4<f32>(-2., 2., -2., 0.), vec3<f32>(2., 2., 1.)), d);
-//     d = max(-sd_sph_inf_box(p - vec4<f32>(-2., 2., -2., 1.5), vec4<f32>(1., 1., 1., 1.)), d);
-
-//     var pr: vec4<f32> = p - vec4<f32>(-2., 2., 2., 2.);
-
-//     var r = pr.xw * rotate(time.x);
-//     pr.x = r.x;
-//     pr.w = r.y;
-
-//     r = pr.yw * rotate(time.x);
-//     pr.y = r.x;
-//     pr.w = r.y;
-
-//     r = pr.zw * rotate(time.x);
-//     pr.z = r.x;
-//     pr.w = r.y;
-
-//     d = min(sd_box(pr, vec4<f32>(1., 1., 1., 1.)), d);
-
-//     d = min(sd_box(p - vec4<f32>(1., 1., 2., 1.), vec4<f32>(1., 0.2, 1., 0.5)), d);
-//     // d = min(sd_sphere(p - vec4<f32>(1, 1, 1, 0), 1.2), d);
-//     // d = min(sd_sph_box(p - vec4<f32>(3, 1.5, 3, 2), vec4<f32>(1)), d);
-//     // d = min(sd_box_sph(p - vec4<f32>(3, 1.5, -3, 2), vec4<f32>(0.5, 0.5, 0.5, 1)), d);
-//     return d;
-// }
 
 fn map(p: vec4<f32>) -> f32 {
     var d = MAX_DIST * 2.2;
@@ -285,7 +232,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let normal: vec3<f32> = get_normal(dist_and_depth.x * ray_direction + cam_pos);
 
-    let shade: f32 = dot(normal, normalize(vec3<f32>(0.2, 1., 0.5)));
+    let shade_coof: f32 = dot(normal, normalize(vec3<f32>(0.2, 1., 0.5)));
+
+    let shade = mix(0.31, 0.9, shade_coof);
 
     var color: vec3<f32> = vec3<f32>(shade * 1.33) + (dist_and_depth.x / MAX_DIST);
 

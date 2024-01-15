@@ -44,12 +44,12 @@ impl Engine {
             .build(&cleint_main_loop.event_loop)
             .unwrap();
 
-        let physic = PhysicsSystem::new();
-
+        
         let world = World::new().await;
         
         let render = RenderSystem::new(window, &world).await;
- 
+        
+        let physic = PhysicsSystem::new(&world);
         // let net = ClientNetSystem::new().await;
         
         let input = InputSystem::new();

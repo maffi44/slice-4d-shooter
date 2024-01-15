@@ -72,7 +72,7 @@ impl ShapesArrayUniformData {
         let mut neg_inf_w_cubes = Vec::new();
         let mut neg_sph_cubes = Vec::new();
         
-        for obj in &world.map {
+        for obj in &world.static_objects {
             match obj {
                 StaticObject::Cube(tr,size, is_positive) => {
                     let mut data = [0.;8];

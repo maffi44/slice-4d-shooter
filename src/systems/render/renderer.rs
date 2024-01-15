@@ -120,9 +120,9 @@ impl Renderer {
         self.queue.submit(std::iter::once(encoder.finish()));
 
         let instant = web_time::Instant::now();
-        self.queue.on_submitted_work_done(move || {
-            log::info!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
-        });
+        // self.queue.on_submitted_work_done(move || {
+        //     log::info!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
+        // });
         output.present();
 
         Ok(())

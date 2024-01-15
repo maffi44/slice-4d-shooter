@@ -1,10 +1,10 @@
 use glam::{
-    Vec4, Vec3, Vec2
+    Vec4, Vec3, Vec2, Vec4Swizzles
 };
 
-use super::super::transform::Transform;
+use super::{super::transform::Transform, StaticObjectsData};
 
-use crate::systems::static_obj::StaticObject;
+use crate::systems::static_obj::{StaticObject, self};
 
 pub enum Collision<'a> {
     Static(&'a mut StaticCollision),
@@ -46,7 +46,7 @@ impl DynamicCollision {
         self.forces.push(force);
     }
 
-    pub fn physics_tick(&mut self, delta: f32, map: &Vec<StaticObject>) {
+    pub fn physics_tick(&mut self, delta: f32, static_objects: &StaticObjectsData) {
 
         let mut frame_postition_inctrement = Vec4::ZERO;
 
@@ -69,7 +69,10 @@ impl DynamicCollision {
 
         if self.is_enable {
 
-            translate_collider(self.transform.get_position(), self.current_velocity * delta, 0.5);
+            let position_increment = translate_collider(self.transform.get_position(), self.current_velocity * delta, 0.5, static_objects);
+
+            self.transform.increment_position(position_increment);
+            self.current_velocity *= 1.0 - delta*4.0;
 
         } else {
 
@@ -100,27 +103,11 @@ impl DynamicArea {
     }
 }
 
-use std::f32::consts::PI;
-// use glm::Vec3;
-// use glm::Vec4;
-// use glm::{cos, sin};
-// use glm::vec3 as vec3;
-// use glm::vec4 as vec4;
-// use glm::vec2 as vec2;
-// use glm::min as min;
-// use glm::max as max;
-// use glm::length as length;
-// use glm::abs as abs;
-// use glm::clamp;
-// use glm::cross;
-// use glm::normalize;
-// use glm::dot;
-// use glam::Vec3::dot;
-
 const THRESHOLD: f32 = 0.005;
-const MAX_COLLIDING_ITERATIONS: i32 = 15;
+const MAX_COLLIDING_ITERATIONS: i32 = 10;
 
-fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius: f32) -> Vec4 {
+
+fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> Vec4 {
 
     let start_postition = position;
 
@@ -128,32 +115,56 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
         return position - start_postition;
     }
 
-    for _ in (0..MAX_COLLIDING_ITERATIONS) {
+    for i in 0..MAX_COLLIDING_ITERATIONS {
+
+        log::warn!("ITRATION {}", i);
 
         let direction = translation.normalize();
+
+        log::warn!("direction is {}", direction);
+        log::warn!("position is {}", position);
+        log::warn!("translation is {}", translation);
         
         position += translation;
 
-        let distance_to_nearest_obj = get_dist(position);
+        log::warn!("position after translation is {}", position);
+
+        let distance_to_nearest_obj = get_dist(position, static_objects);
+
+        log::warn!("distance to near obj is {}", distance_to_nearest_obj);
         
-        // if not colliding end collider translation
-        if distance_to_nearest_obj > collider_radius {
+
+        // if not colliding end colider translation
+        if distance_to_nearest_obj > collider_radius - THRESHOLD {
             return position - start_postition;
         }
 
-        // moving collider back if collided
+        // moving collider back if collided  
         let overlap = collider_radius - distance_to_nearest_obj;
 
-        let normal = get_normal(position);
+        log::warn!("overlap is {}", overlap);
+
+        let normal = get_normal(position, static_objects);
+
+        log::warn!("normal is {}", normal);
 
         let coof = normal.dot(direction);
 
-        let backtrace = overlap * coof;
+        log::warn!("coof is {}", coof);
 
-        position -= direction * backtrace;
+        let backtrace = overlap * 1.0/coof;
+
+        log::warn!("backtrace is {}", backtrace);
+
+        position += direction * backtrace;
+
+        log::warn!("position after backtrace is {}", position);
 
         // collider rebound
-        translation = direction.reject_from(normal) * backtrace;
+        translation = direction.reject_from(-normal) * -backtrace;
+
+        log::warn!("new translation is {}", translation);
+
     }
 
     panic!("Physics system error: Colliging iteration more then {}", MAX_COLLIDING_ITERATIONS);
@@ -187,41 +198,34 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 //     return max_dist;
 // }
 
-fn get_dist(p: Vec4) -> f32 {
-    let d = MAX_DIST * 2.2;
+#[inline]
+fn get_dist(p: Vec4, static_objects: &StaticObjectsData) -> f32 {
+    let mut d = f32::MAX;
 
-    for (let i = 0u; i < shapes_array_metadata.cubes.amount; i++) {
-        let index = i + shapes_array_metadata.cubes.first_index;
-        d = min(d, sd_box(p - shapes[index].pos, shapes[index].size));
+    for (position, size) in static_objects.cubes.iter() {
+         d = d.min(sd_box(p - position.clone(), size.clone()));
     }
-    for (let i = 0u; i < shapes_array_metadata.cubes_inf_w.amount; i++) {
-        let index = i + shapes_array_metadata.cubes_inf_w.first_index;
-        d = min(d, sd_inf_box(p - shapes[index].pos, shapes[index].size.xyz));
+    for (position, size) in static_objects.inf_w_cubes.iter() {
+        d = d.min(sd_inf_box(p - position.clone(), size.xyz()));
     }
-    for (let i = 0u; i < shapes_array_metadata.spheres.amount; i++) {
-        let index = i + shapes_array_metadata.spheres.first_index;
-        d = min(d, sd_sphere(p - shapes[index].pos, shapes[index].size.x));
+    for (position, size) in static_objects.spheres.iter() {
+        d = d.min(sd_sphere(p - position.clone(), size.x));
     }
-    for (let i = 0u; i < shapes_array_metadata.sph_cube.amount; i++) {
-        let index = i + shapes_array_metadata.sph_cube.first_index;
-        d = min(d, sd_sph_box(p - shapes[index].pos, shapes[index].size));
+    for (position, size) in static_objects.shpcubes.iter() {
+        d = d.min(sd_sph_box(p - position.clone(), size.clone()));
     }
 
-    for (let i = 0u; i < shapes_array_metadata.neg_cubes.amount; i++) {
-        let index = i + shapes_array_metadata.neg_cubes.first_index;
-        d = max(d, -sd_box(p - shapes[index].pos, shapes[index].size));
+    for (position, size) in static_objects.cubes.iter() {
+        d = d.max(-sd_box(p - position.clone(), size.clone()));
     }
-    for (let i = 0u; i < shapes_array_metadata.neg_cubes_inf_w.amount; i++) {
-        let index = i + shapes_array_metadata.neg_cubes_inf_w.first_index;
-        d = max(d, -sd_inf_box(p - shapes[index].pos, shapes[index].size.xyz));
+    for (position, size) in static_objects.inf_w_cubes.iter() {
+        d = d.max(-sd_inf_box(p - position.clone(), size.xyz()));
     }
-    for (let i = 0u; i < shapes_array_metadata.neg_spheres.amount; i++) {
-        let index = i + shapes_array_metadata.neg_spheres.first_index;
-        d = max(d, -sd_sphere(p - shapes[index].pos, shapes[index].size.x));
+    for (position, size) in static_objects.spheres.iter() {
+        d = d.max(-sd_sphere(p - position.clone(),size.x));
     }
-    for (let i = 0u; i < shapes_array_metadata.neg_sph_cube.amount; i++) {
-        let index = i + shapes_array_metadata.neg_sph_cube.first_index;
-        d = max(d, -sd_sph_box(p - shapes[index].pos, shapes[index].size));
+    for (position, size) in static_objects.shpcubes.iter() {
+        d = d.max(-sd_sph_box(p - position.clone(), size.clone()));
     }
 
     return d;
@@ -232,6 +236,19 @@ fn sd_inf_box(p: Vec4, b: Vec3) -> f32 {
     return f32::min(f32::max(d.x, f32::max(d.y, d.z)),0.0) + (d.max(Vec3::ZERO).length());
 }
 
+fn sd_sphere(p: Vec4, r: f32) -> f32 {
+    p.length() - r
+}
+
+fn sd_sph_box(p: Vec4, b: Vec4) -> f32 {
+    let d1: f32 = p.xy().length() - b.x;
+    let d2: f32 = p.xz().length() - b.y;
+    let d3: f32 = p.yz().length() - b.z;
+    let d4: f32 = p.wx().length() - b.w;
+    let d5: f32 = p.wy().length() - b.w;
+    let d6: f32 = p.wz().length() - b.w;
+    return d6.max(d5.max(d4.max(d1.max(d2.max(d3)))));
+}
 
 fn sd_sph_inf_box(p: Vec4, b: Vec4) -> f32 {
     let d1 = Vec2::new(p.w, p.x).length() - b.x;
@@ -245,16 +262,17 @@ fn sd_box(p: Vec4, b: Vec4) -> f32 {
     return f32::min(f32::max(d.x,f32::max(d.y,f32::max(d.z, d.w))),0.0) + d.max(Vec4::ZERO).length();
 }
 
-fn get_normal(p: Vec4) -> Vec4 {
+#[inline]
+fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
     let a = p + Vec4::new(-0.001, 0.001, 0.001, 0.0);
     let b = p + Vec4::new(0.001, -0.001, 0.001, 0.0);
     let c = p + Vec4::new(0.001, 0.001, -0.001, 0.0);
     let d = p + Vec4::new(-0.001, -0.001, -0.001, 0.0);
 
-    let fa = get_dist(a);
-    let fb = get_dist(b);
-    let fc = get_dist(c);
-    let fd = get_dist(d);
+    let fa = get_dist(a, static_objects);
+    let fb = get_dist(b, static_objects);
+    let fc = get_dist(c, static_objects);
+    let fd = get_dist(d, static_objects);
 
     let normal = 
         Vec4::new(-0.001, 0.001, 0.001, 0.0) * fa +

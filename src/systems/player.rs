@@ -219,16 +219,15 @@ impl Player {
         }
 
         if self.get_collider().is_enable {
-            movement_vec = xz_player_rotation * movement_vec;
-        } else {
             movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+        } else {
+            movement_vec = xz_player_rotation * movement_vec;
         }
 
         self.inner_state.collision.set_wish_direction(movement_vec);
 
 
         if input.jump.is_action_just_pressed() {
-            log::warn!("IM JUMP!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             self.inner_state.collision.add_force(Vec4::Y * JUMP_Y_SPEED);
         }
 

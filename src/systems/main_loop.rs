@@ -42,39 +42,10 @@ impl MainLoop {
         self,
         mut systems : Engine,
     ) {
-        let main_player = systems.world.add_and_spawn_new_player(
-            InputMaster::LocalMaster(
-                LocalMaster::new(ActionsFrameState::empty())
-            )
-        );
-
-        systems.engine_handle.send_command(
-            Command {
-                sender: 0_u32,
-                command_type: CommandType::SendMessage(
-                    main_player,
-                    Message::SetTransform(
-                        Transform::new(-3.0, 1.0, 0.0, 0.0),
-                    )
-                )
-            }
-        );
-
-        systems.engine_handle.send_command(
-            Command {
-                sender: 0_u32,
-                command_type: CommandType::SendMessage(
-                    main_player,
-                    Message::EnableCollider(
-                        false
-                    )
-                )
-            }
-        );
-
-        systems.world.main_camera_from = main_player;
-
+        
         let systems = &mut systems;
+        
+        init(systems);
 
         let _ = self.event_loop.run(move |event, elwt|{
             match event {
@@ -144,9 +115,6 @@ impl MainLoop {
                         },
                         
                         WindowEvent::KeyboardInput {event,is_synthetic, ..} => { 
-                            if *is_synthetic {
-                                log::warn!("IS SINTHETIC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                            }
                             systems.input.set_keyboard_input(event);
                         },
 
@@ -203,4 +171,38 @@ fn main_loop(
     systems.time.end_of_frame(); 
 
 
+}
+
+fn init(systems: &mut Engine) {
+    let main_player = systems.world.add_and_spawn_new_player(
+        InputMaster::LocalMaster(
+            LocalMaster::new(ActionsFrameState::empty())
+        )
+    );
+
+    systems.engine_handle.send_command(
+        Command {
+            sender: 0_u32,
+            command_type: CommandType::SendMessage(
+                main_player,
+                Message::SetTransform(
+                    Transform::new(-5.0, 2.0, 0.0, 0.0),
+                )
+            )
+        }
+    );
+
+    // systems.engine_handle.send_command(
+    //     Command {
+    //         sender: 0_u32,
+    //         command_type: CommandType::SendMessage(
+    //             main_player,
+    //             Message::EnableCollider(
+    //                 false
+    //             )
+    //         )
+    //     }
+    // );
+
+    systems.world.main_camera_from = main_player;
 }

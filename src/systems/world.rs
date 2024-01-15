@@ -17,7 +17,7 @@ use super::{
         SpawnEffect,
         SpawnProjectile,
     },
-    static_obj::StaticObject,
+    static_obj::{StaticObject, self},
 };
 
 use getrandom;
@@ -31,7 +31,7 @@ pub struct World {
     pub pool_of_players: HashMap<PlayerID, Player>,
     pub spawned_players: Vec<PlayerID>,
     pub main_camera_from: PlayerID,
-    pub map: Vec<StaticObject>,
+    pub static_objects: Vec<StaticObject>,
     // fx_pool
     // devices_pool
     // projectiles_pool
@@ -45,14 +45,14 @@ impl World {
 
     pub async fn new() -> Self {
 
-        let map = map::load_map().await;
+        let static_objects = map::load_map().await;
 
         World {
             pool_of_players: HashMap::with_capacity(2),
             // pool_of_rockets: Vec::
             spawned_players: Vec::with_capacity(2),
             main_camera_from: 0,
-            map,
+            static_objects,
         }
     }
 
