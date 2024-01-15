@@ -110,64 +110,79 @@ const MAX_COLLIDING_ITERATIONS: i32 = 10;
 fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> Vec4 {
 
     let start_postition = position;
-
-    if translation.length() == 0.0 {
-        return position - start_postition;
-    }
-
-    for i in 0..MAX_COLLIDING_ITERATIONS {
-
-        log::warn!("ITRATION {}", i);
-
-        let direction = translation.normalize();
-
-        log::warn!("direction is {}", direction);
-        log::warn!("position is {}", position);
-        log::warn!("translation is {}", translation);
+    
+    let allowed_lenght = collider_radius * 0.95; 
+    
+    let mut translation_lenght = translation.length();
+    
+    while translation_lenght > 0.0 {    
         
-        position += translation;
+        if translation_lenght > allowed_lenght {
 
-        log::warn!("position after translation is {}", position);
+            translation_lenght -= allowed_lenght;
 
-        let distance_to_nearest_obj = get_dist(position, static_objects);
+            translation = translation.normalize() * allowed_lenght;
+        } else {
+            translation = translation.normalize() * translation_lenght;
 
-        log::warn!("distance to near obj is {}", distance_to_nearest_obj);
-        
-
-        // if not colliding end colider translation
-        if distance_to_nearest_obj > collider_radius - THRESHOLD {
-            return position - start_postition;
+            translation_lenght = 0.0;
         }
 
-        // moving collider back if collided  
-        let overlap = collider_radius - distance_to_nearest_obj;
+        for i in 0..MAX_COLLIDING_ITERATIONS {
 
-        log::warn!("overlap is {}", overlap);
+            // log::warn!("ITRATION {}", i);
 
-        let normal = get_normal(position, static_objects);
+            let direction = translation.normalize();
 
-        log::warn!("normal is {}", normal);
+            // log::warn!("direction is {}", direction);
+            // log::warn!("position is {}", position);
+            // log::warn!("translation is {}", translation);
+            
+            position += translation;
 
-        let coof = normal.dot(direction);
+            // log::warn!("position after translation is {}", position);
 
-        log::warn!("coof is {}", coof);
+            let distance_to_nearest_obj = get_dist(position, static_objects);
 
-        let backtrace = overlap * 1.0/coof;
+            // log::warn!("distance to near obj is {}", distance_to_nearest_obj);
+            
 
-        log::warn!("backtrace is {}", backtrace);
+            // if not colliding end colider translation
+            if distance_to_nearest_obj > collider_radius - THRESHOLD {
+                return position - start_postition;
+            }
 
-        position += direction * backtrace;
+            // moving collider back if collided  
+            let overlap = collider_radius - distance_to_nearest_obj;
 
-        log::warn!("position after backtrace is {}", position);
+            // log::warn!("overlap is {}", overlap);
 
-        // collider rebound
-        translation = direction.reject_from(-normal) * -backtrace;
+            let normal = get_normal(position, static_objects);
 
-        log::warn!("new translation is {}", translation);
+            // log::warn!("normal is {}", normal);
 
+            let coof = normal.dot(direction);
+
+            // log::warn!("coof is {}", coof);
+
+            let backtrace = overlap * 1.0/coof;
+
+            // log::warn!("backtrace is {}", backtrace);
+
+            position += direction * backtrace;
+
+            // log::warn!("position after backtrace is {}", position);
+
+            // collider rebound
+            translation = direction.reject_from(-normal) * -backtrace;
+
+            // log::warn!("new translation is {}", translation);
+
+        }
+
+        panic!("(DEBUG) Physics system error: Colliging iteration more then {}", MAX_COLLIDING_ITERATIONS);
     }
-
-    panic!("Physics system error: Colliging iteration more then {}", MAX_COLLIDING_ITERATIONS);
+    position - start_postition
 }
 
 // fn ray_march(mut ray_origin: Vec4, ray_direction: Vec4, max_dist: f32) -> f32 {

@@ -219,7 +219,12 @@ impl InputSystem {
 
                 match input.state {
                     ElementState::Pressed => {
-                        action.is_action_just_pressed = true;
+                        if action.is_action_pressed {
+                            action.is_action_just_pressed = false;
+                        } else {
+                            action.is_action_just_pressed = true;
+                        }
+                        
                         action.is_action_pressed = true;
                     },
                     ElementState::Released => {

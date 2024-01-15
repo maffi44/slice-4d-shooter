@@ -8,11 +8,13 @@ use glam::{
     Mat4,
 };
 
-const MAX_SPEED : f32 = 8.0;
-const MAX_ACCEL : f32 = 15.0;
+const MAX_SPEED : f32 = 20.0;
+const MAX_ACCEL : f32 = 25.0;
 const HEALTH: i32 = 100_i32;
-const JUMP_Y_SPEED: f32 = 0.1;
+const JUMP_Y_SPEED: f32 = 20.0;
 const JUMP_W_SPEED: f32 = 0.1;
+
+const GRAVITY: f32 = -0.35;
 
 use player_input_master::InputMaster;
 
@@ -231,9 +233,12 @@ impl Player {
             self.inner_state.collision.add_force(Vec4::Y * JUMP_Y_SPEED);
         }
 
-        if input.crouch.is_action_just_pressed() {
-            self.inner_state.collision.add_force(Vec4::W * JUMP_W_SPEED);
-        };
+        self.inner_state.collision.add_force(Vec4::Y * GRAVITY);
+        
+
+        // if input.crouch.is_action_just_pressed() {
+        //     self.inner_state.collision.add_force(Vec4::W * JUMP_W_SPEED);
+        // };
 
     }
 
