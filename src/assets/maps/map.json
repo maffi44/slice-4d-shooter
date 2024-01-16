@@ -27,6 +27,33 @@
         }
     },
     {
+        "cube" : {
+            "transform" : {
+                "position" : {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": -22.0
+                },
+                "rotation" : {
+                    "yz": 0.0,
+                    "xz": 0.0,
+                    "xy": 0.0,
+                    "wx": 0.0,
+                    "wy": 0.0,
+                    "wz": 0.0
+                }
+            },
+            "size" : {
+                "x": 10.0,
+                "y": 10.0,
+                "z": 10.0,
+                "w": 2.0
+            },
+            "is_positive" : true
+        }
+    },
+    {
         "cube_w_inf" : {
             "transform" : {
                 "position" : {
@@ -81,7 +108,7 @@
             "transform" : {
                 "position" : {
                     "x": 1.0,
-                    "y": -3.0,
+                    "y": 1.0,
                     "z": 2.0,
                     "w": 0.0
                 },

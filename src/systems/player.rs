@@ -11,7 +11,7 @@ use glam::{
 const MAX_SPEED : f32 = 20.0;
 const MAX_ACCEL : f32 = 25.0;
 const HEALTH: i32 = 100_i32;
-const JUMP_Y_SPEED: f32 = 10.0;
+const JUMP_Y_SPEED: f32 = 14.0;
 const JUMP_W_SPEED: f32 = 0.1;
 
 const GRAVITY: f32 = -0.3;
@@ -234,6 +234,12 @@ impl Player {
         }
 
         self.inner_state.collision.add_force(Vec4::Y * GRAVITY);
+
+        if input.crouch.is_action_pressed() {
+            self.inner_state.collision.add_force(Vec4::W * GRAVITY * -2.0);
+        }
+
+        self.inner_state.collision.add_force(Vec4::W * GRAVITY);
         
 
         // if input.crouch.is_action_just_pressed() {
