@@ -48,8 +48,6 @@ impl DynamicCollision {
 
     pub fn physics_tick(&mut self, delta: f32, static_objects: &StaticObjectsData) {
 
-        let mut frame_postition_inctrement = Vec4::ZERO;
-
         if self.wish_direction.length() > 0.0 {
             // self.wish_direction = self.wish_direction.normalize();
 
@@ -69,10 +67,12 @@ impl DynamicCollision {
 
         if self.is_enable {
 
-            let position_increment = translate_collider(self.transform.get_position(), self.current_velocity * delta, 0.5, static_objects);
-
+            let (position_increment, is_collided) = translate_collider(self.transform.get_position(), self.current_velocity * delta, 0.5, static_objects);
+            
+            if is_collided {
+                self.current_velocity *= 1.0 - delta*6.0;
+            }
             self.transform.increment_position(position_increment);
-            self.current_velocity *= 1.0 - delta*4.0;
 
         } else {
 
@@ -104,18 +104,55 @@ impl DynamicArea {
 }
 
 const THRESHOLD: f32 = 0.005;
-const MAX_COLLIDING_ITERATIONS: i32 = 10;
+const MAX_COLLIDING_ITERATIONS: i32 = 50;
 
 
-fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> Vec4 {
+fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> (Vec4, bool) {
+
+    let mut is_collided = false;
 
     let start_postition = position;
     
     let allowed_lenght = collider_radius * 0.95; 
+
     
+    let mut distance_to_nearest_obj = get_dist(position, static_objects);
+    
+    // if the collider stuck in some object let's push it out
+    if distance_to_nearest_obj <= 0.0 {
+
+        while distance_to_nearest_obj <= collider_radius + THRESHOLD {
+            log::warn!("INSIDE distance to near obj is {}", distance_to_nearest_obj);
+
+            let mut normal = get_normal(position, static_objects);
+
+            log::warn!("NORMAL IS {:?}", normal.normalize());
+
+
+            if distance_to_nearest_obj < 0.0 {
+                normal *= -1.0;
+            }
+            
+            position += 
+                normal*(distance_to_nearest_obj.abs()+collider_radius+THRESHOLD);
+            
+            distance_to_nearest_obj = get_dist(position, static_objects);
+        }
+        return (position - start_postition, true);
+    }
+
+    // normal collide
     let mut translation_lenght = translation.length();
+
+    let mut iter_index = 0u32;
     
-    while translation_lenght > 0.0 {    
+    while translation_lenght > 0.0 {
+
+
+        log::warn!("translation length interation index is {}", iter_index);
+        iter_index += 1;    
+
+        log::warn!("translation length is {}", translation_lenght);
         
         if translation_lenght > allowed_lenght {
 
@@ -130,88 +167,66 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
         for i in 0..MAX_COLLIDING_ITERATIONS {
 
-            // log::warn!("ITRATION {}", i);
+            log::warn!("ITRATION {}", i);
 
             let direction = translation.normalize();
 
-            // log::warn!("direction is {}", direction);
-            // log::warn!("position is {}", position);
-            // log::warn!("translation is {}", translation);
+            log::warn!("direction is {}", direction);
+            log::warn!("position is {}", position);
+            log::warn!("translation is {}", translation);
             
             position += translation;
 
-            // log::warn!("position after translation is {}", position);
+            log::warn!("position after translation is {}", position);
 
-            let distance_to_nearest_obj = get_dist(position, static_objects);
+            let mut distance_to_nearest_obj = get_dist(position, static_objects);
 
-            // log::warn!("distance to near obj is {}", distance_to_nearest_obj);
-            
+            log::warn!("distance to near obj is {}", distance_to_nearest_obj);
 
             // if not colliding end colider translation
             if distance_to_nearest_obj > collider_radius - THRESHOLD {
-                return position - start_postition;
+                return (position - start_postition, is_collided);
             }
+
+            is_collided = true;
 
             // moving collider back if collided  
             let overlap = collider_radius - distance_to_nearest_obj;
 
-            // log::warn!("overlap is {}", overlap);
+            log::warn!("overlap is {}", overlap);
 
             let normal = get_normal(position, static_objects);
 
-            // log::warn!("normal is {}", normal);
+            log::warn!("normal is {}", normal);
 
             let coof = normal.dot(direction);
+            
+            log::warn!("coof is {}", coof);
 
-            // log::warn!("coof is {}", coof);
+            let backtrace = if coof == 0.0 {
+                position += normal * overlap;
+                0.0
+            } else {
+                overlap * 1.0/coof
+            };
 
-            let backtrace = overlap * 1.0/coof;
-
-            // log::warn!("backtrace is {}", backtrace);
+            log::warn!("backtrace is {}", backtrace);
 
             position += direction * backtrace;
 
-            // log::warn!("position after backtrace is {}", position);
+            log::warn!("position after backtrace is {}", position);
 
             // collider rebound
             translation = direction.reject_from(-normal) * -backtrace;
 
-            // log::warn!("new translation is {}", translation);
+            log::warn!("new translation is {}", translation);
 
         }
 
         panic!("(DEBUG) Physics system error: Colliging iteration more then {}", MAX_COLLIDING_ITERATIONS);
     }
-    position - start_postition
+    (position - start_postition, is_collided)
 }
-
-// fn ray_march(mut ray_origin: Vec4, ray_direction: Vec4, max_dist: f32) -> f32 {
-//     let mut total_distance = 0.0;
-
-//     let mut i = 0;
-//     while i < 128 {
-//         ray_origin = ray_origin + (ray_direction * 0.2);
-//         let d = get_dist(ray_origin);
-//         total_distance += d;
-
-//         if d < 0.35 {
-//             // if  get_dist(ray_origin + (ray_direction * -d)) >= 0.2 {
-//             //     return total_distance - 0.2;
-//             // }
-//             return (
-//                 (total_distance - 0.35).clamp(0.0, max_dist),
-//             )
-//             get_normal(ray_origin)
-//         }
-//         if total_distance >= max_dist {
-//             return max_dist;
-//         }
-        
-        
-//         i += 1;
-//     }
-//     return max_dist;
-// }
 
 #[inline]
 fn get_dist(p: Vec4, static_objects: &StaticObjectsData) -> f32 {
@@ -246,15 +261,18 @@ fn get_dist(p: Vec4, static_objects: &StaticObjectsData) -> f32 {
     return d;
 }
 
+#[inline]
 fn sd_inf_box(p: Vec4, b: Vec3) -> f32 {
     let d = Vec3::new(p.x, p.y, p.z).abs() - b;
     return f32::min(f32::max(d.x, f32::max(d.y, d.z)),0.0) + (d.max(Vec3::ZERO).length());
 }
 
+#[inline]
 fn sd_sphere(p: Vec4, r: f32) -> f32 {
     p.length() - r
 }
 
+#[inline]
 fn sd_sph_box(p: Vec4, b: Vec4) -> f32 {
     let d1: f32 = p.xy().length() - b.x;
     let d2: f32 = p.xz().length() - b.y;
@@ -265,6 +283,7 @@ fn sd_sph_box(p: Vec4, b: Vec4) -> f32 {
     return d6.max(d5.max(d4.max(d1.max(d2.max(d3)))));
 }
 
+#[inline]
 fn sd_sph_inf_box(p: Vec4, b: Vec4) -> f32 {
     let d1 = Vec2::new(p.w, p.x).length() - b.x;
     let d2 = Vec2::new(p.w, p.y).length() - b.y;
@@ -272,6 +291,7 @@ fn sd_sph_inf_box(p: Vec4, b: Vec4) -> f32 {
     return f32::max(d1,f32::max(d2,f32::min(f32::max(d.x,d.y),0.0) + (d.max(Vec2::ZERO)).length()));
 }
 
+#[inline]
 fn sd_box(p: Vec4, b: Vec4) -> f32 {
     let d = p.abs() - b;
     return f32::min(f32::max(d.x,f32::max(d.y,f32::max(d.z, d.w))),0.0) + d.max(Vec4::ZERO).length();
@@ -279,22 +299,65 @@ fn sd_box(p: Vec4, b: Vec4) -> f32 {
 
 #[inline]
 fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
-    let a = p + Vec4::new(-0.001, 0.001, 0.001, 0.0);
-    let b = p + Vec4::new(0.001, -0.001, 0.001, 0.0);
-    let c = p + Vec4::new(0.001, 0.001, -0.001, 0.0);
-    let d = p + Vec4::new(-0.001, -0.001, -0.001, 0.0);
+    let a = p + Vec4::new(-0.001, 0.001, 0.001, 0.001);
+    let b = p + Vec4::new(0.001, -0.001, 0.001,-0.001);
+    let c = p + Vec4::new(0.001, 0.001, -0.001, 0.001);
+    let d = p + Vec4::new(-0.001, -0.001, -0.001, -0.001);
 
     let fa = get_dist(a, static_objects);
     let fb = get_dist(b, static_objects);
     let fc = get_dist(c, static_objects);
     let fd = get_dist(d, static_objects);
 
-    let normal = 
+    let mut normal = 
         Vec4::new(-0.001, 0.001, 0.001, 0.0) * fa +
         Vec4::new(0.001, -0.001, 0.001, 0.0) * fb +
         Vec4::new(0.001, 0.001, -0.001, 0.0) * fc +
         Vec4::new(-0.001, -0.001, -0.001, 0.0) * fd;
-    
+
+    // if we are stuck in surface normal will be zero length
+    // let's make some random normal in this case 
+    while normal.try_normalize().is_none() {
+
+        // let mut bytes : [u8;4] = [0,0,0,0];
+        // let res = getrandom::getrandom(&mut bytes);
+        
+        // if let Err(err) = res {
+        //     panic!("Can't make random f32 in get_normal fnction");
+        // }
+        // let x: f32 = f32::from_be_bytes(bytes);
+
+
+        // let mut bytes : [u8;4] = [0,0,0,0];
+        // let res = getrandom::getrandom(&mut bytes);
+        
+        // if let Err(err) = res {
+        //     panic!("Can't make random f32 in get_normal fnction");
+        // }
+        // let y: f32 = f32::from_be_bytes(bytes);
+
+
+        // let mut bytes : [u8;4] = [0,0,0,0];
+        // let res = getrandom::getrandom(&mut bytes);
+        
+        // if let Err(err) = res {
+        //     panic!("Can't make random f32 in get_normal fnction");
+        // }
+        // let z: f32 = f32::from_be_bytes(bytes);
+
+
+        // let mut bytes : [u8;4] = [0,0,0,0];
+        // let res = getrandom::getrandom(&mut bytes);
+        
+        // if let Err(err) = res {
+        //     panic!("Can't make random f32 in get_normal fnction");
+        // }
+        // let w: f32 = f32::from_be_bytes(bytes);
+        
+
+        // normal = Vec4::new(x, y, z, w);
+        normal = Vec4::new(0.0, 1.0, 0.0, 1.0);
+    }
     normal.normalize()
 }
 

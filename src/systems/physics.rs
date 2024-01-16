@@ -4,7 +4,7 @@ use glam::Vec4;
 
 pub mod collisions;
 
-struct StaticObjectsData {
+pub struct StaticObjectsData {
      cubes: Vec<(Vec4,Vec4)>,
      inf_w_cubes: Vec<(Vec4,Vec4)>,
      spheres: Vec<(Vec4,Vec4)>,

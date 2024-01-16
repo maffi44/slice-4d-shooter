@@ -11,10 +11,10 @@ use glam::{
 const MAX_SPEED : f32 = 20.0;
 const MAX_ACCEL : f32 = 25.0;
 const HEALTH: i32 = 100_i32;
-const JUMP_Y_SPEED: f32 = 20.0;
+const JUMP_Y_SPEED: f32 = 10.0;
 const JUMP_W_SPEED: f32 = 0.1;
 
-const GRAVITY: f32 = -0.35;
+const GRAVITY: f32 = -0.3;
 
 use player_input_master::InputMaster;
 
