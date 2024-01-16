@@ -169,16 +169,17 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
             log::warn!("ITRATION {}", i);
 
+            let direction = translation.normalize();
+
+            log::warn!("direction is {}", direction);
             log::warn!("position is {}", position);
             log::warn!("translation is {}", translation);
-
-            let start_position = position;
             
             position += translation;
 
             log::warn!("position after translation is {}", position);
 
-            let distance_to_nearest_obj = get_dist(position, static_objects);
+            let mut distance_to_nearest_obj = get_dist(position, static_objects);
 
             log::warn!("distance to near obj is {}", distance_to_nearest_obj);
 
@@ -186,10 +187,6 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
             if distance_to_nearest_obj > collider_radius - THRESHOLD {
                 return (position - start_postition, is_collided);
             }
-
-            let direction = translation.normalize();
-
-            log::warn!("direction is {}", direction);
 
             is_collided = true;
 
@@ -206,29 +203,25 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
             
             log::warn!("coof is {}", coof);
 
-            if coof.abs() < 0.0005 {
-
+            let backtrace = if coof.abs() < 0.0001 {
                 position += normal * overlap;
 
-                let already_translate = position.distance(start_position);
-
-                translation = direction * (translation.length() - already_translate);
-
+                -translation.length()
             } else {
 
-                let backtrace = overlap * 1.0/coof;
-                log::warn!("backtrace is {}", backtrace);
-    
-                position += direction * backtrace;
-    
-                log::warn!("position after backtrace is {}", position);
-    
-                // collider rebound
-                translation = direction.reject_from(-normal) * -backtrace;
-    
-                log::warn!("new translation is {}", translation);
+                overlap * 1.0/coof
             };
 
+            log::warn!("backtrace is {}", backtrace);
+
+            position += direction * backtrace;
+
+            log::warn!("position after backtrace is {}", position);
+
+            // collider rebound
+            translation = direction.reject_from(-normal) * -backtrace;
+
+            log::warn!("new translation is {}", translation);
 
         }
 
