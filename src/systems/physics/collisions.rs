@@ -105,17 +105,15 @@ impl DynamicArea {
 }
 
 const THRESHOLD: f32 = 0.005;
+const HALF_THRESHOLD: f32 = 0.00025;
 const MAX_COLLIDING_ITERATIONS: u32 = 50;
 
-
+/*
 fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> (Vec4, bool) {
 
     let mut is_collided = false;
 
     let start_postition = position;
-    
-    let allowed_lenght = collider_radius * 0.95; 
-
     
     let mut distance_to_nearest_obj = get_dist(position, static_objects);
     
@@ -123,11 +121,11 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
     if distance_to_nearest_obj <= 0.0 {
 
         while distance_to_nearest_obj <= collider_radius + THRESHOLD {
-            log::debug!("INSIDE distance to near obj is {}", distance_to_nearest_obj);
+            log::warn!("INSIDE distance to near obj is {}", distance_to_nearest_obj);
 
             let mut normal = get_normal(position, static_objects);
 
-            log::debug!("NORMAL IS {:?}", normal.normalize());
+            log::warn!("NORMAL IS {:?}", normal.normalize());
 
 
             if distance_to_nearest_obj < 0.0 {
@@ -146,7 +144,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
     // if the collider is overlaping the object let's push it out
     while distance_to_nearest_obj < collider_radius {
 
-        log::debug!("OVERLAP iteration number {}", iteration_counter);
+        log::warn!("OVERLAP iteration number {}", iteration_counter);
             
         if iteration_counter > MAX_COLLIDING_ITERATIONS {
             
@@ -157,111 +155,127 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
         let overlap = collider_radius - distance_to_nearest_obj;
 
-        log::debug!("OVERLAP is {}", overlap);
+        log::warn!("OVERLAP is {}", overlap);
 
         let mut normal = get_normal(position, static_objects);
 
-        log::debug!("OVERLAP normal is {:?}", normal);
+        log::warn!("OVERLAP normal is {:?}", normal);
 
         position += normal * (overlap + THRESHOLD);
 
-        log::debug!("OVERLAP position after move is {:?}", position);
+        log::warn!("OVERLAP position after move is {:?}", position);
 
         distance_to_nearest_obj = get_dist(position, static_objects);
 
-        log::debug!("OVERLAP distance to near obj is {}", distance_to_nearest_obj);
+        log::warn!("OVERLAP distance to near obj is {}", distance_to_nearest_obj);
 
         iteration_counter += 1;
     }
 
     // normal collide
+    let allowed_lenght = collider_radius - THRESHOLD; 
+    
     let mut translation_lenght = translation.length();
 
     let mut iter_index = 0u32;
     
     while translation_lenght > 0.0 {
 
-
-        log::debug!("translation length interation index is {}", iter_index);
+        log::warn!("translation length interation index is {}", iter_index);
         iter_index += 1;    
 
-        log::debug!("translation length is {}", translation_lenght);
+        log::warn!("translation length is {}", translation_lenght);
         
-        if translation_lenght > allowed_lenght {
+        if translation_lenght < allowed_lenght {
 
-            translation_lenght -= allowed_lenght;
-
-            translation = translation.normalize() * allowed_lenght;
-        } else {
             translation = translation.normalize() * translation_lenght;
 
             translation_lenght = 0.0;
+        } else {
+            translation_lenght -= allowed_lenght;
+
+            translation = translation.normalize() * allowed_lenght;
         }
 
         for i in 0..MAX_COLLIDING_ITERATIONS {
 
-            log::debug!("ITRATION {}", i);
+            log::warn!("ITRATION {}", i);
 
             let direction = translation.normalize();
 
-            log::debug!("direction is {}", direction);
-            log::debug!("position is {}", position);
-            log::debug!("translation is {}", translation);
+            log::warn!("direction is {}", direction);
+            log::warn!("position is {}", position);
+            log::warn!("translation is {}", translation);
             
-            position += translation;
+            log::warn!("position after first translation is {}", position + translation);
 
-            log::debug!("position after translation is {}", position);
+            let mut distance_to_nearest_obj = get_dist(position + translation, static_objects);
 
-            let mut distance_to_nearest_obj = get_dist(position, static_objects);
-
-            log::debug!("distance to near obj is {}", distance_to_nearest_obj);
+            log::warn!("distance to near obj is {}", distance_to_nearest_obj);
 
             // if not colliding end colider translation
-            if distance_to_nearest_obj > collider_radius {
-                return (position - start_postition, is_collided);
+            if distance_to_nearest_obj >= collider_radius - THRESHOLD {
+                return ((position + translation) - start_postition, is_collided);
             }
 
             is_collided = true;
 
-            // moving collider back if collided  
-            let overlap = collider_radius - distance_to_nearest_obj;
+            while distance_to_nearest_obj < collider_radius {
 
-            log::debug!("overlap is {}", overlap);
+                let distance_to_collide = distance_to_nearest_obj - collider_radius;
+                
+                position += direction * distance_to_collide;
+                
+                translation -= direction * distance_to_collide;
+                
+                distance_to_nearest_obj = get_dist(position, static_objects);
+            }
+
+            // if collider transltion is overlapping some object
+            // let's move collider to collide with object and calculate new translation
+
+            // let full_distance_to_translate = translation.length();
+
+            // let distance_to_collide = distance_to_nearest_obj - (collider_radius + THRESHOLD * 0.5);
+
+
+            // position += direction * distance_to_collide;
+            
 
             let normal = get_normal(position, static_objects);
 
-            log::debug!("normal is {}", normal);
+            // log::warn!("normal is {}", normal);
 
-            let coof = normal.dot(direction);
+            // let coof = normal.dot(direction);
             
-            log::debug!("coof is {}", coof);
+            // log::warn!("coof is {}", coof);
 
-            let backtrace = if coof.abs() < 0.0001 {
-                position += normal * overlap;
+            // let backtrace = if coof.abs() < 0.0001 {
+            //     position += normal * overlap;
 
-                -translation.length()
-            } else {
+            //     -translation.length()
+            // } else {
 
-                overlap * 1.0/coof
-            };
+            //     overlap * 1.0/coof
+            // };
 
-            log::debug!("backtrace is {}", backtrace);
+            // log::warn!("backtrace is {}", backtrace);
 
-            position += direction * backtrace;
+            // position += direction * backtrace;
 
-            log::debug!("position after backtrace is {}", position);
+            log::warn!("position after backtrace is {}", position);
 
             // collider rebound
-            translation = direction.reject_from(-normal) * -backtrace;
+            translation = translation.reject_from(-normal * translation.length());
 
-            log::debug!("new translation is {}", translation);
+            log::warn!("new translation is {}", translation);
 
         }
 
         panic!("(DEBUG) Physics system error: Colliging iteration more then {}", MAX_COLLIDING_ITERATIONS);
     }
     (position - start_postition, is_collided)
-}
+}*/
 
 
 /*
@@ -273,18 +287,18 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
     let mut distance_to_nearest_obj = get_dist(position, static_objects);
     
-    log::debug!("START TRASLATE COLLIDER");
+    log::warn!("START TRASLATE COLLIDER");
 
-    log::debug!("start position is {:?}", position);
+    log::warn!("start position is {:?}", position);
     
-    log::debug!("start translation is {:?}", translation);
+    log::warn!("start translation is {:?}", translation);
     
-    log::debug!("start distance to nearest object is {}", distance_to_nearest_obj);
+    log::warn!("start distance to nearest object is {}", distance_to_nearest_obj);
     
     // before moving the collider if collider is stuck inside object let's push it out
     if distance_to_nearest_obj <= 0.0 {
 
-        log::debug!("Center of collider is INSIDE object");
+        log::warn!("Center of collider is INSIDE object");
 
         is_collided = true;
 
@@ -292,18 +306,18 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
         while distance_to_nearest_obj <= collider_radius + THRESHOLD {
 
-            log::debug!("INSIDE iteration number {}", iteration_counter);
+            log::warn!("INSIDE iteration number {}", iteration_counter);
             
             if iteration_counter > MAX_COLLIDING_ITERATIONS {
                 
                 panic!("(DEBUG) Physics system error: Colliging iteration INSIDE obj more then {}", MAX_COLLIDING_ITERATIONS);
             }
 
-            log::debug!("INSIDE distance to near obj is {}", distance_to_nearest_obj);
+            log::warn!("INSIDE distance to near obj is {}", distance_to_nearest_obj);
 
             let mut normal = get_normal(position, static_objects);
 
-            log::debug!("INSIDE normal is {:?}", normal);
+            log::warn!("INSIDE normal is {:?}", normal);
 
 
             if distance_to_nearest_obj < 0.0 {
@@ -313,7 +327,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
             position += 
                 normal*(distance_to_nearest_obj.abs()+collider_radius+THRESHOLD);
             
-            log::debug!("INSIDE position after translation is {:?}", position);
+            log::warn!("INSIDE position after translation is {:?}", position);
             
             distance_to_nearest_obj = get_dist(position, static_objects);
         }
@@ -323,7 +337,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
     // if the collider is overlaping the object let's push it out
     while distance_to_nearest_obj < collider_radius {
 
-        log::debug!("OVERLAP iteration number {}", iteration_counter);
+        log::warn!("OVERLAP iteration number {}", iteration_counter);
             
         if iteration_counter > MAX_COLLIDING_ITERATIONS {
             
@@ -334,205 +348,419 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
         let overlap = collider_radius - distance_to_nearest_obj;
 
-        log::debug!("OVERLAP is {}", overlap);
+        log::warn!("OVERLAP is {}", overlap);
 
         let mut normal = get_normal(position, static_objects);
 
-        log::debug!("OVERLAP normal is {:?}", normal);
+        log::warn!("OVERLAP normal is {:?}", normal);
 
         position += normal * (overlap + THRESHOLD);
 
-        log::debug!("OVERLAP position after move is {:?}", position);
+        log::warn!("OVERLAP position after move is {:?}", position);
 
         distance_to_nearest_obj = get_dist(position, static_objects);
 
-        log::debug!("OVERLAP distance to near obj is {}", distance_to_nearest_obj);
-
-        iteration_counter += 1;
-    }
-    
-    let mut iteration_counter = 0u32;
-    // here the collider is guaranteed located outside and does not overlap the object
-    while translation.length().is_normal() {
-
-        log::debug!("start iteration {}", iteration_counter);
-
-        if iteration_counter > MAX_COLLIDING_ITERATIONS {
-            
-            panic!("(DEBUG) Physics system error: Colliging iteration OVERLAP obj more then {}", MAX_COLLIDING_ITERATIONS);
-        }
-
-        log::debug!("position is {:?}", position);
-
-        log::debug!("translation is {:?}", translation);
-            
-        log::debug!("distance to nearest object is {}", distance_to_nearest_obj);
-        
-        let direction = translation.normalize();
-
-        let current_translation =
-            (distance_to_nearest_obj - THRESHOLD * 0.5)
-            .clamp(0.0, translation.length()); 
-
-        position += direction * current_translation;
-
-        let mut distance_to_nearest_obj = get_dist(position, static_objects);
-
-
-        
-
-        // TODO - maybe here need to write code of pushing out collider if if overlaping object
-
-
+        log::warn!("OVERLAP distance to near obj is {}", distance_to_nearest_obj);
 
         iteration_counter += 1;
     }
 
-    return (position - start_position, is_collided);
-
-    let current_distance = get_dist(position, static_objects);
-
-    if distance_to_nearest_obj <= 0.0 {
-
-        while distance_to_nearest_obj <= collider_radius + THRESHOLD {
-            log::debug!("INSIDE distance to near obj is {}", distance_to_nearest_obj);
-
-            let mut normal = get_normal(position, static_objects);
-
-            log::debug!("NORMAL IS {:?}", normal.normalize());
-
-
-            if distance_to_nearest_obj < 0.0 {
-                normal *= -1.0;
-            }
-            
-            position += 
-                normal*(distance_to_nearest_obj.abs()+collider_radius+THRESHOLD);
-            
-            distance_to_nearest_obj = get_dist(position, static_objects);
-        }
-        return (position - start_postition, true);
-    }
-
-
-    let start_postition = position;
+    let allowed_lenght = collider_radius - THRESHOLD; 
     
-    let allowed_lenght = collider_radius * 0.95; 
-
-    
-    let mut distance_to_nearest_obj = get_dist(position, static_objects);
-    
-    // if the collider stuck in some object let's push it out
-    if distance_to_nearest_obj <= 0.0 {
-
-        while distance_to_nearest_obj <= collider_radius + THRESHOLD {
-            log::debug!("INSIDE distance to near obj is {}", distance_to_nearest_obj);
-
-            let mut normal = get_normal(position, static_objects);
-
-            log::debug!("NORMAL IS {:?}", normal.normalize());
-
-
-            if distance_to_nearest_obj < 0.0 {
-                normal *= -1.0;
-            }
-            
-            position += 
-                normal*(distance_to_nearest_obj.abs()+collider_radius+THRESHOLD);
-            
-            distance_to_nearest_obj = get_dist(position, static_objects);
-        }
-        return (position - start_postition, true);
-    }
-
-    // normal collide
     let mut translation_lenght = translation.length();
 
     let mut iter_index = 0u32;
     
     while translation_lenght > 0.0 {
 
-
-        log::debug!("translation length interation index is {}", iter_index);
+        log::warn!("translation length interation index is {}", iter_index);
         iter_index += 1;    
 
-        log::debug!("translation length is {}", translation_lenght);
+        log::warn!("translation length is {}", translation_lenght);
         
-        if translation_lenght > allowed_lenght {
+        if translation_lenght < allowed_lenght {
 
-            translation_lenght -= allowed_lenght;
-
-            translation = translation.normalize() * allowed_lenght;
-        } else {
             translation = translation.normalize() * translation_lenght;
 
             translation_lenght = 0.0;
+        } else {
+            translation_lenght -= allowed_lenght;
+
+            translation = translation.normalize() * allowed_lenght;
         }
 
-        for i in 0..MAX_COLLIDING_ITERATIONS {
+        let mut iteration_counter = 0u32;
+        // here the collider is guaranteed located outside and does not overlap the object
+        while translation.length().is_normal() {
 
-            log::debug!("ITRATION {}", i);
+            log::warn!("start iteration {}", iteration_counter);
 
-            let direction = translation.normalize();
+            if iteration_counter > MAX_COLLIDING_ITERATIONS {
+                
+                panic!("(DEBUG) Physics system error: Colliging iteration OVERLAP obj more then {}", MAX_COLLIDING_ITERATIONS);
+            }
 
-            log::debug!("direction is {}", direction);
-            log::debug!("position is {}", position);
-            log::debug!("translation is {}", translation);
-            
-            position += translation;
+            log::warn!("position is {:?}", position);
 
-            log::debug!("position after translation is {}", position);
+            log::warn!("translation is {:?}", translation);
+                
+            log::warn!("distance to nearest object is {}", distance_to_nearest_obj);
 
-            let mut distance_to_nearest_obj = get_dist(position, static_objects);
+            let distance_from_fin_position = get_dist(position + translation, static_objects);
 
-            log::debug!("distance to near obj is {}", distance_to_nearest_obj);
-
-            // if not colliding end colider translation
-            if distance_to_nearest_obj > collider_radius - THRESHOLD {
-                return (position - start_postition, is_collided);
+            if distance_from_fin_position > collider_radius + THRESHOLD {
+                return ((position + translation) - start_position, is_collided);
             }
 
             is_collided = true;
-
-            // moving collider back if collided  
-            let overlap = collider_radius - distance_to_nearest_obj;
-
-            log::debug!("overlap is {}", overlap);
-
-            let normal = get_normal(position, static_objects);
-
-            log::debug!("normal is {}", normal);
-
-            let coof = normal.dot(direction);
             
-            log::debug!("coof is {}", coof);
+            let direction = translation.normalize();
 
-            let backtrace = if coof.abs() < 0.0001 {
-                position += normal * overlap;
+            // move until collide or end of translation vector
+            
+            let mut distance_to_nearest_obj = get_dist(position, static_objects);
 
-                -translation.length()
+            while
+                distance_to_nearest_obj < collider_radius + THRESHOLD ||
+                !translation.length().is_normal()
+            {
+
+                let current_translation =
+                    (distance_from_fin_position - collider_radius)
+                    .min(translation.length());
+                
+                position += direction * current_translation;
+
+                translation -= direction * current_translation;
+
+                distance_to_nearest_obj = get_dist(position, static_objects);
+            }
+
+            
+
+            // TODO - maybe here need to write code of pushing out collider if if overlaping object
+
+
+
+            iteration_counter += 1;
+        }
+    }
+
+    return (position - start_position, is_collided);
+} */
+
+//     let current_distance = get_dist(position, static_objects);
+
+//     if distance_to_nearest_obj <= 0.0 {
+
+//         while distance_to_nearest_obj <= collider_radius + THRESHOLD {
+//             log::warn!("INSIDE distance to near obj is {}", distance_to_nearest_obj);
+
+//             let mut normal = get_normal(position, static_objects);
+
+//             log::warn!("NORMAL IS {:?}", normal.normalize());
+
+
+//             if distance_to_nearest_obj < 0.0 {
+//                 normal *= -1.0;
+//             }
+            
+//             position += 
+//                 normal*(distance_to_nearest_obj.abs()+collider_radius+THRESHOLD);
+            
+//             distance_to_nearest_obj = get_dist(position, static_objects);
+//         }
+//         return (position - start_postition, true);
+//     }
+
+
+//     let start_postition = position;
+    
+//     let allowed_lenght = collider_radius * 0.95; 
+
+    
+//     let mut distance_to_nearest_obj = get_dist(position, static_objects);
+    
+//     // if the collider stuck in some object let's push it out
+//     if distance_to_nearest_obj <= 0.0 {
+
+//         while distance_to_nearest_obj <= collider_radius + THRESHOLD {
+//             log::warn!("INSIDE distance to near obj is {}", distance_to_nearest_obj);
+
+//             let mut normal = get_normal(position, static_objects);
+
+//             log::warn!("NORMAL IS {:?}", normal.normalize());
+
+
+//             if distance_to_nearest_obj < 0.0 {
+//                 normal *= -1.0;
+//             }
+            
+//             position += 
+//                 normal*(distance_to_nearest_obj.abs()+collider_radius+THRESHOLD);
+            
+//             distance_to_nearest_obj = get_dist(position, static_objects);
+//         }
+//         return (position - start_postition, true);
+//     }
+
+//     // normal collide
+//     let mut translation_lenght = translation.length();
+
+//     let mut iter_index = 0u32;
+    
+//     while translation_lenght > 0.0 {
+
+
+//         log::warn!("translation length interation index is {}", iter_index);
+//         iter_index += 1;    
+
+//         log::warn!("translation length is {}", translation_lenght);
+        
+//         if translation_lenght > allowed_lenght {
+
+//             translation_lenght -= allowed_lenght;
+
+//             translation = translation.normalize() * allowed_lenght;
+//         } else {
+//             translation = translation.normalize() * translation_lenght;
+
+//             translation_lenght = 0.0;
+//         }
+
+//         for i in 0..MAX_COLLIDING_ITERATIONS {
+
+//             log::warn!("ITRATION {}", i);
+
+//             let direction = translation.normalize();
+
+//             log::warn!("direction is {}", direction);
+//             log::warn!("position is {}", position);
+//             log::warn!("translation is {}", translation);
+            
+//             position += translation;
+
+//             log::warn!("position after translation is {}", position);
+
+//             let mut distance_to_nearest_obj = get_dist(position, static_objects);
+
+//             log::warn!("distance to near obj is {}", distance_to_nearest_obj);
+
+//             // if not colliding end colider translation
+//             if distance_to_nearest_obj > collider_radius - THRESHOLD {
+//                 return (position - start_postition, is_collided);
+//             }
+
+//             is_collided = true;
+
+//             // moving collider back if collided  
+//             let overlap = collider_radius - distance_to_nearest_obj;
+
+//             log::warn!("overlap is {}", overlap);
+
+//             let normal = get_normal(position, static_objects);
+
+//             log::warn!("normal is {}", normal);
+
+//             let coof = normal.dot(direction);
+            
+//             log::warn!("coof is {}", coof);
+
+//             let backtrace = if coof.abs() < 0.0001 {
+//                 position += normal * overlap;
+
+//                 -translation.length()
+//             } else {
+
+//                 overlap * 1.0/coof
+//             };
+
+//             log::warn!("backtrace is {}", backtrace);
+
+//             position += direction * backtrace;
+
+//             log::warn!("position after backtrace is {}", position);
+
+//             // collider rebound
+//             translation = direction.reject_from(-normal) * -backtrace;
+
+//             log::warn!("new translation is {}", translation);
+
+//         }
+
+//         panic!("(DEBUG) Physics system error: Colliging iteration more then {}", MAX_COLLIDING_ITERATIONS);
+//     }
+//     (position - start_postition, is_collided)
+// }
+
+
+fn translate_collider(
+    mut position: Vec4,
+    mut translation: Vec4,
+    collider_radius: f32,
+    static_objects: &StaticObjectsData
+) -> (Vec4, bool) {
+
+    let mut is_collide = false;
+
+    let start_position = position;
+
+    log::warn!("start position is {}", start_position);
+
+    // if collider stuck inside object let's push it out
+    if get_dist(position, static_objects) < collider_radius {
+        position = move_collider_outside(position, collider_radius, static_objects);
+        is_collide = true;
+    }
+
+    let mut counter = 0u32;
+
+    while translation.length().is_normal() {
+
+        log::warn!("ITERATION number {}", counter);
+
+        if counter > MAX_COLLIDING_ITERATIONS {
+            panic!("More then max colliding iterations");
+        }
+
+        let dist_on_try_move = get_dist(
+            position + translation.clamp_length_max(collider_radius - THRESHOLD),
+            static_objects
+        );
+
+        if dist_on_try_move - collider_radius > 0.0 {
+            position += translation.clamp_length_max(collider_radius - THRESHOLD);
+
+            if translation.length() < collider_radius - THRESHOLD {
+
+                return (position - start_position, is_collide);
+
             } else {
 
-                overlap * 1.0/coof
-            };
+                translation = translation.clamp_length_max(
+                    translation.length() - (collider_radius - THRESHOLD)
+                );
 
-            log::debug!("backtrace is {}", backtrace);
+                continue;
+            }
+        }
+    
+        // get distance from center of the object to the nearest object    
+        let distance_from_center = get_dist(position, static_objects);
 
-            position += direction * backtrace;
+        log::warn!("distance from the center is {}", distance_from_center);
 
-            log::debug!("position after backtrace is {}", position);
+        let mut distance_from_edge = distance_from_center - collider_radius;
 
-            // collider rebound
-            translation = direction.reject_from(-normal) * -backtrace;
+        log::warn!("distance from the edge is {}", distance_from_edge);
 
-            log::debug!("new translation is {}", translation);
+        // bound if collide
+        if distance_from_edge < THRESHOLD {
+
+            log::warn!("position before moving out is {}", position);
+
+            position = move_collider_outside(position, collider_radius, static_objects);
+
+            distance_from_edge = get_dist(position, static_objects) - collider_radius;
+
+            log::warn!("position after moving out is {}", position);
+
+            log::warn!("BOUND");
+            
+            if distance_from_edge < 0.0 {
+                panic!("ERROR Collideris overlaped object")
+            }
+
+            is_collide = true;
+
+            
+            let normal = get_normal(position, static_objects);
+            
+            log::warn!("normal is {}", normal);
+
+            log::warn!("translation len before reject is {}", translation.length());
+
+            log::warn!("direction is {}", translation.normalize());
+
+            translation = translation.reject_from_normalized(-normal);
+
+            log::warn!("direction after bound is {}", translation.normalize());
+
+            log::warn!("translation len after reject is {}", translation.length());
 
         }
 
-        panic!("(DEBUG) Physics system error: Colliging iteration more then {}", MAX_COLLIDING_ITERATIONS);
+        if distance_from_edge >= translation.length() {
+            position += translation;
+
+            log::warn!("MOVED");
+
+            return (position - start_position, is_collide);
+        }
+
+        position += translation.clamp_length_max(distance_from_edge);
+
+        log::warn!("position after move is {}", position);
+
+        log::warn!("translation length is {}", translation.length());
+
+        translation = translation.clamp_length_max(translation.length() - distance_from_edge);
+
+        log::warn!("translation after change is {}", translation);
+
+        log::warn!("translation length after chage is {}", translation.length());
+        
+        counter += 1;
     }
-    (position - start_postition, is_collided)
-} */
+
+
+    (position - start_position, is_collide)
+}
+
+#[inline]
+fn move_collider_outside(
+    mut position: Vec4,
+    collider_radius: f32,
+    static_objects: &StaticObjectsData
+) -> Vec4 {
+    
+    let mut distance_from_center = get_dist(position, static_objects);
+
+    let mut counter = 0u32;
+
+    while distance_from_center < 0.0 {
+        if counter > MAX_COLLIDING_ITERATIONS {
+            panic!("'move_collider_outside' More the max colliding iterations inside the object")
+        }
+        let normal = get_normal(position, static_objects);
+        position -= normal * (distance_from_center + THRESHOLD);
+        
+        distance_from_center = get_dist(position, static_objects);
+        
+        counter += 1;
+    }
+
+    let mut distance_from_edge = distance_from_center - (collider_radius + THRESHOLD);
+
+    let mut counter = 0u32;
+
+    while distance_from_edge < -0.0001 {
+        if counter > MAX_COLLIDING_ITERATIONS {
+            panic!("'move_collider_outside' More the max colliding iterations when overlapping the object");
+        }
+        let normal = get_normal(position, static_objects);
+
+        position += normal * distance_from_edge.abs();
+
+        distance_from_edge = get_dist(position, static_objects) - (collider_radius + THRESHOLD);
+        
+        log::warn!("'move_collider_outside' disatnce from th edge is {}", distance_from_edge);
+
+        counter += 1;
+    }
+
+    position
+}
 
 #[inline]
 fn get_dist(p: Vec4, static_objects: &StaticObjectsData) -> f32 {
@@ -670,14 +898,14 @@ fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
 
 #[inline]
 fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
-    let a = p + Vec4::new(1.000, 0.000, 0.000, 0.000);
-    let b = p + Vec4::new(-1.000, 0.000, 0.000,0.000);
-    let c = p + Vec4::new(0.000, 1.000, 0.000, 0.000);
-    let d = p + Vec4::new(0.000, -1.000, 0.000, 0.000);
-    let e = p + Vec4::new(0.000, 0.000, 1.000, 0.000);
-    let f = p + Vec4::new(0.000, 0.000, -1.000,0.000);
-    let g = p + Vec4::new(0.000, 0.000, 0.000, 1.000);
-    let h = p + Vec4::new(0.000, 0.000, 0.000, -1.000);
+    let a = p + Vec4::new(THRESHOLD, 0.000, 0.000, 0.000);
+    let b = p + Vec4::new(-THRESHOLD, 0.000, 0.000,0.000);
+    let c = p + Vec4::new(0.000, THRESHOLD, 0.000, 0.000);
+    let d = p + Vec4::new(0.000, -THRESHOLD, 0.000, 0.000);
+    let e = p + Vec4::new(0.000, 0.000, THRESHOLD, 0.000);
+    let f = p + Vec4::new(0.000, 0.000, -THRESHOLD,0.000);
+    let g = p + Vec4::new(0.000, 0.000, 0.000, THRESHOLD);
+    let h = p + Vec4::new(0.000, 0.000, 0.000, -THRESHOLD);
 
     let fa = get_dist(a, static_objects);
     let fb = get_dist(b, static_objects);
