@@ -246,17 +246,17 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
             // log::warn!("normal is {}", normal);
 
-            // let coof = normal.dot(direction);
+            // let coefficient = normal.dot(direction);
             
-            // log::warn!("coof is {}", coof);
+            // log::warn!("coefficient is {}", coefficient);
 
-            // let backtrace = if coof.abs() < 0.0001 {
+            // let backtrace = if coefficient.abs() < 0.0001 {
             //     position += normal * overlap;
 
             //     -translation.length()
             // } else {
 
-            //     overlap * 1.0/coof
+            //     overlap * 1.0/coefficient
             // };
 
             // log::warn!("backtrace is {}", backtrace);
@@ -562,17 +562,17 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
 //             log::warn!("normal is {}", normal);
 
-//             let coof = normal.dot(direction);
+//             let coefficient = normal.dot(direction);
             
-//             log::warn!("coof is {}", coof);
+//             log::warn!("coefficient is {}", coefficient);
 
-//             let backtrace = if coof.abs() < 0.0001 {
+//             let backtrace = if coefficient.abs() < 0.0001 {
 //                 position += normal * overlap;
 
 //                 -translation.length()
 //             } else {
 
-//                 overlap * 1.0/coof
+//                 overlap * 1.0/coefficient
 //             };
 
 //             log::warn!("backtrace is {}", backtrace);
@@ -606,13 +606,7 @@ fn translate_collider(
     let start_position = position;
 
     log::warn!("start position is {}", start_position);
-
-    // if collider stuck inside object let's push it out
-    if get_dist(position, static_objects) < collider_radius {
-        position = move_collider_outside(position, collider_radius, static_objects);
-        is_collide = true;
-    }
-
+    
     let mut counter = 0u32;
 
     while translation.length().is_normal() {
@@ -623,57 +617,21 @@ fn translate_collider(
             panic!("More then max colliding iterations");
         }
 
-        let dist_on_try_move = get_dist(
-            position + translation.clamp_length_max(collider_radius - THRESHOLD),
-            static_objects
-        );
+        // if collider stuck inside object let's push it out
+        let is_pushed = move_collider_outside(&mut position, collider_radius, static_objects);
 
-        if dist_on_try_move - collider_radius > 0.0 {
-            position += translation.clamp_length_max(collider_radius - THRESHOLD);
-
-            if translation.length() < collider_radius - THRESHOLD {
-
-                return (position - start_position, is_collide);
-
-            } else {
-
-                translation = translation.clamp_length_max(
-                    translation.length() - (collider_radius - THRESHOLD)
-                );
-
-                continue;
-            }
-        }
-    
-        // get distance from center of the object to the nearest object    
-        let distance_from_center = get_dist(position, static_objects);
-
-        log::warn!("distance from the center is {}", distance_from_center);
-
-        let mut distance_from_edge = distance_from_center - collider_radius;
+        // get distance from edge of the object to the nearest object
+        let mut distance_from_edge = get_dist(position, static_objects) - collider_radius;
 
         log::warn!("distance from the edge is {}", distance_from_edge);
 
         // bound if collide
-        if distance_from_edge < THRESHOLD {
-
-            log::warn!("position before moving out is {}", position);
-
-            position = move_collider_outside(position, collider_radius, static_objects);
-
-            distance_from_edge = get_dist(position, static_objects) - collider_radius;
-
-            log::warn!("position after moving out is {}", position);
+        if distance_from_edge < THRESHOLD || is_pushed {
 
             log::warn!("BOUND");
-            
-            if distance_from_edge < 0.0 {
-                panic!("ERROR Collideris overlaped object")
-            }
 
             is_collide = true;
 
-            
             let normal = get_normal(position, static_objects);
             
             log::warn!("normal is {}", normal);
@@ -682,49 +640,137 @@ fn translate_collider(
 
             log::warn!("direction is {}", translation.normalize());
 
-            translation = translation.reject_from_normalized(-normal);
+            if normal.dot(translation) < 0.0 {
 
-            log::warn!("direction after bound is {}", translation.normalize());
+                let probable_transltaion_dir = translation.reject_from_normalized(normal).normalize();
 
-            log::warn!("translation len after reject is {}", translation.length());
+                let next_normal = get_normal(
+                    position + probable_transltaion_dir * THRESHOLD,
+                    static_objects
+                );
+
+                log::warn!("next normal is {}", normal);
+
+                let curvature_coefficient = next_normal.dot(probable_transltaion_dir);
+
+                log::warn!("curvature_coefficient is {}", curvature_coefficient);
+
+                if curvature_coefficient < 0.0 {
+
+                    let prev_normal = get_normal(
+                        position - probable_transltaion_dir * THRESHOLD,
+                        static_objects
+                    );
+
+                    log::warn!("prev normal is {}", prev_normal);
+
+                    if next_normal.dot(translation) < 0.0 {
+                        
+                        translation = translation.reject_from_normalized(next_normal);
+                        
+                        log::warn!("direction after first bound is {}", translation.normalize());
+
+                        log::warn!("translation len after first reject is {}", translation.length());
+                    }
+
+                    if prev_normal.dot(translation) < 0.0 {
+
+                        translation = translation.reject_from_normalized(prev_normal);
+
+                        log::warn!("direction after second bound is {}", translation.normalize());
+
+                        log::warn!("translation len after second reject is {}", translation.length());    
+                    }
+
+                } else {
+
+                    translation = translation.reject_from_normalized(normal);
+
+                    log::warn!("direction after bound is {}", translation.normalize());
+
+                    log::warn!("translation len after reject is {}", translation.length());
+                }
+            }
+
+            // position = move_collider_outside(position, collider_radius, static_objects);
+
+            // log::warn!("position after moving out is {}", position);
+
+            
+            // if distance_from_edge < 0.0 {
+            //     panic!("ERROR Collideris overlaped object")
+            // }
 
         }
 
-        if distance_from_edge >= translation.length() {
-            position += translation;
+        let dist_on_try_move = get_dist(
+            position + translation.clamp_length_max(collider_radius - THRESHOLD),
+            static_objects
+        );
 
-            log::warn!("MOVED");
+        if dist_on_try_move - collider_radius > 0.0 {
 
-            return (position - start_position, is_collide);
+            position += translation.clamp_length_max(collider_radius - THRESHOLD);
+
+            if translation.length() < collider_radius - THRESHOLD {
+
+                return (position - start_position, is_collide);
+
+            } else {
+                translation = translation.clamp_length_max(
+                    (translation.length() - (collider_radius - THRESHOLD)).max(0.0)
+                );
+
+                counter += 1;
+                continue;
+            }
         }
 
-        position += translation.clamp_length_max(distance_from_edge);
+        let mut translation_length = translation.length();
 
-        log::warn!("position after move is {}", position);
+        let translation_dir = translation.normalize();
 
-        log::warn!("translation length is {}", translation.length());
+        let small_steps_counter = 0u32;
 
-        translation = translation.clamp_length_max(translation.length() - distance_from_edge);
+        while translation_length > 0.0 {
 
-        log::warn!("translation after change is {}", translation);
+            if small_steps_counter > MAX_COLLIDING_ITERATIONS {
+                panic!("More then max colliding small steps iterations");
+            }
 
-        log::warn!("translation length after chage is {}", translation.length());
-        
+            let current_translation_len = translation_length.min(distance_from_edge.max(THRESHOLD));
+
+            position += translation_dir * current_translation_len;
+
+            translation_length -= current_translation_len;
+
+            distance_from_edge = get_dist(position, static_objects) - collider_radius;
+            
+            translation = translation_dir * translation_length;
+            
+            if distance_from_edge < 0.0 {
+                break;
+            }
+        }
+
         counter += 1;
     }
-
 
     (position - start_position, is_collide)
 }
 
 #[inline]
 fn move_collider_outside(
-    mut position: Vec4,
+    position: &mut Vec4,
     collider_radius: f32,
     static_objects: &StaticObjectsData
-) -> Vec4 {
+) -> bool {
+
+    let mut pos = *position;
+
+    let mut is_collided = false;
     
-    let mut distance_from_center = get_dist(position, static_objects);
+    let mut distance_from_center = get_dist(pos, static_objects);
 
     let mut counter = 0u32;
 
@@ -732,34 +778,40 @@ fn move_collider_outside(
         if counter > MAX_COLLIDING_ITERATIONS {
             panic!("'move_collider_outside' More the max colliding iterations inside the object")
         }
-        let normal = get_normal(position, static_objects);
-        position -= normal * (distance_from_center + THRESHOLD);
+        is_collided = true;
+
+        let normal = get_normal(pos, static_objects);
+        pos -= normal * (distance_from_center + THRESHOLD);
         
-        distance_from_center = get_dist(position, static_objects);
+        distance_from_center = get_dist(pos, static_objects);
         
         counter += 1;
     }
 
-    let mut distance_from_edge = distance_from_center - (collider_radius + THRESHOLD);
+    let mut distance_from_edge = distance_from_center - collider_radius;
 
     let mut counter = 0u32;
 
-    while distance_from_edge < -0.0001 {
+    while distance_from_edge < 0.0 {
         if counter > MAX_COLLIDING_ITERATIONS {
             panic!("'move_collider_outside' More the max colliding iterations when overlapping the object");
         }
-        let normal = get_normal(position, static_objects);
+        is_collided = true;
 
-        position += normal * distance_from_edge.abs();
+        let normal = get_normal(pos, static_objects);
 
-        distance_from_edge = get_dist(position, static_objects) - (collider_radius + THRESHOLD);
+        pos += normal * distance_from_edge.abs().max(THRESHOLD * 0.25);
+
+        distance_from_edge = get_dist(pos, static_objects) - collider_radius;
         
         log::warn!("'move_collider_outside' disatnce from th edge is {}", distance_from_edge);
 
         counter += 1;
     }
 
-    position
+    *position = pos;
+
+    is_collided
 }
 
 #[inline]
@@ -831,81 +883,16 @@ fn sd_box(p: Vec4, b: Vec4) -> f32 {
     return f32::min(f32::max(d.x,f32::max(d.y,f32::max(d.z, d.w))),0.0) + d.max(Vec4::ZERO).length();
 }
 
-/*#[inline]
-fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
-    let a = p + Vec4::new(-0.001, 0.001, 0.001, 0.001);
-    let b = p + Vec4::new(0.001, -0.001, 0.001,-0.001);
-    let c = p + Vec4::new(0.001, 0.001, -0.001, 0.001);
-    let d = p + Vec4::new(-0.001, -0.001, -0.001, -0.001);
-
-    let fa = get_dist(a, static_objects);
-    let fb = get_dist(b, static_objects);
-    let fc = get_dist(c, static_objects);
-    let fd = get_dist(d, static_objects);
-
-    let mut normal = 
-        Vec4::new(-0.001, 0.001, 0.001, 0.0) * fa +
-        Vec4::new(0.001, -0.001, 0.001, 0.0) * fb +
-        Vec4::new(0.001, 0.001, -0.001, 0.0) * fc +
-        Vec4::new(-0.001, -0.001, -0.001, 0.0) * fd;
-
-    // if we are stuck in surface normal will be zero length
-    // let's make some random normal in this case 
-    while normal.try_normalize().is_none() {
-
-        // let mut bytes : [u8;4] = [0,0,0,0];
-        // let res = getrandom::getrandom(&mut bytes);
-        
-        // if let Err(err) = res {
-        //     panic!("Can't make random f32 in get_normal fnction");
-        // }
-        // let x: f32 = f32::from_be_bytes(bytes);
-
-
-        // let mut bytes : [u8;4] = [0,0,0,0];
-        // let res = getrandom::getrandom(&mut bytes);
-        
-        // if let Err(err) = res {
-        //     panic!("Can't make random f32 in get_normal fnction");
-        // }
-        // let y: f32 = f32::from_be_bytes(bytes);
-
-
-        // let mut bytes : [u8;4] = [0,0,0,0];
-        // let res = getrandom::getrandom(&mut bytes);
-        
-        // if let Err(err) = res {
-        //     panic!("Can't make random f32 in get_normal fnction");
-        // }
-        // let z: f32 = f32::from_be_bytes(bytes);
-
-
-        // let mut bytes : [u8;4] = [0,0,0,0];
-        // let res = getrandom::getrandom(&mut bytes);
-        
-        // if let Err(err) = res {
-        //     panic!("Can't make random f32 in get_normal fnction");
-        // }
-        // let w: f32 = f32::from_be_bytes(bytes);
-        
-
-        // normal = Vec4::new(x, y, z, w);
-        normal = Vec4::new(0.0, 1.0, 0.0, 1.0);
-    }
-    normal.normalize()
-}*/
-
-
 #[inline]
 fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
-    let a = p + Vec4::new(THRESHOLD, 0.000, 0.000, 0.000);
-    let b = p + Vec4::new(-THRESHOLD, 0.000, 0.000,0.000);
-    let c = p + Vec4::new(0.000, THRESHOLD, 0.000, 0.000);
-    let d = p + Vec4::new(0.000, -THRESHOLD, 0.000, 0.000);
-    let e = p + Vec4::new(0.000, 0.000, THRESHOLD, 0.000);
-    let f = p + Vec4::new(0.000, 0.000, -THRESHOLD,0.000);
-    let g = p + Vec4::new(0.000, 0.000, 0.000, THRESHOLD);
-    let h = p + Vec4::new(0.000, 0.000, 0.000, -THRESHOLD);
+    let a = p + Vec4::new(HALF_THRESHOLD, 0.000, 0.000, 0.000);
+    let b = p + Vec4::new(-HALF_THRESHOLD, 0.000, 0.000,0.000);
+    let c = p + Vec4::new(0.000, HALF_THRESHOLD, 0.000, 0.000);
+    let d = p + Vec4::new(0.000, -HALF_THRESHOLD, 0.000, 0.000);
+    let e = p + Vec4::new(0.000, 0.000, HALF_THRESHOLD, 0.000);
+    let f = p + Vec4::new(0.000, 0.000, -HALF_THRESHOLD,0.000);
+    let g = p + Vec4::new(0.000, 0.000, 0.000, HALF_THRESHOLD);
+    let h = p + Vec4::new(0.000, 0.000, 0.000, -HALF_THRESHOLD);
 
     let fa = get_dist(a, static_objects);
     let fb = get_dist(b, static_objects);
@@ -916,7 +903,7 @@ fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
     let fg = get_dist(g, static_objects);
     let fh = get_dist(h, static_objects);
 
-    let mut normal = 
+    let normal = 
         Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
         Vec4::new(-1.000, 0.000, 0.000,0.000) * fb +
         Vec4::new(0.000, 1.000, 0.000, 0.000) * fc +
@@ -928,47 +915,56 @@ fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
 
     // if the collider is stuck in object's surface normal will be zero length
     // let's make some random normal in this case 
-    while normal.try_normalize().is_none() {
-
-        // let mut bytes : [u8;4] = [0,0,0,0];
-        // let res = getrandom::getrandom(&mut bytes);
-        
-        // if let Err(err) = res {
-        //     panic!("Can't make random f32 in get_normal fnction");
-        // }
-        // let x: f32 = f32::from_be_bytes(bytes);
-
-
-        // let mut bytes : [u8;4] = [0,0,0,0];
-        // let res = getrandom::getrandom(&mut bytes);
-        
-        // if let Err(err) = res {
-        //     panic!("Can't make random f32 in get_normal fnction");
-        // }
-        // let y: f32 = f32::from_be_bytes(bytes);
-
-
-        // let mut bytes : [u8;4] = [0,0,0,0];
-        // let res = getrandom::getrandom(&mut bytes);
-        
-        // if let Err(err) = res {
-        //     panic!("Can't make random f32 in get_normal fnction");
-        // }
-        // let z: f32 = f32::from_be_bytes(bytes);
-
-
-        // let mut bytes : [u8;4] = [0,0,0,0];
-        // let res = getrandom::getrandom(&mut bytes);
-        
-        // if let Err(err) = res {
-        //     panic!("Can't make random f32 in get_normal fnction");
-        // }
-        // let w: f32 = f32::from_be_bytes(bytes);
-        
-
-        // normal = Vec4::new(x, y, z, w);
-        normal = Vec4::new(0.0, 1.0, 0.0, 1.0);
+    if let Some(normal) = normal.try_normalize() {
+        return normal;
+    } else {
+        return random_vec().normalize();
     }
-    normal.normalize()
 }
 
+
+fn random_vec() -> Vec4 {
+    let mut bytes : [u8;4] = [0,0,0,0];
+    let res = getrandom::getrandom(&mut bytes);
+    
+    if let Err(err) = res {
+        panic!("Can't make random f32 in random_vec fnction");
+    }
+    let x: f32 = f32::from_be_bytes(bytes);
+
+
+    let mut bytes : [u8;4] = [0,0,0,0];
+    let res = getrandom::getrandom(&mut bytes);
+    
+    if let Err(err) = res {
+        panic!("Can't make random f32 in random_vec fnction");
+    }
+    let y: f32 = f32::from_be_bytes(bytes);
+
+
+    let mut bytes : [u8;4] = [0,0,0,0];
+    let res = getrandom::getrandom(&mut bytes);
+    
+    if let Err(err) = res {
+        panic!("Can't make random f32 in random_vec fnction");
+    }
+    let z: f32 = f32::from_be_bytes(bytes);
+
+
+    let mut bytes : [u8;4] = [0,0,0,0];
+    let res = getrandom::getrandom(&mut bytes);
+    
+    if let Err(err) = res {
+        panic!("Can't make random f32 in random_vec fnction");
+    }
+    let w: f32 = f32::from_be_bytes(bytes);
+    
+
+    let mut new_vec = Vec4::new(x, y, z, w);
+
+    if !new_vec.length().is_normal() {
+        new_vec = random_vec();
+    }
+
+    new_vec
+}

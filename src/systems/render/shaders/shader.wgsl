@@ -232,9 +232,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let normal: vec3<f32> = get_normal(dist_and_depth.x * ray_direction + cam_pos);
 
-    let shade_coof: f32 = dot(normal, normalize(vec3<f32>(0.2, 1., 0.5)));
+    let shade_coefficient: f32 = dot(normal, normalize(vec3<f32>(0.2, 1., 0.5)));
 
-    let shade = mix(0.31, 0.9, shade_coof);
+    let shade = mix(0.31, 0.9, shade_coefficient);
 
     var color: vec3<f32> = vec3<f32>(shade * 1.33) + (dist_and_depth.x / MAX_DIST);
 
