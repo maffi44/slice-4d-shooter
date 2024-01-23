@@ -8,10 +8,10 @@ use glam::{
     Mat4,
 };
 
-const MAX_SPEED : f32 = 20.0;
-const MAX_ACCEL : f32 = 25.0;
+const MAX_SPEED : f32 = 24.0;
+const MAX_ACCEL : f32 = 28.0;
 const HEALTH: i32 = 100_i32;
-const JUMP_Y_SPEED: f32 = 14.0;
+const JUMP_Y_SPEED: f32 = 12.0;
 const JUMP_W_SPEED: f32 = 0.1;
 
 const GRAVITY: f32 = -0.3;
@@ -41,6 +41,7 @@ impl PlayerInnerState {
                 transform,
                 MAX_SPEED,
                 MAX_ACCEL,
+                0.5,
             ),
             hp: HEALTH,
             view_angle: Vec2::ZERO,
@@ -82,6 +83,9 @@ pub struct Player {
 
     devices: [Option<Box<dyn Device>>; 4],
 
+    is_gravity_y_enabled: bool,
+    is_gravity_w_enabled: bool,
+
     pub master: InputMaster,
 }
 
@@ -98,6 +102,9 @@ impl Player {
             hands_slot_1: None,
             hands_slot_2: None,
             hands_slot_3: None,
+
+            is_gravity_y_enabled: true,
+            is_gravity_w_enabled: false,
 
             devices: [None, None, None, None],
 
@@ -220,20 +227,54 @@ impl Player {
             movement_vec = vec;
         }
 
-        if self.get_collider().is_enable {
-            movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
-        } else {
-            movement_vec = xz_player_rotation * movement_vec;
+        if input.mode_1.is_action_just_pressed {
+            self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
         }
 
-        self.inner_state.collision.set_wish_direction(movement_vec);
+        if input.mode_2.is_action_just_pressed {
+            self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
+        }
 
+        if input.mode_3.is_action_just_pressed {
+            self.get_mut_collider().is_enable = !self.get_mut_collider().is_enable;
+        }
+
+        if self.get_collider().is_enable {
+
+            if self.is_gravity_y_enabled {
+                movement_vec = xz_player_rotation * movement_vec;
+
+                if self.get_collider().is_on_ground {
+                    self.inner_state.collision.set_wish_direction(movement_vec, 1.0);
+                } else {
+                    self.inner_state.collision.set_wish_direction(movement_vec, 0.3);
+                }
+
+                self.inner_state.collision.add_force(Vec4::Y * GRAVITY);
+            } else {
+               movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+
+               self.inner_state.collision.set_wish_direction(movement_vec, 1.0);
+
+            }
+
+            if self.is_gravity_w_enabled {
+                self.inner_state.collision.add_force(Vec4::W * GRAVITY);
+            }
+
+        } else {
+            movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+
+            self.inner_state.collision.set_wish_direction(movement_vec, 1.0);
+        }
 
         if input.jump.is_action_just_pressed() {
-            self.inner_state.collision.add_force(Vec4::Y * JUMP_Y_SPEED);
+            if self.get_collider().is_on_ground {
+
+                self.inner_state.collision.add_force(Vec4::Y * JUMP_Y_SPEED);
+            }
         }
 
-        self.inner_state.collision.add_force(Vec4::Y * GRAVITY);
 
         if input.w_up.is_action_pressed() {
             self.inner_state.collision.add_force(Vec4::W * GRAVITY * -2.0);
@@ -243,13 +284,9 @@ impl Player {
             self.inner_state.collision.add_force(Vec4::W * GRAVITY * 2.0);
         }
 
-
-        // self.inner_state.collision.add_force(Vec4::W * GRAVITY);
-        
-
-        // if input.crouch.is_action_just_pressed() {
-        //     self.inner_state.collision.add_force(Vec4::W * JUMP_W_SPEED);
-        // };
+        if input.crouch.is_action_just_pressed() {
+            self.inner_state.collision.add_force(Vec4::W * GRAVITY * -2.0);
+        };
 
     }
 

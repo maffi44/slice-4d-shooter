@@ -38,7 +38,10 @@ pub struct ActionsFrameState {
     pub move_left: Action,
     pub w_down: Action,
     pub w_up: Action,
-    pub crouch: Action,     
+    pub crouch: Action,   
+    pub mode_1: Action,
+    pub mode_2: Action,  
+    pub mode_3: Action,  
     pub jump: Action,
     pub fire: Action,
     pub mouse_axis: Vec2,
@@ -55,6 +58,9 @@ impl ActionsFrameState {
         let mut w_up = Action::new();
         let mut jump = Action::new();
         let mut fire = Action::new();
+        let mut mode_1 = Action::new();
+        let mut mode_2 = Action::new();
+        let mut mode_3 = Action::new();
         let mouse_axis = mouse_axis;
         
         for (_, (button_action, action)) in actions_table.iter() {
@@ -68,6 +74,9 @@ impl ActionsFrameState {
                 ButtonActions::Fire => fire = action.clone(),
                 ButtonActions::WDown => w_down = action.clone(),
                 ButtonActions::WUp => w_up = action.clone(),
+                ButtonActions::ModeOne => mode_1 = action.clone(),
+                ButtonActions::ModeTwo => mode_2 = action.clone(),
+                ButtonActions::ModeThree => mode_3 = action.clone(),
             }
         }
 
@@ -81,6 +90,9 @@ impl ActionsFrameState {
             w_up,
             jump,
             fire,
+            mode_1,
+            mode_2,
+            mode_3,
             mouse_axis
         }
     }
@@ -95,6 +107,9 @@ impl ActionsFrameState {
         let w_down = Action::new();
         let jump = Action::new();
         let fire = Action::new();
+        let mode_1 = Action::new();
+        let mode_2 = Action::new();
+        let mode_3 = Action::new();
         let mouse_axis = Vec2::ZERO;
 
         ActionsFrameState {
@@ -107,6 +122,9 @@ impl ActionsFrameState {
             w_up,
             jump,
             fire,
+            mode_1,
+            mode_2,
+            mode_3,
             mouse_axis
         }
     }
@@ -132,6 +150,9 @@ enum ButtonActions {
     Jump,
     WUp,
     WDown,
+    ModeOne,
+    ModeTwo,
+    ModeThree,
     Fire,
 }
 
@@ -187,10 +208,21 @@ impl InputSystem {
             (ButtonActions::WDown, Action::new())
         );
         actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Digit1),
+            (ButtonActions::ModeOne, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Digit2),
+            (ButtonActions::ModeTwo, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Digit3),
+            (ButtonActions::ModeThree, Action::new())
+        );
+        actions_table.insert(
             SomeButton::MouseButton(MouseButton::Left),
             (ButtonActions::Fire, Action::new())
         );
-    
         InputSystem {
             actions_table,
             mouse_axis: Vec2::ZERO,
