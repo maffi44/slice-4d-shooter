@@ -115,7 +115,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
     let start_postition = position;
     
-    let mut distance_to_nearest_obj = get_dist(position, static_objects);
+    let mut distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
     
     // if the collider stuck in some object let's push it out
     if distance_to_nearest_obj <= 0.0 {
@@ -135,7 +135,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
             position += 
                 normal*(distance_to_nearest_obj.abs()+collider_radius+THRESHOLD);
             
-            distance_to_nearest_obj = get_dist(position, static_objects);
+            distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
         }
         return (position - start_postition, true);
     }
@@ -165,7 +165,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
         log::warn!("OVERLAP position after move is {:?}", position);
 
-        distance_to_nearest_obj = get_dist(position, static_objects);
+        distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
 
         log::warn!("OVERLAP distance to near obj is {}", distance_to_nearest_obj);
 
@@ -228,7 +228,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
                 
                 translation -= direction * distance_to_collide;
                 
-                distance_to_nearest_obj = get_dist(position, static_objects);
+                distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
             }
 
             // if collider transltion is overlapping some object
@@ -285,7 +285,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
     let start_position = position;
 
-    let mut distance_to_nearest_obj = get_dist(position, static_objects);
+    let mut distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
     
     log::warn!("START TRASLATE COLLIDER");
 
@@ -329,7 +329,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
             
             log::warn!("INSIDE position after translation is {:?}", position);
             
-            distance_to_nearest_obj = get_dist(position, static_objects);
+            distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
         }
     }
 
@@ -358,7 +358,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
         log::warn!("OVERLAP position after move is {:?}", position);
 
-        distance_to_nearest_obj = get_dist(position, static_objects);
+        distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
 
         log::warn!("OVERLAP distance to near obj is {}", distance_to_nearest_obj);
 
@@ -418,7 +418,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
             // move until collide or end of translation vector
             
-            let mut distance_to_nearest_obj = get_dist(position, static_objects);
+            let mut distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
 
             while
                 distance_to_nearest_obj < collider_radius + THRESHOLD ||
@@ -433,7 +433,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
                 translation -= direction * current_translation;
 
-                distance_to_nearest_obj = get_dist(position, static_objects);
+                distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
             }
 
             
@@ -449,7 +449,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
     return (position - start_position, is_collided);
 } */
 
-//     let current_distance = get_dist(position, static_objects);
+//     let current_distance = get_dist(position, collider_radius, static_objects);
 
 //     if distance_to_nearest_obj <= 0.0 {
 
@@ -468,7 +468,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 //             position += 
 //                 normal*(distance_to_nearest_obj.abs()+collider_radius+THRESHOLD);
             
-//             distance_to_nearest_obj = get_dist(position, static_objects);
+//             distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
 //         }
 //         return (position - start_postition, true);
 //     }
@@ -479,7 +479,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 //     let allowed_lenght = collider_radius * 0.95; 
 
     
-//     let mut distance_to_nearest_obj = get_dist(position, static_objects);
+//     let mut distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
     
 //     // if the collider stuck in some object let's push it out
 //     if distance_to_nearest_obj <= 0.0 {
@@ -499,7 +499,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 //             position += 
 //                 normal*(distance_to_nearest_obj.abs()+collider_radius+THRESHOLD);
             
-//             distance_to_nearest_obj = get_dist(position, static_objects);
+//             distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
 //         }
 //         return (position - start_postition, true);
 //     }
@@ -542,7 +542,7 @@ fn translate_collider(mut position: Vec4, mut translation: Vec4, collider_radius
 
 //             log::warn!("position after translation is {}", position);
 
-//             let mut distance_to_nearest_obj = get_dist(position, static_objects);
+//             let mut distance_to_nearest_obj = get_dist(position, collider_radius, static_objects);
 
 //             log::warn!("distance to near obj is {}", distance_to_nearest_obj);
 
@@ -621,7 +621,7 @@ fn translate_collider(
         let is_pushed = move_collider_outside(&mut position, collider_radius, static_objects);
 
         // get distance from edge of the object to the nearest object
-        let mut distance_from_edge = get_dist(position, static_objects) - collider_radius;
+        let mut distance_from_edge = get_dist(position, collider_radius, static_objects) - collider_radius;
 
         log::warn!("distance from the edge is {}", distance_from_edge);
 
@@ -632,7 +632,7 @@ fn translate_collider(
 
             is_collide = true;
 
-            let normal = get_normal(position, static_objects);
+            let normal = get_normal(position, collider_radius, static_objects);
             
             log::warn!("normal is {}", normal);
 
@@ -646,6 +646,7 @@ fn translate_collider(
 
                 let next_normal = get_normal(
                     position + probable_transltaion_dir * THRESHOLD,
+                    collider_radius,
                     static_objects
                 );
 
@@ -659,6 +660,7 @@ fn translate_collider(
 
                     let prev_normal = get_normal(
                         position - probable_transltaion_dir * THRESHOLD,
+                        collider_radius,
                         static_objects
                     );
 
@@ -705,6 +707,7 @@ fn translate_collider(
 
         let dist_on_try_move = get_dist(
             position + translation.clamp_length_max(collider_radius - THRESHOLD),
+            collider_radius,
             static_objects
         );
 
@@ -746,7 +749,7 @@ fn translate_collider(
 
             translation_length -= current_translation_len;
 
-            distance_from_edge = get_dist(position, static_objects) - collider_radius;
+            distance_from_edge = get_dist(position, collider_radius, static_objects) - collider_radius;
 
             translation = translation_dir * translation_length;
             
@@ -770,7 +773,7 @@ fn translate_collider(
                     
                     position += translation_dir * distance_from_edge.min(-THRESHOLD);
 
-                    distance_from_edge = get_dist(position, static_objects) - collider_radius;
+                    distance_from_edge = get_dist(position, collider_radius, static_objects) - collider_radius;
 
                     small_backward_steps_counter += 1u32;
                 }
@@ -799,7 +802,7 @@ fn move_collider_outside(
 
     let mut is_collided = false;
     
-    let mut distance_from_center = get_dist(pos, static_objects);
+    let mut distance_from_center = get_dist(pos, collider_radius, static_objects);
 
     let mut counter = 0u32;
 
@@ -809,10 +812,10 @@ fn move_collider_outside(
         }
         is_collided = true;
 
-        let normal = get_normal(pos, static_objects);
+        let normal = get_normal(pos, collider_radius, static_objects);
         pos -= normal * (distance_from_center + THRESHOLD);
         
-        distance_from_center = get_dist(pos, static_objects);
+        distance_from_center = get_dist(pos, collider_radius, static_objects);
         
         counter += 1;
     }
@@ -839,7 +842,7 @@ fn move_collider_outside(
 
                 pos += normal * distance_from_edge.abs().max(THRESHOLD * 0.25);
 
-                distance_from_edge = get_dist(pos, static_objects) - collider_radius;
+                distance_from_edge = get_dist(pos, collider_radius, static_objects) - collider_radius;
         
             }
             
@@ -847,11 +850,11 @@ fn move_collider_outside(
         }
         is_collided = true;
 
-        let normal = get_normal(pos, static_objects);
+        let normal = get_normal(pos, collider_radius, static_objects);
 
         pos += normal * distance_from_edge.abs().max(THRESHOLD * 0.25);
 
-        distance_from_edge = get_dist(pos, static_objects) - collider_radius;
+        distance_from_edge = get_dist(pos, collider_radius, static_objects) - collider_radius;
         
         log::warn!("'move_collider_outside' disatnce from th edge is {}", distance_from_edge);
 
@@ -864,7 +867,101 @@ fn move_collider_outside(
 }
 
 #[inline]
-fn get_dist(p: Vec4, static_objects: &StaticObjectsData) -> f32 {
+fn get_dist(p: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> f32 {
+    let mut d = f32::MAX;
+
+    for (position, size) in static_objects.cubes.iter() {
+         d = d.min(sd_box(p - position.clone(), size.clone()));
+    }
+    for (position, size) in static_objects.inf_w_cubes.iter() {
+        d = d.min(sd_inf_box(p - position.clone(), size.xyz()));
+    }
+    for (position, size) in static_objects.spheres.iter() {
+        d = d.min(sd_sphere(p - position.clone(), size.x));
+    }
+    for (position, size) in static_objects.shpcubes.iter() {
+        d = d.min(sd_sph_box(p - position.clone(), size.clone()));
+    }
+
+    for (position, size) in static_objects.neg_cubes.iter() {
+        let dist = sd_box(p - position.clone(), size.clone());
+        
+        if dist > 0.0 && dist < collider_radius {
+
+            log::warn!("OVERLAP");
+
+            let new_dist = get_dist_from_overlap_negative(p, dist, collider_radius, static_objects);
+
+            d = d.max(new_dist);
+
+        } else {
+            d = d.max(-dist);
+        }
+
+    }
+    for (position, size) in static_objects.neg_inf_w_cubes.iter() {
+        let dist = sd_inf_box(p - position.clone(), size.xyz());
+
+        if dist > 0.0 && dist < collider_radius {
+            
+            let new_dist = get_dist_from_overlap_negative(p, dist, collider_radius, static_objects);
+
+            d = d.max(new_dist);
+
+        } else {
+            d = d.max(-dist);
+        }
+    }
+    for (position, size) in static_objects.neg_spheres.iter() {
+        let dist = sd_sphere(p - position.clone(),size.x);
+
+        if dist > 0.0 && dist < collider_radius {
+            
+            let new_dist = get_dist_from_overlap_negative(p, dist, collider_radius, static_objects);
+
+            d = d.max(new_dist);
+
+        } else {
+            d = d.max(-dist);
+        }
+    }
+    for (position, size) in static_objects.neg_shpcubes.iter() {
+        let dist = sd_sph_box(p - position.clone(), size.clone());
+
+        if dist > 0.0 && dist < collider_radius {
+            
+            let new_dist = get_dist_from_overlap_negative(p, dist, collider_radius, static_objects);
+
+            d = d.max(new_dist);
+
+        } else {
+            d = d.max(-dist);
+        }
+    }
+
+    return d;
+}
+
+#[inline]
+fn get_dist_from_overlap_negative(position: Vec4, current_dist: f32, collider_radius: f32, static_objects: &StaticObjectsData) -> f32 {
+    let normal = get_normal_only_positive(position, collider_radius, static_objects);
+    
+    let temp_postition = position - (normal * (current_dist + THRESHOLD));
+
+    let dist_from_temp_pos = get_dist_without_overlap(temp_postition, static_objects);
+
+    let normal_from_temp_pos = get_normal_without_overlap(temp_postition, static_objects);
+
+    let nearest_pos = temp_postition - (normal_from_temp_pos * dist_from_temp_pos);
+
+    let new_dist = position.distance(nearest_pos);
+
+    new_dist
+
+}
+
+#[inline]
+fn get_dist_without_overlap(p: Vec4, static_objects: &StaticObjectsData) -> f32 {
     let mut d = f32::MAX;
 
     for (position, size) in static_objects.cubes.iter() {
@@ -894,6 +991,103 @@ fn get_dist(p: Vec4, static_objects: &StaticObjectsData) -> f32 {
     }
 
     return d;
+}
+
+#[inline]
+fn get_normal_without_overlap(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
+    let a = p + Vec4::new(HALF_THRESHOLD, 0.000, 0.000, 0.000);
+    let b = p + Vec4::new(-HALF_THRESHOLD, 0.000, 0.000,0.000);
+    let c = p + Vec4::new(0.000, HALF_THRESHOLD, 0.000, 0.000);
+    let d = p + Vec4::new(0.000, -HALF_THRESHOLD, 0.000, 0.000);
+    let e = p + Vec4::new(0.000, 0.000, HALF_THRESHOLD, 0.000);
+    let f = p + Vec4::new(0.000, 0.000, -HALF_THRESHOLD,0.000);
+    let g = p + Vec4::new(0.000, 0.000, 0.000, HALF_THRESHOLD);
+    let h = p + Vec4::new(0.000, 0.000, 0.000, -HALF_THRESHOLD);
+
+    let fa = get_dist_without_overlap(a, static_objects);
+    let fb = get_dist_without_overlap(b, static_objects);
+    let fc = get_dist_without_overlap(c, static_objects);
+    let fd = get_dist_without_overlap(d, static_objects);
+    let fe = get_dist_without_overlap(e, static_objects);
+    let ff = get_dist_without_overlap(f, static_objects);
+    let fg = get_dist_without_overlap(g, static_objects);
+    let fh = get_dist_without_overlap(h, static_objects);
+
+    let normal = 
+        Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
+        Vec4::new(-1.000, 0.000, 0.000,0.000) * fb +
+        Vec4::new(0.000, 1.000, 0.000, 0.000) * fc +
+        Vec4::new(0.000, -1.000, 0.000, 0.000) * fd +
+        Vec4::new(0.000, 0.000, 1.000, 0.000) * fe +
+        Vec4::new(0.000, 0.000, -1.000,0.000) * ff +
+        Vec4::new(0.000, 0.000, 0.000, 1.000) * fg +
+        Vec4::new(0.000, 0.000, 0.000, -1.000) * fh;
+
+    // if the collider is stuck in object's surface normal will be zero length
+    // let's make some random normal in this case 
+    if let Some(normal) = normal.try_normalize() {
+        return normal;
+    } else {
+        return random_vec().normalize();
+    }
+}
+
+#[inline]
+fn get_dist_only_positive(p: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> f32 {
+    let mut d = f32::MAX;
+
+    for (position, size) in static_objects.cubes.iter() {
+         d = d.min(sd_box(p - position.clone(), size.clone()));
+    }
+    for (position, size) in static_objects.inf_w_cubes.iter() {
+        d = d.min(sd_inf_box(p - position.clone(), size.xyz()));
+    }
+    for (position, size) in static_objects.spheres.iter() {
+        d = d.min(sd_sphere(p - position.clone(), size.x));
+    }
+    for (position, size) in static_objects.shpcubes.iter() {
+        d = d.min(sd_sph_box(p - position.clone(), size.clone()));
+    }
+    return d;
+}
+
+#[inline]
+fn get_normal_only_positive(p: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> Vec4 {
+    let a = p + Vec4::new(HALF_THRESHOLD, 0.000, 0.000, 0.000);
+    let b = p + Vec4::new(-HALF_THRESHOLD, 0.000, 0.000,0.000);
+    let c = p + Vec4::new(0.000, HALF_THRESHOLD, 0.000, 0.000);
+    let d = p + Vec4::new(0.000, -HALF_THRESHOLD, 0.000, 0.000);
+    let e = p + Vec4::new(0.000, 0.000, HALF_THRESHOLD, 0.000);
+    let f = p + Vec4::new(0.000, 0.000, -HALF_THRESHOLD,0.000);
+    let g = p + Vec4::new(0.000, 0.000, 0.000, HALF_THRESHOLD);
+    let h = p + Vec4::new(0.000, 0.000, 0.000, -HALF_THRESHOLD);
+
+    let fa = get_dist_only_positive(a, collider_radius, static_objects);
+    let fb = get_dist_only_positive(b, collider_radius, static_objects);
+    let fc = get_dist_only_positive(c, collider_radius, static_objects);
+    let fd = get_dist_only_positive(d, collider_radius, static_objects);
+    let fe = get_dist_only_positive(e, collider_radius, static_objects);
+    let ff = get_dist_only_positive(f, collider_radius, static_objects);
+    let fg = get_dist_only_positive(g, collider_radius, static_objects);
+    let fh = get_dist_only_positive(h, collider_radius, static_objects);
+
+    let normal = 
+        Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
+        Vec4::new(-1.000, 0.000, 0.000,0.000) * fb +
+        Vec4::new(0.000, 1.000, 0.000, 0.000) * fc +
+        Vec4::new(0.000, -1.000, 0.000, 0.000) * fd +
+        Vec4::new(0.000, 0.000, 1.000, 0.000) * fe +
+        Vec4::new(0.000, 0.000, -1.000,0.000) * ff +
+        Vec4::new(0.000, 0.000, 0.000, 1.000) * fg +
+        Vec4::new(0.000, 0.000, 0.000, -1.000) * fh;
+
+    // if the collider is stuck in object's surface normal will be zero length
+    // let's make some random normal in this case 
+    if let Some(normal) = normal.try_normalize() {
+        return normal;
+    } else {
+        return random_vec().normalize();
+    }
 }
 
 #[inline]
@@ -933,7 +1127,7 @@ fn sd_box(p: Vec4, b: Vec4) -> f32 {
 }
 
 #[inline]
-fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
+fn get_normal(p: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> Vec4 {
     let a = p + Vec4::new(HALF_THRESHOLD, 0.000, 0.000, 0.000);
     let b = p + Vec4::new(-HALF_THRESHOLD, 0.000, 0.000,0.000);
     let c = p + Vec4::new(0.000, HALF_THRESHOLD, 0.000, 0.000);
@@ -943,14 +1137,14 @@ fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
     let g = p + Vec4::new(0.000, 0.000, 0.000, HALF_THRESHOLD);
     let h = p + Vec4::new(0.000, 0.000, 0.000, -HALF_THRESHOLD);
 
-    let fa = get_dist(a, static_objects);
-    let fb = get_dist(b, static_objects);
-    let fc = get_dist(c, static_objects);
-    let fd = get_dist(d, static_objects);
-    let fe = get_dist(e, static_objects);
-    let ff = get_dist(f, static_objects);
-    let fg = get_dist(g, static_objects);
-    let fh = get_dist(h, static_objects);
+    let fa = get_dist(a, collider_radius, static_objects);
+    let fb = get_dist(b, collider_radius, static_objects);
+    let fc = get_dist(c, collider_radius, static_objects);
+    let fd = get_dist(d, collider_radius, static_objects);
+    let fe = get_dist(e, collider_radius, static_objects);
+    let ff = get_dist(f, collider_radius, static_objects);
+    let fg = get_dist(g, collider_radius, static_objects);
+    let fh = get_dist(h, collider_radius, static_objects);
 
     let normal = 
         Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
@@ -971,24 +1165,24 @@ fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
     }
 }
 
-fn get_big_normal(p: Vec4, size: f32, static_objects: &StaticObjectsData) -> Vec4 {
-    let a = p + Vec4::new(size, 0.000, 0.000, 0.000);
-    let b = p + Vec4::new(-size, 0.000, 0.000,0.000);
-    let c = p + Vec4::new(0.000, size, 0.000, 0.000);
-    let d = p + Vec4::new(0.000, -size, 0.000, 0.000);
-    let e = p + Vec4::new(0.000, 0.000, size, 0.000);
-    let f = p + Vec4::new(0.000, 0.000, -size,0.000);
-    let g = p + Vec4::new(0.000, 0.000, 0.000, size);
-    let h = p + Vec4::new(0.000, 0.000, 0.000, -size);
+fn get_big_normal(p: Vec4, collider_radius: f32, static_objects: &StaticObjectsData) -> Vec4 {
+    let a = p + Vec4::new(collider_radius, 0.000, 0.000, 0.000);
+    let b = p + Vec4::new(-collider_radius, 0.000, 0.000,0.000);
+    let c = p + Vec4::new(0.000, collider_radius, 0.000, 0.000);
+    let d = p + Vec4::new(0.000, -collider_radius, 0.000, 0.000);
+    let e = p + Vec4::new(0.000, 0.000, collider_radius, 0.000);
+    let f = p + Vec4::new(0.000, 0.000, -collider_radius,0.000);
+    let g = p + Vec4::new(0.000, 0.000, 0.000, collider_radius);
+    let h = p + Vec4::new(0.000, 0.000, 0.000, -collider_radius);
 
-    let fa = get_dist(a, static_objects);
-    let fb = get_dist(b, static_objects);
-    let fc = get_dist(c, static_objects);
-    let fd = get_dist(d, static_objects);
-    let fe = get_dist(e, static_objects);
-    let ff = get_dist(f, static_objects);
-    let fg = get_dist(g, static_objects);
-    let fh = get_dist(h, static_objects);
+    let fa = get_dist(a, collider_radius, static_objects);
+    let fb = get_dist(b, collider_radius, static_objects);
+    let fc = get_dist(c, collider_radius, static_objects);
+    let fd = get_dist(d, collider_radius, static_objects);
+    let fe = get_dist(e, collider_radius, static_objects);
+    let ff = get_dist(f, collider_radius, static_objects);
+    let fg = get_dist(g, collider_radius, static_objects);
+    let fh = get_dist(h, collider_radius, static_objects);
 
     let normal = 
         Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
