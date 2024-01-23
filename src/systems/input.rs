@@ -36,6 +36,8 @@ pub struct ActionsFrameState {
     pub move_backward: Action,
     pub move_right: Action,
     pub move_left: Action,
+    pub w_down: Action,
+    pub w_up: Action,
     pub crouch: Action,     
     pub jump: Action,
     pub fire: Action,
@@ -49,6 +51,8 @@ impl ActionsFrameState {
         let mut move_right = Action::new();
         let mut move_left = Action::new();
         let mut crouch = Action::new();
+        let mut w_down = Action::new();
+        let mut w_up = Action::new();
         let mut jump = Action::new();
         let mut fire = Action::new();
         let mouse_axis = mouse_axis;
@@ -62,6 +66,8 @@ impl ActionsFrameState {
                 ButtonActions::Crouch => crouch = action.clone(),
                 ButtonActions::Jump => jump = action.clone(),
                 ButtonActions::Fire => fire = action.clone(),
+                ButtonActions::WDown => w_down = action.clone(),
+                ButtonActions::WUp => w_up = action.clone(),
             }
         }
 
@@ -71,6 +77,8 @@ impl ActionsFrameState {
             move_right,
             move_left,
             crouch,
+            w_down,
+            w_up,
             jump,
             fire,
             mouse_axis
@@ -83,6 +91,8 @@ impl ActionsFrameState {
         let move_right = Action::new();
         let move_left = Action::new();
         let crouch = Action::new();
+        let w_up = Action::new();
+        let w_down = Action::new();
         let jump = Action::new();
         let fire = Action::new();
         let mouse_axis = Vec2::ZERO;
@@ -93,6 +103,8 @@ impl ActionsFrameState {
             move_right,
             move_left,
             crouch,
+            w_down,
+            w_up,
             jump,
             fire,
             mouse_axis
@@ -118,6 +130,8 @@ enum ButtonActions {
     MoveLeft,
     Crouch,
     Jump,
+    WUp,
+    WDown,
     Fire,
 }
 
@@ -157,12 +171,20 @@ impl InputSystem {
             (ButtonActions::MoveLeft, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::ShiftLeft),
+            SomeButton::KeyCode(KeyCode::KeyR),
             (ButtonActions::Crouch, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Space),
             (ButtonActions::Jump, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyE),
+            (ButtonActions::WUp, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyQ),
+            (ButtonActions::WDown, Action::new())
         );
         actions_table.insert(
             SomeButton::MouseButton(MouseButton::Left),

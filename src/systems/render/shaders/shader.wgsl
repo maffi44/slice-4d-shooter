@@ -103,7 +103,7 @@ fn sd_octahedron(point: vec4<f32>, s: f32) -> f32 {
 }
 
 fn map(p: vec4<f32>) -> f32 {
-    var d = MAX_DIST * 2.2;
+    var d = MAX_DIST;
 
     for (var i = 0u; i < shapes_array_metadata.cubes.amount; i++) {
         var index = i + shapes_array_metadata.cubes.first_index;
@@ -238,7 +238,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var color: vec3<f32> = vec3<f32>(shade * 1.33) + (dist_and_depth.x / MAX_DIST);
 
-    color = mix(color, vec3<f32>(0.9, 1., 1.), clamp((dist_and_depth.x / (0.5*MAX_DIST)), 0.0, 1.0));
+    color = mix(color, vec3<f32>(0.9, 1., 1.), clamp((dist_and_depth.x / (MAX_DIST)), 0.0, 1.0));
 
     var c = dist_and_depth.y / f32(f32(MAX_STEPS) / 3.0);
     color.g -= c;

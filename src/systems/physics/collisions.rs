@@ -70,8 +70,8 @@ impl DynamicCollision {
 
             let (position_increment, is_collided) = translate_collider(self.transform.get_position(), self.current_velocity * delta, 0.5, static_objects);
             
+            self.current_velocity *= 1.0 - delta*4.0;
             if is_collided {
-                self.current_velocity *= 1.0 - delta*6.0;
             }
             self.transform.increment_position(position_increment);
 
@@ -80,7 +80,7 @@ impl DynamicCollision {
             // maybe temporal
 
             // if collider is not enable we nned to add some friction for movement
-            self.current_velocity *= 1.0 - delta*4.0;
+            self.current_velocity *= 1.0 - delta*5.0;
             
             self.transform.increment_position(self.current_velocity * delta);
         }
@@ -734,6 +734,8 @@ fn translate_collider(
 
         while translation_length > 0.0 {
 
+            log::warn!("SMALL STEPS");
+
             if small_steps_counter > MAX_COLLIDING_ITERATIONS {
                 panic!("More then max colliding small steps iterations");
             }
@@ -745,12 +747,39 @@ fn translate_collider(
             translation_length -= current_translation_len;
 
             distance_from_edge = get_dist(position, static_objects) - collider_radius;
-            
+
             translation = translation_dir * translation_length;
             
             if distance_from_edge < 0.0 {
+
+                break;
+
+                log::warn!("SMALL BACKWARD STEPS");
+
+                let mut backward_dist = 0.0;
+
+                let mut small_backward_steps_counter = 0u32;
+
+                while distance_from_edge < 0.0 {
+
+                    if small_backward_steps_counter > MAX_COLLIDING_ITERATIONS {
+                        panic!("More then max colliding small backward steps iterations");
+                    }
+
+                    backward_dist += distance_from_edge.min(-THRESHOLD);
+                    
+                    position += translation_dir * distance_from_edge.min(-THRESHOLD);
+
+                    distance_from_edge = get_dist(position, static_objects) - collider_radius;
+
+                    small_backward_steps_counter += 1u32;
+                }
+
+                // translation -= translation_dir * backward_dist;
+
                 break;
             }
+
         }
 
         counter += 1;
@@ -793,8 +822,28 @@ fn move_collider_outside(
     let mut counter = 0u32;
 
     while distance_from_edge < 0.0 {
-        if counter > MAX_COLLIDING_ITERATIONS {
-            panic!("'move_collider_outside' More the max colliding iterations when overlapping the object");
+
+        // if gets a many iterationsrunning maybe collider is stack between two walls
+        // try to push it with big normals 
+        if counter > MAX_COLLIDING_ITERATIONS / 2 {
+
+            let pushing_counter = 0u32;
+
+            while distance_from_edge < 0.0 {
+
+                if pushing_counter > MAX_COLLIDING_ITERATIONS {
+                    panic!("'move_collider_outside' More the max colliding iterations when overlapping (pushing) the object");
+                }
+            
+                let normal = get_big_normal(pos, collider_radius, static_objects);
+
+                pos += normal * distance_from_edge.abs().max(THRESHOLD * 0.25);
+
+                distance_from_edge = get_dist(pos, static_objects) - collider_radius;
+        
+            }
+            
+            break;
         }
         is_collided = true;
 
@@ -831,16 +880,16 @@ fn get_dist(p: Vec4, static_objects: &StaticObjectsData) -> f32 {
         d = d.min(sd_sph_box(p - position.clone(), size.clone()));
     }
 
-    for (position, size) in static_objects.cubes.iter() {
+    for (position, size) in static_objects.neg_cubes.iter() {
         d = d.max(-sd_box(p - position.clone(), size.clone()));
     }
-    for (position, size) in static_objects.inf_w_cubes.iter() {
+    for (position, size) in static_objects.neg_inf_w_cubes.iter() {
         d = d.max(-sd_inf_box(p - position.clone(), size.xyz()));
     }
-    for (position, size) in static_objects.spheres.iter() {
+    for (position, size) in static_objects.neg_spheres.iter() {
         d = d.max(-sd_sphere(p - position.clone(),size.x));
     }
-    for (position, size) in static_objects.shpcubes.iter() {
+    for (position, size) in static_objects.neg_shpcubes.iter() {
         d = d.max(-sd_sph_box(p - position.clone(), size.clone()));
     }
 
@@ -893,6 +942,44 @@ fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
     let f = p + Vec4::new(0.000, 0.000, -HALF_THRESHOLD,0.000);
     let g = p + Vec4::new(0.000, 0.000, 0.000, HALF_THRESHOLD);
     let h = p + Vec4::new(0.000, 0.000, 0.000, -HALF_THRESHOLD);
+
+    let fa = get_dist(a, static_objects);
+    let fb = get_dist(b, static_objects);
+    let fc = get_dist(c, static_objects);
+    let fd = get_dist(d, static_objects);
+    let fe = get_dist(e, static_objects);
+    let ff = get_dist(f, static_objects);
+    let fg = get_dist(g, static_objects);
+    let fh = get_dist(h, static_objects);
+
+    let normal = 
+        Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
+        Vec4::new(-1.000, 0.000, 0.000,0.000) * fb +
+        Vec4::new(0.000, 1.000, 0.000, 0.000) * fc +
+        Vec4::new(0.000, -1.000, 0.000, 0.000) * fd +
+        Vec4::new(0.000, 0.000, 1.000, 0.000) * fe +
+        Vec4::new(0.000, 0.000, -1.000,0.000) * ff +
+        Vec4::new(0.000, 0.000, 0.000, 1.000) * fg +
+        Vec4::new(0.000, 0.000, 0.000, -1.000) * fh;
+
+    // if the collider is stuck in object's surface normal will be zero length
+    // let's make some random normal in this case 
+    if let Some(normal) = normal.try_normalize() {
+        return normal;
+    } else {
+        return random_vec().normalize();
+    }
+}
+
+fn get_big_normal(p: Vec4, size: f32, static_objects: &StaticObjectsData) -> Vec4 {
+    let a = p + Vec4::new(size, 0.000, 0.000, 0.000);
+    let b = p + Vec4::new(-size, 0.000, 0.000,0.000);
+    let c = p + Vec4::new(0.000, size, 0.000, 0.000);
+    let d = p + Vec4::new(0.000, -size, 0.000, 0.000);
+    let e = p + Vec4::new(0.000, 0.000, size, 0.000);
+    let f = p + Vec4::new(0.000, 0.000, -size,0.000);
+    let g = p + Vec4::new(0.000, 0.000, 0.000, size);
+    let h = p + Vec4::new(0.000, 0.000, 0.000, -size);
 
     let fa = get_dist(a, static_objects);
     let fb = get_dist(b, static_objects);

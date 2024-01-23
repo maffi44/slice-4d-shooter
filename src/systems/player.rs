@@ -235,9 +235,14 @@ impl Player {
 
         self.inner_state.collision.add_force(Vec4::Y * GRAVITY);
 
-        if input.crouch.is_action_pressed() {
+        if input.w_up.is_action_pressed() {
             self.inner_state.collision.add_force(Vec4::W * GRAVITY * -2.0);
         }
+
+        if input.w_down.is_action_pressed() {
+            self.inner_state.collision.add_force(Vec4::W * GRAVITY * 2.0);
+        }
+
 
         // self.inner_state.collision.add_force(Vec4::W * GRAVITY);
         
