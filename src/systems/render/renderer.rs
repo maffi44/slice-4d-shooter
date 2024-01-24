@@ -7,13 +7,10 @@ use super::render_data::{
 };
 use winit::window::Window;
 use wgpu::{
-    util::{
+    rwh::{HasDisplayHandle, HasRawDisplayHandle, HasRawWindowHandle, HasWindowHandle}, util::{
         DeviceExt,
         BufferInitDescriptor
-    },
-    BufferUsages,
-    Buffer,
-    BindGroup
+    }, BindGroup, Buffer, BufferUsages, InstanceFlags
 };
 
 #[repr(C)]
@@ -48,7 +45,7 @@ const INDICES: &[u16] = &[0, 2, 1];
 
 
 pub struct Renderer {
-    surface: wgpu::Surface,
+    surface: wgpu::Surface<'static>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
@@ -104,10 +101,12 @@ impl Renderer {
                             b: 0.3,
                             a: 1.0,
                         }),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
@@ -129,15 +128,22 @@ impl Renderer {
     }
 
 
-    pub async fn new(window: &Window, world: &World) -> Self {
-        let size = winit::dpi::PhysicalSize::new(1200, 800);
+    pub async fn new(window: &Window, world: &World) -> Renderer {
+        let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
+            flags: InstanceFlags::empty(),
+            gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
 
-        let surface = unsafe { instance.create_surface(&window) }.unwrap();
+        let surface = unsafe { instance.create_surface_unsafe(
+            wgpu::SurfaceTargetUnsafe::RawHandle {
+                raw_display_handle: window.display_handle().unwrap().as_raw(),
+                raw_window_handle: window.window_handle().unwrap().as_raw()
+            }
+        ).unwrap() };
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -151,10 +157,10 @@ impl Renderer {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: wgpu::Features::empty(),
+                    required_features: wgpu::Features::empty(),
                     // WebGL doesn't support all of wgpu's features, so if
                     // we're building for the web we'll have to disable some.
-                    limits: if cfg!(target_arch = "wasm32") {
+                    required_limits: if cfg!(target_arch = "wasm32") {
                         wgpu::Limits::downlevel_webgl2_defaults()
                     } else {
                         wgpu::Limits::default()
@@ -185,6 +191,7 @@ impl Renderer {
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
+            desired_maximum_frame_latency: 3,
         };
         surface.configure(&device, &config);
 
@@ -192,6 +199,7 @@ impl Renderer {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
+
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader.wgsl").into()),
         });
 

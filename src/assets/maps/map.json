@@ -471,5 +471,25 @@
             },
             "is_positive" : false
         }
+    },
+    {
+        "spawn_position" : {
+            "transform" : {
+                "position" : {
+                    "x": 0.0,
+                    "y": 20.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "rotation" : {
+                    "yz": 0.0,
+                    "xz": 0.0,
+                    "xy": 0.0,
+                    "wx": 0.0,
+                    "wy": 0.0,
+                    "wz": 0.0
+                }
+            }
+        }
     }
 ]

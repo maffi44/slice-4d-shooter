@@ -1,4 +1,4 @@
-use super::{world::World, static_obj::StaticObject, transform::Position};
+use super::{world::World, static_obj::StaticObject};
 
 use glam::Vec4;
 

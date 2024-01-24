@@ -192,7 +192,7 @@ impl InputSystem {
             (ButtonActions::MoveLeft, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyR),
+            SomeButton::KeyCode(KeyCode::ShiftLeft),
             (ButtonActions::Crouch, Action::new())
         );
         actions_table.insert(

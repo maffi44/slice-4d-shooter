@@ -1,4 +1,5 @@
 pub mod player_input_master;
+pub mod player_settings;
 
 use std::f32::consts::PI;
 
@@ -8,17 +9,8 @@ use glam::{
     Mat4,
 };
 
-const MAX_SPEED : f32 = 24.0;
-const MAX_ACCEL : f32 = 28.0;
-const HEALTH: i32 = 100_i32;
-const JUMP_Y_SPEED: f32 = 12.0;
-const JUMP_W_SPEED: f32 = 0.1;
-
-const GRAVITY: f32 = -0.3;
-
 use player_input_master::InputMaster;
-
-use self::player_input_master::LocalMaster;
+use player_settings::PlayerSettings;
 
 use super::{
     devices::{Device, DeviceType, DefaultPistol},
@@ -35,15 +27,17 @@ pub struct PlayerInnerState {
 }
 
 impl PlayerInnerState {
-    pub fn new(transform: Transform) -> Self {
+    pub fn new(transform: Transform, settings: &PlayerSettings) -> Self {
         PlayerInnerState {
             collision: DynamicCollision::new(
                 transform,
-                MAX_SPEED,
-                MAX_ACCEL,
-                0.5,
+                settings.max_speed,
+                settings.max_accel,
+                settings.collider_radius,
+                settings.friction_on_air,
+                settings.friction_on_ground,
             ),
-            hp: HEALTH,
+            hp: 100,
             view_angle: Vec2::ZERO,
         }
     }
@@ -86,16 +80,18 @@ pub struct Player {
     is_gravity_y_enabled: bool,
     is_gravity_w_enabled: bool,
 
+    player_settings: PlayerSettings,
+
     pub master: InputMaster,
 }
 
 impl Player {
 
-    pub fn new(id: PlayerID, master: InputMaster) -> Self {
+    pub fn new(id: PlayerID, master: InputMaster, player_settings: PlayerSettings) -> Self {
         Player {
             id,
 
-            inner_state: PlayerInnerState::new(Transform::new_zero()),
+            inner_state: PlayerInnerState::new(Transform::new_zero(), &player_settings),
             active_hands_slot: ActiveHandsSlot::Zero,
 
             hands_slot_0: Box::new(DefaultPistol::default()),
@@ -107,6 +103,8 @@ impl Player {
             is_gravity_w_enabled: false,
 
             devices: [None, None, None, None],
+            
+            player_settings,
 
             master,
         }
@@ -245,12 +243,18 @@ impl Player {
                 movement_vec = xz_player_rotation * movement_vec;
 
                 if self.get_collider().is_on_ground {
-                    self.inner_state.collision.set_wish_direction(movement_vec, 1.0);
+                    self.inner_state.collision.set_wish_direction(
+                        movement_vec,
+                        1.0
+                    );
                 } else {
-                    self.inner_state.collision.set_wish_direction(movement_vec, 0.3);
+                    self.inner_state.collision.set_wish_direction(
+                        movement_vec,
+                        self.player_settings.air_speed_mult
+                    );
                 }
 
-                self.inner_state.collision.add_force(Vec4::Y * GRAVITY);
+                self.inner_state.collision.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
             } else {
                movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
 
@@ -259,7 +263,7 @@ impl Player {
             }
 
             if self.is_gravity_w_enabled {
-                self.inner_state.collision.add_force(Vec4::W * GRAVITY);
+                self.inner_state.collision.add_force(Vec4::NEG_W * self.player_settings.gravity_w_speed);
             }
 
         } else {
@@ -269,23 +273,24 @@ impl Player {
         }
 
         if input.jump.is_action_just_pressed() {
+            self.inner_state.collision.add_force(Vec4::Y * self.player_settings.jump_y_speed);
             if self.get_collider().is_on_ground {
 
-                self.inner_state.collision.add_force(Vec4::Y * JUMP_Y_SPEED);
             }
         }
 
 
         if input.w_up.is_action_pressed() {
-            self.inner_state.collision.add_force(Vec4::W * GRAVITY * -2.0);
+            self.inner_state.collision.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
         }
 
         if input.w_down.is_action_pressed() {
-            self.inner_state.collision.add_force(Vec4::W * GRAVITY * 2.0);
+            self.inner_state.collision.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
         }
 
         if input.crouch.is_action_just_pressed() {
-            self.inner_state.collision.add_force(Vec4::W * GRAVITY * -2.0);
+            self.inner_state.collision.add_force(Vec4::W * self.player_settings.jump_w_speed);
+            self.inner_state.collision.add_force(Vec4::Y * self.player_settings.jump_y_speed);
         };
 
     }

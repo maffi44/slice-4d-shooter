@@ -1,6 +1,5 @@
 use winit::{window::WindowBuilder, platform::web::WindowBuilderExtWebSys};
 
-use winit::dpi::PhysicalSize;
 use wasm_bindgen::JsValue;
 
 use super::{
@@ -10,6 +9,7 @@ use super::{
     physics::PhysicsSystem,
     time::TimeSystem,
     world::World,
+    player::player_settings::PlayerSettings,
     engine_handle::EngineHandle, net::NetSystem,
 };
 
@@ -21,6 +21,7 @@ pub struct Engine {
     pub world: World,
     pub engine_handle: EngineHandle,
     pub net: NetSystem,
+    pub global_players_settings: PlayerSettings,
     // pub runtime: RuntimeSystem,
     // pub net: ClientNetSystem,
 }
@@ -40,7 +41,7 @@ impl Engine {
             .with_canvas(Some(canvas))
             .with_active(true)
             // .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
-            .with_inner_size(PhysicalSize::new(1200, 800))
+            // .with_inner_size(PhysicalSize::new(1200, 800))
             .build(&cleint_main_loop.event_loop)
             .unwrap();
 
@@ -56,11 +57,11 @@ impl Engine {
 
         let time = TimeSystem::new(60_u32);
 
-        
-
         let engine_handle = EngineHandle::new();
 
         let net = NetSystem::new();
+
+        let global_players_settings = PlayerSettings::load_player_settings().await;
 
         Engine {
             physic,
@@ -70,6 +71,7 @@ impl Engine {
             world,
             engine_handle,
             net,
+            global_players_settings,
         }
     }
 }

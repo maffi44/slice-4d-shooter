@@ -103,7 +103,7 @@ fn sd_octahedron(point: vec4<f32>, s: f32) -> f32 {
 }
 
 fn map(p: vec4<f32>) -> f32 {
-    var d = MAX_DIST;
+    var d = MAX_DIST * 2.2;
 
     for (var i = 0u; i < shapes_array_metadata.cubes.amount; i++) {
         var index = i + shapes_array_metadata.cubes.first_index;
@@ -219,7 +219,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // uv.x = in.position.y / 2.0;
     // uv.y = in.position.x / 2.0;
     var uv: vec2<f32> = in.position.xy * 0.7;
-    uv.x *= 1.5;
+    uv.x *= camera_uni.aspect;
 
     var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
     ray_direction *= camera_uni.cam_rot;

@@ -1,3 +1,5 @@
+use crate::systems::transform;
+
 use super::super::{
     static_obj::StaticObject,
     transform::Transform,
@@ -11,7 +13,7 @@ use wasm_bindgen_futures::JsFuture;
 use serde_json::Value;
 
 
-pub async fn load_map() -> Vec<StaticObject> {
+pub async fn load_map() -> (Vec<StaticObject>, Vec4) {
 
     let window = web_sys::window().unwrap();
 
@@ -52,12 +54,14 @@ pub async fn load_map() -> Vec<StaticObject> {
     map
 }
 
-fn parse_json_into_map(json_map: Value) -> Vec<StaticObject> {
+fn parse_json_into_map(json_map: Value) -> (Vec<StaticObject>, Vec4) {
     let mut map: Vec<StaticObject> = Vec::with_capacity(40);
 
     let array = json_map
         .as_array()
         .expect("Wrong JSON map format. Array elements must be objects");
+
+    let mut spawn_position = Vec4::ZERO;
 
     for object in array {
         
@@ -120,6 +124,13 @@ fn parse_json_into_map(json_map: Value) -> Vec<StaticObject> {
 
                     map.push(shape);
                 },
+                "spawn_position" => {
+                    let shape_name = "spawn_position";
+
+                    let transform = parse_json_into_transform(shape, shape_name);
+
+                    spawn_position = transform.get_position();
+                }
                 _ => {
                     panic!("Wrong JSON map format, unexpected shape {} in map", name)
                 }
@@ -127,7 +138,7 @@ fn parse_json_into_map(json_map: Value) -> Vec<StaticObject> {
         }
     }
 
-    map
+    (map, spawn_position)
 }
 
 

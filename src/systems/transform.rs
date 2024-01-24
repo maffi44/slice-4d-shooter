@@ -25,6 +25,13 @@ impl Transform {
         }
     }
 
+    pub fn new_from_vec4(position: Vec4) -> Self {
+        Transform {
+            position,
+            rotation: Mat4::IDENTITY,
+        }
+    }
+
     pub fn increment_position(&mut self, increment: Vec4) {
         self.position += increment;
     }

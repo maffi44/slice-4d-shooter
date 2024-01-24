@@ -18,20 +18,26 @@ use glam::{Vec4, Mat4};
 pub struct RenderSystem {
     pub window: Window,
     renderer: Renderer,
+    aspect: f32,
 }
 
 impl RenderSystem {
     pub async fn new(
         window: Window,
-        world: &World
+        world: &World,
     ) -> Self {
 
+        let aspect = {
+            let size = window.inner_size();
+            size.width as f32 / size.height as f32
+        };
 
         let renderer = Renderer::new(&window, world).await;
 
         RenderSystem {
             window,
             renderer,
+            aspect,
         }
     }
 
@@ -48,11 +54,6 @@ impl RenderSystem {
             cam_rot = Mat4::IDENTITY;
         }
 
-        let aspect = {
-            let size = winit::dpi::PhysicalSize::new(1200, 800);
-            (size.width / size.height) as f32
-        };
-
         let mut rot_mat_slice: [f32;16] = [0.0; 16];
 
         cam_rot.write_cols_to_slice(&mut rot_mat_slice);
@@ -61,7 +62,7 @@ impl RenderSystem {
             camera_uniform: CameraUniform {
                 cam_pos: cam_pos.into(),
                 cam_rot: rot_mat_slice,
-                aspect: [aspect, 0.0, 0.0, 0.0],
+                aspect: [self.aspect, 0.0, 0.0, 0.0],
             },
             time: TimeUniform::new_val(time.timestamp_of_main_loop_start.elapsed().as_secs_f32()),
         };
@@ -93,6 +94,11 @@ impl RenderSystem {
 
     pub fn resize_frame_buffer(&mut self) {
         self.renderer.resize(self.window.inner_size());
+
+        self.aspect = {
+            let size = self.window.inner_size();
+            size.width as f32 / size.height as f32
+        };
     }
 
 }

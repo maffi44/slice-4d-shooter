@@ -5,10 +5,7 @@ use std::collections::HashMap;
 
 use super::{
     player::{
-        Player,
-        PlayerID,
-        Message,
-        player_input_master::{InputMaster, LocalMaster},
+        player_input_master::InputMaster, player_settings::PlayerSettings, Message, Player, PlayerID
     },
     engine_handle::EngineHandle,
     projectiles::ProjectileType,
@@ -17,10 +14,11 @@ use super::{
         SpawnEffect,
         SpawnProjectile,
     },
-    static_obj::{StaticObject, self},
+    static_obj::StaticObject,
 };
 
 use getrandom;
+use glam::Vec4;
 
 
 pub enum PlayerAccessError {
@@ -32,6 +30,7 @@ pub struct World {
     pub spawned_players: Vec<PlayerID>,
     pub main_camera_from: PlayerID,
     pub static_objects: Vec<StaticObject>,
+    pub spawn_position: Vec4,
     // fx_pool
     // devices_pool
     // projectiles_pool
@@ -45,7 +44,7 @@ impl World {
 
     pub async fn new() -> Self {
 
-        let static_objects = map::load_map().await;
+        let (static_objects, spawn_position) = map::load_map().await;
 
         World {
             pool_of_players: HashMap::with_capacity(2),
@@ -53,6 +52,7 @@ impl World {
             spawned_players: Vec::with_capacity(2),
             main_camera_from: 0,
             static_objects,
+            spawn_position,
         }
     }
 
@@ -91,7 +91,7 @@ impl World {
 
     }
 
-    pub fn add_new_player(&mut self, master: InputMaster) -> PlayerID {
+    pub fn add_new_player(&mut self, master: InputMaster, player_settings: PlayerSettings) -> PlayerID {
 
         let mut id: PlayerID = make_random_id();
 
@@ -99,7 +99,7 @@ impl World {
             id = make_random_id();
         }
 
-        let new_player = Player::new(id, master);
+        let new_player = Player::new(id, master, player_settings);
 
         self.pool_of_players.insert(id, new_player);
 
@@ -116,8 +116,8 @@ impl World {
         }
     }
 
-    pub fn add_and_spawn_new_player(&mut self, master: InputMaster) -> PlayerID {
-        let id = self.add_new_player(master);
+    pub fn add_and_spawn_new_player(&mut self, master: InputMaster, player_settings: PlayerSettings) -> PlayerID {
+        let id = self.add_new_player(master, player_settings);
         match self.spawn_player_from_pool(id) {
             Ok(()) => return id,
             Err(e) => panic!("in fn add_and_spawn_new_player after fn add_new_player have not player in pool")

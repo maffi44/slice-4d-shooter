@@ -22,6 +22,8 @@ pub struct DynamicCollision {
     collider_radius: f32,
     max_speed: f32,
     max_accel: f32,
+    friction_on_air: f32,
+    friction_on_ground: f32,
     wish_direction: Vec4,
     movment_mult: f32,
     current_velocity: Vec4,
@@ -30,13 +32,22 @@ pub struct DynamicCollision {
 }
 
 impl DynamicCollision {
-    pub fn new(transform: Transform, max_speed: f32, max_accel: f32, collider_radius: f32) -> Self {
+    pub fn new(
+        transform: Transform,
+        max_speed: f32,
+        max_accel: f32,
+        collider_radius: f32,
+        friction_on_air: f32,
+        friction_on_ground: f32,
+    ) -> Self {
         DynamicCollision {
             is_enable: true,
             transform,
             collider_radius,
             max_speed,
             max_accel,
+            friction_on_air,
+            friction_on_ground,
             wish_direction: Vec4::ZERO,
             movment_mult: 1.0,
             current_velocity: Vec4::ZERO,
@@ -77,14 +88,18 @@ impl DynamicCollision {
 
         if self.is_enable {
 
-            let (position_increment, is_collided) = translate_collider(self.transform.get_position(), self.current_velocity * delta, self.collider_radius, static_objects);
+            let (position_increment, is_collided) = translate_collider(
+                self.transform.get_position(),
+                self.current_velocity * delta,
+                self.collider_radius,
+                static_objects
+            );
             
             if is_collided {
-                self.current_velocity *= 1.0 - delta*3.5;
+                self.current_velocity *= 1.0 - delta*self.friction_on_ground;
             } else {
-                self.current_velocity *= 1.0 - delta*1.5;
+                self.current_velocity *= 1.0 - delta*self.friction_on_air;
             }
-            // self.current_velocity *= 1.0 - delta*3.4;
 
             self.transform.increment_position(position_increment);
 
@@ -143,13 +158,13 @@ fn translate_collider(
 
     let start_position = position;
 
-    log::warn!("start position is {}", start_position);
+    // log::warn!("start position is {}", start_position);
     
     let mut counter = 0u32;
 
     while translation.length().is_normal() {
 
-        log::warn!("ITERATION number {}", counter);
+        // log::warn!("ITERATION number {}", counter);
 
         if counter > MAX_COLLIDING_ITERATIONS {
             panic!("More then max colliding iterations");
@@ -161,22 +176,22 @@ fn translate_collider(
         // get distance from edge of the object to the nearest object
         let mut distance_from_edge = get_dist(position, static_objects) - collider_radius;
 
-        log::warn!("distance from the edge is {}", distance_from_edge);
+        // log::warn!("distance from the edge is {}", distance_from_edge);
 
         // bound if collide
         if distance_from_edge < THRESHOLD || is_pushed {
 
-            log::warn!("BOUND");
+            // log::warn!("BOUND");
 
             is_collide = true;
 
             let normal = get_normal(position, static_objects);
             
-            log::warn!("normal is {}", normal);
+            // log::warn!("normal is {}", normal);
 
-            log::warn!("translation len before reject is {}", translation.length());
+            // log::warn!("translation len before reject is {}", translation.length());
 
-            log::warn!("direction is {}", translation.normalize());
+            // log::warn!("direction is {}", translation.normalize());
 
             if normal.dot(translation) < 0.0 {
 
@@ -187,11 +202,11 @@ fn translate_collider(
                     static_objects
                 );
 
-                log::warn!("next normal is {}", normal);
+                // log::warn!("next normal is {}", normal);
 
                 let curvature_coefficient = next_normal.dot(probable_transltaion_dir);
 
-                log::warn!("curvature_coefficient is {}", curvature_coefficient);
+                // log::warn!("curvature_coefficient is {}", curvature_coefficient);
 
                 if curvature_coefficient < 0.0 {
 
@@ -200,33 +215,33 @@ fn translate_collider(
                         static_objects
                     );
 
-                    log::warn!("prev normal is {}", prev_normal);
+                    // log::warn!("prev normal is {}", prev_normal);
 
                     if next_normal.dot(translation) < 0.0 {
                         
                         translation = translation.reject_from_normalized(next_normal);
                         
-                        log::warn!("direction after first bound is {}", translation.normalize());
+                        // log::warn!("direction after first bound is {}", translation.normalize());
 
-                        log::warn!("translation len after first reject is {}", translation.length());
+                        // log::warn!("translation len after first reject is {}", translation.length());
                     }
 
                     if prev_normal.dot(translation) < 0.0 {
 
                         translation = translation.reject_from_normalized(prev_normal);
 
-                        log::warn!("direction after second bound is {}", translation.normalize());
+                        // log::warn!("direction after second bound is {}", translation.normalize());
 
-                        log::warn!("translation len after second reject is {}", translation.length());    
+                        // log::warn!("translation len after second reject is {}", translation.length());    
                     }
 
                 } else {
 
                     translation = translation.reject_from_normalized(normal);
 
-                    log::warn!("direction after bound is {}", translation.normalize());
+                    // log::warn!("direction after bound is {}", translation.normalize());
 
-                    log::warn!("translation len after reject is {}", translation.length());
+                    // log::warn!("translation len after reject is {}", translation.length());
                 }
             }
 
@@ -263,7 +278,7 @@ fn translate_collider(
 
         while translation_length > 0.0 {
 
-            log::warn!("SMALL STEPS");
+            // log::warn!("SMALL STEPS");
 
             if small_steps_counter > MAX_COLLIDING_ITERATIONS {
                 panic!("More then max colliding small steps iterations");
@@ -314,10 +329,10 @@ fn move_collider_outside(
         is_collided = true;
 
         let normal = get_normal(pos, static_objects);
-        pos -= normal * (distance_from_center + THRESHOLD);
+        pos -= normal * (distance_from_center - THRESHOLD);
         
         distance_from_center = get_dist(pos, static_objects);
-        
+
         counter += 1;
     }
 
@@ -357,7 +372,7 @@ fn move_collider_outside(
 
         distance_from_edge = get_dist(pos, static_objects) - collider_radius;
         
-        log::warn!("'move_collider_outside' disatnce from th edge is {}", distance_from_edge);
+        // log::warn!("'move_collider_outside' disatnce from th edge is {}", distance_from_edge);
 
         counter += 1;
     }

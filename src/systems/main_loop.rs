@@ -1,12 +1,11 @@
 use super::{
-    engine::Engine,
+    engine::{self, Engine},
     input::ActionsFrameState,
     player::{
-        Message,
         player_input_master::{
             InputMaster,
             LocalMaster
-        },
+        }, player_settings, Message
     },
     transform::Transform,
     engine_handle::{
@@ -16,18 +15,18 @@ use super::{
 };
 
 use std::time::Duration;
-use web_sys::js_sys::is_finite;
+use web_sys::js_sys::encode_uri;
 use web_time::Instant;
 use glam::Vec2;
 
 use winit::{
-    event::*,
-    event_loop::{ControlFlow, EventLoop},
+    event::*, event_loop::{ControlFlow, EventLoop}, keyboard::{KeyCode, PhysicalKey}, monitor::VideoMode, window::{self, Fullscreen}
 };
 
 pub struct 
 MainLoop {
-    pub event_loop: EventLoop<()>
+    pub event_loop: EventLoop<()>,
+    pointer_is_grabbed: bool,
 }
 
 impl MainLoop {
@@ -35,10 +34,11 @@ impl MainLoop {
     pub fn new() -> Self {
         MainLoop {
             event_loop: EventLoop::new().unwrap(),
+            pointer_is_grabbed: false,
         }
     }
 
-    pub async fn run(
+    pub async fn run<'a>(
         self,
         mut systems : Engine,
     ) {
@@ -114,13 +114,51 @@ impl MainLoop {
                             systems.render.resize_frame_buffer();
                         },
                         
-                        WindowEvent::KeyboardInput {event,is_synthetic, ..} => { 
+                        WindowEvent::KeyboardInput {event,is_synthetic, ..} => {
+
+                            if let PhysicalKey::Code(code) = event.physical_key {
+                                match code {
+                                    KeyCode::Escape => {
+                                        if event.state.is_pressed() {
+                                            systems.render.window.set_cursor_visible(true);
+                                            systems.render.window.set_cursor_grab(window::CursorGrabMode::None).unwrap();
+                                            systems.render.window.set_fullscreen(None);
+                                        }
+                                    },
+                                    KeyCode::Enter => {
+                                        systems.render.window.set_cursor_grab(window::CursorGrabMode::Locked).unwrap();
+                                        systems.render.window.set_cursor_visible(false);
+
+                                        if event.state.is_pressed() {
+                                            systems.render.window
+                                                .set_fullscreen(Some(
+                                                    Fullscreen::Borderless(
+                                                        None
+                                                    )
+                                                )
+                                            );
+                                        }
+                                    },
+                                    _ => {}
+                                }
+                            }
+
                             systems.input.set_keyboard_input(event);
                         },
 
                         WindowEvent::MouseInput {button, state,..} => {
+                            // if left click set cursor grabbed
+                            match button {
+                                MouseButton::Left => {
+                                    if state.is_pressed() {
+                                        systems.render.window.set_cursor_grab(window::CursorGrabMode::Locked).unwrap();
+                                        systems.render.window.set_cursor_visible(false);
+                                    }
+                                },
+                                _ => {},
+                            }
+                            // set mouse input
                             systems.input.set_mouse_button_input(button, state);
-                            
                         },
                         _ => {},
                     }
@@ -177,7 +215,8 @@ fn init(systems: &mut Engine) {
     let main_player = systems.world.add_and_spawn_new_player(
         InputMaster::LocalMaster(
             LocalMaster::new(ActionsFrameState::empty())
-        )
+        ),
+        systems.global_players_settings.clone()
     );
 
     systems.engine_handle.send_command(
@@ -186,7 +225,7 @@ fn init(systems: &mut Engine) {
             command_type: CommandType::SendMessage(
                 main_player,
                 Message::SetTransform(
-                    Transform::new(0.0, 2.0, 0.0, 0.0),
+                    Transform::new_from_vec4(systems.world.spawn_position),
                 )
             )
         }
