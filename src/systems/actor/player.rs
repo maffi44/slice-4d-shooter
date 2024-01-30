@@ -13,17 +13,20 @@ use player_input_master::InputMaster;
 use player_settings::PlayerSettings;
 
 use super::{
+    ActorID,
+    Message,
+};
+
+use super::super::{
     devices::{Device, DeviceType, DefaultPistol},
     engine_handle::EngineHandle,
     transform::Transform,
     physics::collisions::DynamicCollision,
 };
 
-pub type PlayerID = u32;
 pub struct PlayerInnerState {
     pub collision: DynamicCollision,
     pub hp: i32,
-    pub view_angle: Vec2,
 }
 
 impl PlayerInnerState {
@@ -38,7 +41,6 @@ impl PlayerInnerState {
                 settings.friction_on_ground,
             ),
             hp: 100,
-            view_angle: Vec2::ZERO,
         }
     }
 }
@@ -57,16 +59,12 @@ pub enum PlayersDeviceSlotNumber {
     Fourth,
 }
 
-pub enum Message {
-    DealDamage(u32),
-    SetTransform(Transform),
-    EnableCollider(bool)
-}
-
 pub struct Player {
-    id: PlayerID,
+    id: ActorID,
 
     inner_state: PlayerInnerState,
+
+    view_angle: Vec2,
 
     active_hands_slot: ActiveHandsSlot, 
 
@@ -87,7 +85,7 @@ pub struct Player {
 
 impl Player {
 
-    pub fn new(id: PlayerID, master: InputMaster, player_settings: PlayerSettings) -> Self {
+    pub fn new(id: ActorID, master: InputMaster, player_settings: PlayerSettings) -> Self {
         Player {
             id,
 
@@ -107,6 +105,8 @@ impl Player {
             player_settings,
 
             master,
+
+            view_angle: Vec2::ZERO,
         }
     }
 
@@ -131,7 +131,7 @@ impl Player {
         self.inner_state.collision.transform.rotation = new_rotation
     }
 
-    pub fn recieve_message(&mut self, from: PlayerID, message: Message, engine_handle: &mut EngineHandle) {
+    pub fn recieve_message(&mut self, from: ActorID, message: Message, engine_handle: &mut EngineHandle) {
         match message {
             Message::DealDamage(damage) => {
                 self.inner_state.hp -= damage as i32;
@@ -156,8 +156,8 @@ impl Player {
             }   
         };
 
-        let prev_x = self.inner_state.view_angle.x;
-        let prev_y = self.inner_state.view_angle.y;
+        let prev_x = self.view_angle.x;
+        let prev_y = self.view_angle.y;
 
         let x = input.mouse_axis.x + prev_x;
         let y = input.mouse_axis.y + prev_y.clamp(-PI/2.0, PI/2.0);
@@ -171,7 +171,7 @@ impl Player {
 
         let xz_player_rotation = Mat4::from_rotation_y(x);
 
-        self.inner_state.view_angle = Vec2::new(x, y);
+        self.view_angle = Vec2::new(x, y);
 
         // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
 

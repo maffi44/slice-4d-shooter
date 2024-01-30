@@ -1,11 +1,12 @@
 use super::{
-    engine::{self, Engine},
+    engine::Engine,
     input::ActionsFrameState,
-    player::{
-        player_input_master::{
+    actor::{
+        Message,
+        player::player_input_master::{
             InputMaster,
             LocalMaster
-        }, player_settings, Message
+        },
     },
     transform::Transform,
     engine_handle::{
@@ -15,12 +16,14 @@ use super::{
 };
 
 use std::time::Duration;
-use web_sys::js_sys::encode_uri;
 use web_time::Instant;
 use glam::Vec2;
 
 use winit::{
-    event::*, event_loop::{ControlFlow, EventLoop}, keyboard::{KeyCode, PhysicalKey}, monitor::VideoMode, window::{self, Fullscreen}
+    event::*,
+    event_loop::{ControlFlow, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
+    window::{self, Fullscreen}
 };
 
 pub struct 
@@ -221,7 +224,7 @@ fn init(systems: &mut Engine) {
 
     systems.engine_handle.send_command(
         Command {
-            sender: 0_u32,
+            sender: 0_u64,
             command_type: CommandType::SendMessage(
                 main_player,
                 Message::SetTransform(

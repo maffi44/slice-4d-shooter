@@ -16,7 +16,7 @@ use winit::{
 
 use super::{
     net::NetSystem,
-    player::player_input_master::InputMaster::{
+    actor::player::player_input_master::InputMaster::{
         LocalMaster,
         RemoteMaster,
     },

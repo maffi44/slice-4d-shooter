@@ -4,10 +4,10 @@ use super::{
         Command,
         CommandType,
     },
-    player::{
-        PlayerInnerState,
+    actor::ActorID,
+    actor::{
         Message,
-        PlayerID,
+        player::PlayerInnerState,
     },
     input::ActionsFrameState,
     effects::EffectType,
@@ -36,7 +36,7 @@ impl Device for DefaultPistol {
 
     fn process_input(
             &mut self,
-            player_id: PlayerID,
+            player_id: ActorID,
             player: &mut PlayerInnerState,
             input: &ActionsFrameState,
             engine_handle: &mut EngineHandle
@@ -85,7 +85,7 @@ pub enum DeviceType {
 pub trait Device {
     fn process_input(
         &mut self,
-        player_id: PlayerID,
+        player_id: ActorID,
         player: &mut PlayerInnerState,
         input: &ActionsFrameState,
         engine_handle: &mut EngineHandle

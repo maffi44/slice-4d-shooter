@@ -36,10 +36,10 @@ struct ShapesArrayMetadata {
 @group(0) @binding(3) var<uniform> shapes: array<Shape, 512>;
 
 
-const MAX_STEPS: i32 = 100;
+const MAX_STEPS: i32 = 200;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
-const MAX_DIST: f32 = 70.0;
+const MAX_DIST: f32 = 700.0;
 
 
 fn rotate(angle: f32) -> mat2x2<f32> {
@@ -105,6 +105,20 @@ fn sd_octahedron(point: vec4<f32>, s: f32) -> f32 {
 fn map(p: vec4<f32>) -> f32 {
     var d = MAX_DIST * 2.2;
 
+    // var p = pos;
+
+    // var coof = (p.z + 10) / 20;
+
+    // coof = fract(coof);
+
+    // p.z = coof * 20 - 10;
+
+    // coof = (p.x + 10) / 20;
+
+    // coof = fract(coof);
+
+    // p.x = coof * 20 - 10;
+
     for (var i = 0u; i < shapes_array_metadata.cubes.amount; i++) {
         var index = i + shapes_array_metadata.cubes.first_index;
         d = min(d, sd_box(p - shapes[index].pos, shapes[index].size));
@@ -162,8 +176,10 @@ fn get_normal(p: vec4<f32>) -> vec3<f32> {
     );
 }
 
+const MIN_STEP: f32 = 0.005;
+
 fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32> ) -> vec2<f32>  {
-    var color: vec3<f32> = vec3<f32>(0., 0., 0.);
+    // var color: vec3<f32> = vec3<f32>(0., 0., 0.);
     var total_distance: f32 = 0.;
     
     var ray_origin = ray_origin_base;
@@ -174,16 +190,16 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32> ) -> vec2<f32>
         total_distance += d;
 
         if (d < 0.) {
-            color.z = 1.;
-            return vec2<f32>(total_distance, f32(i));
+            // color.z = 1.;
+            return vec2<f32>(total_distance + d, f32(i));
         }
         if (d < MIN_DIST) {
-            color.x = 1.;
-            return vec2<f32>(total_distance, f32(i));
+            // color.x = 1.;
+            return vec2<f32>(total_distance + d, f32(i));
         }
         if (total_distance > MAX_DIST) {
-            color.y = 1.;
-            return vec2<f32>(total_distance, f32(i));
+            // color.y = 1.;
+            return vec2<f32>(MAX_DIST, f32(i));
         }
 
         ray_origin += ray_direction * d;
@@ -240,9 +256,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     color = mix(color, vec3<f32>(0.9, 1., 1.), clamp((dist_and_depth.x / (MAX_DIST)), 0.0, 1.0));
 
-    var c = dist_and_depth.y / f32(f32(MAX_STEPS) / 3.0);
-    color.g -= c;
-    color.b -= c;
+    // var c = dist_and_depth.y / f32(f32(MAX_STEPS) / 3.0);
+    // color.g -= c;
+    // color.b -= c;
 
     return vec4<f32>(color, 1.0);
 }

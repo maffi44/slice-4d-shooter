@@ -10,6 +10,6 @@ pub mod effects;
 pub mod world;
 pub mod engine_handle;
 pub mod devices;
-pub mod player;
+pub mod actor;
 pub mod projectiles;
 pub mod static_obj;

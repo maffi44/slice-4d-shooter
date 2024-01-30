@@ -1,19 +1,21 @@
 use super::{
     projectiles::ProjectileType,
-    player::PlayerID,
-    player::Message,
+    actor::{
+        Message,
+        ActorID,
+    },
     physics::PhysicsState,
     effects::EffectType,
 };
 
 pub struct Command {
-    pub sender: PlayerID,
+    pub sender: ActorID,
     pub command_type: CommandType,
 }
 
 pub enum CommandType {
     SpawnProjectile(ProjectileType),
-    SendMessage(PlayerID, Message),
+    SendMessage(ActorID, Message),
     SpawnEffect(EffectType),
 }
 

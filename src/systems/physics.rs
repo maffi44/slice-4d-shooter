@@ -106,7 +106,7 @@ impl PhysicsState {
 
 pub struct Hit {
     pub hit_point: Vec4,
-    pub hited_players_id: Option<u32>, 
+    pub hited_players_id: Option<u64>, 
     pub hit_normal: Vec4,
 }
 

@@ -9,7 +9,7 @@ use super::{
     physics::PhysicsSystem,
     time::TimeSystem,
     world::World,
-    player::player_settings::PlayerSettings,
+    actor::player::player_settings::PlayerSettings,
     engine_handle::EngineHandle, net::NetSystem,
 };
 
