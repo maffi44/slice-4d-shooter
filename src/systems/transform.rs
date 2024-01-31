@@ -3,7 +3,7 @@ use glam::{
     Mat4,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Transform {
     pub position: Vec4,
     pub rotation: Mat4,

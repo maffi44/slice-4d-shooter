@@ -1,8 +1,14 @@
-use super::{world::World, static_obj::StaticObject};
+use self::collider::MutCollider;
+
+use super::{
+    world::World,
+    static_obj::StaticObject,
+    actor::Actor,
+};
 
 use glam::Vec4;
 
-pub mod collisions;
+pub mod collider;
 
 pub struct StaticObjectsData {
      cubes: Vec<(Vec4,Vec4)>,
@@ -122,9 +128,19 @@ impl PhysicsSystem {
     }
 
     pub fn process_physics(&mut self, world: &mut World, dt: f32) {
-        for player_id in world.spawned_players.iter() {
-            if let Some(player) = world.pool_of_players.get_mut(player_id) {
-                player.get_mut_collider().physics_tick(dt, &self.static_objects_data);
+        for (_, actor) in world.actors.iter_mut() {
+
+            if let Some(some_collider) = actor.get_mut_collider() {
+                
+                match some_collider {
+                    MutCollider::Dynamic(collider) => {
+                        
+                        collider.physics_tick(dt, &self.static_objects_data);
+                    },
+                    MutCollider::DynamicArea(_) => {},
+                    MutCollider::Static(_) => {},
+                    MutCollider::StaticArea(_) => {},
+                }
             }
         }
     }

@@ -7,16 +7,23 @@ use super::{super::transform::Transform, StaticObjectsData};
 
 use crate::systems::static_obj::{StaticObject, self};
 
-pub enum Collision<'a> {
-    Static(&'a mut StaticCollision),
-    Dynamic(&'a mut DynamicCollision),
+pub enum MutCollider<'a> {
+    Static(&'a mut StaticCollider),
+    Dynamic(&'a mut DynamicCollider),
     StaticArea(&'a mut StaticArea),
     DynamicArea(&'a mut DynamicArea),
 }
 
-pub struct StaticCollision {}
+pub enum Collider<'a> {
+    Static(&'a StaticCollider),
+    Dynamic(&'a DynamicCollider),
+    StaticArea(&'a StaticArea),
+    DynamicArea(&'a DynamicArea),
+}
 
-pub struct DynamicCollision {
+pub struct StaticCollider {}
+
+pub struct DynamicCollider {
     pub is_enable: bool,
     pub transform: Transform,
     collider_radius: f32,
@@ -31,7 +38,7 @@ pub struct DynamicCollision {
     pub is_on_ground: bool,
 }
 
-impl DynamicCollision {
+impl DynamicCollider {
     pub fn new(
         transform: Transform,
         max_speed: f32,
@@ -40,7 +47,7 @@ impl DynamicCollision {
         friction_on_air: f32,
         friction_on_ground: f32,
     ) -> Self {
-        DynamicCollision {
+        DynamicCollider {
             is_enable: true,
             transform,
             collider_radius,

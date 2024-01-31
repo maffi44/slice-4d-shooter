@@ -6,8 +6,7 @@ use crate::systems::render::render_data::TimeUniform;
 use self::render_data::CameraUniform;
 
 use super::{
-    world::World,
-    time::TimeSystem
+    actor::{player::Player, ActorWrapper}, time::TimeSystem, world::World
 };
 
 use renderer::Renderer;
@@ -46,12 +45,15 @@ impl RenderSystem {
         let cam_pos;
         let cam_rot;
         
-        if let Some(main_player) = world.pool_of_players.get(&world.main_camera_from) {
-            cam_pos = main_player.get_position();
-            cam_rot = main_player.get_rotation_matrix();
+        if let Some(actor) = world.actors.get(&world.main_camera_from) {
+            if let ActorWrapper::Player(main_player) = actor {
+                cam_pos = main_player.get_position();
+                cam_rot = main_player.get_rotation_matrix();
+            } else {
+                panic!("main camera is connected to the actor that is not a Player")
+            }
         } else {
-            cam_pos = Vec4::ZERO;
-            cam_rot = Mat4::IDENTITY;
+            panic!("main camera is not connected to the player")
         }
 
         let mut rot_mat_slice: [f32;16] = [0.0; 16];

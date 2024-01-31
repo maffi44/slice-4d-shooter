@@ -6,8 +6,7 @@ use super::{
     },
     actor::ActorID,
     actor::{
-        Message,
-        player::PlayerInnerState,
+        player::PlayerInnerState, Message, MessageType
     },
     input::ActionsFrameState,
     effects::EffectType,
@@ -43,21 +42,19 @@ impl Device for DefaultPistol {
         ) {
         if input.fire.is_action_just_pressed() {
             let hit = engine_handle.physics_state.ray_cast(
-                player.collision.transform.get_position(),
-                player.collision.transform.get_direction(),
+                player.collider.transform.get_position(),
+                player.collider.transform.get_direction(),
                 1000.0
             );
 
             if let Some(hit) = hit {
                 if let Some(id) = hit.hited_players_id {
-                    engine_handle.send_command(
+                    engine_handle.send_direct_message(
+                        id,
                         // send message to the damaged player
-                        Command {
-                            sender: player_id,
-                            command_type: CommandType::SendMessage(
-                                id,
-                                Message::DealDamage(self.damage)
-                            )
+                        Message {
+                            from: player_id,
+                            message: MessageType::DealDamage(self.damage)
                         }
                     )
                 } else {

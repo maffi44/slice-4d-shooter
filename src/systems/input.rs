@@ -16,10 +16,10 @@ use winit::{
 
 use super::{
     net::NetSystem,
-    actor::player::player_input_master::InputMaster::{
+    actor::{player::player_input_master::InputMaster::{
         LocalMaster,
         RemoteMaster,
-    },
+    }, ActorWrapper},
     world::World,
 };
 
@@ -231,18 +231,22 @@ impl InputSystem {
 
     pub fn get_input(&mut self, world: &mut World ,net: &mut NetSystem) {
 
-        for (_, player) in world.pool_of_players.iter_mut() {
-            match &mut player.master {
-                LocalMaster(master) => {
-                    master.current_input =
-                        ActionsFrameState::current(
-                            &self.actions_table,
-                            self.mouse_axis
-                        );
-                    // log::info!("current input is {:?}", master.current_input);
-                }
-                RemoteMaster(master) => {
-                    // Didn't implement yet
+        for (_, actor) in world.actors.iter_mut() {
+
+            if let ActorWrapper::Player(player) = actor {
+                
+                match &mut player.master {
+                    LocalMaster(master) => {
+                        master.current_input =
+                            ActionsFrameState::current(
+                                &self.actions_table,
+                                self.mouse_axis
+                            );
+                        // log::info!("current input is {:?}", master.current_input);
+                    }
+                    RemoteMaster(master) => {
+                        // Didn't implement yet
+                    }
                 }
             }
         }

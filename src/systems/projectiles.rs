@@ -1,7 +1,7 @@
 
 use super::{
-    physics::collisions::{
-        Collision,
+    physics::collider::{
+        Collider,
         DynamicArea,
     },
     transform::Transform,
@@ -29,8 +29,8 @@ impl Rocket {
 }
 
 impl Projectile for Rocket {
-    fn get_collision(&mut self) -> Collision {
-        Collision::DynamicArea(&mut self.collision)
+    fn get_collision(&mut self) -> Collider {
+        Collider::DynamicArea(&mut self.collision)
     }
 
     fn tick(&mut self) {
@@ -39,7 +39,7 @@ impl Projectile for Rocket {
 }
 
 pub trait Projectile {
-    fn get_collision(&mut self) -> Collision;
+    fn get_collision(&mut self) -> Collider;
 
     fn tick(&mut self) {}
 }

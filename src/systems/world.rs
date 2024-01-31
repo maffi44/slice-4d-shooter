@@ -1,29 +1,23 @@
 mod map;
 
+use core::panic;
 use std::collections::HashMap;
 
 
 use super::{
     actor::{
-        Message,
+        Actor,
         ActorID,
-        player::{
-            player_input_master::InputMaster,
-            player_settings::PlayerSettings,
-            Player,
-        },
-    },
-    engine_handle::EngineHandle,
-    projectiles::ProjectileType,
-    engine_handle::CommandType::{
-        SendMessage,
+        ActorWrapper,
+        Message
+    }, engine_handle::CommandType::{
         SpawnEffect,
         SpawnProjectile,
     },
+    engine_handle::EngineHandle,
     static_obj::StaticObject,
 };
 
-use getrandom;
 use glam::Vec4;
 
 
@@ -32,8 +26,8 @@ pub enum PlayerAccessError {
 }
 
 pub struct World {
-    pub pool_of_players: HashMap<ActorID, Player>,
-    pub spawned_players: Vec<ActorID>,
+    pub actors: HashMap<ActorID, ActorWrapper>,
+    all_ids: Vec<ActorID>,
     pub main_camera_from: ActorID,
     pub static_objects: Vec<StaticObject>,
     pub spawn_position: Vec4,
@@ -52,10 +46,13 @@ impl World {
 
         let (static_objects, spawn_position) = map::load_map().await;
 
+        let mut all_ids = Vec::with_capacity(20);
+
+        all_ids.push(0);
+
         World {
-            pool_of_players: HashMap::with_capacity(2),
-            // pool_of_rockets: Vec::
-            spawned_players: Vec::with_capacity(2),
+            actors: HashMap::with_capacity(20),
+            all_ids,
             main_camera_from: 0,
             static_objects,
             spawn_position,
@@ -67,89 +64,132 @@ impl World {
             let from = command.sender;
             
             match command.command_type {
-                SendMessage(to, message) => {
-                    self.send_message_to_player(
-                        from,
-                        to,
-                        message,
-                        engine_handle
-                    );
-                }
                 SpawnEffect(_) => {}
                 SpawnProjectile(_) => {}
             }
         }
     }
 
-    pub fn send_message_to_player(
+    pub fn send_messages(&mut self, engine_handle: &mut EngineHandle) {
+        
+        loop {
+                while let Some(message) = engine_handle.boardcast_message_buffer.pop() {
+                    self.send_boardcast_messages(message, engine_handle)                
+                }
+
+                while let Some((to, message)) = engine_handle.direct_message_buffer.pop() {
+                    self.send_direct_messages(to, message, engine_handle)                
+                }
+
+                if engine_handle.direct_message_buffer.is_empty() {
+                    if engine_handle.boardcast_message_buffer.is_empty() {
+                        
+                        return;
+                    }
+                }
+            }
+    }
+
+    fn send_direct_messages(
         &mut self,
-        from: ActorID,
         to: ActorID,
         message: Message,
         engine_handle: &mut EngineHandle
     ) {
-        if let Some(player) = self.pool_of_players.get_mut(&to) {
-            player.recieve_message(from, message, engine_handle)
+        if let Some(actor) = self.actors.get_mut(&to) {
+            actor.recieve_message(message, engine_handle);
         }
     }
 
-    pub fn spawn_projectile(&mut self, projectile_type: ProjectileType, sender: ActorID) {
-
+    fn send_boardcast_messages(
+        &mut self,
+        message: Message,
+        engine_handle: &mut EngineHandle
+    ) {
+        for (_, actor) in self.actors.iter_mut() {
+            if actor.get_id().expect("actor does not have id") != message.from {
+                actor.recieve_boardcast_message(&message, engine_handle);
+            } 
+        }
     }
 
-    pub fn add_new_player(&mut self, master: InputMaster, player_settings: PlayerSettings) -> ActorID {
+    // pub fn spawn_projectile(&mut self, projectile_type: ProjectileType, sender: ActorID) {
 
-        let mut id: ActorID = make_random_id();
+    // }
 
-        while self.pool_of_players.contains_key(&id) {
-            id = make_random_id();
-        }
+    pub fn add_actor_to_world(&mut self, mut actor: ActorWrapper) -> ActorID {
 
-        let new_player = Player::new(id, master, player_settings);
+        let id = match actor.get_id() {
+            Some(id) => id,
+            None => {
+                let id = self.make_new_unique_id_and_store_it();
 
-        self.pool_of_players.insert(id, new_player);
+                actor.set_id(id);
+
+                id
+            },
+        };
+
+        self.actors.insert(id, actor);
 
         id
     }
 
-    pub fn spawn_player_from_pool(&mut self, id: ActorID) -> Result<(), PlayerAccessError>{
-        if self.pool_of_players.contains_key(&id) {
-            self.spawned_players.push(id);
+    pub fn remove_actor_from_world(&mut self, id: ActorID) -> Option<ActorWrapper> {
 
-            Ok(())
-        } else {
-            Err(PlayerAccessError::HaveNotPlayer)
+        self.actors.remove(&id)
+    }
+
+    // pub fn spawn_player_from_pool(&mut self, id: ActorID) -> Result<(), PlayerAccessError>{
+    //     if self.actors.contains_key(&id) {
+    //         self.all_ids.push(id);
+
+    //         Ok(())
+    //     } else {
+    //         Err(PlayerAccessError::HaveNotPlayer)
+    //     }
+    // }
+
+    // pub fn add_and_spawn_new_player(&mut self, master: InputMaster, player_settings: PlayerSettings) -> ActorID {
+    //     let id = self.add_new_actor(master, player_settings);
+    //     match self.spawn_player_from_pool(id) {
+    //         Ok(()) => return id,
+    //         Err(e) => panic!("in fn add_and_spawn_new_player after fn add_new_player have not player in pool")
+    //     };
+    // }
+
+    pub fn tick(&mut self, engine_handle: &mut EngineHandle) {
+        for (_, actor) in self.actors.iter_mut() {
+            actor.tick(engine_handle)
         }
     }
 
-    pub fn add_and_spawn_new_player(&mut self, master: InputMaster, player_settings: PlayerSettings) -> ActorID {
-        let id = self.add_new_player(master, player_settings);
-        match self.spawn_player_from_pool(id) {
-            Ok(()) => return id,
-            Err(e) => panic!("in fn add_and_spawn_new_player after fn add_new_player have not player in pool")
-        };
-    }
+    fn make_new_unique_id_and_store_it(&mut self) -> ActorID {
+        if let Some(last_id) = self.all_ids.last() {
+            if *last_id < u64::MAX {
+                let new_id = last_id + 1;
 
-    pub fn process_input(&mut self, engine_handle: &mut EngineHandle) {
-        for player_id in self.spawned_players.iter() {
-            let player = self.pool_of_players.get_mut(player_id);
+                self.all_ids.push(new_id);
 
-            if let Some(player) = player {
-                player.process_input(engine_handle);
+                new_id
+            } else {
+                panic!("in world system in all_ids last value is maximum of u64 type")
             }
+        } else {
+            panic!("in world system in all_ids buffer have no any value")
         }
     }
 }
 
 
-fn make_random_id() -> u64 {
-    let mut bytes: [u8; 8] = [0_u8; 8];
+// fn make_random_id() -> u64 {
+//     let mut bytes: [u8; 8] = [0_u8; 8];
 
-    if let Err(err) = getrandom::getrandom(&mut bytes) {
-        panic!("getrandom error, error code is {}", err);
-    }
-    u64::from_be_bytes(bytes)
-}
+//     if let Err(err) = getrandom::getrandom(&mut bytes) {
+//         panic!("getrandom error, error code is {}", err);
+//     }
+//     u64::from_be_bytes(bytes)
+// }
 
 // fn is_id_unique() -> bool {
 

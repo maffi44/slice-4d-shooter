@@ -3,16 +3,17 @@ use super::{
     input::ActionsFrameState,
     actor::{
         Message,
-        player::player_input_master::{
-            InputMaster,
-            LocalMaster
-        },
+        MessageType,
+        ActorWrapper,
+        player::{
+            Player,
+            player_input_master::{
+                InputMaster,
+                LocalMaster
+            },
+        }
     },
     transform::Transform,
-    engine_handle::{
-        Command,
-        CommandType,
-    },
 };
 
 use std::time::Duration;
@@ -196,9 +197,11 @@ fn main_loop(
 
     systems.input.get_input(&mut systems.world, &mut systems.net);
 
-    systems.world.process_input(&mut systems.engine_handle);
+    systems.world.tick(&mut systems.engine_handle);
 
     systems.world.process_commands(&mut systems.engine_handle);
+
+    systems.world.send_messages(&mut systems.engine_handle);
 
     systems.physic.process_physics(
         &mut systems.world, 
@@ -215,36 +218,26 @@ fn main_loop(
 }
 
 fn init(systems: &mut Engine) {
-    let main_player = systems.world.add_and_spawn_new_player(
+    let main_player = Player::new(
         InputMaster::LocalMaster(
             LocalMaster::new(ActionsFrameState::empty())
         ),
         systems.global_players_settings.clone()
     );
 
-    systems.engine_handle.send_command(
-        Command {
-            sender: 0_u64,
-            command_type: CommandType::SendMessage(
-                main_player,
-                Message::SetTransform(
-                    Transform::new_from_vec4(systems.world.spawn_position),
-                )
+    let main_player_id = systems.world.add_actor_to_world(
+        ActorWrapper::Player(main_player)
+    );
+
+    systems.engine_handle.send_direct_message(
+        main_player_id,
+        Message {
+            from: 0_u64,
+            message: MessageType::SetTransform(
+                Transform::new_from_vec4(systems.world.spawn_position),
             )
         }
     );
 
-    // systems.engine_handle.send_command(
-    //     Command {
-    //         sender: 0_u32,
-    //         command_type: CommandType::SendMessage(
-    //             main_player,
-    //             Message::EnableCollider(
-    //                 false
-    //             )
-    //         )
-    //     }
-    // );
-
-    systems.world.main_camera_from = main_player;
+    systems.world.main_camera_from = main_player_id;
 }
