@@ -11,5 +11,4 @@ pub mod world;
 pub mod engine_handle;
 pub mod devices;
 pub mod actor;
-pub mod projectiles;
 pub mod static_obj;

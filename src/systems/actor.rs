@@ -1,27 +1,20 @@
 pub mod player;
+pub mod diamond;
 
 use player::Player;
 
 use super::{
     transform::Transform,
-    engine_handle::{
-        EngineHandle,
-        Command,
-    },
+    engine_handle::EngineHandle,
     physics::collider::{
-        Collider,
-        MutCollider,
+        DynamicCollider,
+        StaticCollider,
+        Area
     },
 };
 
 
 pub type ActorID = u64;
-
-pub enum ActorWrapper {
-    Player(Player),
-    Diamond,
-    Exit,
-}
 
 pub trait Actor<'a> {
 
@@ -31,15 +24,23 @@ pub trait Actor<'a> {
 
     fn tick(&mut self, engine_handle: &mut EngineHandle) {}
 
-    fn get_collider(&'a self) -> Option<Collider<'a>> {None}
+    fn get_dynamic_collider(&'a mut self) -> Option<&'a mut DynamicCollider> {None}
 
-    fn get_mut_collider(&'a mut self) -> Option<MutCollider<'a>> {None}
+    fn get_static_colliders(&'a mut self) -> Option<&'a mut Vec<StaticCollider>> {None}
+    
+    fn get_areas(&'a mut self) -> Option<&'a mut Vec<Area>> {None}
 
-    fn get_visual_elem(&self) {}
+    fn get_visual_elem(&'a self) {}
 
     fn get_id(&self) -> Option<ActorID>;
     
     fn set_id(&mut self, id: ActorID);
+}
+
+pub enum ActorWrapper {
+    Player(Player),
+    Diamond,
+    Exit,
 }
 
 impl Actor<'_> for ActorWrapper {
@@ -73,20 +74,30 @@ impl Actor<'_> for ActorWrapper {
         }
     }
 
-    fn get_collider(&'_ self) -> Option<Collider<'_>> {
+    fn get_dynamic_collider(&mut self) -> Option<&mut DynamicCollider> {
         match  self {
             ActorWrapper::Player(player) => {
-                player.get_collider()
+                player.get_dynamic_collider()
             },
             ActorWrapper::Diamond => {panic!("try to get access to diamond")},
             ActorWrapper::Exit => {panic!("try to get access to exit")},
         }
     }
 
-    fn get_mut_collider(&'_ mut self) -> Option<MutCollider<'_>> {
+    fn get_static_colliders(&mut self) -> Option<&mut Vec<StaticCollider>> {
         match  self {
             ActorWrapper::Player(player) => {
-                player.get_mut_collider()
+                player.get_static_colliders()
+            },
+            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
+            ActorWrapper::Exit => {panic!("try to get access to exit")},
+        }
+    }
+
+    fn get_areas(&mut self) -> Option<&mut Vec<Area>> {
+        match  self {
+            ActorWrapper::Player(player) => {
+                player.get_areas()
             },
             ActorWrapper::Diamond => {panic!("try to get access to diamond")},
             ActorWrapper::Exit => {panic!("try to get access to exit")},

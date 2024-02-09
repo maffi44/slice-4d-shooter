@@ -44,7 +44,7 @@ impl MainLoop {
 
     pub async fn run<'a>(
         self,
-        mut systems : Engine,
+        mut systems : Engine<'a>,
     ) {
         
         let systems = &mut systems;

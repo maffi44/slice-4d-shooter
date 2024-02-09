@@ -1,5 +1,7 @@
 mod map;
+mod static_object;
 
+use static_object::StaticObject;
 use core::panic;
 use std::collections::HashMap;
 
@@ -10,15 +12,12 @@ use super::{
         ActorID,
         ActorWrapper,
         Message
-    }, engine_handle::CommandType::{
-        SpawnEffect,
-        SpawnProjectile,
     },
+    engine_handle::CommandType::SpawnEffect,
     engine_handle::EngineHandle,
-    static_obj::StaticObject,
 };
 
-use glam::Vec4;
+use glam::{Vec3, Vec4};
 
 
 pub enum PlayerAccessError {
@@ -44,12 +43,13 @@ impl World {
 
     pub async fn new() -> Self {
 
-        let (static_objects, spawn_position) = map::load_map().await;
-
+        
         let mut all_ids = Vec::with_capacity(20);
-
+        
         all_ids.push(0);
-
+        
+        let (static_objects, spawn_position) = map::load_map().await;
+        
         World {
             actors: HashMap::with_capacity(20),
             all_ids,
@@ -65,7 +65,6 @@ impl World {
             
             match command.command_type {
                 SpawnEffect(_) => {}
-                SpawnProjectile(_) => {}
             }
         }
     }

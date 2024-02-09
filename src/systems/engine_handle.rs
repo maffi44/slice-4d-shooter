@@ -1,5 +1,4 @@
 use super::{
-    projectiles::ProjectileType,
     actor::{
         Message,
         ActorID,
@@ -14,7 +13,7 @@ pub struct Command {
 }
 
 pub enum CommandType {
-    SpawnProjectile(ProjectileType),
+    // SpawnProjectile(ProjectileType),
     SpawnEffect(EffectType),
 }
 

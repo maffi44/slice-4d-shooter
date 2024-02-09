@@ -1,25 +1,9 @@
 use glam::{
     Vec4, Vec3, Vec2, Vec4Swizzles
 };
-use web_sys::console::dir;
-
 use super::{super::transform::Transform, StaticObjectsData};
 
 use crate::systems::static_obj::{StaticObject, self};
-
-pub enum MutCollider<'a> {
-    Static(&'a mut StaticCollider),
-    Dynamic(&'a mut DynamicCollider),
-    StaticArea(&'a mut StaticArea),
-    DynamicArea(&'a mut DynamicArea),
-}
-
-pub enum Collider<'a> {
-    Static(&'a StaticCollider),
-    Dynamic(&'a DynamicCollider),
-    StaticArea(&'a StaticArea),
-    DynamicArea(&'a DynamicArea),
-}
 
 pub struct StaticCollider {}
 
@@ -136,16 +120,16 @@ impl DynamicCollider {
     }
 }
 
-pub struct StaticArea {}
-
-pub struct DynamicArea {
+pub struct Area {
     transform: Transform,
+    radius: f32,
 }
 
-impl DynamicArea {
-    pub fn new(transform: Transform) -> Self {
-        DynamicArea {
+impl Area {
+    pub fn new(transform: Transform, radius: f32) -> Self {
+        Area {
             transform,
+            radius,
         }
     }
 }

@@ -12,11 +12,6 @@ use glam::{
 use player_input_master::InputMaster;
 use player_settings::PlayerSettings;
 
-use crate::systems::physics::collider::{
-    MutCollider,
-    Collider,
-};
-
 use super::{
     Actor, ActorID, Message, MessageType
 };
@@ -132,20 +127,8 @@ impl Actor<'_> for Player {
         self.id
     }
 
-    fn get_collider(&self) -> Option<Collider> {
-        Some(
-            Collider::Dynamic(
-                &self.inner_state.collider
-            )
-        )
-    }
-
-    fn get_mut_collider(&mut self) -> Option<MutCollider> {
-        Some(
-            MutCollider::Dynamic(
-                &mut self.inner_state.collider
-            )
-        )
+    fn get_dynamic_collider(&mut self) -> Option<&mut DynamicCollider> {
+        Some(&mut self.inner_state.collider)
     }
 
     fn tick(&mut self, engine_handle: &mut EngineHandle) {
@@ -296,6 +279,8 @@ impl Actor<'_> for Player {
             self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
             self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
         };
+
+        log::warn!("Position: {:.2}", self.get_position());
     }
 }
 

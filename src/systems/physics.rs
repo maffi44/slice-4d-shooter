@@ -1,28 +1,33 @@
-use self::collider::MutCollider;
+use self::collider::{Area, DynamicCollider, StaticCollider};
 
 use super::{
-    world::World,
-    static_obj::StaticObject,
-    actor::Actor,
+    actor::Actor, static_obj::StaticObject, world::World
 };
 
 use glam::Vec4;
 
 pub mod collider;
 
-pub struct StaticObjectsData {
-     cubes: Vec<(Vec4,Vec4)>,
-     inf_w_cubes: Vec<(Vec4,Vec4)>,
-     spheres: Vec<(Vec4,Vec4)>,
-     shpcubes: Vec<(Vec4,Vec4)>,
-
-     neg_cubes: Vec<(Vec4,Vec4)>,
-     neg_inf_w_cubes: Vec<(Vec4,Vec4)>,
-     neg_spheres: Vec<(Vec4,Vec4)>,
-     neg_shpcubes: Vec<(Vec4,Vec4)>,
+struct StaticColliderData {
+    postition: Vec4,
+    size: Vec4,
+    friction: f32,
+    bounce_rate: f32,
 }
 
-impl StaticObjectsData {
+pub struct LevelStaticCollidersData {
+     cubes: Vec<StaticColliderData>,
+     inf_w_cubes: Vec<StaticColliderData>,
+     spheres: Vec<StaticColliderData>,
+     shpcubes: Vec<StaticColliderData>,
+
+     neg_cubes: Vec<StaticColliderData>,
+     neg_inf_w_cubes: Vec<StaticColliderData>,
+     neg_spheres: Vec<StaticColliderData>,
+     neg_shpcubes: Vec<StaticColliderData>,
+}
+
+impl LevelStaticCollidersData {
     pub fn new(world: &World) -> Self {
         let mut cubes = Vec::new();
         let mut inf_w_cubes = Vec::new();
@@ -94,7 +99,10 @@ impl StaticObjectsData {
 }
 
 pub struct PhysicsSystem {
-    static_objects_data: StaticObjectsData
+    static_objects_data: StaticObjectsData,
+
+    frame_static_colliders_buffer: Vec<StaticColliderData>,
+    frame_dynamics_colliders_buffer: Vec<DynamicColliderData>
 }
 pub struct PhysicsState {
 
@@ -117,33 +125,46 @@ pub struct Hit {
 }
 
 
-impl PhysicsSystem {
+impl<'a> PhysicsSystem<'a> {
     pub fn new(world: &World) -> Self {
         
         let static_objects_data = StaticObjectsData::new(world);
 
         PhysicsSystem {
-            static_objects_data
+            static_objects_data,
+            frame_static_colliders_buffer: Vec::with_capacity(20),
+            frame_dynamics_colliders_buffer: Vec::with_capacity(1),
+            frame_areas_buffer: Vec::with_capacity(20),
         }
     }
 
-    pub fn process_physics(&mut self, world: &mut World, dt: f32) {
+    pub fn process_physics(&mut self, world: &'a mut World, dt: f32) {
         for (_, actor) in world.actors.iter_mut() {
 
-            if let Some(some_collider) = actor.get_mut_collider() {
+            if let Some(dynamic_collider) = actor.get_dynamic_collider() {
                 
-                match some_collider {
-                    MutCollider::Dynamic(collider) => {
-                        
-                        collider.physics_tick(dt, &self.static_objects_data);
-                    },
-                    MutCollider::DynamicArea(_) => {},
-                    MutCollider::Static(_) => {},
-                    MutCollider::StaticArea(_) => {},
+                self.frame_dynamics_colliders_buffer.push(dynamic_collider);
+            }
+
+            if let Some(static_colliders) = actor.get_static_colliders() {
+
+                for static_collider in static_colliders.iter_mut() {
+
+                    self.frame_static_colliders_buffer.push(static_collider);
+                }
+            }
+
+            if let Some(areas) = actor.get_areas() {
+                
+                for area in areas.iter_mut() {
+
+                    self.frame_areas_buffer.push(area);
                 }
             }
         }
+
+        self.frame_areas_buffer.clear();
+        self.frame_dynamics_colliders_buffer.clear();
+        self.frame_static_colliders_buffer.clear();
     }
-
-
 }

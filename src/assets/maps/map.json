@@ -1,495 +1,501 @@
-[
-    {
-        "cube_w_inf" : {
-            "transform" : {
-                "position" : {
-                    "x": 0.0,
-                    "y": 0.0 ,
-                    "z": 0.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 10.0,
-                "y": 0.2,
-                "z": 10.0
-            },
-            "is_positive" : true
-        }
+{
+    "level_name" : "test_level",
+
+    "defaults" : {
+        "is_positive": true,
+        "friction": 0.35,
+        "bounce_rate": 0.0,
+        "material": {
+            "red": 1.0,
+            "green": 1.0,
+            "blue": 1.0
+        },
+        "roundness": 0.0,
+        "stickiness": 0.0
     },
-    {
-        "cube" : {
-            "transform" : {
-                "position" : {
-                    "x": 0.0,
-                    "y": 0.0,
-                    "z": 0.0,
-                    "w": -4.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0,
-                "w": 2.0
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "sphere" : {
-            "transform" : {
-                "position" : {
-                    "x": -2.0,
-                    "y": 1.0,
-                    "z": 2.0,
-                    "w": -1.4
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 1.4
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "sphere" : {
-            "transform" : {
-                "position" : {
-                    "x": 2.0,
-                    "y": 1.0,
-                    "z": 2.0,
-                    "w": 1.4
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 1.4
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "sph_cube" : {
-            "transform" : {
-                "position" : {
-                    "x": 0.0,
-                    "y": 2.0,
-                    "z": 5.0,
-                    "w": -1.5
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 2.0,
+
+    "spawn_position" : {
+        "transform" : {
+            "position" : {
+                "x": 0.0,
                 "y": 2.0,
-                "z": 2.0,
-                "w": 2.0
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "sph_cube" : {
-            "transform" : {
-                "position" : {
-                    "x": 4.0,
-                    "y": 2.0,
-                    "z": 5.0,
-                    "w": 1.5
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 2.0,
-                "y": 2.0,
-                "z": 2.0,
-                "w": 2.0
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "cube" : {
-            "transform" : {
-                "position" : {
-                    "x": 6.0,
-                    "y": 1.5,
-                    "z": -4.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 1.5,
-                "y": 2.0,
-                "z": 1.0,
-                "w": 2.0
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "cube" : {
-            "transform" : {
-                "position" : {
-                    "x": 2.0,
-                    "y": 1.5,
-                    "z": -4.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 1.5,
-                "y": 2.0,
-                "z": 1.0,
-                "w": 2.0
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "sph_cube" : {
-            "transform" : {
-                "position" : {
-                    "x": 2.0,
-                    "y": 1.5,
-                    "z": -4.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 1.0,
-                "y": 1.0,
-                "z": 1.0,
-                "w": 1.0
-            },
-            "is_positive" : false
-        }
-    },
-    {
-        "cube" : {
-            "transform" : {
-                "position" : {
-                    "x": -2.0,
-                    "y": 1.5,
-                    "z": -4.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 1.5,
-                "y": 2.0,
-                "z": 1.0,
-                "w": 2.0
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "sphere" : {
-            "transform" : {
-                "position" : {
-                    "x": -2.0,
-                    "y": 1.5,
-                    "z": -5.2,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 3.0
-            },
-            "is_positive" : false
-        }
-    },
-    {
-        "cube" : {
-            "transform" : {
-                "position" : {
-                    "x": -6.0,
-                    "y": 1.5,
-                    "z": -4.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 1.5,
-                "y": 2.0,
-                "z": 1.0,
-                "w": 2.0
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "cube" : {
-            "transform" : {
-                "position" : {
-                    "x": -6.0,
-                    "y": 1.5,
-                    "z": -4.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 1.1,
-                "y": 2.2,
-                "z": 1.2,
-                "w": 2.2
-            },
-            "is_positive" : false
-        }
-    },
-    {
-        "cube" : {
-            "transform" : {
-                "position" : {
-                    "x": -20.0,
-                    "y": 0.0,
-                    "z": 0.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 10.1,
-                "y": 10.2,
-                "z": 10.2,
-                "w": 10.2
-            },
-            "is_positive" : true
-        }
-    },
-    {
-        "sph_cube" : {
-            "transform" : {
-                "position" : {
-                    "x": -11.0,
-                    "y": 2.0,
-                    "z": 4.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 3.1,
-                "y": 3.2,
-                "z": 3.2,
-                "w": 3.6
-            },
-            "is_positive" : false
-        }
-    },
-    {
-        "cube" : {
-            "transform" : {
-                "position" : {
-                    "x": -18.0,
-                    "y": 2.0,
-                    "z": 0.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 9.5,
-                "y": 1.8,
-                "z": 2.2,
-                "w": 10.2
-            },
-            "is_positive" : false
-        }
-    },
-    {
-        "sphere" : {
-            "transform" : {
-                "position" : {
-                    "x": -25.0,
-                    "y": 2.0,
-                    "z": 0.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 4.0
-            },
-            "is_positive" : false
-        }
-    },
-    {
-        "cube" : {
-            "transform" : {
-                "position" : {
-                    "x": -25.0,
-                    "y": 2.0,
-                    "z": 0.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
-            },
-            "size" : {
-                "x": 2.1,
-                "y": 2.0,
-                "z": 11.2,
-                "w": 10.2
-            },
-            "is_positive" : false
-        }
-    },
-    {
-        "spawn_position" : {
-            "transform" : {
-                "position" : {
-                    "x": 0.0,
-                    "y": 2.0,
-                    "z": 0.0,
-                    "w": 0.0
-                },
-                "rotation" : {
-                    "yz": 0.0,
-                    "xz": 0.0,
-                    "xy": 0.0,
-                    "wx": 0.0,
-                    "wy": 0.0,
-                    "wz": 0.0
-                }
+                "z": 0.0,
+                "w": 0.0
             }
         }
-    }
-]
+    },
+
+    "actors" : [
+
+    ],
+    
+    "static_objects": [
+        {
+            "cube_w_inf" : {
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 0.0 ,
+                        "z": 0.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 10.0,
+                    "y": 0.2,
+                    "z": 10.0
+                },
+                "is_positive" : true,
+                "friction": 0.0,
+                "bounce_rate": 0.5
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": -4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 10.0,
+                    "y": 10.0,
+                    "z": 10.0,
+                    "w": 2.0
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "sphere" : {
+                "transform" : {
+                    "position" : {
+                        "x": -2.0,
+                        "y": 1.0,
+                        "z": 2.0,
+                        "w": -1.4
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.4
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "sphere" : {
+                "transform" : {
+                    "position" : {
+                        "x": 2.0,
+                        "y": 1.0,
+                        "z": 2.0,
+                        "w": 1.4
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.4
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "sph_cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 2.0,
+                        "z": 5.0,
+                        "w": -1.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.0,
+                    "y": 2.0,
+                    "z": 2.0,
+                    "w": 2.0
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "sph_cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 4.0,
+                        "y": 2.0,
+                        "z": 5.0,
+                        "w": 1.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.0,
+                    "y": 2.0,
+                    "z": 2.0,
+                    "w": 2.0
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 6.0,
+                        "y": 1.5,
+                        "z": -4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 2.0,
+                    "z": 1.0,
+                    "w": 2.0
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 2.0,
+                        "y": 1.5,
+                        "z": -4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 2.0,
+                    "z": 1.0,
+                    "w": 2.0
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "sph_cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 2.0,
+                        "y": 1.5,
+                        "z": -4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0,
+                    "w": 1.0
+                },
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -2.0,
+                        "y": 1.5,
+                        "z": -4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 2.0,
+                    "z": 1.0,
+                    "w": 2.0
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "sphere" : {
+                "transform" : {
+                    "position" : {
+                        "x": -2.0,
+                        "y": 1.5,
+                        "z": -5.2,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.0
+                },
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -6.0,
+                        "y": 1.5,
+                        "z": -4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 2.0,
+                    "z": 1.0,
+                    "w": 2.0
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -6.0,
+                        "y": 1.5,
+                        "z": -4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.1,
+                    "y": 2.2,
+                    "z": 1.2,
+                    "w": 2.2
+                },
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -20.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 10.1,
+                    "y": 10.2,
+                    "z": 10.2,
+                    "w": 10.2
+                },
+                "is_positive" : true
+            }
+        },
+        {
+            "sph_cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -11.0,
+                        "y": 2.0,
+                        "z": 4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.1,
+                    "y": 3.2,
+                    "z": 3.2,
+                    "w": 3.6
+                },
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -18.0,
+                        "y": 2.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 9.5,
+                    "y": 1.8,
+                    "z": 2.2,
+                    "w": 10.2
+                },
+                "is_positive" : false
+            }
+        },
+        {
+            "sphere" : {
+                "transform" : {
+                    "position" : {
+                        "x": -25.0,
+                        "y": 2.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 4.0
+                },
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -25.0,
+                        "y": 2.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.1,
+                    "y": 2.0,
+                    "z": 11.2,
+                    "w": 10.2
+                },
+                "is_positive" : false
+            }
+        }
+    ]
+}

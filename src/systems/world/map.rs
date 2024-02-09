@@ -1,60 +1,84 @@
-use crate::systems::transform;
+use crate::systems::actor::ActorWrapper;
 
 use super::super::{
-    static_obj::StaticObject,
     transform::Transform,
 };
-use glam::{
-    Vec2,
-    Vec3,
-    Vec4,
-};
+use glam::{Vec4, Vec3};
+use super::static_object::StaticObject;
+
 use wasm_bindgen_futures::JsFuture;
 use serde_json::Value;
 
 
-pub async fn load_map() -> (Vec<StaticObject>, Vec4) {
-
-    let window = web_sys::window().unwrap();
-
-    let target = "http://127.0.0.1:5500/src/assets/maps/map.json";
-    
-    let promise = window.fetch_with_str(target);
-
-    let result = JsFuture::from(promise).await;
-
-    let map = match result {
-        Ok(val) => {
-            let response: web_sys::Response = val.into();
-
-            let json_text = JsFuture::from(response.text().unwrap()).await;
-            
-            match json_text {
-                Ok(text) => {
-                    let json_map = serde_json::from_str(&text.as_string().unwrap()).unwrap();
-                    
-                    parse_json_into_map(json_map)
-                },
-                Err(val) => {
-                    panic!(
-                        "ERROR: cannot converting map.json file into text, err is: {:?}",
-                        val
-                    );
-                },
-            }
-        },
-        Err(val) => {
-            panic!(
-                "ERROR: the map cannot be loaded, err: {}",
-                val.as_string().unwrap_or("".to_string())
-            );
-        }  
-    };
-
-    map
+pub struct ObjectMatrial {
+    color: Vec3
 }
 
-fn parse_json_into_map(json_map: Value) -> (Vec<StaticObject>, Vec4) {
+pub struct DefaultMapSettings {
+    friction: f32,
+    bounce_rate: f32,
+    material: ObjectMatrial,
+    roundness: f32,
+    stickiness: f32,
+    is_positive: bool,
+}
+pub struct Level {
+    level_name: String,
+    static_objects: Vec<StaticObject>,
+    spawn_position: Vec4,
+}
+
+impl Level {
+    
+    pub async fn download_map_from_server_with_translation(
+        translation: Vec4
+    ) -> (Level, Vec<ActorWrapper>)
+    {
+        let window = web_sys::window().unwrap();
+    
+        let target = "http://127.0.0.1:5500/src/assets/maps/map.json";
+        
+        let promise = window.fetch_with_str(target);
+    
+        let result = JsFuture::from(promise).await;
+    
+        let map = match result {
+            Ok(val) => {
+                let response: web_sys::Response = val.into();
+    
+                let json_text = JsFuture::from(response.text().unwrap()).await;
+                
+                match json_text {
+                    Ok(text) => {
+                        let json_map = serde_json::from_str(&text.as_string().unwrap()).unwrap();
+                        
+                        parse_json_into_map_with_translation(json_map, translation)
+                    },
+                    Err(val) => {
+                        panic!(
+                            "ERROR: cannot converting map.json file into text, err is: {:?}",
+                            val
+                        );
+                    },
+                }
+            },
+            Err(val) => {
+                panic!(
+                    "ERROR: the map cannot be loaded, err: {}",
+                    val.as_string().unwrap_or("".to_string())
+                );
+            }  
+        };
+    
+        map
+    }
+}
+
+
+fn parse_json_into_map_with_translation(
+    json_map: Value, translation: Vec4
+) -> (Vec<StaticObject>, Vec4)
+{
     let mut map: Vec<StaticObject> = Vec::with_capacity(40);
 
     let array = json_map
@@ -75,7 +99,7 @@ fn parse_json_into_map(json_map: Value) -> (Vec<StaticObject>, Vec4) {
                 "cube" => {
                     let shape_name = "cube shape";
 
-                    let transform = parse_json_into_transform(shape, shape_name);
+                    let transform = parse_json_into_transform(shape, shape_name, translation);
 
                     let size = parse_json_into_size(shape, shape_name);
 
@@ -88,7 +112,7 @@ fn parse_json_into_map(json_map: Value) -> (Vec<StaticObject>, Vec4) {
                 "cube_w_inf" => {
                     let shape_name = "cube_w_inf";
 
-                    let transform = parse_json_into_transform(shape, shape_name);
+                    let transform = parse_json_into_transform(shape, shape_name, translation);
 
                     let size = parse_json_into_size(shape, shape_name);
 
@@ -101,7 +125,7 @@ fn parse_json_into_map(json_map: Value) -> (Vec<StaticObject>, Vec4) {
                 "sphere" => {
                     let shape_name = "sphere";
 
-                    let transform = parse_json_into_transform(shape, shape_name);
+                    let transform = parse_json_into_transform(shape, shape_name, translation);
 
                     let size = parse_json_into_size(shape, shape_name);
 
@@ -114,7 +138,7 @@ fn parse_json_into_map(json_map: Value) -> (Vec<StaticObject>, Vec4) {
                 "sph_cube" => {
                     let shape_name = "sph_cube";
 
-                    let transform = parse_json_into_transform(shape, shape_name);
+                    let transform = parse_json_into_transform(shape, shape_name, translation);
 
                     let size = parse_json_into_size(shape, shape_name);
 
@@ -127,7 +151,7 @@ fn parse_json_into_map(json_map: Value) -> (Vec<StaticObject>, Vec4) {
                 "spawn_position" => {
                     let shape_name = "spawn_position";
 
-                    let transform = parse_json_into_transform(shape, shape_name);
+                    let transform = parse_json_into_transform(shape, shape_name, translation);
 
                     spawn_position = transform.get_position();
                 }
@@ -142,7 +166,7 @@ fn parse_json_into_map(json_map: Value) -> (Vec<StaticObject>, Vec4) {
 }
 
 
-fn parse_json_into_transform(shape: &Value, shape_name: &'static str) -> Transform {
+fn parse_json_into_transform(shape: &Value, shape_name: &'static str, translation: Vec4) -> Transform {
 
     let shape = shape
         .as_object()
@@ -265,7 +289,9 @@ fn parse_json_into_transform(shape: &Value, shape_name: &'static str) -> Transfo
             )
         );
     
-    Transform::new(x as f32, y as f32, z as f32, w as f32)
+    let position = Vec4::new(x as f32, y as f32, z as f32, w as f32);
+    
+    Transform::new_from_vec4(position + translation)
 }
 
 
@@ -386,17 +412,11 @@ fn parse_json_into_size(shape: &Value, shape_name: &'static str) -> Vec4 {
 
 }
 
-fn parse_json_into_is_positive(shape: &Value, shape_name: &'static str) -> bool {
+fn parse_json_into_is_positive(shape: &Value, shape_name: &'static str) -> Option<bool> {
 
-    let shape = shape
-        .as_object()
-        .expect(
-            &format!
-            (
-                "Wrong JSON map format, all shape must be json objects in {}",
-                shape_name
-            )
-        );
+    let shape = shape.as_object();
+
+    if shape.is_none() {return None;}
 
     let json_is_positive = shape
         .get("is_positive")
@@ -413,17 +433,80 @@ fn parse_json_into_is_positive(shape: &Value, shape_name: &'static str) -> bool 
         .expect(
             &format!
             (
-                "Wrong JSON map format, size property is not boolean type in {}",
+                "Wrong JSON map format, is_positive property is not boolean type in {}",
                 shape_name
             )
         );
     
-    is_positive
+    Some(is_positive)
 }
 
-enum Size {
-    X(f32),
-    XY(Vec2),
-    XYZ(Vec3),
-    XYZW(Vec4),
+fn parse_json_into_friction(shape: &Value, shape_name: &'static str) -> f32 {
+
+    let shape = shape
+        .as_object()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, all shape must be json objects in {}",
+                shape_name
+            )
+        );
+
+    let json_friction = shape
+        .get("friction")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, friction property is not exist in {}",
+                shape_name
+            )
+        );
+
+    let friction = json_friction
+        .as_f64()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, friction property is not float type in {}",
+                shape_name
+            )
+        );
+    
+    Some(friction as f32)
+}
+
+fn parse_json_into_bounce_rate(shape: &Value, shape_name: &'static str) -> bool {
+
+    let shape = shape
+        .as_object()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, all shape must be json objects in {}",
+                shape_name
+            )
+        );
+
+    let json_bounce_rate = shape
+        .get("bounce_rate")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, bounce_rate property is not exist in {}",
+                shape_name
+            )
+        );
+
+    let bounce_rate = json_bounce_rate
+        .as_f64()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, bounce_rate property is not float type in {}",
+                shape_name
+            )
+        );
+    
+    bounce_rate as f32
 }
