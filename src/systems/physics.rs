@@ -1,7 +1,7 @@
 use self::collider::{Area, DynamicCollider, StaticCollider};
 
 use super::{
-    actor::Actor, static_obj::StaticObject, world::World
+    actor::Actor, world::static_object::StaticObject, world::World
 };
 
 use glam::Vec4;
@@ -125,7 +125,7 @@ pub struct Hit {
 }
 
 
-impl<'a> PhysicsSystem<'a> {
+impl PhysicsSystem {
     pub fn new(world: &World) -> Self {
         
         let static_objects_data = StaticObjectsData::new(world);
@@ -138,7 +138,7 @@ impl<'a> PhysicsSystem<'a> {
         }
     }
 
-    pub fn process_physics(&mut self, world: &'a mut World, dt: f32) {
+    pub fn process_physics(&mut self, world: &mut World, dt: f32) {
         for (_, actor) in world.actors.iter_mut() {
 
             if let Some(dynamic_collider) = actor.get_dynamic_collider() {

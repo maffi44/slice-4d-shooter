@@ -13,7 +13,7 @@ use super::{
     engine_handle::EngineHandle, net::NetSystem,
 };
 
-pub struct Engine<'a> {
+pub struct Engine {
     pub render: RenderSystem,
     pub input: InputSystem,
     pub physic: PhysicsSystem,
@@ -26,11 +26,11 @@ pub struct Engine<'a> {
     // pub net: ClientNetSystem,
 }
 
-impl<'a, 'b> Engine<'a> {
+impl Engine {
     pub async fn new(
-        cleint_main_loop: &'b MainLoop,
+        cleint_main_loop: &MainLoop,
         // async_runtime: &Runtime,
-    ) -> Engine<'a> {
+    ) -> Engine {
 
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id("game_canvas").unwrap();

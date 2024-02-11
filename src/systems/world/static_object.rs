@@ -2,20 +2,34 @@ use glam::{Vec3, Vec4};
 use super::super::transform::Transform;
 
 #[derive(Debug)]
-pub struct StaticObjectData {
-    transform: Transform,
-    size: Vec4,
-    is_positive: bool,
-    friction: f32,
-    roundness: f32,
-    bound_rate: f32,
-    material: Vec3,
-    // stickiness: f32
+pub struct ObjectMatrial {
+    color: Vec3
 }
 
-pub enum StaticObject {
-    Cube(StaticObjectData),
-    CubeInfW(StaticObjectData),
-    Sphere(StaticObjectData),
-    SphCube(StaticObjectData),
+impl ObjectMatrial {
+    pub fn new(color: Vec3) -> Self {
+        ObjectMatrial {
+            color
+        }
+    }
+}
+#[derive(Debug)]
+pub struct StaticObject {
+    pub shape_type: ShapeType,
+    pub transform: Transform,
+    pub size: Vec4,
+    pub is_positive: bool,
+    pub friction: f32,
+    pub roundness: f32,
+    pub bounce_rate: f32,
+    pub material: ObjectMatrial,
+    pub stickiness: f32
+}
+
+#[derive(Debug)]
+pub enum ShapeType {
+    Cube,
+    CubeInfW,
+    Sphere,
+    SphCube,
 }

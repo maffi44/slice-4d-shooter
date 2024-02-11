@@ -28,7 +28,7 @@ impl Diamond {
     }
 }
 
-impl Actor<'_> for Diamond {
+impl Actor for Diamond {
     fn recieve_message(&mut self, message: Message, engine_handle: &mut EngineHandle) {
         let from = message.from;
 

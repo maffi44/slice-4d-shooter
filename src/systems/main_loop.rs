@@ -44,7 +44,7 @@ impl MainLoop {
 
     pub async fn run<'a>(
         self,
-        mut systems : Engine<'a>,
+        mut systems : Engine,
     ) {
         
         let systems = &mut systems;
@@ -234,7 +234,7 @@ fn init(systems: &mut Engine) {
         Message {
             from: 0_u64,
             message: MessageType::SetTransform(
-                Transform::new_from_vec4(systems.world.spawn_position),
+                Transform::new_from_vec4(systems.world.main_spawn_position),
             )
         }
     );

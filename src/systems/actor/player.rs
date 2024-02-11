@@ -82,7 +82,7 @@ pub struct Player {
     pub master: InputMaster,
 }
 
-impl Actor<'_> for Player {
+impl Actor for Player {
     fn recieve_message(&mut self, message: Message, engine_handle: &mut EngineHandle) {
         let from = message.from;
 

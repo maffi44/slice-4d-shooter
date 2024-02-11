@@ -16,7 +16,7 @@ use super::{
 
 pub type ActorID = u64;
 
-pub trait Actor<'a> {
+pub trait Actor {
 
     fn recieve_message(&mut self, message: Message, engine_handle: &mut EngineHandle);
 
@@ -24,13 +24,13 @@ pub trait Actor<'a> {
 
     fn tick(&mut self, engine_handle: &mut EngineHandle) {}
 
-    fn get_dynamic_collider(&'a mut self) -> Option<&'a mut DynamicCollider> {None}
+    fn get_dynamic_collider(&mut self) -> Option<&mut DynamicCollider> {None}
 
-    fn get_static_colliders(&'a mut self) -> Option<&'a mut Vec<StaticCollider>> {None}
+    fn get_static_colliders(&mut self) -> Option<&mut Vec<StaticCollider>> {None}
     
-    fn get_areas(&'a mut self) -> Option<&'a mut Vec<Area>> {None}
+    fn get_areas(&mut self) -> Option<&mut Vec<Area>> {None}
 
-    fn get_visual_elem(&'a self) {}
+    fn get_visual_elem(&self) {}
 
     fn get_id(&self) -> Option<ActorID>;
     
@@ -43,7 +43,7 @@ pub enum ActorWrapper {
     Exit,
 }
 
-impl Actor<'_> for ActorWrapper {
+impl Actor for ActorWrapper {
     fn recieve_message(&mut self, message: Message, engine_handle: &mut EngineHandle) {
         match  self {
             ActorWrapper::Player(player) => {

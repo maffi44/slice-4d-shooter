@@ -1,20 +1,18 @@
-mod map;
-mod static_object;
+pub mod level;
+pub mod static_object;
 
 use static_object::StaticObject;
 use core::panic;
 use std::collections::HashMap;
 
 
+use self::level::Level;
+
 use super::{
     actor::{
-        Actor,
-        ActorID,
-        ActorWrapper,
-        Message
+        self, Actor, ActorID, ActorWrapper, Message
     },
-    engine_handle::CommandType::SpawnEffect,
-    engine_handle::EngineHandle,
+    engine_handle::{CommandType::SpawnEffect, EngineHandle},
 };
 
 use glam::{Vec3, Vec4};
@@ -25,19 +23,12 @@ pub enum PlayerAccessError {
 }
 
 pub struct World {
+    pub levels: Vec<Level>,
     pub actors: HashMap<ActorID, ActorWrapper>,
     all_ids: Vec<ActorID>,
     pub main_camera_from: ActorID,
-    pub static_objects: Vec<StaticObject>,
-    pub spawn_position: Vec4,
-    // fx_pool
-    // devices_pool
-    // projectiles_pool
+    pub main_spawn_position: Vec4,
 }
-
-
-// use wasm_bindgen::prelude::*;
-// use web_sys::{Request, RequestInit, RequestMode, Response};
 
 impl World {
 
@@ -45,18 +36,31 @@ impl World {
 
         
         let mut all_ids = Vec::with_capacity(20);
-        
+
+        // 0 it is id of engine
+        // in case when engine send message to the some actor
+        // sender property will be 0      
         all_ids.push(0);
         
-        let (static_objects, spawn_position) = map::load_map().await;
-        
-        World {
-            actors: HashMap::with_capacity(20),
+        let (level, actors) = Level::download_level_from_server(Vec4::ZERO).await;
+
+        let main_spawn_position = level.spawn_position.clone();
+
+        let levels = vec![level];
+
+        let mut world = World {
+            actors: HashMap::with_capacity(actors.len()),
             all_ids,
+            levels,
             main_camera_from: 0,
-            static_objects,
-            spawn_position,
+            main_spawn_position,
+        };
+
+        for actor in actors {
+            world.add_actor_to_world(actor);
         }
+
+        world
     }
 
     pub fn process_commands(&mut self, engine_handle: &mut EngineHandle) {

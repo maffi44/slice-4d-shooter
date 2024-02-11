@@ -6,9 +6,11 @@
         "friction": 0.35,
         "bounce_rate": 0.0,
         "material": {
-            "red": 1.0,
-            "green": 1.0,
-            "blue": 1.0
+            "color" : {
+                "red": 1.0,
+                "green": 1.0,
+                "blue": 1.0
+            }
         },
         "roundness": 0.0,
         "stickiness": 0.0
