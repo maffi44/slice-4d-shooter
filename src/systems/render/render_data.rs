@@ -1,4 +1,10 @@
-use crate::systems::{world::World, static_obj::StaticObject};
+use crate::systems::{
+    physics::physics_system_data::ShapeType,
+    world::{
+        static_object::StaticObject,
+        World,
+    }
+};
 
 pub struct FrameRenderData {
     pub camera_uniform: CameraUniform,
@@ -40,190 +46,379 @@ pub struct CameraUniform {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct ShapesArrayMetadataUniform {
-    pub cubes: [u32;4],
-    pub spheres: [u32;4],
-    pub cubes_inf_w: [u32;4],
-    pub sph_cubes: [u32;4],
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
+struct Shape {
+    pub pos: [f32;4],
+    pub size: [f32;4],
+    pub color: [f32;3],
+    pub roundness: f32,
+}
 
-    pub neg_cubes: [u32;4],
-    pub neg_spheres: [u32;4],
-    pub neg_cubes_inf_w: [u32;4],
-    pub neg_sph_cubes: [u32;4],
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
+struct NegShape {
+    pub pos: [f32;4],
+    pub size: [f32;4],
+    pub roundness: f32,
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
+struct StickinessNegShape {
+    pub pos: [f32;4],
+    pub size: [f32;4],
+    pub roundness: f32,
+    pub stickiness: f32,
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
+struct StickinessShape {
+    pub pos: [f32;4],
+    pub size: [f32;4],
+    pub color: [f32;3],
+    pub roundness: f32,
+    pub stickiness: f32,
+}
+
+pub struct ShapeArrays {
+    pub normal: [Shape; 512],
+    pub negative: [NegShape; 512],
+    pub stickiness: [StickinessShape; 512],
+    pub neg_stickiness: [StickinessNegShape; 512],
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct ShapesArrayUniformData {
-    pub metadata: ShapesArrayMetadataUniform,
-    pub shapes: [[f32;8];512],
+pub struct AllShapesArraysMetadata {
+    pub cubes_amount: u32,
+    pub spheres_amount: u32,
+    pub sph_cubes_amount: u32,
+    pub inf_w_cubes_amount: u32,
+
+    pub neg_cubes_amount: u32,
+    pub neg_spheres_amount: u32,
+    pub neg_sph_cubes_amount: u32,
+    pub neg_inf_w_cubes_amount: u32,
+
+    pub s_cubes_amount: u32,
+    pub s_spheres_amount: u32,
+    pub s_sph_cubes_amount: u32,
+    pub s_inf_w_cubes_amount: u32,
+
+    pub s_neg_cubes_amount: u32,
+    pub s_neg_spheres_amount: u32,
+    pub s_neg_sph_cubes_amount: u32,
+    pub s_neg_inf_w_cubes_amount: u32,
 }
 
-impl ShapesArrayUniformData {
+pub struct StaticShapesArraysUniformData {
+    pub cubes: ShapeArrays,
+    pub spheres: ShapeArrays,
+    pub inf_w_cubes: ShapeArrays,
+    pub sph_cubes: ShapeArrays,
+
+    pub metadata: AllShapesArraysMetadata,
+}
+
+impl StaticShapesArraysUniformData {
     pub fn new(world: &World) -> Self {
-        let mut cubes = Vec::new();
-        let mut spheres = Vec::new();
-        let mut inf_w_cubes = Vec::new();
-        let mut sph_cubes = Vec::new();
+        let mut cubes = ShapeArrays {
+            normal: [Shape::default(); 512],
+            negative: [NegShape::default(); 512],
+            stickiness: [StickinessShape::default(); 512],
+            neg_stickiness: [StickinessNegShape::default(); 512],
+        };
 
-        let mut neg_cubes = Vec::new();
-        let mut neg_spheres = Vec::new();
-        let mut neg_inf_w_cubes = Vec::new();
-        let mut neg_sph_cubes = Vec::new();
+        let mut spheres = ShapeArrays {
+            normal: [Shape::default(); 512],
+            negative: [NegShape::default(); 512],
+            stickiness: [StickinessShape::default(); 512],
+            neg_stickiness: [StickinessNegShape::default(); 512],
+        };
+
+        let mut inf_w_cubes = ShapeArrays {
+            normal: [Shape::default(); 512],
+            negative: [NegShape::default(); 512],
+            stickiness: [StickinessShape::default(); 512],
+            neg_stickiness: [StickinessNegShape::default(); 512],
+        };
+
+        let mut sph_cubes = ShapeArrays {
+            normal: [Shape::default(); 512],
+            negative: [NegShape::default(); 512],
+            stickiness: [StickinessShape::default(); 512],
+            neg_stickiness: [StickinessNegShape::default(); 512],
+        };
         
-        for obj in &world.static_objects {
-            match obj {
-                StaticObject::Cube(tr,size, is_positive) => {
-                    let mut data = [0.;8];
+        let mut cubes_amount = 0u32;
+        let mut spheres_amount = 0u32;
+        let mut sph_cubes_amount = 0u32;
+        let mut inf_w_cubes_amount = 0u32;
 
-                    tr.get_position().write_to_slice(&mut data);
-                    size.write_to_slice(&mut data[4..]);
+        let mut neg_cubes_amount = 0u32;
+        let mut neg_spheres_amount = 0u32;
+        let mut neg_sph_cubes_amount = 0u32;
+        let mut neg_inf_w_cubes_amount = 0u32;
 
-                    if *is_positive {
-                        cubes.push(data);
+        let mut s_cubes_amount = 0u32;
+        let mut s_spheres_amount = 0u32;
+        let mut s_sph_cubes_amount = 0u32;
+        let mut s_inf_w_cubes_amount = 0u32;
+
+        let mut s_neg_cubes_amount = 0u32;
+        let mut s_neg_spheres_amount = 0u32;
+        let mut s_neg_sph_cubes_amount = 0u32;
+        let mut s_neg_inf_w_cubes_amount = 0u32;
+
+        for obj in &world.level.static_objects {
+
+            match obj.collider.shape_type {
+                ShapeType::Cube => {
+
+                    if obj.collider.is_positive {
+                        if obj.collider.stickiness == 0.0 {
+
+                            let shape = Shape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
+                                roundness: obj.collider.roundness,
+                            };
+
+                            cubes.normal[cubes_amount as usize] = shape;
+
+                            cubes_amount += 1;
+
+                        } else {
+
+                            let shape = StickinessShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
+                                stickiness: obj.collider.stickiness,
+                                roundness: obj.collider.roundness,
+                            };
+
+                            cubes.stickiness[s_cubes_amount as usize] = shape;
+
+                            s_cubes_amount += 1;
+                        }
                     } else {
-                        neg_cubes.push(data);
+                        if obj.collider.stickiness == 0.0 {
+                            let shape = NegShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                roundness: obj.collider.roundness,
+                            };
+
+                            cubes.negative[neg_cubes_amount as usize] = shape;
+
+                            neg_cubes_amount += 1;
+                        } else {
+                            let shape = StickinessNegShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                roundness: obj.collider.roundness,
+                                stickiness: obj.collider.stickiness
+                            };
+
+                            cubes.neg_stickiness[s_neg_cubes_amount as usize] = shape;
+
+                            s_neg_cubes_amount += 1;
+                        }
                     }
                 }
-                StaticObject::Sphere(tr,size, is_positive) => {
-                    let mut data = [0.;8];
+                ShapeType::Sphere => {
+                    if obj.collider.is_positive {
+                        if obj.collider.stickiness == 0.0 {
 
-                    tr.get_position().write_to_slice(&mut data);
-                    size.write_to_slice(&mut data[4..]);
+                            let shape = Shape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
+                                roundness: obj.collider.roundness,
+                            };
 
-                    if *is_positive {
-                        spheres.push(data);
+                            spheres.normal[spheres_amount as usize] = shape;
+
+                            spheres_amount += 1;
+
+                        } else {
+
+                            let shape = StickinessShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
+                                stickiness: obj.collider.stickiness,
+                                roundness: obj.collider.roundness,
+                            };
+
+                            spheres.stickiness[s_spheres_amount as usize] = shape;
+
+                            s_spheres_amount += 1;
+                        }
                     } else {
-                        neg_spheres.push(data);
+                        if obj.collider.stickiness == 0.0 {
+                            let shape = NegShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                roundness: obj.collider.roundness,
+                            };
+
+                            spheres.negative[neg_spheres_amount as usize] = shape;
+
+                            neg_spheres_amount += 1;
+                        } else {
+                            let shape = StickinessNegShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                roundness: obj.collider.roundness,
+                                stickiness: obj.collider.stickiness
+                            };
+
+                            spheres.neg_stickiness[s_neg_spheres_amount as usize] = shape;
+
+                            s_neg_spheres_amount += 1;
+                        }
                     }
-                    
                 }
-                StaticObject::CubeInfW(tr,size, is_positive) => {
-                    let mut data = [0.;8];
+                ShapeType::CubeInfW => {
+                    if obj.collider.is_positive {
+                        if obj.collider.stickiness == 0.0 {
 
-                    tr.get_position().write_to_slice(&mut data);
-                    size.write_to_slice(&mut data[4..]);
+                            let shape = Shape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
+                                roundness: obj.collider.roundness,
+                            };
 
-                    if *is_positive {
-                        inf_w_cubes.push(data);
+                            inf_w_cubes.normal[inf_w_cubes_amount as usize] = shape;
+
+                            inf_w_cubes_amount += 1;
+
+                        } else {
+
+                            let shape = StickinessShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
+                                stickiness: obj.collider.stickiness,
+                                roundness: obj.collider.roundness,
+                            };
+
+                            inf_w_cubes.stickiness[s_inf_w_cubes_amount as usize] = shape;
+
+                            s_inf_w_cubes_amount += 1;
+                        }
                     } else {
-                        neg_inf_w_cubes.push(data);
+                        if obj.collider.stickiness == 0.0 {
+                            let shape = NegShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                roundness: obj.collider.roundness,
+                            };
+
+                            inf_w_cubes.negative[neg_inf_w_cubes_amount as usize] = shape;
+
+                            neg_inf_w_cubes_amount += 1;
+                        } else {
+                            let shape = StickinessNegShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                roundness: obj.collider.roundness,
+                                stickiness: obj.collider.stickiness
+                            };
+
+                            inf_w_cubes.neg_stickiness[s_neg_inf_w_cubes_amount as usize] = shape;
+
+                            s_neg_inf_w_cubes_amount += 1;
+                        }
                     }
                 },
-                StaticObject::SphCube(tr,size, is_positive) => {
-                    let mut data = [0.;8];
+                ShapeType::SphCube => {
+                    if obj.collider.is_positive {
+                        if obj.collider.stickiness == 0.0 {
 
-                    tr.get_position().write_to_slice(&mut data);
-                    size.write_to_slice(&mut data[4..]);
+                            let shape = Shape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
+                                roundness: obj.collider.roundness,
+                            };
 
-                    if *is_positive {
-                        sph_cubes.push(data);
+                            sph_cubes.normal[sph_cubes_amount as usize] = shape;
+
+                            sph_cubes_amount += 1;
+
+                        } else {
+
+                            let shape = StickinessShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
+                                stickiness: obj.collider.stickiness,
+                                roundness: obj.collider.roundness,
+                            };
+
+                            sph_cubes.stickiness[s_sph_cubes_amount as usize] = shape;
+
+                            s_sph_cubes_amount += 1;
+                        }
                     } else {
-                        neg_sph_cubes.push(data);
+                        if obj.collider.stickiness == 0.0 {
+                            let shape = NegShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                roundness: obj.collider.roundness,
+                            };
+
+                            sph_cubes.negative[neg_sph_cubes_amount as usize] = shape;
+
+                            neg_sph_cubes_amount += 1;
+                        } else {
+                            let shape = StickinessNegShape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                roundness: obj.collider.roundness,
+                                stickiness: obj.collider.stickiness
+                            };
+
+                            sph_cubes.neg_stickiness[s_neg_sph_cubes_amount as usize] = shape;
+
+                            s_neg_sph_cubes_amount += 1;
+                        }
                     }
                 }
             }
         }
 
-        let mut shapes = [[0.0_f32;8];512];
-
-        // copy shapes to array and make metadata
-        // copy cubes
-        let first_index = 0;
-        let amount = cubes.len();
-        let last_index = first_index + amount;
-
-        let cubes_metadata = [first_index as u32, amount as u32, 0, 0];
-        for i in first_index.. first_index + amount {
-            shapes[i] = cubes[i - first_index];
-        }
-
-        // copy spheres
-        let first_index = last_index;
-        let amount = spheres.len();
-        let last_index = first_index + amount;
-
-        let spheres_metadata = [first_index as u32, amount as u32, 0, 0];
-        for i in first_index.. first_index + amount {
-            shapes[i] = spheres[i - first_index];
-        }
-
-        // copy w_inf_cubes
-        let first_index = last_index;
-        let amount = inf_w_cubes.len();
-        let last_index = first_index + amount;
-
-        let inf_w_cubes_metadata = [first_index as u32, amount as u32, 0, 0];
-        for i in first_index.. first_index + amount {
-            shapes[i] = inf_w_cubes[i - first_index];
-        }
-
-        // copy shp_cubes
-        let first_index = last_index;
-        let amount = sph_cubes.len();
-        let last_index = first_index + amount;
-
-        let sph_cubes_metadata = [first_index as u32, amount as u32, 0, 0];
-        for i in first_index.. first_index + amount {
-            shapes[i] = sph_cubes[i - first_index];
-        }
-
-        // copy neg_cubes
-        let first_index = last_index;
-        let amount = neg_cubes.len();
-        let last_index = first_index + amount;
-
-        let neg_cubes_metadata = [first_index as u32, amount as u32, 0, 0];
-        for i in first_index.. first_index + amount {
-            shapes[i] = neg_cubes[i - first_index];
-        }
-
-        // copy neg_spheres
-        let first_index = last_index;
-        let amount = neg_spheres.len();
-        let last_index = first_index + amount;
-
-        let neg_spheres_metadata = [first_index as u32, amount as u32, 0, 0];
-        for i in first_index.. first_index + amount {
-            shapes[i] = neg_spheres[i - first_index];
-        }
-
-        // copy neg_w_inf_cubes
-        let first_index = last_index;
-        let amount = neg_inf_w_cubes.len();
-        let last_index = first_index + amount;
-
-        let neg_inf_w_cubes_metadata = [first_index as u32, amount as u32, 0, 0];
-        for i in first_index.. first_index + amount {
-            shapes[i] = neg_inf_w_cubes[i - first_index];
-        }
-
-        // copy neg_shp_cubes
-        let first_index = last_index;
-        let amount = neg_sph_cubes.len();
-        let last_index = first_index + amount;
-
-        let neg_sph_cubes_metadata = [first_index as u32, amount as u32, 0, 0];
-        for i in first_index.. first_index + amount {
-            shapes[i] = neg_sph_cubes[i - first_index];
-        }
-
-        let metadata = ShapesArrayMetadataUniform {
-            spheres: spheres_metadata,
-            cubes: cubes_metadata,
-            cubes_inf_w: inf_w_cubes_metadata,
-            sph_cubes: sph_cubes_metadata,
-
-            neg_spheres: neg_spheres_metadata,
-            neg_cubes: neg_cubes_metadata,
-            neg_cubes_inf_w: neg_inf_w_cubes_metadata,
-            neg_sph_cubes: neg_sph_cubes_metadata,
+        let metadata = AllShapesArraysMetadata {
+            cubes_amount,
+            spheres_amount,
+            sph_cubes_amount,
+            inf_w_cubes_amount,
+            neg_cubes_amount,
+            neg_spheres_amount,
+            neg_sph_cubes_amount,
+            neg_inf_w_cubes_amount,
+            s_cubes_amount,
+            s_spheres_amount,
+            s_sph_cubes_amount,
+            s_inf_w_cubes_amount,
+            s_neg_cubes_amount,
+            s_neg_spheres_amount,
+            s_neg_sph_cubes_amount,
+            s_neg_inf_w_cubes_amount,
         };
 
-        ShapesArrayUniformData {
-            shapes,
-            metadata
+        StaticShapesArraysUniformData {
+            cubes,
+            sph_cubes,
+            spheres,
+            inf_w_cubes,
+            metadata,
         }
     }
 }

@@ -4,13 +4,9 @@ pub mod diamond;
 use player::Player;
 
 use super::{
-    transform::Transform,
-    engine_handle::EngineHandle,
-    physics::collider::{
-        DynamicCollider,
-        StaticCollider,
-        Area
-    },
+    engine_handle::EngineHandle, physics::{
+        area::Area, colliders_container::CollidersContainer, dynamic_collider::DynamicCollider, kinematic_collider::KinematicCollider, static_collider::StaticCollider
+    }, transform::Transform
 };
 
 
@@ -18,17 +14,11 @@ pub type ActorID = u64;
 
 pub trait Actor {
 
-    fn recieve_message(&mut self, message: Message, engine_handle: &mut EngineHandle);
-
-    fn recieve_boardcast_message(&mut self, message: &Message, engine_handle: &mut EngineHandle);
+    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle);
 
     fn tick(&mut self, engine_handle: &mut EngineHandle) {}
 
-    fn get_dynamic_collider(&mut self) -> Option<&mut DynamicCollider> {None}
-
-    fn get_static_colliders(&mut self) -> Option<&mut Vec<StaticCollider>> {None}
-    
-    fn get_areas(&mut self) -> Option<&mut Vec<Area>> {None}
+    fn get_colliders_container(&mut self) -> Option<CollidersContainer> {None}
 
     fn get_visual_elem(&self) {}
 
@@ -44,23 +34,14 @@ pub enum ActorWrapper {
 }
 
 impl Actor for ActorWrapper {
-    fn recieve_message(&mut self, message: Message, engine_handle: &mut EngineHandle) {
+
+    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
         match  self {
             ActorWrapper::Player(player) => {
                 player.recieve_message(message, engine_handle);
             },
-            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
-            ActorWrapper::Exit => {panic!("try to get access to exit")},
-        }
-    }
-
-    fn recieve_boardcast_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
-        match  self {
-            ActorWrapper::Player(player) => {
-                player.recieve_boardcast_message(message, engine_handle);
-            },
-            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
-            ActorWrapper::Exit => {panic!("try to get access to exit")},
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
 
@@ -69,38 +50,18 @@ impl Actor for ActorWrapper {
             ActorWrapper::Player(player) => {
                 player.tick(engine_handle);
             },
-            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
-            ActorWrapper::Exit => {panic!("try to get access to exit")},
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
 
-    fn get_dynamic_collider(&mut self) -> Option<&mut DynamicCollider> {
+    fn get_colliders_container(&mut self) -> Option<CollidersContainer> {
         match  self {
             ActorWrapper::Player(player) => {
-                player.get_dynamic_collider()
+                player.get_colliders_container()
             },
-            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
-            ActorWrapper::Exit => {panic!("try to get access to exit")},
-        }
-    }
-
-    fn get_static_colliders(&mut self) -> Option<&mut Vec<StaticCollider>> {
-        match  self {
-            ActorWrapper::Player(player) => {
-                player.get_static_colliders()
-            },
-            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
-            ActorWrapper::Exit => {panic!("try to get access to exit")},
-        }
-    }
-
-    fn get_areas(&mut self) -> Option<&mut Vec<Area>> {
-        match  self {
-            ActorWrapper::Player(player) => {
-                player.get_areas()
-            },
-            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
-            ActorWrapper::Exit => {panic!("try to get access to exit")},
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
 
@@ -109,8 +70,8 @@ impl Actor for ActorWrapper {
             ActorWrapper::Player(player) => {
                 player.get_visual_elem()
             },
-            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
-            ActorWrapper::Exit => {panic!("try to get access to exit")},
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
 
@@ -119,8 +80,8 @@ impl Actor for ActorWrapper {
             ActorWrapper::Player(player) => {
                 player.get_id()
             },
-            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
-            ActorWrapper::Exit => {panic!("try to get access to exit")},
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
 
@@ -129,8 +90,8 @@ impl Actor for ActorWrapper {
             ActorWrapper::Player(player) => {
                 player.set_id(id);
             },
-            ActorWrapper::Diamond => {panic!("try to get access to diamond")},
-            ActorWrapper::Exit => {panic!("try to get access to exit")},
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
 }

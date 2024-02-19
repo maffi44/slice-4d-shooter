@@ -1,13 +1,14 @@
 use glam::{
     Vec4, Vec3, Vec2, Vec4Swizzles
 };
-use super::{super::transform::Transform, StaticObjectsData};
+use super::super::transform::Transform;
+use super::physics_system_data::StaticCollidersData;
+// use crate::systems::static_obj::{StaticObject, self};
 
-use crate::systems::static_obj::{StaticObject, self};
 
-pub struct StaticCollider {}
+pub struct DynamicCollider {}
 
-pub struct DynamicCollider {
+pub struct KinematicCollider {
     pub is_enable: bool,
     pub transform: Transform,
     collider_radius: f32,
@@ -22,7 +23,7 @@ pub struct DynamicCollider {
     pub is_on_ground: bool,
 }
 
-impl DynamicCollider {
+impl KinematicCollider {
     pub fn new(
         transform: Transform,
         max_speed: f32,
@@ -31,7 +32,7 @@ impl DynamicCollider {
         friction_on_air: f32,
         friction_on_ground: f32,
     ) -> Self {
-        DynamicCollider {
+        KinematicCollider {
             is_enable: true,
             transform,
             collider_radius,
@@ -47,6 +48,10 @@ impl DynamicCollider {
         }
     }
 
+    pub fn get_collider_radius(&self) -> f32 {
+        self.collider_radius
+    }
+    
     pub fn set_wish_direction(&mut self, wish_direction: Vec4, movement_mult: f32) {
         self.wish_direction = wish_direction;
         self.movment_mult = movement_mult;
@@ -56,7 +61,7 @@ impl DynamicCollider {
         self.forces.push(force);
     }
 
-    pub fn physics_tick(&mut self, delta: f32, static_objects: &StaticObjectsData) {
+    pub fn physics_tick(&mut self, delta: f32, static_objects: &StaticCollidersData) {
 
         self.is_on_ground = false;
 
@@ -120,20 +125,6 @@ impl DynamicCollider {
     }
 }
 
-pub struct Area {
-    transform: Transform,
-    radius: f32,
-}
-
-impl Area {
-    pub fn new(transform: Transform, radius: f32) -> Self {
-        Area {
-            transform,
-            radius,
-        }
-    }
-}
-
 const THRESHOLD: f32 = 0.005;
 const HALF_THRESHOLD: f32 = 0.00025;
 const MAX_COLLIDING_ITERATIONS: u32 = 50;
@@ -142,7 +133,7 @@ fn translate_collider(
     mut position: Vec4,
     mut translation: Vec4,
     collider_radius: f32,
-    static_objects: &StaticObjectsData
+    static_objects: &StaticCollidersData
 ) -> (Vec4, bool) {
 
     let mut is_collide = false;
@@ -302,7 +293,7 @@ fn translate_collider(
 fn move_collider_outside(
     position: &mut Vec4,
     collider_radius: f32,
-    static_objects: &StaticObjectsData
+    static_objects: &StaticCollidersData
 ) -> bool {
 
     let mut pos = *position;
@@ -374,33 +365,33 @@ fn move_collider_outside(
 }
 
 #[inline]
-fn get_dist(p: Vec4, static_objects: &StaticObjectsData) -> f32 {
+fn get_dist(p: Vec4, static_objects: &StaticCollidersData) -> f32 {
     let mut d = f32::MAX;
 
-    for (position, size) in static_objects.cubes.iter() {
-         d = d.min(sd_box(p - position.clone(), size.clone()));
+    for collider in static_objects.cubes.iter_normal() {
+         d = d.min(sd_box(p - collider.position.clone(), collider.size.clone()));
     }
-    for (position, size) in static_objects.inf_w_cubes.iter() {
-        d = d.min(sd_inf_box(p - position.clone(), size.xyz()));
+    for collider in static_objects.inf_w_cubes.iter_normal() {
+        d = d.min(sd_inf_box(p - collider.position.clone(), collider.size.xyz()));
     }
-    for (position, size) in static_objects.spheres.iter() {
-        d = d.min(sd_sphere(p - position.clone(), size.x));
+    for collider in static_objects.spheres.iter_normal() {
+        d = d.min(sd_sphere(p - collider.position.clone(), collider.size.x));
     }
-    for (position, size) in static_objects.shpcubes.iter() {
-        d = d.min(sd_sph_box(p - position.clone(), size.clone()));
+    for collider in static_objects.sph_cubes.iter_normal() {
+        d = d.min(sd_sph_box(p - collider.position.clone(), collider.size.clone()));
     }
 
-    for (position, size) in static_objects.neg_cubes.iter() {
-        d = d.max(-sd_box(p - position.clone(), size.clone()));
+    for collider in static_objects.cubes.iter_negative() {
+        d = d.max(-sd_box(p - collider.position.clone(), collider.size.clone()));
     }
-    for (position, size) in static_objects.neg_inf_w_cubes.iter() {
-        d = d.max(-sd_inf_box(p - position.clone(), size.xyz()));
+    for collider in static_objects.inf_w_cubes.iter_negative() {
+        d = d.max(-sd_inf_box(p - collider.position.clone(), collider.size.xyz()));
     }
-    for (position, size) in static_objects.neg_spheres.iter() {
-        d = d.max(-sd_sphere(p - position.clone(),size.x));
+    for collider in static_objects.spheres.iter_negative() {
+        d = d.max(-sd_sphere(p - collider.position.clone(),collider.size.x));
     }
-    for (position, size) in static_objects.neg_shpcubes.iter() {
-        d = d.max(-sd_sph_box(p - position.clone(), size.clone()));
+    for collider in static_objects.sph_cubes.iter_negative() {
+        d = d.max(-sd_sph_box(p - collider.position.clone(), collider.size.clone()));
     }
 
     return d;
@@ -443,7 +434,7 @@ fn sd_box(p: Vec4, b: Vec4) -> f32 {
 }
 
 #[inline]
-fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
+fn get_normal(p: Vec4, static_objects: &StaticCollidersData) -> Vec4 {
     let a = p + Vec4::new(HALF_THRESHOLD, 0.000, 0.000, 0.000);
     let b = p + Vec4::new(-HALF_THRESHOLD, 0.000, 0.000,0.000);
     let c = p + Vec4::new(0.000, HALF_THRESHOLD, 0.000, 0.000);
@@ -481,7 +472,8 @@ fn get_normal(p: Vec4, static_objects: &StaticObjectsData) -> Vec4 {
     }
 }
 
-fn get_big_normal(p: Vec4, size: f32, static_objects: &StaticObjectsData) -> Vec4 {
+#[inline]
+fn get_big_normal(p: Vec4, size: f32, static_objects: &StaticCollidersData) -> Vec4 {
     let a = p + Vec4::new(size, 0.000, 0.000, 0.000);
     let b = p + Vec4::new(-size, 0.000, 0.000,0.000);
     let c = p + Vec4::new(0.000, size, 0.000, 0.000);

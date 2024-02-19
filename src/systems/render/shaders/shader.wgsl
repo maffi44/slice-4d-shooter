@@ -9,37 +9,94 @@ struct CamerUniform {
 struct Shape {
     pos: vec4<f32>,
     size: vec4<f32>,
+    color: vec3<f32>,
+    roundness: f32,
 }
 
-struct SpecificShapeMetadata {
-    first_index: u32,
-    amount: u32,
-
-    empty_bytes: vec2<u32>,
+struct NegShape {
+    pos: vec4<f32>,
+    size: vec4<f32>,
+    roundness: f32,
 }
 
-struct ShapesArrayMetadata {
-    cubes: SpecificShapeMetadata,
-    spheres: SpecificShapeMetadata,
-    cubes_inf_w: SpecificShapeMetadata,
-    sph_cube: SpecificShapeMetadata,
-
-    neg_cubes: SpecificShapeMetadata,
-    neg_spheres: SpecificShapeMetadata,
-    neg_cubes_inf_w: SpecificShapeMetadata,
-    neg_sph_cube: SpecificShapeMetadata,
+struct StickinessNegShape {
+    pos: vec4<f32>,
+    size: vec4<f32>,
+    roundness: f32,
+    stickiness: f32,
 }
+
+struct StickinessShape {
+    pos: vec4<f32>,
+    size: vec4<f32>,
+    color: vec3<f32>,
+    roundness: f32,
+    stickiness: f32,
+}
+
+struct ShapesMetadata {
+    cubes_amount: u32,
+    s_cubes_amount: u32,
+    neg_cubes_amount: u32,
+    s_neg_cubes_amount: u32,
+
+    spheres_amount: u32,
+    s_spheres_amount: u32,
+    neg_spheres_amount: u32,
+    s_neg_spheres_amount: u32,
+
+    inf_cubes_amount: u32,
+    s_inf_cubes_amount: u32,
+    neg_inf_cubes_amount: u32,
+    s_neg_inf_cubes_amount: u32,
+
+    sph_cubes_amount: u32,
+    s_sph_cubes_amount: u32,
+    neg_sph_cubes_amount: u32,
+    s_neg_sph_cubes_amount: u32,
+}
+
+// struct ShapesArrayMetadata {
+//     cubes: SpecificShapeMetadata,
+//     spheres: SpecificShapeMetadata,
+//     cubes_inf_w: SpecificShapeMetadata,
+//     sph_cube: SpecificShapeMetadata,
+
+//     neg_cubes: SpecificShapeMetadata,
+//     neg_spheres: SpecificShapeMetadata,
+//     neg_cubes_inf_w: SpecificShapeMetadata,
+//     neg_sph_cube: SpecificShapeMetadata,
+// }
 
 @group(0) @binding(0) var<uniform> camera_uni: CamerUniform;
 @group(0) @binding(1) var<uniform> time: vec4<f32>;
-@group(0) @binding(2) var<uniform> shapes_array_metadata: ShapesArrayMetadata;
-@group(0) @binding(3) var<uniform> shapes: array<Shape, 512>;
+@group(0) @binding(2) var<uniform> shapes_metadata: ShapesMetadata;
+// @group(0) @binding(3) var<uniform> shapes: array<Shape, 512>;
 
+@group(0) @binding(3) var<uniform> cubes: array<Shape, 512>;
+@group(0) @binding(4) var<uniform> s_cubes: array<StickinessShape, 512>;
+@group(0) @binding(5) var<uniform> neg_cubes: array<NegShape, 512>;
+@group(0) @binding(6) var<uniform> s_neg_cubes: array<StickinessNegShape, 512>;
+
+@group(0) @binding(7) var<uniform> spheres: array<Shape, 512>;
+@group(0) @binding(8) var<uniform> s_spheres: array<StickinessShape, 512>;
+@group(0) @binding(9) var<uniform> neg_spheres: array<NegShape, 512>;
+@group(0) @binding(10) var<uniform> s_neg_spheres: array<StickinessNegShape, 512>;
+
+@group(0) @binding(11) var<uniform> inf_cubes: array<Shape, 512>;
+@group(0) @binding(12) var<uniform> s_inf_cubes: array<StickinessShape, 512>;
+@group(0) @binding(13) var<uniform> neg_inf_cubes: array<NegShape, 512>;
+@group(0) @binding(14) var<uniform> s_neg_inf_cubes: array<StickinessNegShape, 512>;
+
+@group(0) @binding(15) var<uniform> sph_cubes: array<Shape, 512>;
+@group(0) @binding(16) var<uniform> s_sph_cubes: array<StickinessShape, 512>;
+@group(0) @binding(17) var<uniform> neg_sph_cubes: array<NegShape, 512>;
+@group(0) @binding(18) var<uniform> s_neg_sph_cubes: array<StickinessNegShape, 512>;
 
 const MAX_STEPS: i32 = 200;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
-const MAX_DIST: f32 = 700.0;
+const MAX_DIST: f32 = 700.0;    
 
 
 fn rotate(angle: f32) -> mat2x2<f32> {
@@ -119,39 +176,65 @@ fn map(p: vec4<f32>) -> f32 {
 
     // p.x = coof * 20 - 10;
 
-    for (var i = 0u; i < shapes_array_metadata.cubes.amount; i++) {
-        var index = i + shapes_array_metadata.cubes.first_index;
-        d = min(d, sd_box(p - shapes[index].pos, shapes[index].size));
+    for (var i = 0u; i < shapes_metadata.cubes_amount; i++) {
+        d = min(d, sd_box(cubes[i].pos, cubes[i].size));
     }
-    for (var i = 0u; i < shapes_array_metadata.cubes_inf_w.amount; i++) {
-        var index = i + shapes_array_metadata.cubes_inf_w.first_index;
-        d = min(d, sd_inf_box(p - shapes[index].pos, shapes[index].size.xyz));
+    for (var i = 0u; i < shapes_metadata.spheres_amount; i++) {
+        d = min(d, sd_sphere(spheres[i].pos, spheres[i].size.x));
     }
-    for (var i = 0u; i < shapes_array_metadata.spheres.amount; i++) {
-        var index = i + shapes_array_metadata.spheres.first_index;
-        d = min(d, sd_sphere(p - shapes[index].pos, shapes[index].size.x));
+    for (var i = 0u; i < shapes_metadata.sph_cubes_amount; i++) {
+        d = min(d, sd_sph_box(sph_cubes[i].pos, sph_cubes[i].size));
     }
-    for (var i = 0u; i < shapes_array_metadata.sph_cube.amount; i++) {
-        var index = i + shapes_array_metadata.sph_cube.first_index;
-        d = min(d, sd_sph_box(p - shapes[index].pos, shapes[index].size));
+    for (var i = 0u; i < shapes_metadata.inf_cubes_amount; i++) {
+        d = min(d, sd_inf_box(inf_cubes[i].pos, inf_cubes[i].size.xyz));
     }
 
-    for (var i = 0u; i < shapes_array_metadata.neg_cubes.amount; i++) {
-        var index = i + shapes_array_metadata.neg_cubes.first_index;
-        d = max(d, -sd_box(p - shapes[index].pos, shapes[index].size));
+    for (var i = 0u; i < shapes_metadata.neg_cubes_amount; i++) {
+        d = max(d, -sd_box(neg_cubes[i].pos, neg_cubes[i].size));
     }
-    for (var i = 0u; i < shapes_array_metadata.neg_cubes_inf_w.amount; i++) {
-        var index = i + shapes_array_metadata.neg_cubes_inf_w.first_index;
-        d = max(d, -sd_inf_box(p - shapes[index].pos, shapes[index].size.xyz));
+    for (var i = 0u; i < shapes_metadata.neg_spheres_amount; i++) {
+        d = max(d, -sd_sphere(neg_spheres[i].pos, neg_spheres[i].size.x));
     }
-    for (var i = 0u; i < shapes_array_metadata.neg_spheres.amount; i++) {
-        var index = i + shapes_array_metadata.neg_spheres.first_index;
-        d = max(d, -sd_sphere(p - shapes[index].pos, shapes[index].size.x));
+    for (var i = 0u; i < shapes_metadata.neg_sph_cubes_amount; i++) {
+        d = max(d, -sd_sph_box(neg_sph_cubes[i].pos, neg_sph_cubes[i].size));
     }
-    for (var i = 0u; i < shapes_array_metadata.neg_sph_cube.amount; i++) {
-        var index = i + shapes_array_metadata.neg_sph_cube.first_index;
-        d = max(d, -sd_sph_box(p - shapes[index].pos, shapes[index].size));
+    for (var i = 0u; i < shapes_metadata.neg_inf_cubes_amount; i++) {
+        d = max(d, -sd_inf_box(neg_inf_cubes[i].pos, neg_inf_cubes[i].size.xyz));
     }
+
+    // for (var i = 0u; i < shapes_array_metadata.cubes.amount; i++) {
+    //     var index = i + shapes_array_metadata.cubes.first_index;
+    //     d = min(d, sd_box(p - shapes[index].pos, shapes[index].size));
+    // }
+    // for (var i = 0u; i < shapes_array_metadata.cubes_inf_w.amount; i++) {
+    //     var index = i + shapes_array_metadata.cubes_inf_w.first_index;
+    //     d = min(d, sd_inf_box(p - shapes[index].pos, shapes[index].size.xyz));
+    // }
+    // for (var i = 0u; i < shapes_array_metadata.spheres.amount; i++) {
+    //     var index = i + shapes_array_metadata.spheres.first_index;
+    //     d = min(d, sd_sphere(p - shapes[index].pos, shapes[index].size.x));
+    // }
+    // for (var i = 0u; i < shapes_array_metadata.sph_cube.amount; i++) {
+    //     var index = i + shapes_array_metadata.sph_cube.first_index;
+    //     d = min(d, sd_sph_box(p - shapes[index].pos, shapes[index].size));
+    // }
+
+    // for (var i = 0u; i < shapes_array_metadata.neg_cubes.amount; i++) {
+    //     var index = i + shapes_array_metadata.neg_cubes.first_index;
+    //     d = max(d, -sd_box(p - shapes[index].pos, shapes[index].size));
+    // }
+    // for (var i = 0u; i < shapes_array_metadata.neg_cubes_inf_w.amount; i++) {
+    //     var index = i + shapes_array_metadata.neg_cubes_inf_w.first_index;
+    //     d = max(d, -sd_inf_box(p - shapes[index].pos, shapes[index].size.xyz));
+    // }
+    // for (var i = 0u; i < shapes_array_metadata.neg_spheres.amount; i++) {
+    //     var index = i + shapes_array_metadata.neg_spheres.first_index;
+    //     d = max(d, -sd_sphere(p - shapes[index].pos, shapes[index].size.x));
+    // }
+    // for (var i = 0u; i < shapes_array_metadata.neg_sph_cube.amount; i++) {
+    //     var index = i + shapes_array_metadata.neg_sph_cube.first_index;
+    //     d = max(d, -sd_sph_box(p - shapes[index].pos, shapes[index].size));
+    // }
 
     return d;
 }

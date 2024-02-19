@@ -23,11 +23,10 @@ pub enum PlayerAccessError {
 }
 
 pub struct World {
-    pub levels: Vec<Level>,
+    pub level: Level,
     pub actors: HashMap<ActorID, ActorWrapper>,
     all_ids: Vec<ActorID>,
     pub main_camera_from: ActorID,
-    pub main_spawn_position: Vec4,
 }
 
 impl World {
@@ -42,18 +41,13 @@ impl World {
         // sender property will be 0      
         all_ids.push(0);
         
-        let (level, actors) = Level::download_level_from_server(Vec4::ZERO).await;
-
-        let main_spawn_position = level.spawn_position.clone();
-
-        let levels = vec![level];
+        let (level, actors) = Level::download_level_from_server().await;
 
         let mut world = World {
             actors: HashMap::with_capacity(actors.len()),
             all_ids,
-            levels,
+            level,
             main_camera_from: 0,
-            main_spawn_position,
         };
 
         for actor in actors {
@@ -84,11 +78,10 @@ impl World {
                     self.send_direct_messages(to, message, engine_handle)                
                 }
 
-                if engine_handle.direct_message_buffer.is_empty() {
-                    if engine_handle.boardcast_message_buffer.is_empty() {
-                        
-                        return;
-                    }
+                if engine_handle.direct_message_buffer.is_empty() &&
+                    engine_handle.boardcast_message_buffer.is_empty() {
+                            
+                    return;
                 }
             }
     }
@@ -100,7 +93,7 @@ impl World {
         engine_handle: &mut EngineHandle
     ) {
         if let Some(actor) = self.actors.get_mut(&to) {
-            actor.recieve_message(message, engine_handle);
+            actor.recieve_message(&message, engine_handle);
         }
     }
 
@@ -111,7 +104,7 @@ impl World {
     ) {
         for (_, actor) in self.actors.iter_mut() {
             if actor.get_id().expect("actor does not have id") != message.from {
-                actor.recieve_boardcast_message(&message, engine_handle);
+                actor.recieve_message(&message, engine_handle);
             } 
         }
     }

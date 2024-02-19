@@ -1,9 +1,12 @@
 use crate::systems::actor::ActorWrapper;
+use crate::systems::physics::{
+    static_collider::StaticCollider,
+    physics_system_data::ShapeType
+};
 
 use super::super::transform::Transform;
 use super::static_object::{
     StaticObject,
-    ShapeType,
     ObjectMatrial
 };
 use glam::{Vec4, Vec3};
@@ -26,14 +29,11 @@ pub struct Level {
     pub level_name: String,
     pub static_objects: Vec<StaticObject>,
     pub spawn_position: Vec4,
-    pub level_transaltion: Vec4,
 }
 
 
 impl Level {
-    pub async fn download_level_from_server(
-        level_translation: Vec4
-    ) -> (Level, Vec<ActorWrapper>)
+    pub async fn download_level_from_server() -> (Level, Vec<ActorWrapper>)
     {
         let window = web_sys::window().unwrap();
     
@@ -53,7 +53,7 @@ impl Level {
                     Ok(text) => {
                         let json_map = serde_json::from_str(&text.as_string().unwrap()).unwrap();
                         
-                        parse_json_level(json_map, level_translation)
+                        parse_json_level(json_map)
                     },
                     Err(val) => {
                         panic!(
@@ -78,7 +78,7 @@ impl Level {
 
 
 fn parse_json_level(
-    json: Value, level_transaltion: Vec4
+    json: Value
 ) -> (Level, Vec<ActorWrapper>) {
     let json_level = json
     .as_object()
@@ -98,7 +98,7 @@ fn parse_json_level(
             .get("spawn_position")
             .expect("Wrong JSON map format. JSON level must have static_objects property");
         
-        let transform = parse_json_into_transform(json_spawn_postition, "", level_transaltion);
+        let transform = parse_json_into_transform(json_spawn_postition, "spawn_position ");
         
         transform.get_position()
     };
@@ -116,7 +116,7 @@ fn parse_json_level(
             .get("static_objects")
             .expect("Wrong JSON map format. JSON level must have static_objects property");
 
-        parse_json_static_objects(json_static_objects, level_transaltion, default_settings)
+        parse_json_static_objects(json_static_objects, default_settings)
     };
 
     let actors = {
@@ -124,14 +124,13 @@ fn parse_json_level(
             .get("static_objects")
             .expect("Wrong JSON map format. JSON level must have static_objects property");
 
-        parse_json_actors(json_static_objects, level_transaltion)
+        parse_json_actors(json_static_objects)
     };
 
     let level = Level {
         level_name,
         static_objects,
         spawn_position,
-        level_transaltion
     };
 
     (level, actors)
@@ -250,7 +249,7 @@ fn parse_json_defaults(
 
 
 fn parse_json_static_objects(
-    json_map: &Value, translation: Vec4, defaults: DefaultStaticObjectSettings
+    json_map: &Value, defaults: DefaultStaticObjectSettings
 ) -> Vec<StaticObject>
 {
     let mut static_objects: Vec<StaticObject> = Vec::with_capacity(40);
@@ -270,7 +269,7 @@ fn parse_json_static_objects(
 
         for (name, shape) in object {
             let static_object = parse_json_specific_shape(
-                name, shape, translation, defaults
+                name, shape, &defaults
             );
             static_objects.push(static_object)
         }
@@ -282,7 +281,7 @@ fn parse_json_static_objects(
 
 
 fn parse_json_specific_shape(
-    shape_name: &String, json_shape: &Value, translation: Vec4, defaults: DefaultStaticObjectSettings
+    shape_name: &String, json_shape: &Value, defaults: &DefaultStaticObjectSettings
 ) -> StaticObject {
     let shape_name = shape_name.as_str();
 
@@ -306,7 +305,7 @@ fn parse_json_specific_shape(
         }
     };
 
-    let transform = parse_json_into_transform(json_shape, shape_name, translation);
+    let position = parse_json_into_transform(json_shape, shape_name).get_position();
 
     let size = parse_json_into_size(json_shape, shape_name);
 
@@ -334,22 +333,26 @@ fn parse_json_specific_shape(
         json_shape, shape_name
     ).unwrap_or(defaults.material);
 
-    StaticObject {
+    let collider = StaticCollider {
         shape_type,
-        transform,
+        position,
         size,
         is_positive,
         friction,
         roundness,
         bounce_rate,
-        material,
         stickiness
+    };
+
+    StaticObject {
+        collider,
+        material,
     }
 }
 
 
 
-fn parse_json_into_transform(shape: &Value, shape_name: &str, translation: Vec4) -> Transform {
+fn parse_json_into_transform(shape: &Value, shape_name: &str) -> Transform {
 
     let shape = shape
         .as_object()
@@ -474,7 +477,7 @@ fn parse_json_into_transform(shape: &Value, shape_name: &str, translation: Vec4)
     
     let position = Vec4::new(x as f32, y as f32, z as f32, w as f32);
     
-    Transform::new_from_vec4(position + translation)
+    Transform::new_from_vec4(position)
 }
 
 
@@ -871,7 +874,7 @@ fn parse_json_into_material(json_shape: &Value, shape_name: &str) -> Option<Obje
 
 
 fn parse_json_actors(
-    json: &Value, translation: Vec4
+    json: &Value
 ) -> Vec<ActorWrapper>
 {
     Vec::new()

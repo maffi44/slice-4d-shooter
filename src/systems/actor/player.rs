@@ -17,21 +17,27 @@ use super::{
 };
 
 use super::super::{
+    physics::{
+        colliders_container::CollidersContainer,
+        kinematic_collider::KinematicCollider,
+        dynamic_collider::DynamicCollider,
+        static_collider::StaticCollider,
+        area::Area,
+    },
     devices::{Device, DeviceType, DefaultPistol},
     engine_handle::EngineHandle,
     transform::Transform,
-    physics::collider::DynamicCollider,
 };
 
 pub struct PlayerInnerState {
-    pub collider: DynamicCollider,
+    pub collider: KinematicCollider,
     pub hp: i32,
 }
 
 impl PlayerInnerState {
     pub fn new(transform: Transform, settings: &PlayerSettings) -> Self {
         PlayerInnerState {
-            collider: DynamicCollider::new(
+            collider: KinematicCollider::new(
                 transform,
                 settings.max_speed,
                 settings.max_accel,
@@ -83,25 +89,7 @@ pub struct Player {
 }
 
 impl Actor for Player {
-    fn recieve_message(&mut self, message: Message, engine_handle: &mut EngineHandle) {
-        let from = message.from;
-
-        let message = message.message;
-        
-        match message {
-            MessageType::DealDamage(damage) => {
-                self.inner_state.hp -= damage as i32;
-            },
-            MessageType::SetTransform(transform) => {
-                self.inner_state.collider.transform = transform;
-            }
-            MessageType::EnableCollider(enable) => {
-                self.inner_state.collider.is_enable = enable;
-            }
-        }
-    }
-
-    fn recieve_boardcast_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
+    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
         let from = message.from;
 
         let message = &message.message;
@@ -127,8 +115,15 @@ impl Actor for Player {
         self.id
     }
 
-    fn get_dynamic_collider(&mut self) -> Option<&mut DynamicCollider> {
-        Some(&mut self.inner_state.collider)
+    fn get_colliders_container(&mut self) -> Option<CollidersContainer> {
+        let collider_container = CollidersContainer {
+            kinematic_collider: Some(&mut self.inner_state.collider),
+            dynamic_colliders: None,
+            static_colliders: None,
+            area: None,
+        };
+
+        Some(collider_container)
     }
 
     fn tick(&mut self, engine_handle: &mut EngineHandle) {

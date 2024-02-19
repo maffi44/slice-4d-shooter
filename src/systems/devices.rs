@@ -40,34 +40,34 @@ impl Device for DefaultPistol {
             input: &ActionsFrameState,
             engine_handle: &mut EngineHandle
         ) {
-        if input.fire.is_action_just_pressed() {
-            let hit = engine_handle.physics_state.ray_cast(
-                player.collider.transform.get_position(),
-                player.collider.transform.get_direction(),
-                1000.0
-            );
+        // if input.fire.is_action_just_pressed() {
+        //     let hit = engine_handle.physics_state.ray_cast(
+        //         player.collider.transform.get_position(),
+        //         player.collider.transform.get_direction(),
+        //         1000.0
+        //     );
 
-            if let Some(hit) = hit {
-                if let Some(id) = hit.hited_players_id {
-                    engine_handle.send_direct_message(
-                        id,
-                        // send message to the damaged player
-                        Message {
-                            from: player_id,
-                            message: MessageType::DealDamage(self.damage)
-                        }
-                    )
-                } else {
-                    engine_handle.send_command(
-                        // spawn shoot effect on point
-                        Command {
-                            sender: player_id,
-                            command_type: CommandType::SpawnEffect(EffectType::DefaultPistolDecal),
-                        }
-                   )
-                }
-            }
-        }
+        //     if let Some(hit) = hit {
+        //         if let Some(id) = hit.hited_players_id {
+        //             engine_handle.send_direct_message(
+        //                 id,
+        //                 // send message to the damaged player
+        //                 Message {
+        //                     from: player_id,
+        //                     message: MessageType::DealDamage(self.damage)
+        //                 }
+        //             )
+        //         } else {
+        //             engine_handle.send_command(
+        //                 // spawn shoot effect on point
+        //                 Command {
+        //                     sender: player_id,
+        //                     command_type: CommandType::SpawnEffect(EffectType::DefaultPistolDecal),
+        //                 }
+        //            )
+        //         }
+        //     }
+        // }
     }
 }
 

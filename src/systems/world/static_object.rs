@@ -1,9 +1,9 @@
-use glam::{Vec3, Vec4};
-use super::super::transform::Transform;
+use glam::Vec3;
+use super::super::physics::static_collider::StaticCollider;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct ObjectMatrial {
-    color: Vec3
+    pub color: Vec3
 }
 
 impl ObjectMatrial {
@@ -15,21 +15,7 @@ impl ObjectMatrial {
 }
 #[derive(Debug)]
 pub struct StaticObject {
-    pub shape_type: ShapeType,
-    pub transform: Transform,
-    pub size: Vec4,
-    pub is_positive: bool,
-    pub friction: f32,
-    pub roundness: f32,
-    pub bounce_rate: f32,
+    pub collider: StaticCollider,
     pub material: ObjectMatrial,
-    pub stickiness: f32
 }
 
-#[derive(Debug)]
-pub enum ShapeType {
-    Cube,
-    CubeInfW,
-    Sphere,
-    SphCube,
-}
