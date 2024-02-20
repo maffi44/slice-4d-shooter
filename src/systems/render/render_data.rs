@@ -47,7 +47,7 @@ pub struct CameraUniform {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
-struct Shape {
+pub struct Shape {
     pub pos: [f32;4],
     pub size: [f32;4],
     pub color: [f32;3],
@@ -56,7 +56,7 @@ struct Shape {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
-struct NegShape {
+pub struct NegShape {
     pub pos: [f32;4],
     pub size: [f32;4],
     pub roundness: f32,
@@ -64,7 +64,7 @@ struct NegShape {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
-struct StickinessNegShape {
+pub struct StickinessNegShape {
     pub pos: [f32;4],
     pub size: [f32;4],
     pub roundness: f32,
@@ -73,7 +73,7 @@ struct StickinessNegShape {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
-struct StickinessShape {
+pub struct StickinessShape {
     pub pos: [f32;4],
     pub size: [f32;4],
     pub color: [f32;3],

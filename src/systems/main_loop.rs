@@ -4,6 +4,7 @@ use super::{
     actor::{
         Message,
         MessageType,
+        CommonActorsMessages,
         ActorWrapper,
         player::{
             Player,
@@ -199,14 +200,15 @@ fn main_loop(
 
     systems.world.tick(&mut systems.engine_handle);
 
-    systems.world.process_commands(&mut systems.engine_handle);
-
-    systems.world.send_messages(&mut systems.engine_handle);
+    systems.world.send_messages_and_process_commands(&mut systems.engine_handle);
 
     systems.physic.process_physics(
         &mut systems.world, 
-        systems.time.target_frame_duration.as_secs_f32()
+        systems.time.target_frame_duration.as_secs_f32(),
+        &mut systems.engine_handle
     );
+
+    systems.world.send_messages_and_process_commands(&mut systems.engine_handle);
 
     systems.render.render_frame(&mut systems.world, &mut systems.time);
 
@@ -233,8 +235,10 @@ fn init(systems: &mut Engine) {
         main_player_id,
         Message {
             from: 0_u64,
-            message: MessageType::SetTransform(
-                Transform::new_from_vec4(systems.world.level.spawn_position),
+            message: MessageType::CommonActorsMessages(
+                CommonActorsMessages::SetTransform(
+                    Transform::new_from_vec4(systems.world.level.spawn_position),
+                )
             )
         }
     );

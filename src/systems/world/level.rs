@@ -341,7 +341,8 @@ fn parse_json_specific_shape(
         friction,
         roundness,
         bounce_rate,
-        stickiness
+        stickiness,
+        actors_id: None
     };
 
     StaticObject {

@@ -13,7 +13,13 @@ use player_input_master::InputMaster;
 use player_settings::PlayerSettings;
 
 use super::{
-    Actor, ActorID, Message, MessageType
+    Actor,
+    ActorID,
+    CommonActorsMessages,
+    Component,
+    Message,
+    MessageType,
+    SpecificActorMessage
 };
 
 use super::super::{
@@ -88,6 +94,10 @@ pub struct Player {
     pub master: InputMaster,
 }
 
+pub enum PLayerMessages {
+    DealDamage(u32),
+}
+
 impl Actor for Player {
     fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
         let from = message.from;
@@ -95,20 +105,44 @@ impl Actor for Player {
         let message = &message.message;
         
         match message {
-            MessageType::DealDamage(damage) => {
-                self.inner_state.hp -= *damage as i32;
+            MessageType::CommonActorsMessages(message) => {
+                match message {
+                    CommonActorsMessages::SetTransform(transform) => {
+                        self.inner_state.collider.transform = transform.clone();
+                    },
+                    CommonActorsMessages::EnableCollider(switch) => {
+                        self.inner_state.collider.is_enable = *switch;
+                    },
+                    CommonActorsMessages::IncrementPosition(increment) => {
+                        self.inner_state.collider.transform.increment_position(increment.clone());
+                    }
+                }
+            }
+            MessageType::PhysicsMessages(message) => {
+                match message {
+                    _ => {}
+                }
             },
-            MessageType::SetTransform(transform) => {
-                self.inner_state.collider.transform = transform.clone();
-            }
-            MessageType::EnableCollider(enable) => {
-                self.inner_state.collider.is_enable = *enable;
-            }
+            MessageType::SpecificActorMessage(message) => {
+                match message {
+                    SpecificActorMessage::PLayerMessages(message) => {
+                        match message {
+                            PLayerMessages::DealDamage(damage) => {
+                                self.inner_state.hp -= *damage as i32;
+                            }
+                        }
+                    },
+                    _ => {},
+                }
+
+            }  
         }
     }
 
-    fn set_id(&mut self, id: ActorID) {
+    fn init(&mut self, id: ActorID) {
         self.id = Some(id);
+
+        self.inner_state.collider.init(id);
     }
 
     fn get_id(&self) -> Option<ActorID> {

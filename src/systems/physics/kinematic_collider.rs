@@ -1,12 +1,28 @@
 use glam::{
-    Vec4, Vec3, Vec2, Vec4Swizzles
+    Vec4, Vec4Swizzles
 };
+
+use super::sdf_functions::{
+    sd_box,
+    sd_inf_box,
+    sd_sph_box,
+    sd_sphere
+};
+
+use crate::systems::actor::{
+    Component,
+    ActorID,
+};
+use crate::systems::engine_handle::{self, EngineHandle};
+
 use super::super::transform::Transform;
 use super::physics_system_data::StaticCollidersData;
 // use crate::systems::static_obj::{StaticObject, self};
 
 
-pub struct DynamicCollider {}
+pub enum KinematicColliderMessages {
+    
+}
 
 pub struct KinematicCollider {
     pub is_enable: bool,
@@ -21,6 +37,19 @@ pub struct KinematicCollider {
     current_velocity: Vec4,
     forces: Vec<Vec4>,
     pub is_on_ground: bool,
+    actors_id: Option<ActorID>,
+}
+
+impl Component for KinematicCollider {
+    fn init(&mut self, id: ActorID) {
+        self.actors_id = Some(id);
+    }
+
+    fn get_id(&self) -> Option<ActorID> {
+        let id = self.actors_id.expect("Component was not initialised");
+
+        Some(id)
+    }
 }
 
 impl KinematicCollider {
@@ -44,7 +73,8 @@ impl KinematicCollider {
             movment_mult: 1.0,
             current_velocity: Vec4::ZERO,
             forces: Vec::with_capacity(10),
-            is_on_ground: false
+            is_on_ground: false,
+            actors_id: None,
         }
     }
 
@@ -61,7 +91,12 @@ impl KinematicCollider {
         self.forces.push(force);
     }
 
-    pub fn physics_tick(&mut self, delta: f32, static_objects: &StaticCollidersData) {
+    pub fn physics_tick(
+        &mut self,
+        delta: f32,
+        static_objects: &StaticCollidersData,
+        engine_handle: &mut EngineHandle,
+    ) {
 
         self.is_on_ground = false;
 
@@ -395,42 +430,6 @@ fn get_dist(p: Vec4, static_objects: &StaticCollidersData) -> f32 {
     }
 
     return d;
-}
-
-#[inline]
-fn sd_inf_box(p: Vec4, b: Vec3) -> f32 {
-    let d = Vec3::new(p.x, p.y, p.z).abs() - b;
-    return f32::min(f32::max(d.x, f32::max(d.y, d.z)),0.0) + (d.max(Vec3::ZERO).length());
-}
-
-#[inline]
-fn sd_sphere(p: Vec4, r: f32) -> f32 {
-    p.length() - r
-}
-
-#[inline]
-fn sd_sph_box(p: Vec4, b: Vec4) -> f32 {
-    let d1: f32 = p.xy().length() - b.x;
-    let d2: f32 = p.xz().length() - b.y;
-    let d3: f32 = p.yz().length() - b.z;
-    let d4: f32 = p.wx().length() - b.w;
-    let d5: f32 = p.wy().length() - b.w;
-    let d6: f32 = p.wz().length() - b.w;
-    return d6.max(d5.max(d4.max(d1.max(d2.max(d3)))));
-}
-
-#[inline]
-fn sd_sph_inf_box(p: Vec4, b: Vec4) -> f32 {
-    let d1 = Vec2::new(p.w, p.x).length() - b.x;
-    let d2 = Vec2::new(p.w, p.y).length() - b.y;
-    let d = Vec2::new(p.x, p.y).abs() - Vec2::new(b.x,b.y);
-    return f32::max(d1,f32::max(d2,f32::min(f32::max(d.x,d.y),0.0) + (d.max(Vec2::ZERO)).length()));
-}
-
-#[inline]
-fn sd_box(p: Vec4, b: Vec4) -> f32 {
-    let d = p.abs() - b;
-    return f32::min(f32::max(d.x,f32::max(d.y,f32::max(d.z, d.w))),0.0) + d.max(Vec4::ZERO).length();
 }
 
 #[inline]

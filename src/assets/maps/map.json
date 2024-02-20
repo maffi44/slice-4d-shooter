@@ -33,44 +33,6 @@
     },
 
     "actors" : [
-        // {
-        //     "button" : {
-        //         "name" : "wrong_button",
-        //         "position" : {
-        //             "x" : 0.0
-        //         },
-        //         "events" : {
-        //             "on_button_pressed" :  {
-        //                 "messages" : [
-        //                     {
-        //                         "to" : "special_cube",
-        //                         "command" : "move to",
-        //                         "content" : {
-        //                             "position" : {
-        //                                 "x" : 100.0,
-        //                                 "y" : 100.0,
-        //                                 "z" : 100.0,
-        //                                 "w" : 100.0
-        //                             }
-        //                         }
-        //                     }
-        //                 ]
-        //             }
-        //         }
-        //     }
-        // },
-        // {
-        //     "cube" : {
-        //         "name" : "special_cube",
-        //         "position" : {
-        //             "x" : 10.0,
-        //             "y" : 10.0,
-        //             "z" : 10.0,
-        //             "w" : 10.0
-        //         },
-        //         "speed" : 10.0
-        //     }
-        // }
     ],
     
     "static_objects": [

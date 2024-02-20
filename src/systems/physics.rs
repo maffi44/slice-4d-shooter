@@ -4,6 +4,7 @@ pub mod kinematic_collider;
 pub mod static_collider;
 pub mod dynamic_collider;
 pub mod area;
+pub mod sdf_functions;
 
 use self::{
     kinematic_collider::KinematicCollider,
@@ -17,7 +18,7 @@ use self::{
 };
 
 use super::{
-    actor::Actor, world::World
+    actor::Actor, engine_handle::{self, EngineHandle}, world::World
 };
 
 pub struct PhysicsSystem {
@@ -38,7 +39,12 @@ impl PhysicsSystem {
         }
     }
 
-    pub fn process_physics(&mut self, world: &mut World, delta: f32) {
+    pub fn process_physics(
+        &mut self,
+        world: &mut World,
+        delta: f32,
+        engine_handle: &mut EngineHandle,
+    ) {
 
         self.frame_colliders_buffers.kinematic_colliders.clear();
         self.frame_colliders_buffers.dynamic_colliders.clear();
@@ -92,12 +98,12 @@ impl PhysicsSystem {
         // colliders to combine them into groups and calculate physics in these groups
 
         // temp
-        for kinematic_collider in kinematic_colliders {
-            kinematic_collider.physics_tick(delta, &self.static_colliders_data)
+        for kinematic_collider in kinematic_colliders.iter_mut() {
+            kinematic_collider.physics_tick(delta, &self.static_colliders_data, engine_handle)
         }
 
-        for area in areas {
-            area.physic_tick(kinematic_colliders);
+        for area in areas.iter_mut() {
+            area.physics_tick(&kinematic_colliders, engine_handle);
         }
 
         self.static_colliders_data.clear_temporal_static_colliders();

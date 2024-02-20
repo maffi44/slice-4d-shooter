@@ -57,17 +57,7 @@ impl World {
         world
     }
 
-    pub fn process_commands(&mut self, engine_handle: &mut EngineHandle) {
-        if let Some(command) = engine_handle.command_buffer.pop() {
-            let from = command.sender;
-            
-            match command.command_type {
-                SpawnEffect(_) => {}
-            }
-        }
-    }
-
-    pub fn send_messages(&mut self, engine_handle: &mut EngineHandle) {
+    pub fn send_messages_and_process_commands(&mut self, engine_handle: &mut EngineHandle) {
         
         loop {
                 while let Some(message) = engine_handle.boardcast_message_buffer.pop() {
@@ -78,8 +68,18 @@ impl World {
                     self.send_direct_messages(to, message, engine_handle)                
                 }
 
+                while let Some(command) = engine_handle.command_buffer.pop() {
+                    let from = command.sender;
+                    
+                    match command.command_type {
+                        SpawnEffect(_) => {}
+                    }
+                }
+
                 if engine_handle.direct_message_buffer.is_empty() &&
-                    engine_handle.boardcast_message_buffer.is_empty() {
+                    engine_handle.boardcast_message_buffer.is_empty() &&
+                    engine_handle.command_buffer.is_empty()
+                {
                             
                     return;
                 }
@@ -120,7 +120,7 @@ impl World {
             None => {
                 let id = self.make_new_unique_id_and_store_it();
 
-                actor.set_id(id);
+                actor.init(id);
 
                 id
             },

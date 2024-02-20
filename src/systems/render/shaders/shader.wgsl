@@ -56,18 +56,6 @@ struct ShapesMetadata {
     s_neg_sph_cubes_amount: u32,
 }
 
-// struct ShapesArrayMetadata {
-//     cubes: SpecificShapeMetadata,
-//     spheres: SpecificShapeMetadata,
-//     cubes_inf_w: SpecificShapeMetadata,
-//     sph_cube: SpecificShapeMetadata,
-
-//     neg_cubes: SpecificShapeMetadata,
-//     neg_spheres: SpecificShapeMetadata,
-//     neg_cubes_inf_w: SpecificShapeMetadata,
-//     neg_sph_cube: SpecificShapeMetadata,
-// }
-
 @group(0) @binding(0) var<uniform> camera_uni: CamerUniform;
 @group(0) @binding(1) var<uniform> time: vec4<f32>;
 @group(0) @binding(2) var<uniform> shapes_metadata: ShapesMetadata;

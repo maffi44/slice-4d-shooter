@@ -24,7 +24,7 @@ pub trait Actor {
 
     fn get_id(&self) -> Option<ActorID>;
     
-    fn set_id(&mut self, id: ActorID);
+    fn init(&mut self, id: ActorID);
 }
 
 pub enum ActorWrapper {
@@ -85,10 +85,10 @@ impl Actor for ActorWrapper {
         }
     }
 
-    fn set_id(&mut self, id: ActorID) {
+    fn init(&mut self, id: ActorID) {
         match  self {
             ActorWrapper::Player(player) => {
-                player.set_id(id);
+                player.init(id);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -97,12 +97,46 @@ impl Actor for ActorWrapper {
 }
 
 
+pub trait Component {
+    fn init(&mut self, id: ActorID);
+
+    fn get_id(&self) -> Option<ActorID>;
+}
+
 pub struct Message {
     pub from: ActorID,
     pub message: MessageType,
 }
 pub enum MessageType {
-    DealDamage(u32),
-    SetTransform(Transform),
-    EnableCollider(bool)
+    CommonActorsMessages(CommonActorsMessages),
+    SpecificActorMessage(SpecificActorMessage),
+    PhysicsMessages(PhysicsMessages),
 }
+
+use glam::Vec4;
+pub enum CommonActorsMessages {
+    SetTransform(Transform),
+    EnableCollider(bool),
+    IncrementPosition(Vec4),
+}
+
+use self::player::PLayerMessages;
+
+pub enum SpecificActorMessage {
+    PLayerMessages(PLayerMessages),
+}
+
+use super::physics::{
+    kinematic_collider::KinematicColliderMessages,
+    dynamic_collider::DynamicColliderMessages,
+    static_collider::StaticColliderMessages,
+    area::AreaMessages,
+};
+
+pub enum PhysicsMessages {
+    KinematicColliderMessages(KinematicColliderMessages),
+    StaticColliderMessages(StaticColliderMessages),
+    DynamicColliderMessages(DynamicColliderMessages),
+    AreaMessages(AreaMessages),
+}
+
