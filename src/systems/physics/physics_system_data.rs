@@ -156,25 +156,10 @@ impl CollidersShapeTypeArrays {
     #[inline]
     fn clear_temporal_static_colliders(&mut self) {
 
-        if self.normal.len() > self.constant_normal_len {
-
-            self.normal.drain(self.constant_normal_len..);
-        }
-
-        if self.negative.len() > self.constant_negative_len {
-
-            self.negative.drain(self.constant_negative_len..);
-        }
-
-        if self.stickiness.len() > self.constant_stickiness_len {
-
-            self.stickiness.drain(self.constant_stickiness_len..);
-        }
-
-        if self.neg_stickiness.len() > self.constant_neg_stickiness_len {
-
-            self.neg_stickiness.drain(self.constant_neg_stickiness_len..);
-        }
+        self.normal.truncate(self.constant_normal_len);
+        self.negative.truncate(self.constant_negative_len);
+        self.stickiness.truncate(self.constant_stickiness_len);
+        self.neg_stickiness.truncate(self.constant_neg_stickiness_len);
     }
 
 }

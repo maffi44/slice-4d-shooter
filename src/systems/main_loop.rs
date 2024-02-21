@@ -194,6 +194,8 @@ impl MainLoop {
 fn main_loop(
     systems : &mut Engine,
 ) {
+    // log::warn!("Main loop iter number {}", systems.time.frame_counter);
+
     systems.time.start_of_frame();
 
     systems.input.get_input(&mut systems.world, &mut systems.net);

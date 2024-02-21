@@ -66,6 +66,10 @@ impl PhysicsSystem {
             std::mem::transmute_copy(&self.frame_colliders_buffers.areas)
         };
 
+        // let mut kinematic_colliders: Vec<&mut KinematicCollider> = Vec::new();
+        // let mut dynamic_colliders: Vec<&mut DynamicCollider> = Vec::new();
+        // let mut areas: Vec<&mut Area> = Vec::new();
+
         for (_, actor) in world.actors.iter_mut() {
 
             if let Some(colliders_container) = actor.get_colliders_container() {

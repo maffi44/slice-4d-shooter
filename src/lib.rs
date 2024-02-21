@@ -17,10 +17,13 @@ async fn client_main() {
     console_log::init_with_level(log::Level::Warn).expect("Could't initialize logger");
 
     let main_loop = MainLoop::new();
+    
+    log::warn!("Pre systems init");
 
     let systems = Engine::new(&main_loop).await;
     
-    log::info!("Engine ready to start main loop");
+    // log::warn!("Engine ready to start main loop");
+
 
     main_loop.run(systems).await;
 }

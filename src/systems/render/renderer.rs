@@ -129,7 +129,11 @@ impl Renderer {
 
 
     pub async fn new(window: &Window, world: &World) -> Renderer {
+        log::warn!("Pre size");
+
         let size = window.inner_size();
+
+        log::warn!("Pre instance");
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -138,12 +142,16 @@ impl Renderer {
             gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
 
+        log::warn!("Pre surface");
+
         let surface = unsafe { instance.create_surface_unsafe(
             wgpu::SurfaceTargetUnsafe::RawHandle {
                 raw_display_handle: window.display_handle().unwrap().as_raw(),
                 raw_window_handle: window.window_handle().unwrap().as_raw()
             }
         ).unwrap() };
+
+        log::warn!("Pre adapter");
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -153,6 +161,8 @@ impl Renderer {
             })
             .await
             .unwrap();
+
+        log::warn!("Pre queue");
 
         let (device, queue) = adapter
             .request_device(
@@ -172,31 +182,43 @@ impl Renderer {
             .await
             .unwrap();
 
+        log::warn!("Pre surface_caps");
+
         let surface_caps = surface.get_capabilities(&adapter);
         // Shader code in this tutorial assumes an sRGB surface texture. Using a different
         // one will result all the colors coming out darker. If you want to support non
         // sRGB surfaces, you'll need to account for that when drawing to the frame.
+        
+        log::warn!("Pre surface_format");
+
         let surface_format = surface_caps
         .formats
         .iter()
         .copied()
         .find(|f| f.is_srgb())
-        .unwrap_or(surface_caps.formats[0]);
+        .unwrap_or(wgpu::TextureFormat::Rgba32Float);
+
+        log::warn!("Pre config");
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width: size.width,
             height: size.height,
-            present_mode: surface_caps.present_modes[0],
-            alpha_mode: surface_caps.alpha_modes[0],
+            present_mode: wgpu::PresentMode::default(),
+            alpha_mode: wgpu::CompositeAlphaMode::default(),
             view_formats: vec![],
             desired_maximum_frame_latency: 3,
         };
+
+        log::warn!("Pre surface.configure");
+
         surface.configure(&device, &config);
 
         // let modes = &surface_caps.present_modes;
-
+        
+        log::warn!("Pre shader");
+        
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
 
@@ -230,6 +252,7 @@ impl Renderer {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
+        log::warn!("Pre shapes_array_metadata_buffer");
 
         let shapes_array_metadata_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
@@ -257,6 +280,8 @@ impl Renderer {
 // @group(0) @binding(17) var<uniform> neg_sph_cubes: array<NegShape, 512>;
 // @group(0) @binding(18) var<uniform> s_neg_sph_cubes: array<StickinessNegShape, 512>;
 
+        log::warn!("Pre normal_cubes_buffer");
+        
         let normal_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
             contents: bytemuck::cast_slice(&[shapes_array_data.cubes.normal]),
