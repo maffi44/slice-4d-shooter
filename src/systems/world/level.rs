@@ -252,13 +252,11 @@ fn parse_json_static_objects(
     json_map: &Value, defaults: DefaultStaticObjectSettings
 ) -> Vec<StaticObject>
 {
-    let mut static_objects: Vec<StaticObject> = Vec::with_capacity(40);
+    let mut static_objects: Vec<StaticObject> = Vec::with_capacity(100);
 
     let array = json_map
         .as_array()
         .expect("Wrong JSON map format. static objects value must be an array");
-
-    let mut spawn_position = Vec4::ZERO;
 
     for object in array {
         

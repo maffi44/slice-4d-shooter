@@ -8,9 +8,8 @@ use super::render_data::{
 use winit::window::Window;
 use wgpu::{
     rwh::{HasDisplayHandle, HasRawDisplayHandle, HasRawWindowHandle, HasWindowHandle}, util::{
-        DeviceExt,
-        BufferInitDescriptor
-    }, BindGroup, Buffer, BufferUsages, InstanceFlags
+        BufferInitDescriptor, DeviceExt, RenderEncoder
+    }, BindGroup, Buffer, BufferUsages, Color, InstanceFlags
 };
 
 #[repr(C)]
@@ -56,7 +55,8 @@ pub struct Renderer {
     num_indices: u32,
     pub camera_buffer: Buffer,
     pub time_buffer: Buffer,
-    uniform_bind_group: BindGroup,
+    uniform_bind_group_0: BindGroup,
+    uniform_bind_group_1: BindGroup,
     // time: std::time::SystemTime,
     // already_rendered: Arc<Mutex<bool>>,
 }
@@ -95,12 +95,14 @@ impl Renderer {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
+                        load: wgpu::LoadOp::Clear(
+                            Color {
+                                r: 0.0,
+                                g: 1.0,
+                                b: 0.0,
+                                a: 1.0
+                            }
+                        ),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -110,7 +112,8 @@ impl Renderer {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
+            render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
@@ -120,7 +123,7 @@ impl Renderer {
 
         let instant = web_time::Instant::now();
         // self.queue.on_submitted_work_done(move || {
-        //     log::info!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
+        //     log::error!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
         // });
         output.present();
 
@@ -129,11 +132,11 @@ impl Renderer {
 
 
     pub async fn new(window: &Window, world: &World) -> Renderer {
-        log::warn!("Pre size");
+        log::info!("Pre size");
 
         let size = window.inner_size();
 
-        log::warn!("Pre instance");
+        log::info!("Pre instance");
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -142,7 +145,7 @@ impl Renderer {
             gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
 
-        log::warn!("Pre surface");
+        log::info!("Pre surface");
 
         let surface = unsafe { instance.create_surface_unsafe(
             wgpu::SurfaceTargetUnsafe::RawHandle {
@@ -151,7 +154,7 @@ impl Renderer {
             }
         ).unwrap() };
 
-        log::warn!("Pre adapter");
+        log::info!("Pre adapter");
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -162,7 +165,7 @@ impl Renderer {
             .await
             .unwrap();
 
-        log::warn!("Pre queue");
+        log::info!("Pre queue");
 
         let (device, queue) = adapter
             .request_device(
@@ -182,23 +185,23 @@ impl Renderer {
             .await
             .unwrap();
 
-        log::warn!("Pre surface_caps");
+        log::info!("Pre surface_caps");
 
         let surface_caps = surface.get_capabilities(&adapter);
         // Shader code in this tutorial assumes an sRGB surface texture. Using a different
         // one will result all the colors coming out darker. If you want to support non
         // sRGB surfaces, you'll need to account for that when drawing to the frame.
         
-        log::warn!("Pre surface_format");
+        log::info!("Pre surface_format");
 
         let surface_format = surface_caps
         .formats
         .iter()
         .copied()
         .find(|f| f.is_srgb())
-        .unwrap_or(wgpu::TextureFormat::Rgba32Float);
+        .unwrap_or(surface_caps.formats[0]);
 
-        log::warn!("Pre config");
+        log::info!("Pre config");
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -211,13 +214,13 @@ impl Renderer {
             desired_maximum_frame_latency: 3,
         };
 
-        log::warn!("Pre surface.configure");
+        log::info!("Pre surface.configure");
 
         surface.configure(&device, &config);
 
         // let modes = &surface_caps.present_modes;
         
-        log::warn!("Pre shader");
+        log::info!("Pre shader");
         
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -252,7 +255,7 @@ impl Renderer {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
-        log::warn!("Pre shapes_array_metadata_buffer");
+        log::info!("Pre shapes_array_metadata_buffer");
 
         let shapes_array_metadata_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
@@ -271,16 +274,16 @@ impl Renderer {
 // @group(0) @binding(10) var<uniform> s_neg_spheres: array<StickinessNegShape, 512>;
 
 // @group(0) @binding(11) var<uniform> inf_cubes: array<Shape, 512>;
-// @group(0) @binding(12) var<uniform> s_inf_cubes: array<StickinessShape, 512>;
-// @group(0) @binding(13) var<uniform> neg_inf_cubes: array<NegShape, 512>;
-// @group(0) @binding(14) var<uniform> s_neg_inf_cubes: array<StickinessNegShape, 512>;
+// @group(1) @binding(0) var<uniform> s_inf_cubes: array<StickinessShape, 512>;
+// @group(1) @binding(1) var<uniform> neg_inf_cubes: array<NegShape, 512>;
+// @group(1) @binding(2) var<uniform> s_neg_inf_cubes: array<StickinessNegShape, 512>;
 
-// @group(0) @binding(15) var<uniform> sph_cubes: array<Shape, 512>;
-// @group(0) @binding(16) var<uniform> s_sph_cubes: array<StickinessShape, 512>;
-// @group(0) @binding(17) var<uniform> neg_sph_cubes: array<NegShape, 512>;
-// @group(0) @binding(18) var<uniform> s_neg_sph_cubes: array<StickinessNegShape, 512>;
+// @group(1) @binding(3) var<uniform> sph_cubes: array<Shape, 512>;
+// @group(1) @binding(4) var<uniform> s_sph_cubes: array<StickinessShape, 512>;
+// @group(1) @binding(5) var<uniform> neg_sph_cubes: array<NegShape, 512>;
+// @group(1) @binding(6) var<uniform> s_neg_sph_cubes: array<StickinessNegShape, 512>;
 
-        log::warn!("Pre normal_cubes_buffer");
+        log::info!("Pre normal_cubes_buffer");
         
         let normal_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
@@ -382,7 +385,7 @@ impl Renderer {
         });
 
 
-        let uniform_bind_group_layout =
+        let uniform_bind_group_layout_0 =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -496,8 +499,15 @@ impl Renderer {
                         },
                         count: None,
                     },
+                ],
+                label: Some("uniform_bind_group_layout_0"),
+            });
+
+            let uniform_bind_group_layout_1 =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
                     wgpu::BindGroupLayoutEntry {
-                        binding: 11,
+                        binding: 0,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -507,7 +517,7 @@ impl Renderer {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 12,
+                        binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -517,7 +527,7 @@ impl Renderer {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 13,
+                        binding: 2,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -527,7 +537,7 @@ impl Renderer {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 14,
+                        binding: 3,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -537,7 +547,7 @@ impl Renderer {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 15,
+                        binding: 4,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -547,7 +557,7 @@ impl Renderer {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 16,
+                        binding: 5,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -557,7 +567,7 @@ impl Renderer {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 17,
+                        binding: 6,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -567,7 +577,7 @@ impl Renderer {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 18,
+                        binding: 7,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -578,11 +588,11 @@ impl Renderer {
                     },
 
                 ],
-                label: Some("uniform_bind_group_layout"),
+                label: Some("uniform_bind_group_layout_1"),
             });
         
-        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &uniform_bind_group_layout,
+        let uniform_bind_group_0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &uniform_bind_group_layout_0,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -629,49 +639,57 @@ impl Renderer {
                     binding: 10,
                     resource: neg_stickiness_spheres_buffer.as_entire_binding(),
                 },
+                ],
+            
+            label: Some("shader_unforms_and_storge_bind_group_0"),
+        });
+
+        let uniform_bind_group_1 = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &uniform_bind_group_layout_1,
+            entries: &[
 
                 wgpu::BindGroupEntry {
-                    binding: 11,
+                    binding: 0,
                     resource: normal_inf_w_cubes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 12,
+                    binding: 1,
                     resource: stickiness_inf_w_cubes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 13,
+                    binding: 2,
                     resource: negative_inf_w_cubes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 14,
+                    binding: 3,
                     resource: neg_stickiness_inf_w_cubes_buffer.as_entire_binding(),
                 },
 
                 wgpu::BindGroupEntry {
-                    binding: 15,
+                    binding: 4,
                     resource: normal_sph_cubes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 16,
+                    binding: 5,
                     resource: stickiness_sph_cubes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 17,
+                    binding: 6,
                     resource: negative_sph_cubes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 18,
+                    binding: 7,
                     resource: neg_stickiness_sph_cubes_buffer.as_entire_binding(),
                 },
                 ],
             
-            label: Some("shader_unforms_and_storge_bind_group"),
+            label: Some("shader_unforms_and_storge_bind_group_1"),
         });
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout],
+            bind_group_layouts: &[&uniform_bind_group_layout_0, &uniform_bind_group_layout_1],
             push_constant_ranges: &[],
         });
 
@@ -746,7 +764,8 @@ impl Renderer {
             index_buffer,
             camera_buffer,
             time_buffer,
-            uniform_bind_group,
+            uniform_bind_group_0,
+            uniform_bind_group_1,
             // time: std::time::SystemTime::now(),
             // already_rendered: Arc::new(Mutex::new(true)),
         }

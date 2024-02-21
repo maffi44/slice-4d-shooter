@@ -14,15 +14,15 @@ async fn client_main() {
 
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     
-    console_log::init_with_level(log::Level::Warn).expect("Could't initialize logger");
+    console_log::init_with_level(log::Level::Info).expect("Could't initialize logger");
 
     let main_loop = MainLoop::new();
     
-    log::warn!("Pre systems init");
+    // log::info!("Pre systems init");
 
     let systems = Engine::new(&main_loop).await;
     
-    // log::warn!("Engine ready to start main loop");
+    // log::info!("Engine ready to start main loop");
 
 
     main_loop.run(systems).await;

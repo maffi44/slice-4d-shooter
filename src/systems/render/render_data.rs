@@ -46,12 +46,23 @@ pub struct CameraUniform {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Shape {
     pub pos: [f32;4],
     pub size: [f32;4],
     pub color: [f32;3],
     pub roundness: f32,
+}
+
+impl Default for Shape {
+    fn default() -> Self {
+        Shape {
+            pos: [0.0, 0.0, 0.0, 0.0],
+            size: [1.0, 1.0, 1.0, 1.0],
+            color: [1.0, 1.0, 1.0],
+            roundness: 0.0,
+        }
+    }
 }
 
 #[repr(C)]
@@ -60,6 +71,7 @@ pub struct NegShape {
     pub pos: [f32;4],
     pub size: [f32;4],
     pub roundness: f32,
+    pub empty_bytes: [f32;3],
 }
 
 #[repr(C)]
@@ -82,34 +94,34 @@ pub struct StickinessShape {
 }
 
 pub struct ShapeArrays {
-    pub normal: [Shape; 512],
-    pub negative: [NegShape; 512],
-    pub stickiness: [StickinessShape; 512],
-    pub neg_stickiness: [StickinessNegShape; 512],
+    pub normal: [Shape; 256],
+    pub negative: [NegShape; 256],
+    pub stickiness: [StickinessShape; 256],
+    pub neg_stickiness: [StickinessNegShape; 256],
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct AllShapesArraysMetadata {
-    pub cubes_amount: u32,
-    pub spheres_amount: u32,
-    pub sph_cubes_amount: u32,
-    pub inf_w_cubes_amount: u32,
+    cubes_amount: u32,
+    s_cubes_amount: u32,
+    neg_cubes_amount: u32,
+    s_neg_cubes_amount: u32,
 
-    pub neg_cubes_amount: u32,
-    pub neg_spheres_amount: u32,
-    pub neg_sph_cubes_amount: u32,
-    pub neg_inf_w_cubes_amount: u32,
+    spheres_amount: u32,
+    s_spheres_amount: u32,
+    neg_spheres_amount: u32,
+    s_neg_spheres_amount: u32,
 
-    pub s_cubes_amount: u32,
-    pub s_spheres_amount: u32,
-    pub s_sph_cubes_amount: u32,
-    pub s_inf_w_cubes_amount: u32,
+    inf_w_cubes_amount: u32,
+    s_inf_w_cubes_amount: u32,
+    neg_inf_w_cubes_amount: u32,
+    s_neg_inf_w_cubes_amount: u32,
 
-    pub s_neg_cubes_amount: u32,
-    pub s_neg_spheres_amount: u32,
-    pub s_neg_sph_cubes_amount: u32,
-    pub s_neg_inf_w_cubes_amount: u32,
+    sph_cubes_amount: u32,
+    s_sph_cubes_amount: u32,
+    neg_sph_cubes_amount: u32,
+    s_neg_sph_cubes_amount: u32,
 }
 
 pub struct StaticShapesArraysUniformData {
@@ -124,31 +136,31 @@ pub struct StaticShapesArraysUniformData {
 impl StaticShapesArraysUniformData {
     pub fn new(world: &World) -> Self {
         let mut cubes = ShapeArrays {
-            normal: [Shape::default(); 512],
-            negative: [NegShape::default(); 512],
-            stickiness: [StickinessShape::default(); 512],
-            neg_stickiness: [StickinessNegShape::default(); 512],
+            normal: [Shape::default(); 256],
+            negative: [NegShape::default(); 256],
+            stickiness: [StickinessShape::default(); 256],
+            neg_stickiness: [StickinessNegShape::default(); 256],
         };
 
         let mut spheres = ShapeArrays {
-            normal: [Shape::default(); 512],
-            negative: [NegShape::default(); 512],
-            stickiness: [StickinessShape::default(); 512],
-            neg_stickiness: [StickinessNegShape::default(); 512],
+            normal: [Shape::default(); 256],
+            negative: [NegShape::default(); 256],
+            stickiness: [StickinessShape::default(); 256],
+            neg_stickiness: [StickinessNegShape::default(); 256],
         };
 
         let mut inf_w_cubes = ShapeArrays {
-            normal: [Shape::default(); 512],
-            negative: [NegShape::default(); 512],
-            stickiness: [StickinessShape::default(); 512],
-            neg_stickiness: [StickinessNegShape::default(); 512],
+            normal: [Shape::default(); 256],
+            negative: [NegShape::default(); 256],
+            stickiness: [StickinessShape::default(); 256],
+            neg_stickiness: [StickinessNegShape::default(); 256],
         };
 
         let mut sph_cubes = ShapeArrays {
-            normal: [Shape::default(); 512],
-            negative: [NegShape::default(); 512],
-            stickiness: [StickinessShape::default(); 512],
-            neg_stickiness: [StickinessNegShape::default(); 512],
+            normal: [Shape::default(); 256],
+            negative: [NegShape::default(); 256],
+            stickiness: [StickinessShape::default(); 256],
+            neg_stickiness: [StickinessNegShape::default(); 256],
         };
         
         let mut cubes_amount = 0u32;
@@ -186,6 +198,13 @@ impl StaticShapesArraysUniformData {
                                 roundness: obj.collider.roundness,
                             };
 
+                            // let shape = Shape {
+                            //     pos: [0.0, 0.0, 0.0, 0.0],
+                            //     size: [1.0, 1.0, 1.0, 1.0],
+                            //     color: [1.0, 1.0, 1.0],
+                            //     roundness: 0.0,
+                            // };
+
                             cubes.normal[cubes_amount as usize] = shape;
 
                             cubes_amount += 1;
@@ -210,6 +229,7 @@ impl StaticShapesArraysUniformData {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 roundness: obj.collider.roundness,
+                                empty_bytes: [0.0, 0.0, 0.0]
                             };
 
                             cubes.negative[neg_cubes_amount as usize] = shape;
@@ -264,6 +284,7 @@ impl StaticShapesArraysUniformData {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 roundness: obj.collider.roundness,
+                                empty_bytes: [0.0, 0.0, 0.0]
                             };
 
                             spheres.negative[neg_spheres_amount as usize] = shape;
@@ -318,6 +339,7 @@ impl StaticShapesArraysUniformData {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 roundness: obj.collider.roundness,
+                                empty_bytes: [0.0, 0.0, 0.0]
                             };
 
                             inf_w_cubes.negative[neg_inf_w_cubes_amount as usize] = shape;
@@ -372,6 +394,7 @@ impl StaticShapesArraysUniformData {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 roundness: obj.collider.roundness,
+                                empty_bytes: [0.0, 0.0, 0.0]
                             };
 
                             sph_cubes.negative[neg_sph_cubes_amount as usize] = shape;

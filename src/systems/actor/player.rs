@@ -49,7 +49,7 @@ impl PlayerInnerState {
                 settings.max_accel,
                 settings.collider_radius,
                 settings.friction_on_air,
-                settings.friction_on_ground,
+                // settings.friction_on_ground,
             ),
             hp: 100,
         }
@@ -309,7 +309,7 @@ impl Actor for Player {
             self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
         };
 
-        log::warn!("Position: {:.2}", self.get_position());
+        log::info!("Position: {:.2}", self.get_position());
     }
 }
 

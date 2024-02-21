@@ -65,17 +65,17 @@ impl CollidersShapeTypeArrays {
 
     #[inline]
     pub fn iter_negative(&self) -> std::slice::Iter<'_, StaticCollider>{
-        self.normal.iter()
+        self.negative.iter()
     }
 
     #[inline]
     pub fn iter_stickiness(&self) -> std::slice::Iter<'_, StaticCollider>{
-        self.normal.iter()
+        self.stickiness.iter()
     }
 
     #[inline]
     pub fn iter_neg_stickiness(&self) -> std::slice::Iter<'_, StaticCollider>{
-        self.normal.iter()
+        self.neg_stickiness.iter()
     }
 
 

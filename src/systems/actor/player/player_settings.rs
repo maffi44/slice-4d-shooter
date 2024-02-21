@@ -19,7 +19,7 @@ pub struct PlayerSettings {
     pub gravity_y_speed: f32,
     pub gravity_w_speed: f32,
 
-    pub friction_on_ground: f32,
+    // pub friction_on_ground: f32,
     pub friction_on_air: f32,
 }
 
@@ -56,7 +56,7 @@ impl PlayerSettings {
             },
             Err(val) => {
                 panic!(
-                    "ERROR: the map cannot be loaded, err: {}",
+                    "ERROR: the player_settings cannot be loaded, err: {}",
                     val.as_string().unwrap_or("".to_string())
                 );
             }  
@@ -68,86 +68,103 @@ impl PlayerSettings {
 
 fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
 
-    let mut settings = PlayerSettings {
-        collider_radius: f32::NAN,
-        max_speed: f32::NAN,
-        max_accel: f32::NAN,
-        air_speed_mult: f32::NAN,
-        jump_y_speed: f32::NAN,
-        jump_w_speed: f32::NAN,
-        jetpak_w_speed: f32::NAN,
-        gravity_y_speed: f32::NAN,
-        gravity_w_speed: f32::NAN,
-        friction_on_ground: f32::NAN,
-        friction_on_air: f32::NAN,
-    };
 
     let object = json_settigs
         .as_object()
         .expect("Wrong JSON settings format");
 
-        for (property, value) in object {
-            match property.as_str() {
-                "player_sphere_radius" => {
-                    settings.collider_radius = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "player_max_speed" => {
-                    settings.max_speed = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "player_max_accel" => {
-                    settings.max_accel = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "air_speed_mult" => {
-                    settings.air_speed_mult = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "player_jump_y_speed" => {
-                    settings.jump_y_speed = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "player_jump_w_speed" => {
-                    settings.jump_w_speed = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "gravity_y_speed" => {
-                    settings.gravity_y_speed = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "gravity_w_speed" => {
-                    settings.gravity_w_speed = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "player_jetpak_w_speed" => {
-                    settings.jetpak_w_speed = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "friction_on_ground" => {
-                    settings.friction_on_ground = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                "friction_on_air" => {
-                    settings.friction_on_air = {
-                        value.as_f64().expect("Wrong JSON settings format") as f32
-                    }
-                },
-                _ => {
-                    panic!("Wrong JSON settings format")
-                }
-            }
-        }
+    let collider_radius = {
+        object
+            .get("player_sphere_radius")
+            .expect("Have not player_sphere_radius in settings.json")
+            .as_f64()
+            .expect("player_sphere_radius is not float value in settings.json")
+            as f32
+    };
 
-    settings
+    let max_speed = {
+        object
+            .get("player_max_speed")
+            .expect("Have not player_max_speed in settings.json")
+            .as_f64()
+            .expect("player_max_speed is not float value in settings.json")
+            as f32
+    };
+    let max_accel = {
+        object
+            .get("player_max_accel")
+            .expect("Have not player_max_accel in settings.json")
+            .as_f64()
+            .expect("player_max_accel is not float value in settings.json")
+            as f32
+    };
+    let air_speed_mult = {
+        object
+            .get("air_speed_mult")
+            .expect("Have not air_speed_mult in settings.json")
+            .as_f64()
+            .expect("air_speed_mult is not float value in settings.json")
+            as f32
+    };
+    let jump_y_speed = {
+        object
+            .get("player_jump_y_speed")
+            .expect("Have not player_jump_y_speed in settings.json")
+            .as_f64()
+            .expect("player_jump_y_speed is not float value in settings.json")
+            as f32
+    };
+    let jump_w_speed = {
+        object
+            .get("player_jump_w_speed")
+            .expect("Have not player_jump_w_speed in settings.json")
+            .as_f64()
+            .expect("player_jump_w_speed is not float value in settings.json")
+            as f32
+    };
+    let jetpak_w_speed = {
+        object
+            .get("player_jetpak_w_speed")
+            .expect("Have not player_jetpak_w_speed in settings.json")
+            .as_f64()
+            .expect("player_jetpak_w_speed is not float value in settings.json")
+            as f32
+    };
+    let gravity_y_speed = {
+        object
+            .get("gravity_y_speed")
+            .expect("Have not gravity_y_speed in settings.json")
+            .as_f64()
+            .expect("gravity_y_speed is not float value in settings.json")
+            as f32
+    };
+    let gravity_w_speed = {
+        object
+            .get("gravity_w_speed")
+            .expect("Have not gravity_w_speed in settings.json")
+            .as_f64()
+            .expect("gravity_w_speed is not float value in settings.json")
+            as f32
+    };
+    let friction_on_air = {
+        object
+            .get("friction_on_air")
+            .expect("Have not friction_on_air in settings.json")
+            .as_f64()
+            .expect("friction_on_air is not float value in settings.json")
+            as f32
+    };
+
+    PlayerSettings {
+        collider_radius,
+        max_speed,
+        max_accel,
+        air_speed_mult,
+        jump_y_speed,
+        jump_w_speed,
+        jetpak_w_speed,
+        gravity_y_speed,
+        gravity_w_speed,
+        friction_on_air,
+    }
 }

@@ -26,14 +26,14 @@ impl RenderSystem {
         world: &World,
     ) -> Self {
 
-        log::warn!("Pre aspect init");
+        log::info!("Pre aspect init");
 
         let aspect = {
             let size = window.inner_size();
             size.width as f32 / size.height as f32
         };
 
-        log::warn!("Pre renderer init");
+        log::info!("Pre renderer init");
 
 
         let renderer = Renderer::new(&window, world).await;

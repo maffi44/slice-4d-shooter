@@ -45,36 +45,36 @@ impl Engine {
             .build(&cleint_main_loop.event_loop)
             .unwrap();
 
-        log::warn!("Engine initializating pre World init");
+        log::info!("Engine initializating pre World init");
         
         let world = World::new().await;
         
-        log::warn!("Engine initializating pre render init");
+        log::info!("Engine initializating pre render init");
 
         let render = RenderSystem::new(window, &world).await;
 
-        log::warn!("Engine initializating pre physic init");
+        log::info!("Engine initializating pre physic init");
         
         let physic = PhysicsSystem::new(&world);
         // let net = ClientNetSystem::new().await;
         
-        log::warn!("Engine initializating pre input init");
+        log::info!("Engine initializating pre input init");
 
         let input = InputSystem::new();
 
-        log::warn!("Engine initializating pre time init");
+        log::info!("Engine initializating pre time init");
 
         let time = TimeSystem::new(60_u32);
 
-        log::warn!("Engine initializating pre engine_handle init");
+        log::info!("Engine initializating pre engine_handle init");
 
         let engine_handle = EngineHandle::new();
 
-        log::warn!("Engine initializating pre net init");
+        log::info!("Engine initializating pre net init");
 
         let net = NetSystem::new();
 
-        log::warn!("Engine initializating pre global_players_settings init");
+        log::info!("Engine initializating pre global_players_settings init");
 
         let global_players_settings = PlayerSettings::load_player_settings().await;
 
