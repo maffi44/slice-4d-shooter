@@ -14,8 +14,11 @@ async fn client_main() {
 
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     
-
+    #[cfg(debug_assertions)]
     console_log::init_with_level(log::Level::Info).expect("Could't initialize logger");
+
+    #[cfg(not(debug_assertions))]
+    console_log::init_with_level(log::Level::Warn).expect("Could't initialize logger");
 
     let main_loop = MainLoop::new();
     

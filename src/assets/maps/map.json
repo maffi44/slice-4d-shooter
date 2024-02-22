@@ -91,6 +91,33 @@
             }
         },
         {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 2.0,
+                        "y": 0.0,
+                        "z": 2.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.0,
+                    "y": 1.0,
+                    "z": 1.0,
+                    "w": 2.0
+                },
+                "stickiness" : 1.0
+            }
+        },
+        {
             "sphere" : {
                 "transform" : {
                     "position" : {
@@ -243,7 +270,7 @@
                     "z": 1.0,
                     "w": 2.0
                 },
-                "is_positive" : true
+                "stickiness" : 0.2
             }
         },
         {
@@ -270,7 +297,7 @@
                     "z": 1.0,
                     "w": 1.0
                 },
-                "is_positive" : false
+                "stickiness" : 0.8
             }
         },
         {
@@ -297,7 +324,7 @@
                     "z": 1.0,
                     "w": 2.0
                 },
-                "is_positive" : true
+                "stickiness" : 1.0
             }
         },
         {
@@ -321,7 +348,7 @@
                 "size" : {
                     "x": 3.0
                 },
-                "is_positive" : false
+                "stickiness" : 1.0
             }
         },
         {

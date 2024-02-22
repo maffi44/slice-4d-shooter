@@ -24,6 +24,7 @@ struct StickinessNegShape {
     pos: vec4<f32>,
     size: vec4<f32>,
     roundness: f32,
+    empty_bytes: vec2<f32>,
     stickiness: f32,
 }
 
@@ -32,6 +33,7 @@ struct StickinessShape {
     size: vec4<f32>,
     color: vec3<f32>,
     roundness: f32,
+    empty_bytes: vec3<f32>,
     stickiness: f32,
 }
 
@@ -147,6 +149,36 @@ fn sd_octahedron(point: vec4<f32>, s: f32) -> f32 {
     return (p.x+p.y+p.z+p.w-s)*0.57735027;
 }
 
+fn smin_2(a: f32, b: f32, k: f32) -> f32
+{
+    let kk = k * (1.0/(1.0-sqrt(0.5)));
+    let x: f32 = (b-a)/k;
+    var g: f32 = 0.0;
+    if (x > 1.0) {
+        g = 0.0;
+    } else {
+        if (x < -1.0) {
+            g = x;
+        } else {
+            g = sin(PI/4.0+asin(x*0.7071067))-1.0;
+        }
+    }
+    // float g = (x> 1.0) ? 0.0 :
+    //           (x<-1.0) ? x :
+    //           (sin(PI/4.0+asin(x*0.7071067))-1.0);
+    return a + kk * g;
+}
+
+fn smin(a: f32, b: f32, k: f32) -> f32
+{
+    let kk = k * 2.0;
+    let x = (b-a)/kk;
+    let g = 0.5*(x-sqrt(x*x+0.25));
+    return a + kk * g;
+}
+
+
+
 fn map(p: vec4<f32>) -> f32 {
     var d = MAX_DIST;
 
@@ -169,31 +201,52 @@ fn map(p: vec4<f32>) -> f32 {
     //LAST ONE v
 
 
+    // normal shapes
     for (var i = 0u; i < shapes_metadata.cubes_amount; i++) {
-        d = min(d, sd_box(p - cubes[i].pos, cubes[i].size));
+        d = min(d, sd_box(p - cubes[i].pos, cubes[i].size) - cubes[i].roundness);
     }
     for (var i = 0u; i < shapes_metadata.spheres_amount; i++) {
-        d = min(d, sd_sphere(p - spheres[i].pos, spheres[i].size.x));
+        d = min(d, sd_sphere(p - spheres[i].pos, spheres[i].size.x) - spheres[i].roundness);
     }
     for (var i = 0u; i < shapes_metadata.sph_cubes_amount; i++) {
-        d = min(d, sd_sph_box(p - sph_cubes[i].pos, sph_cubes[i].size));
+        d = min(d, sd_sph_box(p - sph_cubes[i].pos, sph_cubes[i].size) - sph_cubes[i].roundness);
     }
     for (var i = 0u; i < shapes_metadata.inf_cubes_amount; i++) {
-        d = min(d, sd_inf_box(p - inf_cubes[i].pos, inf_cubes[i].size.xyz));
+        d = min(d, sd_inf_box(p - inf_cubes[i].pos, inf_cubes[i].size.xyz) - inf_cubes[i].roundness);
     }
 
+
+    // stickiness shapes
+    for (var i = 0u; i < shapes_metadata.s_cubes_amount; i++) {
+        d = smin(d, sd_box(p - s_cubes[i].pos, s_cubes[i].size) - s_cubes[i].roundness, s_cubes[i].stickiness);
+    }
+    for (var i = 0u; i < shapes_metadata.s_spheres_amount; i++) {
+        d = smin(d, sd_sphere(p - s_spheres[i].pos, s_spheres[i].size.x) - s_spheres[i].roundness, s_spheres[i].stickiness);
+    }
+    for (var i = 0u; i < shapes_metadata.s_sph_cubes_amount; i++) {
+        d = smin(d, sd_sph_box(p - s_sph_cubes[i].pos, s_sph_cubes[i].size) - s_sph_cubes[i].roundness, s_sph_cubes[i].stickiness);
+    }
+    for (var i = 0u; i < shapes_metadata.s_inf_cubes_amount; i++) {
+        d = smin(d, sd_inf_box(p - s_inf_cubes[i].pos, s_inf_cubes[i].size.xyz) - s_inf_cubes[i].roundness, s_inf_cubes[i].stickiness);
+    }
+
+
+
+    // negative shapes
     for (var i = 0u; i < shapes_metadata.neg_cubes_amount; i++) {
-        d = max(d, -sd_box(p - neg_cubes[i].pos, neg_cubes[i].size));
+        d = max(d, -(sd_box(p - neg_cubes[i].pos, neg_cubes[i].size) - neg_cubes[i].roundness));
     }
     for (var i = 0u; i < shapes_metadata.neg_spheres_amount; i++) {
-        d = max(d, -sd_sphere(p - neg_spheres[i].pos, neg_spheres[i].size.x));
+        d = max(d, -(sd_sphere(p - neg_spheres[i].pos, neg_spheres[i].size.x) - neg_spheres[i].roundness));
     }
     for (var i = 0u; i < shapes_metadata.neg_sph_cubes_amount; i++) {
-        d = max(d, -sd_sph_box(p - neg_sph_cubes[i].pos, neg_sph_cubes[i].size));
+        d = max(d, -(sd_sph_box(p - neg_sph_cubes[i].pos, neg_sph_cubes[i].size) - neg_sph_cubes[i].roundness));
     }
     for (var i = 0u; i < shapes_metadata.neg_inf_cubes_amount; i++) {
-        d = max(d, -sd_inf_box(p - neg_inf_cubes[i].pos, neg_inf_cubes[i].size.xyz));
+        d = max(d, -(sd_inf_box(p - neg_inf_cubes[i].pos, neg_inf_cubes[i].size.xyz) - neg_inf_cubes[i].roundness));
     }
+
+    
 
 
 

@@ -404,29 +404,29 @@ fn get_dist(p: Vec4, static_objects: &StaticCollidersData) -> f32 {
     let mut d = f32::MAX;
 
     for collider in static_objects.cubes.iter_normal() {
-         d = d.min(sd_box(p - collider.position.clone(), collider.size.clone()));
+         d = d.min(sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness);
     }
     for collider in static_objects.inf_w_cubes.iter_normal() {
-        d = d.min(sd_inf_box(p - collider.position.clone(), collider.size.xyz()));
+        d = d.min(sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness);
     }
     for collider in static_objects.spheres.iter_normal() {
-        d = d.min(sd_sphere(p - collider.position.clone(), collider.size.x));
+        d = d.min(sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness);
     }
     for collider in static_objects.sph_cubes.iter_normal() {
-        d = d.min(sd_sph_box(p - collider.position.clone(), collider.size.clone()));
+        d = d.min(sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness);
     }
 
     for collider in static_objects.cubes.iter_negative() {
-        d = d.max(-sd_box(p - collider.position.clone(), collider.size.clone()));
+        d = d.max(-(sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness));
     }
     for collider in static_objects.inf_w_cubes.iter_negative() {
-        d = d.max(-sd_inf_box(p - collider.position.clone(), collider.size.xyz()));
+        d = d.max(-(sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness));
     }
     for collider in static_objects.spheres.iter_negative() {
-        d = d.max(-sd_sphere(p - collider.position.clone(),collider.size.x));
+        d = d.max(-(sd_sphere(p - collider.position.clone(),collider.size.x) - collider.roundness));
     }
     for collider in static_objects.sph_cubes.iter_negative() {
-        d = d.max(-sd_sph_box(p - collider.position.clone(), collider.size.clone()));
+        d = d.max(-(sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness));
     }
 
     return d;

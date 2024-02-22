@@ -80,6 +80,7 @@ pub struct StickinessNegShape {
     pub pos: [f32;4],
     pub size: [f32;4],
     pub roundness: f32,
+    pub empty_bytes: [f32;2],
     pub stickiness: f32,
 }
 
@@ -90,6 +91,7 @@ pub struct StickinessShape {
     pub size: [f32;4],
     pub color: [f32;3],
     pub roundness: f32,
+    pub empty_bytes: [f32;3],
     pub stickiness: f32,
 }
 
@@ -139,8 +141,6 @@ pub struct StaticShapesArraysUniformData {
 
 impl StaticShapesArraysUniformData {
     pub fn new(world: &World) -> Self {
-
-        log::error!("123123123");
 
         let mut cubes = Box::new(ShapeArrays {
             normal: [Shape::default(); 256],
@@ -225,6 +225,7 @@ impl StaticShapesArraysUniformData {
                                 size: obj.collider.size.to_array(),
                                 color: obj.material.color.to_array(),
                                 stickiness: obj.collider.stickiness,
+                                empty_bytes: [0.0, 0.0, 0.0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -249,6 +250,7 @@ impl StaticShapesArraysUniformData {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 roundness: obj.collider.roundness,
+                                empty_bytes: [0.0, 0.0],
                                 stickiness: obj.collider.stickiness
                             };
 
@@ -280,6 +282,7 @@ impl StaticShapesArraysUniformData {
                                 size: obj.collider.size.to_array(),
                                 color: obj.material.color.to_array(),
                                 stickiness: obj.collider.stickiness,
+                                empty_bytes: [0.0, 0.0, 0.0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -304,6 +307,7 @@ impl StaticShapesArraysUniformData {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 roundness: obj.collider.roundness,
+                                empty_bytes: [0.0, 0.0],
                                 stickiness: obj.collider.stickiness
                             };
 
@@ -335,6 +339,7 @@ impl StaticShapesArraysUniformData {
                                 size: obj.collider.size.to_array(),
                                 color: obj.material.color.to_array(),
                                 stickiness: obj.collider.stickiness,
+                                empty_bytes: [0.0, 0.0, 0.0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -359,6 +364,7 @@ impl StaticShapesArraysUniformData {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 roundness: obj.collider.roundness,
+                                empty_bytes: [0.0, 0.0],
                                 stickiness: obj.collider.stickiness
                             };
 
@@ -390,6 +396,7 @@ impl StaticShapesArraysUniformData {
                                 size: obj.collider.size.to_array(),
                                 color: obj.material.color.to_array(),
                                 stickiness: obj.collider.stickiness,
+                                empty_bytes: [0.0, 0.0, 0.0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -414,6 +421,7 @@ impl StaticShapesArraysUniformData {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 roundness: obj.collider.roundness,
+                                empty_bytes: [0.0, 0.0],
                                 stickiness: obj.collider.stickiness
                             };
 
