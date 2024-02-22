@@ -127,13 +127,12 @@ pub struct AllShapesArraysMetadata {
 }
 
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+
 pub struct StaticShapesArraysUniformData {
-    pub cubes: ShapeArrays,
-    pub spheres: ShapeArrays,
-    pub inf_w_cubes: ShapeArrays,
-    pub sph_cubes: ShapeArrays,
+    pub cubes: Box<ShapeArrays>,
+    pub spheres: Box<ShapeArrays>,
+    pub inf_w_cubes: Box<ShapeArrays>,
+    pub sph_cubes: Box<ShapeArrays>,
 
     pub metadata: AllShapesArraysMetadata,
 }
@@ -143,33 +142,33 @@ impl StaticShapesArraysUniformData {
 
         log::error!("123123123");
 
-        let mut cubes = ShapeArrays {
+        let mut cubes = Box::new(ShapeArrays {
             normal: [Shape::default(); 256],
             negative: [NegShape::default(); 256],
             stickiness: [StickinessShape::default(); 256],
             neg_stickiness: [StickinessNegShape::default(); 256],
-        };
+        });
 
-        let mut spheres = ShapeArrays {
+        let mut spheres = Box::new(ShapeArrays {
             normal: [Shape::default(); 256],
             negative: [NegShape::default(); 256],
             stickiness: [StickinessShape::default(); 256],
             neg_stickiness: [StickinessNegShape::default(); 256],
-        };
+        });
 
-        let mut inf_w_cubes = ShapeArrays {
+        let mut inf_w_cubes = Box::new(ShapeArrays {
             normal: [Shape::default(); 256],
             negative: [NegShape::default(); 256],
             stickiness: [StickinessShape::default(); 256],
             neg_stickiness: [StickinessNegShape::default(); 256],
-        };
+        });
 
-        let mut sph_cubes = ShapeArrays {
+        let mut sph_cubes = Box::new(ShapeArrays {
             normal: [Shape::default(); 256],
             negative: [NegShape::default(); 256],
             stickiness: [StickinessShape::default(); 256],
             neg_stickiness: [StickinessNegShape::default(); 256],
-        };
+        });
         
         let mut cubes_amount = 0u32;
         let mut spheres_amount = 0u32;
@@ -453,8 +452,6 @@ impl StaticShapesArraysUniformData {
             inf_w_cubes,
             metadata,
         };
-
-        log::info!("render data: static_shapes_array_uniform_data : \n {:?}", static_shapes_array_uniform_data);
 
         static_shapes_array_uniform_data
     }
