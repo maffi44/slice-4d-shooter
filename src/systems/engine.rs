@@ -32,6 +32,10 @@ impl Engine {
         // async_runtime: &Runtime,
     ) -> Engine {
 
+        log::info!("engine systems: window init");
+        
+        let world = World::new().await;
+
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id("game_canvas").unwrap();
         let canvas: web_sys::HtmlCanvasElement = JsValue::from(canvas).into();
@@ -45,15 +49,7 @@ impl Engine {
             .build(&cleint_main_loop.event_loop)
             .unwrap();
 
-        log::info!("engine systems: window init");
-        
-        let world = World::new().await;
-        
         log::info!("engine systems: world init");
-
-        let render = RenderSystem::new(window, &world).await;
-
-        log::info!("engine systems: render init");
         
         let physic = PhysicsSystem::new(&world);
         
@@ -78,6 +74,10 @@ impl Engine {
         let global_players_settings = PlayerSettings::load_player_settings().await;
 
         log::info!("engine systems: global_players_settings init");
+
+        let render = RenderSystem::new(window, &world).await;
+
+        log::info!("engine systems: render init");
 
         Engine {
             physic,

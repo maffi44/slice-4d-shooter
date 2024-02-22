@@ -121,7 +121,7 @@ impl Renderer {
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
 
-        let instant = web_time::Instant::now();
+        // let instant = web_time::Instant::now();
         // self.queue.on_submitted_work_done(move || {
         //     log::error!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
         // });
