@@ -70,8 +70,8 @@ impl Default for Shape {
 pub struct NegShape {
     pub pos: [f32;4],
     pub size: [f32;4],
-    pub roundness: f32,
     pub empty_bytes: [f32;3],
+    pub roundness: f32,
 }
 
 #[repr(C)]
@@ -93,6 +93,8 @@ pub struct StickinessShape {
     pub stickiness: f32,
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ShapeArrays {
     pub normal: [Shape; 256],
     pub negative: [NegShape; 256],
@@ -124,6 +126,9 @@ pub struct AllShapesArraysMetadata {
     s_neg_sph_cubes_amount: u32,
 }
 
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct StaticShapesArraysUniformData {
     pub cubes: ShapeArrays,
     pub spheres: ShapeArrays,
@@ -135,6 +140,9 @@ pub struct StaticShapesArraysUniformData {
 
 impl StaticShapesArraysUniformData {
     pub fn new(world: &World) -> Self {
+
+        log::error!("123123123");
+
         let mut cubes = ShapeArrays {
             normal: [Shape::default(); 256],
             negative: [NegShape::default(); 256],
@@ -184,6 +192,8 @@ impl StaticShapesArraysUniformData {
         let mut s_neg_inf_w_cubes_amount = 0u32;
 
         for obj in &world.level.static_objects {
+
+            log::info!("static objects amount is {}", world.level.static_objects.len());
 
             match obj.collider.shape_type {
                 ShapeType::Cube => {
@@ -436,12 +446,16 @@ impl StaticShapesArraysUniformData {
             s_neg_inf_w_cubes_amount,
         };
 
-        StaticShapesArraysUniformData {
+        let static_shapes_array_uniform_data = StaticShapesArraysUniformData {
             cubes,
             sph_cubes,
             spheres,
             inf_w_cubes,
             metadata,
-        }
+        };
+
+        log::info!("render data: static_shapes_array_uniform_data : \n {:?}", static_shapes_array_uniform_data);
+
+        static_shapes_array_uniform_data
     }
 }

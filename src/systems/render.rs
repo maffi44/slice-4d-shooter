@@ -26,17 +26,14 @@ impl RenderSystem {
         world: &World,
     ) -> Self {
 
-        log::info!("Pre aspect init");
-
         let aspect = {
             let size = window.inner_size();
             size.width as f32 / size.height as f32
         };
 
-        log::info!("Pre renderer init");
-
-
         let renderer = Renderer::new(&window, world).await;
+
+        log::info!("render system: renderer init");
 
         RenderSystem {
             window,
@@ -86,7 +83,7 @@ impl RenderSystem {
             bytemuck::cast_slice(&[render_data.time]),
         );
 
-        if let Err(err) = self.renderer.render() {
+        if let Err(err) = self.renderer.render(&self.window) {
             match err {
                 wgpu::SurfaceError::Lost => self.resize_frame_buffer(),
 

@@ -52,6 +52,8 @@ impl MainLoop {
         
         init(systems);
 
+        log::info!("init(systems) called");
+
         let _ = self.event_loop.run(move |event, elwt|{
             match event {
                 Event::NewEvents(cause) => {

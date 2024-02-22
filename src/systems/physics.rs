@@ -31,7 +31,12 @@ impl PhysicsSystem {
     pub fn new(world: &World) -> Self {
         
         let static_colliders_data = StaticCollidersData::new(world);
+
+        log::info!("physics system: static_colliders_data init");
+
         let frame_colliders_buffers = FrameCollidersBuffers::new();
+
+        log::info!("physics system: frame_colliders_buffers init");
 
         PhysicsSystem {
             static_colliders_data,

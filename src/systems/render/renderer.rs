@@ -71,7 +71,7 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, window: &Window) -> Result<(), wgpu::SurfaceError> {
         // self.device.poll(wgpu::MaintainBase::Poll);
         // if *(self.already_rendered.lock().unwrap()) == true {
         //     *(self.already_rendered.lock().unwrap()) = false
@@ -125,6 +125,9 @@ impl Renderer {
         // self.queue.on_submitted_work_done(move || {
         //     log::error!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
         // });
+
+        window.pre_present_notify();
+
         output.present();
 
         Ok(())
@@ -132,11 +135,7 @@ impl Renderer {
 
 
     pub async fn new(window: &Window, world: &World) -> Renderer {
-        log::info!("Pre size");
-
         let size = window.inner_size();
-
-        log::info!("Pre instance");
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -145,7 +144,7 @@ impl Renderer {
             gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
 
-        log::info!("Pre surface");
+        log::info!("renderer: wgpu instance init");
 
         let surface = unsafe { instance.create_surface_unsafe(
             wgpu::SurfaceTargetUnsafe::RawHandle {
@@ -154,7 +153,7 @@ impl Renderer {
             }
         ).unwrap() };
 
-        log::info!("Pre adapter");
+        log::info!("renderer: wgpu surface init");
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -165,7 +164,7 @@ impl Renderer {
             .await
             .unwrap();
 
-        log::info!("Pre queue");
+        log::info!("renderer: wgpu adapter init");
 
         let (device, queue) = adapter
             .request_device(
@@ -185,14 +184,14 @@ impl Renderer {
             .await
             .unwrap();
 
-        log::info!("Pre surface_caps");
+        log::info!("renderer: wgpu device and queue init");
 
         let surface_caps = surface.get_capabilities(&adapter);
         // Shader code in this tutorial assumes an sRGB surface texture. Using a different
         // one will result all the colors coming out darker. If you want to support non
         // sRGB surfaces, you'll need to account for that when drawing to the frame.
         
-        log::info!("Pre surface_format");
+        log::info!("renderer: gpu surface_caps init");
 
         let surface_format = surface_caps
         .formats
@@ -201,32 +200,32 @@ impl Renderer {
         .find(|f| f.is_srgb())
         .unwrap_or(surface_caps.formats[0]);
 
-        log::info!("Pre config");
+        log::info!("renderer: wgpu surface_format init");
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::default(),
+            present_mode: wgpu::PresentMode::AutoNoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::default(),
             view_formats: vec![],
             desired_maximum_frame_latency: 3,
         };
 
-        log::info!("Pre surface.configure");
+        log::info!("renderer: wgpu config init");
 
         surface.configure(&device, &config);
 
-        // let modes = &surface_caps.present_modes;
-        
-        log::info!("Pre shader");
+        log::info!("renderer: wgpu surface configurated");
         
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
 
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader.wgsl").into()),
         });
+
+        log::info!("renderer: wgpu shader init");
 
         let init_camera_uniform = CameraUniform {
             cam_pos: [0.0, 0.0, 0.0, 0.0],
@@ -238,10 +237,16 @@ impl Renderer {
             ],
             aspect: [1.0, 0.0, 0.0, 0.0],
         };
+
+        log::info!("renderer: init_camera_uniform init");
         
         let init_time = TimeUniform::new_zero();
 
+        log::info!("renderer: init_time init");
+
         let shapes_array_data = StaticShapesArraysUniformData::new(world);
+
+        log::info!("renderer: shapes_array_data init");
 
         let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("camera_buffer"),
@@ -254,8 +259,6 @@ impl Renderer {
             contents: bytemuck::cast_slice(&[init_time.time]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
-
-        log::info!("Pre shapes_array_metadata_buffer");
 
         let shapes_array_metadata_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
@@ -384,6 +387,7 @@ impl Renderer {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
+        log::info!("renderer: wgpu uniform buffers init");
 
         let uniform_bind_group_layout_0 =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -501,9 +505,13 @@ impl Renderer {
                     },
                 ],
                 label: Some("uniform_bind_group_layout_0"),
-            });
+            }
+        );
 
-            let uniform_bind_group_layout_1 =
+        log::info!("renderer: wgpu uniform_bind_group_layout_0 init");
+
+
+        let uniform_bind_group_layout_1 =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -589,7 +597,10 @@ impl Renderer {
 
                 ],
                 label: Some("uniform_bind_group_layout_1"),
-            });
+            }
+        );
+
+        log::info!("renderer: wgpu uniform_bind_group_layout_1 init");
         
         let uniform_bind_group_0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout_0,
@@ -644,6 +655,8 @@ impl Renderer {
             label: Some("shader_unforms_and_storge_bind_group_0"),
         });
 
+        log::info!("renderer: wgpu uniform_bind_group_0 init");
+
         let uniform_bind_group_1 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout_1,
             entries: &[
@@ -686,12 +699,16 @@ impl Renderer {
             label: Some("shader_unforms_and_storge_bind_group_1"),
         });
 
+        log::info!("renderer: wgpu uniform_bind_group_1 init");
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
             bind_group_layouts: &[&uniform_bind_group_layout_0, &uniform_bind_group_layout_1],
             push_constant_ranges: &[],
         });
+
+        log::info!("renderer: wgpu render_pipeline_layout init");
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
@@ -732,6 +749,8 @@ impl Renderer {
             },
             multiview: None, // 5.
         });
+
+        log::info!("renderer: wgpu render_pipeline init");
         
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -741,6 +760,8 @@ impl Renderer {
             }
         );
 
+        log::info!("renderer: wgpu vertex_buffer init");
+
         let index_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Index Buffer"),
@@ -749,7 +770,8 @@ impl Renderer {
             }
         );
 
-        
+        log::info!("renderer: wgpu index_buffer init");
+
         let num_indices = INDICES.len() as u32;
 
         Renderer {

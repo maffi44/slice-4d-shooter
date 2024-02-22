@@ -43,6 +43,8 @@ impl World {
         
         let (level, actors) = Level::download_level_from_server().await;
 
+        log::info!("world system: level downloaded and init");
+
         let mut world = World {
             actors: HashMap::with_capacity(actors.len()),
             all_ids,

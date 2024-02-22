@@ -16,8 +16,8 @@ struct Shape {
 struct NegShape {
     pos: vec4<f32>,
     size: vec4<f32>,
-    roundness: f32,
     empty_bytes: vec3<f32>,
+    roundness: f32,
 }
 
 struct StickinessNegShape {
@@ -182,18 +182,18 @@ fn map(p: vec4<f32>) -> f32 {
         d = min(d, sd_inf_box(p - inf_cubes[i].pos, inf_cubes[i].size.xyz));
     }
 
-    // for (var i = 0u; i < shapes_metadata.neg_cubes_amount; i++) {
-    //     d = max(d, -sd_box(p - neg_cubes[i].pos, neg_cubes[i].size));
-    // }
-    // for (var i = 0u; i < shapes_metadata.neg_spheres_amount; i++) {
-    //     d = max(d, -sd_sphere(p - neg_spheres[i].pos, neg_spheres[i].size.x));
-    // }
-    // for (var i = 0u; i < shapes_metadata.neg_sph_cubes_amount; i++) {
-    //     d = max(d, -sd_sph_box(p - neg_sph_cubes[i].pos, neg_sph_cubes[i].size));
-    // }
-    // for (var i = 0u; i < shapes_metadata.neg_inf_cubes_amount; i++) {
-    //     d = max(d, -sd_inf_box(p - neg_inf_cubes[i].pos, neg_inf_cubes[i].size.xyz));
-    // }
+    for (var i = 0u; i < shapes_metadata.neg_cubes_amount; i++) {
+        d = max(d, -sd_box(p - neg_cubes[i].pos, neg_cubes[i].size));
+    }
+    for (var i = 0u; i < shapes_metadata.neg_spheres_amount; i++) {
+        d = max(d, -sd_sphere(p - neg_spheres[i].pos, neg_spheres[i].size.x));
+    }
+    for (var i = 0u; i < shapes_metadata.neg_sph_cubes_amount; i++) {
+        d = max(d, -sd_sph_box(p - neg_sph_cubes[i].pos, neg_sph_cubes[i].size));
+    }
+    for (var i = 0u; i < shapes_metadata.neg_inf_cubes_amount; i++) {
+        d = max(d, -sd_inf_box(p - neg_inf_cubes[i].pos, neg_inf_cubes[i].size.xyz));
+    }
 
 
 
