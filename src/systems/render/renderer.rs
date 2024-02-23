@@ -56,7 +56,7 @@ pub struct Renderer {
     pub camera_buffer: Buffer,
     pub time_buffer: Buffer,
     uniform_bind_group_0: BindGroup,
-    uniform_bind_group_1: BindGroup,
+    // uniform_bind_group_1: BindGroup,
     // time: std::time::SystemTime,
     // already_rendered: Arc<Mutex<bool>>,
 }
@@ -113,7 +113,7 @@ impl Renderer {
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
-            render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
+            // render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
@@ -288,104 +288,104 @@ impl Renderer {
 
         log::info!("Pre normal_cubes_buffer");
         
-        let normal_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        let normal_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.cubes.normal.as_slice()),
+            contents: bytemuck::cast_slice(shapes_array_data.shapes.normal.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
-        let stickiness_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        let stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.cubes.stickiness.as_slice()),
+            contents: bytemuck::cast_slice(shapes_array_data.shapes.stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
-        let negative_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        let negative_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.cubes.negative.as_slice()),
+            contents: bytemuck::cast_slice(shapes_array_data.shapes.negative.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
-        let neg_stickiness_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        let neg_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.cubes.neg_stickiness.as_slice()),
+            contents: bytemuck::cast_slice(shapes_array_data.shapes.neg_stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         
-        let normal_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.spheres.normal.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let normal_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.spheres.normal.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
-        let stickiness_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.spheres.stickiness.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let stickiness_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.spheres.stickiness.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
-        let negative_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.spheres.negative.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let negative_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.spheres.negative.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
-        let neg_stickiness_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.spheres.neg_stickiness.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
-
-
-        let normal_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.normal.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
-
-        let stickiness_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.stickiness.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
-
-        let negative_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.negative.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
-
-        let neg_stickiness_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.neg_stickiness.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let neg_stickiness_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.spheres.neg_stickiness.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
 
-        let normal_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.normal.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let normal_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.normal.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
-        let stickiness_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.stickiness.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let stickiness_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.stickiness.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
-        let negative_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.negative.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let negative_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.negative.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
-        let neg_stickiness_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.neg_stickiness.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let neg_stickiness_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.neg_stickiness.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
+
+
+        // let normal_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.normal.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
+
+        // let stickiness_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.stickiness.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
+
+        // let negative_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.negative.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
+
+        // let neg_stickiness_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("time_buffer"),
+        //     contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.neg_stickiness.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
         log::info!("renderer: wgpu uniform buffers init");
 
@@ -462,47 +462,47 @@ impl Renderer {
                         },
                         count: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 7,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 8,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 9,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
+                    // wgpu::BindGroupLayoutEntry {
+                    //     binding: 7,
+                    //     visibility: wgpu::ShaderStages::FRAGMENT,
+                    //     ty: wgpu::BindingType::Buffer {
+                    //         ty: wgpu::BufferBindingType::Uniform,
+                    //         has_dynamic_offset: false,
+                    //         min_binding_size: None,
+                    //     },
+                    //     count: None,
+                    // },
+                    // wgpu::BindGroupLayoutEntry {
+                    //     binding: 8,
+                    //     visibility: wgpu::ShaderStages::FRAGMENT,
+                    //     ty: wgpu::BindingType::Buffer {
+                    //         ty: wgpu::BufferBindingType::Uniform,
+                    //         has_dynamic_offset: false,
+                    //         min_binding_size: None,
+                    //     },
+                    //     count: None,
+                    // },
+                    // wgpu::BindGroupLayoutEntry {
+                    //     binding: 9,
+                    //     visibility: wgpu::ShaderStages::FRAGMENT,
+                    //     ty: wgpu::BindingType::Buffer {
+                    //         ty: wgpu::BufferBindingType::Uniform,
+                    //         has_dynamic_offset: false,
+                    //         min_binding_size: None,
+                    //     },
+                    //     count: None,
+                    // },
 
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 10,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
+                    // wgpu::BindGroupLayoutEntry {
+                    //     binding: 10,
+                    //     visibility: wgpu::ShaderStages::FRAGMENT,
+                    //     ty: wgpu::BindingType::Buffer {
+                    //         ty: wgpu::BufferBindingType::Uniform,
+                    //         has_dynamic_offset: false,
+                    //         min_binding_size: None,
+                    //     },
+                    //     count: None,
+                    // },
                 ],
                 label: Some("uniform_bind_group_layout_0"),
             }
@@ -511,96 +511,96 @@ impl Renderer {
         log::info!("renderer: wgpu uniform_bind_group_layout_0 init");
 
 
-        let uniform_bind_group_layout_1 =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 3,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 4,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 5,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 6,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 7,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
+        // let uniform_bind_group_layout_1 =
+        //     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        //         entries: &[
+        //             wgpu::BindGroupLayoutEntry {
+        //                 binding: 0,
+        //                 visibility: wgpu::ShaderStages::FRAGMENT,
+        //                 ty: wgpu::BindingType::Buffer {
+        //                     ty: wgpu::BufferBindingType::Uniform,
+        //                     has_dynamic_offset: false,
+        //                     min_binding_size: None,
+        //                 },
+        //                 count: None,
+        //             },
+        //             wgpu::BindGroupLayoutEntry {
+        //                 binding: 1,
+        //                 visibility: wgpu::ShaderStages::FRAGMENT,
+        //                 ty: wgpu::BindingType::Buffer {
+        //                     ty: wgpu::BufferBindingType::Uniform,
+        //                     has_dynamic_offset: false,
+        //                     min_binding_size: None,
+        //                 },
+        //                 count: None,
+        //             },
+        //             wgpu::BindGroupLayoutEntry {
+        //                 binding: 2,
+        //                 visibility: wgpu::ShaderStages::FRAGMENT,
+        //                 ty: wgpu::BindingType::Buffer {
+        //                     ty: wgpu::BufferBindingType::Uniform,
+        //                     has_dynamic_offset: false,
+        //                     min_binding_size: None,
+        //                 },
+        //                 count: None,
+        //             },
+        //             wgpu::BindGroupLayoutEntry {
+        //                 binding: 3,
+        //                 visibility: wgpu::ShaderStages::FRAGMENT,
+        //                 ty: wgpu::BindingType::Buffer {
+        //                     ty: wgpu::BufferBindingType::Uniform,
+        //                     has_dynamic_offset: false,
+        //                     min_binding_size: None,
+        //                 },
+        //                 count: None,
+        //             },
+        //             wgpu::BindGroupLayoutEntry {
+        //                 binding: 4,
+        //                 visibility: wgpu::ShaderStages::FRAGMENT,
+        //                 ty: wgpu::BindingType::Buffer {
+        //                     ty: wgpu::BufferBindingType::Uniform,
+        //                     has_dynamic_offset: false,
+        //                     min_binding_size: None,
+        //                 },
+        //                 count: None,
+        //             },
+        //             wgpu::BindGroupLayoutEntry {
+        //                 binding: 5,
+        //                 visibility: wgpu::ShaderStages::FRAGMENT,
+        //                 ty: wgpu::BindingType::Buffer {
+        //                     ty: wgpu::BufferBindingType::Uniform,
+        //                     has_dynamic_offset: false,
+        //                     min_binding_size: None,
+        //                 },
+        //                 count: None,
+        //             },
+        //             wgpu::BindGroupLayoutEntry {
+        //                 binding: 6,
+        //                 visibility: wgpu::ShaderStages::FRAGMENT,
+        //                 ty: wgpu::BindingType::Buffer {
+        //                     ty: wgpu::BufferBindingType::Uniform,
+        //                     has_dynamic_offset: false,
+        //                     min_binding_size: None,
+        //                 },
+        //                 count: None,
+        //             },
+        //             wgpu::BindGroupLayoutEntry {
+        //                 binding: 7,
+        //                 visibility: wgpu::ShaderStages::FRAGMENT,
+        //                 ty: wgpu::BindingType::Buffer {
+        //                     ty: wgpu::BufferBindingType::Uniform,
+        //                     has_dynamic_offset: false,
+        //                     min_binding_size: None,
+        //                 },
+        //                 count: None,
+        //             },
 
-                ],
-                label: Some("uniform_bind_group_layout_1"),
-            }
-        );
+        //         ],
+        //         label: Some("uniform_bind_group_layout_1"),
+        //     }
+        // );
 
-        log::info!("renderer: wgpu uniform_bind_group_layout_1 init");
+        // log::info!("renderer: wgpu uniform_bind_group_layout_1 init");
         
         let uniform_bind_group_0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout_0,
@@ -619,37 +619,37 @@ impl Renderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
-                    resource: normal_cubes_buffer.as_entire_binding(),
+                    resource: normal_shapes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 4,
-                    resource: stickiness_cubes_buffer.as_entire_binding(),
+                    resource: negative_shapes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 5,
-                    resource: negative_cubes_buffer.as_entire_binding(),
+                    resource: stickiness_shapes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 6,
-                    resource: neg_stickiness_cubes_buffer.as_entire_binding(),
+                    resource: neg_stickiness_shapes_buffer.as_entire_binding(),
                 },
 
-                wgpu::BindGroupEntry {
-                    binding: 7,
-                    resource: normal_spheres_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 8,
-                    resource: stickiness_spheres_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 9,
-                    resource: negative_spheres_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 10,
-                    resource: neg_stickiness_spheres_buffer.as_entire_binding(),
-                },
+                // wgpu::BindGroupEntry {
+                //     binding: 7,
+                //     resource: normal_spheres_buffer.as_entire_binding(),
+                // },
+                // wgpu::BindGroupEntry {
+                //     binding: 8,
+                //     resource: stickiness_spheres_buffer.as_entire_binding(),
+                // },
+                // wgpu::BindGroupEntry {
+                //     binding: 9,
+                //     resource: negative_spheres_buffer.as_entire_binding(),
+                // },
+                // wgpu::BindGroupEntry {
+                //     binding: 10,
+                //     resource: neg_stickiness_spheres_buffer.as_entire_binding(),
+                // },
                 ],
             
             label: Some("shader_unforms_and_storge_bind_group_0"),
@@ -657,54 +657,54 @@ impl Renderer {
 
         log::info!("renderer: wgpu uniform_bind_group_0 init");
 
-        let uniform_bind_group_1 = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &uniform_bind_group_layout_1,
-            entries: &[
+        // let uniform_bind_group_1 = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        //     layout: &uniform_bind_group_layout_1,
+        //     entries: &[
 
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: normal_inf_w_cubes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: stickiness_inf_w_cubes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: negative_inf_w_cubes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: neg_stickiness_inf_w_cubes_buffer.as_entire_binding(),
-                },
+        //         wgpu::BindGroupEntry {
+        //             binding: 0,
+        //             resource: normal_inf_w_cubes_buffer.as_entire_binding(),
+        //         },
+        //         wgpu::BindGroupEntry {
+        //             binding: 1,
+        //             resource: stickiness_inf_w_cubes_buffer.as_entire_binding(),
+        //         },
+        //         wgpu::BindGroupEntry {
+        //             binding: 2,
+        //             resource: negative_inf_w_cubes_buffer.as_entire_binding(),
+        //         },
+        //         wgpu::BindGroupEntry {
+        //             binding: 3,
+        //             resource: neg_stickiness_inf_w_cubes_buffer.as_entire_binding(),
+        //         },
 
-                wgpu::BindGroupEntry {
-                    binding: 4,
-                    resource: normal_sph_cubes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 5,
-                    resource: stickiness_sph_cubes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 6,
-                    resource: negative_sph_cubes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 7,
-                    resource: neg_stickiness_sph_cubes_buffer.as_entire_binding(),
-                },
-                ],
+        //         wgpu::BindGroupEntry {
+        //             binding: 4,
+        //             resource: normal_sph_cubes_buffer.as_entire_binding(),
+        //         },
+        //         wgpu::BindGroupEntry {
+        //             binding: 5,
+        //             resource: stickiness_sph_cubes_buffer.as_entire_binding(),
+        //         },
+        //         wgpu::BindGroupEntry {
+        //             binding: 6,
+        //             resource: negative_sph_cubes_buffer.as_entire_binding(),
+        //         },
+        //         wgpu::BindGroupEntry {
+        //             binding: 7,
+        //             resource: neg_stickiness_sph_cubes_buffer.as_entire_binding(),
+        //         },
+        //         ],
             
-            label: Some("shader_unforms_and_storge_bind_group_1"),
-        });
+        //     label: Some("shader_unforms_and_storge_bind_group_1"),
+        // });
 
-        log::info!("renderer: wgpu uniform_bind_group_1 init");
+        // log::info!("renderer: wgpu uniform_bind_group_1 init");
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout_0, &uniform_bind_group_layout_1],
+            bind_group_layouts: &[&uniform_bind_group_layout_0],
             push_constant_ranges: &[],
         });
 
@@ -787,7 +787,7 @@ impl Renderer {
             camera_buffer,
             time_buffer,
             uniform_bind_group_0,
-            uniform_bind_group_1,
+            // uniform_bind_group_1,
             // time: std::time::SystemTime::now(),
             // already_rendered: Arc::new(Mutex::new(true)),
         }
