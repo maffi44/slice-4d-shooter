@@ -20,7 +20,7 @@ pub struct DefaultStaticObjectSettings {
     bounce_rate: f32,
     material: ObjectMatrial,
     roundness: f32,
-    stickiness: f32,
+    stickiness: bool,
     is_positive: bool,
 }
 
@@ -29,6 +29,7 @@ pub struct Level {
     pub level_name: String,
     pub static_objects: Vec<StaticObject>,
     pub spawn_position: Vec4,
+    pub all_shapes_stickiness_radius: f32
 }
 
 
@@ -93,6 +94,15 @@ fn parse_json_level(
             .into()
     };
 
+    let all_shapes_stickiness_radius: f32 = {
+        json_level
+            .get("all_shapes_stickiness_radius")
+            .expect("Wrong JSON map format. JSON level must have all_shapes_stickiness_radius property")
+            .as_f64()
+            .expect("Wrong JSON map format. all_shapes_stickiness_radius value must be float number")
+            as f32
+    };
+
     let spawn_position = {
         let json_spawn_postition = json_level
             .get("spawn_position")
@@ -131,6 +141,7 @@ fn parse_json_level(
         level_name,
         static_objects,
         spawn_position,
+        all_shapes_stickiness_radius,
     };
 
     (level, actors)
@@ -176,9 +187,8 @@ fn parse_json_defaults(
         json_settings
             .get("stickiness")
             .expect("Wrong JSON map format. JSON defaults must have stickiness property")
-            .as_f64()
-            .expect("Wrong JSON map format. stickiness value must be float number")
-            as f32
+            .as_bool()
+            .expect("Wrong JSON map format. stickiness value must be boolean type")
     };
 
     let is_positive = {
@@ -728,7 +738,7 @@ fn parse_json_into_roundness(json_shape: &Value, shape_name: &str) -> Option<f32
 
 
 
-fn parse_json_into_stickiness(json_shape: &Value, shape_name: &str) -> Option<f32> {
+fn parse_json_into_stickiness(json_shape: &Value, shape_name: &str) -> Option<bool> {
 
     let shape = json_shape
         .as_object()
@@ -748,14 +758,14 @@ fn parse_json_into_stickiness(json_shape: &Value, shape_name: &str) -> Option<f3
 
     let stickiness = json_stickiness
         .unwrap()
-        .as_f64()
+        .as_bool()
         .expect(
             &format!
             (
-                "Wrong JSON map format, stickiness property is not float number type in {}",
+                "Wrong JSON map format, stickiness property is not boolean type in {}",
                 shape_name
             )
-        ) as f32;
+        );
     
     Some(stickiness)
 }

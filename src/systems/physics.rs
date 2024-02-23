@@ -108,7 +108,12 @@ impl PhysicsSystem {
 
         // temp
         for kinematic_collider in kinematic_colliders.iter_mut() {
-            kinematic_collider.physics_tick(delta, &self.static_colliders_data, engine_handle)
+            kinematic_collider.physics_tick(
+                delta,
+                &self.static_colliders_data,
+                engine_handle,
+                world.level.all_shapes_stickiness_radius
+            )
         }
 
         for area in areas.iter_mut() {

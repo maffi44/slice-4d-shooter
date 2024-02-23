@@ -12,16 +12,18 @@
                 "blue": 1.0
             }
         },
-        "roundness": 0.0,
-        "stickiness": 0.0
+        "roundness": 0.05,
+        "stickiness": false
     },
+
+    "all_shapes_stickiness_radius": 2.2,
 
     "spawn_position" : {
         "transform" : {
             "position" : {
-                "x": 0.0,
+                "x": 1.0,
                 "y": 2.0,
-                "z": 0.0,
+                "z": 12.5,
                 "w": 0.0
             }
         }
@@ -37,19 +39,81 @@
     
     "static_objects": [
         {
+            "sphere" : {
+                "transform" : {
+                    "position" : {
+                        "x": 2.0,
+                        "y": 1.5 ,
+                        "z": 10.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0
+                },
+                "stickiness" : true,
+                "is_positive" : false
+            }
+        },
+        {
+            "sphere" : {
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 1.0 ,
+                        "z": 10.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.1
+                },
+                "stickiness" : true,
+                "is_positive" : false
+            }
+        },        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 1.0,
+                        "y": 1.5 ,
+                        "z":13.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.2,
+                    "y": 2.0,
+                    "z": 1.0,
+                    "w": 2.0
+                },
+                "roundness" : 0.3,
+                "stickiness" : true,
+                "is_positive" : false
+            }
+        },
+        {
             "cube_w_inf" : {
                 "transform" : {
                     "position" : {
                         "x": 0.0,
                         "y": 0.0 ,
-                        "z": 0.0,
+                        "z": 15.0,
                         "w": 0.0
                     }
                 },
                 "size" : {
-                    "x": 10.0,
+                    "x": 15.0,
                     "y": 0.2,
-                    "z": 10.0
+                    "z": 30.0
                 },
                 "is_positive" : true,
                 "friction": 0.0,
@@ -60,7 +124,8 @@
                         "green": 1.0,
                         "blue": 1.0
                     }
-                }
+                },
+                "stickiness" : true
             }
         },
         {
@@ -86,35 +151,7 @@
                     "y": 10.0,
                     "z": 10.0,
                     "w": 2.0
-                },
-                "is_positive" : true
-            }
-        },
-        {
-            "cube" : {
-                "transform" : {
-                    "position" : {
-                        "x": 2.0,
-                        "y": 0.0,
-                        "z": 2.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 1.0,
-                    "z": 1.0,
-                    "w": 2.0
-                },
-                "stickiness" : 1.0
+                }
             }
         },
         {
@@ -137,8 +174,7 @@
                 },
                 "size" : {
                     "x": 1.4
-                },
-                "is_positive" : true
+                }
             }
         },
         {
@@ -161,8 +197,7 @@
                 },
                 "size" : {
                     "x": 1.4
-                },
-                "is_positive" : true
+                }
             }
         },
         {
@@ -188,8 +223,7 @@
                     "y": 2.0,
                     "z": 2.0,
                     "w": 2.0
-                },
-                "is_positive" : true
+                }
             }
         },
         {
@@ -215,8 +249,7 @@
                     "y": 2.0,
                     "z": 2.0,
                     "w": 2.0
-                },
-                "is_positive" : true
+                }
             }
         },
         {
@@ -242,8 +275,7 @@
                     "y": 2.0,
                     "z": 1.0,
                     "w": 2.0
-                },
-                "is_positive" : true
+                }
             }
         },
         {
@@ -269,8 +301,7 @@
                     "y": 2.0,
                     "z": 1.0,
                     "w": 2.0
-                },
-                "stickiness" : 0.2
+                }
             }
         },
         {
@@ -296,8 +327,7 @@
                     "y": 1.0,
                     "z": 1.0,
                     "w": 1.0
-                },
-                "stickiness" : 0.8
+                }
             }
         },
         {
@@ -323,8 +353,7 @@
                     "y": 2.0,
                     "z": 1.0,
                     "w": 2.0
-                },
-                "stickiness" : 1.0
+                }
             }
         },
         {
@@ -348,7 +377,7 @@
                 "size" : {
                     "x": 3.0
                 },
-                "stickiness" : 1.0
+                "is_positive" : false
             }
         },
         {
@@ -374,12 +403,11 @@
                     "y": 2.0,
                     "z": 1.0,
                     "w": 2.0
-                },
-                "is_positive" : true
+                }
             }
         },
         {
-            "cube" : {
+            "sph_cube" : {
                 "transform" : {
                     "position" : {
                         "x": -6.0,
@@ -399,7 +427,7 @@
                 "size" : {
                     "x": 1.1,
                     "y": 2.2,
-                    "z": 1.2,
+                    "z": 3.2,
                     "w": 2.2
                 },
                 "is_positive" : false
@@ -429,7 +457,7 @@
                     "z": 10.2,
                     "w": 10.2
                 },
-                "is_positive" : true
+                "stickiness" : true
             }
         },
         {

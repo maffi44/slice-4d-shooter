@@ -290,100 +290,100 @@ impl Renderer {
         
         let normal_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.cubes.normal]),
+            contents: bytemuck::cast_slice(shapes_array_data.cubes.normal.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let stickiness_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.cubes.stickiness]),
+            contents: bytemuck::cast_slice(shapes_array_data.cubes.stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let negative_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.cubes.negative]),
+            contents: bytemuck::cast_slice(shapes_array_data.cubes.negative.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let neg_stickiness_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.cubes.neg_stickiness]),
+            contents: bytemuck::cast_slice(shapes_array_data.cubes.neg_stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         
         let normal_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.spheres.normal]),
+            contents: bytemuck::cast_slice(shapes_array_data.spheres.normal.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let stickiness_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.spheres.stickiness]),
+            contents: bytemuck::cast_slice(shapes_array_data.spheres.stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let negative_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.spheres.negative]),
+            contents: bytemuck::cast_slice(shapes_array_data.spheres.negative.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let neg_stickiness_spheres_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.spheres.neg_stickiness]),
+            contents: bytemuck::cast_slice(shapes_array_data.spheres.neg_stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
 
         let normal_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.inf_w_cubes.normal]),
+            contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.normal.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let stickiness_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.inf_w_cubes.stickiness]),
+            contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let negative_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.inf_w_cubes.negative]),
+            contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.negative.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let neg_stickiness_inf_w_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.inf_w_cubes.neg_stickiness]),
+            contents: bytemuck::cast_slice(shapes_array_data.inf_w_cubes.neg_stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
 
         let normal_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.sph_cubes.normal]),
+            contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.normal.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let stickiness_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.sph_cubes.stickiness]),
+            contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let negative_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.sph_cubes.negative]),
+            contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.negative.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let neg_stickiness_sph_cubes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
-            contents: bytemuck::cast_slice(&[shapes_array_data.sph_cubes.neg_stickiness]),
+            contents: bytemuck::cast_slice(shapes_array_data.sph_cubes.neg_stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 

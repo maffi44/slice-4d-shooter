@@ -106,7 +106,7 @@ impl CollidersShapeTypeArrays {
     fn add_constant_static_collider(&mut self, static_collider: StaticCollider) {
 
         if static_collider.is_positive {
-            if static_collider.stickiness > 0.0 {
+            if static_collider.stickiness{
 
                 self.stickiness.push(static_collider);
                 self.constant_stickiness_len += 1;
@@ -116,7 +116,7 @@ impl CollidersShapeTypeArrays {
                 self.constant_normal_len += 1;
             }
         } else {
-            if static_collider.stickiness > 0.0 {
+            if static_collider.stickiness{
 
                 self.neg_stickiness.push(static_collider);
                 self.constant_neg_stickiness_len += 1;
@@ -134,7 +134,7 @@ impl CollidersShapeTypeArrays {
     #[inline]
     fn add_temporal_static_collider(&mut self, static_collider: StaticCollider) {
         if static_collider.is_positive {
-            if static_collider.stickiness > 0.0 {
+            if static_collider.stickiness{
 
                 self.stickiness.push(static_collider);
             } else {
@@ -142,7 +142,7 @@ impl CollidersShapeTypeArrays {
                 self.normal.push(static_collider);
             }
         } else {
-            if static_collider.stickiness > 0.0 {
+            if static_collider.stickiness{
 
                 self.neg_stickiness.push(static_collider);
             } else {

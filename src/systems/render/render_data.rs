@@ -59,49 +59,18 @@ impl Default for Shape {
         Shape {
             pos: [0.0, 0.0, 0.0, 0.0],
             size: [1.0, 1.0, 1.0, 1.0],
-            color: [1.0, 1.0, 1.0],
+            color: [0.0, 0.0, 0.0],
             roundness: 0.0,
         }
     }
 }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
-pub struct NegShape {
-    pub pos: [f32;4],
-    pub size: [f32;4],
-    pub empty_bytes: [f32;3],
-    pub roundness: f32,
-}
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
-pub struct StickinessNegShape {
-    pub pos: [f32;4],
-    pub size: [f32;4],
-    pub roundness: f32,
-    pub empty_bytes: [f32;2],
-    pub stickiness: f32,
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
-pub struct StickinessShape {
-    pub pos: [f32;4],
-    pub size: [f32;4],
-    pub color: [f32;3],
-    pub roundness: f32,
-    pub empty_bytes: [f32;3],
-    pub stickiness: f32,
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ShapeArrays {
-    pub normal: [Shape; 256],
-    pub negative: [NegShape; 256],
-    pub stickiness: [StickinessShape; 256],
-    pub neg_stickiness: [StickinessNegShape; 256],
+    pub normal: Box<[Shape; 256]>,
+    pub negative: Box<[Shape; 256]>,
+    pub stickiness: Box<[Shape; 256]>,
+    pub neg_stickiness: Box<[Shape; 256]>,
 }
 
 #[repr(C)]
@@ -126,6 +95,9 @@ pub struct AllShapesArraysMetadata {
     s_sph_cubes_amount: u32,
     neg_sph_cubes_amount: u32,
     s_neg_sph_cubes_amount: u32,
+
+    empty_bytes: [f32; 3],
+    shapes_stickiness: f32,
 }
 
 
@@ -143,31 +115,31 @@ impl StaticShapesArraysUniformData {
     pub fn new(world: &World) -> Self {
 
         let mut cubes = Box::new(ShapeArrays {
-            normal: [Shape::default(); 256],
-            negative: [NegShape::default(); 256],
-            stickiness: [StickinessShape::default(); 256],
-            neg_stickiness: [StickinessNegShape::default(); 256],
+            normal: Box::new([Shape::default(); 256]),
+            negative: Box::new([Shape::default(); 256]),
+            stickiness: Box::new([Shape::default(); 256]),
+            neg_stickiness: Box::new([Shape::default(); 256]),
         });
 
         let mut spheres = Box::new(ShapeArrays {
-            normal: [Shape::default(); 256],
-            negative: [NegShape::default(); 256],
-            stickiness: [StickinessShape::default(); 256],
-            neg_stickiness: [StickinessNegShape::default(); 256],
+            normal: Box::new([Shape::default(); 256]),
+            negative: Box::new([Shape::default(); 256]),
+            stickiness: Box::new([Shape::default(); 256]),
+            neg_stickiness: Box::new([Shape::default(); 256]),
         });
 
         let mut inf_w_cubes = Box::new(ShapeArrays {
-            normal: [Shape::default(); 256],
-            negative: [NegShape::default(); 256],
-            stickiness: [StickinessShape::default(); 256],
-            neg_stickiness: [StickinessNegShape::default(); 256],
+            normal: Box::new([Shape::default(); 256]),
+            negative: Box::new([Shape::default(); 256]),
+            stickiness: Box::new([Shape::default(); 256]),
+            neg_stickiness: Box::new([Shape::default(); 256]),
         });
 
         let mut sph_cubes = Box::new(ShapeArrays {
-            normal: [Shape::default(); 256],
-            negative: [NegShape::default(); 256],
-            stickiness: [StickinessShape::default(); 256],
-            neg_stickiness: [StickinessNegShape::default(); 256],
+            normal: Box::new([Shape::default(); 256]),
+            negative: Box::new([Shape::default(); 256]),
+            stickiness: Box::new([Shape::default(); 256]),
+            neg_stickiness: Box::new([Shape::default(); 256]),
         });
         
         let mut cubes_amount = 0u32;
@@ -198,7 +170,7 @@ impl StaticShapesArraysUniformData {
                 ShapeType::Cube => {
 
                     if obj.collider.is_positive {
-                        if obj.collider.stickiness == 0.0 {
+                        if !obj.collider.stickiness {
 
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
@@ -220,12 +192,10 @@ impl StaticShapesArraysUniformData {
 
                         } else {
 
-                            let shape = StickinessShape {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 color: obj.material.color.to_array(),
-                                stickiness: obj.collider.stickiness,
-                                empty_bytes: [0.0, 0.0, 0.0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -234,24 +204,23 @@ impl StaticShapesArraysUniformData {
                             s_cubes_amount += 1;
                         }
                     } else {
-                        if obj.collider.stickiness == 0.0 {
-                            let shape = NegShape {
+                        if !obj.collider.stickiness {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
                                 roundness: obj.collider.roundness,
-                                empty_bytes: [0.0, 0.0, 0.0]
                             };
 
                             cubes.negative[neg_cubes_amount as usize] = shape;
 
                             neg_cubes_amount += 1;
                         } else {
-                            let shape = StickinessNegShape {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
                                 roundness: obj.collider.roundness,
-                                empty_bytes: [0.0, 0.0],
-                                stickiness: obj.collider.stickiness
                             };
 
                             cubes.neg_stickiness[s_neg_cubes_amount as usize] = shape;
@@ -262,7 +231,7 @@ impl StaticShapesArraysUniformData {
                 }
                 ShapeType::Sphere => {
                     if obj.collider.is_positive {
-                        if obj.collider.stickiness == 0.0 {
+                        if !obj.collider.stickiness {
 
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
@@ -277,12 +246,10 @@ impl StaticShapesArraysUniformData {
 
                         } else {
 
-                            let shape = StickinessShape {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 color: obj.material.color.to_array(),
-                                stickiness: obj.collider.stickiness,
-                                empty_bytes: [0.0, 0.0, 0.0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -291,24 +258,23 @@ impl StaticShapesArraysUniformData {
                             s_spheres_amount += 1;
                         }
                     } else {
-                        if obj.collider.stickiness == 0.0 {
-                            let shape = NegShape {
+                        if !obj.collider.stickiness {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
                                 roundness: obj.collider.roundness,
-                                empty_bytes: [0.0, 0.0, 0.0]
                             };
 
                             spheres.negative[neg_spheres_amount as usize] = shape;
 
                             neg_spheres_amount += 1;
                         } else {
-                            let shape = StickinessNegShape {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
                                 roundness: obj.collider.roundness,
-                                empty_bytes: [0.0, 0.0],
-                                stickiness: obj.collider.stickiness
                             };
 
                             spheres.neg_stickiness[s_neg_spheres_amount as usize] = shape;
@@ -319,7 +285,7 @@ impl StaticShapesArraysUniformData {
                 }
                 ShapeType::CubeInfW => {
                     if obj.collider.is_positive {
-                        if obj.collider.stickiness == 0.0 {
+                        if !obj.collider.stickiness {
 
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
@@ -334,12 +300,10 @@ impl StaticShapesArraysUniformData {
 
                         } else {
 
-                            let shape = StickinessShape {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 color: obj.material.color.to_array(),
-                                stickiness: obj.collider.stickiness,
-                                empty_bytes: [0.0, 0.0, 0.0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -348,24 +312,23 @@ impl StaticShapesArraysUniformData {
                             s_inf_w_cubes_amount += 1;
                         }
                     } else {
-                        if obj.collider.stickiness == 0.0 {
-                            let shape = NegShape {
+                        if !obj.collider.stickiness {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
                                 roundness: obj.collider.roundness,
-                                empty_bytes: [0.0, 0.0, 0.0]
                             };
 
                             inf_w_cubes.negative[neg_inf_w_cubes_amount as usize] = shape;
 
                             neg_inf_w_cubes_amount += 1;
                         } else {
-                            let shape = StickinessNegShape {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
                                 roundness: obj.collider.roundness,
-                                empty_bytes: [0.0, 0.0],
-                                stickiness: obj.collider.stickiness
                             };
 
                             inf_w_cubes.neg_stickiness[s_neg_inf_w_cubes_amount as usize] = shape;
@@ -376,7 +339,7 @@ impl StaticShapesArraysUniformData {
                 },
                 ShapeType::SphCube => {
                     if obj.collider.is_positive {
-                        if obj.collider.stickiness == 0.0 {
+                        if !obj.collider.stickiness {
 
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
@@ -391,12 +354,10 @@ impl StaticShapesArraysUniformData {
 
                         } else {
 
-                            let shape = StickinessShape {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
                                 color: obj.material.color.to_array(),
-                                stickiness: obj.collider.stickiness,
-                                empty_bytes: [0.0, 0.0, 0.0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -405,24 +366,23 @@ impl StaticShapesArraysUniformData {
                             s_sph_cubes_amount += 1;
                         }
                     } else {
-                        if obj.collider.stickiness == 0.0 {
-                            let shape = NegShape {
+                        if !obj.collider.stickiness {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
                                 roundness: obj.collider.roundness,
-                                empty_bytes: [0.0, 0.0, 0.0]
                             };
 
                             sph_cubes.negative[neg_sph_cubes_amount as usize] = shape;
 
                             neg_sph_cubes_amount += 1;
                         } else {
-                            let shape = StickinessNegShape {
+                            let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
+                                color: obj.material.color.to_array(),
                                 roundness: obj.collider.roundness,
-                                empty_bytes: [0.0, 0.0],
-                                stickiness: obj.collider.stickiness
                             };
 
                             sph_cubes.neg_stickiness[s_neg_sph_cubes_amount as usize] = shape;
@@ -451,6 +411,9 @@ impl StaticShapesArraysUniformData {
             s_neg_spheres_amount,
             s_neg_sph_cubes_amount,
             s_neg_inf_w_cubes_amount,
+
+            empty_bytes: [0.0, 0.0, 0.0],
+            shapes_stickiness: world.level.all_shapes_stickiness_radius
         };
 
         let static_shapes_array_uniform_data = StaticShapesArraysUniformData {

@@ -18,7 +18,7 @@ pub struct StaticCollider {
     pub size: Vec4,
     pub is_positive: bool,
     pub roundness: f32,
-    pub stickiness: f32,
+    pub stickiness: bool,
     pub friction: f32,
     pub bounce_rate: f32,
     pub shape_type: ShapeType,
