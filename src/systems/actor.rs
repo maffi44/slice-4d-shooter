@@ -16,7 +16,7 @@ pub trait Actor {
 
     fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle);
 
-    fn tick(&mut self, engine_handle: &mut EngineHandle) {}
+    fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {}
 
     fn get_colliders_container(&mut self) -> Option<CollidersContainer> {None}
 
@@ -45,10 +45,10 @@ impl Actor for ActorWrapper {
         }
     }
 
-    fn tick(&mut self, engine_handle: &mut EngineHandle) {
+    fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
         match  self {
             ActorWrapper::Player(player) => {
-                player.tick(engine_handle);
+                player.tick(engine_handle, delta);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},

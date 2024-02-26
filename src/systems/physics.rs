@@ -111,8 +111,8 @@ impl PhysicsSystem {
             kinematic_collider.physics_tick(
                 delta,
                 &self.static_colliders_data,
+                world.level.all_shapes_stickiness_radius,
                 engine_handle,
-                world.level.all_shapes_stickiness_radius
             )
         }
 

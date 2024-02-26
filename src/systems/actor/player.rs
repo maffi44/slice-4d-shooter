@@ -91,6 +91,8 @@ pub struct Player {
 
     player_settings: PlayerSettings,
 
+    no_collider_veclocity: Vec4,
+
     pub master: InputMaster,
 }
 
@@ -160,7 +162,7 @@ impl Actor for Player {
         Some(collider_container)
     }
 
-    fn tick(&mut self, engine_handle: &mut EngineHandle) {
+    fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
         let my_id = self.id.expect("Player does not have id");
 
         let input = match &self.master {
@@ -218,6 +220,18 @@ impl Actor for Player {
             }
         }
 
+        if input.mode_1.is_action_just_pressed {
+            self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
+        }
+
+        if input.mode_2.is_action_just_pressed {
+            self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
+        }
+
+        if input.mode_3.is_action_just_pressed {
+            self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
+        }
+
 
         let mut movement_vec = Vec4::ZERO;
 
@@ -241,17 +255,34 @@ impl Actor for Player {
             movement_vec = vec;
         }
 
-        if input.mode_1.is_action_just_pressed {
-            self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
+        if input.jump.is_action_just_pressed() {
+
+            if self.inner_state.collider.is_on_ground {
+                self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+
+            }
         }
 
-        if input.mode_2.is_action_just_pressed {
-            self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
+        if input.w_up.is_action_pressed() {
+            if self.inner_state.collider.is_enable {
+                self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
+            } else {
+                self.no_collider_veclocity += Vec4::W * self.player_settings.jetpak_w_speed;
+            }
         }
 
-        if input.mode_3.is_action_just_pressed {
-            self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
+        if input.w_down.is_action_pressed() {
+            if self.inner_state.collider.is_enable {
+                self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
+            } else {
+                self.no_collider_veclocity += Vec4::NEG_W * self.player_settings.jetpak_w_speed;
+            }
         }
+
+        if input.crouch.is_action_just_pressed() {
+            self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+            self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+        };
 
         if self.inner_state.collider.is_enable {
 
@@ -283,31 +314,27 @@ impl Actor for Player {
             }
 
         } else {
+            
             movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
 
-            self.inner_state.collider.set_wish_direction(movement_vec, 1.0);
-        }
+            const MAX_SPEED: f32 = 24.0;
+            const MAX_ACCEL: f32 = 32.0;
 
-        if input.jump.is_action_just_pressed() {
-            self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-            if self.inner_state.collider.is_on_ground {
-
+            if movement_vec.length().is_normal() {
+                let current_speed_in_wishdir = self.no_collider_veclocity.dot(movement_vec);
+    
+                let speed = MAX_SPEED - current_speed_in_wishdir;
+    
+                let add_speed = 0.0_f32.max(speed.min(MAX_ACCEL * delta));
+    
+                self.no_collider_veclocity += movement_vec * add_speed;
+    
             }
+
+            self.inner_state.collider.transform.increment_position(self.no_collider_veclocity * delta);
         }
 
-
-        if input.w_up.is_action_pressed() {
-            self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
-        }
-
-        if input.w_down.is_action_pressed() {
-            self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
-        }
-
-        if input.crouch.is_action_just_pressed() {
-            self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-            self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-        };
+        self.no_collider_veclocity *= 1.0 - delta*3.4;
 
         log::info!("Position: {:.2}", self.get_position());
     }
@@ -336,18 +363,11 @@ impl Player {
 
             master,
 
+            no_collider_veclocity: Vec4::ZERO,
+
             view_angle: Vec2::ZERO,
         }
     }
-
-
-    // pub fn get_collider(&self) -> &DynamicCollider {
-    //     &self.inner_state.collision
-    // }
-
-    // pub fn get_mut_collider(&mut self) -> &mut DynamicCollider {
-    //     &mut self.inner_state.collision
-    // }
 
     pub fn get_position(&self) -> Vec4 {
         self.inner_state.collider.transform.get_position()
@@ -360,156 +380,6 @@ impl Player {
     pub fn set_rotation_matrix(&mut self, new_rotation: Mat4) {
         self.inner_state.collider.transform.rotation = new_rotation
     }
-
-    // pub fn process_input(&mut self, engine_handle: &mut EngineHandle) {
-
-    //     let input = match &self.master {
-    //         InputMaster::LocalMaster(master) => {
-    //             master.current_input.clone()
-    //         }
-    //         InputMaster::RemoteMaster(master) => {
-    //            master.current_input.clone()
-    //         }   
-    //     };
-
-    //     let prev_x = self.view_angle.x;
-    //     let prev_y = self.view_angle.y;
-
-    //     let x = input.mouse_axis.x + prev_x;
-    //     let y = input.mouse_axis.y + prev_y.clamp(-PI/2.0, PI/2.0);
-
-    //     self.set_rotation_matrix(Mat4::from_cols_slice(&[
-    //         x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
-    //         0.0,        y.cos(),            -y.sin(),           0.0,
-    //         -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
-    //         0.0,        0.0,                0.0,                1.0
-    //     ]));
-
-    //     let xz_player_rotation = Mat4::from_rotation_y(x);
-
-    //     self.view_angle = Vec2::new(x, y);
-
-    //     // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
-
-    //     match self.active_hands_slot {
-    //         ActiveHandsSlot::Zero => {
-    //             self.hands_slot_0.process_input(self.id, &mut self.inner_state, &input, engine_handle);
-    //         },
-    //         ActiveHandsSlot::First => {
-    //             if let Some(device) = self.hands_slot_1.as_mut() {
-    //                 device.process_input(self.id, &mut self.inner_state, &input, engine_handle);
-    //             }
-    //         },
-    //         ActiveHandsSlot::Second => {
-    //             if let Some(device) = self.hands_slot_2.as_mut() {
-    //                 device.process_input(self.id, &mut self.inner_state, &input, engine_handle);
-    //             }
-    //         },
-    //         ActiveHandsSlot::Third => {
-    //             if let Some(device) = self.hands_slot_3.as_mut() {
-    //                 device.process_input(self.id, &mut self.inner_state, &input, engine_handle);
-    //             }
-    //         }
-    //     }
-
-    //     for device in self.devices.iter_mut() {
-    //         if let Some(device) = device {
-    //             device.process_input(self.id, &mut self.inner_state, &input, engine_handle);
-    //         }
-    //     }
-
-
-    //     let mut movement_vec = Vec4::ZERO;
-
-    //     if input.move_forward.is_action_pressed() {
-    //         movement_vec += Vec4::NEG_Z;
-    //     }
-
-    //     if input.move_backward.is_action_pressed() {
-    //         movement_vec += Vec4::Z;
-    //     }
-
-    //     if input.move_right.is_action_pressed() {
-    //         movement_vec += Vec4::X;
-    //     }
-
-    //     if input.move_left.is_action_pressed() {
-    //         movement_vec += Vec4::NEG_X;
-    //     }
-
-    //     if let Some(vec) = movement_vec.try_normalize() {
-    //         movement_vec = vec;
-    //     }
-
-    //     if input.mode_1.is_action_just_pressed {
-    //         self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
-    //     }
-
-    //     if input.mode_2.is_action_just_pressed {
-    //         self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
-    //     }
-
-    //     if input.mode_3.is_action_just_pressed {
-    //         self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
-    //     }
-
-    //     if self.inner_state.collider.is_enable {
-
-    //         if self.is_gravity_y_enabled {
-    //             movement_vec = xz_player_rotation * movement_vec;
-
-    //             if self.inner_state.collider.is_on_ground {
-    //                 self.inner_state.collider.set_wish_direction(
-    //                     movement_vec,
-    //                     1.0
-    //                 );
-    //             } else {
-    //                 self.inner_state.collider.set_wish_direction(
-    //                     movement_vec,
-    //                     self.player_settings.air_speed_mult
-    //                 );
-    //             }
-
-    //             self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
-    //         } else {
-    //            movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
-
-    //            self.inner_state.collider.set_wish_direction(movement_vec, 1.0);
-
-    //         }
-
-    //         if self.is_gravity_w_enabled {
-    //             self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.gravity_w_speed);
-    //         }
-
-    //     } else {
-    //         movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
-
-    //         self.inner_state.collider.set_wish_direction(movement_vec, 1.0);
-    //     }
-
-    //     if input.jump.is_action_just_pressed() {
-    //         self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-    //         if self.inner_state.collider.is_on_ground {
-
-    //         }
-    //     }
-
-
-    //     if input.w_up.is_action_pressed() {
-    //         self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
-    //     }
-
-    //     if input.w_down.is_action_pressed() {
-    //         self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
-    //     }
-
-    //     if input.crouch.is_action_just_pressed() {
-    //         self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-    //         self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-    //     };
-
-    // }
 
     pub fn set_gun_to_1_slot(
         &mut self,

@@ -14,6 +14,7 @@ use crate::systems::actor::{
     ActorID,
 };
 use crate::systems::engine_handle::{self, EngineHandle};
+use crate::systems::transform::Position;
 
 use super::super::transform::Transform;
 use super::physics_system_data::StaticCollidersData;
@@ -23,6 +24,10 @@ use super::physics_system_data::StaticCollidersData;
 pub enum KinematicColliderMessages {
     
 }
+
+const THRESHOLD: f32 = 0.005;
+const HALF_THRESHOLD: f32 = 0.00025;
+const MAX_COLLIDING_ITERATIONS: u32 = 50;
 
 pub struct KinematicCollider {
     pub is_enable: bool,
@@ -95,24 +100,10 @@ impl KinematicCollider {
         &mut self,
         delta: f32,
         static_objects: &StaticCollidersData,
+        shapes_stickiness: f32,
         engine_handle: &mut EngineHandle,
-        shapes_stickiness: f32
     ) {
-
         self.is_on_ground = false;
-
-        if self.wish_direction.length() > 0.0 {
-            // self.wish_direction = self.wish_direction.normalize();
-
-            let current_speed_in_wishdir = self.current_velocity.dot(self.wish_direction);
-
-            let speed = self.max_speed - current_speed_in_wishdir;
-
-            let add_speed = 0.0_f32.max(speed.min(self.max_accel * delta));
-
-            self.current_velocity += self.wish_direction * (add_speed * self.movment_mult);
-
-        }
 
         while let Some(force) = self.forces.pop() {
             self.current_velocity += force;
@@ -120,10 +111,21 @@ impl KinematicCollider {
 
         if self.is_enable {
 
-            let (position_increment, is_collided) = translate_collider(
-                self.transform.get_position(),
-                self.current_velocity * delta,
-                self.collider_radius,
+            if self.wish_direction.length().is_normal() {
+                // self.wish_direction = self.wish_direction.normalize();
+    
+                let current_speed_in_wishdir = self.current_velocity.dot(self.wish_direction);
+    
+                let speed = self.max_speed - current_speed_in_wishdir;
+    
+                let add_speed = 0.0_f32.max(speed.min(self.max_accel * delta));
+    
+                self.current_velocity += self.wish_direction * (add_speed * self.movment_mult);
+    
+            }
+
+            let (position_increment, is_collided) = self.translate_collider(
+                delta,
                 static_objects,
                 shapes_stickiness
             );
@@ -136,209 +138,343 @@ impl KinematicCollider {
 
             self.transform.increment_position(position_increment);
 
-            if position_increment.length().is_normal() {
-                self.current_velocity = self.current_velocity.project_onto_normalized(position_increment.normalize());
-            }
+            // if position_increment.length().is_normal() {
+            //     self.current_velocity = self.current_velocity.project_onto_normalized(position_increment.normalize());
+            // }
 
             //check if collider staying on the ground
-            let bottom_position = self.transform.get_position() - self.collider_radius * Vec4::Y;
+            let bottom_position = self.transform.get_position() - ((self.collider_radius * 0.3) * Vec4::Y);
 
-            if get_dist(bottom_position, static_objects, shapes_stickiness) < 0.1 {
+            if get_dist(bottom_position, static_objects, shapes_stickiness) < self.collider_radius * 0.95 {
                 self.is_on_ground = true;
             }
 
         } else {
 
-            // maybe temporal
-
-            // if collider is not enable we nned to add some friction for movement
-            self.current_velocity *= 1.0 - delta*3.4;
-            
-            self.transform.increment_position(self.current_velocity * delta);
+            self.current_velocity = Vec4::ZERO;
         }
 
-       
         self.wish_direction = Vec4::ZERO;
+    }
+
+
+
+    fn translate_collider(
+        &mut self,
+        delta: f32,
+        static_objects: &StaticCollidersData,
+        stickiness: f32,
+    ) -> (Vec4, bool) {
+
+        let mut position = self.transform.get_position();
+
+        let mut translation = self.current_velocity * delta;
+
+        let start_translation = translation;
+
+        let collider_radius = self.collider_radius;
+    
+        let mut is_collide = false;
+    
+        let start_position = position;
+    
+        // pushing out the kinematic collider if it is stuck inside the object
+        // at beginning of physics frame.
+        // It is only possible if some static object moved in the previus frame
+        // (unless the kinematic collider was disabled in previous frame),
+        // and if this happaned, we will add the collision force to the kinematic collider 
+        let (new_pos, is_pushed) = move_collider_outside(
+            position,
+            collider_radius,
+            static_objects,
+            stickiness
+        );
+
+        if is_pushed {
+            is_collide = is_pushed;
+
+            let collide_translation =  new_pos - position;
+
+            self.current_velocity += collide_translation * 1.0/delta;
+
+            position = new_pos;
+        }
+    
+    
+        // log::info!("start position is {}", start_position);
+        
+        let mut counter = 0u32;
+    
+        while translation.length().is_normal() {
+    
+            // log::info!("ITERATION number {}", counter);
+    
+            if counter > MAX_COLLIDING_ITERATIONS {
+                panic!("More then max colliding iterations");
+            }
+    
+            // if collider stuck inside object let's push it out
+            let (new_pos, is_pushed) = move_collider_outside(position, collider_radius, static_objects, stickiness);
+    
+            is_collide = is_pushed;
+    
+            position = new_pos;
+    
+            // get distance from edge of the object to the nearest object
+            let mut distance_from_edge = get_dist(position, static_objects, stickiness) - collider_radius;
+    
+            // log::info!("distance from the edge is {}", distance_from_edge);
+    
+            // bound if collide
+            if distance_from_edge < THRESHOLD || is_pushed {
+    
+                // log::info!("BOUND");
+    
+                is_collide = true;
+    
+                let normal = get_normal(position, static_objects, stickiness);
+                
+                // log::info!("normal is {}", normal);
+    
+                // log::info!("translation len before reject is {}", translation.length());
+    
+                // log::info!("direction is {}", translation.normalize());
+    
+                if normal.dot(translation) < 0.0 {
+    
+                    let probable_transltaion_dir = translation.reject_from_normalized(normal).normalize();
+    
+                    let next_normal = get_normal(
+                        position + probable_transltaion_dir * THRESHOLD,
+                        static_objects,
+                        stickiness
+                    );
+    
+                    // log::info!("next normal is {}", normal);
+    
+                    let curvature_coefficient = next_normal.dot(probable_transltaion_dir);
+    
+                    // log::info!("curvature_coefficient is {}", curvature_coefficient);
+    
+                    if curvature_coefficient < 0.0 {
+    
+                        let prev_normal = get_normal(
+                            position - probable_transltaion_dir * THRESHOLD,
+                            static_objects,
+                            stickiness
+                        );
+
+                        let next_pos_bounce_coefficient = get_bounce_coefficient(
+                            position + probable_transltaion_dir * THRESHOLD,
+                            static_objects,
+                            stickiness
+                        );
+
+                        let prev_pos_bounce_coefficient = get_bounce_coefficient(
+                            position - probable_transltaion_dir * THRESHOLD,
+                            static_objects,
+                            stickiness
+                        );
+    
+                        // log::info!("prev normal is {}", prev_normal);
+    
+                        if next_normal.dot(translation) < 0.0 {
+
+                            let current_velocity = self.current_velocity;
+
+                            let coef = translation.length() / current_velocity.length();
+
+                            let mut new_velocity = current_velocity.reject_from_normalized(next_normal);
+
+                            let absorbed_velocity = new_velocity - current_velocity;
+
+                            new_velocity += absorbed_velocity * next_pos_bounce_coefficient;
+
+                            let diff = new_velocity - current_velocity;
+
+
+                            self.current_velocity = new_velocity;
+
+
+                            // let mut new_translation = translation.reject_from_normalized(next_normal);
+
+                            // let absorbed_transaltion = new_translation - translation;
+
+                            // new_translation += absorbed_transaltion * next_pos_bounce_coefficient;
+
+                            log::warn!("coef: {}", coef);
+
+                            log::warn!("translation before: {}", translation);
+
+                            translation += diff * coef;
+
+                            log::warn!("translation after: {}", translation);
+                            
+                            // log::info!("direction after first bound is {}", translation.normalize());
+    
+                            // log::info!("translation len after first reject is {}", translation.length());
+                        }
+    
+                        if prev_normal.dot(translation) < 0.0 {
+
+                            let current_velocity = self.current_velocity;
+    
+                            let coef = translation.length() / current_velocity.length();
+
+                            let mut new_velocity = current_velocity.reject_from_normalized(prev_normal);
+
+                            let absorbed_velocity = new_velocity - current_velocity;
+
+                            new_velocity += absorbed_velocity * prev_pos_bounce_coefficient;
+
+                            let diff = new_velocity - current_velocity;
+
+                            self.current_velocity = new_velocity;
+
+
+                            // let mut new_translation = translation.reject_from_normalized(prev_normal);
+
+                            // let absorbed_transaltion = new_translation - translation;
+
+                            // new_translation += absorbed_transaltion * prev_pos_bounce_coefficient;
+
+                            log::warn!("coef: {}", coef);
+
+                            log::warn!("translation before: {}", translation);
+
+                            translation += diff * coef;
+
+                            log::warn!("translation after: {}", translation);
+                            
+    
+                            // log::info!("direction after second bound is {}", translation.normalize());
+    
+                            // log::info!("translation len after second reject is {}", translation.length());    
+                        }
+    
+                    } else {
+
+                        let bounce_coefficient = get_bounce_coefficient(
+                            position + probable_transltaion_dir * THRESHOLD,
+                            static_objects,
+                            stickiness
+                        );
+
+                        let current_velocity = self.current_velocity;
+
+                        let coef = translation.length() / current_velocity.length();
+    
+                        let mut new_velocity = current_velocity.reject_from_normalized(normal);
+
+                        let absorbed_velocity = new_velocity - current_velocity;
+
+                        new_velocity += absorbed_velocity * bounce_coefficient;
+
+                        let diff = new_velocity - current_velocity;
+
+                        self.current_velocity = new_velocity;
+
+
+                        // let mut new_translation = translation.reject_from_normalized(normal);
+
+                        // let absorbed_transaltion = new_translation - translation;
+
+                        // new_translation += absorbed_transaltion * bounce_coefficient;                        log::warn!("translation before: {}", translation);
+                        
+                        log::warn!("coef: {}", coef);
+
+                        log::warn!("translation before: {}", translation);
+
+                        translation += diff * coef;
+
+                        log::warn!("translation after: {}", translation);
+
+                        // log::info!("direction after bound is {}", translation.normalize());
+    
+                        // log::info!("translation len after reject is {}", translation.length());
+                    }
+                }
+    
+            }
+    
+            let dist_on_try_move = get_dist(
+                position + translation.clamp_length_max(collider_radius - THRESHOLD),
+                static_objects,
+                stickiness
+            );
+    
+            if dist_on_try_move - collider_radius > 0.0 {
+    
+                position += translation.clamp_length_max(collider_radius - THRESHOLD);
+    
+                if translation.length() < collider_radius - THRESHOLD {
+    
+                    return (position - start_position, is_collide);
+    
+                } else {
+                    translation = translation.clamp_length_max(
+                        (translation.length() - (collider_radius - THRESHOLD)).max(0.0)
+                    );
+    
+                    counter += 1;
+                    continue;
+                }
+            }
+    
+            let mut translation_length = translation.length();
+    
+            let translation_dir = translation.normalize();
+    
+            let small_steps_counter = 0u32;
+    
+            while translation_length > 0.0 {
+    
+                // log::info!("SMALL STEPS");
+    
+                if small_steps_counter > MAX_COLLIDING_ITERATIONS {
+                    panic!("More then max colliding small steps iterations");
+                }
+    
+                let current_translation_len = translation_length.min(distance_from_edge.max(THRESHOLD));
+    
+                position += translation_dir * current_translation_len;
+    
+                translation_length -= current_translation_len;
+    
+                distance_from_edge = get_dist(position, static_objects, stickiness) - collider_radius;
+    
+                translation = translation_dir * translation_length;
+                
+                if distance_from_edge < 0.0 {
+    
+                    break;
+                }
+    
+            }
+    
+            counter += 1;
+        }
+
+        // let diff = position - start_position;
+
+        // let velocity = diff * 1.0/delta;
+
+        // self.current_velocity = velocity;
+    
+        (position - start_position, is_collide)
     }
 }
 
-const THRESHOLD: f32 = 0.005;
-const HALF_THRESHOLD: f32 = 0.00025;
-const MAX_COLLIDING_ITERATIONS: u32 = 50;
 
-fn translate_collider(
-    mut position: Vec4,
-    mut translation: Vec4,
+#[inline]
+fn move_collider_outside(
+    position: Vec4,
     collider_radius: f32,
     static_objects: &StaticCollidersData,
     stickiness: f32
 ) -> (Vec4, bool) {
 
-    let mut is_collide = false;
-
-    let start_position = position;
-
-    // log::info!("start position is {}", start_position);
-    
-    let mut counter = 0u32;
-
-    while translation.length().is_normal() {
-
-        // log::info!("ITERATION number {}", counter);
-
-        if counter > MAX_COLLIDING_ITERATIONS {
-            panic!("More then max colliding iterations");
-        }
-
-        // if collider stuck inside object let's push it out
-        let is_pushed = move_collider_outside(&mut position, collider_radius, static_objects, stickiness);
-
-        // get distance from edge of the object to the nearest object
-        let mut distance_from_edge = get_dist(position, static_objects, stickiness) - collider_radius;
-
-        // log::info!("distance from the edge is {}", distance_from_edge);
-
-        // bound if collide
-        if distance_from_edge < THRESHOLD || is_pushed {
-
-            // log::info!("BOUND");
-
-            is_collide = true;
-
-            let normal = get_normal(position, static_objects, stickiness);
-            
-            // log::info!("normal is {}", normal);
-
-            // log::info!("translation len before reject is {}", translation.length());
-
-            // log::info!("direction is {}", translation.normalize());
-
-            if normal.dot(translation) < 0.0 {
-
-                let probable_transltaion_dir = translation.reject_from_normalized(normal).normalize();
-
-                let next_normal = get_normal(
-                    position + probable_transltaion_dir * THRESHOLD,
-                    static_objects,
-                    stickiness
-                );
-
-                // log::info!("next normal is {}", normal);
-
-                let curvature_coefficient = next_normal.dot(probable_transltaion_dir);
-
-                // log::info!("curvature_coefficient is {}", curvature_coefficient);
-
-                if curvature_coefficient < 0.0 {
-
-                    let prev_normal = get_normal(
-                        position - probable_transltaion_dir * THRESHOLD,
-                        static_objects,
-                        stickiness
-                    );
-
-                    // log::info!("prev normal is {}", prev_normal);
-
-                    if next_normal.dot(translation) < 0.0 {
-                        
-                        translation = translation.reject_from_normalized(next_normal);
-                        
-                        // log::info!("direction after first bound is {}", translation.normalize());
-
-                        // log::info!("translation len after first reject is {}", translation.length());
-                    }
-
-                    if prev_normal.dot(translation) < 0.0 {
-
-                        translation = translation.reject_from_normalized(prev_normal);
-
-                        // log::info!("direction after second bound is {}", translation.normalize());
-
-                        // log::info!("translation len after second reject is {}", translation.length());    
-                    }
-
-                } else {
-
-                    translation = translation.reject_from_normalized(normal);
-
-                    // log::info!("direction after bound is {}", translation.normalize());
-
-                    // log::info!("translation len after reject is {}", translation.length());
-                }
-            }
-
-        }
-
-        let dist_on_try_move = get_dist(
-            position + translation.clamp_length_max(collider_radius - THRESHOLD),
-            static_objects,
-            stickiness
-        );
-
-        if dist_on_try_move - collider_radius > 0.0 {
-
-            position += translation.clamp_length_max(collider_radius - THRESHOLD);
-
-            if translation.length() < collider_radius - THRESHOLD {
-
-                return (position - start_position, is_collide);
-
-            } else {
-                translation = translation.clamp_length_max(
-                    (translation.length() - (collider_radius - THRESHOLD)).max(0.0)
-                );
-
-                counter += 1;
-                continue;
-            }
-        }
-
-        let mut translation_length = translation.length();
-
-        let translation_dir = translation.normalize();
-
-        let small_steps_counter = 0u32;
-
-        while translation_length > 0.0 {
-
-            // log::info!("SMALL STEPS");
-
-            if small_steps_counter > MAX_COLLIDING_ITERATIONS {
-                panic!("More then max colliding small steps iterations");
-            }
-
-            let current_translation_len = translation_length.min(distance_from_edge.max(THRESHOLD));
-
-            position += translation_dir * current_translation_len;
-
-            translation_length -= current_translation_len;
-
-            distance_from_edge = get_dist(position, static_objects, stickiness) - collider_radius;
-
-            translation = translation_dir * translation_length;
-            
-            if distance_from_edge < 0.0 {
-
-                break;
-            }
-
-        }
-
-        counter += 1;
-    }
-
-    (position - start_position, is_collide)
-}
-
-#[inline]
-fn move_collider_outside(
-    position: &mut Vec4,
-    collider_radius: f32,
-    static_objects: &StaticCollidersData,
-    stickiness: f32
-) -> bool {
-
-    let mut pos = *position;
+    let mut pos = position;
 
     let mut is_collided = false;
     
@@ -401,9 +537,7 @@ fn move_collider_outside(
         counter += 1;
     }
 
-    *position = pos;
-
-    is_collided
+    (pos, is_collided)
 }
 
 #[inline]
@@ -414,7 +548,7 @@ fn smin(a: f32, b: f32, k: f32) -> f32
     return a + k * g;
 }
 
-const MAX_DIST: f32 = 7000_f32;
+const MAX_DIST: f32 = 700_f32;
 
 #[inline]
 fn get_dist(p: Vec4, static_objects: &StaticCollidersData, stickiness: f32) -> f32 {
@@ -514,16 +648,120 @@ fn get_dist(p: Vec4, static_objects: &StaticCollidersData, stickiness: f32) -> f
     return d;
 }
 
+
+fn get_bounce_coefficient(
+    p: Vec4,
+    static_objects: &StaticCollidersData,
+    stickiness: f32,
+) -> f32 {
+    let mut d = MAX_DIST;
+
+    let mut bounce_coeficient = 0.0;
+
+    for collider in static_objects.cubes.iter_stickiness() {
+        let new_d = smin(
+            d,
+            sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
+            stickiness
+        );
+
+        if new_d < d {
+            bounce_coeficient = collider.bounce_rate;
+
+            d = new_d;
+        }
+    }
+    for collider in static_objects.inf_w_cubes.iter_stickiness() {
+        let new_d = smin(
+            d,
+            sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness,
+            stickiness
+        );
+
+        if new_d < d {
+            bounce_coeficient = collider.bounce_rate;
+
+            d = new_d;
+        }
+    }
+    for collider in static_objects.spheres.iter_stickiness() {
+        let new_d = smin(
+            d,
+            sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness,
+            stickiness
+        );
+
+        if new_d < d {
+            bounce_coeficient = collider.bounce_rate;
+
+            d = new_d;
+        }
+    }
+    for collider in static_objects.sph_cubes.iter_stickiness() {
+        let new_d = smin(
+            d,
+            sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
+            stickiness
+        );
+
+        if new_d < d {
+            bounce_coeficient = collider.bounce_rate;
+
+            d = new_d;
+        }
+    }
+    
+
+    for collider in static_objects.cubes.iter_normal() {
+        let new_d = sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
+
+        if new_d < d {
+            bounce_coeficient = collider.bounce_rate;
+
+            d = new_d;
+        };
+    }
+    for collider in static_objects.inf_w_cubes.iter_normal() {
+        let new_d = sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness;
+
+        if new_d < d {
+            bounce_coeficient = collider.bounce_rate;
+
+            d = new_d;
+        };
+    }
+    for collider in static_objects.spheres.iter_normal() {
+        let new_d = sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness;
+
+        if new_d < d {
+            bounce_coeficient = collider.bounce_rate;
+
+            d = new_d;
+        };
+    }
+    for collider in static_objects.sph_cubes.iter_normal() {
+        let new_d = sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
+
+        if new_d < d {
+            bounce_coeficient = collider.bounce_rate;
+
+            d = new_d;
+        };
+    }
+
+    bounce_coeficient
+}
+
 #[inline]
 fn get_normal(p: Vec4, static_objects: &StaticCollidersData, stickiness: f32) -> Vec4 {
-    let a = p + Vec4::new(HALF_THRESHOLD, 0.000, 0.000, 0.000);
-    let b = p + Vec4::new(-HALF_THRESHOLD, 0.000, 0.000,0.000);
-    let c = p + Vec4::new(0.000, HALF_THRESHOLD, 0.000, 0.000);
-    let d = p + Vec4::new(0.000, -HALF_THRESHOLD, 0.000, 0.000);
-    let e = p + Vec4::new(0.000, 0.000, HALF_THRESHOLD, 0.000);
-    let f = p + Vec4::new(0.000, 0.000, -HALF_THRESHOLD,0.000);
-    let g = p + Vec4::new(0.000, 0.000, 0.000, HALF_THRESHOLD);
-    let h = p + Vec4::new(0.000, 0.000, 0.000, -HALF_THRESHOLD);
+    let a = p + Vec4::new(THRESHOLD, 0.000, 0.000, 0.000);
+    let b = p + Vec4::new(-THRESHOLD, 0.000, 0.000,0.000);
+    let c = p + Vec4::new(0.000, THRESHOLD, 0.000, 0.000);
+    let d = p + Vec4::new(0.000, -THRESHOLD, 0.000, 0.000);
+    let e = p + Vec4::new(0.000, 0.000, THRESHOLD, 0.000);
+    let f = p + Vec4::new(0.000, 0.000, -THRESHOLD,0.000);
+    let g = p + Vec4::new(0.000, 0.000, 0.000, THRESHOLD);
+    let h = p + Vec4::new(0.000, 0.000, 0.000, -THRESHOLD);
 
     let fa = get_dist(a, static_objects, stickiness);
     let fb = get_dist(b, static_objects, stickiness);

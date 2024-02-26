@@ -156,9 +156,9 @@ impl World {
     //     };
     // }
 
-    pub fn tick(&mut self, engine_handle: &mut EngineHandle) {
+    pub fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
         for (_, actor) in self.actors.iter_mut() {
-            actor.tick(engine_handle)
+            actor.tick(engine_handle, delta)
         }
     }
 

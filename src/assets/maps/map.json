@@ -23,7 +23,7 @@
             "position" : {
                 "x": 1.0,
                 "y": 2.0,
-                "z": 12.5,
+                "z": 14.5,
                 "w": 0.0
             }
         }
@@ -69,9 +69,11 @@
                     "x": 1.1
                 },
                 "stickiness" : true,
-                "is_positive" : false
+                "is_positive" : false,
+                "roundness" : 0.0
             }
-        },        {
+        },
+        {
             "cube" : {
                 "transform" : {
                     "position" : {
@@ -101,6 +103,33 @@
             }
         },
         {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -7.0,
+                        "y": 0.25 ,
+                        "z": 8.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.2,
+                    "y": 0.5,
+                    "z": 3.0,
+                    "w": 3.0
+                },
+                "bounce_rate" : 2.0
+            }
+        },
+        {
             "cube_w_inf" : {
                 "transform" : {
                     "position" : {
@@ -117,7 +146,6 @@
                 },
                 "is_positive" : true,
                 "friction": 0.0,
-                "bounce_rate": 0.5,
                 "material": {
                     "color" : {
                         "red": 1.0,

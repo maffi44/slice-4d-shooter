@@ -202,7 +202,10 @@ fn main_loop(
 
     systems.input.get_input(&mut systems.world, &mut systems.net);
 
-    systems.world.tick(&mut systems.engine_handle);
+    systems.world.tick(
+        &mut systems.engine_handle,
+        systems.time.target_frame_duration.as_secs_f32()
+    );
 
     systems.world.send_messages_and_process_commands(&mut systems.engine_handle);
 
