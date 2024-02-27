@@ -1,3 +1,5 @@
+use crate::systems::transform::Transform;
+
 use super::super::world::World;
 
 use glam::Vec4;
@@ -246,19 +248,23 @@ impl StaticCollidersData {
 
 
 pub struct FrameCollidersBuffers {
-    pub dynamic_colliders: Vec<&'static mut DynamicCollider>,
-    pub kinematic_colliders: Vec<&'static mut KinematicCollider>,
+    // pub dynamic_colliders: Vec<&'static mut DynamicCollider>,
+    pub kinematic_colliders: Vec<(&'static mut Transform, &'static mut KinematicCollider)>,
     pub areas: Vec<&'static mut Area>,
 }
 
 impl FrameCollidersBuffers {
     pub fn new() -> Self {
-        let dynamic_colliders = Vec::<&mut DynamicCollider>::new();
-        let kinematic_colliders = Vec::<&mut KinematicCollider>::new();
-        let areas = Vec::<&mut Area>::new();
+        // let dynamic_colliders = Vec::<&mut DynamicCollider>::new();
+        let kinematic_colliders =
+            Vec::<(&'static mut Transform, &'static mut KinematicCollider)>::new();
+        
+        let areas =
+            Vec::<&mut Area>::new();
+        
 
         FrameCollidersBuffers {
-            dynamic_colliders,
+            // dynamic_colliders,
             kinematic_colliders,
             areas,
         }

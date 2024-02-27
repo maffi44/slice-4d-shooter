@@ -1,7 +1,7 @@
 use glam::{Vec4, Vec4Swizzles};
 
 use crate::systems::engine_handle::{self, EngineHandle};
-use crate::systems::transform::Transform;
+use crate::systems::transform::{self, Transform};
 
 use super::sdf_functions::{
     sd_box,
@@ -23,17 +23,32 @@ pub enum AreaMessages {
 }
 
 pub struct Area {
-    transform: Transform,
-    size: Vec4,
+    frame_position: Vec4,
+    frame_size: Vec4,
+    
+    pub size: Vec4,
+    pub translation: Vec4,
     shape_type: ShapeType,
     actors_id: Option<ActorID>,
     intersected_actor_ids: Vec<ActorID>,
 }
 
 impl Area {
-    pub fn new(transform: Transform, shape_type: ShapeType, size: Vec4) -> Self {
+    
+    pub fn set_frame_position(&mut self, frame_position: Vec4) {
+        self.frame_position = frame_position;
+    }
+
+    pub fn set_frame_size(&mut self, frame_position: Vec4) {
+        self.frame_position = frame_position;
+    }
+
+    pub fn new(translation: Vec4, shape_type: ShapeType, size: Vec4) -> Self {
         Area {
-            transform,   
+            frame_position: Vec4::ZERO,
+            frame_size: Vec4::ZERO,
+
+            translation,
             shape_type,
             size,
             actors_id: None,
@@ -43,17 +58,17 @@ impl Area {
 
     pub fn physics_tick(
         &mut self,
-        kinematic_colliders: &Vec<&mut KinematicCollider>,
+        kinematic_colliders: &Vec<(&mut Transform, &mut KinematicCollider)>,
         engine_handle: &mut EngineHandle,
     ) {
-        for kinematic_collider in kinematic_colliders.iter() {
+        for (transform, kinematic_collider) in kinematic_colliders.iter() {
 
             let collider_id = kinematic_collider.get_id().expect(
                 "Kinematic collider have not actor's id"
             );
 
             let is_intersect = self
-                .kinematic_collider_is_intersect_with_area(&kinematic_collider);
+                .kinematic_collider_is_intersect_with_area(&transform, &kinematic_collider);
             
             let was_intersected = self
                 .kinematic_collider_was_intersected_with_area(collider_id);
@@ -128,34 +143,34 @@ impl Area {
 
     fn kinematic_collider_is_intersect_with_area(
         &self,
+        transform: &Transform,
         kinematic_collider: &KinematicCollider
     ) -> bool {
-        let kinematic_collider_position =
-            kinematic_collider.transform.get_position();
+        let kinematic_collider_position = transform.get_position();
 
         let distnance_from_collider_center = match self.shape_type {
             ShapeType::Cube => {
                 sd_box(
-                    kinematic_collider_position - self.transform.get_position(),
-                    self.size
+                    kinematic_collider_position - self.frame_position,
+                    self.frame_size
                 )
             },
             ShapeType::Sphere => {
                 sd_sphere(
-                    kinematic_collider_position - self.transform.get_position(),
-                    self.size.x
+                    kinematic_collider_position - self.frame_position,
+                    self.frame_size.x
                 )
             },
             ShapeType::SphCube => {
                 sd_sph_box(
-                    kinematic_collider_position - self.transform.get_position(),
-                    self.size
+                    kinematic_collider_position - self.frame_position,
+                    self.frame_size
                 )
             },
             ShapeType::CubeInfW => {
                 sd_inf_box(
-                    kinematic_collider_position - self.transform.get_position(),
-                    self.size.xyz()
+                    kinematic_collider_position - self.frame_position,
+                    self.frame_size.xyz()
                 )
             }
         };

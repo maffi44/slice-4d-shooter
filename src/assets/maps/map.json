@@ -35,6 +35,98 @@
     },
 
     "actors" : [
+        {
+            "wandering_actor" : {
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 2.0 ,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0 ,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+                "target" : {
+                    "transform" : {
+                        "position" : {
+                            "x": 0.0,
+                            "y": 10.0 ,
+                            "z": 0.0,
+                            "w": 0.0
+                        },
+                        "scale" : {
+                            "x": 2.0,
+                            "y": 2.0 ,
+                            "z": 2.0,
+                            "w": 2.0
+                        }
+                    },
+                    "time" : 3.0,
+                    "type" : "liner"
+                },
+                "static_objects" : [
+                    {
+                        "cube" : {
+                            "transform" : {
+                                "position" : {
+                                    "x": 0.0,
+                                    "y": 0.0 ,
+                                    "z": 0.0,
+                                    "w": 0.0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 1.0,
+                                "y": 0.5,
+                                "z": 1.0,
+                                "w": 1.0
+                            },
+                            "stickiness" : true
+                        }
+                    },
+                    {
+                        "cube" : {
+                            "transform" : {
+                                "position" : {
+                                    "x": 0.5,
+                                    "y": 0.0 ,
+                                    "z": 0.0,
+                                    "w": 0.0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.5,
+                                "y": 1.0,
+                                "z": 0.5,
+                                "w": 0.5
+                            },
+                            "stickiness" : true
+                        }
+                    }
+                ]
+            }
+        }
     ],
     
     "static_objects": [
@@ -156,6 +248,33 @@
                     }
                 },
                 "stickiness" : true
+            }
+        },
+        {
+            "cube_w_inf" : {
+                "transform" : {
+                    "position" : {
+                        "x": 30.0,
+                        "y": 1.0 ,
+                        "z": 15.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 15.0,
+                    "y": 0.2,
+                    "z": 30.0
+                },
+                "is_positive" : true,
+                "friction": 0.0,
+                "material": {
+                    "color" : {
+                        "red": 1.0,
+                        "green": 1.0,
+                        "blue": 1.0
+                    }
+                },
+                "stickiness" : false
             }
         },
         {
@@ -455,9 +574,9 @@
                     }
                 },
                 "size" : {
-                    "x": 1.1,
-                    "y": 2.2,
-                    "z": 3.2,
+                    "x": 1.5,
+                    "y": 2.5,
+                    "z": 4.2,
                     "w": 2.2
                 },
                 "is_positive" : false

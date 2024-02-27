@@ -18,7 +18,7 @@ use self::{
 };
 
 use super::{
-    actor::Actor, engine_handle::{self, EngineHandle}, world::World
+    actor::Actor, engine_handle::{self, EngineHandle}, transform::{self, Transform}, world::World
 };
 
 pub struct PhysicsSystem {
@@ -52,7 +52,7 @@ impl PhysicsSystem {
     ) {
 
         self.frame_colliders_buffers.kinematic_colliders.clear();
-        self.frame_colliders_buffers.dynamic_colliders.clear();
+        // self.frame_colliders_buffers.dynamic_colliders.clear();
         self.frame_colliders_buffers.areas.clear();
 
         // I use frame_colliders_buffers as a memory buffer in order
@@ -61,45 +61,56 @@ impl PhysicsSystem {
         // TODO: Change this unsafe functionality to use a regular Vec<&mut 'SomeCollider'>::new()
         //  with a custom allocator 
 
-        let mut kinematic_colliders: Vec<&mut KinematicCollider> = unsafe {
+        let mut kinematic_colliders: Vec<(&mut Transform, &mut KinematicCollider)> = unsafe {
             std::mem::transmute_copy(&self.frame_colliders_buffers.kinematic_colliders)
-        };
-        let mut dynamic_colliders: Vec<&mut DynamicCollider> = unsafe {
-            std::mem::transmute_copy(&self.frame_colliders_buffers.dynamic_colliders)
         };
         let mut areas: Vec<&mut Area> = unsafe {
             std::mem::transmute_copy(&self.frame_colliders_buffers.areas)
         };
+        // let mut dynamic_colliders: Vec<&mut DynamicCollider> = unsafe {
+        //     std::mem::transmute_copy(&self.frame_colliders_buffers.dynamic_colliders)
+        // };
 
-        // let mut kinematic_colliders: Vec<&mut KinematicCollider> = Vec::new();
-        // let mut dynamic_colliders: Vec<&mut DynamicCollider> = Vec::new();
-        // let mut areas: Vec<&mut Area> = Vec::new();
 
         for (_, actor) in world.actors.iter_mut() {
 
-            if let Some(colliders_container) = actor.get_colliders_container() {
+            if let Some(physical_element) = actor.get_physical_element() {
 
-                if let Some(kinematic_collider) = colliders_container.kinematic_collider {
-                    kinematic_colliders.push(kinematic_collider);
-                }
+                let transform = physical_element.transform;
                 
-                if let Some(area) = colliders_container.area {
+                if let Some(area) = physical_element.area {
+
+                    area.set_frame_position(transform.get_position() + area.translation);
+                    area.set_frame_size(transform.get_scale() * area.size);
+
                     areas.push(area);
                 }
 
-                if let Some(colliders) = colliders_container.dynamic_colliders {
-                    for dynamic_collider in colliders {
+                if let Some(colliders) = physical_element.static_colliders {
+                    for static_collider in colliders {
+
+                        let mut temporal_static_collider = static_collider.clone();
+
+                        temporal_static_collider.position += transform.get_position();
                         
-                        dynamic_colliders.push(dynamic_collider);
+                        temporal_static_collider.size *= transform.get_scale();
+                        
+                        self.static_colliders_data.add_temporal_static_collider(temporal_static_collider);
                     }
+                }
+                
+                if let Some(kinematic_collider) = physical_element.kinematic_collider {
+                    kinematic_colliders.push((transform, kinematic_collider));
                 }
 
-                if let Some(colliders) = colliders_container.static_colliders {
-                    for static_collider in colliders {
+
+                // if let Some(colliders) = colliders_container.dynamic_colliders {
+                //     for dynamic_collider in colliders {
                         
-                        self.static_colliders_data.add_temporal_static_collider(static_collider.clone());
-                    }
-                }
+                //         dynamic_colliders.push(dynamic_collider);
+                //     }
+                // }
+
             }
         }
         
@@ -107,11 +118,12 @@ impl PhysicsSystem {
         // colliders to combine them into groups and calculate physics in these groups
 
         // temp
-        for kinematic_collider in kinematic_colliders.iter_mut() {
+        for (transform, kinematic_collider) in kinematic_colliders.iter_mut() {
             kinematic_collider.physics_tick(
                 delta,
                 &self.static_colliders_data,
                 world.level.all_shapes_stickiness_radius,
+                transform,
                 engine_handle,
             )
         }
@@ -123,11 +135,11 @@ impl PhysicsSystem {
         self.static_colliders_data.clear_temporal_static_colliders();
 
         std::mem::forget(kinematic_colliders);
-        std::mem::forget(dynamic_colliders);
         std::mem::forget(areas);
+        // std::mem::forget(dynamic_colliders);
 
         self.frame_colliders_buffers.kinematic_colliders.clear();
-        self.frame_colliders_buffers.dynamic_colliders.clear();
         self.frame_colliders_buffers.areas.clear();
+        // self.frame_colliders_buffers.dynamic_colliders.clear();
     }
 }

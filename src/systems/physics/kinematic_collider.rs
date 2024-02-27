@@ -31,7 +31,6 @@ const MAX_COLLIDING_ITERATIONS: u32 = 50;
 
 pub struct KinematicCollider {
     pub is_enable: bool,
-    pub transform: Transform,
     collider_radius: f32,
     max_speed: f32,
     max_accel: f32,
@@ -59,7 +58,6 @@ impl Component for KinematicCollider {
 
 impl KinematicCollider {
     pub fn new(
-        transform: Transform,
         max_speed: f32,
         max_accel: f32,
         collider_radius: f32,
@@ -68,7 +66,6 @@ impl KinematicCollider {
     ) -> Self {
         KinematicCollider {
             is_enable: true,
-            transform,
             collider_radius,
             max_speed,
             max_accel,
@@ -101,6 +98,7 @@ impl KinematicCollider {
         delta: f32,
         static_objects: &StaticCollidersData,
         shapes_stickiness: f32,
+        transform: &mut Transform,
         engine_handle: &mut EngineHandle,
     ) {
         self.is_on_ground = false;
@@ -127,17 +125,18 @@ impl KinematicCollider {
             let position_increment = self.move_collider(
                 delta,
                 static_objects,
+                transform.get_position(),
                 shapes_stickiness
             );
 
-            self.transform.increment_position(position_increment);
+            transform.increment_position(position_increment);
 
             // if position_increment.length().is_normal() {
             //     self.current_velocity = self.current_velocity.project_onto_normalized(position_increment.normalize());
             // }
 
             //check if collider staying on the ground
-            let bottom_position = self.transform.get_position() - ((self.collider_radius * 0.1) * Vec4::Y);
+            let bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * Vec4::Y);
 
             if get_dist(bottom_position, static_objects, shapes_stickiness) < self.collider_radius * 0.95 {
                 self.is_on_ground = true;
@@ -157,10 +156,11 @@ impl KinematicCollider {
         &mut self,
         delta: f32,
         static_objects: &StaticCollidersData,
+        start_position: Vec4,
         stickiness: f32,
     ) -> Vec4 {
 
-        let mut position = self.transform.get_position();
+        let mut position = start_position;
 
         let mut translation = self.current_velocity * delta;
 
@@ -170,8 +170,6 @@ impl KinematicCollider {
     
         let mut is_collide = false;
     
-        let start_position = position;
-
         let mut friction: f32 = 0.0;
     
         // pushing out the kinematic collider if it is stuck inside the object

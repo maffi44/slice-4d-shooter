@@ -5,7 +5,7 @@ use player::Player;
 
 use super::{
     engine_handle::EngineHandle, physics::{
-        area::Area, colliders_container::CollidersContainer, dynamic_collider::DynamicCollider, kinematic_collider::KinematicCollider, static_collider::StaticCollider
+        area::Area, colliders_container::PhysicalElement, dynamic_collider::DynamicCollider, kinematic_collider::KinematicCollider, static_collider::StaticCollider
     }, transform::Transform
 };
 
@@ -18,9 +18,9 @@ pub trait Actor {
 
     fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {}
 
-    fn get_colliders_container(&mut self) -> Option<CollidersContainer> {None}
+    fn get_physical_element(&mut self) -> Option<PhysicalElement> {None}
 
-    fn get_visual_elem(&self) {}
+    fn get_visual_element(&self) {}
 
     fn get_id(&self) -> Option<ActorID>;
     
@@ -55,20 +55,20 @@ impl Actor for ActorWrapper {
         }
     }
 
-    fn get_colliders_container(&mut self) -> Option<CollidersContainer> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
         match  self {
             ActorWrapper::Player(player) => {
-                player.get_colliders_container()
+                player.get_physical_element()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
 
-    fn get_visual_elem(&self) {
+    fn get_visual_element(&self) {
         match  self {
             ActorWrapper::Player(player) => {
-                player.get_visual_elem()
+                player.get_visual_element()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},

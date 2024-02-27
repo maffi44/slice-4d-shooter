@@ -24,7 +24,7 @@ use super::{
 
 use super::super::{
     physics::{
-        colliders_container::CollidersContainer,
+        colliders_container::PhysicalElement,
         kinematic_collider::KinematicCollider,
         dynamic_collider::DynamicCollider,
         static_collider::StaticCollider,
@@ -37,6 +37,7 @@ use super::super::{
 
 pub struct PlayerInnerState {
     pub collider: KinematicCollider,
+    pub transform: Transform,
     pub hp: i32,
 }
 
@@ -44,13 +45,13 @@ impl PlayerInnerState {
     pub fn new(transform: Transform, settings: &PlayerSettings) -> Self {
         PlayerInnerState {
             collider: KinematicCollider::new(
-                transform,
                 settings.max_speed,
                 settings.max_accel,
                 settings.collider_radius,
                 settings.friction_on_air,
                 // settings.friction_on_ground,
             ),
+            transform,
             hp: 100,
         }
     }
@@ -110,13 +111,13 @@ impl Actor for Player {
             MessageType::CommonActorsMessages(message) => {
                 match message {
                     CommonActorsMessages::SetTransform(transform) => {
-                        self.inner_state.collider.transform = transform.clone();
+                        self.inner_state.transform = transform.clone();
                     },
                     CommonActorsMessages::EnableCollider(switch) => {
                         self.inner_state.collider.is_enable = *switch;
                     },
                     CommonActorsMessages::IncrementPosition(increment) => {
-                        self.inner_state.collider.transform.increment_position(increment.clone());
+                        self.inner_state.transform.increment_position(increment.clone());
                     }
                 }
             }
@@ -151,10 +152,10 @@ impl Actor for Player {
         self.id
     }
 
-    fn get_colliders_container(&mut self) -> Option<CollidersContainer> {
-        let collider_container = CollidersContainer {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+        let collider_container = PhysicalElement {
+            transform: &mut self.inner_state.transform,
             kinematic_collider: Some(&mut self.inner_state.collider),
-            dynamic_colliders: None,
             static_colliders: None,
             area: None,
         };
@@ -331,7 +332,7 @@ impl Actor for Player {
     
             }
 
-            self.inner_state.collider.transform.increment_position(self.no_collider_veclocity * delta);
+            self.inner_state.transform.increment_position(self.no_collider_veclocity * delta);
         }
 
         self.no_collider_veclocity *= 1.0 - delta*3.4;
@@ -370,15 +371,15 @@ impl Player {
     }
 
     pub fn get_position(&self) -> Vec4 {
-        self.inner_state.collider.transform.get_position()
+        self.inner_state.transform.get_position()
     }
 
     pub fn get_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.collider.transform.rotation.clone()
+        self.inner_state.transform.rotation.clone()
     }
 
     pub fn set_rotation_matrix(&mut self, new_rotation: Mat4) {
-        self.inner_state.collider.transform.rotation = new_rotation
+        self.inner_state.transform.rotation = new_rotation
     }
 
     pub fn get_collider_radius(&self) -> f32 {

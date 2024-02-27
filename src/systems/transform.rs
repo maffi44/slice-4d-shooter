@@ -7,6 +7,7 @@ use glam::{
 pub struct Transform {
     pub position: Vec4,
     pub rotation: Mat4,
+    pub scale: Vec4,
 }
 
 impl Transform {
@@ -15,6 +16,7 @@ impl Transform {
         Transform {
             position: Vec4::ZERO,
             rotation: Mat4::IDENTITY,
+            scale: Vec4::ONE,
         }
     }
 
@@ -22,6 +24,8 @@ impl Transform {
         Transform {
             position: Vec4::new(x, y, z, w),
             rotation: Mat4::IDENTITY,
+            scale: Vec4::ONE,
+
         }
     }
 
@@ -29,6 +33,7 @@ impl Transform {
         Transform {
             position,
             rotation: Mat4::IDENTITY,
+            scale: Vec4::ONE,
         }
     }
 
@@ -42,6 +47,10 @@ impl Transform {
 
     pub fn get_position(&self) -> Vec4 {
         self.position
+    }
+
+    pub fn get_scale(&self) -> Vec4 {
+        self.scale
     }
 
     pub fn get_direction(&mut self) -> Vec4 {
