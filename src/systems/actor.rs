@@ -1,5 +1,6 @@
 pub mod player;
 pub mod diamond;
+pub mod wandering_actor;
 
 use player::Player;
 
@@ -14,7 +15,11 @@ pub type ActorID = u64;
 
 pub trait Actor {
 
-    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle);
+    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {}
+
+    fn get_mut_transform(&mut self) -> &mut Transform;
+    
+    fn get_transform(&self) -> &Transform;
 
     fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {}
 
@@ -29,16 +34,46 @@ pub trait Actor {
 
 pub enum ActorWrapper {
     Player(Player),
+    WonderingActor(WonderingActor),
     Diamond,
     Exit,
 }
 
 impl Actor for ActorWrapper {
 
+    fn get_transform(&self) -> &Transform {
+        match  self {
+            ActorWrapper::Player(actor) => {
+                actor.get_transform()
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
+        }
+    }
+
+    fn get_mut_transform(&mut self) -> &mut Transform {
+        match  self {
+            ActorWrapper::Player(actor) => {
+                actor.get_mut_transform()
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.get_mut_transform()
+            },
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
+        }
+    }
+
     fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
         match  self {
-            ActorWrapper::Player(player) => {
-                player.recieve_message(message, engine_handle);
+            ActorWrapper::Player(actor) => {
+                actor.recieve_message(message, engine_handle);
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.recieve_message(message, engine_handle);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -47,8 +82,11 @@ impl Actor for ActorWrapper {
 
     fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
         match  self {
-            ActorWrapper::Player(player) => {
-                player.tick(engine_handle, delta);
+            ActorWrapper::Player(actor) => {
+                actor.tick(engine_handle, delta);
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.tick(engine_handle, delta);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -57,8 +95,11 @@ impl Actor for ActorWrapper {
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
         match  self {
-            ActorWrapper::Player(player) => {
-                player.get_physical_element()
+            ActorWrapper::Player(actor) => {
+                actor.get_physical_element()
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.get_physical_element()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -66,9 +107,12 @@ impl Actor for ActorWrapper {
     }
 
     fn get_visual_element(&self) {
-        match  self {
-            ActorWrapper::Player(player) => {
-                player.get_visual_element()
+        match self {
+            ActorWrapper::Player(actor) => {
+                actor.get_visual_element()
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.get_visual_element()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -76,9 +120,12 @@ impl Actor for ActorWrapper {
     }
 
     fn get_id(&self) -> Option<ActorID> {
-        match  self {
-            ActorWrapper::Player(player) => {
-                player.get_id()
+        match self {
+            ActorWrapper::Player(actor) => {
+                actor.get_id()
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.get_id()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -87,8 +134,11 @@ impl Actor for ActorWrapper {
 
     fn init(&mut self, id: ActorID) {
         match  self {
-            ActorWrapper::Player(player) => {
-                player.init(id);
+            ActorWrapper::Player(actor) => {
+                actor.init(id);
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.init(id);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -120,7 +170,7 @@ pub enum CommonActorsMessages {
     IncrementPosition(Vec4),
 }
 
-use self::player::PLayerMessages;
+use self::{player::PLayerMessages, wandering_actor::WonderingActor};
 
 pub enum SpecificActorMessage {
     PLayerMessages(PLayerMessages),

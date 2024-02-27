@@ -35,11 +35,13 @@ use super::super::{
     transform::Transform,
 };
 
+
 pub struct PlayerInnerState {
     pub collider: KinematicCollider,
     pub transform: Transform,
     pub hp: i32,
 }
+
 
 impl PlayerInnerState {
     pub fn new(transform: Transform, settings: &PlayerSettings) -> Self {
@@ -57,6 +59,7 @@ impl PlayerInnerState {
     }
 }
 
+
 enum ActiveHandsSlot {
     Zero,
     First,
@@ -64,12 +67,14 @@ enum ActiveHandsSlot {
     Third,
 }
 
+
 pub enum PlayersDeviceSlotNumber {
     First,
     Second,
     Third,
     Fourth,
 }
+
 
 pub struct Player {
     id: Option<ActorID>,
@@ -97,9 +102,11 @@ pub struct Player {
     pub master: InputMaster,
 }
 
+
 pub enum PLayerMessages {
     DealDamage(u32),
 }
+
 
 impl Actor for Player {
     fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
@@ -142,15 +149,28 @@ impl Actor for Player {
         }
     }
 
+
+    fn get_mut_transform(&mut self) -> &mut Transform {
+        &mut self.inner_state.transform
+    }
+
+
+    fn get_transform(&self) -> &Transform {
+        &self.inner_state.transform
+    }
+
+
     fn init(&mut self, id: ActorID) {
         self.id = Some(id);
 
         self.inner_state.collider.init(id);
     }
 
+
     fn get_id(&self) -> Option<ActorID> {
         self.id
     }
+
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
         let collider_container = PhysicalElement {
@@ -163,6 +183,7 @@ impl Actor for Player {
         Some(collider_container)
     }
 
+    
     fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
         let my_id = self.id.expect("Player does not have id");
 
@@ -341,6 +362,8 @@ impl Actor for Player {
     }
 }
 
+
+
 impl Player {
 
     pub fn new(master: InputMaster, player_settings: PlayerSettings) -> Self {
@@ -370,21 +393,26 @@ impl Player {
         }
     }
 
+
     pub fn get_position(&self) -> Vec4 {
         self.inner_state.transform.get_position()
     }
+
 
     pub fn get_rotation_matrix(&self) -> Mat4 {
         self.inner_state.transform.rotation.clone()
     }
 
+
     pub fn set_rotation_matrix(&mut self, new_rotation: Mat4) {
         self.inner_state.transform.rotation = new_rotation
     }
 
+
     pub fn get_collider_radius(&self) -> f32 {
         self.inner_state.collider.get_collider_radius()
     }
+
 
     pub fn set_gun_to_1_slot(
         &mut self,
@@ -405,6 +433,7 @@ impl Player {
         }
     }
 
+
     pub fn set_gun_to_2_slot(
         &mut self,
         device: Box<dyn Device>
@@ -424,6 +453,7 @@ impl Player {
         }
     }
 
+
     pub fn set_gun_to_3_slot(
         &mut self,
         device: Box<dyn Device>
@@ -442,6 +472,7 @@ impl Player {
             }
         }
     }
+
 
     pub fn set_device_to_device_slot(
         &mut self,

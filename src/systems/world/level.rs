@@ -1,8 +1,11 @@
+use crate::systems::actor::wandering_actor::WonderingActor;
 use crate::systems::actor::ActorWrapper;
+use crate::systems::physics::static_collider;
 use crate::systems::physics::{
     static_collider::StaticCollider,
     physics_system_data::ShapeType
 };
+use crate::systems::transform;
 
 use super::super::transform::Transform;
 use super::static_object::{
@@ -13,6 +16,7 @@ use glam::{Vec4, Vec3};
 
 use wasm_bindgen_futures::JsFuture;
 use serde_json::Value;
+use web_sys::js_sys::Intl::Collator;
 
 
 pub struct DefaultStaticObjectSettings {
@@ -126,15 +130,15 @@ fn parse_json_level(
             .get("static_objects")
             .expect("Wrong JSON map format. JSON level must have static_objects property");
 
-        parse_json_static_objects(json_static_objects, default_settings)
+        parse_json_static_objects(json_static_objects, &default_settings)
     };
 
     let actors = {
-        let json_static_objects = json_level
-            .get("static_objects")
+        let json_actors = json_level
+            .get("actors")
             .expect("Wrong JSON map format. JSON level must have static_objects property");
 
-        parse_json_actors(json_static_objects)
+        parse_json_actors(json_actors, &default_settings)
     };
 
     let level = Level {
@@ -259,7 +263,7 @@ fn parse_json_defaults(
 
 
 fn parse_json_static_objects(
-    json_map: &Value, defaults: DefaultStaticObjectSettings
+    json_map: &Value, defaults: &DefaultStaticObjectSettings
 ) -> Vec<StaticObject>
 {
     let mut static_objects: Vec<StaticObject> = Vec::with_capacity(100);
@@ -883,8 +887,72 @@ fn parse_json_into_material(json_shape: &Value, shape_name: &str) -> Option<Obje
 
 
 fn parse_json_actors(
-    json: &Value
+    json: &Value,
+    defaults: &DefaultStaticObjectSettings
 ) -> Vec<ActorWrapper>
 {
-    Vec::new()
+
+    let mut actors = Vec::new();
+
+    let actors_json_array = json
+        .as_array()
+        .expect("Wrong JSON map format, actors property must be array");
+
+    for actor_json_value in actors_json_array {
+
+        let actor_json_object = actor_json_value
+            .as_object()
+            .expect("Wrong JSON map format, any actor in actors must be a json object");
+
+        for (actor_type, actor_value) in actor_json_object {
+            match actor_type.as_str() {
+                "wandering_actor" => {
+
+                    let actor = parse_wandering_actor(actor_value, defaults);
+
+                    actors.push(ActorWrapper::WonderingActor(actor));
+                }
+                _ => {panic!("Wrong JSON map format, {} it is worng actor type", actor_type)}
+            }
+        }
+    }
+
+    actors
+}
+
+
+fn parse_wandering_actor(actor_value: &Value, defaults: &DefaultStaticObjectSettings) -> WonderingActor {
+
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, wandering_actor must be an json object");
+
+    let target = actor_object
+        .get("target")
+        .expect("Wrong JSON map format, wandering_actor must have target property");
+
+    let transform = parse_json_into_transform(actor_value, "wandering_actor");
+
+    let second_target = parse_json_into_transform(target, "wandering_actor, target");
+
+    let travel_time = actor_object
+        .get("travel_time")
+        .expect("Wrong JSON map format, wandering_actor must have travel_time property")
+        .as_f64()
+        .expect("Wrong JSON map format, travel_time in wandering_actor must be float number")
+        as f32;
+
+    let static_objects_value = actor_object
+        .get("static_objects")
+        .expect("Wrong JSON map format, wandering_actor must have static_objects property");
+
+    let static_objects = parse_json_static_objects(static_objects_value, defaults);
+
+
+    WonderingActor::new(
+        transform,
+        static_objects,
+        second_target,
+        travel_time
+    )
 }

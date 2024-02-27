@@ -37,6 +37,7 @@
     "actors" : [
         {
             "wandering_actor" : {
+                
                 "transform" : {
                     "position" : {
                         "x": 0.0,
@@ -51,6 +52,7 @@
                         "w": 1.0
                     }
                 },
+
                 "target" : {
                     "transform" : {
                         "position" : {
@@ -65,10 +67,13 @@
                             "z": 2.0,
                             "w": 2.0
                         }
-                    },
-                    "time" : 3.0,
-                    "type" : "liner"
+                    }
                 },
+
+                "travel_time" : 3.0,
+
+                "travel_type" : "liner",
+
                 "static_objects" : [
                     {
                         "cube" : {
