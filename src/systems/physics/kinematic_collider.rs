@@ -1,5 +1,5 @@
 use glam::{
-    Vec4, Vec4Swizzles
+    FloatExt, Vec4, Vec4Swizzles
 };
 
 use super::sdf_functions::{
@@ -124,17 +124,11 @@ impl KinematicCollider {
     
             }
 
-            let (position_increment, is_collided) = self.translate_collider(
+            let position_increment = self.move_collider(
                 delta,
                 static_objects,
                 shapes_stickiness
             );
-            
-            if is_collided {
-                self.current_velocity *= 1.0 - delta*self.friction_on_air;
-            } else {
-                self.current_velocity *= 1.0 - delta*self.friction_on_air;
-            }
 
             self.transform.increment_position(position_increment);
 
@@ -143,7 +137,7 @@ impl KinematicCollider {
             // }
 
             //check if collider staying on the ground
-            let bottom_position = self.transform.get_position() - ((self.collider_radius * 0.3) * Vec4::Y);
+            let bottom_position = self.transform.get_position() - ((self.collider_radius * 0.1) * Vec4::Y);
 
             if get_dist(bottom_position, static_objects, shapes_stickiness) < self.collider_radius * 0.95 {
                 self.is_on_ground = true;
@@ -159,12 +153,12 @@ impl KinematicCollider {
 
 
 
-    fn translate_collider(
+    fn move_collider(
         &mut self,
         delta: f32,
         static_objects: &StaticCollidersData,
         stickiness: f32,
-    ) -> (Vec4, bool) {
+    ) -> Vec4 {
 
         let mut position = self.transform.get_position();
 
@@ -177,6 +171,8 @@ impl KinematicCollider {
         let mut is_collide = false;
     
         let start_position = position;
+
+        let mut friction: f32 = 0.0;
     
         // pushing out the kinematic collider if it is stuck inside the object
         // at beginning of physics frame.
@@ -263,22 +259,17 @@ impl KinematicCollider {
                             static_objects,
                             stickiness
                         );
-
-                        let next_pos_bounce_coefficient = get_bounce_coefficient(
-                            position + probable_transltaion_dir * THRESHOLD,
-                            static_objects,
-                            stickiness
-                        );
-
-                        let prev_pos_bounce_coefficient = get_bounce_coefficient(
-                            position - probable_transltaion_dir * THRESHOLD,
-                            static_objects,
-                            stickiness
-                        );
     
                         // log::info!("prev normal is {}", prev_normal);
     
                         if next_normal.dot(translation) < 0.0 {
+                            let (bounce, new_friction) = get_bounce_and_friction(
+                                position + probable_transltaion_dir * THRESHOLD,
+                                static_objects,
+                                stickiness
+                            );
+
+                            friction = friction.max(new_friction);
 
                             let current_velocity = self.current_velocity;
 
@@ -288,7 +279,7 @@ impl KinematicCollider {
 
                             let absorbed_velocity = new_velocity - current_velocity;
 
-                            new_velocity += absorbed_velocity * next_pos_bounce_coefficient;
+                            new_velocity += absorbed_velocity * bounce;
 
                             let diff = new_velocity - current_velocity;
 
@@ -302,20 +293,22 @@ impl KinematicCollider {
 
                             // new_translation += absorbed_transaltion * next_pos_bounce_coefficient;
 
-                            log::warn!("coef: {}", coef);
-
-                            log::warn!("translation before: {}", translation);
-
                             translation += diff * coef;
 
-                            log::warn!("translation after: {}", translation);
-                            
                             // log::info!("direction after first bound is {}", translation.normalize());
     
                             // log::info!("translation len after first reject is {}", translation.length());
                         }
     
                         if prev_normal.dot(translation) < 0.0 {
+
+                            let (bounce, new_friction) = get_bounce_and_friction(
+                                position + probable_transltaion_dir * THRESHOLD,
+                                static_objects,
+                                stickiness
+                            );
+
+                            friction = friction.max(new_friction);
 
                             let current_velocity = self.current_velocity;
     
@@ -325,7 +318,7 @@ impl KinematicCollider {
 
                             let absorbed_velocity = new_velocity - current_velocity;
 
-                            new_velocity += absorbed_velocity * prev_pos_bounce_coefficient;
+                            new_velocity += absorbed_velocity * bounce;
 
                             let diff = new_velocity - current_velocity;
 
@@ -338,15 +331,8 @@ impl KinematicCollider {
 
                             // new_translation += absorbed_transaltion * prev_pos_bounce_coefficient;
 
-                            log::warn!("coef: {}", coef);
-
-                            log::warn!("translation before: {}", translation);
-
                             translation += diff * coef;
 
-                            log::warn!("translation after: {}", translation);
-                            
-    
                             // log::info!("direction after second bound is {}", translation.normalize());
     
                             // log::info!("translation len after second reject is {}", translation.length());    
@@ -354,11 +340,13 @@ impl KinematicCollider {
     
                     } else {
 
-                        let bounce_coefficient = get_bounce_coefficient(
+                        let (bounce, new_friction) = get_bounce_and_friction(
                             position + probable_transltaion_dir * THRESHOLD,
                             static_objects,
                             stickiness
                         );
+
+                        friction = friction.max(new_friction);
 
                         let current_velocity = self.current_velocity;
 
@@ -368,7 +356,7 @@ impl KinematicCollider {
 
                         let absorbed_velocity = new_velocity - current_velocity;
 
-                        new_velocity += absorbed_velocity * bounce_coefficient;
+                        new_velocity += absorbed_velocity * bounce;
 
                         let diff = new_velocity - current_velocity;
 
@@ -379,15 +367,7 @@ impl KinematicCollider {
 
                         // let absorbed_transaltion = new_translation - translation;
 
-                        // new_translation += absorbed_transaltion * bounce_coefficient;                        log::warn!("translation before: {}", translation);
-                        
-                        log::warn!("coef: {}", coef);
-
-                        log::warn!("translation before: {}", translation);
-
                         translation += diff * coef;
-
-                        log::warn!("translation after: {}", translation);
 
                         // log::info!("direction after bound is {}", translation.normalize());
     
@@ -408,8 +388,14 @@ impl KinematicCollider {
                 position += translation.clamp_length_max(collider_radius - THRESHOLD);
     
                 if translation.length() < collider_radius - THRESHOLD {
+
+                    if is_collide {
+                        self.current_velocity *= 1.0 - delta * friction.max(self.friction_on_air);
+                    } else {
+                        self.current_velocity *= 1.0 - delta*self.friction_on_air;
+                    }
     
-                    return (position - start_position, is_collide);
+                    return position - start_position;
     
                 } else {
                     translation = translation.clamp_length_max(
@@ -455,13 +441,13 @@ impl KinematicCollider {
             counter += 1;
         }
 
-        // let diff = position - start_position;
-
-        // let velocity = diff * 1.0/delta;
-
-        // self.current_velocity = velocity;
+        if is_collide {
+            self.current_velocity *= 1.0 - delta * friction.max(self.friction_on_air);
+        } else {
+            self.current_velocity *= 1.0 - delta*self.friction_on_air;
+        }
     
-        (position - start_position, is_collide)
+        position - start_position
     }
 }
 
@@ -649,66 +635,83 @@ fn get_dist(p: Vec4, static_objects: &StaticCollidersData, stickiness: f32) -> f
 }
 
 
-fn get_bounce_coefficient(
+fn get_bounce_and_friction(
     p: Vec4,
     static_objects: &StaticCollidersData,
     stickiness: f32,
-) -> f32 {
+) -> (f32, f32) {
     let mut d = MAX_DIST;
 
     let mut bounce_coeficient = 0.0;
+    let mut friction = 0.0;
 
     for collider in static_objects.cubes.iter_stickiness() {
-        let new_d = smin(
-            d,
-            sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
-            stickiness
+        let new_d = sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
+        
+        let dd = smin(d, new_d, stickiness);
+        
+        let coef = ((dd - d) / (new_d - d)).clamp(0.0, 1.0);
+        bounce_coeficient = bounce_coeficient.lerp(
+            collider.bounce_rate,
+            coef
+        );
+        friction = friction.lerp(
+            collider.friction,
+            coef
         );
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-
-            d = new_d;
-        }
+        d = dd;
     }
     for collider in static_objects.inf_w_cubes.iter_stickiness() {
-        let new_d = smin(
-            d,
-            sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness,
-            stickiness
+        let new_d = sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness;
+
+        let dd = smin(d, new_d, stickiness);
+        
+        let coef = ((dd - d) / (new_d - d)).clamp(0.0, 1.0);
+        bounce_coeficient = bounce_coeficient.lerp(
+            collider.bounce_rate,
+            coef
+        );
+        friction = friction.lerp(
+            collider.friction,
+            coef
         );
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-
-            d = new_d;
-        }
+        d = dd;
     }
     for collider in static_objects.spheres.iter_stickiness() {
-        let new_d = smin(
-            d,
-            sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness,
-            stickiness
+        let new_d = sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness;
+
+        let dd = smin(d, new_d, stickiness);
+        
+        let coef = ((dd - d) / (new_d - d)).clamp(0.0, 1.0);
+        bounce_coeficient = bounce_coeficient.lerp(
+            collider.bounce_rate,
+            coef
+        );
+        friction = friction.lerp(
+            collider.friction,
+            coef
         );
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-
-            d = new_d;
-        }
+        d = dd;
     }
     for collider in static_objects.sph_cubes.iter_stickiness() {
-        let new_d = smin(
-            d,
-            sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
-            stickiness
+        let new_d = sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
+
+        let dd = smin(d, new_d, stickiness);
+        
+        let coef = ((dd - d) / (new_d - d)).clamp(0.0, 1.0);
+        bounce_coeficient = bounce_coeficient.lerp(
+            collider.bounce_rate,
+            coef
+        );
+        friction = friction.lerp(
+            collider.friction,
+            coef
         );
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-
-            d = new_d;
-        }
+        d = dd;
     }
     
 
@@ -717,6 +720,7 @@ fn get_bounce_coefficient(
 
         if new_d < d {
             bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
         };
@@ -726,6 +730,7 @@ fn get_bounce_coefficient(
 
         if new_d < d {
             bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
         };
@@ -735,6 +740,7 @@ fn get_bounce_coefficient(
 
         if new_d < d {
             bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
         };
@@ -744,12 +750,13 @@ fn get_bounce_coefficient(
 
         if new_d < d {
             bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
         };
     }
 
-    bounce_coeficient
+    (bounce_coeficient, friction)
 }
 
 #[inline]

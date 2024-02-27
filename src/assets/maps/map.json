@@ -3,7 +3,7 @@
 
     "defaults" : {
         "is_positive": true,
-        "friction": 0.35,
+        "friction": 0.8,
         "bounce_rate": 0.0,
         "material": {
             "color" : {
@@ -93,13 +93,15 @@
                 },
                 "size" : {
                     "x": 1.2,
-                    "y": 2.0,
+                    "y": 3.0,
                     "z": 1.0,
                     "w": 2.0
                 },
                 "roundness" : 0.3,
                 "stickiness" : true,
-                "is_positive" : true
+                "bounce_rate" : 2.0,
+                "is_positive" : true,
+                "friction" : 0.0
             }
         },
         {
@@ -145,7 +147,7 @@
                     "z": 30.0
                 },
                 "is_positive" : true,
-                "friction": 0.0,
+                "friction": 3.4,
                 "material": {
                     "color" : {
                         "red": 1.0,
@@ -485,7 +487,8 @@
                     "z": 10.2,
                     "w": 10.2
                 },
-                "stickiness" : true
+                "stickiness" : true,
+                "friction" : 0.0
             }
         },
         {

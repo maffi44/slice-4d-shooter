@@ -1,10 +1,10 @@
 {
     "player_sphere_radius": 0.6,
 
-    "player_max_speed" : 24.0,
-    "player_max_accel" : 32.0,
+    "player_max_speed" : 44.0,
+    "player_max_accel" : 42.0,
 
-    "air_speed_mult" : 0.3,
+    "air_speed_mult" : 0.15,
 
     "player_jump_y_speed" : 16.0,
     "player_jump_w_speed" : 16.0,
@@ -13,5 +13,5 @@
 
     "gravity_y_speed" : 0.3,
     "gravity_w_speed" : 0.3,
-    "friction_on_air" : 1.0
+    "friction_on_air" : 0.2
 }

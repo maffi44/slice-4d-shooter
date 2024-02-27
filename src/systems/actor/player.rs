@@ -381,6 +381,10 @@ impl Player {
         self.inner_state.collider.transform.rotation = new_rotation
     }
 
+    pub fn get_collider_radius(&self) -> f32 {
+        self.inner_state.collider.get_collider_radius()
+    }
+
     pub fn set_gun_to_1_slot(
         &mut self,
         device: Box<dyn Device>
