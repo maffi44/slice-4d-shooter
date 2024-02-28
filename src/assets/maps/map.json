@@ -99,34 +99,8 @@
                                 "z": 1.0,
                                 "w": 1.0
                             },
-                            "stickiness" : true
-                        }
-                    },
-                    {
-                        "cube" : {
-                            "transform" : {
-                                "position" : {
-                                    "x": 0.5,
-                                    "y": 0.0 ,
-                                    "z": 0.0,
-                                    "w": 0.0
-                                },
-                                "rotation" : {
-                                    "yz": 0.0,
-                                    "xz": 0.0,
-                                    "xy": 0.0,
-                                    "wx": 0.0,
-                                    "wy": 0.0,
-                                    "wz": 0.0
-                                }
-                            },
-                            "size" : {
-                                "x": 0.5,
-                                "y": 1.0,
-                                "z": 0.5,
-                                "w": 0.5
-                            },
-                            "stickiness" : true
+                            "stickiness" : false,
+                            "friction" : 4.0
                         }
                     }
                 ]

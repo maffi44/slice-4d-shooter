@@ -75,7 +75,7 @@ impl Engine {
 
         log::info!("engine systems: global_players_settings init");
 
-        let render = RenderSystem::new(window, &world).await;
+        let render = RenderSystem::new(window, &world, &time).await;
 
         log::info!("engine systems: render init");
 

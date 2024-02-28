@@ -217,7 +217,7 @@ fn main_loop(
 
     systems.world.send_messages_and_process_commands(&mut systems.engine_handle);
 
-    systems.render.render_frame(&mut systems.world, &mut systems.time);
+    systems.render.render_frame(&systems.world, &systems.time);
 
     systems.input.reset_input();
 

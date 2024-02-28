@@ -1,9 +1,7 @@
 use glam::Vec4;
 
 use crate::systems::{
-    engine_handle::EngineHandle,
-    physics::{colliders_container::PhysicalElement, static_collider::StaticCollider},
-    transform::Transform, world::static_object::StaticObject
+    engine_handle::EngineHandle, physics::{colliders_container::PhysicalElement, static_collider::StaticCollider}, render::VisualElement, transform::Transform, world::static_object::StaticObject
 };
 
 use super::{Actor, ActorID, Component};
@@ -89,8 +87,13 @@ impl Actor for WonderingActor {
         Some(physical_element)
     }
 
-    fn get_visual_element(&self) {
+    fn get_visual_element(&self) -> Option<VisualElement> {
+        let visual_element = VisualElement {
+            transfrom: &self.transform,
+            static_objects: &self.static_objects
+        };
 
+        Some(visual_element)
     }
 
     fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {

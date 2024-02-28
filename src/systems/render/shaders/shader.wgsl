@@ -1,10 +1,10 @@
 // Fragment shader
 
-struct CamerUniform {
+struct CameraUniform {
     cam_pos: vec4<f32>,
     cam_rot: mat4x4<f32>,
-    aspect: f32,
 }
+
 
 struct Shape {
     pos: vec4<f32>,
@@ -65,35 +65,40 @@ struct ShapesMetadata {
 
     s_neg_sph_cubes_start: u32,
     s_neg_sph_cubes_amount: u32,
-
-
-    empty_bytes: vec3<f32>,
-    shapes_stickiness: f32,
 }
 
-@group(0) @binding(0) var<uniform> camera_uni: CamerUniform;
-@group(0) @binding(1) var<uniform> time: vec4<f32>;
-@group(0) @binding(2) var<uniform> shapes_metadata: ShapesMetadata;
+struct OtherDynamicData {
+    shapes_arrays_metadata: ShapesMetadata,
+    camera_data: CameraUniform,
+    empty_byte: f32,
+    stickiness: f32,
+    screen_aspect: f32,
+    time: f32,   
+}
 
-@group(0) @binding(3) var<uniform> normal_shapes: array<Shape, 256>;
-@group(0) @binding(4) var<uniform> negatives_shapes: array<Shape, 256>;
-@group(0) @binding(5) var<uniform> stickiness_shapes: array<Shape, 256>;
-@group(0) @binding(6) var<uniform> neg_stickiness_shapes: array<Shape, 256>;
+struct OtherStaticData {
+    shapes_arrays_metadata: ShapesMetadata,
+    empty_bytes: vec3<f32>,
+    stickiness: f32 
+}
 
-// @group(0) @binding(7) var<uniform> spheres: array<Shape, 256>;
-// @group(0) @binding(8) var<uniform> s_spheres: array<Shape, 256>;
-// @group(0) @binding(9) var<uniform> neg_spheres: array<Shape, 256>;
-// @group(0) @binding(10) var<uniform> s_neg_spheres: array<Shape, 256>;
 
-// @group(1) @binding(0) var<uniform> inf_cubes: array<Shape, 256>;
-// @group(1) @binding(1) var<uniform> s_inf_cubes: array<Shape, 256>;
-// @group(1) @binding(2) var<uniform> neg_inf_cubes: array<Shape, 256>;
-// @group(1) @binding(3) var<uniform> s_neg_inf_cubes: array<Shape, 256>;
+@group(0) @binding(0) var<uniform> normal_shapes: array<Shape, 256>;
+@group(0) @binding(1) var<uniform> negatives_shapes: array<Shape, 256>;
+@group(0) @binding(2) var<uniform> stickiness_shapes: array<Shape, 256>;
+@group(0) @binding(3) var<uniform> neg_stickiness_shapes: array<Shape, 256>;
 
-// @group(1) @binding(4) var<uniform> sph_cubes: array<Shape, 256>;
-// @group(1) @binding(5) var<uniform> s_sph_cubes: array<Shape, 256>;
-// @group(1) @binding(6) var<uniform> neg_sph_cubes: array<Shape, 256>;
-// @group(1) @binding(7) var<uniform> s_neg_sph_cubes: array<Shape, 256>;
+@group(0) @binding(4) var<uniform> static_data: OtherStaticData;
+
+
+@group(0) @binding(5) var<uniform> dyn_normal_shapes: array<Shape, 256>;
+@group(0) @binding(6) var<uniform> dyn_negatives_shapes: array<Shape, 256>;
+@group(0) @binding(7) var<uniform> dyn_stickiness_shapes: array<Shape, 256>;
+@group(0) @binding(8) var<uniform> dyn_neg_stickiness_shapes: array<Shape, 256>;
+
+@group(0) @binding(9) var<uniform> dynamic_data: OtherDynamicData;
+
+
 
 const MAX_STEPS: i32 = 200;
 const PI: f32 = 3.1415926535897;
@@ -206,65 +211,133 @@ fn map(p: vec4<f32>) -> f32 {
     // coof = fract(coof);
 
     // p.x = coof * 20 - 10;
-
+ //
+    // Static shapes
+    //
 
     // stickiness shapes
-    for (var i = shapes_metadata.s_cubes_start; i < shapes_metadata.s_cubes_amount + shapes_metadata.s_cubes_start; i++) {
-        d = smin(d, sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, shapes_metadata.shapes_stickiness);
+    for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
+        d = smin(d, sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
     }
-    for (var i = shapes_metadata.s_spheres_start; i < shapes_metadata.s_spheres_amount + shapes_metadata.s_spheres_start; i++) {
-        d = smin(d, sd_sphere(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.x) - stickiness_shapes[i].roundness, shapes_metadata.shapes_stickiness);
+    for (var i = static_data.shapes_arrays_metadata.s_spheres_start; i < static_data.shapes_arrays_metadata.s_spheres_amount + static_data.shapes_arrays_metadata.s_spheres_start; i++) {
+        d = smin(d, sd_sphere(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.x) - stickiness_shapes[i].roundness, static_data.stickiness);
     }
-    for (var i = shapes_metadata.s_sph_cubes_start; i < shapes_metadata.s_sph_cubes_amount + shapes_metadata.s_sph_cubes_start; i++) {
-        d = smin(d, sd_sph_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, shapes_metadata.shapes_stickiness);
+    for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+        d = smin(d, sd_sph_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
     }
-    for (var i = shapes_metadata.s_inf_cubes_start; i < shapes_metadata.s_inf_cubes_amount + shapes_metadata.s_inf_cubes_start; i++) {
-        d = smin(d, sd_inf_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.xyz) - stickiness_shapes[i].roundness, shapes_metadata.shapes_stickiness);
+    for (var i = static_data.shapes_arrays_metadata.s_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_inf_cubes_amount + static_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+        d = smin(d, sd_inf_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.xyz) - stickiness_shapes[i].roundness, static_data.stickiness);
     }
 
     // normal shapes
-    for (var i = shapes_metadata.cubes_start; i < shapes_metadata.cubes_amount + shapes_metadata.cubes_start; i++) {
+    for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
         d = min(d, sd_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
     }
-    for (var i = shapes_metadata.spheres_start; i < shapes_metadata.spheres_amount + shapes_metadata.spheres_start; i++) {
+    for (var i = static_data.shapes_arrays_metadata.spheres_start; i < static_data.shapes_arrays_metadata.spheres_amount + static_data.shapes_arrays_metadata.spheres_start; i++) {
         d = min(d, sd_sphere(p - normal_shapes[i].pos, normal_shapes[i].size.x) - normal_shapes[i].roundness);
     }
-    for (var i = shapes_metadata.sph_cubes_start; i < shapes_metadata.sph_cubes_amount + shapes_metadata.sph_cubes_start; i++) {
+    for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
         d = min(d, sd_sph_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
     }
-    for (var i = shapes_metadata.inf_cubes_start; i < shapes_metadata.inf_cubes_amount + shapes_metadata.inf_cubes_start; i++) {
+    for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
         d = min(d, sd_inf_box(p - normal_shapes[i].pos, normal_shapes[i].size.xyz) - normal_shapes[i].roundness);
     }
 
     // negative stickiness shapes
     var dd = MAX_DIST;
 
-    for (var i = shapes_metadata.s_neg_cubes_start; i < shapes_metadata.s_neg_cubes_amount + shapes_metadata.s_neg_cubes_start; i++) {
-        dd = smin(dd, sd_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, shapes_metadata.shapes_stickiness);
+    for (var i = static_data.shapes_arrays_metadata.s_neg_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_cubes_amount + static_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+        dd = smin(dd, sd_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
     }
-    for (var i = shapes_metadata.s_neg_spheres_start; i < shapes_metadata.s_neg_spheres_amount + shapes_metadata.s_neg_spheres_start; i++) {
-        dd = smin(dd, sd_sphere(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.x) - neg_stickiness_shapes[i].roundness, shapes_metadata.shapes_stickiness);
+    for (var i = static_data.shapes_arrays_metadata.s_neg_spheres_start; i < static_data.shapes_arrays_metadata.s_neg_spheres_amount + static_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+        dd = smin(dd, sd_sphere(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.x) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
     }
-    for (var i = shapes_metadata.s_neg_sph_cubes_start; i < shapes_metadata.s_neg_sph_cubes_amount + shapes_metadata.s_neg_sph_cubes_start; i++) {
-        dd = smin(dd, sd_sph_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, shapes_metadata.shapes_stickiness);
+    for (var i = static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+        dd = smin(dd, sd_sph_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
     }
-    for (var i = shapes_metadata.s_neg_inf_cubes_start; i < shapes_metadata.s_neg_inf_cubes_amount + shapes_metadata.s_neg_inf_cubes_start; i++) {
-        dd = smin(dd, sd_inf_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.xyz) - neg_stickiness_shapes[i].roundness, shapes_metadata.shapes_stickiness);
+    for (var i = static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
+        dd = smin(dd, sd_inf_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.xyz) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
     }
     d = max(d, -dd);
 
     //negative shapes
-    for (var i = shapes_metadata.neg_cubes_start; i < shapes_metadata.neg_cubes_amount + shapes_metadata.neg_cubes_start; i++) {
+    for (var i = static_data.shapes_arrays_metadata.neg_cubes_start; i < static_data.shapes_arrays_metadata.neg_cubes_amount + static_data.shapes_arrays_metadata.neg_cubes_start; i++) {
         d = max(d, -(sd_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
     }
-    for (var i = shapes_metadata.neg_spheres_start; i < shapes_metadata.neg_spheres_amount + shapes_metadata.neg_spheres_start; i++) {
+    for (var i = static_data.shapes_arrays_metadata.neg_spheres_start; i < static_data.shapes_arrays_metadata.neg_spheres_amount + static_data.shapes_arrays_metadata.neg_spheres_start; i++) {
         d = max(d, -(sd_sphere(p - negatives_shapes[i].pos, negatives_shapes[i].size.x) - negatives_shapes[i].roundness));
     }
-    for (var i = shapes_metadata.neg_sph_cubes_start; i < shapes_metadata.neg_sph_cubes_amount + shapes_metadata.neg_sph_cubes_start; i++) {
+    for (var i = static_data.shapes_arrays_metadata.neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.neg_sph_cubes_amount + static_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
         d = max(d, -(sd_sph_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
     }
-    for (var i = shapes_metadata.neg_inf_cubes_start; i < shapes_metadata.neg_inf_cubes_amount + shapes_metadata.neg_inf_cubes_start; i++) {
+    for (var i = static_data.shapes_arrays_metadata.neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.neg_inf_cubes_amount + static_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
         d = max(d, -(sd_inf_box(p - negatives_shapes[i].pos, negatives_shapes[i].size.xyz) - negatives_shapes[i].roundness));
+    }
+
+
+
+
+   
+    //
+    // Dynamic shapes
+    //
+
+    for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
+        d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, dynamic_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
+        d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, dynamic_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+        d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, dynamic_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+        d = smin(d, sd_inf_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.xyz) - dyn_stickiness_shapes[i].roundness, dynamic_data.stickiness);
+    }
+
+    // normal shapes
+    for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
+        d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.spheres_start; i < dynamic_data.shapes_arrays_metadata.spheres_amount + dynamic_data.shapes_arrays_metadata.spheres_start; i++) {
+        d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+        d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.inf_cubes_amount + dynamic_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+        d = min(d, sd_inf_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.xyz) - dyn_normal_shapes[i].roundness);
+    }
+
+    // negative stickiness shapes
+    var ddd = MAX_DIST;
+
+    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+        ddd = smin(ddd, sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness, dynamic_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_amount + dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+        ddd = smin(ddd, sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness, dynamic_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+        ddd = smin(ddd, sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness, dynamic_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
+        ddd = smin(ddd, sd_inf_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.xyz) - dyn_neg_stickiness_shapes[i].roundness, dynamic_data.stickiness);
+    }
+    d = max(d, -dd);
+
+    //negative shapes
+    for (var i = dynamic_data.shapes_arrays_metadata.neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_cubes_start; i++) {
+        d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount + dynamic_data.shapes_arrays_metadata.neg_spheres_start; i++) {
+        d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+        d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
+        d = max(d, -(sd_inf_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.xyz) - dyn_negatives_shapes[i].roundness));
     }
 
     return d;
@@ -349,12 +422,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // uv.x = in.position.y / 2.0;
     // uv.y = in.position.x / 2.0;
     var uv: vec2<f32> = in.position.xy * 0.7;
-    uv.x *= camera_uni.aspect;
+    uv.x *= dynamic_data.screen_aspect;
 
     var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
-    ray_direction *= camera_uni.cam_rot;
+    ray_direction *= dynamic_data.camera_data.cam_rot;
 
-    let camera_position = camera_uni.cam_pos;
+    let camera_position = dynamic_data.camera_data.cam_pos;
 
     let cam_pos: vec4<f32> = vec4<f32>(camera_position);
 

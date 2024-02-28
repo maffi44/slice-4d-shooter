@@ -7,7 +7,7 @@ use player::Player;
 use super::{
     engine_handle::EngineHandle, physics::{
         area::Area, colliders_container::PhysicalElement, dynamic_collider::DynamicCollider, kinematic_collider::KinematicCollider, static_collider::StaticCollider
-    }, transform::Transform
+    }, render::VisualElement, transform::Transform
 };
 
 
@@ -25,7 +25,7 @@ pub trait Actor {
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {None}
 
-    fn get_visual_element(&self) {}
+    fn get_visual_element(&self) -> Option<VisualElement> {None}
 
     fn get_id(&self) -> Option<ActorID>;
     
@@ -106,7 +106,7 @@ impl Actor for ActorWrapper {
         }
     }
 
-    fn get_visual_element(&self) {
+    fn get_visual_element(&self) -> Option<VisualElement>{
         match self {
             ActorWrapper::Player(actor) => {
                 actor.get_visual_element()

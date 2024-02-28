@@ -1,86 +1,92 @@
 pub mod render_data;
 mod renderer;
 
-use crate::systems::render::render_data::TimeUniform;
-
-use self::render_data::CameraUniform;
+use self::render_data::RenderData;
 
 use super::{
-    actor::{player::Player, ActorWrapper}, time::TimeSystem, world::World
+    time::TimeSystem,
+    transform::Transform,
+    world::{
+        static_object::StaticObject,
+        World
+    }
 };
 
 use renderer::Renderer;
-use render_data::FrameRenderData;
 use winit::window::Window;
-use glam::{Vec4, Mat4};
+
+
+
+pub struct VisualElement<'a> {
+    pub transfrom: &'a Transform,
+    pub static_objects: &'a Vec<StaticObject>,
+}
+
+
 
 pub struct RenderSystem {
+    render_data: RenderData,
     pub window: Window,
     renderer: Renderer,
-    aspect: f32,
 }
+
+
 
 impl RenderSystem {
     pub async fn new(
         window: Window,
         world: &World,
+        time: &TimeSystem,
     ) -> Self {
-
-        let aspect = {
-            let size = window.inner_size();
-            size.width as f32 / size.height as f32
-        };
-
-        let renderer = Renderer::new(&window, world).await;
-
+        
+        let render_data = RenderData::new(world, time, &window);
+        
+        let renderer = Renderer::new(&window, &render_data).await;
+        
         log::info!("render system: renderer init");
-
+        
         RenderSystem {
             window,
             renderer,
-            aspect,
+
+            render_data,
         }
     }
 
-    pub fn render_frame(&mut self, world: &mut World, time: &mut TimeSystem) {
-        
-        let cam_pos;
-        let cam_rot;
-        
-        if let Some(actor) = world.actors.get(&world.main_camera_from) {
-            if let ActorWrapper::Player(main_player) = actor {
-                cam_pos = main_player.get_position() + Vec4::Y * main_player.get_collider_radius() * 0.98;
-                cam_rot = main_player.get_rotation_matrix();
-            } else {
-                panic!("main camera is connected to the actor that is not a Player")
-            }
-        } else {
-            panic!("main camera is not connected to the player")
-        }
 
-        let mut rot_mat_slice: [f32;16] = [0.0; 16];
 
-        cam_rot.write_cols_to_slice(&mut rot_mat_slice);
+    pub fn render_frame(&mut self, world: &World, time: &TimeSystem) {
 
-        let render_data = FrameRenderData {
-            camera_uniform: CameraUniform {
-                cam_pos: cam_pos.into(),
-                cam_rot: rot_mat_slice,
-                aspect: [self.aspect, 0.0, 0.0, 0.0],
-            },
-            time: TimeUniform::new_val(time.timestamp_of_main_loop_start.elapsed().as_secs_f32()),
-        };
+        self.render_data.update_dynamic_render_data(world, time, &self.window);
 
         self.renderer.queue.write_buffer(
-            &self.renderer.camera_buffer,
+            &self.renderer.other_dynamic_data,
             0,
-            bytemuck::cast_slice(&[render_data.camera_uniform]),
+            bytemuck::cast_slice(&[self.render_data.dynamic_data.other_dynamic_data]),
         );
 
         self.renderer.queue.write_buffer(
-            &self.renderer.time_buffer,
+            &self.renderer.dynamic_normal_shapes_buffer,
             0,
-            bytemuck::cast_slice(&[render_data.time]),
+            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
+        );
+
+        self.renderer.queue.write_buffer(
+            &self.renderer.dynamic_negative_shapes_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.negative.as_slice()),
+        );
+
+        self.renderer.queue.write_buffer(
+            &self.renderer.dynamic_stickiness_shapes_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
+        );
+
+        self.renderer.queue.write_buffer(
+            &self.renderer.dynamic_neg_stickiness_shapes_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
         );
 
         if let Err(err) = self.renderer.render(&self.window) {
@@ -96,13 +102,10 @@ impl RenderSystem {
         }
     }
 
+
+
     pub fn resize_frame_buffer(&mut self) {
         self.renderer.resize(self.window.inner_size());
-
-        self.aspect = {
-            let size = self.window.inner_size();
-            size.width as f32 / size.height as f32
-        };
     }
-
 }
+
