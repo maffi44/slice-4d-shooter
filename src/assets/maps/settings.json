@@ -1,5 +1,5 @@
 {
-    "player_sphere_radius": 0.6,
+    "player_sphere_radius": 0.5,
 
     "player_max_speed" : 44.0,
     "player_max_accel" : 42.0,

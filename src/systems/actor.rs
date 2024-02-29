@@ -2,12 +2,23 @@ pub mod player;
 pub mod diamond;
 pub mod wandering_actor;
 
-use player::Player;
+use wandering_actor::WanderingActor;
+use player::{
+    PLayerMessages,
+    Player,
+};
 
 use super::{
-    engine_handle::EngineHandle, physics::{
-        area::Area, colliders_container::PhysicalElement, dynamic_collider::DynamicCollider, kinematic_collider::KinematicCollider, static_collider::StaticCollider
-    }, render::VisualElement, transform::Transform
+    engine_handle::EngineHandle,
+    render::VisualElement,
+    transform::Transform,
+    physics::{
+        area::Area,
+        colliders_container::PhysicalElement,
+        dynamic_collider::DynamicCollider,
+        kinematic_collider::KinematicCollider,
+        static_collider::StaticCollider
+    },
 };
 
 
@@ -34,7 +45,7 @@ pub trait Actor {
 
 pub enum ActorWrapper {
     Player(Player),
-    WonderingActor(WonderingActor),
+    WonderingActor(WanderingActor),
     Diamond,
     Exit,
 }
@@ -169,8 +180,6 @@ pub enum CommonActorsMessages {
     EnableCollider(bool),
     IncrementPosition(Vec4),
 }
-
-use self::{player::PLayerMessages, wandering_actor::WonderingActor};
 
 pub enum SpecificActorMessage {
     PLayerMessages(PLayerMessages),

@@ -1,4 +1,7 @@
-use crate::systems::actor::wandering_actor::WonderingActor;
+use crate::systems::actor::wandering_actor::{
+    WanderingActor,
+    WonderingActorMovementType,
+};
 use crate::systems::actor::ActorWrapper;
 use crate::systems::physics::static_collider;
 use crate::systems::physics::{
@@ -489,8 +492,106 @@ fn parse_json_into_transform(shape: &Value, shape_name: &str) -> Transform {
         );
     
     let position = Vec4::new(x as f32, y as f32, z as f32, w as f32);
+
+    let json_scale = json_transform
+        .get("scale");
+
+    if json_scale.is_none() {
+
+        return Transform::new_from_pos(position);
+    }
+
+    let json_scale = json_scale.expect(
+        &format!
+        (
+            "Wrong JSON map format, scale property is not exist in transform in {}",
+            shape_name
+        )
+    )
+    .as_object()
+    .expect(
+        &format!
+        (
+            "Wrong JSON map format, scale property is not json object in {}",
+            shape_name
+        )
+    );
+            
+    let x = json_scale
+        .get("x")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, x property is not exist in transform in {}",
+                shape_name
+            )
+        )
+        .as_f64()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, value of x property of transform property is not float number type in {}",
+                shape_name
+            )
+        );
+
+    let y = json_scale
+        .get("y")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, y property is not exist in transform in{}",
+                shape_name
+            )
+        )
+        .as_f64()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, value of y property of transform property is not float number type in {}",
+                shape_name
+            )
+        );
+
+    let z = json_scale
+        .get("z")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, z property is not exist in transform in {}",
+                shape_name
+            )
+        )
+        .as_f64()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, value of z property of transform property is not float number type in {}",
+                shape_name
+            )
+        );
+
+    let w = json_scale
+        .get("w")
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, w property is not exist in transform in {}",
+                shape_name
+            )
+        )
+        .as_f64()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, value of w property of transform property is not float number type in {}",
+                shape_name
+            )
+        );
     
-    Transform::new_from_vec4(position)
+    let scale = Vec4::new(x as f32, y as f32, z as f32, w as f32);
+    
+    Transform::new_from_pos_and_scale(position, scale)
 }
 
 
@@ -921,7 +1022,7 @@ fn parse_json_actors(
 }
 
 
-fn parse_wandering_actor(actor_value: &Value, defaults: &DefaultStaticObjectSettings) -> WonderingActor {
+fn parse_wandering_actor(actor_value: &Value, defaults: &DefaultStaticObjectSettings) -> WanderingActor {
 
     let actor_object = actor_value
         .as_object()
@@ -941,6 +1042,26 @@ fn parse_wandering_actor(actor_value: &Value, defaults: &DefaultStaticObjectSett
         .as_f64()
         .expect("Wrong JSON map format, travel_time in wandering_actor must be float number")
         as f32;
+    
+    let movement_type = actor_object
+        .get("movement_type")
+        .expect("Wrong JSON map format, wandering_actor must have movement_type property")
+        .as_str()
+        .expect("Wrong JSON map format, movement_type in wandering_actor must be string value");
+
+    let movement_type = {
+        match movement_type {
+            "linear" => {
+                WonderingActorMovementType::Linear
+            },
+            "nonlinear" => {
+                WonderingActorMovementType::NonLinear
+            },
+            _ => {
+                panic!("Wrong JSON map format, {} it is not allowed movement_type in wandering actor", movement_type);
+            }
+        }
+    };
 
     let static_objects_value = actor_object
         .get("static_objects")
@@ -949,10 +1070,11 @@ fn parse_wandering_actor(actor_value: &Value, defaults: &DefaultStaticObjectSett
     let static_objects = parse_json_static_objects(static_objects_value, defaults);
 
 
-    WonderingActor::new(
+    WanderingActor::new(
         transform,
         static_objects,
         second_target,
-        travel_time
+        travel_time,
+        movement_type
     )
 }

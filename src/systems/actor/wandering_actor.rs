@@ -1,29 +1,45 @@
 use glam::Vec4;
 
 use crate::systems::{
-    engine_handle::EngineHandle, physics::{colliders_container::PhysicalElement, static_collider::StaticCollider}, render::VisualElement, transform::Transform, world::static_object::StaticObject
+    engine_handle::EngineHandle,
+    render::VisualElement,
+    transform::Transform,
+    world::static_object::StaticObject,
+    physics::{
+        colliders_container::PhysicalElement,
+        static_collider::StaticCollider
+    },
 };
+
+const PI: f32 = 3.1415926535897;
 
 use super::{Actor, ActorID, Component};
 
-pub struct WonderingActor {
+pub enum WonderingActorMovementType {
+    Linear,
+    NonLinear,
+}
+
+pub struct WanderingActor {
     transform: Transform,
     id: Option<ActorID>,
     static_objects: Vec<StaticObject>,
     static_colliders: Vec<StaticCollider>,
 
+    movement_type: WonderingActorMovementType,
     targets: [Transform; 2],
     travel_time: f32,
-    current_target: usize,
+    current_target_index: usize,
     current_travel_time: f32,
 }
 
-impl WonderingActor {
+impl WanderingActor {
     pub fn new(
         transform: Transform,
         static_objects: Vec<StaticObject>,
         second_target: Transform,
-        travel_time: f32
+        travel_time: f32,
+        movement_type: WonderingActorMovementType,
     ) -> Self {
 
         let mut static_colliders = Vec::new();
@@ -40,13 +56,14 @@ impl WonderingActor {
 
         let current_travel_time = 0_f32;
 
-        WonderingActor {
+        WanderingActor {
             transform,
             static_colliders,
             static_objects,
             travel_time,
+            movement_type,
             targets,
-            current_target,
+            current_target_index: current_target,
             current_travel_time,
             id: None
         }
@@ -55,7 +72,7 @@ impl WonderingActor {
 
 const THRESHOLD: f32 = 0.01;
 
-impl Actor for WonderingActor {
+impl Actor for WanderingActor {
     fn get_transform(&self) -> &Transform {
         &self.transform
     }
@@ -98,32 +115,61 @@ impl Actor for WonderingActor {
 
     fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
         
-        let current_target = self.targets[self.current_target];
+        let current_target = self.targets[self.current_target_index];
 
         let previous_target = self.targets[
             // current_target always is 0 or 1.
             // if current_target is 0 we get 1
             // and if current_target is 1 we get 0
-            (self.current_target as i32 - 1 as i32).abs() as usize
-            ];
+            (self.current_target_index as i32 - 1 as i32).abs() as usize
+        ];
         
-        let mut speed = current_target.get_position() - previous_target.get_position();
-
-        speed /= self.travel_time;
-
-        self.transform.increment_position(speed * delta);
-
-        let distance_for_target = self
-            .transform
-            .get_position()
-            .distance(
-                current_target.get_position()
-            );
+        match self.movement_type {
+            WonderingActorMovementType::Linear => {
+                
+                let mut movement_speed = current_target.get_position() - previous_target.get_position();
         
-        if distance_for_target < THRESHOLD {
+                let mut scaling_speed = current_target.get_scale() - previous_target.get_scale();
+
+                movement_speed /= self.travel_time;
+                
+                scaling_speed /= self.travel_time;
+
+                self.transform.increment_position(movement_speed * delta);
+                self.transform.increment_scale(scaling_speed * delta);
+
+            },
+            WonderingActorMovementType::NonLinear => {
+                let coefficient = {
+                    f32::sin((self.current_travel_time / self.travel_time) * (PI/2.0))
+                };
+
+                let new_position = previous_target.get_position().lerp(
+                    current_target.get_position(),
+                    coefficient
+                );
+
+                let new_scale = previous_target.get_scale().lerp(
+                    current_target.get_scale(),
+                    coefficient
+                );
+
+                self.transform.set_position(new_position);
+                self.transform.set_scale(new_scale);
+            }
+        }
+        
+
+
+        if self.current_travel_time >= self.travel_time {
             // change target
             // change 0 to 1 or 1 to 0
-            self.current_target = (self.current_target as i32 - 1 as i32).abs() as usize;
-        } 
+            self.current_target_index = (self.current_target_index as i32 - 1 as i32).abs() as usize;
+
+            self.current_travel_time = 0.0;
+
+        } else {
+            self.current_travel_time += delta;
+        };
     }
 }

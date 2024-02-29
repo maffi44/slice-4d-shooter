@@ -244,7 +244,7 @@ fn init(systems: &mut Engine) {
             from: 0_u64,
             message: MessageType::CommonActorsMessages(
                 CommonActorsMessages::SetTransform(
-                    Transform::new_from_vec4(systems.world.level.spawn_position),
+                    Transform::new_from_pos(systems.world.level.spawn_position),
                 )
             )
         }
