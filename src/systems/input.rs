@@ -38,12 +38,13 @@ pub struct ActionsFrameState {
     pub move_left: Action,
     pub w_down: Action,
     pub w_up: Action,
-    pub crouch: Action,   
+    pub explore_w: Action,   
     pub mode_1: Action,
     pub mode_2: Action,  
     pub mode_3: Action,  
     pub jump: Action,
-    pub fire: Action,
+    pub first_mouse: Action,
+    pub second_mouse: Action,
     pub mouse_axis: Vec2,
 }
 
@@ -57,7 +58,8 @@ impl ActionsFrameState {
         let mut w_down = Action::new();
         let mut w_up = Action::new();
         let mut jump = Action::new();
-        let mut fire = Action::new();
+        let mut first_mouse = Action::new();
+        let mut second_mouse = Action::new();
         let mut mode_1 = Action::new();
         let mut mode_2 = Action::new();
         let mut mode_3 = Action::new();
@@ -69,9 +71,10 @@ impl ActionsFrameState {
                 ButtonActions::MoveBackward => move_backward = action.clone(),
                 ButtonActions::MoveRight => move_right = action.clone(),
                 ButtonActions::MoveLeft => move_left = action.clone(),
-                ButtonActions::Crouch => crouch = action.clone(),
+                ButtonActions::ExploreW => crouch = action.clone(),
                 ButtonActions::Jump => jump = action.clone(),
-                ButtonActions::Fire => fire = action.clone(),
+                ButtonActions::FirstMouse => first_mouse = action.clone(),
+                ButtonActions::SecondMouse => second_mouse = action.clone(),
                 ButtonActions::WDown => w_down = action.clone(),
                 ButtonActions::WUp => w_up = action.clone(),
                 ButtonActions::ModeOne => mode_1 = action.clone(),
@@ -85,11 +88,12 @@ impl ActionsFrameState {
             move_backward,
             move_right,
             move_left,
-            crouch,
+            explore_w: crouch,
             w_down,
             w_up,
             jump,
-            fire,
+            first_mouse,
+            second_mouse,
             mode_1,
             mode_2,
             mode_3,
@@ -106,7 +110,8 @@ impl ActionsFrameState {
         let w_up = Action::new();
         let w_down = Action::new();
         let jump = Action::new();
-        let fire = Action::new();
+        let first_mouse = Action::new();
+        let second_mouse = Action::new();
         let mode_1 = Action::new();
         let mode_2 = Action::new();
         let mode_3 = Action::new();
@@ -117,11 +122,12 @@ impl ActionsFrameState {
             move_backward,
             move_right,
             move_left,
-            crouch,
+            explore_w: crouch,
             w_down,
             w_up,
             jump,
-            fire,
+            first_mouse,
+            second_mouse,
             mode_1,
             mode_2,
             mode_3,
@@ -146,14 +152,15 @@ enum ButtonActions {
     MoveBackward,
     MoveRight,
     MoveLeft,
-    Crouch,
+    ExploreW,
     Jump,
     WUp,
     WDown,
     ModeOne,
     ModeTwo,
     ModeThree,
-    Fire,
+    FirstMouse,
+    SecondMouse,
 }
 
 // for future user's settings
@@ -163,8 +170,11 @@ enum ButtonActionsLinkedKeys {
     MoveRight(KeyCode),
     MoveLeft(KeyCode),
     Jump(KeyCode),
-    Fire(KeyCode),
+    FirstMouse(KeyCode),
+    SecondMouse(KeyCode),
 }
+
+
 pub struct InputSystem {
     actions_table: HashMap<SomeButton, (ButtonActions, Action)>,
     mouse_axis: Vec2,
@@ -193,7 +203,7 @@ impl InputSystem {
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::ShiftLeft),
-            (ButtonActions::Crouch, Action::new())
+            (ButtonActions::ExploreW, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Space),
@@ -221,7 +231,11 @@ impl InputSystem {
         );
         actions_table.insert(
             SomeButton::MouseButton(MouseButton::Left),
-            (ButtonActions::Fire, Action::new())
+            (ButtonActions::FirstMouse, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::MouseButton(MouseButton::Right),
+            (ButtonActions::SecondMouse, Action::new())
         );
         InputSystem {
             actions_table,

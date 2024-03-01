@@ -81,7 +81,7 @@ pub struct Player {
 
     inner_state: PlayerInnerState,
 
-    view_angle: Vec2,
+    view_angle: Vec4,
 
     active_hands_slot: ActiveHandsSlot, 
 
@@ -98,6 +98,9 @@ pub struct Player {
     player_settings: PlayerSettings,
 
     no_collider_veclocity: Vec4,
+
+    explore_w_position: f32,
+    explore_w_coefficient: f32,
 
     pub master: InputMaster,
 }
@@ -196,22 +199,66 @@ impl Actor for Player {
             }   
         };
 
-        let prev_x = self.view_angle.x;
-        let prev_y = self.view_angle.y;
+        let second_mouse_b_pressed = input.second_mouse.is_action_pressed();
 
-        let x = input.mouse_axis.x + prev_x;
-        let y = input.mouse_axis.y + prev_y.clamp(-PI/2.0, PI/2.0);
+        let mut x = self.view_angle.x;
+        let mut y = self.view_angle.y;
+        let mut xw = self.view_angle.z;
+        let mut yw = self.view_angle.w;
 
-        self.set_rotation_matrix(Mat4::from_cols_slice(&[
+        if second_mouse_b_pressed {
+            xw = input.mouse_axis.x + xw;
+            yw = (input.mouse_axis.y + yw).clamp(-PI/2.0, PI/2.0);
+            
+        } else {
+            xw *= 1.0 - delta * 3.0;
+            yw *= 1.0 - delta * 3.0;
+
+            x = input.mouse_axis.x + x;
+            y = (input.mouse_axis.y + y).clamp(-PI/2.0, PI/2.0);
+        }
+
+
+        let normal_rotation = Mat4::from_cols_slice(&[
             x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
             0.0,        y.cos(),            -y.sin(),           0.0,
             -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
             0.0,        0.0,                0.0,                1.0
-        ]));
+        ]);
+
+        // let xw_rotation = Mat4::from_cols_slice(&[
+        //     yw.cos(),    0.0,    0.0,    yw.sin(),
+        //     0.0,        1.0,    0.0,    0.0,
+        //     0.0,        0.0,    1.0,    0.0,
+        //     -yw.sin(),   0.0,    0.0,    yw.cos()
+        // ]);
+
+        let yw_rotation = Mat4::from_cols_slice(&[
+            1.0,    0.0,    0.0,        0.0,
+            0.0,    1.0,    0.0,        0.0,
+            0.0,    0.0,    yw.cos(),   yw.sin(),
+            0.0,    0.0,    -yw.sin(),   yw.cos()
+        ]);
+
+
+        self.set_rotation_matrix(yw_rotation * normal_rotation);
+
+        // self.set_rotation_matrix(Mat4::from_cols_slice(&[
+        //     y.cos(),    0.0,    0.0,    y.sin(),
+        //     0.0,        1.0,    0.0,    0.0,
+        //     0.0,        0.0,    1.0,    0.0,
+        //     -y.sin(),   0.0,    0.0,    y.cos()
+        // ]));
+
+        // self.set_rotation_matrix(Mat4::from_cols_slice(&[
+        //     1.0,    0.0,        0.0,    0.0,
+        //     0.0,    y.cos(),    0.0,    y.sin(),
+        //     0.0,    0.0,        1.0,    0.0,
+        //     0.0,    -y.sin(),   0.0,    y.cos()
+        // ]));
 
         let xz_player_rotation = Mat4::from_rotation_y(x);
-
-        self.view_angle = Vec2::new(x, y);
+        self.view_angle = Vec4::new(x, y, xw, yw);  
 
         // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
 
@@ -301,15 +348,41 @@ impl Actor for Player {
             }
         }
 
-        if input.crouch.is_action_just_pressed() {
-            self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-            self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+        const MAX_EXPLORE_DIST: f32 = 2.5;
+        const EXPLORE_SPEED: f32 = 0.7;
+
+        if self.explore_w_position != 0.0 {
+            if self.explore_w_position > 0.0 {
+                if self.explore_w_position > MAX_EXPLORE_DIST {
+                    self.explore_w_position = delta * -EXPLORE_SPEED;
+                } else {
+                    self.explore_w_position += delta * EXPLORE_SPEED;
+                }
+            } else {
+                if self.explore_w_position < -MAX_EXPLORE_DIST {
+                    self.explore_w_position = 0.0;
+                } else {
+                    self.explore_w_position -= delta * EXPLORE_SPEED;
+                }
+            }
+        }
+
+        if input.explore_w.is_action_just_pressed() {
+            // self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+            // self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+
+            if self.explore_w_position == 0.0 {
+                self.explore_w_position = delta * self.player_settings.max_speed;
+            }
         };
+
+        self.explore_w_coefficient =
+            (MAX_EXPLORE_DIST - self.explore_w_position.abs()) / MAX_EXPLORE_DIST;
 
         if self.inner_state.collider.is_enable {
 
             if self.is_gravity_y_enabled {
-                movement_vec = xz_player_rotation * movement_vec;
+                movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
 
                 if self.inner_state.collider.is_on_ground {
                     self.inner_state.collider.set_wish_direction(
@@ -324,6 +397,7 @@ impl Actor for Player {
                 }
 
                 self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
+
             } else {
                movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
 
@@ -387,12 +461,22 @@ impl Player {
 
             master,
 
+            explore_w_position: 0.0,
+            explore_w_coefficient: 0.0,
+
             no_collider_veclocity: Vec4::ZERO,
 
-            view_angle: Vec2::ZERO,
+            view_angle: Vec4::ZERO,
         }
     }
 
+    pub fn get_explore_w_position(&self) -> f32 {
+        self.explore_w_position
+    }
+
+    pub fn get_explore_w_coefficient(&self) -> f32 {
+        self.explore_w_coefficient
+    }
 
     pub fn get_position(&self) -> Vec4 {
         self.inner_state.transform.get_position()

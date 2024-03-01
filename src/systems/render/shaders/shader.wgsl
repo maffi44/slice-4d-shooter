@@ -70,7 +70,9 @@ struct ShapesMetadata {
 struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     camera_data: CameraUniform,
-    empty_byte: f32,
+    empty_byte: vec3<f32>,
+    explore_w_pos: f32,
+    explore_w_coef: f32,
     stickiness: f32,
     screen_aspect: f32,
     time: f32,   
@@ -79,7 +81,7 @@ struct OtherDynamicData {
 struct OtherStaticData {
     shapes_arrays_metadata: ShapesMetadata,
     empty_bytes: vec3<f32>,
-    stickiness: f32 
+    stickiness: f32
 }
 
 
@@ -191,18 +193,18 @@ fn smin(a: f32, b: f32, k: f32) -> f32
 }
 
 fn get_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32) -> vec3<f32> {
-    let color = get_color_at_point(start_pos + direction * distance);
+    let color = get_color_at_point(start_pos + direction * distance, distance);
 
     return color;
 }
 
 
-fn get_color_at_point(p: vec4<f32>) -> vec3<f32> {
+fn get_color_at_point(p: vec4<f32>, distance: f32) -> vec3<f32> {
 
     var d = MAX_DIST;
     var color = vec3(0.0, 0.0, 0.0);
 
-    // stickiness shapes
+    // static stickiness shapes
     for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
         let new_d = sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness;
         
@@ -248,45 +250,7 @@ fn get_color_at_point(p: vec4<f32>) -> vec3<f32> {
         d = dd;
     }
 
-    // normal shapes
-    for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
-        let new_d = sd_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness;
-
-        if new_d < d {
-            color = normal_shapes[i].color;
-            d = new_d;
-        }
-    }
-    for (var i = static_data.shapes_arrays_metadata.spheres_start; i < static_data.shapes_arrays_metadata.spheres_amount + static_data.shapes_arrays_metadata.spheres_start; i++) {
-        let new_d = sd_sphere(p - normal_shapes[i].pos, normal_shapes[i].size.x) - normal_shapes[i].roundness;
-
-        if new_d < d {
-            color = normal_shapes[i].color;
-            d = new_d;
-        }
-    }
-    for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-        let new_d = sd_sph_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness;
-
-        if new_d < d {
-            color = normal_shapes[i].color;
-            d = new_d;
-        }
-    }
-    for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
-        let new_d = sd_inf_box(p - normal_shapes[i].pos, normal_shapes[i].size.xyz) - normal_shapes[i].roundness;
-
-        if new_d < d {
-            color = normal_shapes[i].color;
-            d = new_d;
-        }
-    }
-
-    //
-    // Dynamic shapes
-    //
-
-    // stickiness shapes
+    // dynamic stickiness shapes
     for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
         let new_d = sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness;
         
@@ -332,7 +296,41 @@ fn get_color_at_point(p: vec4<f32>) -> vec3<f32> {
         d = dd;
     }
 
-    // normal shapes
+    // static normal shapes
+    for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
+        let new_d = sd_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness;
+
+        if new_d < d {
+            color = normal_shapes[i].color;
+            d = new_d;
+        }
+    }
+    for (var i = static_data.shapes_arrays_metadata.spheres_start; i < static_data.shapes_arrays_metadata.spheres_amount + static_data.shapes_arrays_metadata.spheres_start; i++) {
+        let new_d = sd_sphere(p - normal_shapes[i].pos, normal_shapes[i].size.x) - normal_shapes[i].roundness;
+
+        if new_d < d {
+            color = normal_shapes[i].color;
+            d = new_d;
+        }
+    }
+    for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+        let new_d = sd_sph_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness;
+
+        if new_d < d {
+            color = normal_shapes[i].color;
+            d = new_d;
+        }
+    }
+    for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+        let new_d = sd_inf_box(p - normal_shapes[i].pos, normal_shapes[i].size.xyz) - normal_shapes[i].roundness;
+
+        if new_d < d {
+            color = normal_shapes[i].color;
+            d = new_d;
+        }
+    }
+
+    // dynamic normal shapes
     for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
         let new_d = sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness;
 
@@ -365,6 +363,14 @@ fn get_color_at_point(p: vec4<f32>) -> vec3<f32> {
             d = new_d;
         }
     }
+
+    // if distance + 1.0 > MAX_DIST {
+    //     let c = fract(p * 0.01);
+
+    //     color.x = mix(color.x, 0.0, c.x + c.w);
+    //     color.y = mix(color.y, 0.0, c.y + c.w);
+    //     color.z = mix(color.z, 0.0, c.z + c.w);
+    // }
 
     return color;
 }
@@ -448,7 +454,7 @@ fn map(p: vec4<f32>) -> f32 {
     d = max(d, -dd);
 
     // dynamic negative stickiness shapes
-    var ddd = MAX_DIST;
+    var ddd = dd;
 
     for (var i = dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
         ddd = smin(ddd, sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
@@ -495,23 +501,36 @@ fn map(p: vec4<f32>) -> f32 {
     return d;
 }
 
-fn get_normal(p: vec4<f32>) -> vec3<f32> {
-    var e: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
-    var a: vec4<f32> = p + e.yxxz;
-    var b: vec4<f32> = p + e.xyxz;
-    var c: vec4<f32> = p + e.xxyz;
-    var d: vec4<f32> = p + e.yyyz;
+fn get_normal(p: vec4<f32>) -> vec4<f32> {
+    var h: vec3<f32> = vec3<f32>(0.000, 0.001, -0.001);
+
+    var a: vec4<f32> = p + h.yxxx;
+    var b: vec4<f32> = p + h.xyxx;
+    var c: vec4<f32> = p + h.xxyx;
+    var d: vec4<f32> = p + h.xxxy;
+    var e: vec4<f32> = p + h.zxxx;
+    var f: vec4<f32> = p + h.xzxx;
+    var g: vec4<f32> = p + h.xxzx;
+    var k: vec4<f32> = p + h.xxxz;
 
     var fa: f32 = map(a);
     var fb: f32 = map(b);
     var fc: f32 = map(c);
     var fd: f32 = map(d);
+    var fe: f32 = map(e);
+    var ff: f32 = map(f);
+    var fg: f32 = map(g);
+    var fk: f32 = map(k);
 
     return normalize(
-        e.yxx * fa +
-        e.xyx * fb +
-        e.xxy * fc +
-        e.yyy * fd
+        h.yxxx * fa +
+        h.xyxx * fb +
+        h.xxyx * fc +
+        h.xxxy * fd +
+        h.zxxx * fe +
+        h.xzxx * ff +
+        h.xxzx * fg +
+        h.xxxz * fk
     );
 }
 
@@ -583,19 +602,50 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction); 
 
-    let normal: vec3<f32> = get_normal(dist_and_depth.x * ray_direction + camera_position);
+    let normal: vec4<f32> = get_normal(dist_and_depth.x * ray_direction + camera_position);
 
-    let shade_coefficient: f32 = dot(normal, normalize(vec3<f32>(0.2, 1., 0.5)));
+    let shade_coefficient: f32 = dot(normal, normalize(vec4<f32>(0.2, 1., 0.5, 0.1)));
 
-    let shade = mix(0.31, 0.9, shade_coefficient);
+    let shade = mix(0.1, 1.0, shade_coefficient);
 
     var color = get_color(camera_position, ray_direction, dist_and_depth.x);
 
-    color *= shade * 1.33;
-
-    // var color: vec3<f32> = vec3<f32>(shade * 1.33) + (dist_and_depth.x / MAX_DIST);
+    color *= shade * 1.2;
 
     color = mix(clamp(color, vec3(0.0), vec3(1.0)), vec3<f32>(0.9, 1., 1.0), dist_and_depth.x / MAX_DIST);
+
+    if dynamic_data.explore_w_pos != 0.0 {
+
+        let dist_and_depth_explore: vec2<f32> = ray_march(
+            camera_position + vec4(0.0, 0.0, 0.0, dynamic_data.explore_w_pos), ray_direction
+        );
+
+        var explore_color = vec3(3.0, 0.1, 6.0);
+        if dynamic_data.explore_w_pos < 0.0 {
+            explore_color = vec3(0.1, 0.3, 16.0);
+        }
+
+        explore_color *= dynamic_data.explore_w_coef * dynamic_data.explore_w_coef;
+
+        let e_normal: vec4<f32> = get_normal(
+            dist_and_depth_explore.x * ray_direction +
+            (camera_position + vec4(0.0, 0.0, 0.0, dynamic_data.explore_w_pos))
+        );
+
+        var e_shade_coefficient: f32 = dot(e_normal, normalize(vec4<f32>(0.2, 1., 0.5, 0.1)));
+
+        e_shade_coefficient = clamp(e_shade_coefficient, 0.0, 0.6);
+
+        explore_color *= e_shade_coefficient * 2.0;
+
+        color = clamp(color, vec3(0.0), vec3(1.0));
+
+        color += explore_color;
+        // if dist_and_depth.x >= dist_and_depth_explore.x {
+        // } else {
+        //     color = mix(color, explore_color, 0.3);
+        // }
+    }
 
     return vec4<f32>(color, 1.0);
 }

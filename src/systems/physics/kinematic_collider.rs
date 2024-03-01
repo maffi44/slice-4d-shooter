@@ -132,8 +132,6 @@ impl KinematicCollider {
                 shapes_stickiness
             );
 
-            log::warn!("POS: {}", transform.get_position());
-
             transform.increment_position(position_increment);
 
             // if position_increment.length().is_normal() {

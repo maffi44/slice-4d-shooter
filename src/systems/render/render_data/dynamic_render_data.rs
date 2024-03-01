@@ -423,7 +423,9 @@ impl DynamicRenderData {
 pub struct OtherDynamicData {
     dynamic_shapes_arrays_metadata: ShapesArraysMetadata,
     camera_data: CameraUniform,
-    empty_byte: f32,
+    empty_byte: [f32; 3],
+    explore_w_pos: f32,
+    explore_w_coef: f32,
     stickiness: f32,
     screen_aspect: f32,
     time: f32,   
@@ -440,17 +442,26 @@ impl OtherDynamicData {
         
         let cam_pos;
         let cam_rot;
+
+        let explore_w_pos;
+        let explore_w_coef;
         
         if let Some(actor) = world.actors.get(&world.main_camera_from) {
             if let ActorWrapper::Player(main_player) = actor {
                 cam_pos = main_player.get_position() + Vec4::Y * main_player.get_collider_radius() * 0.98;
                 cam_rot = main_player.get_rotation_matrix();
+
+                explore_w_pos = main_player.get_explore_w_position();
+                explore_w_coef = main_player.get_explore_w_coefficient();
             } else {
                 panic!("main camera is connected to the actor that is not a Player")
             }
         } else {
             panic!("main camera is not connected to the player")
         }
+
+        self.explore_w_pos = explore_w_pos;
+        self.explore_w_coef = explore_w_coef;
 
         self.camera_data = CameraUniform {
             cam_pos: cam_pos.to_array(),
@@ -474,7 +485,9 @@ impl Default for OtherDynamicData {
         OtherDynamicData {
             dynamic_shapes_arrays_metadata: ShapesArraysMetadata::default(),
             camera_data: CameraUniform::default(),
-            empty_byte: 0.0,
+            empty_byte: [0.0, 0.0, 0.0],
+            explore_w_pos: 0.0,
+            explore_w_coef: 0.0,
             stickiness: 0.5,
             screen_aspect: 1.0,
             time: 0.0,
