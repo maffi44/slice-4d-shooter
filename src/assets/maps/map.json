@@ -3,28 +3,28 @@
 
     "defaults" : {
         "is_positive": true,
-        "friction": 3.1,
+        "friction": 0.1,
         "bounce_rate": 0.0,
         "material": {
             "color" : {
-                "red": 0.8,
-                "green": 0.8,
-                "blue": 0.8
+                "red": 0.75,
+                "green": 0.55,
+                "blue": 0.85
             }
         },
-        "roundness": 0.0,
+        "roundness": 0.05,
         "stickiness": false
     },
 
-    "all_shapes_stickiness_radius": 3.5,
+    "all_shapes_stickiness_radius": 3.2,
 
     "spawn_position" : {
         "transform" : {
             "position" : {
                 "x": 1.0,
-                "y": 1.2,
-                "z": 0.5,
-                "w": 0.0
+                "y": 2.0,
+                "z": 0.0,
+                "w": 1.0
             }
         }
     },
@@ -34,155 +34,40 @@
         "upper_cup" : 10.0
     },
 
+
+    "transform" : {
+        "position" : {
+            "x": -18.0,
+            "y": 2.0,
+            "z": 0.0,
+            "w": 0.0
+        },
+        "rotation" : {
+            "yz": 0.0,
+            "xz": 0.0,
+            "xy": 0.0,
+            "wx": 0.0,
+            "wy": 0.0,
+            "wz": 0.0
+        }
+    },
+    "size" : {
+        "x": 7.5,
+        "y": 1.8,
+        "z": 2.2,
+        "w": 10.2
+    },
+
+
     "actors" : [
         {
             "wandering_actor" : {
-                "comment": "platform moving up and down",
+                
                 "transform" : {
                     "position" : {
-                        "x": -10.0,
+                        "x": -10,
                         "y": 2.0 ,
-                        "z": 25.0,
-                        "w": 0.0
-                    },
-                    "scale" : {
-                        "x": 1.0,
-                        "y": 1.0 ,
-                        "z": 1.0,
-                        "w": 1.0
-                    }
-                },
-
-                "target" : {
-                    "transform" : {
-                        "position" : {
-                            "x": -10.0,
-                            "y": 10.0 ,
-                            "z": 25.0,
-                            "w": 0.0
-                        },
-                        "scale" : {
-                            "x": 1.0,
-                            "y": 1.0 ,
-                            "z": 1.0,
-                            "w": 1.0
-                        }
-                    }
-                },
-
-                "travel_time" : 3.0,
-
-                "movement_type" : "linear",
-
-                "static_objects" : [
-                    {
-                        "cube" : {
-                            "transform" : {
-                                "position" : {
-                                    "x": 0.0,
-                                    "y": 0.0,
-                                    "z": 0.0,
-                                    "w": 0.0
-                                },
-                                "rotation" : {
-                                    "yz": 0.0,
-                                    "xz": 0.0,
-                                    "xy": 0.0,
-                                    "wx": 0.0,
-                                    "wy": 0.0,
-                                    "wz": 0.0
-                                }
-                            },
-                            "size" : {
-                                "x": 2.0,
-                                "y": 0.5,
-                                "z": 2.0,
-                                "w": 2.0
-                            },
-                            "is_positive" : true
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "wandering_actor" : {
-                "comment": "platform moving up and down",
-                "transform" : {
-                    "position" : {
-                        "x": -10.0,
-                        "y": 2.0 ,
-                        "z": 20.0,
-                        "w": 0.0
-                    },
-                    "scale" : {
-                        "x": 1.0,
-                        "y": 1.0 ,
-                        "z": 1.0,
-                        "w": 1.0
-                    }
-                },
-
-                "target" : {
-                    "transform" : {
-                        "position" : {
-                            "x": -10.0,
-                            "y": 10.0 ,
-                            "z": 20.0,
-                            "w": 0.0
-                        },
-                        "scale" : {
-                            "x": 1.0,
-                            "y": 1.0 ,
-                            "z": 1.0,
-                            "w": 1.0
-                        }
-                    }
-                },
-
-                "travel_time" : 3.0,
-
-                "movement_type" : "nonlinear",
-
-                "static_objects" : [
-                    {
-                        "cube" : {
-                            "transform" : {
-                                "position" : {
-                                    "x": 0.0,
-                                    "y": 0.0,
-                                    "z": 0.0,
-                                    "w": 0.0
-                                },
-                                "rotation" : {
-                                    "yz": 0.0,
-                                    "xz": 0.0,
-                                    "xy": 0.0,
-                                    "wx": 0.0,
-                                    "wy": 0.0,
-                                    "wz": 0.0
-                                }
-                            },
-                            "size" : {
-                                "x": 2.0,
-                                "y": 0.5,
-                                "z": 2.0,
-                                "w": 2.0
-                            },
-                            "is_positive" : true
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "wandering_actor" : {
-                "comment": "sph_cube moving on the w axis",
-                "transform" : {
-                    "position" : {
-                        "x": -10.0,
-                        "y": 2.0 ,
-                        "z": 15.0,
+                        "z": 0.0,
                         "w": 2.0
                     },
                     "scale" : {
@@ -196,31 +81,31 @@
                 "target" : {
                     "transform" : {
                         "position" : {
-                            "x": -10.0,
+                            "x": -10,
                             "y": 2.0 ,
-                            "z": 15.0,
-                            "w": -2.0
+                            "z": 0.0,
+                            "w": 2.0
                         },
                         "scale" : {
                             "x": 1.0,
-                            "y": 1.0 ,
-                            "z": 1.0,
-                            "w": 1.0
+                            "y": 0.0 ,
+                            "z": 0.0,
+                            "w": 0.0
                         }
                     }
                 },
 
-                "travel_time" : 3.0,
+                "travel_time" : 3,
 
-                "movement_type" : "linear",
+                "movement_type" : "nonlinear",
 
                 "static_objects" : [
                     {
-                        "sph_cube" : {
+                        "cube" : {
                             "transform" : {
                                 "position" : {
                                     "x": 0.0,
-                                    "y": 0.0,
+                                    "y": 0.0 ,
                                     "z": 0.0,
                                     "w": 0.0
                                 },
@@ -234,13 +119,16 @@
                                 }
                             },
                             "size" : {
-                                "x": 2.0,
-                                "y": 2.0,
-                                "z": 2.0,
+                                "x": 3.0,
+                                "y": 1.5,
+                                "z": 1.5,
                                 "w": 2.0
                             },
-                            "is_positive" : true
+                            "roundness" : 0.3,
+                            "is_positive" : false,
+                            "stickiness" : true
                         }
+                        
                     }
                 ]
             }
@@ -249,41 +137,47 @@
     
     "static_objects": [
         {
-            "cube_w_inf" : {
-                "comment": "floor",
+            "sphere" : {
+                "transform" : {
+                    "position" : {
+                        "x": 2.0,
+                        "y": 1.5 ,
+                        "z": 10.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0
+                },
+                "stickiness" : true,
+                "is_positive" : false
+            }
+        },
+        {
+            "sphere" : {
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": -25.0,
-                        "z": -60.0,
+                        "y": 1.0 ,
+                        "z": 10.0,
                         "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
                     }
                 },
                 "size" : {
-                    "x": 30.0,
-                    "y": 25.0,
-                    "z": 90.0
+                    "x": 1.1
                 },
-                "stickiness": false,
-                "is_positive" : true
+                "stickiness" : true,
+                "is_positive" : false,
+                "roundness" : 0.0
             }
         },
         {
-            "cube_w_inf" : {
-                "comment": "x border high",
+            "cube" : {
                 "transform" : {
                     "position" : {
-                        "x": 31.0,
-                        "y": 2.5,
-                        "z": -60.0,
+                        "x": 1.0,
+                        "y": 1.5 ,
+                        "z": 11.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -296,21 +190,25 @@
                     }
                 },
                 "size" : {
-                    "x": 2.0,
-                    "y": 5.0,
-                    "z": 90.0
+                    "x": 1.2,
+                    "y": 2.0,
+                    "z": 1.0,
+                    "w": 2.0
                 },
-                "is_positive" : true
+                "roundness" : 0.3,
+                "stickiness" : true,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "friction" : 0.0
             }
         },
         {
-            "cube_w_inf" : {
-                "comment": "x border low",
+            "cube" : {
                 "transform" : {
                     "position" : {
-                        "x": -31.0,
-                        "y": 2.5,
-                        "z": -60.0,
+                        "x": -7.0,
+                        "y": 0.25 ,
+                        "z": 8.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -323,112 +221,77 @@
                     }
                 },
                 "size" : {
-                    "x": 2.0,
-                    "y": 5.0,
-                    "z": 90.0
+                    "x": 3.2,
+                    "y": 0.5,
+                    "z": 3.0,
+                    "w": 3.0
                 },
-                "is_positive" : true
+                "bounce_rate" : 1.0
             }
         },
         {
             "cube_w_inf" : {
-                "comment": "z border high",
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": 2.5,
-                        "z": 31.0,
+                        "y": 0.0 ,
+                        "z": 15.0,
                         "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
                     }
                 },
                 "size" : {
-                    "x": 30.0,
-                    "y": 5.0,
-                    "z": 2.0
+                    "x": 15.0,
+                    "y": 0.2,
+                    "z": 30.0
                 },
-                "is_positive" : true
-            }
-        },
-        {
-            "cube_w_inf" : {
-                "comment": "Wall",
-                "transform" : {
-                    "position" : {
-                        "x": 0.0,
-                        "y": 2.5,
-                        "z": -31.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 30.0,
-                    "y": 5.0,
-                    "z": 2.0
-                },
+                "is_positive" : true,
+                "friction": 0.1,
                 "material": {
-                    "color": {
-                        "comment": "Pastel Lime",
-                        "red": 0.7,
-                        "green": 0.9,
+                    "color" : {
+                        "red": 0.3,
+                        "green": 0.3,
                         "blue": 0.6
                     }
                 },
-                "stickiness": true,
-                "is_positive" : true
+                "stickiness" : true
             }
         },
         {
             "cube_w_inf" : {
-                "comment": "z border low",
+                "transform" : {
+                    "position" : {
+                        "x": 30.0,
+                        "y": 1.0 ,
+                        "z": 15.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 15.0,
+                    "y": 0.2,
+                    "z": 30.0
+                },
+                "is_positive" : true,
+                "friction": 0.0,
+                "bounce_rate" : 0.5,
+                "material": {
+                    "color" : {
+                        "red": 1.0,
+                        "green": 1.0,
+                        "blue": 1.0
+                    }
+                },
+                "stickiness" : false
+            }
+        },
+        {
+            "cube" : {
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": 2.5,
-                        "z": -151.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 30.0,
-                    "y": 5.0,
-                    "z": 2.0
-                },
-                "is_positive" : true
-            }
-        },
-        {
-            "cube" : {
-                "comment": "w border high",
-                "transform" : {
-                    "position" : {
-                        "x": 1.0,
                         "y": 0.0,
                         "z": 0.0,
-                        "w": 30.0
+                        "w": -2.1
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -440,23 +303,21 @@
                     }
                 },
                 "size" : {
-                    "x": 30.0,
-                    "y": 30.0,
-                    "z": 30.0,
+                    "x": 40.0,
+                    "y": 40.0,
+                    "z": 40.0,
                     "w": 2.0
-                },
-                "is_positive" : true
+                }
             }
         },
         {
-            "cube" : {
-                "comment": "w border low",
+            "sphere" : {
                 "transform" : {
                     "position" : {
-                        "x": 1.0,
-                        "y": 0.0,
-                        "z": 0.0,
-                        "w": -30.0
+                        "x": -2.0,
+                        "y": 1.0,
+                        "z": 2.0,
+                        "w": -1.4
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -468,23 +329,41 @@
                     }
                 },
                 "size" : {
-                    "x": 30.0,
-                    "y": 30.0,
-                    "z": 30.0,
-                    "w": 2.0
-                },
-                "is_positive" : true
+                    "x": 1.4
+                }
             }
         },
         {
-            "cube" : {
-                "comment": "exhibit 1, cube that dissapears if w value is changed",
+            "sphere" : {
                 "transform" : {
                     "position" : {
-                        "x": 20.0,
+                        "x": 2.0,
+                        "y": 1.0,
+                        "z": 2.0,
+                        "w": 1.4
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.4
+                }
+            }
+        },
+        {
+            "sph_cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
                         "y": 2.0,
-                        "z": 25.0,
-                        "w": 0.0
+                        "z": 5.0,
+                        "w": -1.5
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -500,18 +379,42 @@
                     "y": 2.0,
                     "z": 2.0,
                     "w": 2.0
+                }
+            }
+        },
+        {
+            "sph_cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 4.0,
+                        "y": 2.0,
+                        "z": 5.0,
+                        "w": 1.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
                 },
-                "is_positive" : true
+                "size" : {
+                    "x": 2.0,
+                    "y": 2.0,
+                    "z": 2.0,
+                    "w": 2.0
+                }
             }
         },
         {
             "cube" : {
-                "comment": "exhibit 1.1, cube that dissapears if w value is changed and rounded",
                 "transform" : {
                     "position" : {
-                        "x": 20.0,
-                        "y": 2.0,
-                        "z": 15.0,
+                        "x": 6.0,
+                        "y": 1.5,
+                        "z": -4.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -525,22 +428,19 @@
                 },
                 "size" : {
                     "x": 1.5,
-                    "y": 1.5,
-                    "z": 1.5,
-                    "w": 1.5
-                },
-                "roundness": 0.65,
-                "is_positive" : true
+                    "y": 2.0,
+                    "z": 1.0,
+                    "w": 2.0
+                }
             }
         },
         {
             "cube" : {
-                "comment": "exhibit 1.2, cube that dissapears if w value is changed and small",
                 "transform" : {
                     "position" : {
-                        "x": 20.0,
-                        "y": 2.0,
-                        "z": 5.0,
+                        "x": 2.0,
+                        "y": 1.5,
+                        "z": -4.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -553,22 +453,72 @@
                     }
                 },
                 "size" : {
-                    "x": 0.5,
-                    "y": 0.5,
-                    "z": 0.5,
+                    "x": 1.5,
+                    "y": 2.0,
+                    "z": 1.0,
                     "w": 2.0
+                }
+            }
+        },
+        {
+            "sph_cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 2.0,
+                        "y": 1.5,
+                        "z": -4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
                 },
-                "is_positive" : true
+                "size" : {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 1.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -2.0,
+                        "y": 1.5,
+                        "z": -4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 2.0,
+                    "z": 1.0,
+                    "w": 2.0
+                }
             }
         },
         {
             "sphere" : {
-                "comment": "exhibit 2, sphere that dissapears if w value is changed",
                 "transform" : {
                     "position" : {
-                        "x": 10.0,
-                        "y": 2.0,
-                        "z": 25.0,
+                        "x": -2.0,
+                        "y": 1.5,
+                        "z": -5.2,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -581,22 +531,18 @@
                     }
                 },
                 "size" : {
-                    "x": 2.0,
-                    "y": 2.0,
-                    "z": 2.0,
-                    "w": 2.0
+                    "x": 3.0
                 },
-                "is_positive" : true
+                "is_positive" : false
             }
         },
         {
-            "sphere" : {
-                "comment": "exhibit 2.1a, sphere that dissapears if w value is changed and sticky",
+            "cube" : {
                 "transform" : {
                     "position" : {
-                        "x": 10.0,
-                        "y": 2.0,
-                        "z": 14.0,
+                        "x": -6.0,
+                        "y": 1.5,
+                        "z": -4.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -609,108 +555,20 @@
                     }
                 },
                 "size" : {
-                    "x": 2.0,
+                    "x": 1.5,
                     "y": 2.0,
-                    "z": 2.0,
+                    "z": 1.0,
                     "w": 2.0
-                },
-                "material": {
-                    "color": {
-                        "comment": "Red",
-                        "red": 0.5,
-                        "green": 0.0,
-                        "blue": 0.0
-                        }
-                },
-                "stickiness": true,
-                "is_positive" : true
-                
-            }
-        },
-        {
-            "sphere" : {
-                "comment": "exhibit 2.1b, sphere that dissapears if w value is changed and sticky",
-                "transform" : {
-                    "position" : {
-                        "x": 10.0,
-                        "y": 4.0,
-                        "z": 12.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 2.0,
-                    "z": 2.0,
-                    "w": 2.0
-                },
-                "material": {
-                    "color": {
-                        "comment": "Green",
-                        "red": 0.0,
-                        "green": 0.5,
-                        "blue": 0.0
-                        }
-                },
-                "stickiness": true,
-                "is_positive" : true
-                
-            }
-        },
-        {
-            "sphere" : {
-                "comment": "exhibit 2.1c, sphere that dissapears if w value is changed and sticky",
-                "transform" : {
-                    "position" : {
-                        "x": 10.0,
-                        "y": 2.0,
-                        "z": 10.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 2.0,
-                    "z": 2.0,
-                    "w": 2.0
-                },
-                "material": {
-                    "color": {
-                        "comment": "Blue",
-                        "red": 0.0,
-                        "green": 0.0,
-                        "blue": 0.5
-                        }
-                },
-                "stickiness": true,
-                "is_positive" : true
-                
+                }
             }
         },
         {
             "sph_cube" : {
-                "comment": "exhibit 3, sph_cube that dissapears if w value is changed",
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
-                        "y": 2.0,
-                        "z": 25.0,
+                        "x": -6.0,
+                        "y": 1.5,
+                        "z": -6.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -723,22 +581,21 @@
                     }
                 },
                 "size" : {
-                    "x": 2.0,
-                    "y": 2.0,
-                    "z": 2.0,
-                    "w": 2.0
+                    "x": 1.5,
+                    "y": 2.5,
+                    "z": 4.2,
+                    "w": 2.2
                 },
-                "is_positive" : true
+                "is_positive" : false
             }
         },
         {
-            "sph_cube" : {
-                "comment": "exhibit 3.1, sph_cube that dissapears if w value is changed and stretched on y axis",
+            "cube" : {
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
-                        "y": 2.0,
-                        "z": 15.0,
+                        "x": -20.0,
+                        "y": 0.0,
+                        "z": 0.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -751,22 +608,22 @@
                     }
                 },
                 "size" : {
-                    "x": 2.0,
-                    "y": 4.0,
-                    "z": 2.0,
-                    "w": 2.0
+                    "x": 10.1,
+                    "y": 10.2,
+                    "z": 10.2,
+                    "w": 10.2
                 },
-                "is_positive" : true
+                "stickiness" : true,
+                "friction" : 0.0
             }
         },
         {
             "sph_cube" : {
-                "comment": "exhibit 3.2, sph_cube that dissapears if w value is changed and stretched on z axis",
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
-                        "y": 2.0,
-                        "z": 10.0,
+                        "x": -11.0,
+                        "y": 6.0,
+                        "z": 9.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -779,23 +636,22 @@
                     }
                 },
                 "size" : {
-                    "x": 2.0,
-                    "y": 2.0,
-                    "z": 4.0,
-                    "w": 2.0
+                    "x": 3.1,
+                    "y": 3.2,
+                    "z": 3.2,
+                    "w": 3.6
                 },
-                "is_positive" : true
+                "is_positive" : false
             }
         },
         {
-            "sph_cube" : {
-                "comment": "exhibit 3.3, sph_cube that dissapears if w value is changed and stretched on x axis",
+            "cube" : {
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
+                        "x": -19.0,
                         "y": 2.0,
-                        "z": 5.0,
-                        "w": 0.0
+                        "z": 0.0,
+                        "w": 2.1
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -807,20 +663,20 @@
                     }
                 },
                 "size" : {
-                    "x": 4.0,
-                    "y": 2.0,
-                    "z": 2.0,
+                    "x": 7.0,
+                    "y": 1.8,
+                    "z": 2.2,
                     "w": 2.0
                 },
-                "is_positive" : true
+                "is_positive" : false,
+                "stickiness" : true
             }
         },
         {
-            "sph_cube" : {
-                "comment": "exhibit 3.3, sph_cube that dissapears if w value is changed and stretched on x and y axis",
+            "cube" : {
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
+                        "x": -25.0,
                         "y": 2.0,
                         "z": 0.0,
                         "w": 0.0
@@ -835,484 +691,11 @@
                     }
                 },
                 "size" : {
-                    "x": 4.0,
-                    "y": 4.0,
-                    "z": 2.0,
-                    "w": 2.0
-                },
-                "is_positive" : true
-            }
-        },
-        {
-            "sph_cube" : {
-                "comment": "exhibit 3.3, sph_cube that dissapears if w value is changed and stretched on x and z axis and big",
-                "transform" : {
-                    "position" : {
-                        "x": 0.0,
-                        "y": 2.0,
-                        "z": -15.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 20.0,
-                    "y": 10.0,
-                    "z": 20.0,
-                    "w": 10.0
-                },
-                "material": {
-                    "color" : {
-                        "red": 0.1,
-                        "green": 0.6,
-                        "blue": 0.1
-                    }
-                },
-                "stickiness": true,
-                "is_positive" : true
-            }
-        },
-        {
-            "cube" : {
-                "comment": "exhibit 5, platform with high bounce_rate",
-                "transform" : {
-                    "position" : {
-                        "x": -20.0,
-                        "y": 2.0,
-                        "z": 25.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 0.5,
-                    "z": 2.0,
-                    "w": 2.0
-                },
-                "bounce_rate": 1.0,
-                "is_positive" : true
-            }
-        },
-        {
-            "cube" : {
-                "comment": "exhibit 5.1, platform with high friction",
-                "transform" : {
-                    "position" : {
-                        "x": -20.0,
-                        "y": 7.0,
-                        "z": 15.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 0.5,
-                    "z": 2.0,
-                    "w": 2.0
-                },
-                "material": {
-                    "color" : {
-                        "red": 1.0,
-                        "green": 0.1,
-                        "blue": 0.1
-                    }
-                },
-                "friction": 10.0,
-                "is_positive" : true
-            }
-        },
-        {
-            "cube" : {
-                "comment": "exhibit 5.2a, a tunnel",
-                "transform" : {
-                    "position" : {
-                        "x": -20.0,
-                        "y": 2.0,
-                        "z": -10.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 4.0,
-                    "y": 4.0,
-                    "z": 15.0,
-                    "w": 2.0
-                },
-                "friction": 0.0,
-                "is_positive" : true
-            }
-        },
-        {
-            "cube" : {
-                "comment": "exhibit 5.2a, hole of the tunnel",
-                "transform" : {
-                    "position" : {
-                        "x": -20.0,
-                        "y": 2.5,
-                        "z": -12.1,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
+                    "x": 2.1,
                     "y": 2.0,
-                    "z": 22.1,
-                    "w": 2.0
+                    "z": 2.2,
+                    "w": 14.2
                 },
-                "roundness": 0.5,
-                "stickiness": true,
-                "is_positive" : false
-            }
-        },
-        {
-            "cube" : {
-                "comment": "hole",
-                "transform" : {
-                    "position" : {
-                        "x": -10.0,
-                        "y": 2.5,
-                        "z": -12.1,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 2.0,
-                    "z": 22.1,
-                    "w": 2.0
-                },
-                "roundness": 0.5,
-                "friction": 0.0,
-                "stickiness": true,
-                "is_positive" : false
-            }
-        },
-        {
-            "sph_cube" : {
-                "comment": "exhibit 3.3, sph_cube that dissapears if w value is changed and stretched on x and z axis and big",
-                "transform" : {
-                    "position" : {
-                        "x": 0.0,
-                        "y": 2.0,
-                        "z": -60.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 20.0,
-                    "y": 10.0,
-                    "z": 20.0,
-                    "w": 10.0
-                },
-                "material": {
-                    "color": {
-                        "comment": "Pale Turquoise",
-                        "red": 0.6,
-                        "green": 0.8,
-                        "blue": 0.7
-                    }
-                },
-                "stickiness": true,
-                "is_positive" : true
-            }
-        },
-        {
-            "cube" : {
-                "comment": "tunnel",
-                "transform" : {
-                    "position" : {
-                        "x": 0.0,
-                        "y": 2.7,
-                        "z": -55.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 2.0,
-                    "z": 10.0,
-                    "w": 5.0
-                },
-                "roundness": 0.5,
-                "stickiness": true,
-                "is_positive" : false
-            }
-        },
-        {
-            "cube" : {
-                "comment": "tunnel",
-                "transform" : {
-                    "position" : {
-                        "x": -5.0,
-                        "y": 2.7,
-                        "z": -60.0,
-                        "w": 7.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 10.0,
-                    "y": 2.0,
-                    "z": 2.0,
-                    "w": 5.0
-                },
-                "roundness": 0.5,
-                "stickiness": true,
-                "is_positive" : false
-            }
-        },
-        {
-            "cube" : {
-                "comment": "exhibit 6a, lower platform with high bounce_rate",
-                "transform" : {
-                    "position" : {
-                        "x": -20.0,
-                        "y": 2.0,
-                        "z": -55.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 0.5,
-                    "z": 2.0,
-                    "w": 2.0
-                },
-                "bounce_rate": 1.1,
-                "is_positive" : true
-            }
-        },
-        {
-            "cube" : {
-                "comment": "exhibit 6b, higher platform with high bounce_rate",
-                "transform" : {
-                    "position" : {
-                        "x": -20.0,
-                        "y": 10.0,
-                        "z": -55.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 3.0,
-                    "y": 0.5,
-                    "z": 3.0,
-                    "w": 2.0
-                },
-                "bounce_rate": 1.1,
-                "is_positive" : true
-            }
-        },
-        {
-            "sph_cube" : {
-                "transform" : {
-                    "position" : {
-                        "x": -15.0,
-                        "y": 10.0,
-                        "z": -65.0,
-                        "w": 2.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 2.0,
-                    "z": 2.0,
-                    "w": 2.0
-                },
-                "stickiness": true,
-                "is_positive" : true
-            }
-        },
-        {
-            "sph_cube" : {
-                "transform" : {
-                    "position" : {
-                        "x": -20.0,
-                        "y": 10.0,
-                        "z": -65.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.0,
-                    "y": 2.0,
-                    "z": 2.0,
-                    "w": 2.0
-                },
-                "material": {
-                    "color": {
-                        "comment": "Blue",
-                        "red": 0.0,
-                        "green": 0.0,
-                        "blue": 1.0
-                        }
-                },
-                "stickiness": true,
-                "is_positive" : true
-            }
-        },
-        {
-            "sphere" : {
-                "transform" : {
-                    "position" : {
-                        "x": -17.5,
-                        "y": 12.5,
-                        "z": -65.0,
-                        "w": 1.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 1.4
-                },
-                "material": {
-                        
-                    "color": {
-                        "comment": "Dark Lime",
-                        "red": 0.0,
-                        "green": 0.7,
-                        "blue": 0.0
-                        }
-                    },
-                "stickiness": true,
-                "is_positive" : true
-            }
-        },
-        {
-            "sph_cube" : {
-                "transform" : {
-                    "position" : {
-                        "x": -5.0,
-                        "y": 10.0,
-                        "z": -68.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 8.0,
-                    "y": 4.0,
-                    "z": 8.0,
-                    "w": 8.0
-                },
-                "roundness": 0.5,
-                "stickiness": true,
                 "is_positive" : false
             }
         }

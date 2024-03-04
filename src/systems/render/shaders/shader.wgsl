@@ -502,16 +502,14 @@ fn map(p: vec4<f32>) -> f32 {
 }
 
 fn get_normal(p: vec4<f32>) -> vec4<f32> {
-    var h: vec3<f32> = vec3<f32>(0.000, 0.001, -0.001);
-
-    var a: vec4<f32> = p + h.yxxx;
-    var b: vec4<f32> = p + h.xyxx;
-    var c: vec4<f32> = p + h.xxyx;
-    var d: vec4<f32> = p + h.xxxy;
-    var e: vec4<f32> = p + h.zxxx;
-    var f: vec4<f32> = p + h.xzxx;
-    var g: vec4<f32> = p + h.xxzx;
-    var k: vec4<f32> = p + h.xxxz;
+    var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
+    
+    var a: vec4<f32> = p + h.yxxz;
+    var b: vec4<f32> = p + h.xyxz;
+    var c: vec4<f32> = p + h.xxyz;
+    var d: vec4<f32> = p + h.yyyz;
+    var e: vec4<f32> = p + h.zzzx;
+    var f: vec4<f32> = p + h.zzzy;
 
     var fa: f32 = map(a);
     var fb: f32 = map(b);
@@ -519,18 +517,14 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
     var fd: f32 = map(d);
     var fe: f32 = map(e);
     var ff: f32 = map(f);
-    var fg: f32 = map(g);
-    var fk: f32 = map(k);
 
     return normalize(
-        h.yxxx * fa +
-        h.xyxx * fb +
-        h.xxyx * fc +
-        h.xxxy * fd +
-        h.zxxx * fe +
-        h.xzxx * ff +
-        h.xxzx * fg +
-        h.xxxz * fk
+        h.yxxz * fa +
+        h.xyxz * fb +
+        h.xxyz * fc +
+        h.yyyz * fd +
+        h.zzzx * fe +
+        h.zzzy * ff
     );
 }
 
@@ -614,38 +608,38 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     color = mix(clamp(color, vec3(0.0), vec3(1.0)), vec3<f32>(0.9, 1., 1.0), dist_and_depth.x / MAX_DIST);
 
-    if dynamic_data.explore_w_pos != 0.0 {
+    // if dynamic_data.explore_w_pos != 0.0 {
 
-        let dist_and_depth_explore: vec2<f32> = ray_march(
-            camera_position + vec4(0.0, 0.0, 0.0, dynamic_data.explore_w_pos), ray_direction
-        );
+    //     let dist_and_depth_explore: vec2<f32> = ray_march(
+    //         camera_position + vec4(0.0, 0.0, 0.0, dynamic_data.explore_w_pos), ray_direction
+    //     );
 
-        var explore_color = vec3(3.0, 0.1, 6.0);
-        if dynamic_data.explore_w_pos < 0.0 {
-            explore_color = vec3(0.1, 0.3, 16.0);
-        }
+    //     var explore_color = vec3(3.0, 0.1, 6.0);
+    //     if dynamic_data.explore_w_pos < 0.0 {
+    //         explore_color = vec3(0.1, 0.3, 16.0);
+    //     }
 
-        explore_color *= dynamic_data.explore_w_coef * dynamic_data.explore_w_coef;
+    //     explore_color *= dynamic_data.explore_w_coef * dynamic_data.explore_w_coef;
 
-        let e_normal: vec4<f32> = get_normal(
-            dist_and_depth_explore.x * ray_direction +
-            (camera_position + vec4(0.0, 0.0, 0.0, dynamic_data.explore_w_pos))
-        );
+    //     let e_normal: vec4<f32> = get_normal(
+    //         dist_and_depth_explore.x * ray_direction +
+    //         (camera_position + vec4(0.0, 0.0, 0.0, dynamic_data.explore_w_pos))
+    //     );
 
-        var e_shade_coefficient: f32 = dot(e_normal, normalize(vec4<f32>(0.2, 1., 0.5, 0.1)));
+    //     var e_shade_coefficient: f32 = dot(e_normal, normalize(vec4<f32>(0.2, 1., 0.5, 0.1)));
 
-        e_shade_coefficient = clamp(e_shade_coefficient, 0.0, 0.6);
+    //     e_shade_coefficient = clamp(e_shade_coefficient, 0.0, 0.6);
 
-        explore_color *= e_shade_coefficient * 2.0;
+    //     explore_color *= e_shade_coefficient * 2.0;
 
-        color = clamp(color, vec3(0.0), vec3(1.0));
+    //     color = clamp(color, vec3(0.0), vec3(1.0));
 
-        color += explore_color;
-        // if dist_and_depth.x >= dist_and_depth_explore.x {
-        // } else {
-        //     color = mix(color, explore_color, 0.3);
-        // }
-    }
+    //     color += explore_color;
+    //     // if dist_and_depth.x >= dist_and_depth_explore.x {
+    //     // } else {
+    //     //     color = mix(color, explore_color, 0.3);
+    //     // }
+    // }
 
     return vec4<f32>(color, 1.0);
 }
