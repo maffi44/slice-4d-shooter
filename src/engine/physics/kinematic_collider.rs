@@ -8,21 +8,17 @@ use crate::{
         engine_handle::EngineHandle,
         physics::{
             physics_system_data::StaticCollidersData,
-            sdf_functions::{
-                sd_box,
-                sd_inf_box,
-                sd_sph_box,
-                sd_sphere
+            common_physical_functions::{
+                get_dist,
+                get_normal,
+                get_big_normal,
+                get_bounce_and_friction,
             },
         },
     },
 };
 
-use glam::{
-    Vec4Swizzles,
-    FloatExt,
-    Vec4,
-};
+use glam::Vec4;
 
 
 
@@ -30,8 +26,7 @@ pub enum KinematicColliderMessages {
     
 }
 
-const THRESHOLD: f32 = 0.009;
-const HALF_THRESHOLD: f32 = 0.00025;
+const MIN_STEP: f32 = 0.009;
 const MAX_COLLIDING_ITERATIONS: u32 = 50;
 const MAX_SMALL_STEPS_COLLIDING_ITERATIONS: u32 = 150;
 
@@ -240,7 +235,7 @@ impl KinematicCollider {
             // log::info!("distance from the edge is {}", distance_from_edge);
     
             // bound if collide
-            if distance_from_edge < THRESHOLD {
+            if distance_from_edge < MIN_STEP {
     
                 // log::info!("BOUND");
     
@@ -259,7 +254,7 @@ impl KinematicCollider {
                     let probable_transltaion_dir = translation.reject_from_normalized(normal).normalize();
     
                     let next_normal = get_normal(
-                        position + probable_transltaion_dir * THRESHOLD,
+                        position + probable_transltaion_dir * MIN_STEP,
                         static_objects,
                         stickiness
                     );
@@ -273,7 +268,7 @@ impl KinematicCollider {
                     if curvature_coefficient < 0.0 {
     
                         let prev_normal = get_normal(
-                            position - probable_transltaion_dir * THRESHOLD,
+                            position - probable_transltaion_dir * MIN_STEP,
                             static_objects,
                             stickiness
                         );
@@ -282,7 +277,7 @@ impl KinematicCollider {
     
                         if next_normal.dot(translation) < 0.0 {
                             let (bounce, new_friction) = get_bounce_and_friction(
-                                position + probable_transltaion_dir * THRESHOLD,
+                                position + probable_transltaion_dir * MIN_STEP,
                                 static_objects,
                                 stickiness
                             );
@@ -327,7 +322,7 @@ impl KinematicCollider {
                         if prev_normal.dot(translation) < 0.0 {
 
                             let (bounce, new_friction) = get_bounce_and_friction(
-                                position - probable_transltaion_dir * THRESHOLD,
+                                position - probable_transltaion_dir * MIN_STEP,
                                 static_objects,
                                 stickiness
                             );
@@ -400,16 +395,16 @@ impl KinematicCollider {
             }
     
             let dist_on_try_move = get_dist(
-                position + translation.clamp_length_max(collider_radius - THRESHOLD),
+                position + translation.clamp_length_max(collider_radius - MIN_STEP),
                 static_objects,
                 stickiness
             );
     
             if dist_on_try_move - collider_radius > 0.0 {
     
-                position += translation.clamp_length_max(collider_radius - THRESHOLD);
+                position += translation.clamp_length_max(collider_radius - MIN_STEP);
     
-                if translation.length() < collider_radius - THRESHOLD {
+                if translation.length() < collider_radius - MIN_STEP {
 
                     if is_collide {
                         self.current_velocity *= 1.0 - delta * friction.max(self.friction_on_air);
@@ -423,7 +418,7 @@ impl KinematicCollider {
     
                 } else {
                     translation = translation.clamp_length_max(
-                        (translation.length() - (collider_radius - THRESHOLD)).max(0.0)
+                        (translation.length() - (collider_radius - MIN_STEP)).max(0.0)
                     );
     
                     counter += 1;
@@ -451,7 +446,7 @@ impl KinematicCollider {
                     panic!("More then max colliding small steps iterations");
                 }
     
-                let current_translation_len = translation_length.min(distance_from_edge.max(THRESHOLD));
+                let current_translation_len = translation_length.min(distance_from_edge.max(MIN_STEP));
     
                 position += translation_dir * current_translation_len;
     
@@ -540,7 +535,7 @@ fn move_collider_outside(
         is_collided = true;
 
         let normal = get_normal(pos, static_objects, stickiness);
-        pos -= normal * (distance_from_center - THRESHOLD);
+        pos -= normal * (distance_from_center - MIN_STEP);
         
         distance_from_center = get_dist(pos, static_objects, stickiness);
 
@@ -572,7 +567,7 @@ fn move_collider_outside(
             
                 let normal = get_big_normal(pos, collider_radius, static_objects, stickiness);
 
-                pos += normal * distance_from_edge.abs().max(THRESHOLD * 0.25);
+                pos += normal * distance_from_edge.abs().max(MIN_STEP * 0.25);
 
                 distance_from_edge = get_dist(pos, static_objects, stickiness) - collider_radius;
                 
@@ -585,7 +580,7 @@ fn move_collider_outside(
 
         let normal = get_normal(pos, static_objects, stickiness);
 
-        pos += normal * distance_from_edge.abs().max(THRESHOLD * 0.25);
+        pos += normal * distance_from_edge.abs().max(MIN_STEP * 0.25);
 
         distance_from_edge = get_dist(pos, static_objects, stickiness) - collider_radius;
         
@@ -605,369 +600,3 @@ fn move_collider_outside(
 
 
 
-#[inline]
-fn smin(a: f32, b: f32, k: f32) -> f32
-{
-    let x = (b-a)/k;
-    let g = 0.5*(x-(x*x+0.25).sqrt());
-    return a + k * g;
-}
-
-
-const MAX_DIST: f32 = 700_f32;
-
-#[inline]
-fn get_dist(p: Vec4, static_objects: &StaticCollidersData, stickiness: f32) -> f32 {
-    let mut d = MAX_DIST;
-
-    for collider in static_objects.cubes.iter_stickiness() {
-         d = smin(
-            d,
-            sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
-            stickiness
-        );
-    }
-    for collider in static_objects.inf_w_cubes.iter_stickiness() {
-        d = smin(
-            d,
-            sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness,
-            stickiness
-        );
-    }
-    for collider in static_objects.spheres.iter_stickiness() {
-        d = smin(
-            d,
-            sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness,
-            stickiness
-        );
-    }
-    for collider in static_objects.sph_cubes.iter_stickiness() {
-        d = smin(
-            d,
-            sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
-            stickiness
-        );
-    }
-    
-
-    for collider in static_objects.cubes.iter_normal() {
-         d = d.min(sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness);
-    }
-    for collider in static_objects.inf_w_cubes.iter_normal() {
-        d = d.min(sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness);
-    }
-    for collider in static_objects.spheres.iter_normal() {
-        d = d.min(sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness);
-    }
-    for collider in static_objects.sph_cubes.iter_normal() {
-        d = d.min(sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness);
-    }
-
-
-    let mut dd = MAX_DIST;
-
-    for collider in static_objects.cubes.iter_neg_stickiness() {
-        dd = smin(
-            dd,
-            sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
-            stickiness
-        );
-    }
-    for collider in static_objects.inf_w_cubes.iter_neg_stickiness() {
-            dd = smin(
-            dd,
-            sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness,
-            stickiness
-        );
-    }
-    for collider in static_objects.spheres.iter_neg_stickiness() {
-            dd = smin(
-            dd,
-            sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness,
-            stickiness
-        );
-    }
-    for collider in static_objects.sph_cubes.iter_neg_stickiness() {
-            dd = smin(
-            dd,
-            sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
-            stickiness
-        );
-    }
-
-    d = d.max(-dd);
-    
-
-    for collider in static_objects.cubes.iter_negative() {
-        d = d.max(-(sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness));
-    }
-    for collider in static_objects.inf_w_cubes.iter_negative() {
-        d = d.max(-(sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness));
-    }
-    for collider in static_objects.spheres.iter_negative() {
-        d = d.max(-(sd_sphere(p - collider.position.clone(),collider.size.x) - collider.roundness));
-    }
-    for collider in static_objects.sph_cubes.iter_negative() {
-        d = d.max(-(sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness));
-    }
-
-    return d;
-}
-
-
-
-#[inline]
-fn get_bounce_and_friction(
-    p: Vec4,
-    static_objects: &StaticCollidersData,
-    stickiness: f32,
-) -> (f32, f32) {
-    let mut d = MAX_DIST;
-
-    let mut bounce_coeficient = 0.0;
-    let mut friction = 0.0;
-
-    for collider in static_objects.cubes.iter_stickiness() {
-        let new_d = sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
-        
-        let dd = smin(d, new_d, stickiness);
-        
-        let coef = ((new_d - d) / (dd - d)).clamp(0.0, 1.0);
-        bounce_coeficient = bounce_coeficient.lerp(
-            collider.bounce_rate,
-            coef
-        );
-        friction = friction.lerp(
-            collider.friction,
-            coef
-        );
-
-        d = dd;
-    }
-    for collider in static_objects.inf_w_cubes.iter_stickiness() {
-        let new_d = sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness;
-
-        let dd = smin(d, new_d, stickiness);
-        
-        let coef = ((new_d - d) / (dd - d)).clamp(0.0, 1.0);
-        bounce_coeficient = bounce_coeficient.lerp(
-            collider.bounce_rate,
-            coef
-        );
-        friction = friction.lerp(
-            collider.friction,
-            coef
-        );
-
-        d = dd;
-    }
-    for collider in static_objects.spheres.iter_stickiness() {
-        let new_d = sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness;
-
-        let dd = smin(d, new_d, stickiness);
-        
-        let coef = ((new_d - d) / (dd - d)).clamp(0.0, 1.0);
-        bounce_coeficient = bounce_coeficient.lerp(
-            collider.bounce_rate,
-            coef
-        );
-        friction = friction.lerp(
-            collider.friction,
-            coef
-        );
-
-        d = dd;
-    }
-    for collider in static_objects.sph_cubes.iter_stickiness() {
-        let new_d = sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
-
-        let dd = smin(d, new_d, stickiness);
-        
-        let coef = ((new_d - d) / (dd - d)).clamp(0.0, 1.0);
-        bounce_coeficient = bounce_coeficient.lerp(
-            collider.bounce_rate,
-            coef
-        );
-        friction = friction.lerp(
-            collider.friction,
-            coef
-        );
-
-        d = dd;
-    }
-    
-
-    for collider in static_objects.cubes.iter_normal() {
-        let new_d = sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
-
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
-
-            d = new_d;
-        };
-    }
-    for collider in static_objects.inf_w_cubes.iter_normal() {
-        let new_d = sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness;
-
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
-
-            d = new_d;
-        };
-    }
-    for collider in static_objects.spheres.iter_normal() {
-        let new_d = sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness;
-
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
-
-            d = new_d;
-        };
-    }
-    for collider in static_objects.sph_cubes.iter_normal() {
-        let new_d = sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
-
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
-
-            d = new_d;
-        };
-    }
-
-    (bounce_coeficient, friction)
-}
-
-
-
-#[inline]
-fn get_normal(p: Vec4, static_objects: &StaticCollidersData, stickiness: f32) -> Vec4 {
-    let a = p + Vec4::new(THRESHOLD, 0.000, 0.000, 0.000);
-    let b = p + Vec4::new(-THRESHOLD, 0.000, 0.000,0.000);
-    let c = p + Vec4::new(0.000, THRESHOLD, 0.000, 0.000);
-    let d = p + Vec4::new(0.000, -THRESHOLD, 0.000, 0.000);
-    let e = p + Vec4::new(0.000, 0.000, THRESHOLD, 0.000);
-    let f = p + Vec4::new(0.000, 0.000, -THRESHOLD,0.000);
-    let g = p + Vec4::new(0.000, 0.000, 0.000, THRESHOLD);
-    let h = p + Vec4::new(0.000, 0.000, 0.000, -THRESHOLD);
-
-    let fa = get_dist(a, static_objects, stickiness);
-    let fb = get_dist(b, static_objects, stickiness);
-    let fc = get_dist(c, static_objects, stickiness);
-    let fd = get_dist(d, static_objects, stickiness);
-    let fe = get_dist(e, static_objects, stickiness);
-    let ff = get_dist(f, static_objects, stickiness);
-    let fg = get_dist(g, static_objects, stickiness);
-    let fh = get_dist(h, static_objects, stickiness);
-
-    let normal = 
-        Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
-        Vec4::new(-1.000, 0.000, 0.000,0.000) * fb +
-        Vec4::new(0.000, 1.000, 0.000, 0.000) * fc +
-        Vec4::new(0.000, -1.000, 0.000, 0.000) * fd +
-        Vec4::new(0.000, 0.000, 1.000, 0.000) * fe +
-        Vec4::new(0.000, 0.000, -1.000,0.000) * ff +
-        Vec4::new(0.000, 0.000, 0.000, 1.000) * fg +
-        Vec4::new(0.000, 0.000, 0.000, -1.000) * fh;
-
-    // if the collider is stuck in object's surface or in object's
-    // absolute center normal will be zero length let's make some
-    // random normal in this case 
-    if let Some(normal) = normal.try_normalize() {
-        return normal;
-    } else {
-        return random_vec().normalize();
-    }
-}
-
-
-
-#[inline]
-fn get_big_normal(p: Vec4, size: f32, static_objects: &StaticCollidersData, stickiness: f32) -> Vec4 {
-    let a = p + Vec4::new(size, 0.000, 0.000, 0.000);
-    let b = p + Vec4::new(-size, 0.000, 0.000,0.000);
-    let c = p + Vec4::new(0.000, size, 0.000, 0.000);
-    let d = p + Vec4::new(0.000, -size, 0.000, 0.000);
-    let e = p + Vec4::new(0.000, 0.000, size, 0.000);
-    let f = p + Vec4::new(0.000, 0.000, -size,0.000);
-    let g = p + Vec4::new(0.000, 0.000, 0.000, size);
-    let h = p + Vec4::new(0.000, 0.000, 0.000, -size);
-
-    let fa = get_dist(a, static_objects, stickiness);
-    let fb = get_dist(b, static_objects, stickiness);
-    let fc = get_dist(c, static_objects, stickiness);
-    let fd = get_dist(d, static_objects, stickiness);
-    let fe = get_dist(e, static_objects, stickiness);
-    let ff = get_dist(f, static_objects, stickiness);
-    let fg = get_dist(g, static_objects, stickiness);
-    let fh = get_dist(h, static_objects, stickiness);
-
-    let normal = 
-        Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
-        Vec4::new(-1.000, 0.000, 0.000,0.000) * fb +
-        Vec4::new(0.000, 1.000, 0.000, 0.000) * fc +
-        Vec4::new(0.000, -1.000, 0.000, 0.000) * fd +
-        Vec4::new(0.000, 0.000, 1.000, 0.000) * fe +
-        Vec4::new(0.000, 0.000, -1.000,0.000) * ff +
-        Vec4::new(0.000, 0.000, 0.000, 1.000) * fg +
-        Vec4::new(0.000, 0.000, 0.000, -1.000) * fh;
-
-    // if the collider is stuck in object's surface normal will be zero length
-    // let's make some random normal in this case 
-    if let Some(normal) = normal.try_normalize() {
-        return normal;
-    } else {
-        return random_vec().normalize();
-    }
-}
-
-
-
-fn random_vec() -> Vec4 {
-    let mut bytes : [u8;4] = [0,0,0,0];
-    let res = getrandom::getrandom(&mut bytes);
-    
-    if let Err(err) = res {
-        panic!("Can't make random f32 in random_vec fnction");
-    }
-    let x: f32 = f32::from_be_bytes(bytes);
-
-
-    let mut bytes : [u8;4] = [0,0,0,0];
-    let res = getrandom::getrandom(&mut bytes);
-    
-    if let Err(err) = res {
-        panic!("Can't make random f32 in random_vec fnction");
-    }
-    let y: f32 = f32::from_be_bytes(bytes);
-
-
-    let mut bytes : [u8;4] = [0,0,0,0];
-    let res = getrandom::getrandom(&mut bytes);
-    
-    if let Err(err) = res {
-        panic!("Can't make random f32 in random_vec fnction");
-    }
-    let z: f32 = f32::from_be_bytes(bytes);
-
-
-    let mut bytes : [u8;4] = [0,0,0,0];
-    let res = getrandom::getrandom(&mut bytes);
-    
-    if let Err(err) = res {
-        panic!("Can't make random f32 in random_vec fnction");
-    }
-    let w: f32 = f32::from_be_bytes(bytes);
-    
-
-    let mut new_vec = Vec4::new(x, y, z, w);
-
-    if !new_vec.length().is_normal() {
-        new_vec = random_vec();
-    }
-
-    new_vec
-}

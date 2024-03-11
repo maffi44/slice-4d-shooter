@@ -4,7 +4,7 @@ pub mod kinematic_collider;
 pub mod static_collider;
 pub mod dynamic_collider;
 pub mod area;
-pub mod sdf_functions;
+pub mod common_physical_functions;
 
 use crate::{
     actor::Actor,
@@ -19,12 +19,23 @@ use self::{
     area::Area,
     kinematic_collider::KinematicCollider,
     physics_system_data::{
+        Hit,
         FrameCollidersBuffers,
         StaticCollidersData
     },
+    common_physical_functions::{
+        get_dist,
+        get_normal,
+        THRESHOLD,
+    }
 };
 
+use glam::Vec4;
 
+
+
+
+const MAX_RAY_MARCHING_STEPS: usize = 150;
 
 pub struct PhysicsSystem {
     static_colliders_data: StaticCollidersData,
@@ -55,6 +66,8 @@ impl PhysicsSystem {
         delta: f32,
         engine_handle: &mut EngineHandle,
     ) {
+
+        self.static_colliders_data.clear_temporal_static_colliders();
 
         self.frame_colliders_buffers.kinematic_colliders.clear();
         // self.frame_colliders_buffers.dynamic_colliders.clear();
@@ -103,6 +116,19 @@ impl PhysicsSystem {
                         self.static_colliders_data.add_temporal_static_collider(temporal_static_collider);
                     }
                 }
+
+                if let Some(colliders) = physical_element.static_objects {
+                    for static_object in colliders {
+
+                        let mut temporal_static_collider = static_object.collider.clone();
+
+                        temporal_static_collider.position += transform.get_position();
+                        
+                        temporal_static_collider.size *= transform.get_scale();
+                        
+                        self.static_colliders_data.add_temporal_static_collider(temporal_static_collider);
+                    }
+                }
                 
                 if let Some(kinematic_collider) = physical_element.kinematic_collider {
                     kinematic_colliders.push((transform, kinematic_collider));
@@ -137,8 +163,6 @@ impl PhysicsSystem {
             area.physics_tick(&kinematic_colliders, engine_handle);
         }
 
-        self.static_colliders_data.clear_temporal_static_colliders();
-
         std::mem::forget(kinematic_colliders);
         std::mem::forget(areas);
         // std::mem::forget(dynamic_colliders);
@@ -146,5 +170,36 @@ impl PhysicsSystem {
         self.frame_colliders_buffers.kinematic_colliders.clear();
         self.frame_colliders_buffers.areas.clear();
         // self.frame_colliders_buffers.dynamic_colliders.clear();
+    }
+
+    pub fn ray_cast(&self, from: Vec4, direction: Vec4, distance: f32) -> Option<Hit> {
+        
+        let mut i = 0_usize;
+
+        let mut p = from;
+
+        let dir = direction.try_normalize().expect(
+            "Direction vector in ray_cast function cannot be normalized"
+        );
+
+        while i < MAX_RAY_MARCHING_STEPS {
+            let dist = get_dist(p, &self.static_colliders_data, 1.0);
+
+            if dist < THRESHOLD {
+                return Some(
+                        Hit {
+                        hit_point: p,
+                        hit_normal: get_normal(p, &self.static_colliders_data, 1.0),
+                        hited_players_id: None,
+                    }
+                );
+            }
+
+            p += dir * dist;
+
+            i += 1;
+        }
+
+        None
     }
 }

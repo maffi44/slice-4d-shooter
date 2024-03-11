@@ -1,7 +1,6 @@
 use crate::{
     actor::{
-        Message,
-        ActorID,
+        ActorID, ActorWrapper, Message
     },
     engine::effects::EffectType,
 };
@@ -16,6 +15,7 @@ pub struct Command {
 pub enum CommandType {
     // SpawnProjectile(ProjectileType),
     SpawnEffect(EffectType),
+    SpawnActor(ActorWrapper),
 }
 
 pub struct EngineHandle {

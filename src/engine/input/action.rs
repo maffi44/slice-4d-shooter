@@ -1,7 +1,7 @@
 #[derive(Clone, Debug)]
 pub struct Action {
-    pub is_action_just_pressed: bool,
-    pub is_action_pressed: bool,
+    pub(super) is_action_just_pressed: bool,
+    pub(super) is_action_pressed: bool,
 }
 
 impl Action {

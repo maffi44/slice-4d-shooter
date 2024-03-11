@@ -203,6 +203,7 @@ fn main_loop_tick(
     systems.input.get_input(&mut systems.world, &mut systems.net);
 
     systems.world.tick(
+        &systems.physic,
         &mut systems.engine_handle,
         systems.time.target_frame_duration.as_secs_f32()
     );

@@ -8,7 +8,7 @@ use crate::{
         physics::{
             physics_system_data::ShapeType,
             kinematic_collider::KinematicCollider,
-            sdf_functions::{
+            common_physical_functions::{
                 sd_box,
                 sd_inf_box,
                 sd_sph_box,

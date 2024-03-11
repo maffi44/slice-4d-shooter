@@ -1,14 +1,10 @@
 use crate::{
-    transform::Transform,
     engine::{
-        engine_handle::EngineHandle,
-        render::VisualElement,
-        world::static_object::StaticObject,
-        physics::{
+        engine_handle::EngineHandle, physics::{
             colliders_container::PhysicalElement,
-            static_collider::StaticCollider
-        },
-    },
+            static_collider::StaticCollider, PhysicsSystem
+        }, render::VisualElement, world::static_object::StaticObject
+    }, transform::Transform
 };
 
 use std::f32::consts::PI;
@@ -24,7 +20,6 @@ pub struct WanderingActor {
     transform: Transform,
     id: Option<ActorID>,
     static_objects: Vec<StaticObject>,
-    static_colliders: Vec<StaticCollider>,
 
     movement_type: WonderingActorMovementType,
     targets: [Transform; 2],
@@ -41,13 +36,6 @@ impl WanderingActor {
         travel_time: f32,
         movement_type: WonderingActorMovementType,
     ) -> Self {
-
-        let mut static_colliders = Vec::new();
-
-        for static_object in static_objects.iter() {
-            static_colliders.push(static_object.collider.clone())
-        }
-
         let first_target = transform.clone();
 
         let targets = [first_target, second_target];
@@ -58,7 +46,6 @@ impl WanderingActor {
 
         WanderingActor {
             transform,
-            static_colliders,
             static_objects,
             travel_time,
             movement_type,
@@ -88,8 +75,8 @@ impl Actor for WanderingActor {
     fn init(&mut self, id: ActorID) {
         self.id = Some(id);
 
-        for collider in self.static_colliders.iter_mut() {
-            collider.init(id);
+        for static_object in self.static_objects.iter_mut() {
+            static_object.collider.init(id);
         }
     }
 
@@ -97,7 +84,8 @@ impl Actor for WanderingActor {
         let physical_element = PhysicalElement {
             transform: &mut self.transform,
             kinematic_collider: None,
-            static_colliders: Some(&mut self.static_colliders),
+            static_colliders: None,
+            static_objects: Some(&mut self.static_objects),
             area: None
         };
 
@@ -113,8 +101,12 @@ impl Actor for WanderingActor {
         Some(visual_element)
     }
 
-    fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
-        
+    fn tick(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32
+    ) {    
         let current_target = self.targets[self.current_target_index];
 
         let previous_target = self.targets[

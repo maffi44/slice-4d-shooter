@@ -1,29 +1,23 @@
 pub mod player;
 pub mod diamond;
 pub mod wandering_actor;
-pub mod devices;
+pub mod device;
+pub mod holegun_hole;
 
 use crate::{
     engine::{
-        engine_handle::EngineHandle,
-        render::VisualElement,
-        physics::{
-            colliders_container::PhysicalElement,
-            kinematic_collider::KinematicColliderMessages,
-            dynamic_collider::DynamicColliderMessages,
-            static_collider::StaticColliderMessages,
-            area::AreaMessages,
-        },
+        engine_handle::EngineHandle, physics::{
+            area::AreaMessages, colliders_container::PhysicalElement, dynamic_collider::DynamicColliderMessages, kinematic_collider::KinematicColliderMessages, static_collider::StaticColliderMessages, PhysicsSystem
+        }, render::VisualElement
     },
     transform::Transform,
 };
 
 use self::{
-    wandering_actor::WanderingActor,
-    player::{
+    holegun_hole::HoleGunHole, player::{
         PLayerMessages,
         Player,
-    },
+    }, wandering_actor::WanderingActor
 };
 
 
@@ -37,7 +31,12 @@ pub trait Actor {
     
     fn get_transform(&self) -> &Transform;
 
-    fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {}
+    fn tick(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32
+    ) {}
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {None}
 
@@ -51,6 +50,7 @@ pub trait Actor {
 pub enum ActorWrapper {
     Player(Player),
     WonderingActor(WanderingActor),
+    HoleGunHole(HoleGunHole),
     Diamond,
     Exit,
 }
@@ -63,6 +63,9 @@ impl Actor for ActorWrapper {
                 actor.get_transform()
             },
             ActorWrapper::WonderingActor(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::HoleGunHole(actor) => {
                 actor.get_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -78,6 +81,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.get_mut_transform()
             },
+            ActorWrapper::HoleGunHole(actor) => {
+                actor.get_mut_transform()
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -91,18 +97,29 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.recieve_message(message, engine_handle);
             },
+            ActorWrapper::HoleGunHole(actor) => {
+                actor.recieve_message(message, engine_handle);
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
 
-    fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
+    fn tick(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32
+    ) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.tick(engine_handle, delta);
+                actor.tick(physic_system, engine_handle, delta);
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.tick(engine_handle, delta);
+                actor.tick(physic_system, engine_handle, delta);
+            },
+            ActorWrapper::HoleGunHole(actor) => {
+                actor.tick(physic_system, engine_handle, delta);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -115,6 +132,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             },
             ActorWrapper::WonderingActor(actor) => {
+                actor.get_physical_element()
+            },
+            ActorWrapper::HoleGunHole(actor) => {
                 actor.get_physical_element()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -130,6 +150,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.get_visual_element()
             },
+            ActorWrapper::HoleGunHole(actor) => {
+                actor.get_visual_element()
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -143,6 +166,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.get_id()
             },
+            ActorWrapper::HoleGunHole(actor) => {
+                actor.get_id()
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -154,6 +180,9 @@ impl Actor for ActorWrapper {
                 actor.init(id);
             },
             ActorWrapper::WonderingActor(actor) => {
+                actor.init(id);
+            },
+            ActorWrapper::HoleGunHole(actor) => {
                 actor.init(id);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},

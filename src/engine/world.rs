@@ -5,14 +5,15 @@ use self::level::Level;
 
 use crate::{
     actor::{
-        Actor,
-        ActorID,
-        ActorWrapper,
-        Message
+        Actor, ActorID, ActorWrapper, Message
     },
-    engine::engine_handle::{
-        CommandType::SpawnEffect,
-        EngineHandle},
+    engine::{
+        physics::PhysicsSystem,
+        engine_handle::{
+            CommandType,
+            EngineHandle,
+        },
+    },
 };
 
 use core::panic;
@@ -76,7 +77,10 @@ impl World {
                     let from = command.sender;
                     
                     match command.command_type {
-                        SpawnEffect(_) => {}
+                        CommandType::SpawnEffect(_) => {}
+                        CommandType::SpawnActor(actor) => {
+                            self.add_actor_to_world(actor);
+                        }
                     }
                 }
 
@@ -136,9 +140,14 @@ impl World {
         self.actors.remove(&id)
     }
 
-    pub fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
+    pub fn tick(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32
+    ) {
         for (_, actor) in self.actors.iter_mut() {
-            actor.tick(engine_handle, delta)
+            actor.tick(physic_system, engine_handle, delta)
         }
     }
 

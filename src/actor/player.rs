@@ -2,18 +2,9 @@ pub mod player_input_master;
 pub mod player_settings;
 
 use crate::{
-    engine::{
-        physics::{
-            colliders_container::PhysicalElement,
-            kinematic_collider::KinematicCollider,
-        },
-        engine_handle::EngineHandle,
-    },
     actor::{
-        devices::{
-            Device,
-            DeviceType,
-            DefaultPistol
+        device::{
+            holegun::HoleGun, Device, DeviceType
         },
         Actor,
         ActorID,
@@ -22,8 +13,15 @@ use crate::{
         Message,
         MessageType,
         SpecificActorMessage
+    }, engine::{
+        physics::{
+            colliders_container::PhysicalElement,
+            kinematic_collider::KinematicCollider,
+            PhysicsSystem,
+        },
+        engine_handle::EngineHandle,
     },
-    transform::Transform,
+    transform::Transform
 };
 
 use self::{
@@ -33,6 +31,8 @@ use self::{
 
 use std::f32::consts::PI;
 use glam::{Vec4, Mat4};
+
+use super::holegun_hole::HoleGunHole;
 
 
 
@@ -180,6 +180,7 @@ impl Actor for Player {
             transform: &mut self.inner_state.transform,
             kinematic_collider: Some(&mut self.inner_state.collider),
             static_colliders: None,
+            static_objects: None,
             area: None,
         };
 
@@ -187,7 +188,12 @@ impl Actor for Player {
     }
 
     
-    fn tick(&mut self, engine_handle: &mut EngineHandle, delta: f32) {
+    fn tick(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32
+    ) {
         let my_id = self.id.expect("Player does not have id");
 
         let input = match &self.master {
@@ -264,40 +270,40 @@ impl Actor for Player {
 
         match self.active_hands_slot {
             ActiveHandsSlot::Zero => {
-                self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, engine_handle);
+                self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
             },
             ActiveHandsSlot::First => {
                 if let Some(device) = self.hands_slot_1.as_mut() {
-                    device.process_input(my_id, &mut self.inner_state, &input, engine_handle);
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
                 }
             },
             ActiveHandsSlot::Second => {
                 if let Some(device) = self.hands_slot_2.as_mut() {
-                    device.process_input(my_id, &mut self.inner_state, &input, engine_handle);
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
                 }
             },
             ActiveHandsSlot::Third => {
                 if let Some(device) = self.hands_slot_3.as_mut() {
-                    device.process_input(my_id, &mut self.inner_state, &input, engine_handle);
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
                 }
             }
         }
 
         for device in self.devices.iter_mut() {
             if let Some(device) = device {
-                device.process_input(my_id, &mut self.inner_state, &input, engine_handle);
+                device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
             }
         }
 
-        if input.mode_1.is_action_just_pressed {
+        if input.mode_1.is_action_just_pressed() {
             self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
         }
 
-        if input.mode_2.is_action_just_pressed {
+        if input.mode_2.is_action_just_pressed() {
             self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
         }
 
-        if input.mode_3.is_action_just_pressed {
+        if input.mode_3.is_action_just_pressed() {
             self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
         }
 
@@ -447,7 +453,7 @@ impl Player {
             inner_state: PlayerInnerState::new(Transform::new_zero(), &player_settings),
             active_hands_slot: ActiveHandsSlot::Zero,
 
-            hands_slot_0: Box::new(DefaultPistol::default()),
+            hands_slot_0: Box::new(HoleGun{}),
             hands_slot_1: None,
             hands_slot_2: None,
             hands_slot_3: None,
