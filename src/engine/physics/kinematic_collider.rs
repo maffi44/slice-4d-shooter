@@ -101,7 +101,6 @@ impl KinematicCollider {
         &mut self,
         delta: f32,
         static_objects: &StaticCollidersData,
-        shapes_stickiness: f32,
         transform: &mut Transform,
         engine_handle: &mut EngineHandle,
     ) {
@@ -130,7 +129,6 @@ impl KinematicCollider {
                 delta,
                 static_objects,
                 transform.get_position(),
-                shapes_stickiness
             );
 
             transform.increment_position(position_increment);
@@ -142,7 +140,7 @@ impl KinematicCollider {
             //check if collider staying on the ground
             let bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * Vec4::Y);
 
-            if get_dist(bottom_position, static_objects, shapes_stickiness) < self.collider_radius * 0.95 {
+            if get_dist(bottom_position, static_objects) < self.collider_radius * 0.95 {
                 self.is_on_ground = true;
             }
 
@@ -161,7 +159,6 @@ impl KinematicCollider {
         delta: f32,
         static_objects: &StaticCollidersData,
         start_position: Vec4,
-        stickiness: f32,
     ) -> Vec4 {
 
         self.fix_currnet_velocity();
@@ -195,8 +192,7 @@ impl KinematicCollider {
         let (new_pos, is_pushed) = move_collider_outside(
             position,
             collider_radius,
-            static_objects,
-            stickiness
+            static_objects
         );
 
         if is_pushed {
@@ -223,14 +219,14 @@ impl KinematicCollider {
             }
     
             // if collider stuck inside object let's push it out
-            let (new_pos, is_pushed) = move_collider_outside(position, collider_radius, static_objects, stickiness);
+            let (new_pos, is_pushed) = move_collider_outside(position, collider_radius, static_objects);
     
             is_collide = is_pushed;
     
             position = new_pos;
     
             // get distance from edge of the object to the nearest object
-            let mut distance_from_edge = get_dist(position, static_objects, stickiness) - collider_radius;
+            let mut distance_from_edge = get_dist(position, static_objects) - collider_radius;
     
             // log::info!("distance from the edge is {}", distance_from_edge);
     
@@ -241,7 +237,7 @@ impl KinematicCollider {
     
                 is_collide = true;
     
-                let normal = get_normal(position, static_objects, stickiness);
+                let normal = get_normal(position, static_objects);
                 
                 // log::info!("normal is {}", normal);
     
@@ -255,8 +251,7 @@ impl KinematicCollider {
     
                     let next_normal = get_normal(
                         position + probable_transltaion_dir * MIN_STEP,
-                        static_objects,
-                        stickiness
+                        static_objects
                     );
     
                     // log::info!("next normal is {}", normal);
@@ -269,8 +264,7 @@ impl KinematicCollider {
     
                         let prev_normal = get_normal(
                             position - probable_transltaion_dir * MIN_STEP,
-                            static_objects,
-                            stickiness
+                            static_objects
                         );
     
                         // log::info!("prev normal is {}", prev_normal);
@@ -278,8 +272,7 @@ impl KinematicCollider {
                         if next_normal.dot(translation) < 0.0 {
                             let (bounce, new_friction) = get_bounce_and_friction(
                                 position + probable_transltaion_dir * MIN_STEP,
-                                static_objects,
-                                stickiness
+                                static_objects
                             );
 
                             friction = friction.max(new_friction);
@@ -323,8 +316,7 @@ impl KinematicCollider {
 
                             let (bounce, new_friction) = get_bounce_and_friction(
                                 position - probable_transltaion_dir * MIN_STEP,
-                                static_objects,
-                                stickiness
+                                static_objects
                             );
 
                             friction = friction.max(new_friction);
@@ -359,8 +351,7 @@ impl KinematicCollider {
 
                         let (bounce, new_friction) = get_bounce_and_friction(
                             position,
-                            static_objects,
-                            stickiness
+                            static_objects
                         );
 
                         friction = friction.max(new_friction);
@@ -396,8 +387,7 @@ impl KinematicCollider {
     
             let dist_on_try_move = get_dist(
                 position + translation.clamp_length_max(collider_radius - MIN_STEP),
-                static_objects,
-                stickiness
+                static_objects
             );
     
             if dist_on_try_move - collider_radius > 0.0 {
@@ -452,7 +442,7 @@ impl KinematicCollider {
     
                 translation_length -= current_translation_len;
     
-                distance_from_edge = get_dist(position, static_objects, stickiness) - collider_radius;
+                distance_from_edge = get_dist(position, static_objects) - collider_radius;
     
                 translation = translation_dir * translation_length;
                 
@@ -517,14 +507,13 @@ fn move_collider_outside(
     position: Vec4,
     collider_radius: f32,
     static_objects: &StaticCollidersData,
-    stickiness: f32
 ) -> (Vec4, bool) {
 
     let mut pos = position;
 
     let mut is_collided = false;
     
-    let mut distance_from_center = get_dist(pos, static_objects, stickiness);
+    let mut distance_from_center = get_dist(pos, static_objects);
 
     let mut counter = 0u32;
 
@@ -534,10 +523,10 @@ fn move_collider_outside(
         }
         is_collided = true;
 
-        let normal = get_normal(pos, static_objects, stickiness);
+        let normal = get_normal(pos, static_objects);
         pos -= normal * (distance_from_center - MIN_STEP);
         
-        distance_from_center = get_dist(pos, static_objects, stickiness);
+        distance_from_center = get_dist(pos, static_objects);
 
         #[cfg(debug_assertions)]
         unsafe {
@@ -565,11 +554,11 @@ fn move_collider_outside(
                     panic!("'move_collider_outside' More the max colliding iterations when overlapping (pushing) the object");
                 }
             
-                let normal = get_big_normal(pos, collider_radius, static_objects, stickiness);
+                let normal = get_big_normal(pos, collider_radius, static_objects);
 
                 pos += normal * distance_from_edge.abs().max(MIN_STEP * 0.25);
 
-                distance_from_edge = get_dist(pos, static_objects, stickiness) - collider_radius;
+                distance_from_edge = get_dist(pos, static_objects) - collider_radius;
                 
                 pushing_counter += 1;
             }
@@ -578,11 +567,11 @@ fn move_collider_outside(
         }
         is_collided = true;
 
-        let normal = get_normal(pos, static_objects, stickiness);
+        let normal = get_normal(pos, static_objects);
 
         pos += normal * distance_from_edge.abs().max(MIN_STEP * 0.25);
 
-        distance_from_edge = get_dist(pos, static_objects, stickiness) - collider_radius;
+        distance_from_edge = get_dist(pos, static_objects) - collider_radius;
         
         // log::info!("'move_collider_outside' disatnce from th edge is {}", distance_from_edge);
 

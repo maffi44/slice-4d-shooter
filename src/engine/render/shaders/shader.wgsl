@@ -641,5 +641,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     //     // }
     // }
 
+    color += (0.006 - clamp(length(uv), 0.0, 0.006))*200.0;
+
     return vec4<f32>(color, 1.0);
 }

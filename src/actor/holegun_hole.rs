@@ -6,7 +6,7 @@ use crate::{
         ActorID,
     },
     engine::{
-        engine_handle::EngineHandle, physics::{colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, StaticObject}
+        engine_handle::{Command, CommandType, EngineHandle}, physics::{colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, StaticObject}
     },
     transform::{self, Transform},
 };
@@ -23,12 +23,12 @@ pub struct HoleGunHole {
 
 
 impl HoleGunHole {
-    pub fn new() -> Self {
+    pub fn new(radius: f32) -> Self {
         let static_object = StaticObject {
             collider: StaticCollider {
                 shape_type: ShapeType::Sphere,
                 position: Vec4::ZERO,
-                size: Vec4::new(2.0, 0.0, 0.0, 0.0),
+                size: Vec4::new(radius, 0.0, 0.0, 0.0),
                 is_positive: false,
                 roundness: 0.0,
                 stickiness: false,
@@ -85,7 +85,20 @@ impl Actor for HoleGunHole {
         engine_handle: &mut EngineHandle,
         delta: f32
     ) {
+        for obj in self.static_objects.iter_mut() {
+            obj.collider.size.x -= delta * 0.2;
 
+            if obj.collider.size.x <= 0.0 {
+                engine_handle.send_command(
+                    Command {
+                        sender: self.id.expect("HoleGun's Hole have not ActorID"),
+                        command_type: CommandType::RemoveActor(
+                            self.id.expect("HoleGun's Hole have not ActorID")
+                        )
+                    }
+                )
+            }
+        }
     }
 
     fn get_visual_element(&self) -> Option<VisualElement> {

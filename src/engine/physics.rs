@@ -153,7 +153,6 @@ impl PhysicsSystem {
             kinematic_collider.physics_tick(
                 delta,
                 &self.static_colliders_data,
-                world.level.all_shapes_stickiness_radius,
                 transform,
                 engine_handle,
             )
@@ -183,13 +182,13 @@ impl PhysicsSystem {
         );
 
         while i < MAX_RAY_MARCHING_STEPS {
-            let dist = get_dist(p, &self.static_colliders_data, 1.0);
+            let dist = get_dist(p, &self.static_colliders_data);
 
             if dist < THRESHOLD {
                 return Some(
                         Hit {
                         hit_point: p,
-                        hit_normal: get_normal(p, &self.static_colliders_data, 1.0),
+                        hit_normal: get_normal(p, &self.static_colliders_data),
                         hited_players_id: None,
                     }
                 );

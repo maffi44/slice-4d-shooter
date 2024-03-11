@@ -16,6 +16,7 @@ pub enum CommandType {
     // SpawnProjectile(ProjectileType),
     SpawnEffect(EffectType),
     SpawnActor(ActorWrapper),
+    RemoveActor(ActorID),
 }
 
 pub struct EngineHandle {

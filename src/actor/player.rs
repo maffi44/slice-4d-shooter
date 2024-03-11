@@ -270,28 +270,28 @@ impl Actor for Player {
 
         match self.active_hands_slot {
             ActiveHandsSlot::Zero => {
-                self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
+                self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
             },
             ActiveHandsSlot::First => {
                 if let Some(device) = self.hands_slot_1.as_mut() {
-                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
                 }
             },
             ActiveHandsSlot::Second => {
                 if let Some(device) = self.hands_slot_2.as_mut() {
-                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
                 }
             },
             ActiveHandsSlot::Third => {
                 if let Some(device) = self.hands_slot_3.as_mut() {
-                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
                 }
             }
         }
 
         for device in self.devices.iter_mut() {
             if let Some(device) = device {
-                device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle);
+                device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
             }
         }
 
@@ -453,7 +453,7 @@ impl Player {
             inner_state: PlayerInnerState::new(Transform::new_zero(), &player_settings),
             active_hands_slot: ActiveHandsSlot::Zero,
 
-            hands_slot_0: Box::new(HoleGun{}),
+            hands_slot_0: Box::new(HoleGun::new()),
             hands_slot_1: None,
             hands_slot_2: None,
             hands_slot_3: None,

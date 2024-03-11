@@ -61,9 +61,10 @@ fn smin(a: f32, b: f32, k: f32) -> f32
 pub fn get_dist(
     p: Vec4,
     static_objects: &StaticCollidersData,
-    stickiness: f32
 ) -> f32 {
     let mut d = MAX_DIST;
+
+    let stickiness = static_objects.stickiness;
 
     for collider in static_objects.cubes.iter_stickiness() {
          d = smin(
@@ -164,12 +165,13 @@ pub fn get_dist(
 pub fn get_bounce_and_friction(
     p: Vec4,
     static_objects: &StaticCollidersData,
-    stickiness: f32,
 ) -> (f32, f32) {
     let mut d = MAX_DIST;
 
     let mut bounce_coeficient = 0.0;
     let mut friction = 0.0;
+
+    let stickiness = static_objects.stickiness;
 
     for collider in static_objects.cubes.iter_stickiness() {
         let new_d = sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
@@ -291,7 +293,6 @@ pub fn get_bounce_and_friction(
 pub fn get_normal(
     p: Vec4,
     static_objects: &StaticCollidersData,
-    stickiness: f32
 ) -> Vec4 {
     let a = p + Vec4::new(THRESHOLD, 0.000, 0.000, 0.000);
     let b = p + Vec4::new(-THRESHOLD, 0.000, 0.000,0.000);
@@ -302,14 +303,14 @@ pub fn get_normal(
     let g = p + Vec4::new(0.000, 0.000, 0.000, THRESHOLD);
     let h = p + Vec4::new(0.000, 0.000, 0.000, -THRESHOLD);
 
-    let fa = get_dist(a, static_objects, stickiness);
-    let fb = get_dist(b, static_objects, stickiness);
-    let fc = get_dist(c, static_objects, stickiness);
-    let fd = get_dist(d, static_objects, stickiness);
-    let fe = get_dist(e, static_objects, stickiness);
-    let ff = get_dist(f, static_objects, stickiness);
-    let fg = get_dist(g, static_objects, stickiness);
-    let fh = get_dist(h, static_objects, stickiness);
+    let fa = get_dist(a, static_objects);
+    let fb = get_dist(b, static_objects);
+    let fc = get_dist(c, static_objects);
+    let fd = get_dist(d, static_objects);
+    let fe = get_dist(e, static_objects);
+    let ff = get_dist(f, static_objects);
+    let fg = get_dist(g, static_objects);
+    let fh = get_dist(h, static_objects);
 
     let normal = 
         Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
@@ -338,7 +339,6 @@ pub fn get_big_normal(
     p: Vec4,
     size: f32,
     static_objects: &StaticCollidersData,
-    stickiness: f32
 ) -> Vec4 {
     let a = p + Vec4::new(size, 0.000, 0.000, 0.000);
     let b = p + Vec4::new(-size, 0.000, 0.000,0.000);
@@ -349,14 +349,14 @@ pub fn get_big_normal(
     let g = p + Vec4::new(0.000, 0.000, 0.000, size);
     let h = p + Vec4::new(0.000, 0.000, 0.000, -size);
 
-    let fa = get_dist(a, static_objects, stickiness);
-    let fb = get_dist(b, static_objects, stickiness);
-    let fc = get_dist(c, static_objects, stickiness);
-    let fd = get_dist(d, static_objects, stickiness);
-    let fe = get_dist(e, static_objects, stickiness);
-    let ff = get_dist(f, static_objects, stickiness);
-    let fg = get_dist(g, static_objects, stickiness);
-    let fh = get_dist(h, static_objects, stickiness);
+    let fa = get_dist(a, static_objects);
+    let fb = get_dist(b, static_objects);
+    let fc = get_dist(c, static_objects);
+    let fd = get_dist(d, static_objects);
+    let fe = get_dist(e, static_objects);
+    let ff = get_dist(f, static_objects);
+    let fg = get_dist(g, static_objects);
+    let fh = get_dist(h, static_objects);
 
     let normal = 
         Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +

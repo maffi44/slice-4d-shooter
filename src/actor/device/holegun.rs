@@ -18,8 +18,18 @@ use crate::{
 };
 
 pub struct HoleGun {
-
+    charging_time: f32
 }
+
+
+impl HoleGun {
+    pub fn new() -> Self {
+        HoleGun {
+            charging_time: 0.0
+        }
+    }
+}
+
 
 impl Device for HoleGun {
     fn get_device_type(&self) -> DeviceType {
@@ -32,34 +42,73 @@ impl Device for HoleGun {
         player: &mut PlayerInnerState,
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle
+        engine_handle: &mut EngineHandle,
+        delta: f32,
     )
     {
-        if input.first_mouse.is_action_just_pressed() {
-            log::warn!("HOLEGUN PRESSED");
+        if input.first_mouse.is_action_pressed() {
 
-            let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
-            
-            let direction = player.transform.rotation.inverse() * Vec4::NEG_Z;
-            
-            let hit = physic_system.ray_cast(from, direction, 100.0);
+            self.charging_time += delta * 1.6;
 
-            if let Some(hit) = hit {
-                log::warn!("HOLEGUN HIT");
-
-                let mut hole = HoleGunHole::new();
-
-                hole.set_transform(Transform::new_from_pos(hit.hit_point));
-
-                engine_handle.send_command(
-                    Command {
-                        sender: player_id,
-                        command_type: CommandType::SpawnActor(
-                            ActorWrapper::HoleGunHole(hole)
-                        )
-                    }
+            if self.charging_time > 3.0 {
+                
+                shoot(
+                    player_id,
+                    player,
+                    physic_system,
+                    engine_handle,
+                    self.charging_time
                 );
+
+                self.charging_time = 0.0;
+            }
+
+           
+        } else {
+
+            if self.charging_time > 0.0 {
+
+                shoot(
+                    player_id,
+                    player,
+                    physic_system,
+                    engine_handle,
+                    self.charging_time
+                );
+
+                self.charging_time = 0.0;
             }
         }
+    }
+
+}
+
+fn shoot(
+    player_id: ActorID,
+    player: &mut PlayerInnerState,
+    physic_system: &PhysicsSystem,
+    engine_handle: &mut EngineHandle,
+    charging_time: f32,
+) {
+    let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
+            
+    let direction = player.transform.rotation.inverse() * Vec4::NEG_Z;
+    
+    let hit = physic_system.ray_cast(from, direction, 100.0);
+
+    if let Some(hit) = hit {
+
+        let mut hole = HoleGunHole::new(charging_time);
+
+        hole.set_transform(Transform::new_from_pos(hit.hit_point));
+
+        engine_handle.send_command(
+            Command {
+                sender: player_id,
+                command_type: CommandType::SpawnActor(
+                    ActorWrapper::HoleGunHole(hole)
+                )
+            }
+        );
     }
 }

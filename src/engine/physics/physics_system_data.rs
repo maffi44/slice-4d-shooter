@@ -174,6 +174,8 @@ pub struct StaticCollidersData {
     pub spheres: CollidersShapeTypeArrays,
     pub sph_cubes: CollidersShapeTypeArrays,
     pub inf_w_cubes: CollidersShapeTypeArrays,
+
+    pub stickiness: f32,
 }
 
 pub struct Hit {
@@ -221,6 +223,8 @@ impl StaticCollidersData {
             inf_w_cubes,
             spheres,
             sph_cubes,
+
+            stickiness: world.level.all_shapes_stickiness_radius
         }
     }
 

@@ -38,7 +38,8 @@ impl Device for DefaultPointer {
             player: &mut PlayerInnerState,
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
-            engine_handle: &mut EngineHandle
+            engine_handle: &mut EngineHandle,
+            delta: f32,
     ) {
         // TODO - make pointing
     }
@@ -60,7 +61,8 @@ pub trait Device {
         player: &mut PlayerInnerState,
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle
+        engine_handle: &mut EngineHandle,
+        delta: f32,
     );
 
     fn get_device_type(&self) -> DeviceType;

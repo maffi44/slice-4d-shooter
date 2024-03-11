@@ -81,6 +81,9 @@ impl World {
                         CommandType::SpawnActor(actor) => {
                             self.add_actor_to_world(actor);
                         }
+                        CommandType::RemoveActor(id) => {
+                            self.actors.remove(&id);
+                        }
                     }
                 }
 
