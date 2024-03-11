@@ -1,12 +1,12 @@
-mod systems;
+mod engine;
+mod actor;
+mod main_loop;
+mod transform;
+
+use engine::Engine;
+use main_loop::MainLoop;
 
 use wasm_bindgen::prelude::*;
-
-use systems::{
-    engine::Engine,
-    main_loop::MainLoop,
-};  
-
 use log;
 
 #[wasm_bindgen(start)]
