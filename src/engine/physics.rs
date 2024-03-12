@@ -175,26 +175,35 @@ impl PhysicsSystem {
         
         let mut i = 0_usize;
 
-        let mut p = from;
+        let mut pos: Vec4 = from;
 
         let dir = direction.try_normalize().expect(
             "Direction vector in ray_cast function cannot be normalized"
         );
 
+        let mut total_dist = 0.0;
+
         while i < MAX_RAY_MARCHING_STEPS {
-            let dist = get_dist(p, &self.static_colliders_data);
+
+            if total_dist > distance {
+                break;
+            }
+
+            let dist = get_dist(pos, &self.static_colliders_data);
 
             if dist < THRESHOLD {
                 return Some(
                         Hit {
-                        hit_point: p,
-                        hit_normal: get_normal(p, &self.static_colliders_data),
-                        hited_players_id: None,
+                        hit_point: pos,
+                        hit_normal: get_normal(pos, &self.static_colliders_data),
+                        hited_actors_id: None,
                     }
                 );
             }
 
-            p += dir * dist;
+            total_dist += dist;
+
+            pos += dir * dist;
 
             i += 1;
         }

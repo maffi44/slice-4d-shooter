@@ -6,19 +6,20 @@ use crate::{
         ActorID,
     },
     engine::{
-        engine_handle::{Command, CommandType, EngineHandle}, physics::{colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, StaticObject}
+        engine_handle::{Command, CommandType, EngineHandle}, physics::{colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ColoringArea, ObjectMatrial, StaticObject}
     },
-    transform::{self, Transform},
+    transform::Transform,
 };
 
 use super::Component;
 
-
+const HOLE_COLOR: Vec3 = Vec3::new(0.2, 1.0, 0.0);
 
 pub struct HoleGunHole {
     id: Option<ActorID>,
     transform: Transform,
     static_objects: Vec<StaticObject>,
+    coloring_areas: Vec<ColoringArea>,
 }
 
 
@@ -45,10 +46,21 @@ impl HoleGunHole {
 
         static_objects.push(static_object);
 
+        let coloring_area = ColoringArea {
+            translation: Vec4::ZERO,
+            radius: radius + 0.1,
+            color: HOLE_COLOR
+        };
+
+        let mut coloring_areas = Vec::with_capacity(1);
+
+        coloring_areas.push(coloring_area);
+
         HoleGunHole {
             id: None,
             transform: Transform::new_zero(),
             static_objects,
+            coloring_areas,
         }
     }
 
@@ -85,6 +97,10 @@ impl Actor for HoleGunHole {
         engine_handle: &mut EngineHandle,
         delta: f32
     ) {
+        for area in self.coloring_areas.iter_mut() {
+            area.radius -= delta * 0.2;
+        }
+
         for obj in self.static_objects.iter_mut() {
             obj.collider.size.x -= delta * 0.2;
 
@@ -105,7 +121,9 @@ impl Actor for HoleGunHole {
         Some(
             VisualElement {
                 transfrom: &self.transform,
-                static_objects: &self.static_objects
+                static_objects:  Some(&self.static_objects),
+                coloring_areas: Some(&self.coloring_areas),
+                volume_areas: None,
             }
         )
     }

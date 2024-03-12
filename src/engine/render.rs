@@ -6,7 +6,11 @@ use crate::{
     engine::{
         time::TimeSystem,
         world::{
-            static_object::StaticObject,
+            static_object::{
+                StaticObject,
+                VolumeArea,
+                ColoringArea,
+            },
             World
         },
     }
@@ -23,7 +27,9 @@ use winit::window::Window;
 
 pub struct VisualElement<'a> {
     pub transfrom: &'a Transform,
-    pub static_objects: &'a Vec<StaticObject>,
+    pub static_objects: Option<&'a Vec<StaticObject>>,
+    pub coloring_areas: Option<&'a Vec<ColoringArea>>,
+    pub volume_areas: Option<&'a Vec<VolumeArea>>,
 }
 
 
@@ -64,7 +70,7 @@ impl RenderSystem {
         self.render_data.update_dynamic_render_data(world, time, &self.window);
 
         self.renderer.queue.write_buffer(
-            &self.renderer.other_dynamic_data,
+            &self.renderer.other_dynamic_data_buffer,
             0,
             bytemuck::cast_slice(&[self.render_data.dynamic_data.other_dynamic_data]),
         );
@@ -91,6 +97,12 @@ impl RenderSystem {
             &self.renderer.dynamic_neg_stickiness_shapes_buffer,
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
+        );
+
+        self.renderer.queue.write_buffer(
+            &self.renderer.spherical_areas_data_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.spherical_areas_data.as_slice()),
         );
 
         if let Err(err) = self.renderer.render(&self.window) {

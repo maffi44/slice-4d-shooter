@@ -180,8 +180,8 @@ pub struct StaticCollidersData {
 
 pub struct Hit {
     pub hit_point: Vec4,
-    pub hited_players_id: Option<u64>, 
     pub hit_normal: Vec4,
+    pub hited_actors_id: Option<u64>, 
 }
 
 struct StaticColliderData {

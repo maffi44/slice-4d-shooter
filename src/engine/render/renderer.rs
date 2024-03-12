@@ -63,12 +63,14 @@ pub struct Renderer {
     index_buffer: wgpu::Buffer,
     num_indices: u32,
     uniform_bind_group_0: BindGroup,
+    uniform_bind_group_1: BindGroup,
 
     pub dynamic_normal_shapes_buffer: Buffer,
     pub dynamic_stickiness_shapes_buffer: Buffer,
     pub dynamic_negative_shapes_buffer: Buffer,
     pub dynamic_neg_stickiness_shapes_buffer: Buffer,
-    pub other_dynamic_data: Buffer,
+    pub other_dynamic_data_buffer: Buffer,
+    pub spherical_areas_data_buffer: Buffer,
 }
 
 impl Renderer {
@@ -229,11 +231,18 @@ impl Renderer {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
-        let other_dynamic_data = device.create_buffer_init(&BufferInitDescriptor {
+        let other_dynamic_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("camera_buffer"),
             contents: bytemuck::cast_slice(&[render_data.dynamic_data.other_dynamic_data]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
+
+        let spherical_areas_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("camera_buffer"),
+            contents: bytemuck::cast_slice(render_data.dynamic_data.spherical_areas_data.as_slice()),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+
 
         log::info!("renderer: wgpu uniform buffers init");
 
@@ -345,6 +354,24 @@ impl Renderer {
             }
         );
 
+        let uniform_bind_group_layout_1 =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    }
+                ],
+                label: Some("uniform_bind_group_layout_1"),
+            }
+        );
+
         log::info!("renderer: wgpu uniform_bind_group_layout_0 init");
         
 
@@ -404,7 +431,19 @@ impl Renderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 9,
-                    resource: other_dynamic_data.as_entire_binding(),
+                    resource: other_dynamic_data_buffer.as_entire_binding(),
+                }
+            ],
+            
+            label: Some("shader_unforms_and_storge_bind_group_0"),
+        });
+
+        let uniform_bind_group_1 = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &uniform_bind_group_layout_1,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: spherical_areas_data_buffer.as_entire_binding(),
                 }
             ],
             
@@ -416,7 +455,7 @@ impl Renderer {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout_0],
+            bind_group_layouts: &[&uniform_bind_group_layout_0, &uniform_bind_group_layout_1],
             push_constant_ranges: &[],
         });
 
@@ -497,12 +536,14 @@ impl Renderer {
             vertex_buffer,
             index_buffer,
             uniform_bind_group_0,
+            uniform_bind_group_1,
 
             dynamic_normal_shapes_buffer,
             dynamic_stickiness_shapes_buffer,
             dynamic_negative_shapes_buffer,
             dynamic_neg_stickiness_shapes_buffer,
-            other_dynamic_data,
+            other_dynamic_data_buffer,
+            spherical_areas_data_buffer,
         }
     }
 
@@ -543,7 +584,7 @@ impl Renderer {
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
-            // render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
+            render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.

@@ -1,10 +1,14 @@
 use crate::{
     engine::{
-        engine_handle::EngineHandle, physics::{
+        world::static_object::StaticObject,
+        engine_handle::EngineHandle,
+        render::VisualElement,
+        physics::{
+            PhysicsSystem,
             colliders_container::PhysicalElement,
-            static_collider::StaticCollider, PhysicsSystem
-        }, render::VisualElement, world::static_object::StaticObject
-    }, transform::Transform
+        },
+    },
+    transform::Transform
 };
 
 use std::f32::consts::PI;
@@ -95,12 +99,15 @@ impl Actor for WanderingActor {
     fn get_visual_element(&self) -> Option<VisualElement> {
         let visual_element = VisualElement {
             transfrom: &self.transform,
-            static_objects: &self.static_objects
+            static_objects: Some(&self.static_objects),
+            coloring_areas: None,
+            volume_areas: None,
         };
 
         Some(visual_element)
     }
 
+    
     fn tick(
         &mut self,
         physic_system: &PhysicsSystem,

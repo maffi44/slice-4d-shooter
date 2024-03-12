@@ -23,7 +23,7 @@ pub struct RenderData {
 impl RenderData {
     pub fn new(world: &World, time: &TimeSystem, window: &Window) -> Self {
         let static_data = StaticRenderData::new(world);
-        let dynamic_data = DynamicRenderData::new(world, time, window);
+        let dynamic_data = DynamicRenderData::new();
 
         RenderData {
             static_data,
@@ -140,5 +140,41 @@ pub struct ShapesArraysMetadata {
     s_neg_sph_cubes_amount: u32,
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct SphericalAreasMetadata {
+    pub holegun_colorized_areas_start: u32,
+    pub holegun_colorized_areas_amount: u32,
+    pub explode_areas_start: u32,
+    pub explode_areas_amount: u32,
+}
 
+impl Default for SphericalAreasMetadata {
+    fn default() -> Self {
+        SphericalAreasMetadata {
+            holegun_colorized_areas_start: 0,
+            holegun_colorized_areas_amount: 0,
+            explode_areas_start: 0,
+            explode_areas_amount: 0,
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct SphericalArea {
+    pos: [f32;4],
+    color: [f32;3],
+    radius: f32,
+}
+
+impl Default for SphericalArea {
+    fn default() -> Self {
+        SphericalArea {
+            pos: [0.0, 0.0, 0.0, 0.0],
+            color: [0.0, 0.0, 0.0],
+            radius: 1.0,
+        }
+    }
+}
 

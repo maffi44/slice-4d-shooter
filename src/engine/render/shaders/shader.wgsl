@@ -67,8 +67,22 @@ struct ShapesMetadata {
     s_neg_sph_cubes_amount: u32,
 }
 
+struct SphericalAreasMetadata {
+    holegun_colorized_areas_start: u32,
+    holegun_colorized_areas_amount: u32,
+    explode_areas_start: u32,
+    explode_areas_amount: u32,
+}
+
+struct SphericalArea {
+    pos: vec4<f32>,
+    color: vec3<f32>,
+    radius: f32,
+}
+
 struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
+    spherical_areas_meatadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
     empty_byte: vec3<f32>,
     explore_w_pos: f32,
@@ -100,12 +114,14 @@ struct OtherStaticData {
 
 @group(0) @binding(9) var<uniform> dynamic_data: OtherDynamicData;
 
+@group(1) @binding(0) var<uniform> dyn_spherical_areas: array<SphericalArea, 256>;
 
 
-const MAX_STEPS: i32 = 200;
+
+const MAX_STEPS: i32 = 128;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
-const MAX_DIST: f32 = 700.0;    
+const MAX_DIST: f32 = 350.0;    
 
 
 fn rotate(angle: f32) -> mat2x2<f32> {
@@ -193,10 +209,69 @@ fn smin(a: f32, b: f32, k: f32) -> f32
 }
 
 fn get_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32) -> vec3<f32> {
-    let color = get_color_at_point(start_pos + direction * distance, distance);
+    let point = start_pos + direction * distance;
+    
+    var color = get_color_at_point(point, distance);
+
+    color += get_coloring_areas_color(point); 
 
     return color;
 }
+
+fn get_coloring_areas_color(p: vec4<f32>) -> vec3<f32> {
+    var color = vec3<f32>(0.0);
+
+    for (
+        var i = dynamic_data.spherical_areas_meatadata.holegun_colorized_areas_start;
+        i < dynamic_data.spherical_areas_meatadata.holegun_colorized_areas_amount + dynamic_data.spherical_areas_meatadata.holegun_colorized_areas_start;
+        i++
+    )
+    {
+        let d = -sd_sphere(p - dyn_spherical_areas[i].pos, dyn_spherical_areas[i].radius);
+
+        color += dyn_spherical_areas[i].color * clamp(d*30.0, 0.0, 1.0);
+    }
+
+    return color;
+}
+
+// fn get_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32) -> vec3<f32> {
+//     let color = vec3(0.0);
+    
+//     var total_distance: f32 = 0.;
+    
+//     var ray_origin = start_pos;
+
+//     var i: i32 = 0;
+//     for (; i < MAX_STEPS && total_distance < distance; i++) {
+
+//         var d: f32  = map_volume_aeras(ray_origin);
+
+//         total_distance += d;
+
+//         if (d < 0.) {
+//             // color.z = 1.;
+//             return vec2<f32>(total_distance + d, f32(i));
+//         }
+//         if (d < MIN_DIST) {
+//             // color.x = 1.;
+//             return vec2<f32>(total_distance + d, f32(i));
+//         }
+//         if (total_distance > MAX_DIST) {
+//             // color.y = 1.;
+//             return vec2<f32>(MAX_DIST, f32(i));
+//         }
+
+//         ray_origin += direction * d;
+//     }
+//     return vec2<f32>(total_distance, f32(i));
+
+//     return color;
+// }
+
+// fn map_volume_aeras(p: vec4<f32>) -> vec4<f32> {
+
+// }
 
 
 fn get_color_at_point(p: vec4<f32>, distance: f32) -> vec3<f32> {
@@ -606,7 +681,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     color *= shade * 1.2;
 
-    color = mix(clamp(color, vec3(0.0), vec3(1.0)), vec3<f32>(0.9, 1., 1.0), dist_and_depth.x / MAX_DIST);
+    // color += get_areas_color(camera_position, ray_direction, dist_and_depth.x) 
+
+    color = mix(clamp(color, vec3(0.0), vec3(1.0)), vec3<f32>(0.9, 1., 1.0), dist_and_depth.x / (MAX_DIST*0.4));
 
     // if dynamic_data.explore_w_pos != 0.0 {
 
@@ -645,3 +722,4 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     return vec4<f32>(color, 1.0);
 }
+

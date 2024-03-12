@@ -1,18 +1,12 @@
 use crate::{
-    engine::{
-        physics::physics_system_data::ShapeType,
-        time::TimeSystem,
-        world::World,
-        render::render_data::{
-            Shape,
-            ShapesArrays,
-            ShapesArraysMetadata
-        },
-    },
     actor::{
         Actor,
         ActorWrapper
-    },
+    }, engine::{
+        physics::physics_system_data::ShapeType, render::render_data::{
+            Shape, ShapesArrays, ShapesArraysMetadata, SphericalArea, SphericalAreasMetadata
+        }, time::TimeSystem, world::{static_object::{ColoringArea, VolumeArea}, World}
+    }
 };
 
 use glam::{Mat4, Vec4};
@@ -22,25 +16,33 @@ use winit::window::Window;
 
 pub struct DynamicRenderData {
     pub dynamic_shapes_data: ShapesArrays,
+    pub spherical_areas_data: Box<[SphericalArea; 256]>,
     pub other_dynamic_data: OtherDynamicData,
 
     // frame memory buffers
-    cubes_buffer: SpecificShapeBuffers,
-    spheres_buffer: SpecificShapeBuffers,
-    sph_cubes_buffer: SpecificShapeBuffers,
-    inf_w_cubes_buffer: SpecificShapeBuffers,
+    frame_cubes_buffer: SpecificShapeBuffers,
+    frame_spheres_buffer: SpecificShapeBuffers,
+    frame_sph_cubes_buffer: SpecificShapeBuffers,
+    frame_inf_w_cubes_buffer: SpecificShapeBuffers,
+
+    frame_coloring_areas_buffer: Vec<SphericalArea>,
+    frame_volume_areas_buffer: Vec<SphericalArea>,
 }
 
 impl DynamicRenderData {
-    pub fn new(world: &World, time: &TimeSystem, window: &Window) -> Self {
+    pub fn new() -> Self {
         let dynamic_render_data = DynamicRenderData {
             dynamic_shapes_data: ShapesArrays::default(),
+            spherical_areas_data: Box::new([SphericalArea::default(); 256]),
             other_dynamic_data: OtherDynamicData::default(),
 
-            cubes_buffer: SpecificShapeBuffers::default(),
-            spheres_buffer: SpecificShapeBuffers::default(),
-            sph_cubes_buffer: SpecificShapeBuffers::default(),
-            inf_w_cubes_buffer: SpecificShapeBuffers::default(),
+            frame_cubes_buffer: SpecificShapeBuffers::default(),
+            frame_spheres_buffer: SpecificShapeBuffers::default(),
+            frame_sph_cubes_buffer: SpecificShapeBuffers::default(),
+            frame_inf_w_cubes_buffer: SpecificShapeBuffers::default(),
+
+            frame_coloring_areas_buffer: Vec::new(),
+            frame_volume_areas_buffer: Vec::new(),
         };
 
         // dynamic_render_data.update(world, time, window);
@@ -57,10 +59,10 @@ impl DynamicRenderData {
         window: &Window,
     ) {
         
-        self.cubes_buffer.clear_buffers();
-        self.spheres_buffer.clear_buffers();
-        self.sph_cubes_buffer.clear_buffers();
-        self.inf_w_cubes_buffer.clear_buffers();
+        self.frame_cubes_buffer.clear_buffers();
+        self.frame_spheres_buffer.clear_buffers();
+        self.frame_sph_cubes_buffer.clear_buffers();
+        self.frame_inf_w_cubes_buffer.clear_buffers();
 
 
         for (_, actor) in world.actors.iter() {
@@ -69,87 +71,115 @@ impl DynamicRenderData {
 
                 let transform = visual_element.transfrom;
 
-                for static_object in visual_element.static_objects {
-                    
-                    let position = static_object.collider.position + transform.get_position();
-                    let size = static_object.collider.size * transform.get_scale();
-                    let color = static_object.material.color;
-                    let roundness = static_object.collider.roundness;
-                    
-                    let shape = Shape {
-                        pos: position.to_array(),
-                        size: size.to_array(),
-                        color: color.to_array(),
-                        roundness,
-                    };
-
-                    let is_positive = static_object.collider.is_positive;
-                    let is_stickiness = static_object.collider.stickiness;
-                    
-                    match static_object.collider.shape_type {
-
-                        ShapeType::Cube => {
-                            if is_positive {
-                                if is_stickiness {
-                                    self.cubes_buffer.stickiness.push(shape);
+                if let Some(static_objects) = visual_element.static_objects {
+                    for static_object in static_objects {
+                        
+                        let position = static_object.collider.position + transform.get_position();
+                        let size = static_object.collider.size * transform.get_scale();
+                        let color = static_object.material.color;
+                        let roundness = static_object.collider.roundness;
+                        
+                        let shape = Shape {
+                            pos: position.to_array(),
+                            size: size.to_array(),
+                            color: color.to_array(),
+                            roundness,
+                        };
+    
+                        let is_positive = static_object.collider.is_positive;
+                        let is_stickiness = static_object.collider.stickiness;
+                        
+                        match static_object.collider.shape_type {
+    
+                            ShapeType::Cube => {
+                                if is_positive {
+                                    if is_stickiness {
+                                        self.frame_cubes_buffer.stickiness.push(shape);
+                                    } else {
+                                        self.frame_cubes_buffer.normal.push(shape);
+                                    }
                                 } else {
-                                    self.cubes_buffer.normal.push(shape);
+                                    if is_stickiness {
+                                        self.frame_cubes_buffer.neg_stickiness.push(shape);
+                                    } else {
+                                        self.frame_cubes_buffer.negative.push(shape);
+                                    }
                                 }
-                            } else {
-                                if is_stickiness {
-                                    self.cubes_buffer.neg_stickiness.push(shape);
+                            },
+                            ShapeType::Sphere => {
+                                if is_positive {
+                                    if is_stickiness {
+                                        self.frame_spheres_buffer.stickiness.push(shape);
+                                    } else {
+                                        self.frame_spheres_buffer.normal.push(shape);
+                                    }
                                 } else {
-                                    self.cubes_buffer.negative.push(shape);
+                                    if is_stickiness {
+                                        self.frame_spheres_buffer.neg_stickiness.push(shape);
+                                    } else {
+                                        self.frame_spheres_buffer.negative.push(shape);
+                                    }
                                 }
-                            }
-                        },
-                        ShapeType::Sphere => {
-                            if is_positive {
-                                if is_stickiness {
-                                    self.spheres_buffer.stickiness.push(shape);
+                                
+                            },
+                            ShapeType::SphCube => {
+                                if is_positive {
+                                    if is_stickiness {
+                                        self.frame_sph_cubes_buffer.stickiness.push(shape);
+                                    } else {
+                                        self.frame_sph_cubes_buffer.normal.push(shape);
+                                    }
                                 } else {
-                                    self.spheres_buffer.normal.push(shape);
+                                    if is_stickiness {
+                                        self.frame_sph_cubes_buffer.neg_stickiness.push(shape);
+                                    } else {
+                                        self.frame_sph_cubes_buffer.negative.push(shape);
+                                    }
                                 }
-                            } else {
-                                if is_stickiness {
-                                    self.spheres_buffer.neg_stickiness.push(shape);
+                                
+                            },
+                            ShapeType::CubeInfW => {
+                                if is_positive {
+                                    if is_stickiness {
+                                        self.frame_inf_w_cubes_buffer.stickiness.push(shape);
+                                    } else {
+                                        self.frame_inf_w_cubes_buffer.normal.push(shape);
+                                    }
                                 } else {
-                                    self.spheres_buffer.negative.push(shape);
-                                }
-                            }
-                            
-                        },
-                        ShapeType::SphCube => {
-                            if is_positive {
-                                if is_stickiness {
-                                    self.sph_cubes_buffer.stickiness.push(shape);
-                                } else {
-                                    self.sph_cubes_buffer.normal.push(shape);
-                                }
-                            } else {
-                                if is_stickiness {
-                                    self.sph_cubes_buffer.neg_stickiness.push(shape);
-                                } else {
-                                    self.sph_cubes_buffer.negative.push(shape);
-                                }
-                            }
-                            
-                        },
-                        ShapeType::CubeInfW => {
-                            if is_positive {
-                                if is_stickiness {
-                                    self.inf_w_cubes_buffer.stickiness.push(shape);
-                                } else {
-                                    self.inf_w_cubes_buffer.normal.push(shape);
-                                }
-                            } else {
-                                if is_stickiness {
-                                    self.inf_w_cubes_buffer.neg_stickiness.push(shape);
-                                } else {
-                                    self.inf_w_cubes_buffer.negative.push(shape);
+                                    if is_stickiness {
+                                        self.frame_inf_w_cubes_buffer.neg_stickiness.push(shape);
+                                    } else {
+                                        self.frame_inf_w_cubes_buffer.negative.push(shape);
+                                    }
                                 }
                             }
                         }
+                    }
+                }
+
+                if let Some(volume_areas) = visual_element.volume_areas {
+                    
+                    for volume_area in volume_areas {
+                        let area = SphericalArea {
+                            pos: (volume_area.translation + transform.get_position()).to_array(),
+                            radius: volume_area.radius,
+                            color: volume_area.color.to_array(),
+                        };
+
+                        self.frame_volume_areas_buffer.push(area)
+                    }
+                }
+
+                if let Some(coloring_areas) = visual_element.coloring_areas {
+                    
+                    for coloring_area in coloring_areas {
+                        let area = SphericalArea {
+                            pos: (coloring_area.translation + transform.get_position()).to_array(),
+                            radius: coloring_area.radius,
+                            color: coloring_area.color.to_array(),
+                        };
+
+                        self.frame_coloring_areas_buffer.push(area)
                     }
                 }
             }
@@ -212,7 +242,7 @@ impl DynamicRenderData {
         let mut index = 0;
         cubes_start = 0u32;
 
-        while let Some(shape) = self.cubes_buffer.normal.pop() {
+        while let Some(shape) = self.frame_cubes_buffer.normal.pop() {
             self.dynamic_shapes_data.normal[index] = shape;
             index += 1;
         }
@@ -222,7 +252,7 @@ impl DynamicRenderData {
 
         spheres_start = index as u32;
 
-       while let Some(shape) = self.spheres_buffer.normal.pop() {
+       while let Some(shape) = self.frame_spheres_buffer.normal.pop() {
             self.dynamic_shapes_data.normal[index] = shape;
             index += 1;
         }
@@ -232,7 +262,7 @@ impl DynamicRenderData {
 
         inf_cubes_start = index as u32;
 
-       while let Some(shape) = self.inf_w_cubes_buffer.normal.pop() {
+       while let Some(shape) = self.frame_inf_w_cubes_buffer.normal.pop() {
             self.dynamic_shapes_data.normal[index] = shape;
             index += 1;
         }
@@ -242,7 +272,7 @@ impl DynamicRenderData {
 
         sph_cubes_start = index as u32;
 
-       while let Some(shape) = self.sph_cubes_buffer.normal.pop() {
+       while let Some(shape) = self.frame_sph_cubes_buffer.normal.pop() {
             self.dynamic_shapes_data.normal[index] = shape;
             index += 1;
         }
@@ -254,7 +284,7 @@ impl DynamicRenderData {
         let mut index = 0;
         s_cubes_start = 0u32;
 
-       while let Some(shape) = self.cubes_buffer.stickiness.pop() {
+       while let Some(shape) = self.frame_cubes_buffer.stickiness.pop() {
             self.dynamic_shapes_data.stickiness[index] = shape;
             index += 1;
         }
@@ -264,7 +294,7 @@ impl DynamicRenderData {
 
         s_spheres_start = index as u32;
 
-       while let Some(shape) = self.spheres_buffer.stickiness.pop() {
+       while let Some(shape) = self.frame_spheres_buffer.stickiness.pop() {
             self.dynamic_shapes_data.stickiness[index] = shape;
             index += 1;
         }
@@ -274,7 +304,7 @@ impl DynamicRenderData {
 
         s_inf_cubes_start = index as u32;
 
-       while let Some(shape) = self.inf_w_cubes_buffer.stickiness.pop() {
+       while let Some(shape) = self.frame_inf_w_cubes_buffer.stickiness.pop() {
             self.dynamic_shapes_data.stickiness[index] = shape;
             index += 1;
         }
@@ -284,7 +314,7 @@ impl DynamicRenderData {
 
         s_sph_cubes_start = index as u32;
 
-       while let Some(shape) = self.sph_cubes_buffer.stickiness.pop() {
+       while let Some(shape) = self.frame_sph_cubes_buffer.stickiness.pop() {
             self.dynamic_shapes_data.stickiness[index] = shape;
             index += 1;
         }
@@ -297,7 +327,7 @@ impl DynamicRenderData {
         let mut index = 0;
         neg_cubes_start = 0u32;
 
-       while let Some(shape) = self.cubes_buffer.negative.pop() {
+       while let Some(shape) = self.frame_cubes_buffer.negative.pop() {
             self.dynamic_shapes_data.negative[index] = shape;
             index += 1;
         }
@@ -307,7 +337,7 @@ impl DynamicRenderData {
 
         neg_spheres_start = index as u32;
 
-       while let Some(shape) = self.spheres_buffer.negative.pop() {
+       while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
             self.dynamic_shapes_data.negative[index] = shape;
             index += 1;
         }
@@ -317,7 +347,7 @@ impl DynamicRenderData {
 
         neg_inf_cubes_start = index as u32;
 
-       while let Some(shape) = self.inf_w_cubes_buffer.negative.pop() {
+       while let Some(shape) = self.frame_inf_w_cubes_buffer.negative.pop() {
             self.dynamic_shapes_data.negative[index] = shape;
             index += 1;
         }
@@ -327,7 +357,7 @@ impl DynamicRenderData {
 
         neg_sph_cubes_start = index as u32;
 
-       while let Some(shape) = self.sph_cubes_buffer.negative.pop() {
+       while let Some(shape) = self.frame_sph_cubes_buffer.negative.pop() {
             self.dynamic_shapes_data.negative[index] = shape;
             index += 1;
         }
@@ -340,7 +370,7 @@ impl DynamicRenderData {
         let mut index = 0;
         s_neg_cubes_start = 0u32;
 
-       while let Some(shape) = self.cubes_buffer.neg_stickiness.pop() {
+       while let Some(shape) = self.frame_cubes_buffer.neg_stickiness.pop() {
             self.dynamic_shapes_data.neg_stickiness[index] = shape;
             index += 1;
         }
@@ -350,7 +380,7 @@ impl DynamicRenderData {
 
         s_neg_spheres_start = index as u32;
 
-       while let Some(shape) = self.spheres_buffer.neg_stickiness.pop() {
+       while let Some(shape) = self.frame_spheres_buffer.neg_stickiness.pop() {
             self.dynamic_shapes_data.neg_stickiness[index] = shape;
             index += 1;
         }
@@ -360,7 +390,7 @@ impl DynamicRenderData {
 
         s_neg_inf_cubes_start = index as u32;
 
-       while let Some(shape) = self.inf_w_cubes_buffer.neg_stickiness.pop() {
+       while let Some(shape) = self.frame_inf_w_cubes_buffer.neg_stickiness.pop() {
             self.dynamic_shapes_data.neg_stickiness[index] = shape;
             index += 1;
         }
@@ -370,7 +400,7 @@ impl DynamicRenderData {
 
         s_neg_sph_cubes_start = index as u32;
 
-       while let Some(shape) = self.sph_cubes_buffer.neg_stickiness.pop() {
+       while let Some(shape) = self.frame_sph_cubes_buffer.neg_stickiness.pop() {
             self.dynamic_shapes_data.neg_stickiness[index] = shape;
             index += 1;
         }
@@ -413,7 +443,43 @@ impl DynamicRenderData {
             s_neg_sph_cubes_amount,
         };
 
-        self.other_dynamic_data.update(world, time, window, shapes_arrays_metadata);
+        let mut coloring_areas_start = 0u32;
+        let mut coloring_areas_amount = 0u32;
+
+        let mut volume_areas_start = 0u32;
+        let mut volume_areas_amount = 0u32;
+
+        let mut index = 0;
+        coloring_areas_start = 0u32;
+
+        while let Some(area) = self.frame_coloring_areas_buffer.pop() {
+            self.spherical_areas_data[index] = area;
+
+            index += 1;
+        }
+
+        coloring_areas_amount = index as u32;
+
+        volume_areas_start = index as u32;
+
+        while let Some(area) = self.frame_volume_areas_buffer.pop() {
+            self.spherical_areas_data[index] = area;
+
+            index += 1;
+        }
+ 
+        volume_areas_amount = index as u32 - volume_areas_start;
+
+        let spherical_areas_meatadata = SphericalAreasMetadata {
+            holegun_colorized_areas_start: coloring_areas_start,
+            holegun_colorized_areas_amount: coloring_areas_amount,
+            explode_areas_start: volume_areas_amount,
+            explode_areas_amount: volume_areas_amount,
+        };
+
+        // log::warn!("AMOUNT: {}, START: {}", coloring_areas_amount, coloring_areas_start);
+
+        self.other_dynamic_data.update(world, time, window, shapes_arrays_metadata, spherical_areas_meatadata);
     }
 }
 
@@ -421,6 +487,7 @@ impl DynamicRenderData {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct OtherDynamicData {
     dynamic_shapes_arrays_metadata: ShapesArraysMetadata,
+    spherical_areas_metadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
     empty_byte: [f32; 3],
     explore_w_pos: f32,
@@ -436,7 +503,8 @@ impl OtherDynamicData {
         world: &World,
         time: &TimeSystem,
         window: &Window,
-        shapes_arrays_metadata: ShapesArraysMetadata
+        shapes_arrays_metadata: ShapesArraysMetadata,
+        spherical_areas_meatadata: SphericalAreasMetadata,
     ) {
         
         let cam_pos;
@@ -468,6 +536,7 @@ impl OtherDynamicData {
         };
 
         self.dynamic_shapes_arrays_metadata = shapes_arrays_metadata;
+        self.spherical_areas_metadata = spherical_areas_meatadata;
 
         self.screen_aspect = {
             let size = window.inner_size();
@@ -483,6 +552,7 @@ impl Default for OtherDynamicData {
 
         OtherDynamicData {
             dynamic_shapes_arrays_metadata: ShapesArraysMetadata::default(),
+            spherical_areas_metadata: SphericalAreasMetadata::default(),
             camera_data: CameraUniform::default(),
             empty_byte: [0.0, 0.0, 0.0],
             explore_w_pos: 0.0,
