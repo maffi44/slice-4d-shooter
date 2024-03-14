@@ -5,18 +5,21 @@ use crate::{
     }, engine::{
         physics::physics_system_data::ShapeType, render::render_data::{
             Shape, ShapesArrays, ShapesArraysMetadata, SphericalArea, SphericalAreasMetadata
-        }, time::TimeSystem, world::{static_object::{ColoringArea, VolumeArea}, World}
+        }, time::TimeSystem, world::{static_object::{ColoringArea, SphericalVolumeArea, VolumeArea}, World}
     }
 };
 
 use glam::{Mat4, Vec4};
 use winit::window::Window;
 
+use super::BeamArea;
+
 
 
 pub struct DynamicRenderData {
     pub dynamic_shapes_data: ShapesArrays,
     pub spherical_areas_data: Box<[SphericalArea; 256]>,
+    pub beam_areas_data: Box<[BeamArea; 128]>,
     pub other_dynamic_data: OtherDynamicData,
 
     // frame memory buffers
@@ -26,7 +29,8 @@ pub struct DynamicRenderData {
     frame_inf_w_cubes_buffer: SpecificShapeBuffers,
 
     frame_coloring_areas_buffer: Vec<SphericalArea>,
-    frame_volume_areas_buffer: Vec<SphericalArea>,
+    frame_spherical_volume_areas_buffer: Vec<SphericalArea>,
+    frame_beam_volume_areas_buffer: Vec<BeamArea>,
 }
 
 impl DynamicRenderData {
@@ -34,6 +38,7 @@ impl DynamicRenderData {
         let dynamic_render_data = DynamicRenderData {
             dynamic_shapes_data: ShapesArrays::default(),
             spherical_areas_data: Box::new([SphericalArea::default(); 256]),
+            beam_areas_data: Box::new([BeamArea::default(); 128]),
             other_dynamic_data: OtherDynamicData::default(),
 
             frame_cubes_buffer: SpecificShapeBuffers::default(),
@@ -42,7 +47,8 @@ impl DynamicRenderData {
             frame_inf_w_cubes_buffer: SpecificShapeBuffers::default(),
 
             frame_coloring_areas_buffer: Vec::new(),
-            frame_volume_areas_buffer: Vec::new(),
+            frame_spherical_volume_areas_buffer: Vec::new(),
+            frame_beam_volume_areas_buffer: Vec::new(),
         };
 
         // dynamic_render_data.update(world, time, window);
@@ -160,13 +166,30 @@ impl DynamicRenderData {
                 if let Some(volume_areas) = visual_element.volume_areas {
                     
                     for volume_area in volume_areas {
-                        let area = SphericalArea {
-                            pos: (volume_area.translation + transform.get_position()).to_array(),
-                            radius: volume_area.radius,
-                            color: volume_area.color.to_array(),
-                        };
 
-                        self.frame_volume_areas_buffer.push(area)
+                        match volume_area {
+                            VolumeArea::SphericalVolumeArea(spherical_area) => {
+                                let area = SphericalArea {
+                                    pos: (spherical_area.translation + transform.get_position()).to_array(),
+                                    radius: spherical_area.radius,
+                                    color: spherical_area.color.to_array(),
+                                };
+        
+                                self.frame_spherical_volume_areas_buffer.push(area)
+                            },
+
+                            VolumeArea::BeamVolumeArea(beam_area) => {
+                                let area = BeamArea {
+                                    pos1: (beam_area.translation_pos_1 + transform.get_position()).to_array(),
+                                    pos2: (beam_area.translation_pos_2 + transform.get_position()).to_array(),
+                                    radius: beam_area.radius,
+                                    color: beam_area.color.to_array(),
+                                };
+        
+                                self.frame_beam_volume_areas_buffer.push(area);
+                            }
+                        }
+
                     }
                 }
 
@@ -462,7 +485,7 @@ impl DynamicRenderData {
 
         volume_areas_start = index as u32;
 
-        while let Some(area) = self.frame_volume_areas_buffer.pop() {
+        while let Some(area) = self.frame_spherical_volume_areas_buffer.pop() {
             self.spherical_areas_data[index] = area;
 
             index += 1;
@@ -473,13 +496,28 @@ impl DynamicRenderData {
         let spherical_areas_meatadata = SphericalAreasMetadata {
             holegun_colorized_areas_start: coloring_areas_start,
             holegun_colorized_areas_amount: coloring_areas_amount,
-            explode_areas_start: volume_areas_amount,
+            explode_areas_start: volume_areas_start,
             explode_areas_amount: volume_areas_amount,
         };
 
-        // log::warn!("AMOUNT: {}, START: {}", coloring_areas_amount, coloring_areas_start);
+        let mut index = 0_usize;
 
-        self.other_dynamic_data.update(world, time, window, shapes_arrays_metadata, spherical_areas_meatadata);
+        while let Some(area) = self.frame_beam_volume_areas_buffer.pop() {
+            self.beam_areas_data[index] = area;
+
+            index += 1;
+        }
+
+        let beams_areas_amount = index as u32;
+
+        self.other_dynamic_data.update(
+            world,
+            time,
+            window,
+            shapes_arrays_metadata,
+            spherical_areas_meatadata,
+            beams_areas_amount
+        );
     }
 }
 
@@ -489,9 +527,11 @@ pub struct OtherDynamicData {
     dynamic_shapes_arrays_metadata: ShapesArraysMetadata,
     spherical_areas_metadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
-    empty_byte: [f32; 3],
-    explore_w_pos: f32,
-    explore_w_coef: f32,
+    beam_areas_amount: u32,
+    // empty_bytes1: [f32; 3],
+    // empty_bytes2: [f32; 4],
+    // explore_w_pos: f32,
+    // explore_w_coef: f32,
     stickiness: f32,
     screen_aspect: f32,
     time: f32,   
@@ -505,6 +545,7 @@ impl OtherDynamicData {
         window: &Window,
         shapes_arrays_metadata: ShapesArraysMetadata,
         spherical_areas_meatadata: SphericalAreasMetadata,
+        beams_areas_amount: u32,
     ) {
         
         let cam_pos;
@@ -527,8 +568,8 @@ impl OtherDynamicData {
             panic!("main camera is not connected to the player")
         }
 
-        self.explore_w_pos = explore_w_pos;
-        self.explore_w_coef = explore_w_coef;
+        // self.explore_w_pos = explore_w_pos;
+        // self.explore_w_coef = explore_w_coef;
 
         self.camera_data = CameraUniform {
             cam_pos: cam_pos.to_array(),
@@ -543,6 +584,8 @@ impl OtherDynamicData {
             size.width as f32 / size.height as f32
         };
 
+        self.beam_areas_amount = beams_areas_amount;
+
         self.time = time.timestamp_of_main_loop_start.elapsed().as_secs_f32();
     }
 }
@@ -554,9 +597,11 @@ impl Default for OtherDynamicData {
             dynamic_shapes_arrays_metadata: ShapesArraysMetadata::default(),
             spherical_areas_metadata: SphericalAreasMetadata::default(),
             camera_data: CameraUniform::default(),
-            empty_byte: [0.0, 0.0, 0.0],
-            explore_w_pos: 0.0,
-            explore_w_coef: 0.0,
+            beam_areas_amount: 0,
+            // empty_bytes1: [0.0; 3],
+            // empty_bytes2: [0.0; 4],
+            // explore_w_pos: 0.0,
+            // explore_w_coef: 0.0,
             stickiness: 0.5,
             screen_aspect: 1.0,
             time: 0.0,

@@ -1,4 +1,4 @@
-use glam::Vec4;
+use glam::{Mat3, Vec3, Vec4};
 
 use crate::{
     actor::{
@@ -20,14 +20,18 @@ use crate::{
 };
 
 pub struct HoleGun {
-    charging_time: f32
+    charging_time: f32,
+    shooted_on_this_charge: bool,
+    color: Vec3,
 }
 
 
 impl HoleGun {
     pub fn new() -> Self {
         HoleGun {
-            charging_time: 0.0
+            charging_time: 0.0,
+            shooted_on_this_charge: false,
+            color: Vec3::Y*3.0,
         }
     }
 }
@@ -48,18 +52,29 @@ impl Device for HoleGun {
         delta: f32,
     )
     {
-        if input.first_mouse.is_action_pressed() {
+        self.color = Mat3::from_euler(
+            glam::EulerRot::XYZ,
+            self.color.x + delta,
+            self.color.y + delta,
+            self.color.z + delta
+        ) * self.color;
 
+        if input.first_mouse.is_action_pressed() &&
+            !self.shooted_on_this_charge
+        {
             self.charging_time += delta * 1.6;
 
             if self.charging_time > 3.0 {
+
+                self.shooted_on_this_charge = true;
                 
                 shoot(
                     player_id,
                     player,
                     physic_system,
                     engine_handle,
-                    self.charging_time
+                    self.charging_time,
+                    self.color,
                 );
 
                 self.charging_time = 0.0;
@@ -68,6 +83,8 @@ impl Device for HoleGun {
            
         } else {
 
+            self.shooted_on_this_charge = false;
+
             if self.charging_time > 0.0 {
 
                 shoot(
@@ -75,7 +92,8 @@ impl Device for HoleGun {
                     player,
                     physic_system,
                     engine_handle,
-                    self.charging_time
+                    self.charging_time,
+                    self.color,
                 );
 
                 self.charging_time = 0.0;
@@ -91,18 +109,30 @@ fn shoot(
     physic_system: &PhysicsSystem,
     engine_handle: &mut EngineHandle,
     charging_time: f32,
+    color: Vec3,
 ) {
     let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
             
     let direction = player.transform.rotation.inverse() * Vec4::NEG_Z;
+
+    let shooted_from_offset = player.transform.rotation.inverse() * Vec4::new(
+        -player.collider.get_collider_radius() * 0.3,
+        player.collider.get_collider_radius() * 0.2,
+        -player.collider.get_collider_radius() * 0.4,
+        0.0
+    );
     
     let hit = physic_system.ray_cast(from, direction, 100.0);
 
     if let Some(hit) = hit {
 
-        let mut hole = HoleGunHole::new(charging_time);
-
-        hole.set_transform(Transform::new_from_pos(hit.hit_point));
+        let hole = HoleGunHole::new(
+            hit.hit_point,
+            from - shooted_from_offset,
+            charging_time,
+            color.normalize(),
+            
+        );
 
         engine_handle.send_command(
             Command {

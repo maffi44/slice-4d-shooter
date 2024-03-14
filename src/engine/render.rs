@@ -105,6 +105,12 @@ impl RenderSystem {
             bytemuck::cast_slice(self.render_data.dynamic_data.spherical_areas_data.as_slice()),
         );
 
+        self.renderer.queue.write_buffer(
+            &self.renderer.beam_areas_data_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.beam_areas_data.as_slice()),
+        );
+
         if let Err(err) = self.renderer.render(&self.window) {
             match err {
                 wgpu::SurfaceError::Lost => self.resize_frame_buffer(),

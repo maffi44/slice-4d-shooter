@@ -80,13 +80,22 @@ struct SphericalArea {
     radius: f32,
 }
 
+struct BeamArea {
+    pos1: vec4<f32>,
+    pos2: vec4<f32>,
+    color: vec3<f32>,
+    radius: f32,
+}
+
 struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     spherical_areas_meatadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
-    empty_byte: vec3<f32>,
-    explore_w_pos: f32,
-    explore_w_coef: f32,
+    beam_areas_amount: u32,
+    // empty_bytes1: vec3<f32>,
+    // empty_bytes2: vec4<f32>,
+    // explore_w_pos: f32,
+    // explore_w_coef: f32,
     stickiness: f32,
     screen_aspect: f32,
     time: f32,   
@@ -115,6 +124,7 @@ struct OtherStaticData {
 @group(0) @binding(9) var<uniform> dynamic_data: OtherDynamicData;
 
 @group(1) @binding(0) var<uniform> dyn_spherical_areas: array<SphericalArea, 256>;
+@group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 128>;
 
 
 
@@ -184,6 +194,14 @@ fn sd_octahedron(point: vec4<f32>, s: f32) -> f32 {
     return (p.x+p.y+p.z+p.w-s)*0.57725627;
 }
 
+fn sd_capsule(p: vec4<f32>, a: vec4<f32>, b: vec4<f32>, r: f32) -> f32
+{
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa,ba)/dot(ba,ba), 0.0, 1.0);
+    return length(pa - ba*h) - r;
+}
+
 fn smin_2(a: f32, b: f32, k: f32) -> f32
 {
     let kk = k * (1.0/(1.0-sqrt(0.5)));
@@ -213,7 +231,7 @@ fn get_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32) -> vec3<
     
     var color = get_color_at_point(point, distance);
 
-    color += get_coloring_areas_color(point); 
+    // color += get_coloring_areas_color(point); 
 
     return color;
 }
@@ -235,44 +253,112 @@ fn get_coloring_areas_color(p: vec4<f32>) -> vec3<f32> {
     return color;
 }
 
-// fn get_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32) -> vec3<f32> {
-//     let color = vec3(0.0);
-    
-//     var total_distance: f32 = 0.;
-    
-//     var ray_origin = start_pos;
+fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
+    var color = vec3(0.0);
 
-//     var i: i32 = 0;
-//     for (; i < MAX_STEPS && total_distance < distance; i++) {
+    for (
+        var i = dynamic_data.spherical_areas_meatadata.explode_areas_start;
+        i < dynamic_data.spherical_areas_meatadata.explode_areas_amount + dynamic_data.spherical_areas_meatadata.explode_areas_start;
+        i++
+    )
+    {
+        color += ray_march_individual_volume_sphere(
+            dyn_spherical_areas[i],
+            start_pos,
+            direction, 
+            max_distance
+        );
+    }
 
-//         var d: f32  = map_volume_aeras(ray_origin);
+    for (
+        var i = 0u;
+        i < dynamic_data.beam_areas_amount;
+        i++
+    )
+    {
+        color += ray_march_indicidual_volume_beam(
+            dyn_beam_areas[i],
+            start_pos,
+            direction,
+            max_distance
+        );
+    }
 
-//         total_distance += d;
+    return color;
+}
 
-//         if (d < 0.) {
-//             // color.z = 1.;
-//             return vec2<f32>(total_distance + d, f32(i));
-//         }
-//         if (d < MIN_DIST) {
-//             // color.x = 1.;
-//             return vec2<f32>(total_distance + d, f32(i));
-//         }
-//         if (total_distance > MAX_DIST) {
-//             // color.y = 1.;
-//             return vec2<f32>(MAX_DIST, f32(i));
-//         }
+fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
+    var color = vec3(0.0);
 
-//         ray_origin += direction * d;
-//     }
-//     return vec2<f32>(total_distance, f32(i));
+    var total_dist = 0.0;
 
-//     return color;
-// }
+    var p = start_pos;
 
-// fn map_volume_aeras(p: vec4<f32>) -> vec4<f32> {
+    var prev_d = MAX_DIST;
 
-// }
+    for (var i = 0; i < MAX_STEPS; i++) {
 
+        if total_dist > max_distance {
+            break;
+        }
+        
+        let d = sd_sphere(p - sphere.pos, sphere.radius);
+
+        if d > prev_d {
+            break;
+        }
+
+        prev_d = d;
+
+        if d < MIN_DIST {
+            color = sphere.color;
+
+            break;
+        }
+        total_dist += d;
+
+        p += direction * d;
+    }
+
+    return color;
+}
+
+
+fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
+    var color = vec3(0.0);
+
+    var total_dist = 0.0;
+
+    var p = start_pos;
+
+    var prev_d = MAX_DIST;
+
+    for (var i = 0; i < MAX_STEPS; i++) {
+
+        if total_dist > max_distance {
+            break;
+        }
+
+        let d = sd_capsule(p, beam.pos1, beam.pos2, beam.radius);
+        
+        if d > prev_d {
+            break;
+        }
+
+        prev_d = d;
+
+        if d < MIN_DIST {
+            color = beam.color;
+
+            break;
+        }
+        total_dist += d;
+
+        p += direction * d;
+    }
+
+    return color;
+}
 
 fn get_color_at_point(p: vec4<f32>, distance: f32) -> vec3<f32> {
 
@@ -618,11 +704,11 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32> ) -> vec2<f32>
 
         if (d < 0.) {
             // color.z = 1.;
-            return vec2<f32>(total_distance + d, f32(i));
+            return vec2<f32>(total_distance, f32(i));
         }
         if (d < MIN_DIST) {
             // color.x = 1.;
-            return vec2<f32>(total_distance + d, f32(i));
+            return vec2<f32>(total_distance, f32(i));
         }
         if (total_distance > MAX_DIST) {
             // color.y = 1.;
@@ -679,9 +765,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var color = get_color(camera_position, ray_direction, dist_and_depth.x);
 
+    color += get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
+
     color *= shade * 1.2;
 
-    // color += get_areas_color(camera_position, ray_direction, dist_and_depth.x) 
+    color += get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
 
     color = mix(clamp(color, vec3(0.0), vec3(1.0)), vec3<f32>(0.9, 1., 1.0), dist_and_depth.x / (MAX_DIST*0.4));
 

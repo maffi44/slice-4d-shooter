@@ -28,8 +28,22 @@ pub struct  ColoringArea {
 }
 
 #[derive(Clone)]
-pub struct  VolumeArea {
+pub enum VolumeArea {
+    SphericalVolumeArea(SphericalVolumeArea),
+    BeamVolumeArea(BeamVolumeArea),
+}
+
+#[derive(Clone)]
+pub struct  SphericalVolumeArea {
     pub translation: Vec4,
+    pub radius: f32,
+    pub color: Vec3,
+}
+
+#[derive(Clone)]
+pub struct  BeamVolumeArea {
+    pub translation_pos_1: Vec4,
+    pub translation_pos_2: Vec4,
     pub radius: f32,
     pub color: Vec3,
 }

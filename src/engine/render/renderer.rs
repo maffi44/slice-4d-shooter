@@ -71,6 +71,7 @@ pub struct Renderer {
     pub dynamic_neg_stickiness_shapes_buffer: Buffer,
     pub other_dynamic_data_buffer: Buffer,
     pub spherical_areas_data_buffer: Buffer,
+    pub beam_areas_data_buffer: Buffer,
 }
 
 impl Renderer {
@@ -243,6 +244,11 @@ impl Renderer {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
+        let beam_areas_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("camera_buffer"),
+            contents: bytemuck::cast_slice(render_data.dynamic_data.beam_areas_data.as_slice()),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
 
         log::info!("renderer: wgpu uniform buffers init");
 
@@ -366,6 +372,16 @@ impl Renderer {
                             min_binding_size: None,
                         },
                         count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     }
                 ],
                 label: Some("uniform_bind_group_layout_1"),
@@ -444,6 +460,10 @@ impl Renderer {
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: spherical_areas_data_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: beam_areas_data_buffer.as_entire_binding(),
                 }
             ],
             
@@ -544,6 +564,7 @@ impl Renderer {
             dynamic_neg_stickiness_shapes_buffer,
             other_dynamic_data_buffer,
             spherical_areas_data_buffer,
+            beam_areas_data_buffer,
         }
     }
 

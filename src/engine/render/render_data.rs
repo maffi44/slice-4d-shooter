@@ -178,3 +178,22 @@ impl Default for SphericalArea {
     }
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct BeamArea {
+    pos1: [f32; 4],
+    pos2: [f32; 4],
+    color: [f32; 3],
+    radius: f32,
+}
+
+impl Default for BeamArea {
+    fn default() -> Self {
+        BeamArea {
+            pos1: [0.0, 0.0, 0.0, 0.0],
+            pos2: [0.0, 0.0, 0.0, 0.0],
+            color: [0.0, 0.0, 0.0],
+            radius: 1.0,
+        }
+    }
+}
