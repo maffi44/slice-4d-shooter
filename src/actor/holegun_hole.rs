@@ -1,4 +1,4 @@
-use glam::{Vec3, Vec4};
+use glam::{Vec3, Vec4, FloatExt};
 use serde_json::de;
 
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
 
 use super::Component;
 
-const HOLE_COLOR: Vec3 = Vec3::new(0.2, 1.0, 0.0);
+const EXPLODE_TIME: f32 = 0.25;
 
 pub struct HoleGunHole {
     id: Option<ActorID>,
@@ -22,6 +22,11 @@ pub struct HoleGunHole {
     static_objects: Vec<StaticObject>,
     coloring_areas: Vec<ColoringArea>,
     volume_areas: Vec<VolumeArea>,
+
+    explode_current_time: f32,
+    explode_final_time: f32,
+    target_size: f32,
+    target_size_reached: bool
 }
 
 
@@ -34,7 +39,7 @@ impl HoleGunHole {
             collider: StaticCollider {
                 shape_type: ShapeType::Sphere,
                 position: Vec4::ZERO,
-                size: Vec4::new(radius, 0.0, 0.0, 0.0),
+                size: Vec4::new(0.01, 0.0, 0.0, 0.0),
                 is_positive: false,
                 roundness: 0.0,
                 stickiness: false,
@@ -53,7 +58,7 @@ impl HoleGunHole {
 
         let coloring_area = ColoringArea {
             translation: Vec4::ZERO,
-            radius: radius + 0.1,
+            radius: 0.01,
             color: color
         };
 
@@ -65,7 +70,7 @@ impl HoleGunHole {
             BeamVolumeArea {
                 translation_pos_1: Vec4::ZERO,
                 translation_pos_2: shoooted_from - position,
-                radius: 0.015 + radius*0.1,
+                radius: 0.020,
                 color: color, 
             }
         );
@@ -73,8 +78,8 @@ impl HoleGunHole {
         let explode = VolumeArea::SphericalVolumeArea(
             SphericalVolumeArea {
                 translation: Vec4::ZERO,
-                radius: radius*1.2,
-                color: color, 
+                radius: 0.06,
+                color: color,//Vec3::new(1.0, 1.0, 1.0), 
             }
         );
 
@@ -89,6 +94,10 @@ impl HoleGunHole {
             static_objects,
             coloring_areas,
             volume_areas,
+            target_size: radius,
+            target_size_reached: false,
+            explode_current_time: 0.0,
+            explode_final_time: EXPLODE_TIME * (radius*0.3),
         }
     }
 
@@ -125,48 +134,91 @@ impl Actor for HoleGunHole {
         engine_handle: &mut EngineHandle,
         delta: f32
     ) {
-        for area in self.coloring_areas.iter_mut() {
-            area.radius -= delta * 0.2;
-        }
-
-        let mut clear = false;
-
-        for volume_area in self.volume_areas.iter_mut() {
+        if self.target_size_reached {
             
-            match volume_area {
-                VolumeArea::BeamVolumeArea(area) => {
-                    area.radius *= 1.0 - delta*30.0;
-
-                    // if area.radius < 0.001 {
-                    //     clear = true;
-                    // }
-                },
-                VolumeArea::SphericalVolumeArea(area) => {
-                    area.radius *= 1.0 - delta*30.0;
-                    
-                    if area.radius < 0.01 {
-                        clear = true;
+            for area in self.coloring_areas.iter_mut() {
+                area.radius -= delta * 0.2;
+            }
+    
+            let mut clear = false;
+    
+            for volume_area in self.volume_areas.iter_mut() {
+                
+                match volume_area {
+                    VolumeArea::BeamVolumeArea(area) => {
+                        area.radius *= 1.0 - delta*30.0;
+    
+                        if area.radius < 0.001 {
+                            clear = true;
+                        }
+                    },
+                    VolumeArea::SphericalVolumeArea(area) => {
+                        area.radius *= 1.0 - delta*30.0;
+                        
+                        if area.radius < 0.01 {
+                            clear = true;
+                        }
                     }
                 }
             }
-        }
+    
+            if clear {
+                self.volume_areas.clear();
+            }
+    
+            for obj in self.static_objects.iter_mut() {
+                obj.collider.size.x -= delta * 0.2;
+    
+                if obj.collider.size.x <= 0.0 {
+                    engine_handle.send_command(
+                        Command {
+                            sender: self.id.expect("HoleGun's Hole have not ActorID"),
+                            command_type: CommandType::RemoveActor(
+                                self.id.expect("HoleGun's Hole have not ActorID")
+                            )
+                        }
+                    )
+                }
+            }
+        } else {
+            self.explode_current_time += delta;
 
-        if clear {
-            self.volume_areas.clear();
-        }
+            let explode_coeff = self.explode_current_time / self.explode_final_time;
 
-        for obj in self.static_objects.iter_mut() {
-            obj.collider.size.x -= delta * 0.2;
+            for area in self.coloring_areas.iter_mut() {
+                area.radius = f32::lerp(
+                    0.0,
+                    self.target_size*1.1,
+                    explode_coeff.clamp(0.0, 1.0)
+                );
+            }
 
-            if obj.collider.size.x <= 0.0 {
-                engine_handle.send_command(
-                    Command {
-                        sender: self.id.expect("HoleGun's Hole have not ActorID"),
-                        command_type: CommandType::RemoveActor(
-                            self.id.expect("HoleGun's Hole have not ActorID")
-                        )
+            for volume_area in self.volume_areas.iter_mut() {
+                
+                match volume_area {
+                    VolumeArea::BeamVolumeArea(area) => {
+                        area.radius += delta*0.2;
+                    },
+                    VolumeArea::SphericalVolumeArea(area) => {
+                        area.radius = f32::lerp(
+                            0.0,
+                            self.target_size,
+                            explode_coeff.clamp(0.0, 1.0)
+                        );
                     }
-                )
+                }
+            }
+
+            for obj in self.static_objects.iter_mut() {
+                obj.collider.size.x  = f32::lerp(
+                    0.0,
+                    self.target_size,
+                    explode_coeff.clamp(0.0, 1.0)
+                );
+            }
+
+            if self.explode_current_time >= self.explode_final_time {
+                self.target_size_reached = true;
             }
         }
     }

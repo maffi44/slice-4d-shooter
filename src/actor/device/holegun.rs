@@ -1,4 +1,4 @@
-use glam::{Mat3, Vec3, Vec4};
+use glam::{Vec3, Vec4};
 
 use crate::{
     actor::{
@@ -8,7 +8,6 @@ use crate::{
         }, holegun_hole::HoleGunHole, player::PlayerInnerState, ActorID, ActorWrapper, Message, MessageType
     },
     engine::{
-        effects::EffectType,
         physics::PhysicsSystem,
         input::ActionsFrameState,
         engine_handle::{
@@ -16,7 +15,7 @@ use crate::{
             CommandType,
             EngineHandle,
         },
-    }, transform::Transform,
+    }
 };
 
 pub struct HoleGun {
@@ -31,7 +30,7 @@ impl HoleGun {
         HoleGun {
             charging_time: 0.0,
             shooted_on_this_charge: false,
-            color: Vec3::Y*3.0,
+            color: Vec3::new(1.0, 0.6, 0.0),
         }
     }
 }
@@ -52,35 +51,34 @@ impl Device for HoleGun {
         delta: f32,
     )
     {
-        self.color = Mat3::from_euler(
-            glam::EulerRot::XYZ,
-            self.color.x + delta,
-            self.color.y + delta,
-            self.color.z + delta
-        ) * self.color;
+        // self.color = Mat3::from_euler(
+        //     glam::EulerRot::XYZ,
+        //     self.color.x + delta,
+        //     self.color.y + delta,
+        //     self.color.z + delta
+        // ) * self.color;
 
-        if input.first_mouse.is_action_pressed() &&
-            !self.shooted_on_this_charge
-        {
-            self.charging_time += delta * 1.6;
+        if input.first_mouse.is_action_pressed() {
+            if !self.shooted_on_this_charge {
 
-            if self.charging_time > 3.0 {
-
-                self.shooted_on_this_charge = true;
-                
-                shoot(
-                    player_id,
-                    player,
-                    physic_system,
-                    engine_handle,
-                    self.charging_time,
-                    self.color,
-                );
-
-                self.charging_time = 0.0;
+                self.charging_time += delta * 1.6;
+    
+                if self.charging_time > 3.4 {
+    
+                    self.shooted_on_this_charge = true;
+                    
+                    shoot(
+                        player_id,
+                        player,
+                        physic_system,
+                        engine_handle,
+                        self.charging_time,
+                        self.color,
+                    );
+    
+                    self.charging_time = 0.0;
+                }
             }
-
-           
         } else {
 
             self.shooted_on_this_charge = false;
@@ -129,8 +127,8 @@ fn shoot(
         let hole = HoleGunHole::new(
             hit.hit_point,
             from - shooted_from_offset,
-            charging_time,
-            color.normalize(),
+            charging_time*1.2,
+            color,
             
         );
 

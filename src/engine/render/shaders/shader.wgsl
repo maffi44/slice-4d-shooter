@@ -247,7 +247,9 @@ fn get_coloring_areas_color(p: vec4<f32>) -> vec3<f32> {
     {
         let d = -sd_sphere(p - dyn_spherical_areas[i].pos, dyn_spherical_areas[i].radius);
 
-        color += dyn_spherical_areas[i].color * clamp(d*30.0, 0.0, 1.0);
+        color += dyn_spherical_areas[i].color * clamp(
+            (d/dyn_spherical_areas[i].radius) * 10.0, 0.0, 1.0
+        );
     }
 
     return color;
@@ -311,7 +313,12 @@ fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32
         prev_d = d;
 
         if d < MIN_DIST {
-            color = sphere.color;
+
+            let sphere_normal = get_sphere_normal(p, sphere.pos, sphere.radius);
+
+            let color_coef = abs(dot(sphere_normal, direction));
+
+            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 4.0) + vec3(0.1);
 
             break;
         }
@@ -321,6 +328,60 @@ fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32
     }
 
     return color;
+}
+
+fn get_sphere_normal(p: vec4<f32>, sphere_pos: vec4<f32>, sphere_radius: f32) -> vec4<f32> {
+    var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
+    
+    var a: vec4<f32> = p + h.yxxz;
+    var b: vec4<f32> = p + h.xyxz;
+    var c: vec4<f32> = p + h.xxyz;
+    var d: vec4<f32> = p + h.yyyz;
+    var e: vec4<f32> = p + h.zzzx;
+    var f: vec4<f32> = p + h.zzzy;
+
+    var fa: f32 = sd_sphere(a - sphere_pos, sphere_radius);
+    var fb: f32 = sd_sphere(b - sphere_pos, sphere_radius);
+    var fc: f32 = sd_sphere(c - sphere_pos, sphere_radius);
+    var fd: f32 = sd_sphere(d - sphere_pos, sphere_radius);
+    var fe: f32 = sd_sphere(e - sphere_pos, sphere_radius);
+    var ff: f32 = sd_sphere(f - sphere_pos, sphere_radius);
+
+    return normalize(
+        h.yxxz * fa +
+        h.xyxz * fb +
+        h.xxyz * fc +
+        h.yyyz * fd +
+        h.zzzx * fe +
+        h.zzzy * ff
+    );
+}
+
+fn get_capsule_normal(p: vec4<f32>, beam_pos1: vec4<f32>, beam_pos2: vec4<f32>, beam_radius: f32) -> vec4<f32> {
+    var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
+    
+    var a: vec4<f32> = p + h.yxxz;
+    var b: vec4<f32> = p + h.xyxz;
+    var c: vec4<f32> = p + h.xxyz;
+    var d: vec4<f32> = p + h.yyyz;
+    var e: vec4<f32> = p + h.zzzx;
+    var f: vec4<f32> = p + h.zzzy;
+
+    var fa: f32 = sd_capsule(a, beam_pos1, beam_pos2, beam_radius);
+    var fb: f32 = sd_capsule(b, beam_pos1, beam_pos2, beam_radius);
+    var fc: f32 = sd_capsule(c, beam_pos1, beam_pos2, beam_radius);
+    var fd: f32 = sd_capsule(d, beam_pos1, beam_pos2, beam_radius);
+    var fe: f32 = sd_capsule(e, beam_pos1, beam_pos2, beam_radius);
+    var ff: f32 = sd_capsule(f, beam_pos1, beam_pos2, beam_radius);
+
+    return normalize(
+        h.yxxz * fa +
+        h.xyxz * fb +
+        h.xxyz * fc +
+        h.yyyz * fd +
+        h.zzzx * fe +
+        h.zzzy * ff
+    );
 }
 
 
@@ -348,7 +409,15 @@ fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direct
         prev_d = d;
 
         if d < MIN_DIST {
-            color = beam.color;
+            let beam_normal = get_capsule_normal(p, beam.pos1, beam.pos2, beam.radius);
+
+            let beam_dir = normalize(beam.pos1 - beam.pos2);
+
+            let beam_perpendicular = normalize(direction - (dot(direction, beam_dir) * beam_dir));
+
+            let color_coef = abs(dot(beam_normal, beam_perpendicular));
+
+            color = mix(beam.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 4.0);
 
             break;
         }
@@ -761,17 +830,23 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let shade_coefficient: f32 = dot(normal, normalize(vec4<f32>(0.2, 1., 0.5, 0.1)));
 
-    let shade = mix(0.1, 1.0, shade_coefficient);
+    let shade = mix(0.32, 0.98, shade_coefficient);
 
     var color = get_color(camera_position, ray_direction, dist_and_depth.x);
 
-    color += get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
+    let coloring_color = get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
+
+    color += coloring_color * 0.4;
 
     color *= shade * 1.2;
 
+    color += coloring_color * 0.4;
+
     color += get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
 
-    color = mix(clamp(color, vec3(0.0), vec3(1.0)), vec3<f32>(0.9, 1., 1.0), dist_and_depth.x / (MAX_DIST*0.4));
+    color = clamp(color, vec3(0.0), vec3(1.0));
+
+    color = mix(color, vec3<f32>(0.9, 1., 1.0), (dist_and_depth.x*0.4 / (MAX_DIST*0.4)));
 
     // if dynamic_data.explore_w_pos != 0.0 {
 
@@ -806,6 +881,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     //     // }
     // }
 
+    //crosshair
     color += (0.006 - clamp(length(uv), 0.0, 0.006))*200.0;
 
     return vec4<f32>(color, 1.0);
