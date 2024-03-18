@@ -3,6 +3,7 @@ pub mod diamond;
 pub mod wandering_actor;
 pub mod device;
 pub mod holegun_hole;
+pub mod holegun_miss;
 
 use crate::{
     engine::{
@@ -14,7 +15,7 @@ use crate::{
 };
 
 use self::{
-    holegun_hole::HoleGunHole, player::{
+    holegun_hole::HoleGunHole, holegun_miss::HoleGunMiss, player::{
         PLayerMessages,
         Player,
     }, wandering_actor::WanderingActor
@@ -51,6 +52,7 @@ pub enum ActorWrapper {
     Player(Player),
     WonderingActor(WanderingActor),
     HoleGunHole(HoleGunHole),
+    HoleGunMiss(HoleGunMiss),
     Diamond,
     Exit,
 }
@@ -66,6 +68,9 @@ impl Actor for ActorWrapper {
                 actor.get_transform()
             }
             ActorWrapper::HoleGunHole(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::HoleGunMiss(actor) => {
                 actor.get_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -84,6 +89,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::HoleGunHole(actor) => {
                 actor.get_mut_transform()
             },
+            ActorWrapper::HoleGunMiss(actor) => {
+                actor.get_mut_transform()
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -98,6 +106,9 @@ impl Actor for ActorWrapper {
                 actor.recieve_message(message, engine_handle);
             },
             ActorWrapper::HoleGunHole(actor) => {
+                actor.recieve_message(message, engine_handle);
+            },
+            ActorWrapper::HoleGunMiss(actor) => {
                 actor.recieve_message(message, engine_handle);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -121,6 +132,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::HoleGunHole(actor) => {
                 actor.tick(physic_system, engine_handle, delta);
             },
+            ActorWrapper::HoleGunMiss(actor) => {
+                actor.tick(physic_system, engine_handle, delta);
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -135,6 +149,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             },
             ActorWrapper::HoleGunHole(actor) => {
+                actor.get_physical_element()
+            },
+            ActorWrapper::HoleGunMiss(actor) => {
                 actor.get_physical_element()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -153,6 +170,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::HoleGunHole(actor) => {
                 actor.get_visual_element()
             },
+            ActorWrapper::HoleGunMiss(actor) => {
+                actor.get_visual_element()
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -169,6 +189,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::HoleGunHole(actor) => {
                 actor.get_id()
             },
+            ActorWrapper::HoleGunMiss(actor) => {
+                actor.get_id()
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -183,6 +206,9 @@ impl Actor for ActorWrapper {
                 actor.init(id);
             },
             ActorWrapper::HoleGunHole(actor) => {
+                actor.init(id);
+            },
+            ActorWrapper::HoleGunMiss(actor) => {
                 actor.init(id);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},

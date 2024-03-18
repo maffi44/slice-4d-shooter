@@ -5,14 +5,22 @@ use crate::{
         device::{
             Device,
             DeviceType,
-        }, holegun_hole::HoleGunHole, player::PlayerInnerState, ActorID, ActorWrapper, Message, MessageType
+        }, holegun_hole::HoleGunHole, holegun_miss::HoleGunMiss, player::PlayerInnerState, ActorID, ActorWrapper
     },
     engine::{
         engine_handle::{
             Command,
             CommandType,
             EngineHandle,
-        }, input::ActionsFrameState, physics::PhysicsSystem, render::{render_data::SphericalArea, VisualElement}, world::static_object::{SphericalVolumeArea, VolumeArea}
+        },
+        input::ActionsFrameState,
+        physics::PhysicsSystem,
+        render::VisualElement,
+        world::static_object::{
+            SphericalVolumeArea,
+            VolumeArea
+        },
+
     }, transform::Transform
 };
 
@@ -83,6 +91,23 @@ impl HoleGun {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
                         ActorWrapper::HoleGunHole(hole)
+                    )
+                }
+            );
+        } else {
+            let miss = HoleGunMiss::new(
+                from + (direction * 700.0),
+                player.transform.get_position() + shooted_from_offset,
+                charging_time*1.2,
+                color,
+                volume_area,
+            );
+
+            engine_handle.send_command(
+                Command {
+                    sender: player_id,
+                    command_type: CommandType::SpawnActor(
+                        ActorWrapper::HoleGunMiss(miss)
                     )
                 }
             );

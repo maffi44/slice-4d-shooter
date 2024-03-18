@@ -1,5 +1,4 @@
 use glam::{Vec3, Vec4, FloatExt};
-use serde_json::de;
 
 use crate::{
     actor::{
@@ -7,9 +6,28 @@ use crate::{
         ActorID,
     },
     engine::{
-        engine_handle::{Command, CommandType, EngineHandle}, physics::{colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, BeamVolumeArea, ColoringArea, ObjectMatrial, SphericalVolumeArea, StaticObject, VolumeArea}
+        engine_handle::{
+            Command,
+            CommandType,
+            EngineHandle
+        },
+        physics::{
+            colliders_container::PhysicalElement,
+            physics_system_data::ShapeType,
+            static_collider::StaticCollider,
+            PhysicsSystem
+        },
+        render::VisualElement,
+        world::static_object::{
+            BeamVolumeArea,
+            ColoringArea,
+            ObjectMatrial,
+            SphericalVolumeArea,
+            StaticObject,
+            VolumeArea
+        },
     },
-    transform::{self, Transform},
+    transform::Transform,
 };
 
 use super::Component;
@@ -223,6 +241,13 @@ impl Actor for HoleGunHole {
                         self.target_size,
                         explode_coeff.clamp(0.0, 1.0)
                     );
+                }
+                _ => {}
+            }
+            
+            match &mut self.volume_areas[2] {
+                VolumeArea::SphericalVolumeArea(area) => {
+                    area.radius -= delta*0.35;
                 }
                 _ => {}
             }
