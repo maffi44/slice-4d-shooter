@@ -31,7 +31,13 @@ pub struct HoleGunHole {
 
 
 impl HoleGunHole {
-    pub fn new(position: Vec4, shoooted_from: Vec4, radius: f32, color: Vec3) -> Self {
+    pub fn new(
+        position: Vec4,
+        shoooted_from: Vec4,
+        radius: f32,
+        color: Vec3,
+        mut charging_volume_area: VolumeArea
+    ) -> Self {
 
         let transform = Transform::new_from_pos(position);
 
@@ -66,6 +72,15 @@ impl HoleGunHole {
 
         coloring_areas.push(coloring_area);
 
+        match &mut charging_volume_area {
+            VolumeArea::SphericalVolumeArea(area) => {
+                area.translation = shoooted_from - position;
+            }
+            _ => {
+                panic!("charging volume area in HolrGun Hole is not SphericalVolumeArea")
+            }
+        }
+
         let beam = VolumeArea::BeamVolumeArea(
             BeamVolumeArea {
                 translation_pos_1: Vec4::ZERO,
@@ -83,10 +98,11 @@ impl HoleGunHole {
             }
         );
 
-        let mut volume_areas = Vec::with_capacity(2);
+        let mut volume_areas = Vec::with_capacity(3);
 
         volume_areas.push(beam);
         volume_areas.push(explode);
+        volume_areas.push(charging_volume_area);
 
         HoleGunHole {
             id: None,
@@ -193,20 +209,22 @@ impl Actor for HoleGunHole {
                 );
             }
 
-            for volume_area in self.volume_areas.iter_mut() {
-                
-                match volume_area {
-                    VolumeArea::BeamVolumeArea(area) => {
-                        area.radius += delta*0.2;
-                    },
-                    VolumeArea::SphericalVolumeArea(area) => {
-                        area.radius = f32::lerp(
-                            0.0,
-                            self.target_size,
-                            explode_coeff.clamp(0.0, 1.0)
-                        );
-                    }
+            match &mut self.volume_areas[0] {
+                VolumeArea::BeamVolumeArea(area) => {
+                    area.radius += delta*0.2;
+                },
+                _ => {}
+            }
+
+            match &mut self.volume_areas[1] {
+                VolumeArea::SphericalVolumeArea(area) => {
+                    area.radius = f32::lerp(
+                        0.0,
+                        self.target_size,
+                        explode_coeff.clamp(0.0, 1.0)
+                    );
                 }
+                _ => {}
             }
 
             for obj in self.static_objects.iter_mut() {
@@ -226,7 +244,7 @@ impl Actor for HoleGunHole {
     fn get_visual_element(&self) -> Option<VisualElement> {
         Some(
             VisualElement {
-                transfrom: &self.transform,
+                transform: &self.transform,
                 static_objects:  Some(&self.static_objects),
                 coloring_areas: Some(&self.coloring_areas),
                 volume_areas: Some(&self.volume_areas),

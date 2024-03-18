@@ -14,12 +14,11 @@ use crate::{
         MessageType,
         SpecificActorMessage
     }, engine::{
-        physics::{
+        engine_handle::EngineHandle, physics::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicCollider,
             PhysicsSystem,
-        },
-        engine_handle::EngineHandle,
+        }, render::VisualElement
     },
     transform::Transform
 };
@@ -32,7 +31,7 @@ use self::{
 use std::f32::consts::PI;
 use glam::{Vec4, Mat4};
 
-use super::holegun_hole::HoleGunHole;
+// use super::holegun_hole::HoleGunHole;
 
 
 
@@ -145,7 +144,7 @@ impl Actor for Player {
                             }
                         }
                     },
-                    _ => {},
+                    // _ => {},
                 }
 
             }  
@@ -187,7 +186,10 @@ impl Actor for Player {
         Some(collider_container)
     }
 
-    
+    fn get_visual_element(&self) -> Option<VisualElement> {
+        self.hands_slot_0.get_visual_element(self.get_transform())
+    }
+
     fn tick(
         &mut self,
         physic_system: &PhysicsSystem,
@@ -354,36 +356,36 @@ impl Actor for Player {
             }
         }
 
-        const MAX_EXPLORE_DIST: f32 = 2.5;
-        const EXPLORE_SPEED: f32 = 0.7;
+        // const MAX_EXPLORE_DIST: f32 = 2.5;
+        // const EXPLORE_SPEED: f32 = 0.7;
 
-        if self.explore_w_position != 0.0 {
-            if self.explore_w_position > 0.0 {
-                if self.explore_w_position > MAX_EXPLORE_DIST {
-                    self.explore_w_position = delta * -EXPLORE_SPEED;
-                } else {
-                    self.explore_w_position += delta * EXPLORE_SPEED;
-                }
-            } else {
-                if self.explore_w_position < -MAX_EXPLORE_DIST {
-                    self.explore_w_position = 0.0;
-                } else {
-                    self.explore_w_position -= delta * EXPLORE_SPEED;
-                }
-            }
-        }
+        // if self.explore_w_position != 0.0 {
+        //     if self.explore_w_position > 0.0 {
+        //         if self.explore_w_position > MAX_EXPLORE_DIST {
+        //             self.explore_w_position = delta * -EXPLORE_SPEED;
+        //         } else {
+        //             self.explore_w_position += delta * EXPLORE_SPEED;
+        //         }
+        //     } else {
+        //         if self.explore_w_position < -MAX_EXPLORE_DIST {
+        //             self.explore_w_position = 0.0;
+        //         } else {
+        //             self.explore_w_position -= delta * EXPLORE_SPEED;
+        //         }
+        //     }
+        // }
 
         if input.explore_w.is_action_just_pressed() {
-            // self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-            // self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+            self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+            self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
 
-            if self.explore_w_position == 0.0 {
-                self.explore_w_position = delta * self.player_settings.max_speed;
-            }
+            // if self.explore_w_position == 0.0 {
+            //     self.explore_w_position = delta * self.player_settings.max_speed;
+            // }
         };
 
-        self.explore_w_coefficient =
-            (MAX_EXPLORE_DIST - self.explore_w_position.abs()) / MAX_EXPLORE_DIST;
+        // self.explore_w_coefficient =
+        //     (MAX_EXPLORE_DIST - self.explore_w_position.abs()) / MAX_EXPLORE_DIST;
 
         if self.inner_state.collider.is_enable {
 

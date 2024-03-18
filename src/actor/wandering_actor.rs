@@ -98,7 +98,7 @@ impl Actor for WanderingActor {
 
     fn get_visual_element(&self) -> Option<VisualElement> {
         let visual_element = VisualElement {
-            transfrom: &self.transform,
+            transform: &self.transform,
             static_objects: Some(&self.static_objects),
             coloring_areas: None,
             volume_areas: None,

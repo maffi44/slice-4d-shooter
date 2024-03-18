@@ -1,0 +1,297 @@
+{
+    "level_name" : "test_level",
+
+    "defaults" : {
+        "is_positive": true,
+        "friction": 3.1,
+        "bounce_rate": 0.0,
+        "material": {
+            "color" : {
+                "red": 0.8,
+                "green": 0.8,
+                "blue": 0.8
+            }
+        },
+        "roundness": 0.0,
+        "stickiness": false
+    },
+
+    "all_shapes_stickiness_radius": 3.5,
+
+    "spawn_position" : {
+        "transform" : {
+            "position" : {
+                "x": 0.0,
+                "y": 1.0,
+                "z": 0.0,
+                "w": 0.0
+            }
+        }
+    },
+
+    "cups" : {
+        "botton_cup" : -10.0,
+        "upper_cup" : 10.0
+    },
+
+    "actors" : [
+        {
+            "wandering_actor" : {
+                "comment": "",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+
+                "target" : {
+                    "transform" : {
+                        "position" : {
+                            "x": 0.0,
+                            "y": 0.0 ,
+                            "z": 0.0,
+                            "w": 0.0
+                        },
+                        "scale" : {
+                            "x": 1.0,
+                            "y": 1.0 ,
+                            "z": 1.0,
+                            "w": 1.0
+                        }
+                    }
+                },
+
+                "travel_time" : 3.0,
+
+                "movement_type" : "linear",
+
+                "static_objects" : [
+                
+                ]
+            }
+        }
+        
+    ],
+    
+    "static_objects": [
+        {
+            "cube" : {
+                "comment" : "w floor",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 0.0 ,
+                        "z": 0.0,
+                        "w": -1.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 10000000000.0,
+                    "y": 10000000000.0,
+                    "z": 10000000000.0,
+                    "w": 0.1
+                },
+                "friction": 0.0
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w ceiling",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 0.0 ,
+                        "z": 0.0,
+                        "w": 10.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 10000000000.0,
+                    "y": 10000000000.0,
+                    "z": 10000000000.0,
+                    "w": 1.0
+                },
+                "friction": 0.0
+            }
+        },
+        {
+            "cube_w_inf" : {
+                "comment" : "ground",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 0.0 ,
+                        "z": 0.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5000000000000.0,
+                    "y": 1.0,
+                    "z": 5000000000000.0
+                },
+                "color": {
+                    "comment": "Blue",
+                    "red": 0.0,
+                    "green": 0.0,
+                    "blue": 1.0
+                    }
+            }
+        },
+        {
+            "cube_w_inf" : {
+                "comment" : "x wall",
+                "transform" : {
+                    "position" : {
+                        "x": 20.0,
+                        "y": 5.0 ,
+                        "z": 0.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 20.0
+                }
+            }
+        },
+        {
+            "cube_w_inf" : {
+                "comment" : "-x wall",
+                "transform" : {
+                    "position" : {
+                        "x": -20.0,
+                        "y": 5.0 ,
+                        "z": 0.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 20.0
+                }
+            }
+        },
+        {
+            "cube_w_inf" : {
+                "comment" : "z wall",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 5.0 ,
+                        "z": 20.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 20.0,
+                    "y": 5.0,
+                    "z": 1.0
+                }
+            }
+        },
+        {
+            "cube_w_inf" : {
+                "comment" : "-z wall",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 5.0 ,
+                        "z": -20.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 20.0,
+                    "y": 5.0,
+                    "z": 1.0
+                }
+            }
+        },
+        {
+            "cube_w_inf" : {
+                "comment" : "ceiling",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 10.0 ,
+                        "z": 0.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 20.0,
+                    "y": 1.0,
+                    "z": 20.0
+                }
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "z door",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 4.0 ,
+                        "z": 20.0,
+                        "w": 6.0
+                    }
+                },
+                "size" : {
+                    "x": 2.0,
+                    "y": 3.0,
+                    "z": 2.0,
+                    "w": 3.0
+                },
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "z door frame",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 4.0 ,
+                        "z": 17.5,
+                        "w": 1.0
+                    }
+                },
+                "size" : {
+                    "x": 2.0,
+                    "y": 3.0,
+                    "z": 2.0,
+                    "w": 3.0
+                },
+                "is_positive" : false
+            }
+        }
+    ]
+}

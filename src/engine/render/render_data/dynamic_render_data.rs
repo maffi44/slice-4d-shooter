@@ -75,7 +75,7 @@ impl DynamicRenderData {
 
             if let Some(visual_element) = actor.get_visual_element() {
 
-                let transform = visual_element.transfrom;
+                let transform = visual_element.transform;
 
                 if let Some(static_objects) = visual_element.static_objects {
                     for static_object in static_objects {

@@ -6,8 +6,8 @@ use crate::{
         ActorID,
     }, engine::{
         engine_handle::EngineHandle,
-        input::ActionsFrameState, physics::PhysicsSystem,
-    }
+        input::ActionsFrameState, physics::PhysicsSystem, render::VisualElement,
+    }, transform::Transform
 };
 
 
@@ -66,4 +66,8 @@ pub trait Device {
     );
 
     fn get_device_type(&self) -> DeviceType;
+
+    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
+        None
+    }
 }

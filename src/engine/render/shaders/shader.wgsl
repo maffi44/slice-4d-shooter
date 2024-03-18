@@ -318,7 +318,7 @@ fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32
 
             let color_coef = abs(dot(sphere_normal, direction));
 
-            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 4.0) + vec3(0.1);
+            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 4.0) + vec3(0.05);
 
             break;
         }

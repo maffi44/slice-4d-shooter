@@ -26,7 +26,7 @@ use winit::window::Window;
 
 
 pub struct VisualElement<'a> {
-    pub transfrom: &'a Transform,
+    pub transform: &'a Transform,
     pub static_objects: Option<&'a Vec<StaticObject>>,
     pub coloring_areas: Option<&'a Vec<ColoringArea>>,
     pub volume_areas: Option<&'a Vec<VolumeArea>>,
