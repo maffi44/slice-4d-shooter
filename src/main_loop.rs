@@ -200,6 +200,8 @@ fn main_loop_tick(
 
     systems.time.start_of_frame();
 
+    systems.net.tick(&mut systems.engine_handle);
+
     systems.input.get_input(&mut systems.world, &mut systems.net);
 
     systems.world.tick(
@@ -242,7 +244,7 @@ fn init(systems: &mut Engine) {
     systems.engine_handle.send_direct_message(
         main_player_id,
         Message {
-            from: 0_u64,
+            from: 0_u128,
             message: MessageType::CommonActorsMessages(
                 CommonActorsMessages::SetTransform(
                     Transform::new_from_pos(systems.world.level.spawn_position),
@@ -251,5 +253,5 @@ fn init(systems: &mut Engine) {
         }
     );
 
-    systems.world.main_camera_from = main_player_id;
+    systems.world.main_player_id = main_player_id;
 }

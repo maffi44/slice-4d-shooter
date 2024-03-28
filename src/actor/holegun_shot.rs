@@ -30,11 +30,11 @@ use crate::{
     transform::Transform,
 };
 
-use super::Component;
+use super::{CommonActorsMessages, Component, Message, MessageType};
 
 const EXPLODE_TIME: f32 = 0.25;
 
-pub struct HoleGunHole {
+pub struct HoleGunShot {
     id: Option<ActorID>,
     transform: Transform,
     static_objects: Vec<StaticObject>,
@@ -48,7 +48,7 @@ pub struct HoleGunHole {
 }
 
 
-impl HoleGunHole {
+impl HoleGunShot {
     pub fn new(
         position: Vec4,
         shoooted_from: Vec4,
@@ -122,7 +122,7 @@ impl HoleGunHole {
         volume_areas.push(explode);
         volume_areas.push(charging_volume_area);
 
-        HoleGunHole {
+        HoleGunShot {
             id: None,
             transform,
             static_objects,
@@ -141,9 +141,24 @@ impl HoleGunHole {
     }
 }
 
-impl Actor for HoleGunHole {
+impl Actor for HoleGunShot {
     fn get_id(&self) -> Option<ActorID> {
         self.id
+    }
+
+    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+        if let Some(prev_id) = self.id {
+            engine_handle.send_boardcast_message(Message {
+                from: prev_id,
+                message: MessageType::CommonActorsMessages(
+                    CommonActorsMessages::IWasChangedMyId(
+                        id
+                    )
+                )
+            });
+        }
+
+        self.id = Some(id);
     }
 
     fn get_transform(&self) -> &Transform {

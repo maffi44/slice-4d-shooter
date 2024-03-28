@@ -2,7 +2,7 @@ pub mod player;
 pub mod diamond;
 pub mod wandering_actor;
 pub mod device;
-pub mod holegun_hole;
+pub mod holegun_shot;
 pub mod holegun_miss;
 
 use crate::{
@@ -15,14 +15,14 @@ use crate::{
 };
 
 use self::{
-    holegun_hole::HoleGunHole, holegun_miss::HoleGunMiss, player::{
+    holegun_shot::HoleGunShot, holegun_miss::HoleGunMiss, player::{
         PLayerMessages,
         Player,
     }, wandering_actor::WanderingActor
 };
 
 
-pub type ActorID = u64;
+pub type ActorID = u128;
 
 pub trait Actor {
 
@@ -44,6 +44,8 @@ pub trait Actor {
     fn get_visual_element(&self) -> Option<VisualElement> {None}
 
     fn get_id(&self) -> Option<ActorID>;
+
+    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle);
     
     fn init(&mut self, id: ActorID);
 }
@@ -51,7 +53,7 @@ pub trait Actor {
 pub enum ActorWrapper {
     Player(Player),
     WonderingActor(WanderingActor),
-    HoleGunHole(HoleGunHole),
+    HoleGunShot(HoleGunShot),
     HoleGunMiss(HoleGunMiss),
     Diamond,
     Exit,
@@ -67,7 +69,7 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.get_transform()
             }
-            ActorWrapper::HoleGunHole(actor) => {
+            ActorWrapper::HoleGunShot(actor) => {
                 actor.get_transform()
             }
             ActorWrapper::HoleGunMiss(actor) => {
@@ -86,7 +88,7 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.get_mut_transform()
             },
-            ActorWrapper::HoleGunHole(actor) => {
+            ActorWrapper::HoleGunShot(actor) => {
                 actor.get_mut_transform()
             },
             ActorWrapper::HoleGunMiss(actor) => {
@@ -105,7 +107,7 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.recieve_message(message, engine_handle);
             },
-            ActorWrapper::HoleGunHole(actor) => {
+            ActorWrapper::HoleGunShot(actor) => {
                 actor.recieve_message(message, engine_handle);
             },
             ActorWrapper::HoleGunMiss(actor) => {
@@ -129,7 +131,7 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.tick(physic_system, engine_handle, delta);
             },
-            ActorWrapper::HoleGunHole(actor) => {
+            ActorWrapper::HoleGunShot(actor) => {
                 actor.tick(physic_system, engine_handle, delta);
             },
             ActorWrapper::HoleGunMiss(actor) => {
@@ -148,7 +150,7 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.get_physical_element()
             },
-            ActorWrapper::HoleGunHole(actor) => {
+            ActorWrapper::HoleGunShot(actor) => {
                 actor.get_physical_element()
             },
             ActorWrapper::HoleGunMiss(actor) => {
@@ -167,7 +169,7 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.get_visual_element()
             },
-            ActorWrapper::HoleGunHole(actor) => {
+            ActorWrapper::HoleGunShot(actor) => {
                 actor.get_visual_element()
             },
             ActorWrapper::HoleGunMiss(actor) => {
@@ -186,11 +188,30 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.get_id()
             },
-            ActorWrapper::HoleGunHole(actor) => {
+            ActorWrapper::HoleGunShot(actor) => {
                 actor.get_id()
             },
             ActorWrapper::HoleGunMiss(actor) => {
                 actor.get_id()
+            },
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
+        }
+    }
+
+    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+        match self {
+            ActorWrapper::Player(actor) => {
+                actor.set_id(id, engine_handle);
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.set_id(id, engine_handle);
+            },
+            ActorWrapper::HoleGunShot(actor) => {
+                actor.set_id(id, engine_handle);
+            },
+            ActorWrapper::HoleGunMiss(actor) => {
+                actor.set_id(id, engine_handle);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -205,7 +226,7 @@ impl Actor for ActorWrapper {
             ActorWrapper::WonderingActor(actor) => {
                 actor.init(id);
             },
-            ActorWrapper::HoleGunHole(actor) => {
+            ActorWrapper::HoleGunShot(actor) => {
                 actor.init(id);
             },
             ActorWrapper::HoleGunMiss(actor) => {
@@ -239,6 +260,7 @@ pub enum CommonActorsMessages {
     SetTransform(Transform),
     EnableCollider(bool),
     IncrementPosition(Vec4),
+    IWasChangedMyId(ActorID),
 }
 
 pub enum SpecificActorMessage {

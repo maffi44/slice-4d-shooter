@@ -5,7 +5,12 @@ use crate::{
         device::{
             Device,
             DeviceType,
-        }, holegun_hole::HoleGunHole, holegun_miss::HoleGunMiss, player::PlayerInnerState, ActorID, ActorWrapper
+        },
+        holegun_shot::HoleGunShot,
+        holegun_miss::HoleGunMiss,
+        player::PlayerInnerState,
+        ActorWrapper,
+        ActorID,
     },
     engine::{
         engine_handle::{
@@ -78,7 +83,7 @@ impl HoleGun {
 
         if let Some(hit) = hit {
     
-            let hole = HoleGunHole::new(
+            let hole = HoleGunShot::new(
                 hit.hit_point,
                 player.transform.get_position() + shooted_from_offset,
                 charging_time*1.2,
@@ -90,7 +95,7 @@ impl HoleGun {
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
-                        ActorWrapper::HoleGunHole(hole)
+                        ActorWrapper::HoleGunShot(hole)
                     )
                 }
             );

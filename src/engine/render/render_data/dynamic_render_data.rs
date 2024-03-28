@@ -554,7 +554,7 @@ impl OtherDynamicData {
         let explore_w_pos;
         let explore_w_coef;
         
-        if let Some(actor) = world.actors.get(&world.main_camera_from) {
+        if let Some(actor) = world.actors.get(&world.main_player_id) {
             if let ActorWrapper::Player(main_player) = actor {
                 cam_pos = main_player.get_position() + Vec4::Y * main_player.get_collider_radius() * 0.98;
                 cam_rot = main_player.get_rotation_matrix();

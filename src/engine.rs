@@ -83,7 +83,7 @@ impl Engine {
 
         log::info!("engine systems: engine_handle init");
 
-        let net = NetSystem::new();
+        let net = NetSystem::new().await;
 
         log::info!("engine systems: net init");
 

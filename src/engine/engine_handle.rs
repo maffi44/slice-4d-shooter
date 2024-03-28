@@ -2,7 +2,10 @@ use crate::{
     actor::{
         ActorID, ActorWrapper, Message
     },
-    engine::effects::EffectType,
+    engine::{
+        effects::EffectType,
+        net::NetCommand,
+    }
 };
 
 
@@ -17,6 +20,7 @@ pub enum CommandType {
     SpawnEffect(EffectType),
     SpawnActor(ActorWrapper),
     RemoveActor(ActorID),
+    NetCommand(NetCommand)
 }
 
 pub struct EngineHandle {

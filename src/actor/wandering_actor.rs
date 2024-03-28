@@ -13,7 +13,7 @@ use crate::{
 
 use std::f32::consts::PI;
 
-use super::{Actor, ActorID, Component};
+use super::{Actor, ActorID, CommonActorsMessages, Component, Message, MessageType};
 
 pub enum WonderingActorMovementType {
     Linear,
@@ -74,6 +74,21 @@ impl Actor for WanderingActor {
 
     fn get_id(&self) -> Option<ActorID> {
         self.id
+    }
+
+    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+        if let Some(prev_id) = self.id {
+            engine_handle.send_boardcast_message(Message {
+                from: prev_id,
+                message: MessageType::CommonActorsMessages(
+                    CommonActorsMessages::IWasChangedMyId(
+                        id
+                    )
+                )
+            });
+        }
+
+        self.id = Some(id);
     }
 
     fn init(&mut self, id: ActorID) {
