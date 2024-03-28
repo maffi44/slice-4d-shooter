@@ -234,11 +234,12 @@ fn init(systems: &mut Engine) {
         InputMaster::LocalMaster(
             LocalMaster::new(ActionsFrameState::empty())
         ),
-        systems.global_players_settings.clone()
+        systems.world.players_settings.clone()
     );
 
     let main_player_id = systems.world.add_actor_to_world(
-        ActorWrapper::Player(main_player)
+        ActorWrapper::Player(main_player),
+        &mut systems.engine_handle,
     );
 
     systems.engine_handle.send_direct_message(

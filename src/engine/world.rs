@@ -5,14 +5,14 @@ use self::level::Level;
 
 use crate::{
     actor::{
-        Actor, ActorID, ActorWrapper, Message
+        player::player_settings::PlayerSettings, players_doll::PlayersDoll, Actor, ActorID, ActorWrapper, Message
     },
     engine::{
-        physics::PhysicsSystem,
         engine_handle::{
             CommandType,
             EngineHandle,
         },
+        physics::PhysicsSystem
     },
 };
 
@@ -25,11 +25,12 @@ pub struct World {
     pub level: Level,
     pub actors: HashMap<ActorID, ActorWrapper>,
     pub main_player_id: ActorID,
+    pub players_settings: PlayerSettings,
 }
 
 impl World {
 
-    pub async fn new() -> Self {
+    pub async fn new(engine_handle: &mut EngineHandle, players_settings: PlayerSettings) -> Self {
         
         // 0 it is id of engine
         // in case when engine send message to the some actor
@@ -40,12 +41,13 @@ impl World {
 
         let mut world = World {
             actors: HashMap::with_capacity(actors.len()),
+            players_settings,
             level,
             main_player_id: 0,
         };
 
         for actor in actors {
-            world.add_actor_to_world(actor);
+            world.add_actor_to_world(actor, engine_handle);
         }
 
         world
@@ -68,10 +70,10 @@ impl World {
                     match command.command_type {
                         CommandType::SpawnEffect(_) => {}
                         CommandType::SpawnActor(actor) => {
-                            self.add_actor_to_world(actor);
+                            self.add_actor_to_world(actor, engine_handle);
                         }
                         CommandType::RemoveActor(id) => {
-                            self.actors.remove(&id);
+                            self.remove_actor_from_world(id);
                         }
                         CommandType::NetCommand(command) => {
                             match command {
@@ -79,10 +81,16 @@ impl World {
                                     self.change_actor_id(from, new_id, engine_handle);
                                 },
                                 NetCommand::PeerConnected(id) => {
+                                    let player_sphere_radius = self.players_settings.collider_radius;
 
+                                    let players_doll = ActorWrapper::PlayersDoll(
+                                        PlayersDoll::new(id, player_sphere_radius)
+                                    );
+
+                                    self.add_actor_to_world(players_doll, engine_handle);
                                 },
                                 NetCommand::PeerDisconnected(id) => {
-
+                                    self.remove_actor_from_world(id);
                                 }
                             }
                         }
@@ -123,7 +131,7 @@ impl World {
     }
 
     fn change_actor_id(&mut self, old_id: ActorID, new_id: ActorID, engine_handle: &mut EngineHandle) {
-        if let Some(mut actor) = self.actors.remove(&old_id) {
+        if let Some(mut actor) = self.remove_actor_from_world(old_id) {
             actor.set_id(new_id, engine_handle);
 
             if let Some(mut swaped_actor) = self.actors.insert(new_id, actor) {
@@ -137,7 +145,7 @@ impl World {
         }
     }
 
-    pub fn add_actor_to_world(&mut self, mut actor: ActorWrapper) -> ActorID {
+    pub fn add_actor_to_world(&mut self, mut actor: ActorWrapper, engine_handle: &mut EngineHandle) -> ActorID {
 
         let id = match actor.get_id() {
             Some(id) => id,
@@ -150,7 +158,14 @@ impl World {
             },
         };
 
-        self.actors.insert(id, actor);
+        if let Some(mut swaped_actor) = self.actors.insert(id, actor) {
+                
+            let new_id_for_swaped_actor = self.get_new_random_uniq_id();
+
+            swaped_actor.set_id(new_id_for_swaped_actor, engine_handle);
+
+            self.actors.insert(new_id_for_swaped_actor, swaped_actor);
+        }
 
         id
     }

@@ -105,7 +105,7 @@ pub struct Player {
 }
 
 
-pub enum PLayerMessages {
+pub enum PlayerMessages {
     DealDamage(u32),
 }
 
@@ -140,7 +140,7 @@ impl Actor for Player {
                 match message {
                     SpecificActorMessage::PLayerMessages(message) => {
                         match message {
-                            PLayerMessages::DealDamage(damage) => {
+                            PlayerMessages::DealDamage(damage) => {
                                 self.inner_state.hp -= *damage as i32;
                             }
                         }
