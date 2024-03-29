@@ -107,6 +107,7 @@ pub struct Player {
 
 pub enum PlayerMessages {
     DealDamage(u32),
+    SendCreatePlayersDollMessageToPeers,
 }
 
 
@@ -142,6 +143,9 @@ impl Actor for Player {
                         match message {
                             PlayerMessages::DealDamage(damage) => {
                                 self.inner_state.hp -= *damage as i32;
+                            }
+                            PlayerMessages::SendCreatePlayersDollMessageToPeers => {
+
                             }
                         }
                     },

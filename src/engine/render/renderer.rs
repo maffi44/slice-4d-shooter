@@ -83,7 +83,7 @@ impl Renderer {
             self.surface.configure(&self.device, &self.config);
         }
     }
-
+ 
     pub async fn new(window: &Window, render_data: &RenderData) -> Renderer {
         let size = window.inner_size();
 
@@ -93,7 +93,6 @@ impl Renderer {
             flags: InstanceFlags::empty(),
             gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
-
         log::info!("renderer: wgpu instance init");
 
         let surface = unsafe { instance.create_surface_unsafe(
@@ -102,7 +101,6 @@ impl Renderer {
                 raw_window_handle: window.window_handle().unwrap().as_raw()
             }
         ).unwrap() };
-
         log::info!("renderer: wgpu surface init");
 
         let adapter = instance
@@ -113,7 +111,6 @@ impl Renderer {
             })
             .await
             .unwrap();
-
         log::info!("renderer: wgpu adapter init");
 
         let (device, queue) = adapter
@@ -133,14 +130,12 @@ impl Renderer {
             )
             .await
             .unwrap();
-
         log::info!("renderer: wgpu device and queue init");
 
         let surface_caps = surface.get_capabilities(&adapter);
         // Shader code in this tutorial assumes an sRGB surface texture. Using a different
         // one will result all the colors coming out darker. If you want to support non
         // sRGB surfaces, you'll need to account for that when drawing to the frame.
-        
         log::info!("renderer: gpu surface_caps init");
 
         let surface_format = surface_caps
@@ -149,7 +144,6 @@ impl Renderer {
         .copied()
         .find(|f| f.is_srgb())
         .unwrap_or(surface_caps.formats[0]);
-
         log::info!("renderer: wgpu surface_format init");
 
         let config = wgpu::SurfaceConfiguration {
@@ -162,11 +156,9 @@ impl Renderer {
             view_formats: vec![],
             desired_maximum_frame_latency: 3,
         };
-
         log::info!("renderer: wgpu config init");
 
         surface.configure(&device, &config);
-
         log::info!("renderer: wgpu surface configurated");
         
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -174,7 +166,6 @@ impl Renderer {
 
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader.wgsl").into()),
         });
-
         log::info!("renderer: wgpu shader init");
 
         let static_normal_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
@@ -249,7 +240,6 @@ impl Renderer {
             contents: bytemuck::cast_slice(render_data.dynamic_data.beam_areas_data.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
-
         log::info!("renderer: wgpu uniform buffers init");
 
         let uniform_bind_group_layout_0 =
@@ -387,24 +377,7 @@ impl Renderer {
                 label: Some("uniform_bind_group_layout_1"),
             }
         );
-
         log::info!("renderer: wgpu uniform_bind_group_layout_0 init");
-        
-
-//         @group(0) @binding(0) var<uniform> normal_shapes: array<Shape, 256>;
-// @group(0) @binding(1) var<uniform> negatives_shapes: array<Shape, 256>;
-// @group(0) @binding(2) var<uniform> stickiness_shapes: array<Shape, 256>;
-// @group(0) @binding(3) var<uniform> neg_stickiness_shapes: array<Shape, 256>;
-
-// @group(0) @binding(4) var<uniform> static_data: OtherStaticData;
-
-
-// @group(0) @binding(5) var<uniform> dyn_normal_shapes: array<Shape, 256>;
-// @group(0) @binding(6) var<uniform> dyn_negatives_shapes: array<Shape, 256>;
-// @group(0) @binding(7) var<uniform> dyn_stickiness_shapes: array<Shape, 256>;
-// @group(0) @binding(8) var<uniform> dyn_neg_stickiness_shapes: array<Shape, 256>;
-
-// @group(0) @binding(9) var<uniform> dynamic_data: OtherDynamicData;
 
         let uniform_bind_group_0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout_0,

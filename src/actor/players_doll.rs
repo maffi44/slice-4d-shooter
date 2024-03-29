@@ -79,6 +79,7 @@ impl Actor for PlayersDoll {
                             PlayerMessages::DealDamage(damage) => {
                                 self.hp -= *damage as i32;
                             }
+                            PlayerMessages::SendCreatePlayersDollMessageToPeers => {}
                         }
                     },
                     // _ => {},

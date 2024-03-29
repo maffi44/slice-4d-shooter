@@ -5,7 +5,7 @@ use self::level::Level;
 
 use crate::{
     actor::{
-        player::player_settings::PlayerSettings, players_doll::PlayersDoll, Actor, ActorID, ActorWrapper, Message
+        player::{player_settings::PlayerSettings, PlayerMessages}, players_doll::PlayersDoll, Actor, ActorID, ActorWrapper, Message, SpecificActorMessage
     },
     engine::{
         engine_handle::{
@@ -19,7 +19,7 @@ use crate::{
 use core::panic;
 use std::collections::HashMap;
 
-use super::net::NetCommand;
+use super::{engine_handle::Command, net::NetCommand};
 
 pub struct World {
     pub level: Level,
@@ -65,46 +65,63 @@ impl World {
                 }
 
                 while let Some(command) = engine_handle.command_buffer.pop() {
-                    let from = command.sender;
-                    
-                    match command.command_type {
-                        CommandType::SpawnEffect(_) => {}
-                        CommandType::SpawnActor(actor) => {
-                            self.add_actor_to_world(actor, engine_handle);
-                        }
-                        CommandType::RemoveActor(id) => {
-                            self.remove_actor_from_world(id);
-                        }
-                        CommandType::NetCommand(command) => {
-                            match command {
-                                NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {
-                                    self.change_actor_id(from, new_id, engine_handle);
-                                },
-                                NetCommand::PeerConnected(id) => {
-                                    let player_sphere_radius = self.players_settings.collider_radius;
-
-                                    let players_doll = ActorWrapper::PlayersDoll(
-                                        PlayersDoll::new(id, player_sphere_radius)
-                                    );
-
-                                    self.add_actor_to_world(players_doll, engine_handle);
-                                },
-                                NetCommand::PeerDisconnected(id) => {
-                                    self.remove_actor_from_world(id);
-                                }
-                            }
-                        }
-                    }
+                    self.execute_command(command, engine_handle);
                 }
 
                 if engine_handle.direct_message_buffer.is_empty() &&
                     engine_handle.boardcast_message_buffer.is_empty() &&
                     engine_handle.command_buffer.is_empty()
-                {
-                            
+                {   
                     return;
                 }
             }
+    }
+
+    fn execute_command(&mut self, command: Command, engine_handle: &mut EngineHandle) {
+        let from = command.sender;
+
+        match command.command_type {
+            CommandType::SpawnEffect(_) => {}
+            CommandType::SpawnActor(actor) => {
+                self.add_actor_to_world(actor, engine_handle);
+            }
+            CommandType::RemoveActor(id) => {
+                self.remove_actor_from_world(id);
+            }
+            CommandType::NetCommand(command) => {
+                match command {
+                    NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {
+                        self.change_actor_id(self.main_player_id, new_id, engine_handle);
+
+                        self.main_player_id = new_id;
+
+                        engine_handle.send_direct_message(
+                            self.main_player_id,
+                            Message {
+                                from: 0u128,
+                                message: crate::actor::MessageType::SpecificActorMessage(
+                                    SpecificActorMessage::PLayerMessages(
+                                        PlayerMessages::SendCreatePlayersDollMessageToPeers
+                                    )
+                                )
+                            }
+                        );                        
+                    },
+                    NetCommand::PeerConnected(id) => {
+                        // let player_sphere_radius = self.players_settings.collider_radius;
+
+                        // let players_doll = ActorWrapper::PlayersDoll(
+                        //     PlayersDoll::new(id, player_sphere_radius)
+                        // );
+
+                        // self.add_actor_to_world(players_doll, engine_handle);
+                    },
+                    NetCommand::PeerDisconnected(id) => {
+                        self.remove_actor_from_world(id);
+                    }
+                }
+            }
+        }
     }
 
     fn send_direct_messages(

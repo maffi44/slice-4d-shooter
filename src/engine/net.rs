@@ -1,8 +1,7 @@
 use wasm_bindgen::JsValue;
 
 use matchbox_socket::{
-    WebRtcSocket,
-    PeerState,
+    MultipleChannels, PeerState, RtcIceServerConfig, WebRtcSocket
 };
 
 use crate::actor::ActorID;
@@ -13,58 +12,58 @@ use super::engine_handle::{
     CommandType
 };
 
-
+pub enum NetMessage {
+    
+}
 pub enum NetCommand {
     NetSystemIsConnectedAndGetNewPeerID(u128),
     PeerConnected(ActorID),
     PeerDisconnected(ActorID),
+    
+    SendDirectNetMessageReliable(NetMessage),
+    SendDirectNetMessageUnreliable(NetMessage),
+    SendBoardcastNetMessageReliable(NetMessage),
+    SendBoardcastNetMessageUnreliable(NetMessage),
 }
-
+    
 pub struct NetSystem {
-    unreliable_socket: WebRtcSocket,
-    reliable_socket: WebRtcSocket,
+    socket: WebRtcSocket<MultipleChannels>,
     connected: bool,
 }
 
 impl NetSystem {
     pub async fn new() -> Self {
-        
-        let (unreliable_socket, unreliable_socket_future) = WebRtcSocket::new_unreliable("ws://localhost:3536/");
-        let (reliable_socket, reliable_socket_future) = WebRtcSocket::new_reliable("ws://localhost:3536/");
 
-        let unreliable_promise = wasm_bindgen_futures::future_to_promise(async {
-            let _ = unreliable_socket_future.await;
+        let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new("ws://localhost:3536/")
+            .ice_server(RtcIceServerConfig::default())
+            .add_reliable_channel()
+            .add_unreliable_channel()
+            .build();
 
-            Result::Ok(JsValue::null())
-        });
-
-        let _ = wasm_bindgen_futures::JsFuture::from(unreliable_promise);
-
-        let reliable_promise = wasm_bindgen_futures::future_to_promise(async {
-            let _ = reliable_socket_future.await;
+        let promise = wasm_bindgen_futures::future_to_promise(async {
+            let _ = socket_future.await;
 
             Result::Ok(JsValue::null())
         });
 
-        let _ = wasm_bindgen_futures::JsFuture::from(reliable_promise);
+        let _ = wasm_bindgen_futures::JsFuture::from(promise);
 
         NetSystem {
-            unreliable_socket,
-            reliable_socket,
+            socket,
             connected: false
         }
     }
 
     pub fn tick(&mut self, engine_handle: &mut EngineHandle) {
 
-        if self.unreliable_socket.is_closed() || self.reliable_socket.is_closed(){
+        if self.socket.any_closed() {
 
             log::warn!("Net system: connection to signaling server is lost");
             self.reconnect();
         }
 
         if !self.connected {
-            if let Some(id) = self.reliable_socket.id() {
+            if let Some(id) = self.socket.id() {
                 self.connected = true;
 
                 engine_handle.send_command(Command {
@@ -76,7 +75,7 @@ impl NetSystem {
             }
         }
 
-        if let Ok(vec) = self.reliable_socket.try_update_peers() {
+        if let Ok(vec) = self.socket.try_update_peers() {
             for (peer, state) in vec {
                 match state {
                     PeerState::Connected => {
@@ -86,6 +85,7 @@ impl NetSystem {
                                 NetCommand::PeerConnected(peer.0.as_u128())
                             ),
                         });
+                        log::error!("PEER CONNECTED {}", peer.0.as_u128());
                     }
                     PeerState::Disconnected => {
                         engine_handle.send_command(Command {
@@ -94,6 +94,7 @@ impl NetSystem {
                                 NetCommand::PeerDisconnected(peer.0.as_u128())
                             ),
                         });
+                        log::error!("PEER DISCONNECTED {}", peer.0.as_u128());
                     }
                 }
             }
@@ -106,30 +107,20 @@ impl NetSystem {
         
         log::info!("trying to reconnect");
 
-        self.reliable_socket.close();
-        self.unreliable_socket.close();
-        
-        let (unreliable_socket, unreliable_socket_future) = WebRtcSocket::new_unreliable("ws://localhost:3536/");
-        let (reliable_socket, reliable_socket_future) = WebRtcSocket::new_reliable("ws://localhost:3536/");
+        let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new("ws://localhost:3536/")
+            .add_reliable_channel()
+            .add_unreliable_channel()
+            .build();
 
-        let unreliable_promise = wasm_bindgen_futures::future_to_promise(async {
-            let _ = unreliable_socket_future.await;
-
-            Result::Ok(JsValue::null())
-        });
-
-        let _ = wasm_bindgen_futures::JsFuture::from(unreliable_promise);
-
-        let reliable_promise = wasm_bindgen_futures::future_to_promise(async {
-            let _ = reliable_socket_future.await;
+        let promise = wasm_bindgen_futures::future_to_promise(async {
+            let _ = socket_future.await;
 
             Result::Ok(JsValue::null())
         });
 
-        let _ = wasm_bindgen_futures::JsFuture::from(reliable_promise);
+        let _ = wasm_bindgen_futures::JsFuture::from(promise);
 
-        self.unreliable_socket = unreliable_socket;
-        self.reliable_socket = reliable_socket;
+        self.socket = socket;
         self.connected = false;
     }
 }
