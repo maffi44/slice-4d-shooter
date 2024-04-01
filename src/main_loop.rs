@@ -210,7 +210,7 @@ fn main_loop_tick(
         systems.time.target_frame_duration.as_secs_f32()
     );
 
-    systems.world.send_messages_and_process_commands(&mut systems.engine_handle);
+    systems.world.send_messages_and_process_commands(&mut systems.net, &mut systems.engine_handle);
 
     systems.physic.process_physics(
         &mut systems.world, 
@@ -218,7 +218,7 @@ fn main_loop_tick(
         &mut systems.engine_handle
     );
 
-    systems.world.send_messages_and_process_commands(&mut systems.engine_handle);
+    systems.world.send_messages_and_process_commands(&mut systems.net, &mut systems.engine_handle);
 
     systems.render.render_frame(&systems.world, &systems.time);
 

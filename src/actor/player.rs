@@ -14,7 +14,7 @@ use crate::{
         MessageType,
         SpecificActorMessage
     }, engine::{
-        engine_handle::EngineHandle, physics::{
+        engine_handle::{Command, CommandType, EngineHandle}, net::{NetCommand, NetMessage, RemoteMessage}, physics::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicCollider,
             PhysicsSystem,
@@ -30,6 +30,7 @@ use self::{
 
 use std::f32::consts::PI;
 use glam::{Vec4, Mat4};
+use matchbox_socket::PeerId;
 
 // use super::holegun_hole::HoleGunHole;
 
@@ -107,7 +108,7 @@ pub struct Player {
 
 pub enum PlayerMessages {
     DealDamage(u32),
-    SendCreatePlayersDollMessageToPeers,
+    NewPeerConnected(PeerId),
 }
 
 
@@ -123,7 +124,7 @@ impl Actor for Player {
                     CommonActorsMessages::SetTransform(transform) => {
                         self.inner_state.transform = transform.clone();
                     },
-                    CommonActorsMessages::EnableCollider(switch) => {
+                    CommonActorsMessages::Enable(switch) => {
                         self.inner_state.collider.is_enable = *switch;
                     },
                     CommonActorsMessages::IncrementPosition(increment) => {
@@ -144,8 +145,24 @@ impl Actor for Player {
                             PlayerMessages::DealDamage(damage) => {
                                 self.inner_state.hp -= *damage as i32;
                             }
-                            PlayerMessages::SendCreatePlayersDollMessageToPeers => {
+                            PlayerMessages::NewPeerConnected(peer_id) => {
 
+                                engine_handle.send_command(
+                                    Command {
+                                        sender: self.id.unwrap(),
+                                        command_type: CommandType::NetCommand(
+                                            NetCommand::SendDirectNetMessageReliable(
+                                                NetMessage::RemoteCommand(
+                                                    crate::engine::net::RemoteCommand::SpawnPlayersDollActor(
+                                                        self.get_transform().to_serializable_transform(),
+                                                        self.inner_state.collider.get_collider_radius(),
+                                                    )
+                                                ),
+                                                peer_id.clone(),
+                                            )
+                                        )
+                                    }
+                                )
                             }
                         }
                     },
@@ -461,6 +478,20 @@ impl Actor for Player {
         self.no_collider_veclocity *= 1.0 - delta*3.4;
 
         log::info!("Position: {:.2}", self.get_position());
+
+        engine_handle.send_command(Command{
+            sender: my_id,
+            command_type: CommandType::NetCommand(
+                NetCommand::SendBoardcastNetMessageUnreliable(
+                    NetMessage::RemoteDirectMessage(
+                        my_id,
+                        RemoteMessage::SetTransform(
+                            self.inner_state.transform.to_serializable_transform()
+                        )
+                    )
+                )
+            )
+        });
     }
 }
 

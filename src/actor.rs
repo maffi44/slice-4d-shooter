@@ -286,7 +286,7 @@ pub enum MessageType {
 use glam::Vec4;
 pub enum CommonActorsMessages {
     SetTransform(Transform),
-    EnableCollider(bool),
+    Enable(bool),
     IncrementPosition(Vec4),
     IWasChangedMyId(ActorID),
 }

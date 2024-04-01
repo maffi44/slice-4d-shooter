@@ -1,4 +1,5 @@
 use glam::{Vec3, Vec4};
+use matchbox_socket::PeerId;
 
 use crate::{engine::{engine_handle::EngineHandle, physics::{colliders_container::PhysicalElement, dynamic_collider::DynamicCollider, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, StaticObject}}, transform::Transform};
 
@@ -9,6 +10,7 @@ const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
 pub struct PlayersDoll {
     id: Option<ActorID>,
     transform: Transform,
+    masters_peer_id: PeerId,
 
     static_objects: Vec<StaticObject>,
     is_enable: bool,
@@ -16,7 +18,7 @@ pub struct PlayersDoll {
 }
 
 impl PlayersDoll {
-    pub fn new(id: ActorID, player_sphere_radius: f32) -> Self {
+    pub fn new(masters_peer_id: PeerId, id: ActorID, player_sphere_radius: f32, transform: Transform) -> Self {
 
         let static_object = StaticObject {
             collider: StaticCollider {
@@ -38,8 +40,9 @@ impl PlayersDoll {
         static_objects.push(static_object);
 
         PlayersDoll {
+            masters_peer_id,
             id: Some(id),
-            transform: Transform::new_zero(),
+            transform,
             is_enable: true,
             static_objects,
             hp: 0
@@ -59,7 +62,7 @@ impl Actor for PlayersDoll {
                     &CommonActorsMessages::SetTransform(transform) => {
                         self.transform = transform.clone();
                     },
-                    CommonActorsMessages::EnableCollider(switch) => {},
+                    CommonActorsMessages::Enable(switch) => {},
 
                     CommonActorsMessages::IncrementPosition(increment) => {
                         self.transform.increment_position(increment.clone());
@@ -79,7 +82,7 @@ impl Actor for PlayersDoll {
                             PlayerMessages::DealDamage(damage) => {
                                 self.hp -= *damage as i32;
                             }
-                            PlayerMessages::SendCreatePlayersDollMessageToPeers => {}
+                            PlayerMessages::NewPeerConnected(_) => {}
                         }
                     },
                     // _ => {},

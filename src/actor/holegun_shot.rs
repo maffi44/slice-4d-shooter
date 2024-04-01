@@ -51,7 +51,7 @@ pub struct HoleGunShot {
 impl HoleGunShot {
     pub fn new(
         position: Vec4,
-        shoooted_from: Vec4,
+        shooted_from: Vec4,
         radius: f32,
         color: Vec3,
         mut charging_volume_area: VolumeArea
@@ -92,7 +92,7 @@ impl HoleGunShot {
 
         match &mut charging_volume_area {
             VolumeArea::SphericalVolumeArea(area) => {
-                area.translation = shoooted_from - position;
+                area.translation = shooted_from - position;
             }
             _ => {
                 panic!("charging volume area in HolrGun Hole is not SphericalVolumeArea")
@@ -102,7 +102,7 @@ impl HoleGunShot {
         let beam = VolumeArea::BeamVolumeArea(
             BeamVolumeArea {
                 translation_pos_1: Vec4::ZERO,
-                translation_pos_2: shoooted_from - position,
+                translation_pos_2: shooted_from - position,
                 radius: 0.020,
                 color: color, 
             }

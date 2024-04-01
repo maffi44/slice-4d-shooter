@@ -5,7 +5,7 @@ use self::level::Level;
 
 use crate::{
     actor::{
-        player::{player_settings::PlayerSettings, PlayerMessages}, players_doll::PlayersDoll, Actor, ActorID, ActorWrapper, Message, SpecificActorMessage
+        player::{player_settings::PlayerSettings, PlayerMessages}, players_doll::PlayersDoll, Actor, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage
     },
     engine::{
         engine_handle::{
@@ -19,7 +19,7 @@ use crate::{
 use core::panic;
 use std::collections::HashMap;
 
-use super::{engine_handle::Command, net::NetCommand};
+use super::{engine_handle::Command, net::{NetCommand, NetSystem}};
 
 pub struct World {
     pub level: Level,
@@ -53,7 +53,7 @@ impl World {
         world
     }
 
-    pub fn send_messages_and_process_commands(&mut self, engine_handle: &mut EngineHandle) {
+    pub fn send_messages_and_process_commands(&mut self, net_system: &mut NetSystem, engine_handle: &mut EngineHandle) {
         
         loop {
                 while let Some(message) = engine_handle.boardcast_message_buffer.pop() {
@@ -65,7 +65,7 @@ impl World {
                 }
 
                 while let Some(command) = engine_handle.command_buffer.pop() {
-                    self.execute_command(command, engine_handle);
+                    self.execute_command(command, net_system, engine_handle);
                 }
 
                 if engine_handle.direct_message_buffer.is_empty() &&
@@ -77,7 +77,7 @@ impl World {
             }
     }
 
-    fn execute_command(&mut self, command: Command, engine_handle: &mut EngineHandle) {
+    fn execute_command(&mut self, command: Command, net_system: &mut NetSystem, engine_handle: &mut EngineHandle) {
         let from = command.sender;
 
         match command.command_type {
@@ -93,31 +93,39 @@ impl World {
                     NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {
                         self.change_actor_id(self.main_player_id, new_id, engine_handle);
 
-                        self.main_player_id = new_id;
+                        self.main_player_id = new_id;                       
+                    },
+                    NetCommand::SendBoardcastNetMessageReliable(message) => {
+                        net_system.send_boardcast_message_reliable(message);
+                    },
 
-                        engine_handle.send_direct_message(
-                            self.main_player_id,
+                    NetCommand::SendBoardcastNetMessageUnreliable(message) => {
+                        net_system.send_boardcast_message_unreliable(message);
+                    },
+
+                    NetCommand::SendDirectNetMessageReliable(message, peer) => {
+                        net_system.send_direct_message_reliable(message, peer);
+                    },
+
+                    NetCommand::SendDirectNetMessageUnreliable(message, peer) => {
+                        net_system.send_direct_message_unreliable(message, peer);
+                    },
+
+                    NetCommand::PeerConnected(peer_id) => {
+                        engine_handle.send_boardcast_message(
                             Message {
                                 from: 0u128,
-                                message: crate::actor::MessageType::SpecificActorMessage(
+                                message: MessageType::SpecificActorMessage(
                                     SpecificActorMessage::PLayerMessages(
-                                        PlayerMessages::SendCreatePlayersDollMessageToPeers
+                                        PlayerMessages::NewPeerConnected(peer_id)
                                     )
                                 )
                             }
-                        );                        
+                        )
                     },
-                    NetCommand::PeerConnected(id) => {
-                        // let player_sphere_radius = self.players_settings.collider_radius;
 
-                        // let players_doll = ActorWrapper::PlayersDoll(
-                        //     PlayersDoll::new(id, player_sphere_radius)
-                        // );
-
-                        // self.add_actor_to_world(players_doll, engine_handle);
-                    },
                     NetCommand::PeerDisconnected(id) => {
-                        self.remove_actor_from_world(id);
+                        self.remove_actor_from_world(id.0.as_u128());
                     }
                 }
             }

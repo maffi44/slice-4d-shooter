@@ -1,30 +1,22 @@
 use glam::{Vec3, Vec4};
+use winit::dpi::Position;
 
 use crate::{
     actor::{
         device::{
             Device,
             DeviceType,
-        },
-        holegun_shot::HoleGunShot,
-        holegun_miss::HoleGunMiss,
-        player::PlayerInnerState,
-        ActorWrapper,
-        ActorID,
+        }, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::PlayerInnerState, ActorID, ActorWrapper
     },
     engine::{
         engine_handle::{
             Command,
             CommandType,
             EngineHandle,
-        },
-        input::ActionsFrameState,
-        physics::PhysicsSystem,
-        render::VisualElement,
-        world::static_object::{
+        }, input::ActionsFrameState, net::{NetCommand, NetMessage, RemoteCommand}, physics::PhysicsSystem, render::VisualElement, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
-        },
+        }
 
     }, transform::Transform
 };
@@ -77,16 +69,27 @@ impl HoleGun {
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
 
-        let volume_area = self.volume_area.pop().expect("Hole Gun doesn't have volume area on shoot"); 
+        let volume_area = self.volume_area.pop().expect("Hole Gun doesn't have volume area on shoot");
         
+        let volume_area_radius = match &volume_area {
+            VolumeArea::SphericalVolumeArea(area) => {
+                area.radius
+            },
+            _ => {panic!("Charging volume area in holegun is not SphericalVolumeArea")}
+        };
+
         let hit = physic_system.ray_cast(from, direction, 700.0);
 
         if let Some(hit) = hit {
-    
+
+            let position = hit.hit_point;
+            let shooted_from = player.transform.get_position() + shooted_from_offset;
+            let radius = charging_time*1.2;
+
             let hole = HoleGunShot::new(
-                hit.hit_point,
-                player.transform.get_position() + shooted_from_offset,
-                charging_time*1.2,
+                position,
+                shooted_from,
+                radius,
                 color,
                 volume_area,
             );
@@ -99,11 +102,35 @@ impl HoleGun {
                     )
                 }
             );
+
+            engine_handle.send_command(
+                Command {
+                    sender: player_id,
+                    command_type: CommandType::NetCommand(
+                        NetCommand::SendBoardcastNetMessageReliable(
+                            NetMessage::RemoteCommand(
+                                RemoteCommand::SpawnHoleGunShotActor(
+                                    position.to_array(),
+                                    shooted_from.to_array(),
+                                    radius,
+                                    color.to_array(),
+                                    volume_area_radius,
+                                )
+                            )
+                        )
+                    )
+                }
+            )
+
         } else {
+            let position = from + (direction * 700.0);
+            let shooted_from = player.transform.get_position() + shooted_from_offset;
+            let radius = charging_time*1.2;
+
             let miss = HoleGunMiss::new(
-                from + (direction * 700.0),
-                player.transform.get_position() + shooted_from_offset,
-                charging_time*1.2,
+                position,
+                shooted_from,
+                radius,
                 color,
                 volume_area,
             );
@@ -116,6 +143,25 @@ impl HoleGun {
                     )
                 }
             );
+
+            engine_handle.send_command(
+                Command {
+                    sender: player_id,
+                    command_type: CommandType::NetCommand(
+                        NetCommand::SendBoardcastNetMessageReliable(
+                            NetMessage::RemoteCommand(
+                                RemoteCommand::SpawHoleGunMissActor(
+                                    position.to_array(),
+                                    shooted_from.to_array(),
+                                    radius,
+                                    color.to_array(),
+                                    volume_area_radius,
+                                )
+                            )
+                        )
+                    )
+                }
+            )
         }
     }
 }

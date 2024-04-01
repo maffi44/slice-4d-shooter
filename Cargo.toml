@@ -19,6 +19,8 @@ glam = "*"
 #glm = "*"
 log = "*"
 serde_json = "*"
+alkahest = { version = "*", features = [ "derive" ] }
+bincode = "*"
 console_error_panic_hook = "*"
 console_log = "*"
 wasm-bindgen = "*"
