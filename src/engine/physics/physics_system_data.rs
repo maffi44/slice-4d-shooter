@@ -13,6 +13,8 @@ use crate::{
 
 use glam::Vec4;
 
+use super::dynamic_collider::PlayersDollCollider;
+
 
 
 #[derive(Debug, Clone)]
@@ -169,11 +171,13 @@ impl CollidersShapeTypeArrays {
 
 }
 
-pub struct StaticCollidersData {
+pub struct PhysicsState {
     pub cubes: CollidersShapeTypeArrays,
     pub spheres: CollidersShapeTypeArrays,
     pub sph_cubes: CollidersShapeTypeArrays,
     pub inf_w_cubes: CollidersShapeTypeArrays,
+
+    pub dyn_spheres: Vec<PlayersDollCollider>,
 
     pub stickiness: f32,
 }
@@ -191,7 +195,7 @@ struct StaticColliderData {
     bounce_rate: f32,
 }
 
-impl StaticCollidersData {
+impl PhysicsState {
     pub fn new(world: &World) -> Self {
         let mut cubes = CollidersShapeTypeArrays::new();
         let mut spheres = CollidersShapeTypeArrays::new();
@@ -218,11 +222,13 @@ impl StaticCollidersData {
             }
         }
 
-        StaticCollidersData {
+        PhysicsState {
             cubes,
             inf_w_cubes,
             spheres,
             sph_cubes,
+
+            dyn_spheres: Vec::with_capacity(4),
 
             stickiness: world.level.all_shapes_stickiness_radius
         }
@@ -245,24 +251,30 @@ impl StaticCollidersData {
         }
     }
 
-    pub fn clear_temporal_static_colliders(&mut self) {
+    pub fn add_temporal_dynamic_collider(&mut self, collider: PlayersDollCollider) {
+        self.dyn_spheres.push(collider);
+    }
+
+    pub fn clear_temporal_colliders(&mut self) {
         self.cubes.clear_temporal_static_colliders();
         self.spheres.clear_temporal_static_colliders();
         self.sph_cubes.clear_temporal_static_colliders();
         self.inf_w_cubes.clear_temporal_static_colliders();
+
+        self.dyn_spheres.clear();
     }
 }
 
 
 pub struct FrameCollidersBuffers {
-    // pub dynamic_colliders: Vec<&'static mut DynamicCollider>,
+    pub dynamic_colliders: Vec<&'static mut PlayersDollCollider>,
     pub kinematic_colliders: Vec<(&'static mut Transform, &'static mut KinematicCollider)>,
     pub areas: Vec<&'static mut Area>,
 }
 
 impl FrameCollidersBuffers {
     pub fn new() -> Self {
-        // let dynamic_colliders = Vec::<&mut DynamicCollider>::new();
+        let dynamic_colliders = Vec::<&mut PlayersDollCollider>::new();
         let kinematic_colliders =
             Vec::<(&'static mut Transform, &'static mut KinematicCollider)>::new();
         
@@ -271,7 +283,7 @@ impl FrameCollidersBuffers {
         
 
         FrameCollidersBuffers {
-            // dynamic_colliders,
+            dynamic_colliders,
             kinematic_colliders,
             areas,
         }

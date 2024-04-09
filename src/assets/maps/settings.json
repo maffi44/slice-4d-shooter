@@ -1,8 +1,8 @@
 {
-    "player_sphere_radius": 0.5,
+    "player_sphere_radius": 0.7,
 
     "player_max_speed" : 44.0,
-    "player_max_accel" : 42.0,
+    "player_max_accel" : 44.0,
 
     "air_speed_mult" : 0.15,
 

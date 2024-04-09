@@ -6,7 +6,7 @@ use glam::{
     FloatExt,
 };
 
-use super::physics_system_data::StaticCollidersData;
+use super::physics_system_data::PhysicsState;
 
 pub const THRESHOLD: f32 = 0.009;
 pub const MAX_DIST: f32 = 700_f32;
@@ -60,7 +60,7 @@ fn smin(a: f32, b: f32, k: f32) -> f32
 #[inline]
 pub fn get_dist(
     p: Vec4,
-    static_objects: &StaticCollidersData,
+    static_objects: &PhysicsState,
 ) -> f32 {
     let mut d = MAX_DIST;
 
@@ -157,6 +157,10 @@ pub fn get_dist(
         d = d.max(-(sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness));
     }
 
+    for collider in static_objects.dyn_spheres.iter() {
+        d = d.min(sd_sphere(p - collider.position.clone(), collider.radius));
+    }
+
     return d;
 }
 
@@ -164,7 +168,7 @@ pub fn get_dist(
 #[inline]
 pub fn get_bounce_and_friction(
     p: Vec4,
-    static_objects: &StaticCollidersData,
+    static_objects: &PhysicsState,
 ) -> (f32, f32) {
     let mut d = MAX_DIST;
 
@@ -284,6 +288,17 @@ pub fn get_bounce_and_friction(
         };
     }
 
+    for collider in static_objects.dyn_spheres.iter() {
+        let new_d = sd_sphere(p - collider.position.clone(), collider.radius);
+
+        if new_d < d {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
+
+            d = new_d;
+        };
+    }
+
     (bounce_coeficient, friction)
 }
 
@@ -292,7 +307,7 @@ pub fn get_bounce_and_friction(
 #[inline]
 pub fn get_normal(
     p: Vec4,
-    static_objects: &StaticCollidersData,
+    static_objects: &PhysicsState,
 ) -> Vec4 {
     let a = p + Vec4::new(THRESHOLD, 0.000, 0.000, 0.000);
     let b = p + Vec4::new(-THRESHOLD, 0.000, 0.000,0.000);
@@ -338,7 +353,7 @@ pub fn get_normal(
 pub fn get_big_normal(
     p: Vec4,
     size: f32,
-    static_objects: &StaticCollidersData,
+    static_objects: &PhysicsState,
 ) -> Vec4 {
     let a = p + Vec4::new(size, 0.000, 0.000, 0.000);
     let b = p + Vec4::new(-size, 0.000, 0.000,0.000);

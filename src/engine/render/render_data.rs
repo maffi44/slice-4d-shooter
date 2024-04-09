@@ -50,6 +50,16 @@ pub struct Shape {
     pub roundness: f32,
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
+pub struct PlayerForm {
+    pos: [f32;4],
+    empty_bytes: [u32; 4],
+    color: [f32;3],
+    radius: f32,
+    // rotation: [f32; 16],
+}
+
 impl Default for Shape {
     fn default() -> Self {
         Shape {

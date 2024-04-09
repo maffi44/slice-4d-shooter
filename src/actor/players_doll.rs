@@ -1,7 +1,7 @@
 use glam::{Vec3, Vec4};
 use matchbox_socket::PeerId;
 
-use crate::{engine::{engine_handle::EngineHandle, physics::{colliders_container::PhysicalElement, dynamic_collider::DynamicCollider, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, StaticObject}}, transform::Transform};
+use crate::{engine::{engine_handle::EngineHandle, physics::{colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, StaticObject}}, transform::Transform};
 
 use super::{player::PlayerMessages, Actor, ActorID, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
 
@@ -12,7 +12,7 @@ pub struct PlayersDoll {
     transform: Transform,
     masters_peer_id: PeerId,
 
-    static_objects: Vec<StaticObject>,
+    dynamic_colliders: Vec<PlayersDollCollider>,
     is_enable: bool,
     hp: i32
 }
@@ -20,31 +20,24 @@ pub struct PlayersDoll {
 impl PlayersDoll {
     pub fn new(masters_peer_id: PeerId, id: ActorID, player_sphere_radius: f32, transform: Transform) -> Self {
 
-        let static_object = StaticObject {
-            collider: StaticCollider {
-                shape_type: ShapeType::Sphere,
-                position: Vec4::ZERO,
-                size: Vec4::new(player_sphere_radius, 0.0, 0.0, 0.0),
-                is_positive: true,
-                roundness: 0.0,
-                stickiness: false,
-                friction: 0.0,
-                bounce_rate: 0.0,
-                actors_id: Some(id),
-            },
-            material: ObjectMatrial::new(PLAYERS_DOLL_COLOR),
+        let dynamic_collider = PlayersDollCollider {
+            position: Vec4::ZERO,
+            radius: player_sphere_radius,
+            friction: 0.0,
+            bounce_rate: 0.0,
+            actors_id: Some(id),
         };
 
-        let mut static_objects = Vec::with_capacity(1);
+        let mut dynamic_colliders = Vec::with_capacity(1);
 
-        static_objects.push(static_object);
+        dynamic_colliders.push(dynamic_collider);
 
         PlayersDoll {
             masters_peer_id,
             id: Some(id),
             transform,
             is_enable: true,
-            static_objects,
+            dynamic_colliders,
             hp: 0
         }
     }
@@ -106,8 +99,8 @@ impl Actor for PlayersDoll {
     fn init(&mut self, id: ActorID) {
         self.id = Some(id);
 
-        for object in self.static_objects.iter_mut() {
-            object.collider.init(id);
+        for collider in self.dynamic_colliders.iter_mut() {
+            collider.init(id);
         }
     }
 
@@ -139,7 +132,8 @@ impl Actor for PlayersDoll {
                     transform: &mut self.transform,
                     kinematic_collider: None,
                     static_colliders: None,
-                    static_objects: Some(&mut self.static_objects),
+                    dynamic_colliders: Some(&mut self.dynamic_colliders),
+                    static_objects: None,
                     area: None,
                 }
             )
@@ -153,9 +147,10 @@ impl Actor for PlayersDoll {
             Some(
                 VisualElement {
                     transform: &self.transform,
-                    static_objects: Some(&self.static_objects),
+                    static_objects: None,
                     coloring_areas: None,
                     volume_areas: None,
+                    player: Some(&self.dynamic_colliders[0])
                 }
             )
         } else {

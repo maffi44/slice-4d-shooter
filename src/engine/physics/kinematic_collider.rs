@@ -7,7 +7,7 @@ use crate::{
     engine::{
         engine_handle::EngineHandle,
         physics::{
-            physics_system_data::StaticCollidersData,
+            physics_system_data::PhysicsState,
             common_physical_functions::{
                 get_dist,
                 get_normal,
@@ -100,7 +100,7 @@ impl KinematicCollider {
     pub fn physics_tick(
         &mut self,
         delta: f32,
-        static_objects: &StaticCollidersData,
+        static_objects: &PhysicsState,
         transform: &mut Transform,
         engine_handle: &mut EngineHandle,
     ) {
@@ -157,7 +157,7 @@ impl KinematicCollider {
     fn move_collider(
         &mut self,
         delta: f32,
-        static_objects: &StaticCollidersData,
+        static_objects: &PhysicsState,
         start_position: Vec4,
     ) -> Vec4 {
 
@@ -506,7 +506,7 @@ impl KinematicCollider {
 fn move_collider_outside(
     position: Vec4,
     collider_radius: f32,
-    static_objects: &StaticCollidersData,
+    static_objects: &PhysicsState,
 ) -> (Vec4, bool) {
 
     let mut pos = position;

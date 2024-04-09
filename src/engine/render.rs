@@ -23,6 +23,8 @@ use self::{
 
 use winit::window::Window;
 
+use super::physics::dynamic_collider::PlayersDollCollider;
+
 
 
 pub struct VisualElement<'a> {
@@ -30,6 +32,7 @@ pub struct VisualElement<'a> {
     pub static_objects: Option<&'a Vec<StaticObject>>,
     pub coloring_areas: Option<&'a Vec<ColoringArea>>,
     pub volume_areas: Option<&'a Vec<VolumeArea>>,
+    pub player: Option<&'a PlayersDollCollider>,
 }
 
 
@@ -110,6 +113,13 @@ impl RenderSystem {
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.beam_areas_data.as_slice()),
         );
+
+        self.renderer.queue.write_buffer(
+            &self.renderer.player_forms_data_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.player_forms_data.as_slice()),
+        );
+        
 
         if let Err(err) = self.renderer.render(&self.window) {
             match err {

@@ -181,6 +181,7 @@ impl Actor for HoleGunMiss {
                 static_objects:  None,
                 coloring_areas: None,
                 volume_areas: Some(&self.volume_areas),
+                player: None,
             }
         )
     }

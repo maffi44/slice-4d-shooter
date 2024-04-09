@@ -12,7 +12,7 @@ use crate::{
 use glam::{Mat4, Vec4};
 use winit::window::Window;
 
-use super::BeamArea;
+use super::{BeamArea, PlayerForm};
 
 
 
@@ -20,6 +20,7 @@ pub struct DynamicRenderData {
     pub dynamic_shapes_data: ShapesArrays,
     pub spherical_areas_data: Box<[SphericalArea; 256]>,
     pub beam_areas_data: Box<[BeamArea; 128]>,
+    pub player_forms_data: Box<[PlayerForm; 64]>,
     pub other_dynamic_data: OtherDynamicData,
 
     // frame memory buffers
@@ -39,6 +40,7 @@ impl DynamicRenderData {
             dynamic_shapes_data: ShapesArrays::default(),
             spherical_areas_data: Box::new([SphericalArea::default(); 256]),
             beam_areas_data: Box::new([BeamArea::default(); 128]),
+            player_forms_data: Box::new([PlayerForm::default(); 64]),
             other_dynamic_data: OtherDynamicData::default(),
 
             frame_cubes_buffer: SpecificShapeBuffers::default(),
@@ -70,6 +72,8 @@ impl DynamicRenderData {
         self.frame_sph_cubes_buffer.clear_buffers();
         self.frame_inf_w_cubes_buffer.clear_buffers();
 
+
+        let mut player_forms_amount = 0u32;
 
         for (_, actor) in world.actors.iter() {
 
@@ -204,6 +208,19 @@ impl DynamicRenderData {
 
                         self.frame_coloring_areas_buffer.push(area)
                     }
+                }
+
+                if let Some(player_sphere) = visual_element.player {
+                    
+                    self.player_forms_data[player_forms_amount as usize] = PlayerForm {
+                        pos: (player_sphere.position + transform.get_position()).to_array(),
+                        empty_bytes: [0;4],
+                        color: [1.0, 0.0, 0.0],
+                        radius: player_sphere.radius,
+                        // rotation: actor.get_transform().rotation.to_cols_array(),
+                    };
+
+                    player_forms_amount += 1;
                 }
             }
         }
@@ -516,7 +533,8 @@ impl DynamicRenderData {
             window,
             shapes_arrays_metadata,
             spherical_areas_meatadata,
-            beams_areas_amount
+            beams_areas_amount,
+            player_forms_amount
         );
     }
 }
@@ -527,8 +545,9 @@ pub struct OtherDynamicData {
     dynamic_shapes_arrays_metadata: ShapesArraysMetadata,
     spherical_areas_metadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
+    empty_bytes1: [u32;3],
     beam_areas_amount: u32,
-    // empty_bytes1: [f32; 3],
+    player_forms_amount: u32,
     // empty_bytes2: [f32; 4],
     // explore_w_pos: f32,
     // explore_w_coef: f32,
@@ -546,6 +565,7 @@ impl OtherDynamicData {
         shapes_arrays_metadata: ShapesArraysMetadata,
         spherical_areas_meatadata: SphericalAreasMetadata,
         beams_areas_amount: u32,
+        player_forms_amount: u32,
     ) {
         
         let cam_pos;
@@ -587,6 +607,8 @@ impl OtherDynamicData {
         self.beam_areas_amount = beams_areas_amount;
 
         self.time = time.timestamp_of_main_loop_start.elapsed().as_secs_f32();
+
+        self.player_forms_amount = player_forms_amount;
     }
 }
 
@@ -597,9 +619,11 @@ impl Default for OtherDynamicData {
             dynamic_shapes_arrays_metadata: ShapesArraysMetadata::default(),
             spherical_areas_metadata: SphericalAreasMetadata::default(),
             camera_data: CameraUniform::default(),
+            empty_bytes1: [0;3],
             beam_areas_amount: 0,
-            // empty_bytes1: [0.0; 3],
+            player_forms_amount: 0,
             // empty_bytes2: [0.0; 4],
+            // empty_bytes1: [0.0; 3],
             // explore_w_pos: 0.0,
             // explore_w_coef: 0.0,
             stickiness: 0.5,

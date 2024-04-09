@@ -288,6 +288,7 @@ impl Actor for HoleGunShot {
                 static_objects:  Some(&self.static_objects),
                 coloring_areas: Some(&self.coloring_areas),
                 volume_areas: Some(&self.volume_areas),
+                player: None,
             }
         )
     }
@@ -297,6 +298,7 @@ impl Actor for HoleGunShot {
             PhysicalElement {
                 transform: &mut self.transform,
                 static_objects: Some(&mut self.static_objects),
+                dynamic_colliders: None,
                 kinematic_collider: None,
                 static_colliders: None,
                 area: None,

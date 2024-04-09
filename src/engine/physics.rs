@@ -18,10 +18,11 @@ use crate::{
 use self::{
     area::Area,
     kinematic_collider::KinematicCollider,
+    dynamic_collider::PlayersDollCollider,
     physics_system_data::{
         Hit,
         FrameCollidersBuffers,
-        StaticCollidersData
+        PhysicsState
     },
     common_physical_functions::{
         get_dist,
@@ -38,7 +39,7 @@ use glam::Vec4;
 const MAX_RAY_MARCHING_STEPS: usize = 150;
 
 pub struct PhysicsSystem {
-    static_colliders_data: StaticCollidersData,
+    physics_state: PhysicsState,
     frame_colliders_buffers: FrameCollidersBuffers,
 }
 
@@ -46,7 +47,7 @@ pub struct PhysicsSystem {
 impl PhysicsSystem {
     pub fn new(world: &World) -> Self {
         
-        let static_colliders_data = StaticCollidersData::new(world);
+        let physics_state = PhysicsState::new(world);
 
         log::info!("physics system: static_colliders_data init");
 
@@ -55,7 +56,7 @@ impl PhysicsSystem {
         log::info!("physics system: frame_colliders_buffers init");
 
         PhysicsSystem {
-            static_colliders_data,
+            physics_state,
             frame_colliders_buffers
         }
     }
@@ -67,10 +68,10 @@ impl PhysicsSystem {
         engine_handle: &mut EngineHandle,
     ) {
 
-        self.static_colliders_data.clear_temporal_static_colliders();
+        self.physics_state.clear_temporal_colliders();
 
         self.frame_colliders_buffers.kinematic_colliders.clear();
-        // self.frame_colliders_buffers.dynamic_colliders.clear();
+        self.frame_colliders_buffers.dynamic_colliders.clear();
         self.frame_colliders_buffers.areas.clear();
 
         // I use frame_colliders_buffers as a memory buffer in order
@@ -85,9 +86,9 @@ impl PhysicsSystem {
         let mut areas: Vec<&mut Area> = unsafe {
             std::mem::transmute_copy(&self.frame_colliders_buffers.areas)
         };
-        // let mut dynamic_colliders: Vec<&mut DynamicCollider> = unsafe {
-        //     std::mem::transmute_copy(&self.frame_colliders_buffers.dynamic_colliders)
-        // };
+        let mut dynamic_colliders: Vec<&mut PlayersDollCollider> = unsafe {
+            std::mem::transmute_copy(&self.frame_colliders_buffers.dynamic_colliders)
+        };
 
 
         for (_, actor) in world.actors.iter_mut() {
@@ -113,7 +114,7 @@ impl PhysicsSystem {
                         
                         temporal_static_collider.size *= transform.get_scale();
                         
-                        self.static_colliders_data.add_temporal_static_collider(temporal_static_collider);
+                        self.physics_state.add_temporal_static_collider(temporal_static_collider);
                     }
                 }
 
@@ -126,21 +127,27 @@ impl PhysicsSystem {
                         
                         temporal_static_collider.size *= transform.get_scale();
                         
-                        self.static_colliders_data.add_temporal_static_collider(temporal_static_collider);
+                        self.physics_state.add_temporal_static_collider(temporal_static_collider);
                     }
                 }
-                
+
+                if let Some(colliders) = physical_element.dynamic_colliders {
+                    for dynamic_collider in colliders {
+                        
+                        // temporary solution to immitate kinematic physic
+                        let mut temporal_dynamoc_collider = dynamic_collider.clone();
+
+                        temporal_dynamoc_collider.position += transform.get_position();
+
+                        self.physics_state.add_temporal_dynamic_collider(temporal_dynamoc_collider);
+                        
+                        // dynamic_colliders.push(dynamic_collider);
+                    }
+                }
+        
                 if let Some(kinematic_collider) = physical_element.kinematic_collider {
                     kinematic_colliders.push((transform, kinematic_collider));
                 }
-
-
-                // if let Some(colliders) = colliders_container.dynamic_colliders {
-                //     for dynamic_collider in colliders {
-                        
-                //         dynamic_colliders.push(dynamic_collider);
-                //     }
-                // }
 
             }
         }
@@ -152,7 +159,7 @@ impl PhysicsSystem {
         for (transform, kinematic_collider) in kinematic_colliders.iter_mut() {
             kinematic_collider.physics_tick(
                 delta,
-                &self.static_colliders_data,
+                &self.physics_state,
                 transform,
                 engine_handle,
             )
@@ -164,11 +171,11 @@ impl PhysicsSystem {
 
         std::mem::forget(kinematic_colliders);
         std::mem::forget(areas);
-        // std::mem::forget(dynamic_colliders);
+        std::mem::forget(dynamic_colliders);
 
         self.frame_colliders_buffers.kinematic_colliders.clear();
         self.frame_colliders_buffers.areas.clear();
-        // self.frame_colliders_buffers.dynamic_colliders.clear();
+        self.frame_colliders_buffers.dynamic_colliders.clear();
     }
 
     pub fn ray_cast(&self, from: Vec4, direction: Vec4, distance: f32) -> Option<Hit> {
@@ -189,13 +196,13 @@ impl PhysicsSystem {
                 break;
             }
 
-            let dist = get_dist(pos, &self.static_colliders_data);
+            let dist = get_dist(pos, &self.physics_state);
 
             if dist < THRESHOLD {
                 return Some(
                         Hit {
                         hit_point: pos,
-                        hit_normal: get_normal(pos, &self.static_colliders_data),
+                        hit_normal: get_normal(pos, &self.physics_state),
                         hited_actors_id: None,
                     }
                 );
@@ -209,5 +216,10 @@ impl PhysicsSystem {
         }
 
         None
+    }
+
+
+    pub fn sphere_cast(sphere_pos: Vec4, sphere_radius: f32) {
+
     }
 }

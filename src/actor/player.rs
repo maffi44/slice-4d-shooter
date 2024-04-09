@@ -216,6 +216,7 @@ impl Actor for Player {
             transform: &mut self.inner_state.transform,
             kinematic_collider: Some(&mut self.inner_state.collider),
             static_colliders: None,
+            dynamic_colliders: None,
             static_objects: None,
             area: None,
         };

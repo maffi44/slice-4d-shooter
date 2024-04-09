@@ -148,13 +148,18 @@ impl NetSystem {
                         });
                         
                         let mut index = 0usize;
+                        let mut finded = false;
                         for stored_peer in self.peers.iter() {
                             if stored_peer.0.as_u128() == peer.0.as_u128() {
+                                finded = true;
                                 break;
                             }
                             index += 1;
                         }
-                        self.peers.remove(index);
+
+                        if finded {
+                            self.peers.remove(index);
+                        }
                     }
                 }
             }

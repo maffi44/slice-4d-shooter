@@ -13,6 +13,14 @@ struct Shape {
     roundness: f32,
 }
 
+struct PlayerForm {
+    pos: vec4<f32>,
+    empty_bytes: vec4<u32>,
+    color: vec3<f32>,
+    radius: f32,
+    // rotation: mat4x4<f32>,
+}
+
 struct ShapesMetadata {
     //normals
     cubes_start: u32,
@@ -91,14 +99,15 @@ struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     spherical_areas_meatadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
+    empty_bytes1: vec3<u32>,
     beam_areas_amount: u32,
-    // empty_bytes1: vec3<f32>,
+    player_forms_amount: u32,
     // empty_bytes2: vec4<f32>,
     // explore_w_pos: f32,
     // explore_w_coef: f32,
     stickiness: f32,
     screen_aspect: f32,
-    time: f32,   
+    time: f32,
 }
 
 struct OtherStaticData {
@@ -125,6 +134,7 @@ struct OtherStaticData {
 
 @group(1) @binding(0) var<uniform> dyn_spherical_areas: array<SphericalArea, 256>;
 @group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 128>;
+@group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 64>;
 
 
 
@@ -594,6 +604,15 @@ fn get_color_at_point(p: vec4<f32>, distance: f32) -> vec3<f32> {
         }
     }
 
+    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+        let new_d = sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
+
+        if new_d < d {
+            color = dyn_player_forms[i].color;
+            d = new_d;
+        }
+    }
+
     // if distance + 1.0 > MAX_DIST {
     //     let c = fract(p * 0.01);
 
@@ -728,6 +747,10 @@ fn map(p: vec4<f32>) -> f32 {
         d = max(d, -(sd_inf_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.xyz) - dyn_negatives_shapes[i].roundness));
     }
 
+    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+        // let pp = dyn_player_forms[i].rotation * p;
+        d = min(d, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
+    }
     return d;
 }
 

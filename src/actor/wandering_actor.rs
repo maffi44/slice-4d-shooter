@@ -103,6 +103,7 @@ impl Actor for WanderingActor {
         let physical_element = PhysicalElement {
             transform: &mut self.transform,
             kinematic_collider: None,
+            dynamic_colliders: None,
             static_colliders: None,
             static_objects: Some(&mut self.static_objects),
             area: None
@@ -117,6 +118,7 @@ impl Actor for WanderingActor {
             static_objects: Some(&self.static_objects),
             coloring_areas: None,
             volume_areas: None,
+            player: None,
         };
 
         Some(visual_element)
