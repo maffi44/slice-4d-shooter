@@ -7,7 +7,7 @@ use matchbox_socket::{
     MultipleChannels, PeerId, PeerState, RtcIceServerConfig, WebRtcSocket
 };
 
-use crate::{actor::{holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::PlayerMessages, players_doll::PlayersDoll, ActorID, ActorWrapper, CommonActorsMessages, Message, MessageType, SpecificActorMessage}, transform::{self, SerializableTransform, Transform}};
+use crate::{actor::{holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::PlayerMessages, players_death_explode::PlayerDeathExplode, players_doll::PlayersDoll, ActorID, ActorWrapper, CommonActorsMessages, Message, MessageType, SpecificActorMessage}, transform::{self, SerializableTransform, Transform}};
 
 use super::{engine_handle::{
     Command, CommandType, EngineHandle
@@ -31,13 +31,14 @@ pub enum RemoteCommand {
     SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
     SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
     SpawnPlayersDollActor(SerializableTransform, f32),
+    SpawnPlayerDeathExplode([f32;4]),
     RemoveActor(ActorID),
 }
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum RemoteMessage {
-    DealDamage(u32),
+    DealDamageAndAddForce(u32, [f32;4]),
     Enable(bool),
     SetTransform(SerializableTransform)
 }
@@ -139,14 +140,8 @@ impl NetSystem {
                         });
                         self.peers.push(peer);
                     }
+
                     PeerState::Disconnected => {
-                        engine_handle.send_command(Command {
-                            sender: 0_u128,
-                            command_type: CommandType::NetCommand(
-                                NetCommand::PeerDisconnected(peer)
-                            ),
-                        });
-                        
                         let mut index = 0usize;
                         let mut finded = false;
                         for stored_peer in self.peers.iter() {
@@ -159,6 +154,13 @@ impl NetSystem {
 
                         if finded {
                             self.peers.remove(index);
+
+                            engine_handle.send_command(Command {
+                                sender: 0_u128,
+                                command_type: CommandType::NetCommand(
+                                    NetCommand::PeerDisconnected(peer)
+                                ),
+                            });
                         }
                     }
                 }
@@ -239,6 +241,18 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                         sender: 0u128,
                         command_type: CommandType::RemoveActor(actor_id)
                     })
+                },
+                RemoteCommand::SpawnPlayerDeathExplode(pos) => {
+                    let position = Vec4::from_array(pos);
+
+                    let player_death_explode = PlayerDeathExplode::new(position);
+
+                    engine_handle.send_command(Command {
+                        sender: 0u128,
+                        command_type: CommandType::SpawnActor(
+                            ActorWrapper::PlayerDeathExplode(player_death_explode)
+                        )
+                    });
                 },
                 RemoteCommand::SpawHoleGunMissActor(
                     position,
@@ -336,14 +350,17 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                         }
                     )
                 },
-                RemoteMessage::DealDamage(damage) => {
+                RemoteMessage::DealDamageAndAddForce(damage, force) => {
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PLayerMessages(
-                                    PlayerMessages::DealDamage(damage)
+                                    PlayerMessages::DealDamageAndAddForce(
+                                        damage,
+                                        Vec4::from_array(force),
+                                    )
                                 )
                             )
                         }
@@ -377,13 +394,16 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                         }
                     )
                 },
-                RemoteMessage::DealDamage(damage) => {
+                RemoteMessage::DealDamageAndAddForce(damage, force) => {
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PLayerMessages(
-                                    PlayerMessages::DealDamage(damage)
+                                    PlayerMessages::DealDamageAndAddForce(
+                                        damage,
+                                        Vec4::from_array(force),
+                                    )
                                 )
                             )
                         }

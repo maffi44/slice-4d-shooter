@@ -22,6 +22,7 @@ use crate::{
 use glam::{Vec4, Vec3};
 use wasm_bindgen_futures::JsFuture;
 use serde_json::Value;
+use web_sys::js_sys::Math::random;
 
 
 
@@ -38,12 +39,22 @@ pub struct DefaultStaticObjectSettings {
 pub struct Level {
     pub level_name: String,
     pub static_objects: Vec<StaticObject>,
-    pub spawn_position: Vec4,
+    pub spawn_positions: Vec<Vec4>,
     pub all_shapes_stickiness_radius: f32
 }
 
 
 impl Level {
+    
+    pub fn get_random_spawn_position(&self) -> Vec4 {
+        let random_index = (
+            random() * (self.spawn_positions.len() - 1) as f64
+        ) as usize;
+
+        self.spawn_positions[random_index].clone()
+    }
+
+
     pub async fn download_level_from_server() -> (Level, Vec<ActorWrapper>)
     {
         let window = web_sys::window().unwrap();
@@ -113,14 +124,22 @@ fn parse_json_level(
             as f32
     };
 
-    let spawn_position = {
-        let json_spawn_postition = json_level
-            .get("spawn_position")
-            .expect("Wrong JSON map format. JSON level must have static_objects property");
+    let spawn_positions = {
+        let spawn_postitions_array = json_level
+            .get("spawn_positions")
+            .expect("Wrong JSON map format. JSON level must have static_objects property")
+            .as_array()
+            .expect("spawn_positions is not an array");
+
+        let mut spawn_positions = Vec::new();
+
+        for value in spawn_postitions_array {
+            let transform = parse_json_into_transform(value, "spawn_position");
         
-        let transform = parse_json_into_transform(json_spawn_postition, "spawn_position ");
-        
-        transform.get_position()
+            spawn_positions.push(transform.get_position());
+        }
+
+        spawn_positions  
     };
 
     let default_settings = {
@@ -150,7 +169,7 @@ fn parse_json_level(
     let level = Level {
         level_name,
         static_objects,
-        spawn_position,
+        spawn_positions,
         all_shapes_stickiness_radius,
     };
 
@@ -501,7 +520,7 @@ fn parse_json_into_transform(shape: &Value, shape_name: &str) -> Transform {
 
     if json_scale.is_none() {
 
-        return Transform::new_from_pos(position);
+        return Transform::from_position(position);
     }
 
     let json_scale = json_scale.expect(
@@ -594,7 +613,7 @@ fn parse_json_into_transform(shape: &Value, shape_name: &str) -> Transform {
     
     let scale = Vec4::new(x as f32, y as f32, z as f32, w as f32);
     
-    Transform::new_from_pos_and_scale(position, scale)
+    Transform::from_position_and_scale(position, scale)
 }
 
 

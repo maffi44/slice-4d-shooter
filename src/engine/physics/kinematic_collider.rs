@@ -87,6 +87,11 @@ impl KinematicCollider {
     pub fn get_collider_radius(&self) -> f32 {
         self.collider_radius
     }
+
+    pub fn reboot_forces_and_velocity(&mut self) {
+        self.forces.clear();
+        self.current_velocity = Vec4::ZERO;
+    }
     
     pub fn set_wish_direction(&mut self, wish_direction: Vec4, movement_mult: f32) {
         self.wish_direction = wish_direction;

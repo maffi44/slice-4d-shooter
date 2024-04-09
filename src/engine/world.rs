@@ -88,6 +88,34 @@ impl World {
             CommandType::RemoveActor(id) => {
                 self.remove_actor_from_world(id);
             }
+            CommandType::RespawnPlayer(id) => {
+            
+                let spawn_position = self.level.get_random_spawn_position();
+
+                if let Some(player) = self.actors.get_mut(&id) {
+                    
+                    if let ActorWrapper::Player(player) = player {
+                        player.respawn(spawn_position, engine_handle)
+                    } else {
+                        panic!("Player send wrong ID into RespawnPlayer command. Actor with this ID is not player")
+                    }
+                } else {
+                    //this case is possible when player send command to get respawn and before
+                    //command is processed player's id was changed (for example when game connected to singnaling server)
+
+                    // temporal solution is get main_player_id (todo: need to detect when actor change ID, store pair (new 
+                    // and old ids) for one frame and change old id for new in this case)
+
+                    let player = self.actors.get_mut(&self.main_player_id).expect("World have not actor with main_player_id");
+                    
+                    if let ActorWrapper::Player(player) = player {
+                        player.respawn(spawn_position, engine_handle)
+                    } else {
+                        panic!("Actor with main_player_id is not Player");
+                    }
+                }
+
+            }
             CommandType::NetCommand(command) => {
                 match command {
                     NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {

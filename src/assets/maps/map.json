@@ -18,16 +18,38 @@
 
     "all_shapes_stickiness_radius": 3.2,
 
-    "spawn_position" : {
-        "transform" : {
-            "position" : {
-                "x": 1.0,
-                "y": 2.0,
-                "z": 0.0,
-                "w": 1.0
+    "spawn_positions" : [
+        {
+            "transform" : {
+                "position" : {
+                    "x": 1.0,
+                    "y": 2.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 10.0,
+                    "y": 2.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 1.0,
+                    "y": 2.0,
+                    "z": 10.0,
+                    "w": 1.0
+                }
             }
         }
-    },
+    ],
 
     "cups" : {
         "botton_cup" : -10.0,

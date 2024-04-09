@@ -1,7 +1,7 @@
 use glam::{Vec3, Vec4};
 use matchbox_socket::PeerId;
 
-use crate::{engine::{engine_handle::EngineHandle, physics::{colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, StaticObject}}, transform::Transform};
+use crate::{engine::{engine_handle::{Command, CommandType, EngineHandle}, net::{NetCommand, NetMessage, RemoteMessage}, physics::{colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, StaticObject}}, transform::Transform};
 
 use super::{player::PlayerMessages, Actor, ActorID, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
 
@@ -14,7 +14,6 @@ pub struct PlayersDoll {
 
     dynamic_colliders: Vec<PlayersDollCollider>,
     is_enable: bool,
-    hp: i32
 }
 
 impl PlayersDoll {
@@ -38,7 +37,6 @@ impl PlayersDoll {
             transform,
             is_enable: true,
             dynamic_colliders,
-            hp: 0
         }
     }
 }
@@ -72,8 +70,24 @@ impl Actor for PlayersDoll {
                 match &message {
                     &SpecificActorMessage::PLayerMessages(message) => {
                         match message {
-                            PlayerMessages::DealDamage(damage) => {
-                                self.hp -= *damage as i32;
+                            PlayerMessages::DealDamageAndAddForce(damage, force) => {
+                                engine_handle.send_command(
+                                    Command {
+                                        sender: self.id.expect("Player's Doll have not Actor's ID"),
+                                        command_type: CommandType::NetCommand(
+                                            NetCommand::SendDirectNetMessageReliable(
+                                                NetMessage::RemoteDirectMessage(
+                                                    self.id.expect("Player's Doll have not Actor's ID"),
+                                                    RemoteMessage::DealDamageAndAddForce(
+                                                        *damage,
+                                                        force.to_array(),
+                                                    )
+                                                ),
+                                                self.masters_peer_id
+                                            )
+                                        )
+                                    }
+                                )
                             }
                             PlayerMessages::NewPeerConnected(_) => {}
                         }

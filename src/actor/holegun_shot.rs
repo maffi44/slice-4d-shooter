@@ -57,7 +57,7 @@ impl HoleGunShot {
         mut charging_volume_area: VolumeArea
     ) -> Self {
 
-        let transform = Transform::new_from_pos(position);
+        let transform = Transform::from_position(position);
 
         let static_object = StaticObject {
             collider: StaticCollider {

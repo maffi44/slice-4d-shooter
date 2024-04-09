@@ -5,6 +5,7 @@ pub mod device;
 pub mod holegun_shot;
 pub mod holegun_miss;
 pub mod players_doll;
+pub mod players_death_explode;
 
 use crate::{
     engine::{
@@ -18,7 +19,7 @@ use crate::{
 use self::{
     holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::{
         Player, PlayerMessages
-    }, players_doll::PlayersDoll, wandering_actor::WanderingActor
+    }, players_death_explode::PlayerDeathExplode, players_doll::PlayersDoll, wandering_actor::WanderingActor
 };
 
 
@@ -56,6 +57,7 @@ pub enum ActorWrapper {
     HoleGunShot(HoleGunShot),
     HoleGunMiss(HoleGunMiss),
     PlayersDoll(PlayersDoll),
+    PlayerDeathExplode(PlayerDeathExplode),
     Diamond,
     Exit,
 }
@@ -77,6 +79,9 @@ impl Actor for ActorWrapper {
                 actor.get_transform()
             }
             ActorWrapper::PlayersDoll(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::PlayerDeathExplode(actor) => {
                 actor.get_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -101,6 +106,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.get_mut_transform()
             },
+            ActorWrapper::PlayerDeathExplode(actor) => {
+                actor.get_mut_transform()
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -121,6 +129,9 @@ impl Actor for ActorWrapper {
                 actor.recieve_message(message, engine_handle);
             },
             ActorWrapper::PlayersDoll(actor) => {
+                actor.recieve_message(message, engine_handle);
+            },
+            ActorWrapper::PlayerDeathExplode(actor) => {
                 actor.recieve_message(message, engine_handle);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -150,6 +161,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.tick(physic_system, engine_handle, delta);
             },
+            ActorWrapper::PlayerDeathExplode(actor) => {
+                actor.tick(physic_system, engine_handle, delta);
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -170,6 +184,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             },
             ActorWrapper::PlayersDoll(actor) => {
+                actor.get_physical_element()
+            },
+            ActorWrapper::PlayerDeathExplode(actor) => {
                 actor.get_physical_element()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -194,6 +211,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.get_visual_element()
             },
+            ActorWrapper::PlayerDeathExplode(actor) => {
+                actor.get_visual_element()
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -214,6 +234,9 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             },
             ActorWrapper::PlayersDoll(actor) => {
+                actor.get_id()
+            },
+            ActorWrapper::PlayerDeathExplode(actor) => {
                 actor.get_id()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -238,6 +261,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.set_id(id, engine_handle);
             },
+            ActorWrapper::PlayerDeathExplode(actor) => {
+                actor.set_id(id, engine_handle);
+            },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -258,6 +284,9 @@ impl Actor for ActorWrapper {
                 actor.init(id);
             },
             ActorWrapper::PlayersDoll(actor) => {
+                actor.init(id);
+            },
+            ActorWrapper::PlayerDeathExplode(actor) => {
                 actor.init(id);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},

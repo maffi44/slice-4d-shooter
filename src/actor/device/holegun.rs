@@ -1,24 +1,43 @@
 use glam::{Vec3, Vec4};
-use winit::dpi::Position;
 
 use crate::{
     actor::{
         device::{
             Device,
             DeviceType,
-        }, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::PlayerInnerState, ActorID, ActorWrapper
+        },
+        holegun_miss::HoleGunMiss,
+        holegun_shot::HoleGunShot,
+        player::{
+            PlayerInnerState,
+            PlayerMessages
+        },
+        ActorID,
+        ActorWrapper,
+        Message,
+        MessageType,
+        SpecificActorMessage
     },
     engine::{
         engine_handle::{
             Command,
             CommandType,
             EngineHandle,
-        }, input::ActionsFrameState, net::{NetCommand, NetMessage, RemoteCommand}, physics::PhysicsSystem, render::VisualElement, world::static_object::{
+        },
+        input::ActionsFrameState,
+        net::{
+            NetCommand,
+            NetMessage,
+            RemoteCommand
+        },
+        physics::PhysicsSystem,
+        render::VisualElement,
+        world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
-
-    }, transform::Transform
+    },
+    transform::Transform
 };
 
 pub struct HoleGun {
@@ -85,6 +104,38 @@ impl HoleGun {
             let position = hit.hit_point;
             let shooted_from = player.transform.get_position() + shooted_from_offset;
             let radius = charging_time*1.2;
+
+            let hited_players = physic_system.sphere_cast_on_dynamic_colliders(
+                position,
+                radius,
+            );
+
+            for hit in hited_players {
+                let dist_to_hited_point = {
+                    hit.hit_point.distance(position)
+                };
+
+                let damage = (radius * 100.0) / (1.0 + dist_to_hited_point*10.0);
+
+                let force = hit.hit_normal * damage / -4.5;
+
+                log::error!("SET DAMAGE and FORCE: {}, {}", damage, force);
+
+                engine_handle.send_direct_message(
+                    hit.hited_actors_id.expect("Hited Player have not Actor's ID"),
+                    Message {
+                        from: player_id,
+                        message: MessageType::SpecificActorMessage(
+                            SpecificActorMessage::PLayerMessages(
+                                PlayerMessages::DealDamageAndAddForce(
+                                    damage as u32,
+                                    force,
+                                )
+                            )
+                        )
+                    }
+                );
+            }
 
             let hole = HoleGunShot::new(
                 position,

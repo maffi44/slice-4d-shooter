@@ -14,7 +14,7 @@ use crate::{
         MessageType,
         SpecificActorMessage
     }, engine::{
-        engine_handle::{Command, CommandType, EngineHandle}, net::{NetCommand, NetMessage, RemoteMessage}, physics::{
+        engine_handle::{Command, CommandType, EngineHandle}, net::{NetCommand, NetMessage, RemoteCommand, RemoteMessage}, physics::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicCollider,
             PhysicsSystem,
@@ -32,6 +32,8 @@ use std::f32::consts::PI;
 use glam::{Vec4, Mat4};
 use matchbox_socket::PeerId;
 
+use super::players_death_explode::PlayerDeathExplode;
+
 // use super::holegun_hole::HoleGunHole;
 
 
@@ -40,6 +42,7 @@ pub struct PlayerInnerState {
     pub collider: KinematicCollider,
     pub transform: Transform,
     pub hp: i32,
+    pub is_alive: bool,
 }
 
 
@@ -54,7 +57,8 @@ impl PlayerInnerState {
                 // settings.friction_on_ground,
             ),
             transform,
-            hp: 100,
+            hp: 0,
+            is_alive: false
         }
     }
 }
@@ -107,7 +111,7 @@ pub struct Player {
 
 
 pub enum PlayerMessages {
-    DealDamage(u32),
+    DealDamageAndAddForce(u32, Vec4),
     NewPeerConnected(PeerId),
 }
 
@@ -142,8 +146,16 @@ impl Actor for Player {
                 match message {
                     SpecificActorMessage::PLayerMessages(message) => {
                         match message {
-                            PlayerMessages::DealDamage(damage) => {
+                            PlayerMessages::DealDamageAndAddForce(damage, force) => {
                                 self.inner_state.hp -= *damage as i32;
+
+                                self.inner_state.collider.add_force(*force);
+
+                                if self.inner_state.hp <= 0 {
+                                    self.die(engine_handle)
+                                }
+
+                                log::error!("GET DAMAGE: {}", *damage);
                             }
                             PlayerMessages::NewPeerConnected(peer_id) => {
 
@@ -212,20 +224,26 @@ impl Actor for Player {
     }
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
-        let collider_container = PhysicalElement {
-            transform: &mut self.inner_state.transform,
-            kinematic_collider: Some(&mut self.inner_state.collider),
-            static_colliders: None,
-            dynamic_colliders: None,
-            static_objects: None,
-            area: None,
-        };
-
-        Some(collider_container)
+        if self.inner_state.is_alive {
+            let collider_container = PhysicalElement {
+                transform: &mut self.inner_state.transform,
+                kinematic_collider: Some(&mut self.inner_state.collider),
+                static_colliders: None,
+                dynamic_colliders: None,
+                static_objects: None,
+                area: None,
+            };
+    
+            return Some(collider_container);
+        }
+            None
     }
 
     fn get_visual_element(&self) -> Option<VisualElement> {
-        self.hands_slot_0.get_visual_element(self.get_transform())
+        if self.inner_state.is_alive {
+            return self.hands_slot_0.get_visual_element(self.get_transform());
+        }
+        None
     }
 
     fn tick(
@@ -504,7 +522,7 @@ impl Player {
         Player {
             id: None,
 
-            inner_state: PlayerInnerState::new(Transform::new_zero(), &player_settings),
+            inner_state: PlayerInnerState::new(Transform::new(), &player_settings),
             active_hands_slot: ActiveHandsSlot::Zero,
 
             hands_slot_0: Box::new(HoleGun::new()),
@@ -513,7 +531,7 @@ impl Player {
             hands_slot_3: None,
 
             is_gravity_y_enabled: true,
-            is_gravity_w_enabled: false,
+            is_gravity_w_enabled: true,
 
             devices: [None, None, None, None],
             
@@ -555,6 +573,56 @@ impl Player {
 
     pub fn get_collider_radius(&self) -> f32 {
         self.inner_state.collider.get_collider_radius()
+    }
+
+    pub fn die(&mut self, engine_handle: &mut EngineHandle) {
+        self.inner_state.is_alive = false;
+
+        self.inner_state.collider.reboot_forces_and_velocity();
+
+        let players_death_explode = PlayerDeathExplode::new(
+            self.get_transform().get_position()
+        );
+
+        engine_handle.send_command(
+            Command {
+                sender: self.get_id().expect("Player have not ActorID"),
+                command_type: CommandType::SpawnActor(
+                    super::ActorWrapper::PlayerDeathExplode(players_death_explode)
+                )
+            }
+        );
+
+        engine_handle.send_command(
+            Command {
+                sender: self.get_id().expect("Player have not ActorID"),
+                command_type: CommandType::NetCommand(
+                    NetCommand::SendBoardcastNetMessageReliable(
+                        NetMessage::RemoteCommand(
+                            RemoteCommand::SpawnPlayerDeathExplode(
+                                self.get_transform().get_position().to_array()
+                            )
+                        )
+                    )
+                )
+            }
+        );
+
+        engine_handle.send_command(
+            Command {
+                sender: self.get_id().expect("Player have not ActorID"),
+                command_type: CommandType::RespawnPlayer(
+                    self.get_id().expect("Player have not ActorID")
+                )
+            }
+        );
+    }
+
+    pub fn respawn(&mut self, spawn_position: Vec4, engine_handle: &mut EngineHandle) {
+        self.inner_state.is_alive = true;
+        self.inner_state.hp = 100;
+
+        self.inner_state.transform = Transform::from_position(spawn_position);
     }
 
 

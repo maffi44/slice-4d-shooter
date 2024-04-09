@@ -51,7 +51,7 @@ impl Transform {
     }
     
     #[inline]
-    pub fn new_zero() -> Self {
+    pub fn new() -> Self {
         Transform {
             position: Vec4::ZERO,
             rotation: Mat4::IDENTITY,
@@ -60,7 +60,7 @@ impl Transform {
     }
 
     #[inline]
-    pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+    pub fn from_coords(x: f32, y: f32, z: f32, w: f32) -> Self {
         Transform {
             position: Vec4::new(x, y, z, w),
             rotation: Mat4::IDENTITY,
@@ -70,7 +70,7 @@ impl Transform {
     }
 
     #[inline]
-    pub fn new_from_pos(position: Vec4) -> Self {
+    pub fn from_position(position: Vec4) -> Self {
         Transform {
             position,
             rotation: Mat4::IDENTITY,
@@ -79,7 +79,7 @@ impl Transform {
     }
 
     #[inline]
-    pub fn new_from_pos_and_scale(position: Vec4, scale: Vec4) -> Self {
+    pub fn from_position_and_scale(position: Vec4, scale: Vec4) -> Self {
         Transform {
             position,
             rotation: Mat4::IDENTITY,

@@ -7,12 +7,10 @@ pub mod area;
 pub mod common_physical_functions;
 
 use crate::{
-    actor::Actor,
-    transform::Transform,
-    engine::{
+    actor::{Actor, Component}, engine::{
         engine_handle::EngineHandle,
         world::World,
-    }
+    }, transform::Transform
 };
 
 use self::{
@@ -219,7 +217,33 @@ impl PhysicsSystem {
     }
 
 
-    pub fn sphere_cast(sphere_pos: Vec4, sphere_radius: f32) {
+    pub fn sphere_cast_on_dynamic_colliders(
+        &self,
+        casted_sphere_pos: Vec4,
+        casted_sphere_radius: f32
+    ) -> Vec<Hit> {
+        let mut hits = Vec::with_capacity(4);
 
+        for dyn_sphere in &self.physics_state.dyn_spheres {
+            let vec_between_centers = casted_sphere_pos - dyn_sphere.position;
+
+            if vec_between_centers.length() - (dyn_sphere.radius + casted_sphere_radius) < 0.0 {
+                let hit_normal = vec_between_centers.normalize();
+
+                let hit_point = dyn_sphere.position + (hit_normal * dyn_sphere.radius);
+
+                let hited_actors_id = dyn_sphere.get_id();;
+
+                let hit = Hit {
+                    hit_point,
+                    hit_normal,
+                    hited_actors_id,
+                };
+
+                hits.push(hit);
+            } 
+        }
+
+        hits
     }
 }

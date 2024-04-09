@@ -48,7 +48,7 @@ impl HoleGunMiss {
         mut charging_volume_area: VolumeArea
     ) -> Self {
 
-        let transform = Transform::new_from_pos(position);
+        let transform = Transform::from_position(position);
 
         match &mut charging_volume_area {
             VolumeArea::SphericalVolumeArea(area) => {

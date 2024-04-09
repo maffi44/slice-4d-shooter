@@ -20,7 +20,8 @@ pub enum CommandType {
     SpawnEffect(EffectType),
     SpawnActor(ActorWrapper),
     RemoveActor(ActorID),
-    NetCommand(NetCommand)
+    NetCommand(NetCommand),
+    RespawnPlayer(ActorID),
 }
 
 pub struct EngineHandle {

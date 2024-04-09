@@ -1,0 +1,87 @@
+use glam::{Vec3, Vec4};
+
+use crate::{engine::{engine_handle::{Command, CommandType, EngineHandle}, render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}}, transform::Transform};
+
+use super::{Actor, ActorID};
+
+pub struct PlayerDeathExplode {
+    id: Option<ActorID>,
+    transform: Transform,
+    volume_areas: Vec<VolumeArea>,
+}
+
+impl PlayerDeathExplode {
+    pub fn new(position: Vec4) -> Self {
+        let mut volume_areas = Vec::with_capacity(1);
+
+        let volume_area = VolumeArea::SphericalVolumeArea(
+            SphericalVolumeArea {
+                translation: Vec4::ZERO,
+                radius: 0.6,
+                color: Vec3::new(1.0, 0.0, 0.0),
+            }
+        );
+
+        volume_areas.push(volume_area);
+
+        PlayerDeathExplode {
+            id: None,
+            transform: Transform::from_position(position),
+            volume_areas,
+        }
+    }
+}
+
+impl Actor for PlayerDeathExplode {
+    fn get_id(&self) -> Option<ActorID> {
+        self.id
+    }
+
+    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+        self.id = Some(id);
+    }
+
+    fn get_transform(&self) -> &Transform {
+        &self.transform
+    }
+
+    fn get_mut_transform(&mut self) -> &mut Transform {
+        &mut self.transform
+    }
+    
+    fn init(&mut self, id: ActorID) {
+        self.id = Some(id);
+    }
+
+    fn get_visual_element(&self) -> Option<VisualElement> {
+        Some(
+            VisualElement {
+                transform: &self.transform,
+                static_objects: None,
+                coloring_areas: None,
+                volume_areas: Some(&self.volume_areas),
+                player: None,
+            },
+        )
+    }
+
+    fn tick(
+        &mut self,
+        physic_system: &crate::engine::physics::PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32
+    ) {
+        if let VolumeArea::SphericalVolumeArea(area) = &mut self.volume_areas[0] {
+            area.radius += delta*23.0;
+
+            if area.radius > 4.0 {
+                engine_handle.send_command(
+                    Command {
+                        sender: self.id.expect("PlayerDeathExplode have not ActorID"),
+                        command_type: CommandType::RemoveActor(self.id.expect("PlayerDeathExplode have not ActorID")),
+                    }
+                )
+            }
+        }
+    }
+}

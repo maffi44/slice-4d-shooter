@@ -1,22 +1,14 @@
 use crate::{
-    transform::Transform,
-    engine::{
-        Engine,
-        input::ActionsFrameState,
-    },
     actor::{
-        Message,
-        MessageType,
-        CommonActorsMessages,
-        ActorWrapper,
         player::{
-            Player,
             player_input_master::{
                 InputMaster,
                 LocalMaster
-            },
-        }
-    },
+            }, Player
+        }, ActorWrapper, CommonActorsMessages, Message, MessageType
+    }, engine::{
+        engine_handle::{Command, CommandType}, input::ActionsFrameState, Engine
+    }, transform::Transform
 };
 
 use std::time::Duration;
@@ -242,14 +234,11 @@ fn init(systems: &mut Engine) {
         &mut systems.engine_handle,
     );
 
-    systems.engine_handle.send_direct_message(
-        main_player_id,
-        Message {
-            from: 0_u128,
-            message: MessageType::CommonActorsMessages(
-                CommonActorsMessages::SetTransform(
-                    Transform::new_from_pos(systems.world.level.spawn_position),
-                )
+    systems.engine_handle.send_command(
+        Command {
+            sender: 0u128,
+            command_type: CommandType::RespawnPlayer(
+                main_player_id,
             )
         }
     );

@@ -185,7 +185,7 @@ pub struct PhysicsState {
 pub struct Hit {
     pub hit_point: Vec4,
     pub hit_normal: Vec4,
-    pub hited_actors_id: Option<u64>, 
+    pub hited_actors_id: Option<u128>, 
 }
 
 struct StaticColliderData {
