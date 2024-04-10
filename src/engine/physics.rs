@@ -232,7 +232,7 @@ impl PhysicsSystem {
 
                 let hit_point = dyn_sphere.position + (hit_normal * dyn_sphere.radius);
 
-                let hited_actors_id = dyn_sphere.get_id();;
+                let hited_actors_id = dyn_sphere.get_id();
 
                 let hit = Hit {
                     hit_point,

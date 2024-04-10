@@ -47,9 +47,12 @@ pub struct Level {
 impl Level {
     
     pub fn get_random_spawn_position(&self) -> Vec4 {
-        let random_index = (
-            random() * (self.spawn_positions.len() - 1) as f64
-        ) as usize;
+        let random_index = {
+            let mut usize_bytes = 0usize.to_be_bytes();
+            getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
+            
+            usize::from_le_bytes(usize_bytes) % self.spawn_positions.len()
+        };
 
         self.spawn_positions[random_index].clone()
     }

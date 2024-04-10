@@ -57,7 +57,8 @@ pub struct PlayerForm {
     empty_bytes: [u32; 4],
     color: [f32;3],
     radius: f32,
-    // rotation: [f32; 16],
+    rotation: [f32; 16],
+    inv_rotation: [f32; 16],
 }
 
 impl Default for Shape {

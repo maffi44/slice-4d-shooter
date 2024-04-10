@@ -74,11 +74,16 @@ impl Actor for PlayerDeathExplode {
         if let VolumeArea::SphericalVolumeArea(area) = &mut self.volume_areas[0] {
             area.radius += delta*23.0;
 
+            
             if area.radius > 4.0 {
+                let my_id = self.id.expect("PlayerDeathExplode have not ActorID");
+                
                 engine_handle.send_command(
                     Command {
-                        sender: self.id.expect("PlayerDeathExplode have not ActorID"),
-                        command_type: CommandType::RemoveActor(self.id.expect("PlayerDeathExplode have not ActorID")),
+                        sender: my_id,
+                        command_type: CommandType::RemoveActor(
+                            my_id
+                        ),
                     }
                 )
             }

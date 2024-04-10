@@ -19,8 +19,8 @@ use super::{BeamArea, PlayerForm};
 pub struct DynamicRenderData {
     pub dynamic_shapes_data: ShapesArrays,
     pub spherical_areas_data: Box<[SphericalArea; 256]>,
-    pub beam_areas_data: Box<[BeamArea; 128]>,
-    pub player_forms_data: Box<[PlayerForm; 64]>,
+    pub beam_areas_data: Box<[BeamArea; 64]>,
+    pub player_forms_data: Box<[PlayerForm; 32]>,
     pub other_dynamic_data: OtherDynamicData,
 
     // frame memory buffers
@@ -32,15 +32,16 @@ pub struct DynamicRenderData {
     frame_coloring_areas_buffer: Vec<SphericalArea>,
     frame_spherical_volume_areas_buffer: Vec<SphericalArea>,
     frame_beam_volume_areas_buffer: Vec<BeamArea>,
+    frame_player_forms_buffer: Vec<PlayerForm>,
 }
 
 impl DynamicRenderData {
     pub fn new() -> Self {
-        let dynamic_render_data = DynamicRenderData {
+        DynamicRenderData {
             dynamic_shapes_data: ShapesArrays::default(),
             spherical_areas_data: Box::new([SphericalArea::default(); 256]),
-            beam_areas_data: Box::new([BeamArea::default(); 128]),
-            player_forms_data: Box::new([PlayerForm::default(); 64]),
+            beam_areas_data: Box::new([BeamArea::default(); 64]),
+            player_forms_data: Box::new([PlayerForm::default(); 32]),
             other_dynamic_data: OtherDynamicData::default(),
 
             frame_cubes_buffer: SpecificShapeBuffers::default(),
@@ -51,30 +52,11 @@ impl DynamicRenderData {
             frame_coloring_areas_buffer: Vec::new(),
             frame_spherical_volume_areas_buffer: Vec::new(),
             frame_beam_volume_areas_buffer: Vec::new(),
-        };
-
-        // dynamic_render_data.update(world, time, window);
-
-        dynamic_render_data
+            frame_player_forms_buffer: Vec::new(),
+        }
     }
 
-
-
-    pub fn update(
-        &mut self,
-        world: &World,
-        time: &TimeSystem,
-        window: &Window,
-    ) {
-        
-        self.frame_cubes_buffer.clear_buffers();
-        self.frame_spheres_buffer.clear_buffers();
-        self.frame_sph_cubes_buffer.clear_buffers();
-        self.frame_inf_w_cubes_buffer.clear_buffers();
-
-
-        let mut player_forms_amount = 0u32;
-
+    fn get_data_from_actors_visual_elements(&mut self, world: &World) {
         for (_, actor) in world.actors.iter() {
 
             if let Some(visual_element) = actor.get_visual_element() {
@@ -212,19 +194,34 @@ impl DynamicRenderData {
 
                 if let Some(player_sphere) = visual_element.player {
                     
-                    self.player_forms_data[player_forms_amount as usize] = PlayerForm {
+                    let player_form = PlayerForm {
                         pos: (player_sphere.position + transform.get_position()).to_array(),
                         empty_bytes: [0;4],
                         color: [1.0, 0.0, 0.0],
                         radius: player_sphere.radius,
-                        // rotation: actor.get_transform().rotation.to_cols_array(),
+                        rotation: actor.get_transform().rotation.to_cols_array(),
+                        inv_rotation: actor.get_transform().rotation.inverse().to_cols_array(),
                     };
 
-                    player_forms_amount += 1;
+                    self.frame_player_forms_buffer.push(player_form);
                 }
             }
         }
+    }
 
+    fn clear_all_frame_buffers(&mut self) {
+        self.frame_cubes_buffer.clear_buffers();
+        self.frame_spheres_buffer.clear_buffers();
+        self.frame_sph_cubes_buffer.clear_buffers();
+        self.frame_inf_w_cubes_buffer.clear_buffers();
+
+        self.frame_coloring_areas_buffer.clear();
+        self.frame_spherical_volume_areas_buffer.clear();
+        self.frame_beam_volume_areas_buffer.clear();
+        self.frame_player_forms_buffer.clear();
+    }
+
+    pub fn update_dynamic_shapes_buffers_and_get_metadata(&mut self) -> ShapesArraysMetadata {
         let mut cubes_start = 0u32;
         let mut cubes_amount = 0u32;
 
@@ -448,7 +445,7 @@ impl DynamicRenderData {
         s_neg_sph_cubes_amount = index as u32 - s_neg_sph_cubes_start;
 
 
-        let shapes_arrays_metadata = ShapesArraysMetadata {
+        ShapesArraysMetadata {
             cubes_start,
             cubes_amount,
             spheres_start,
@@ -481,8 +478,11 @@ impl DynamicRenderData {
             s_neg_inf_cubes_amount,
             s_neg_sph_cubes_start,
             s_neg_sph_cubes_amount,
-        };
+        }
+    }
 
+
+    fn update_spherical_areas_and_get_meatadata(&mut self) -> SphericalAreasMetadata {
         let mut coloring_areas_start = 0u32;
         let mut coloring_areas_amount = 0u32;
 
@@ -510,13 +510,16 @@ impl DynamicRenderData {
  
         volume_areas_amount = index as u32 - volume_areas_start;
 
-        let spherical_areas_meatadata = SphericalAreasMetadata {
+        SphericalAreasMetadata {
             holegun_colorized_areas_start: coloring_areas_start,
             holegun_colorized_areas_amount: coloring_areas_amount,
             explode_areas_start: volume_areas_start,
             explode_areas_amount: volume_areas_amount,
-        };
+        }
+    }
 
+
+    fn update_beams_buffers_and_get_amount(&mut self) -> u32 {
         let mut index = 0_usize;
 
         while let Some(area) = self.frame_beam_volume_areas_buffer.pop() {
@@ -525,7 +528,40 @@ impl DynamicRenderData {
             index += 1;
         }
 
-        let beams_areas_amount = index as u32;
+        index as u32
+    }
+ 
+
+    fn update_player_forms_buffers_and_get_amount(&mut self) -> u32 {
+        let mut index = 0_usize;
+
+        while let Some(player_form) = self.frame_player_forms_buffer.pop() {
+            self.player_forms_data[index] = player_form;
+
+            index += 1;
+        }
+
+        index as u32
+    }
+
+
+    pub fn update(
+        &mut self,
+        world: &World,
+        time: &TimeSystem,
+        window: &Window,
+    ) {
+        self.clear_all_frame_buffers();
+
+        self.get_data_from_actors_visual_elements(world);
+
+        let shapes_arrays_metadata = self.update_dynamic_shapes_buffers_and_get_metadata();
+
+        let spherical_areas_meatadata = self.update_spherical_areas_and_get_meatadata();
+
+        let beams_areas_amount = self.update_beams_buffers_and_get_amount();
+
+        let player_forms_amount = self.update_player_forms_buffers_and_get_amount();
 
         self.other_dynamic_data.update(
             world,

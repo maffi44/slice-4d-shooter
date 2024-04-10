@@ -18,7 +18,8 @@ struct PlayerForm {
     empty_bytes: vec4<u32>,
     color: vec3<f32>,
     radius: f32,
-    // rotation: mat4x4<f32>,
+    rotation: mat4x4<f32>,
+    inv_rotation: mat4x4<f32>,
 }
 
 struct ShapesMetadata {
@@ -133,8 +134,8 @@ struct OtherStaticData {
 @group(0) @binding(9) var<uniform> dynamic_data: OtherDynamicData;
 
 @group(1) @binding(0) var<uniform> dyn_spherical_areas: array<SphericalArea, 256>;
-@group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 128>;
-@group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 64>;
+@group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 64>;
+@group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 32>;
 
 
 
@@ -747,10 +748,27 @@ fn map(p: vec4<f32>) -> f32 {
         d = max(d, -(sd_inf_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.xyz) - dyn_negatives_shapes[i].roundness));
     }
 
+    var dddd = MAX_DIST;
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-        // let pp = dyn_player_forms[i].rotation * p;
-        d = min(d, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
+        dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
+        dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
+        dddd = max(dddd, -sd_box(
+            dyn_player_forms[i].rotation *
+            (p - dyn_player_forms[i].pos),
+            vec4(
+                dyn_player_forms[i].radius * 0.18,
+                dyn_player_forms[i].radius* 1.2,
+                dyn_player_forms[i].radius* 1.2,
+                dyn_player_forms[i].radius * 1.2
+            )));
+        let pp = dyn_player_forms[i].inv_rotation * vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0);
+        dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos - pp, dyn_player_forms[i].radius * 0.53));
+        dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.6));
+        dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos - pp*0.6, dyn_player_forms[i].radius * 0.34));
+
     }
+
+    d = min(d, dddd);
     return d;
 }
 
