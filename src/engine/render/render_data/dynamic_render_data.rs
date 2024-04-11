@@ -20,7 +20,7 @@ pub struct DynamicRenderData {
     pub dynamic_shapes_data: ShapesArrays,
     pub spherical_areas_data: Box<[SphericalArea; 256]>,
     pub beam_areas_data: Box<[BeamArea; 64]>,
-    pub player_forms_data: Box<[PlayerForm; 32]>,
+    pub player_forms_data: Box<[PlayerForm; 16]>,
     pub other_dynamic_data: OtherDynamicData,
 
     // frame memory buffers
@@ -41,7 +41,7 @@ impl DynamicRenderData {
             dynamic_shapes_data: ShapesArrays::default(),
             spherical_areas_data: Box::new([SphericalArea::default(); 256]),
             beam_areas_data: Box::new([BeamArea::default(); 64]),
-            player_forms_data: Box::new([PlayerForm::default(); 32]),
+            player_forms_data: Box::new([PlayerForm::default(); 16]),
             other_dynamic_data: OtherDynamicData::default(),
 
             frame_cubes_buffer: SpecificShapeBuffers::default(),
@@ -201,6 +201,7 @@ impl DynamicRenderData {
                         radius: player_sphere.radius,
                         rotation: actor.get_transform().rotation.to_cols_array(),
                         inv_rotation: actor.get_transform().rotation.inverse().to_cols_array(),
+                        weapon_offset: player_sphere.weapon_offset.to_array()
                     };
 
                     self.frame_player_forms_buffer.push(player_form);

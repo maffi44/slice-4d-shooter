@@ -17,6 +17,7 @@ pub struct PlayersDollCollider {
     pub friction: f32,
     pub bounce_rate: f32,
     pub actors_id: Option<ActorID>,
+    pub weapon_offset: Vec4,
 }
 
 // impl DynamicCollider {

@@ -82,7 +82,7 @@ impl HoleGun {
                 
         let direction = player.transform.rotation.inverse() * Vec4::NEG_Z;
     
-        let shooted_from_offset = {
+        let weapon_offset = {
             (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
             (player.transform.rotation.inverse() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
@@ -102,7 +102,7 @@ impl HoleGun {
         if let Some(hit) = hit {
 
             let position = hit.hit_point;
-            let shooted_from = player.transform.get_position() + shooted_from_offset;
+            let shooted_from = player.transform.get_position() + weapon_offset;
             let radius = charging_time*1.2;
 
             let hited_players = physic_system.sphere_cast_on_dynamic_colliders(
@@ -175,7 +175,7 @@ impl HoleGun {
 
         } else {
             let position = from + (direction * 700.0);
-            let shooted_from = player.transform.get_position() + shooted_from_offset;
+            let shooted_from = player.transform.get_position() + weapon_offset;
             let radius = charging_time*1.2;
 
             let miss = HoleGunMiss::new(

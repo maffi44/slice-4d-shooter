@@ -19,12 +19,22 @@ pub struct PlayersDoll {
 impl PlayersDoll {
     pub fn new(masters_peer_id: PeerId, id: ActorID, player_sphere_radius: f32, transform: Transform) -> Self {
 
+        let weapon_offset = {
+            Vec4::new(
+                1.0,
+                0.26,
+                0.0,
+                0.0
+            ).normalize() * (player_sphere_radius * 1.35)
+        };
+
         let dynamic_collider = PlayersDollCollider {
             position: Vec4::ZERO,
             radius: player_sphere_radius,
             friction: 0.0,
             bounce_rate: 0.0,
             actors_id: Some(id),
+            weapon_offset,
         };
 
         let mut dynamic_colliders = Vec::with_capacity(1);

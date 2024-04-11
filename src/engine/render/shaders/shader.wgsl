@@ -20,6 +20,7 @@ struct PlayerForm {
     radius: f32,
     rotation: mat4x4<f32>,
     inv_rotation: mat4x4<f32>,
+    weapon_offset: vec4<f32>,
 }
 
 struct ShapesMetadata {
@@ -135,7 +136,7 @@ struct OtherStaticData {
 
 @group(1) @binding(0) var<uniform> dyn_spherical_areas: array<SphericalArea, 256>;
 @group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 64>;
-@group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 32>;
+@group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
 
 
 
@@ -752,9 +753,10 @@ fn map(p: vec4<f32>) -> f32 {
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
         dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
         dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
+        
+        let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
         dddd = max(dddd, -sd_box(
-            dyn_player_forms[i].rotation *
-            (p - dyn_player_forms[i].pos),
+            rotated_p,
             vec4(
                 dyn_player_forms[i].radius * 0.18,
                 dyn_player_forms[i].radius* 1.2,
@@ -765,6 +767,63 @@ fn map(p: vec4<f32>) -> f32 {
         dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos - pp, dyn_player_forms[i].radius * 0.53));
         dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.6));
         dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos - pp*0.6, dyn_player_forms[i].radius * 0.34));
+
+        dddd = min(
+            dddd,
+            sd_sphere(
+                rotated_p - dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].radius * 0.286,
+            )
+        );
+
+        dddd = max(
+            dddd,
+            -sd_capsule(
+                rotated_p,
+                dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    dyn_player_forms[i].radius* 0.49,
+                    0.0
+                ),
+                dyn_player_forms[i].radius* 0.18
+            )
+        );
+
+        dddd = min(
+            dddd,
+            sd_capsule(
+                rotated_p,
+                dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    dyn_player_forms[i].radius* 0.43,
+                    0.0
+                ),
+                dyn_player_forms[i].radius* 0.1
+            )
+        );
+
+        dddd = max(
+            dddd,
+            -sd_capsule(
+                rotated_p,
+                dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    dyn_player_forms[i].radius* 0.65,
+                    0.0
+                ),
+                dyn_player_forms[i].radius* 0.052
+            )
+        );
+        
 
     }
 

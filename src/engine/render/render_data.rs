@@ -59,6 +59,7 @@ pub struct PlayerForm {
     radius: f32,
     rotation: [f32; 16],
     inv_rotation: [f32; 16],
+    weapon_offset: [f32; 4],
 }
 
 impl Default for Shape {

@@ -43,11 +43,13 @@ pub struct PlayerInnerState {
     pub transform: Transform,
     pub hp: i32,
     pub is_alive: bool,
+    // pub weapon_offset: Vec4,
 }
 
 
 impl PlayerInnerState {
     pub fn new(transform: Transform, settings: &PlayerSettings) -> Self {
+
         PlayerInnerState {
             collider: KinematicCollider::new(
                 settings.max_speed,
