@@ -19,7 +19,7 @@ use crate::{
 use self::{
     holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::{
         Player, PlayerMessages
-    }, players_death_explode::PlayerDeathExplode, players_doll::PlayersDoll, wandering_actor::WanderingActor
+    }, players_death_explode::PlayerDeathExplode, players_doll::{PlayersDoll, PlayersDollMessages}, wandering_actor::WanderingActor
 };
 
 
@@ -322,6 +322,7 @@ pub enum CommonActorsMessages {
 
 pub enum SpecificActorMessage {
     PLayerMessages(PlayerMessages),
+    PlayersDollMessages(PlayersDollMessages),
 }
 
 pub enum PhysicsMessages {

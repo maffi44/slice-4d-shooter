@@ -1,9 +1,9 @@
 use glam::{Vec3, Vec4};
 use matchbox_socket::PeerId;
 
-use crate::{engine::{engine_handle::{Command, CommandType, EngineHandle}, net::{NetCommand, NetMessage, RemoteMessage}, physics::{colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, StaticObject}}, transform::Transform};
+use crate::{engine::{engine_handle::{Command, CommandType, EngineHandle}, net::{NetCommand, NetMessage, RemoteMessage}, physics::{colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, SphericalVolumeArea, StaticObject, VolumeArea}}, transform::Transform};
 
-use super::{player::PlayerMessages, Actor, ActorID, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
+use super::{device::holegun::HOLE_GUN_COLOR, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::PlayerMessages, Actor, ActorID, ActorWrapper, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
 
 
 const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
@@ -11,10 +11,23 @@ pub struct PlayersDoll {
     id: Option<ActorID>,
     transform: Transform,
     masters_peer_id: PeerId,
+    weapon_shooting_point: Vec4,
+
+    volume_area: Vec<VolumeArea>,
+    charging_time: f32,
 
     dynamic_colliders: Vec<PlayersDollCollider>,
     is_enable: bool,
 }
+
+pub enum PlayersDollMessages{
+    SpawnHoleGunShotActor([f32;4], f32, [f32;3], f32),
+    SpawHoleGunMissActor([f32;4], f32, [f32;3], f32),
+    HoleGunStartCharging,
+}
+
+const VISUAL_BEAM_MULT: f32 = 2.0;
+const VISUAL_FIRE_SHPERE_MULT: f32 = 2.4;
 
 impl PlayersDoll {
     pub fn new(masters_peer_id: PeerId, id: ActorID, player_sphere_radius: f32, transform: Transform) -> Self {
@@ -41,10 +54,15 @@ impl PlayersDoll {
 
         dynamic_colliders.push(dynamic_collider);
 
+        let weapon_shooting_point = weapon_offset + Vec4::NEG_Z * (player_sphere_radius * 0.49);
+
         PlayersDoll {
             masters_peer_id,
+            weapon_shooting_point,
             id: Some(id),
             transform,
+            charging_time: 0.0,
+            volume_area: Vec::with_capacity(1),
             is_enable: true,
             dynamic_colliders,
         }
@@ -77,8 +95,8 @@ impl Actor for PlayersDoll {
                 }
             },
             MessageType::SpecificActorMessage(message) => {
-                match &message {
-                    &SpecificActorMessage::PLayerMessages(message) => {
+                match message {
+                    SpecificActorMessage::PLayerMessages(message) => {
                         match message {
                             PlayerMessages::DealDamageAndAddForce(damage, force) => {
                                 engine_handle.send_command(
@@ -102,7 +120,98 @@ impl Actor for PlayersDoll {
                             PlayerMessages::NewPeerConnected(_) => {}
                         }
                     },
-                    // _ => {},
+                    SpecificActorMessage::PlayersDollMessages(message) => {
+                        match message {
+                            PlayersDollMessages::HoleGunStartCharging => {
+
+                                if self.volume_area.is_empty() {
+
+                                    let volume_area = VolumeArea::SphericalVolumeArea(
+                                        SphericalVolumeArea {
+                                            color: HOLE_GUN_COLOR,
+                                            translation: self.transform.rotation.inverse() * self.weapon_shooting_point,
+                                            radius: 0.1 * VISUAL_FIRE_SHPERE_MULT,
+                                        }
+                                    );
+                    
+                                    self.volume_area.push(volume_area);
+                                }
+                            }
+                            PlayersDollMessages::SpawnHoleGunShotActor(
+                                position,
+                                radius,
+                                color,
+                                charging_volume_area
+                            ) => {
+                                self.volume_area.clear();
+                                self.charging_time = 0.0;
+
+                                let shooted_from = self.transform.get_position() + self.transform.rotation.inverse() * self.weapon_shooting_point;
+
+                                let charging_volume_area = VolumeArea::SphericalVolumeArea(
+                                    SphericalVolumeArea {
+                                        translation: shooted_from,
+                                        radius: (*charging_volume_area + 0.05) *VISUAL_FIRE_SHPERE_MULT,
+                                        color: Vec3::from_array(*color),
+                                    }
+                                );
+    
+                                let holegun_shot = HoleGunShot::new(
+                                    Vec4::from_array(*position),
+                                    shooted_from,
+                                    *radius,
+                                    Vec3::from_array(*color),
+                                    charging_volume_area,
+                                    VISUAL_BEAM_MULT,
+                                );
+    
+                                let actor = ActorWrapper::HoleGunShot(holegun_shot);
+    
+                                engine_handle.send_command(Command {
+                                    sender: 0u128,
+                                    command_type: CommandType::SpawnActor(actor)
+                                })
+                            },
+
+
+                            PlayersDollMessages::SpawHoleGunMissActor(
+                                position,
+                                radius,
+                                color,
+                                charging_volume_area
+                            ) => {
+
+                                self.volume_area.clear();
+                                self.charging_time = 0.0;
+
+                                let shooted_from = self.transform.get_position() + self.transform.rotation.inverse() * self.weapon_shooting_point;
+
+                                let charging_volume_area = VolumeArea::SphericalVolumeArea(
+                                    SphericalVolumeArea {
+                                        translation: shooted_from,
+                                        radius: (*charging_volume_area + 0.05) *VISUAL_FIRE_SHPERE_MULT,
+                                        color: Vec3::from_array(*color),
+                                    }
+                                );
+
+                                let holegun_miss = HoleGunMiss::new(
+                                    Vec4::from_array(*position),
+                                    shooted_from,
+                                    *radius,
+                                    Vec3::from_array(*color),
+                                    charging_volume_area,
+                                    VISUAL_BEAM_MULT,
+                                );
+
+                                let actor = ActorWrapper::HoleGunMiss(holegun_miss);
+
+                                engine_handle.send_command(Command {
+                                    sender: 0u128,
+                                    command_type: CommandType::SpawnActor(actor)
+                                })
+                            },
+                        }
+                    }
                 }
 
             }  
@@ -173,7 +282,7 @@ impl Actor for PlayersDoll {
                     transform: &self.transform,
                     static_objects: None,
                     coloring_areas: None,
-                    volume_areas: None,
+                    volume_areas: Some(&self.volume_area),
                     player: Some(&self.dynamic_colliders[0])
                 }
             )
@@ -188,10 +297,22 @@ impl Actor for PlayersDoll {
         engine_handle: &mut EngineHandle,
         delta: f32
     ) {
-        if self.is_enable {
+        if !self.volume_area.is_empty() {
 
-        } else {
+            self.charging_time += delta * 1.6;
 
-        }
+            match &mut self.volume_area[0] {
+
+                VolumeArea::SphericalVolumeArea(area) => {
+                    if self.charging_time < 3.4 {
+                        area.radius = self.charging_time * 0.08 * VISUAL_FIRE_SHPERE_MULT;
+                    }
+                    area.translation = self.transform.rotation.inverse() * self.weapon_shooting_point;
+                }
+                _ => {
+                    panic!("charging volume area in PLayersDoll is not SphericalVolumeArea")
+                }
+            }
+        } 
     }
 }

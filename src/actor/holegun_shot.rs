@@ -54,7 +54,8 @@ impl HoleGunShot {
         shooted_from: Vec4,
         radius: f32,
         color: Vec3,
-        mut charging_volume_area: VolumeArea
+        mut charging_volume_area: VolumeArea,
+        beam_radius_mult: f32,
     ) -> Self {
 
         let transform = Transform::from_position(position);
@@ -103,7 +104,7 @@ impl HoleGunShot {
             BeamVolumeArea {
                 translation_pos_1: Vec4::ZERO,
                 translation_pos_2: shooted_from - position,
-                radius: 0.020,
+                radius: 0.020 * beam_radius_mult,
                 color: color, 
             }
         );

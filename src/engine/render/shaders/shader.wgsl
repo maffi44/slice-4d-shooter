@@ -19,7 +19,6 @@ struct PlayerForm {
     color: vec3<f32>,
     radius: f32,
     rotation: mat4x4<f32>,
-    inv_rotation: mat4x4<f32>,
     weapon_offset: vec4<f32>,
 }
 
@@ -606,12 +605,115 @@ fn get_color_at_point(p: vec4<f32>, distance: f32) -> vec3<f32> {
         }
     }
 
+    d = MIN_DIST + 0.003;
+
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-        let new_d = sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
+        var new_d = sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
+        new_d = max(new_d, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
+        
+        let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
+        new_d = max(new_d, -sd_box(
+            rotated_p,
+            vec4(
+                dyn_player_forms[i].radius * 0.18,
+                dyn_player_forms[i].radius* 1.2,
+                dyn_player_forms[i].radius* 1.2,
+                dyn_player_forms[i].radius * 1.2
+            )));
+        
+        new_d = max(
+            new_d,
+            -sd_sphere(
+                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
+                dyn_player_forms[i].radius * 0.53
+            )
+        );
 
         if new_d < d {
-            color = dyn_player_forms[i].color;
             d = new_d;
+
+            color = vec3(1.0);
+        }
+
+        new_d = sd_sphere(
+            p - dyn_player_forms[i].pos,
+            dyn_player_forms[i].radius * 0.6
+        );
+
+        new_d = max(
+            new_d,
+            -sd_sphere(
+                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
+                dyn_player_forms[i].radius * 0.34
+            )
+        );
+
+        if new_d < d {
+            d = new_d;
+
+            color = dyn_player_forms[i].color;
+        }
+
+        new_d = sd_sphere(
+            rotated_p - dyn_player_forms[i].weapon_offset,
+            dyn_player_forms[i].radius * 0.286,
+        );
+
+        new_d = max(
+            new_d,
+            -sd_capsule(
+                rotated_p,
+                dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    dyn_player_forms[i].radius* 0.49,
+                    0.0
+                ),
+                dyn_player_forms[i].radius* 0.18
+            )
+        );
+
+        if new_d < d {
+            d = new_d;
+
+            color = vec3(1.0);
+        }
+
+        new_d = sd_capsule(
+            rotated_p,
+            dyn_player_forms[i].weapon_offset,
+            dyn_player_forms[i].weapon_offset -
+            vec4(
+                0.0,
+                0.0,
+                dyn_player_forms[i].radius* 0.43,
+                0.0
+            ),
+            dyn_player_forms[i].radius* 0.1
+        );
+
+        new_d = max(
+            new_d,
+            -sd_capsule(
+                rotated_p,
+                dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    dyn_player_forms[i].radius* 0.65,
+                    0.0
+                ),
+                dyn_player_forms[i].radius* 0.052
+            )
+        );
+        
+
+        if new_d < d {
+            d = new_d;
+            color = dyn_player_forms[i].color;
         }
     }
 
@@ -763,10 +865,29 @@ fn map(p: vec4<f32>) -> f32 {
                 dyn_player_forms[i].radius* 1.2,
                 dyn_player_forms[i].radius * 1.2
             )));
-        let pp = dyn_player_forms[i].inv_rotation * vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0);
-        dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos - pp, dyn_player_forms[i].radius * 0.53));
-        dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.6));
-        dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos - pp*0.6, dyn_player_forms[i].radius * 0.34));
+        
+        dddd = max(
+            dddd,
+            -sd_sphere(
+                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
+                dyn_player_forms[i].radius * 0.53
+            )
+        );
+
+        dddd = min(
+            dddd,
+            sd_sphere(
+                p - dyn_player_forms[i].pos,
+                dyn_player_forms[i].radius * 0.6
+            )
+        );
+        dddd = max(
+            dddd,
+            -sd_sphere(
+                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
+                dyn_player_forms[i].radius * 0.34
+            )
+        );
 
         dddd = min(
             dddd,
@@ -912,10 +1033,7 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // var uv: vec2<f32> = in.clip_position.xy / vec2<f32>(800.0, 600.0) - 0.5;
-    // var uv: vec2<f32>;
-    // uv.x = in.position.y / 2.0;
-    // uv.y = in.position.x / 2.0;
+
     var uv: vec2<f32> = in.position.xy * 0.7;
     uv.x *= dynamic_data.screen_aspect;
 
@@ -986,4 +1104,3 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     return vec4<f32>(color, 1.0);
 }
-

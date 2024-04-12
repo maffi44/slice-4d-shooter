@@ -200,7 +200,6 @@ impl DynamicRenderData {
                         color: [1.0, 0.0, 0.0],
                         radius: player_sphere.radius,
                         rotation: actor.get_transform().rotation.to_cols_array(),
-                        inv_rotation: actor.get_transform().rotation.inverse().to_cols_array(),
                         weapon_offset: player_sphere.weapon_offset.to_array()
                     };
 

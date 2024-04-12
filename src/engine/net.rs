@@ -7,7 +7,7 @@ use matchbox_socket::{
     MultipleChannels, PeerId, PeerState, RtcIceServerConfig, WebRtcSocket
 };
 
-use crate::{actor::{holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::PlayerMessages, players_death_explode::PlayerDeathExplode, players_doll::PlayersDoll, ActorID, ActorWrapper, CommonActorsMessages, Message, MessageType, SpecificActorMessage}, transform::{self, SerializableTransform, Transform}};
+use crate::{actor::{holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::PlayerMessages, players_death_explode::PlayerDeathExplode, players_doll::{PlayersDoll, PlayersDollMessages}, ActorID, ActorWrapper, CommonActorsMessages, Message, MessageType, SpecificActorMessage}, transform::{self, SerializableTransform, Transform}};
 
 use super::{engine_handle::{
     Command, CommandType, EngineHandle
@@ -28,8 +28,7 @@ pub enum NetMessage {
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum RemoteCommand {
-    SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
-    SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
+
     SpawnPlayersDollActor(SerializableTransform, f32),
     SpawnPlayerDeathExplode([f32;4]),
     RemoveActor(ActorID),
@@ -40,7 +39,10 @@ pub enum RemoteCommand {
 pub enum RemoteMessage {
     DealDamageAndAddForce(u32, [f32;4]),
     Enable(bool),
-    SetTransform(SerializableTransform)
+    SetTransform(SerializableTransform),
+    SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
+    SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
+    HoleGunStartCharging,
 }
 
 impl NetMessage {
@@ -254,66 +256,7 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                         )
                     });
                 },
-                RemoteCommand::SpawHoleGunMissActor(
-                    position,
-                    shoooted_from,
-                    radius,
-                    color,
-                    charging_volume_area
-                ) => {
-                    let charging_volume_area = VolumeArea::SphericalVolumeArea(
-                        SphericalVolumeArea {
-                            translation: Vec4::from_array(shoooted_from),
-                            radius: charging_volume_area,
-                            color: Vec3::from_array(color),
-                        }
-                    );
-
-                    let holegun_miss = HoleGunMiss::new(
-                        Vec4::from_array(position),
-                        Vec4::from_array(shoooted_from),
-                        radius,
-                        Vec3::from_array(color),
-                        charging_volume_area
-                    );
-
-                    let actor = ActorWrapper::HoleGunMiss(holegun_miss);
-
-                    engine_handle.send_command(Command {
-                        sender: 0u128,
-                        command_type: CommandType::SpawnActor(actor)
-                    })
-                },
-                RemoteCommand::SpawnHoleGunShotActor(
-                    position,
-                    shoooted_from,
-                    radius,
-                    color,
-                    charging_volume_area
-                ) => {
-                    let charging_volume_area = VolumeArea::SphericalVolumeArea(
-                        SphericalVolumeArea {
-                            translation: Vec4::from_array(shoooted_from),
-                            radius: charging_volume_area,
-                            color: Vec3::from_array(color),
-                        }
-                    );
-
-                    let holegun_shot = HoleGunShot::new(
-                        Vec4::from_array(position),
-                        Vec4::from_array(shoooted_from),
-                        radius,
-                        Vec3::from_array(color),
-                        charging_volume_area
-                    );
-
-                    let actor = ActorWrapper::HoleGunShot(holegun_shot);
-
-                    engine_handle.send_command(Command {
-                        sender: 0u128,
-                        command_type: CommandType::SpawnActor(actor)
-                    })
-                },
+                
                 RemoteCommand::SpawnPlayersDollActor(tr, player_sphere_radius) => {
                     let transform = Transform::from_serializable_transform(tr);
 
@@ -337,6 +280,67 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
 
         NetMessage::RemoteDirectMessage(actor_id, message) => {
             match message {
+                RemoteMessage::HoleGunStartCharging => {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::HoleGunStartCharging
+                                )
+                            )
+                        }
+                    )
+                }
+                RemoteMessage::SpawHoleGunMissActor(
+                    position,
+                    shoooted_from,
+                    radius,
+                    color,
+                    charging_volume_area
+                ) => {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::SpawHoleGunMissActor(
+                                        position,
+                                        radius,
+                                        color,
+                                        charging_volume_area
+                                    )
+                                )
+                            )
+                        }
+                    )
+                },
+                RemoteMessage::SpawnHoleGunShotActor(
+                    position,
+                    shoooted_from,
+                    radius,
+                    color,
+                    charging_volume_area
+                ) => {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::SpawnHoleGunShotActor(
+                                        position,
+                                        radius,
+                                        color,
+                                        charging_volume_area
+                                    )
+                                )
+                            )
+                        }
+                    )
+                },
                 RemoteMessage::SetTransform(tr) => {
                     let transform = Transform::from_serializable_transform(tr);
 
@@ -382,6 +386,64 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
 
         NetMessage::RemoteBoardCastMessage(message) => {
             match message {
+                RemoteMessage::HoleGunStartCharging => {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::HoleGunStartCharging
+                                )
+                            )
+                        }
+                    )
+                }
+                RemoteMessage::SpawHoleGunMissActor(
+                    position,
+                    shoooted_from,
+                    radius,
+                    color,
+                    charging_volume_area
+                ) => {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::SpawHoleGunMissActor(
+                                        position,
+                                        radius,
+                                        color,
+                                        charging_volume_area
+                                    )
+                                )
+                            )
+                        }
+                    )
+                },
+                RemoteMessage::SpawnHoleGunShotActor(
+                    position,
+                    shoooted_from,
+                    radius,
+                    color,
+                    charging_volume_area
+                ) => {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::SpawnHoleGunShotActor(
+                                        position,
+                                        radius,
+                                        color,
+                                        charging_volume_area
+                                    )
+                                )
+                            )
+                        }
+                    )
+                },
                 RemoteMessage::SetTransform(tr) => {
                     let transform = Transform::from_serializable_transform(tr);
 

@@ -28,7 +28,7 @@ use crate::{
         net::{
             NetCommand,
             NetMessage,
-            RemoteCommand
+            RemoteCommand, RemoteMessage
         },
         physics::PhysicsSystem,
         render::VisualElement,
@@ -49,6 +49,8 @@ pub struct HoleGun {
     shooted_from_pivot_point_dir: Vec4,
 }
 
+pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(1.0, 0.6, 0.0);
+
 
 impl HoleGun {
     pub fn new() -> Self {
@@ -62,7 +64,7 @@ impl HoleGun {
         HoleGun {
             charging_time: 0.0,
             shooted_on_this_charge: false,
-            color: Vec3::new(1.0, 0.6, 0.0),
+            color: HOLE_GUN_COLOR,
             volume_area: Vec::with_capacity(1),
             shooted_from_pivot_point_dir: shooted_from_pivot_point_mult,
             is_charging: false,
@@ -143,6 +145,7 @@ impl HoleGun {
                 radius,
                 color,
                 volume_area,
+                1.0,
             );
     
             engine_handle.send_command(
@@ -159,8 +162,9 @@ impl HoleGun {
                     sender: player_id,
                     command_type: CommandType::NetCommand(
                         NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessage::RemoteCommand(
-                                RemoteCommand::SpawnHoleGunShotActor(
+                            NetMessage::RemoteDirectMessage(
+                                player_id,
+                                RemoteMessage::SpawnHoleGunShotActor(
                                     position.to_array(),
                                     shooted_from.to_array(),
                                     radius,
@@ -184,6 +188,7 @@ impl HoleGun {
                 radius,
                 color,
                 volume_area,
+                1.0,
             );
 
             engine_handle.send_command(
@@ -200,8 +205,9 @@ impl HoleGun {
                     sender: player_id,
                     command_type: CommandType::NetCommand(
                         NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessage::RemoteCommand(
-                                RemoteCommand::SpawHoleGunMissActor(
+                            NetMessage::RemoteDirectMessage(
+                                player_id,
+                                RemoteMessage::SpawHoleGunMissActor(
                                     position.to_array(),
                                     shooted_from.to_array(),
                                     radius,
@@ -267,6 +273,20 @@ impl Device for HoleGun {
                     );
     
                     self.volume_area.push(volume_area);
+
+                    engine_handle.send_command(
+                        Command {
+                            sender: player_id,
+                            command_type: CommandType::NetCommand(
+                                NetCommand::SendBoardcastNetMessageReliable(
+                                    NetMessage::RemoteDirectMessage(
+                                        player_id,
+                                        RemoteMessage::HoleGunStartCharging
+                                    )
+                                )
+                            )
+                        }
+                    )
                 }
 
                 self.charging_time += delta * 1.6;

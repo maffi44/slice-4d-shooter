@@ -58,7 +58,6 @@ pub struct PlayerForm {
     color: [f32;3],
     radius: f32,
     rotation: [f32; 16],
-    inv_rotation: [f32; 16],
     weapon_offset: [f32; 4],
 }
 

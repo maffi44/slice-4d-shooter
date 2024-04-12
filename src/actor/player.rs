@@ -180,7 +180,7 @@ impl Actor for Player {
                             }
                         }
                     },
-                    // _ => {},
+                    _ => {},
                 }
 
             }  
