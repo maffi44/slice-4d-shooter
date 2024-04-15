@@ -727,7 +727,7 @@ fn get_color_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f
             let new_d = p.w + static_data.w_floor;
 
             if new_d < d {
-                color = vec3(0.6,0.0,0.3);
+                color = vec3(0.2,0.2,0.2);
 
                 d = new_d;
             }
@@ -739,9 +739,20 @@ fn get_color_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f
             let new_d = static_data.w_roof - p.w;
 
             if new_d < d {
-                color = vec3(0.3,0.0,0.6);
+                color = vec3(0.2,0.2,0.2);
             }
         }
+    }
+
+    if p.w > 0.0 {
+        let w_diff = clamp((p.w / 6.0), 0.0, 1.0);
+
+        color = mix(color, vec3(0.3,0.0,0.1), w_diff);
+    }
+    if p.w < 0.0 {
+        let w_diff = clamp((1.0 / p.w), 0.0, 1.0);
+
+        color = mix(vec3(0.1,0.0,0.5), color, w_diff);
     }
 
     return color;
@@ -1103,13 +1114,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     color = mix(color, vec3<f32>(0.9, 1., 1.0), (dist_and_depth.x*0.4 / (MAX_DIST*0.4)));
 
-    let point = camera_position + ray_direction * dist_and_depth.x;
+    // let point = camera_position + ray_direction * dist_and_depth.x;
 
-    let w_diff = clamp((1.0 / (point.w - camera_position.w)), 0.0, 1.0);
+    // let w_diff = clamp((1.0 / (point.w - camera_position.w)), 0.0, 1.0);
 
-    let new_color = mix(vec3(0.3,0.0,0.6), vec3(0.3,0.0,0.6), w_diff);
+    // let new_color = mix(vec3(0.3,0.0,0.6), vec3(0.3,0.0,0.6), w_diff);
 
-    color = mix(new_color, color, w_diff);
+    // color = mix(vec3(0.5,0.0,0.1), color, w_diff);
 
     // if dynamic_data.explore_w_pos != 0.0 {
 
