@@ -20,15 +20,54 @@ pub struct StaticRenderData {
 pub struct OtherStaticData {
     shapes_arrays_metadata: ShapesArraysMetadata,
 
+    is_w_floor_exist: i32,
+    w_floor: f32,
+
+    is_w_roof_exist: i32,
+    w_roof: f32,
+
     empty_bytes: [f32; 3],
 
     static_shapes_stickiness: f32 
 }
 
 impl OtherStaticData {
-    pub fn new(shapes_arrays_metadata: ShapesArraysMetadata, stickiness: f32) -> Self {
+    pub fn new(
+        world: &World,
+        shapes_arrays_metadata: ShapesArraysMetadata,
+        stickiness: f32
+    ) -> Self {
+        
+        let mut w_floor = 0.0;
+        let is_w_floor_exist = {
+            if let Some(val) = &world.level.w_floor {
+                w_floor = val.w_pos;
+
+                1_i32
+            } else {
+                0_i32
+            }
+        };
+    
+        let mut w_roof = 0.0;
+        let is_w_roof_exist = {
+            if let Some(val) = &world.level.w_roof {
+                w_roof = val.w_pos;
+
+                1_i32
+            } else {
+                0_i32
+            }
+        };
+
+
         OtherStaticData {
             shapes_arrays_metadata,
+
+            w_floor,
+            is_w_floor_exist,
+            w_roof,
+            is_w_roof_exist,
 
             empty_bytes: [0.0, 0.0, 0.0],
 
@@ -527,6 +566,7 @@ impl StaticRenderData {
         log::info!("static shapes metadata: \n{:?}", metadata);
         
         let other_static_data = OtherStaticData::new(
+            world,
             metadata,
             world.level.all_shapes_stickiness_radius
         );

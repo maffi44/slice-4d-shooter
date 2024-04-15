@@ -113,6 +113,12 @@ struct OtherDynamicData {
 
 struct OtherStaticData {
     shapes_arrays_metadata: ShapesMetadata,
+    
+    is_w_floor_exist: i32,
+    w_floor: f32,
+    is_w_roof_exist: i32,
+    w_roof: f32,
+
     empty_bytes: vec3<f32>,
     stickiness: f32
 }
@@ -143,7 +149,6 @@ const MAX_STEPS: i32 = 128;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
 const MAX_DIST: f32 = 350.0;    
-
 
 fn rotate(angle: f32) -> mat2x2<f32> {
     //angle *= 0.017453;
@@ -237,10 +242,10 @@ fn smin(a: f32, b: f32, k: f32) -> f32
     return a + k * g;
 }
 
-fn get_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32) -> vec3<f32> {
+fn get_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f32> {
     let point = start_pos + direction * distance;
     
-    var color = get_color_at_point(point, distance);
+    var color = get_color_at_point(point, distance, ray_w_rotated);
 
     // color += get_coloring_areas_color(point); 
 
@@ -440,7 +445,7 @@ fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direct
     return color;
 }
 
-fn get_color_at_point(p: vec4<f32>, distance: f32) -> vec3<f32> {
+fn get_color_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f32> {
 
     var d = MAX_DIST;
     var color = vec3(0.0, 0.0, 0.0);
@@ -717,19 +722,33 @@ fn get_color_at_point(p: vec4<f32>, distance: f32) -> vec3<f32> {
         }
     }
 
-    // if distance + 1.0 > MAX_DIST {
-    //     let c = fract(p * 0.01);
+    if static_data.is_w_floor_exist == 1 {
+        if ray_w_rotated == 1 {
+            let new_d = p.w + static_data.w_floor;
 
-    //     color.x = mix(color.x, 0.0, c.x + c.w);
-    //     color.y = mix(color.y, 0.0, c.y + c.w);
-    //     color.z = mix(color.z, 0.0, c.z + c.w);
-    // }
+            if new_d < d {
+                color = vec3(0.6,0.0,0.3);
+
+                d = new_d;
+            }
+        }
+    }
+
+    if static_data.is_w_roof_exist == 1 {
+        if ray_w_rotated == 1 {
+            let new_d = static_data.w_roof - p.w;
+
+            if new_d < d {
+                color = vec3(0.3,0.0,0.6);
+            }
+        }
+    }
 
     return color;
 }
 
 
-fn map(p: vec4<f32>) -> f32 {
+fn map(p: vec4<f32>, ray_w_rotated: i32) -> f32 {
     var d = MAX_DIST;
 
     // static stickiness shapes
@@ -947,12 +966,24 @@ fn map(p: vec4<f32>) -> f32 {
         
 
     }
-
     d = min(d, dddd);
+    
+    if static_data.is_w_floor_exist == 1 {
+        if ray_w_rotated == 1 {
+            d = min(d, p.w + static_data.w_floor);
+        }
+    }
+
+    if static_data.is_w_roof_exist == 1 {
+        if ray_w_rotated == 1 {
+            d = min(d, static_data.w_roof - p.w);
+        }
+    }
+
     return d;
 }
 
-fn get_normal(p: vec4<f32>) -> vec4<f32> {
+fn get_normal(p: vec4<f32>, ray_w_rotated: i32) -> vec4<f32> {
     var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
     
     var a: vec4<f32> = p + h.yxxz;
@@ -962,12 +993,12 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
     var e: vec4<f32> = p + h.zzzx;
     var f: vec4<f32> = p + h.zzzy;
 
-    var fa: f32 = map(a);
-    var fb: f32 = map(b);
-    var fc: f32 = map(c);
-    var fd: f32 = map(d);
-    var fe: f32 = map(e);
-    var ff: f32 = map(f);
+    var fa: f32 = map(a, ray_w_rotated);
+    var fb: f32 = map(b, ray_w_rotated);
+    var fc: f32 = map(c, ray_w_rotated);
+    var fd: f32 = map(d, ray_w_rotated);
+    var fe: f32 = map(e, ray_w_rotated);
+    var ff: f32 = map(f, ray_w_rotated);
 
     return normalize(
         h.yxxz * fa +
@@ -981,7 +1012,7 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
 
 const MIN_STEP: f32 = 0.005;
 
-fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32> ) -> vec2<f32>  {
+fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, ray_w_rotated: i32) -> vec2<f32>  {
     // var color: vec3<f32> = vec3<f32>(0., 0., 0.);
     var total_distance: f32 = 0.;
     
@@ -989,7 +1020,7 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32> ) -> vec2<f32>
 
     var i: i32 = 0;
     for (; i < MAX_STEPS; i++) {
-        var d: f32  = map(ray_origin);
+        var d: f32  = map(ray_origin, ray_w_rotated);
         total_distance += d;
 
         if (d < 0.) {
@@ -1040,17 +1071,23 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
     ray_direction *= dynamic_data.camera_data.cam_rot;
 
+    var ray_w_rotated: i32 = 1;
+
+    if ray_direction.w < 0.0002 && ray_direction.w > -0.0002{
+        ray_w_rotated = 0;
+    }
+
     let camera_position = dynamic_data.camera_data.cam_pos;
 
-    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction); 
+    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, ray_w_rotated); 
 
-    let normal: vec4<f32> = get_normal(dist_and_depth.x * ray_direction + camera_position);
+    let normal: vec4<f32> = get_normal(dist_and_depth.x * ray_direction + camera_position, ray_w_rotated);
 
     let shade_coefficient: f32 = dot(normal, normalize(vec4<f32>(0.2, 1., 0.5, 0.1)));
 
     let shade = mix(0.32, 0.98, shade_coefficient);
 
-    var color = get_color(camera_position, ray_direction, dist_and_depth.x);
+    var color = get_color(camera_position, ray_direction, dist_and_depth.x, ray_w_rotated);
 
     let coloring_color = get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
 
@@ -1065,6 +1102,14 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     color = clamp(color, vec3(0.0), vec3(1.0));
 
     color = mix(color, vec3<f32>(0.9, 1., 1.0), (dist_and_depth.x*0.4 / (MAX_DIST*0.4)));
+
+    let point = camera_position + ray_direction * dist_and_depth.x;
+
+    let w_diff = clamp((1.0 / (point.w - camera_position.w)), 0.0, 1.0);
+
+    let new_color = mix(vec3(0.3,0.0,0.6), vec3(0.3,0.0,0.6), w_diff);
+
+    color = mix(new_color, color, w_diff);
 
     // if dynamic_data.explore_w_pos != 0.0 {
 

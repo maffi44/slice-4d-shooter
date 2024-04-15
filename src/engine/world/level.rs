@@ -24,6 +24,8 @@ use wasm_bindgen_futures::JsFuture;
 use serde_json::Value;
 use web_sys::js_sys::Math::random;
 
+use super::static_object::{WFloor, WRoof};
+
 
 
 pub struct DefaultStaticObjectSettings {
@@ -40,7 +42,9 @@ pub struct Level {
     pub level_name: String,
     pub static_objects: Vec<StaticObject>,
     pub spawn_positions: Vec<Vec4>,
-    pub all_shapes_stickiness_radius: f32
+    pub all_shapes_stickiness_radius: f32,
+    pub w_floor: Option<WFloor>,
+    pub w_roof: Option<WRoof>,
 }
 
 
@@ -153,6 +157,14 @@ fn parse_json_level(
         parse_json_defaults(json_defaults)
     };
 
+    let (w_floor, w_roof) = {
+        let json_w_cups = json_level
+            .get("w_cups")
+            .expect("Wrong JSON map format. JSON level must have w_cups property");
+
+        parse_w_cups(json_w_cups)
+    };
+
     let static_objects = {
         let json_static_objects = json_level
             .get("static_objects")
@@ -174,19 +186,61 @@ fn parse_json_level(
         static_objects,
         spawn_positions,
         all_shapes_stickiness_radius,
+        w_floor,
+        w_roof,
     };
 
     (level, actors)
 }
 
 
+fn parse_w_cups(
+    json: &Value
+) -> (Option<WFloor>, Option<WRoof>) {
+    let obj = json
+        .as_object()
+        .expect("Wrong JSON map format. Root of w_cups property must be an object");
+
+    let w_floor = {
+        if let Some(val) = obj.get("w_floor") {
+            let val = val
+                .as_f64()
+                .expect("Wrong JSON map format. Value of w_floor property in w_cups object must be a number")
+                as f32;
+            
+            Some(WFloor {
+                w_pos: val
+            })
+        } else {
+            None
+        }
+    };
+
+    let w_roof = {
+        if let Some(val) = obj.get("w_roof") {
+            let val = val
+                .as_f64()
+                .expect("Wrong JSON map format. Value of w_roof property in w_cups object must be a number")
+                as f32;
+            
+            Some(WRoof {
+                w_pos: val
+            })
+        } else {
+            None
+        }
+    };
+
+    (w_floor, w_roof)
+}
+
 
 fn parse_json_defaults(
     json: &Value
 ) -> DefaultStaticObjectSettings {
     let json_settings = json
-    .as_object()
-    .expect("Wrong JSON map format. Root json level value must be object");
+        .as_object()
+        .expect("Wrong JSON map format. Root json level value must be object");
 
     let friction = {
         json_settings

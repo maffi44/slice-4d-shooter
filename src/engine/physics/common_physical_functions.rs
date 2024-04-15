@@ -161,6 +161,14 @@ pub fn get_dist(
         d = d.min(sd_sphere(p - collider.position.clone(), collider.radius));
     }
 
+    if let Some(w_floor) = &static_objects.w_floor {
+        d = d.min(p.w + w_floor.w_pos);
+    }
+
+    if let Some(w_roof) = &static_objects.w_roof {
+        d = d.min(w_roof.w_pos - p.w);
+    }
+
     return d;
 }
 

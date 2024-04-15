@@ -21,6 +21,19 @@ pub struct  StaticObject {
 }
 
 #[derive(Clone)]
+pub struct WFloor {
+    pub w_pos: f32 
+}
+
+
+#[derive(Clone)]
+pub struct WRoof {
+    pub w_pos: f32 
+}
+
+
+
+#[derive(Clone)]
 pub struct  ColoringArea {
     pub translation: Vec4,
     pub radius: f32,

@@ -1,14 +1,9 @@
 use crate::{
-    transform::Transform,
     engine::{
-        world::World,
         physics::{
-            kinematic_collider::KinematicCollider,
-            // dynamic_collider::DynamicCollider,
-            static_collider::StaticCollider,
-            area::Area,
-        }
-    },
+            area::Area, kinematic_collider::KinematicCollider, static_collider::StaticCollider
+        }, world::{static_object::{WFloor, WRoof}, World}
+    }, transform::Transform
 };
 
 use glam::Vec4;
@@ -179,6 +174,9 @@ pub struct PhysicsState {
 
     pub dyn_spheres: Vec<PlayersDollCollider>,
 
+    pub w_floor: Option<WFloor>,
+    pub w_roof: Option<WRoof>,
+
     pub stickiness: f32,
 }
 
@@ -229,6 +227,9 @@ impl PhysicsState {
             sph_cubes,
 
             dyn_spheres: Vec::with_capacity(4),
+
+            w_floor: world.level.w_floor.clone(),
+            w_roof: world.level.w_roof.clone(),
 
             stickiness: world.level.all_shapes_stickiness_radius
         }
