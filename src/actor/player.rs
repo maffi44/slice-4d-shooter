@@ -81,6 +81,15 @@ pub enum PlayersDeviceSlotNumber {
     Fourth,
 }
 
+pub struct PlayerScreenEffects {
+    pub w_scaner_is_active: bool,
+    pub w_scaner_radius: f32,
+    pub w_scaner_intesity: f32,
+
+    pub death_screen_effect: f32,
+    pub getting_damage_screen_effect: f32,
+}
+
 
 pub struct Player {
     id: Option<ActorID>,
@@ -109,7 +118,17 @@ pub struct Player {
     explore_w_coefficient: f32,
 
     pub master: InputMaster,
+
+    screen_effects: PlayerScreenEffects,
+
+    w_scanner_enable: bool,
+    w_scanner_radius: f32,
+    w_scanner_reloading_time: f32, 
 }
+
+const W_SCANNER_RELOAD_TIME: f32 = 0.5;
+const W_SCANNER_MAX_RADIUS: f32 = 22.0;
+const W_SCANNER_EXPANDING_SPEED: f32 = 7.5;
 
 
 pub enum PlayerMessages {
@@ -243,7 +262,32 @@ impl Actor for Player {
 
     fn get_visual_element(&self) -> Option<VisualElement> {
         if self.inner_state.is_alive {
-            return self.hands_slot_0.get_visual_element(self.get_transform());
+            match self.active_hands_slot {
+                ActiveHandsSlot::Zero => {
+                    return self.hands_slot_0.get_visual_element(self.get_transform());
+                },
+                ActiveHandsSlot::First => {
+                    if let Some(device) = &self.hands_slot_1 {
+                        return device.get_visual_element(self.get_transform());
+                    } else {
+                        return None;
+                    }
+                },
+                ActiveHandsSlot::Second => {
+                    if let Some(device) = &self.hands_slot_2 {
+                        return device.get_visual_element(self.get_transform());
+                    } else {
+                        return None;
+                    }
+                },
+                ActiveHandsSlot::Third => {
+                    if let Some(device) = &self.hands_slot_3 {
+                        return device.get_visual_element(self.get_transform());
+                    } else {
+                        return None;
+                    }
+                }
+            }
         }
         None
     }
@@ -367,6 +411,21 @@ impl Actor for Player {
             self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
         }
 
+        if input.activate_hand_slot_0.is_action_just_pressed() {
+            self.active_hands_slot = ActiveHandsSlot::Zero;
+        }
+
+        if input.activate_hand_slot_1.is_action_just_pressed() {
+            self.active_hands_slot = ActiveHandsSlot::First;
+        }
+
+        if input.activate_hand_slot_2.is_action_just_pressed() {
+            self.active_hands_slot = ActiveHandsSlot::Second;
+        }
+
+        if input.activate_hand_slot_3.is_action_just_pressed() {
+            self.active_hands_slot = ActiveHandsSlot::Third;
+        }
 
         let mut movement_vec = Vec4::ZERO;
 
@@ -414,36 +473,36 @@ impl Actor for Player {
             }
         }
 
-        // const MAX_EXPLORE_DIST: f32 = 2.5;
-        // const EXPLORE_SPEED: f32 = 0.7;
+        if input.w_scaner.is_action_just_pressed() {
+            if !self.w_scanner_enable {
+                if self.w_scanner_reloading_time >= W_SCANNER_RELOAD_TIME {
+                    self.w_scanner_enable = true;
 
-        // if self.explore_w_position != 0.0 {
-        //     if self.explore_w_position > 0.0 {
-        //         if self.explore_w_position > MAX_EXPLORE_DIST {
-        //             self.explore_w_position = delta * -EXPLORE_SPEED;
-        //         } else {
-        //             self.explore_w_position += delta * EXPLORE_SPEED;
-        //         }
-        //     } else {
-        //         if self.explore_w_position < -MAX_EXPLORE_DIST {
-        //             self.explore_w_position = 0.0;
-        //         } else {
-        //             self.explore_w_position -= delta * EXPLORE_SPEED;
-        //         }
-        //     }
-        // }
+                    self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
+                }
+            }
+        }
 
-        if input.explore_w.is_action_just_pressed() {
+        if self.w_scanner_enable {
+            self.w_scanner_radius += delta * W_SCANNER_EXPANDING_SPEED;
+
+            if self.w_scanner_radius >= W_SCANNER_MAX_RADIUS {
+                self.w_scanner_enable = false;
+                self.w_scanner_reloading_time = 0.0;
+            }
+        }
+
+        if !self.w_scanner_enable {
+
+            if self.w_scanner_reloading_time < W_SCANNER_RELOAD_TIME {
+                self.w_scanner_reloading_time += delta;
+            }
+        }
+
+        if input.jump_w.is_action_just_pressed() {
             self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-            self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-
-            // if self.explore_w_position == 0.0 {
-            //     self.explore_w_position = delta * self.player_settings.max_speed;
-            // }
+            // self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
         };
-
-        // self.explore_w_coefficient =
-        //     (MAX_EXPLORE_DIST - self.explore_w_position.abs()) / MAX_EXPLORE_DIST;
 
         if self.inner_state.collider.is_enable {
 
@@ -513,6 +572,17 @@ impl Actor for Player {
                 )
             )
         });
+
+
+        self.screen_effects.w_scaner_is_active = self.w_scanner_enable;
+        self.screen_effects.w_scaner_radius = self.w_scanner_radius;
+        self.screen_effects.w_scaner_intesity = {
+            let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
+
+            intensity /= W_SCANNER_MAX_RADIUS/3.0;
+
+            intensity.clamp(0.0, 1.0)
+        };
     }
 }
 
@@ -521,6 +591,15 @@ impl Actor for Player {
 impl Player {
 
     pub fn new(master: InputMaster, player_settings: PlayerSettings) -> Self {
+        
+        let screen_effects = PlayerScreenEffects {
+            w_scaner_is_active: false,
+            w_scaner_radius: 0.0,
+            w_scaner_intesity: 0.0,
+            death_screen_effect: 0.0,
+            getting_damage_screen_effect: 0.0,
+        };
+        
         Player {
             id: None,
 
@@ -547,6 +626,12 @@ impl Player {
             no_collider_veclocity: Vec4::ZERO,
 
             view_angle: Vec4::ZERO,
+
+            screen_effects,
+
+            w_scanner_enable: false,
+            w_scanner_radius: 0.0,
+            w_scanner_reloading_time: W_SCANNER_RELOAD_TIME,
         }
     }
 
@@ -565,6 +650,10 @@ impl Player {
 
     pub fn get_rotation_matrix(&self) -> Mat4 {
         self.inner_state.transform.rotation.clone()
+    }
+
+    pub fn get_player_visual_effects(&self) -> &PlayerScreenEffects {
+        &self.screen_effects
     }
 
 

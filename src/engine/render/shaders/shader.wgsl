@@ -96,6 +96,9 @@ struct BeamArea {
     radius: f32,
 }
 
+
+
+
 struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     spherical_areas_meatadata: SphericalAreasMetadata,
@@ -103,9 +106,10 @@ struct OtherDynamicData {
     empty_bytes1: vec3<u32>,
     beam_areas_amount: u32,
     player_forms_amount: u32,
-    // empty_bytes2: vec4<f32>,
-    // explore_w_pos: f32,
-    // explore_w_coef: f32,
+    w_scaner_radius: f32,
+    w_scaner_intesity: f32,
+    death_screen_effect: f32,
+    getting_damage_screen_effect: f32,
     stickiness: f32,
     screen_aspect: f32,
     time: f32,
@@ -450,6 +454,10 @@ fn get_color_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f
     var d = MAX_DIST;
     var color = vec3(0.0, 0.0, 0.0);
 
+    if distance == MAX_DIST {
+        return vec3(1.0);
+    }
+
     // static stickiness shapes
     for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
         let new_d = sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness;
@@ -610,6 +618,38 @@ fn get_color_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f
         }
     }
 
+    if static_data.is_w_floor_exist == 1 {
+        if ray_w_rotated == 1 {
+            let new_d = p.w - static_data.w_floor + MIN_DIST;
+
+            if new_d < d {
+                color = vec3(0.2,0.2,0.2);
+
+                d = new_d;
+            }
+        }
+    }
+
+    if static_data.is_w_roof_exist == 1 {
+        if ray_w_rotated == 1 {
+            let new_d = static_data.w_roof - p.w - MIN_DIST;
+
+            if new_d < d {
+                color = vec3(0.2,0.2,0.2);
+            }
+        }
+    }
+
+    if p.w > 0.0 {
+        let w_diff = clamp((1.0/p.w), 0.0, 1.0);
+
+        color = mix(vec3(0.41,0.21,0.0), color, w_diff);
+    } else if p.w < 0.0 {
+        let w_diff = clamp((-1.0/p.w), 0.0, 1.0);
+
+        color = mix(vec3(0.4,0.0,0.2), color, w_diff);
+    }
+
     d = MIN_DIST + 0.003;
 
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
@@ -722,38 +762,9 @@ fn get_color_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f
         }
     }
 
-    if static_data.is_w_floor_exist == 1 {
-        if ray_w_rotated == 1 {
-            let new_d = p.w + static_data.w_floor;
+    
 
-            if new_d < d {
-                color = vec3(0.2,0.2,0.2);
 
-                d = new_d;
-            }
-        }
-    }
-
-    if static_data.is_w_roof_exist == 1 {
-        if ray_w_rotated == 1 {
-            let new_d = static_data.w_roof - p.w;
-
-            if new_d < d {
-                color = vec3(0.2,0.2,0.2);
-            }
-        }
-    }
-
-    if p.w > 0.0 {
-        let w_diff = clamp((p.w / 6.0), 0.0, 1.0);
-
-        color = mix(color, vec3(0.3,0.0,0.1), w_diff);
-    }
-    if p.w < 0.0 {
-        let w_diff = clamp((1.0 / p.w), 0.0, 1.0);
-
-        color = mix(vec3(0.1,0.0,0.5), color, w_diff);
-    }
 
     return color;
 }
@@ -981,7 +992,7 @@ fn map(p: vec4<f32>, ray_w_rotated: i32) -> f32 {
     
     if static_data.is_w_floor_exist == 1 {
         if ray_w_rotated == 1 {
-            d = min(d, p.w + static_data.w_floor);
+            d = min(d, p.w - static_data.w_floor);
         }
     }
 
@@ -1053,6 +1064,33 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, ray_w_rotated
 }
 
 
+fn add_w_scnner_color(pos: vec4<f32>, dist: f32, dir: vec4<f32>) -> vec3<f32> {
+    var scanner_color = vec3(0.0);
+    
+    if dist > dynamic_data.w_scaner_radius {
+
+        let y_coof = clamp(pow(1.0 - dir.y,3.0), 0.0, 1.0);
+
+        scanner_color = vec3(0.4 * y_coof);
+    }
+
+    scanner_color += clamp(pow(1.0 - abs(dist - dynamic_data.w_scaner_radius), 5.0), 0.0, 1.0);
+
+    
+
+    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+        let d = sd_sphere((pos + dir * dynamic_data.w_scaner_radius) - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
+
+        scanner_color.r += pow(clamp(-d + 0.4, 0.0, 1.0), 1.0); 
+        
+    }
+
+    scanner_color = clamp(scanner_color * dynamic_data.w_scaner_intesity, vec3(0.0), vec3(1.0));
+    
+    return scanner_color;
+}
+
+
 struct VertexInput {
     @location(0) @interpolate(perspective) position: vec3<f32>,
 };
@@ -1114,46 +1152,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     color = mix(color, vec3<f32>(0.9, 1., 1.0), (dist_and_depth.x*0.4 / (MAX_DIST*0.4)));
 
-    // let point = camera_position + ray_direction * dist_and_depth.x;
+    if dynamic_data.w_scaner_radius > 0.0 {
+        color += add_w_scnner_color(camera_position, dist_and_depth.x, ray_direction);
+    }
 
-    // let w_diff = clamp((1.0 / (point.w - camera_position.w)), 0.0, 1.0);
-
-    // let new_color = mix(vec3(0.3,0.0,0.6), vec3(0.3,0.0,0.6), w_diff);
-
-    // color = mix(vec3(0.5,0.0,0.1), color, w_diff);
-
-    // if dynamic_data.explore_w_pos != 0.0 {
-
-    //     let dist_and_depth_explore: vec2<f32> = ray_march(
-    //         camera_position + vec4(0.0, 0.0, 0.0, dynamic_data.explore_w_pos), ray_direction
-    //     );
-
-    //     var explore_color = vec3(3.0, 0.1, 6.0);
-    //     if dynamic_data.explore_w_pos < 0.0 {
-    //         explore_color = vec3(0.1, 0.3, 16.0);
-    //     }
-
-    //     explore_color *= dynamic_data.explore_w_coef * dynamic_data.explore_w_coef;
-
-    //     let e_normal: vec4<f32> = get_normal(
-    //         dist_and_depth_explore.x * ray_direction +
-    //         (camera_position + vec4(0.0, 0.0, 0.0, dynamic_data.explore_w_pos))
-    //     );
-
-    //     var e_shade_coefficient: f32 = dot(e_normal, normalize(vec4<f32>(0.2, 1., 0.5, 0.1)));
-
-    //     e_shade_coefficient = clamp(e_shade_coefficient, 0.0, 0.6);
-
-    //     explore_color *= e_shade_coefficient * 2.0;
-
-    //     color = clamp(color, vec3(0.0), vec3(1.0));
-
-    //     color += explore_color;
-    //     // if dist_and_depth.x >= dist_and_depth_explore.x {
-    //     // } else {
-    //     //     color = mix(color, explore_color, 0.3);
-    //     // }
-    // }
 
     //crosshair
     color += (0.006 - clamp(length(uv), 0.0, 0.006))*200.0;

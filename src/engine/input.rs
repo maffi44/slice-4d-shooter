@@ -16,7 +16,7 @@ use crate::{
 
 use self::action::Action;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, iter::Cloned};
 
 use winit::{
     event::{
@@ -43,11 +43,16 @@ pub struct ActionsFrameState {
     pub move_left: Action,
     pub w_down: Action,
     pub w_up: Action,
-    pub explore_w: Action,   
+    pub w_scaner: Action,
+    pub activate_hand_slot_0: Action,
+    pub activate_hand_slot_1: Action,
+    pub activate_hand_slot_2: Action,
+    pub activate_hand_slot_3: Action,
     pub mode_1: Action,
-    pub mode_2: Action,  
-    pub mode_3: Action,  
+    pub mode_2: Action,
+    pub mode_3: Action,
     pub jump: Action,
+    pub jump_w: Action,
     pub first_mouse: Action,
     pub second_mouse: Action,
     pub mouse_axis: Vec2,
@@ -59,15 +64,20 @@ impl ActionsFrameState {
         let mut move_backward = Action::new();
         let mut move_right = Action::new();
         let mut move_left = Action::new();
-        let mut crouch = Action::new();
+        let mut w_scaner = Action::new();
         let mut w_down = Action::new();
         let mut w_up = Action::new();
         let mut jump = Action::new();
+        let mut jump_w = Action::new();
         let mut first_mouse = Action::new();
         let mut second_mouse = Action::new();
         let mut mode_1 = Action::new();
         let mut mode_2 = Action::new();
         let mut mode_3 = Action::new();
+        let mut activate_hand_slot_0 = Action::new();
+        let mut activate_hand_slot_1 = Action::new();
+        let mut activate_hand_slot_2 = Action::new();
+        let mut activate_hand_slot_3 = Action::new();
         let mouse_axis = mouse_axis;
         
         for (_, (button_action, action)) in actions_table.iter() {
@@ -76,8 +86,13 @@ impl ActionsFrameState {
                 ButtonActions::MoveBackward => move_backward = action.clone(),
                 ButtonActions::MoveRight => move_right = action.clone(),
                 ButtonActions::MoveLeft => move_left = action.clone(),
-                ButtonActions::ExploreW => crouch = action.clone(),
+                ButtonActions::WScaner => w_scaner = action.clone(),
                 ButtonActions::Jump => jump = action.clone(),
+                ButtonActions::JumpW => jump_w = action.clone(),
+                ButtonActions::HandSlot0 => activate_hand_slot_0 = action.clone(),
+                ButtonActions::HandSlot1=> activate_hand_slot_1 = action.clone(),
+                ButtonActions::HandSlot2 => activate_hand_slot_2 = action.clone(),
+                ButtonActions::HandSlot3 => activate_hand_slot_3 = action.clone(),
                 ButtonActions::FirstMouse => first_mouse = action.clone(),
                 ButtonActions::SecondMouse => second_mouse = action.clone(),
                 ButtonActions::WDown => w_down = action.clone(),
@@ -93,10 +108,15 @@ impl ActionsFrameState {
             move_backward,
             move_right,
             move_left,
-            explore_w: crouch,
+            w_scaner,
+            activate_hand_slot_0,
+            activate_hand_slot_1,
+            activate_hand_slot_2,
+            activate_hand_slot_3,
             w_down,
             w_up,
             jump,
+            jump_w,
             first_mouse,
             second_mouse,
             mode_1,
@@ -111,15 +131,20 @@ impl ActionsFrameState {
         let move_backward = Action::new();
         let move_right = Action::new();
         let move_left = Action::new();
-        let crouch = Action::new();
-        let w_up = Action::new();
+        let w_scaner = Action::new();
         let w_down = Action::new();
+        let w_up = Action::new();
         let jump = Action::new();
+        let jump_w = Action::new();
         let first_mouse = Action::new();
         let second_mouse = Action::new();
         let mode_1 = Action::new();
         let mode_2 = Action::new();
         let mode_3 = Action::new();
+        let activate_hand_slot_0 = Action::new();
+        let activate_hand_slot_1 = Action::new();
+        let activate_hand_slot_2 = Action::new();
+        let activate_hand_slot_3 = Action::new();
         let mouse_axis = Vec2::ZERO;
 
         ActionsFrameState {
@@ -127,10 +152,15 @@ impl ActionsFrameState {
             move_backward,
             move_right,
             move_left,
-            explore_w: crouch,
+            w_scaner,
+            activate_hand_slot_0,
+            activate_hand_slot_1,
+            activate_hand_slot_2,
+            activate_hand_slot_3,
             w_down,
             w_up,
             jump,
+            jump_w,
             first_mouse,
             second_mouse,
             mode_1,
@@ -157,7 +187,12 @@ enum ButtonActions {
     MoveBackward,
     MoveRight,
     MoveLeft,
-    ExploreW,
+    HandSlot0,
+    HandSlot1,
+    HandSlot2,
+    HandSlot3,
+    WScaner,
+    JumpW,
     Jump,
     WUp,
     WDown,
@@ -208,7 +243,7 @@ impl InputSystem {
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::ShiftLeft),
-            (ButtonActions::ExploreW, Action::new())
+            (ButtonActions::JumpW, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Space),
@@ -216,22 +251,38 @@ impl InputSystem {
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyE),
-            (ButtonActions::WUp, Action::new())
+            (ButtonActions::WScaner, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyQ),
             (ButtonActions::WDown, Action::new())
         );
         actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Digit0),
+            (ButtonActions::HandSlot0, Action::new())
+        );
+        actions_table.insert(
             SomeButton::KeyCode(KeyCode::Digit1),
-            (ButtonActions::ModeOne, Action::new())
+            (ButtonActions::HandSlot1, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Digit2),
-            (ButtonActions::ModeTwo, Action::new())
+            (ButtonActions::HandSlot2, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Digit3),
+            (ButtonActions::HandSlot3, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Numpad1),
+            (ButtonActions::ModeOne, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Numpad2),
+            (ButtonActions::ModeTwo, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Numpad3),
             (ButtonActions::ModeThree, Action::new())
         );
         actions_table.insert(

@@ -1,7 +1,8 @@
+use std::thread::panicking;
+
 use crate::{
     actor::{
-        Actor,
-        ActorWrapper
+        player::PlayerScreenEffects, Actor, ActorWrapper
     }, engine::{
         physics::physics_system_data::ShapeType, render::render_data::{
             Shape, ShapesArrays, ShapesArraysMetadata, SphericalArea, SphericalAreasMetadata
@@ -563,6 +564,8 @@ impl DynamicRenderData {
 
         let player_forms_amount = self.update_player_forms_buffers_and_get_amount();
 
+        let players_screen_effects = get_players_screen_effects(world);
+
         self.other_dynamic_data.update(
             world,
             time,
@@ -570,10 +573,29 @@ impl DynamicRenderData {
             shapes_arrays_metadata,
             spherical_areas_meatadata,
             beams_areas_amount,
-            player_forms_amount
+            player_forms_amount,
+            players_screen_effects,
         );
     }
 }
+
+
+
+fn get_players_screen_effects(world: &World) -> &PlayerScreenEffects {
+    let main_player = world.actors
+        .get(&world.main_player_id)
+        .expect("Render system ERROR: World have not main player on main_player_id");
+
+    {
+        if let ActorWrapper::Player(player) = main_player {
+            player.get_player_visual_effects()
+        } else {
+            panic!("Render system ERROR: actor with main_player_id is not a Player")
+        }
+    }
+}
+
+
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -584,9 +606,10 @@ pub struct OtherDynamicData {
     empty_bytes1: [u32;3],
     beam_areas_amount: u32,
     player_forms_amount: u32,
-    // empty_bytes2: [f32; 4],
-    // explore_w_pos: f32,
-    // explore_w_coef: f32,
+    w_scaner_radius: f32,
+    w_scaner_intesity: f32,
+    death_screen_effect: f32,
+    getting_damage_screen_effect: f32,
     stickiness: f32,
     screen_aspect: f32,
     time: f32,   
@@ -602,6 +625,7 @@ impl OtherDynamicData {
         spherical_areas_meatadata: SphericalAreasMetadata,
         beams_areas_amount: u32,
         player_forms_amount: u32,
+        players_screen_effects: &PlayerScreenEffects,
     ) {
         
         let cam_pos;
@@ -645,6 +669,17 @@ impl OtherDynamicData {
         self.time = time.timestamp_of_main_loop_start.elapsed().as_secs_f32();
 
         self.player_forms_amount = player_forms_amount;
+
+        self.w_scaner_radius = {
+            if players_screen_effects.w_scaner_is_active {
+                players_screen_effects.w_scaner_radius
+            } else {
+                0.0
+            }
+        };
+        self.w_scaner_intesity = players_screen_effects.w_scaner_intesity;
+        self.death_screen_effect = players_screen_effects.death_screen_effect;
+        self.getting_damage_screen_effect = players_screen_effects.getting_damage_screen_effect;
     }
 }
 
@@ -658,10 +693,10 @@ impl Default for OtherDynamicData {
             empty_bytes1: [0;3],
             beam_areas_amount: 0,
             player_forms_amount: 0,
-            // empty_bytes2: [0.0; 4],
-            // empty_bytes1: [0.0; 3],
-            // explore_w_pos: 0.0,
-            // explore_w_coef: 0.0,
+            w_scaner_intesity: 0.0,
+            w_scaner_radius: 0.0,
+            death_screen_effect: 0.0,
+            getting_damage_screen_effect: 0.0,
             stickiness: 0.5,
             screen_aspect: 1.0,
             time: 0.0,
