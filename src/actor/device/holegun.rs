@@ -241,6 +241,18 @@ impl Device for HoleGun {
         )
     }
 
+    fn process_while_player_is_not_alive(
+            &mut self,
+            player_id: ActorID,
+            player: &mut PlayerInnerState,
+            input: &ActionsFrameState,
+            physic_system: &PhysicsSystem,
+            engine_handle: &mut EngineHandle,
+            delta: f32,
+        ) {
+        self.volume_area.clear();
+    }
+
     fn process_input(
         &mut self,
         player_id: ActorID,

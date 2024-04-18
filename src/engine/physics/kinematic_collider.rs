@@ -88,7 +88,7 @@ impl KinematicCollider {
         self.collider_radius
     }
 
-    pub fn reboot_forces_and_velocity(&mut self) {
+    pub fn reset_forces_and_velocity(&mut self) {
         self.forces.clear();
         self.current_velocity = Vec4::ZERO;
     }

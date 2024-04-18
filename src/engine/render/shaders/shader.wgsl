@@ -1076,18 +1076,33 @@ fn add_w_scnner_color(pos: vec4<f32>, dist: f32, dir: vec4<f32>) -> vec3<f32> {
 
     scanner_color += clamp(pow(1.0 - abs(dist - dynamic_data.w_scaner_radius), 5.0), 0.0, 1.0);
 
-    
+    scanner_color *= dynamic_data.w_scaner_intesity;
 
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-        let d = sd_sphere((pos + dir * dynamic_data.w_scaner_radius) - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
 
-        scanner_color.r += pow(clamp(-d + 0.4, 0.0, 1.0), 1.0); 
+        let d = sd_sphere(pos - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
+
+        let visible = clamp((dynamic_data.w_scaner_radius - d) * 5.0, 0.0, 1.0);
+
+        let vis_d = length(
+            (
+                (
+                    pos + dir * min(
+                        dynamic_data.w_scaner_radius,
+                        length(pos.xyz - dyn_player_forms[i].pos.xyz)
+                    )
+                ) - dyn_player_forms[i].pos
+            ).xyz
+        ) - dyn_player_forms[i].radius;
+
+        var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0) * visible;
+        red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0) * visible;
+        red *= dynamic_data.w_scaner_intesity * 2.0;
         
+        scanner_color.r += red;
     }
-
-    scanner_color = clamp(scanner_color * dynamic_data.w_scaner_intesity, vec3(0.0), vec3(1.0));
     
-    return scanner_color;
+    return clamp(scanner_color, vec3(0.0), vec3(1.0));
 }
 
 

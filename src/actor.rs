@@ -27,7 +27,7 @@ pub type ActorID = u128;
 
 pub trait Actor {
 
-    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {}
+    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle,  physics_system: &PhysicsSystem) {}
 
     fn get_mut_transform(&mut self) -> &mut Transform;
     
@@ -114,25 +114,25 @@ impl Actor for ActorWrapper {
         }
     }
 
-    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
+    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle,  physics_system: &PhysicsSystem) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.recieve_message(message, engine_handle);
+                actor.recieve_message(message, engine_handle, physics_system);
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.recieve_message(message, engine_handle);
+                actor.recieve_message(message, engine_handle, physics_system);
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.recieve_message(message, engine_handle);
+                actor.recieve_message(message, engine_handle, physics_system);
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.recieve_message(message, engine_handle);
+                actor.recieve_message(message, engine_handle, physics_system);
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.recieve_message(message, engine_handle);
+                actor.recieve_message(message, engine_handle, physics_system);
             },
             ActorWrapper::PlayerDeathExplode(actor) => {
-                actor.recieve_message(message, engine_handle);
+                actor.recieve_message(message, engine_handle, physics_system);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},

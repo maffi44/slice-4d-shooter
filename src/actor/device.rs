@@ -70,4 +70,14 @@ pub trait Device {
     fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
         None
     }
+
+    fn process_while_player_is_not_alive(
+        &mut self,
+        player_id: ActorID,
+        player: &mut PlayerInnerState,
+        input: &ActionsFrameState,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32,
+    ) {}
 }

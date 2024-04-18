@@ -53,19 +53,19 @@ impl World {
         world
     }
 
-    pub fn send_messages_and_process_commands(&mut self, net_system: &mut NetSystem, engine_handle: &mut EngineHandle) {
+    pub fn send_messages_and_process_commands(&mut self, net_system: &mut NetSystem, physics_system: &PhysicsSystem, engine_handle: &mut EngineHandle) {
         
         loop {
                 while let Some(message) = engine_handle.boardcast_message_buffer.pop() {
-                    self.send_boardcast_messages(message, engine_handle)                
+                    self.send_boardcast_messages(message, engine_handle, physics_system)                
                 }
 
                 while let Some((to, message)) = engine_handle.direct_message_buffer.pop() {
-                    self.send_direct_messages(to, message, engine_handle)                
+                    self.send_direct_messages(to, message, engine_handle, physics_system)                
                 }
 
                 while let Some(command) = engine_handle.command_buffer.pop() {
-                    self.execute_command(command, net_system, engine_handle);
+                    self.execute_command(command, net_system, physics_system, engine_handle);
                 }
 
                 if engine_handle.direct_message_buffer.is_empty() &&
@@ -77,7 +77,13 @@ impl World {
             }
     }
 
-    fn execute_command(&mut self, command: Command, net_system: &mut NetSystem, engine_handle: &mut EngineHandle) {
+    fn execute_command(
+        &mut self,
+        command: Command,
+        net_system: &mut NetSystem,
+        physics_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+    ) {
         let from = command.sender;
 
         match command.command_type {
@@ -95,7 +101,7 @@ impl World {
                 if let Some(player) = self.actors.get_mut(&id) {
                     
                     if let ActorWrapper::Player(player) = player {
-                        player.respawn(spawn_position, engine_handle)
+                        player.respawn(spawn_position, engine_handle, physics_system)
                     } else {
                         panic!("Player send wrong ID into RespawnPlayer command. Actor with this ID is not player")
                     }
@@ -109,7 +115,7 @@ impl World {
                     let player = self.actors.get_mut(&self.main_player_id).expect("World have not actor with main_player_id");
                     
                     if let ActorWrapper::Player(player) = player {
-                        player.respawn(spawn_position, engine_handle)
+                        player.respawn(spawn_position, engine_handle, physics_system)
                     } else {
                         panic!("Actor with main_player_id is not Player");
                     }
@@ -164,21 +170,24 @@ impl World {
         &mut self,
         to: ActorID,
         message: Message,
-        engine_handle: &mut EngineHandle
+        engine_handle: &mut EngineHandle,
+        physics_system: &PhysicsSystem
+
     ) {
         if let Some(actor) = self.actors.get_mut(&to) {
-            actor.recieve_message(&message, engine_handle);
+            actor.recieve_message(&message, engine_handle, physics_system);
         }
     }
 
     fn send_boardcast_messages(
         &mut self,
         message: Message,
-        engine_handle: &mut EngineHandle
+        engine_handle: &mut EngineHandle,
+        physics_system: &PhysicsSystem
     ) {
         for (_, actor) in self.actors.iter_mut() {
             if actor.get_id().expect("actor does not have id") != message.from {
-                actor.recieve_message(&message, engine_handle);
+                actor.recieve_message(&message, engine_handle, physics_system);
             } 
         }
     }

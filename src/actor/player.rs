@@ -15,9 +15,7 @@ use crate::{
         SpecificActorMessage
     }, engine::{
         engine_handle::{Command, CommandType, EngineHandle}, net::{NetCommand, NetMessage, RemoteCommand, RemoteMessage}, physics::{
-            colliders_container::PhysicalElement,
-            kinematic_collider::KinematicCollider,
-            PhysicsSystem,
+            colliders_container::PhysicalElement, kinematic_collider::KinematicCollider, physics_system_data, PhysicsSystem
         }, render::VisualElement
     },
     transform::Transform
@@ -29,6 +27,7 @@ use self::{
 };
 
 use std::f32::consts::PI;
+use bincode::de;
 use glam::{Vec4, Mat4};
 use matchbox_socket::PeerId;
 
@@ -43,12 +42,13 @@ pub struct PlayerInnerState {
     pub transform: Transform,
     pub hp: i32,
     pub is_alive: bool,
+    pub is_enable: bool
     // pub weapon_offset: Vec4,
 }
 
 
 impl PlayerInnerState {
-    pub fn new(transform: Transform, settings: &PlayerSettings) -> Self {
+    pub fn new(transform: Transform, settings: &PlayerSettings, is_alive: bool, is_enable: bool) -> Self {
 
         PlayerInnerState {
             collider: KinematicCollider::new(
@@ -60,7 +60,8 @@ impl PlayerInnerState {
             ),
             transform,
             hp: 0,
-            is_alive: false
+            is_alive,
+            is_enable,
         }
     }
 }
@@ -123,22 +124,35 @@ pub struct Player {
 
     w_scanner_enable: bool,
     w_scanner_radius: f32,
-    w_scanner_reloading_time: f32, 
+    w_scanner_reloading_time: f32,
+
+    after_death_timer: f32,
+    need_to_die_slowly: bool,
 }
+
+const PLAYER_MAX_HP: i32 = 100;
+
+const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
+const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
 
 const W_SCANNER_RELOAD_TIME: f32 = 0.5;
 const W_SCANNER_MAX_RADIUS: f32 = 22.0;
 const W_SCANNER_EXPANDING_SPEED: f32 = 7.5;
 
+pub const TIME_TO_DIE_SLOWLY: f32 = 1.2;
+
 
 pub enum PlayerMessages {
     DealDamageAndAddForce(u32, Vec4),
     NewPeerConnected(PeerId),
+    Telefrag,
+    DieImmediately,
+    DieSlowly,
 }
 
 
 impl Actor for Player {
-    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
+    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle, physic_system: &PhysicsSystem) {
         let from = message.from;
 
         let message = &message.message;
@@ -150,7 +164,7 @@ impl Actor for Player {
                         self.inner_state.transform = transform.clone();
                     },
                     CommonActorsMessages::Enable(switch) => {
-                        self.inner_state.collider.is_enable = *switch;
+                        self.inner_state.is_enable = *switch;
                     },
                     CommonActorsMessages::IncrementPosition(increment) => {
                         self.inner_state.transform.increment_position(increment.clone());
@@ -167,17 +181,22 @@ impl Actor for Player {
                 match message {
                     SpecificActorMessage::PLayerMessages(message) => {
                         match message {
-                            PlayerMessages::DealDamageAndAddForce(damage, force) => {
-                                self.inner_state.hp -= *damage as i32;
-
-                                self.inner_state.collider.add_force(*force);
-
-                                if self.inner_state.hp <= 0 {
-                                    self.die(engine_handle)
-                                }
-
-                                log::error!("GET DAMAGE: {}", *damage);
+                            PlayerMessages::Telefrag => {
+                                self.die_immediately(engine_handle);
                             }
+
+                            PlayerMessages::DieImmediately => {
+                                self.die_immediately(engine_handle);
+                            }
+
+                            PlayerMessages::DieSlowly => {
+                                self.die_slowly(engine_handle);
+                            }
+
+                            PlayerMessages::DealDamageAndAddForce(damage, force) => {
+                                self.get_damage_and_add_force(*damage as i32, *force, engine_handle);
+                            }
+
                             PlayerMessages::NewPeerConnected(peer_id) => {
 
                                 engine_handle.send_command(
@@ -189,6 +208,7 @@ impl Actor for Player {
                                                     crate::engine::net::RemoteCommand::SpawnPlayersDollActor(
                                                         self.get_transform().to_serializable_transform(),
                                                         self.inner_state.collider.get_collider_radius(),
+                                                        self.inner_state.is_alive
                                                     )
                                                 ),
                                                 peer_id.clone(),
@@ -245,7 +265,7 @@ impl Actor for Player {
     }
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
-        if self.inner_state.is_alive {
+        if self.inner_state.is_enable {
             let collider_container = PhysicalElement {
                 transform: &mut self.inner_state.transform,
                 kinematic_collider: Some(&mut self.inner_state.collider),
@@ -261,7 +281,7 @@ impl Actor for Player {
     }
 
     fn get_visual_element(&self) -> Option<VisualElement> {
-        if self.inner_state.is_alive {
+        if self.inner_state.is_enable {
             match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
                     return self.hands_slot_0.get_visual_element(self.get_transform());
@@ -309,255 +329,354 @@ impl Actor for Player {
             }   
         };
 
-        let second_mouse_b_pressed = input.second_mouse.is_action_pressed();
+        if self.inner_state.is_alive {
 
-        let mut x = self.view_angle.x;
-        let mut y = self.view_angle.y;
-        let mut xw = self.view_angle.z;
-        let mut yw = self.view_angle.w;
-
-        if second_mouse_b_pressed {
-            xw = input.mouse_axis.x + xw;
-            yw = (input.mouse_axis.y + yw).clamp(-PI/2.0, PI/2.0);
-            
-        } else {
-            xw *= 1.0 - delta * 3.0;
-            yw *= 1.0 - delta * 3.0;
-
-            x = input.mouse_axis.x + x;
-            y = (input.mouse_axis.y + y).clamp(-PI/2.0, PI/2.0);
-        }
-
-
-        let normal_rotation = Mat4::from_cols_slice(&[
-            x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
-            0.0,        y.cos(),            -y.sin(),           0.0,
-            -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
-            0.0,        0.0,                0.0,                1.0
-        ]);
-
-        // let xw_rotation = Mat4::from_cols_slice(&[
-        //     yw.cos(),    0.0,    0.0,    yw.sin(),
-        //     0.0,        1.0,    0.0,    0.0,
-        //     0.0,        0.0,    1.0,    0.0,
-        //     -yw.sin(),   0.0,    0.0,    yw.cos()
-        // ]);
-
-        let yw_rotation = Mat4::from_cols_slice(&[
-            1.0,    0.0,    0.0,        0.0,
-            0.0,    1.0,    0.0,        0.0,
-            0.0,    0.0,    yw.cos(),   yw.sin(),
-            0.0,    0.0,    -yw.sin(),   yw.cos()
-        ]);
-
-
-        self.set_rotation_matrix(yw_rotation * normal_rotation);
-
-        // self.set_rotation_matrix(Mat4::from_cols_slice(&[
-        //     y.cos(),    0.0,    0.0,    y.sin(),
-        //     0.0,        1.0,    0.0,    0.0,
-        //     0.0,        0.0,    1.0,    0.0,
-        //     -y.sin(),   0.0,    0.0,    y.cos()
-        // ]));
-
-        // self.set_rotation_matrix(Mat4::from_cols_slice(&[
-        //     1.0,    0.0,        0.0,    0.0,
-        //     0.0,    y.cos(),    0.0,    y.sin(),
-        //     0.0,    0.0,        1.0,    0.0,
-        //     0.0,    -y.sin(),   0.0,    y.cos()
-        // ]));
-
-        let xz_player_rotation = Mat4::from_rotation_y(x);
-        self.view_angle = Vec4::new(x, y, xw, yw);  
-
-        // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
-
-        match self.active_hands_slot {
-            ActiveHandsSlot::Zero => {
-                self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
-            },
-            ActiveHandsSlot::First => {
-                if let Some(device) = self.hands_slot_1.as_mut() {
-                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
-                }
-            },
-            ActiveHandsSlot::Second => {
-                if let Some(device) = self.hands_slot_2.as_mut() {
-                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
-                }
-            },
-            ActiveHandsSlot::Third => {
-                if let Some(device) = self.hands_slot_3.as_mut() {
-                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
-                }
-            }
-        }
-
-        for device in self.devices.iter_mut() {
-            if let Some(device) = device {
-                device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
-            }
-        }
-
-        if input.mode_1.is_action_just_pressed() {
-            self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
-        }
-
-        if input.mode_2.is_action_just_pressed() {
-            self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
-        }
-
-        if input.mode_3.is_action_just_pressed() {
-            self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
-        }
-
-        if input.activate_hand_slot_0.is_action_just_pressed() {
-            self.active_hands_slot = ActiveHandsSlot::Zero;
-        }
-
-        if input.activate_hand_slot_1.is_action_just_pressed() {
-            self.active_hands_slot = ActiveHandsSlot::First;
-        }
-
-        if input.activate_hand_slot_2.is_action_just_pressed() {
-            self.active_hands_slot = ActiveHandsSlot::Second;
-        }
-
-        if input.activate_hand_slot_3.is_action_just_pressed() {
-            self.active_hands_slot = ActiveHandsSlot::Third;
-        }
-
-        let mut movement_vec = Vec4::ZERO;
-
-        if input.move_forward.is_action_pressed() {
-            movement_vec += Vec4::NEG_Z;
-        }
-
-        if input.move_backward.is_action_pressed() {
-            movement_vec += Vec4::Z;
-        }
-
-        if input.move_right.is_action_pressed() {
-            movement_vec += Vec4::X;
-        }
-
-        if input.move_left.is_action_pressed() {
-            movement_vec += Vec4::NEG_X;
-        }
-
-        if let Some(vec) = movement_vec.try_normalize() {
-            movement_vec = vec;
-        }
-
-        if input.jump.is_action_just_pressed() {
-
-            if self.inner_state.collider.is_on_ground {
-                self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-
-            }
-        }
-
-        if input.w_up.is_action_pressed() {
-            if self.inner_state.collider.is_enable {
-                self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
+            let mut x = self.view_angle.x;
+            let mut y = self.view_angle.y;
+            let mut xw = self.view_angle.z;
+            let mut yw = self.view_angle.w;
+    
+            if input.second_mouse.is_action_pressed() {
+                xw = input.mouse_axis.x + xw;
+                yw = (input.mouse_axis.y + yw).clamp(-PI/2.0, PI/2.0);
+                
             } else {
-                self.no_collider_veclocity += Vec4::W * self.player_settings.jetpak_w_speed;
+                xw *= 1.0 - delta * 3.0;
+                yw *= 1.0 - delta * 3.0;
+    
+                x = input.mouse_axis.x + x;
+                y = (input.mouse_axis.y + y).clamp(-PI/2.0, PI/2.0);
             }
-        }
-
-        if input.w_down.is_action_pressed() {
-            if self.inner_state.collider.is_enable {
-                self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
-            } else {
-                self.no_collider_veclocity += Vec4::NEG_W * self.player_settings.jetpak_w_speed;
-            }
-        }
-
-        if input.w_scaner.is_action_just_pressed() {
-            if !self.w_scanner_enable {
-                if self.w_scanner_reloading_time >= W_SCANNER_RELOAD_TIME {
-                    self.w_scanner_enable = true;
-
-                    self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
+    
+    
+            let normal_rotation = Mat4::from_cols_slice(&[
+                x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
+                0.0,        y.cos(),            -y.sin(),           0.0,
+                -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
+                0.0,        0.0,                0.0,                1.0
+            ]);
+    
+            // let xw_rotation = Mat4::from_cols_slice(&[
+            //     yw.cos(),    0.0,    0.0,    yw.sin(),
+            //     0.0,        1.0,    0.0,    0.0,
+            //     0.0,        0.0,    1.0,    0.0,
+            //     -yw.sin(),   0.0,    0.0,    yw.cos()
+            // ]);
+    
+            let yw_rotation = Mat4::from_cols_slice(&[
+                1.0,    0.0,    0.0,        0.0,
+                0.0,    1.0,    0.0,        0.0,
+                0.0,    0.0,    yw.cos(),   yw.sin(),
+                0.0,    0.0,    -yw.sin(),   yw.cos()
+            ]);
+    
+    
+            self.set_rotation_matrix(yw_rotation * normal_rotation);
+    
+            // self.set_rotation_matrix(Mat4::from_cols_slice(&[
+            //     y.cos(),    0.0,    0.0,    y.sin(),
+            //     0.0,        1.0,    0.0,    0.0,
+            //     0.0,        0.0,    1.0,    0.0,
+            //     -y.sin(),   0.0,    0.0,    y.cos()
+            // ]));
+    
+            // self.set_rotation_matrix(Mat4::from_cols_slice(&[
+            //     1.0,    0.0,        0.0,    0.0,
+            //     0.0,    y.cos(),    0.0,    y.sin(),
+            //     0.0,    0.0,        1.0,    0.0,
+            //     0.0,    -y.sin(),   0.0,    y.cos()
+            // ]));
+    
+            let xz_player_rotation = Mat4::from_rotation_y(x);
+            self.view_angle = Vec4::new(x, y, xw, yw);  
+    
+            // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
+    
+            match self.active_hands_slot {
+                ActiveHandsSlot::Zero => {
+                    self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                },
+                ActiveHandsSlot::First => {
+                    if let Some(device) = self.hands_slot_1.as_mut() {
+                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                },
+                ActiveHandsSlot::Second => {
+                    if let Some(device) = self.hands_slot_2.as_mut() {
+                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                },
+                ActiveHandsSlot::Third => {
+                    if let Some(device) = self.hands_slot_3.as_mut() {
+                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
                 }
             }
-        }
-
-        if self.w_scanner_enable {
-            self.w_scanner_radius += delta * W_SCANNER_EXPANDING_SPEED;
-
-            if self.w_scanner_radius >= W_SCANNER_MAX_RADIUS {
-                self.w_scanner_enable = false;
-                self.w_scanner_reloading_time = 0.0;
+    
+            for device in self.devices.iter_mut() {
+                if let Some(device) = device {
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                }
             }
-        }
-
-        if !self.w_scanner_enable {
-
-            if self.w_scanner_reloading_time < W_SCANNER_RELOAD_TIME {
-                self.w_scanner_reloading_time += delta;
+    
+            if input.mode_1.is_action_just_pressed() {
+                self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
             }
-        }
-
-        if input.jump_w.is_action_just_pressed() {
-            self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-            // self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-        };
-
-        if self.inner_state.collider.is_enable {
-
-            if self.is_gravity_y_enabled {
-                movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
-
+    
+            if input.mode_2.is_action_just_pressed() {
+                self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
+            }
+    
+            if input.mode_3.is_action_just_pressed() {
+                self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
+            }
+    
+            if input.activate_hand_slot_0.is_action_just_pressed() {
+                self.active_hands_slot = ActiveHandsSlot::Zero;
+            }
+    
+            if input.activate_hand_slot_1.is_action_just_pressed() {
+                self.active_hands_slot = ActiveHandsSlot::First;
+            }
+    
+            if input.activate_hand_slot_2.is_action_just_pressed() {
+                self.active_hands_slot = ActiveHandsSlot::Second;
+            }
+    
+            if input.activate_hand_slot_3.is_action_just_pressed() {
+                self.active_hands_slot = ActiveHandsSlot::Third;
+            }
+    
+            let mut movement_vec = Vec4::ZERO;
+    
+            if input.move_forward.is_action_pressed() {
+                movement_vec += Vec4::NEG_Z;
+            }
+    
+            if input.move_backward.is_action_pressed() {
+                movement_vec += Vec4::Z;
+            }
+    
+            if input.move_right.is_action_pressed() {
+                movement_vec += Vec4::X;
+            }
+    
+            if input.move_left.is_action_pressed() {
+                movement_vec += Vec4::NEG_X;
+            }
+    
+            if let Some(vec) = movement_vec.try_normalize() {
+                movement_vec = vec;
+            }
+    
+            if input.jump.is_action_just_pressed() {
+    
                 if self.inner_state.collider.is_on_ground {
-                    self.inner_state.collider.set_wish_direction(
-                        movement_vec,
-                        1.0
-                    );
-                } else {
-                    self.inner_state.collider.set_wish_direction(
-                        movement_vec,
-                        self.player_settings.air_speed_mult
-                    );
+                    self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+    
                 }
-
-                self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
-
+            }
+    
+            if input.w_up.is_action_pressed() {
+                if self.inner_state.collider.is_enable {
+                    self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
+                } else {
+                    self.no_collider_veclocity += Vec4::W * self.player_settings.jetpak_w_speed;
+                }
+            }
+    
+            if input.w_down.is_action_pressed() {
+                if self.inner_state.collider.is_enable {
+                    self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
+                } else {
+                    self.no_collider_veclocity += Vec4::NEG_W * self.player_settings.jetpak_w_speed;
+                }
+            }
+    
+            if input.w_scaner.is_action_just_pressed() {
+                if !self.w_scanner_enable {
+                    if self.w_scanner_reloading_time >= W_SCANNER_RELOAD_TIME {
+                        self.w_scanner_enable = true;
+    
+                        self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
+                    }
+                }
+            }
+    
+            if self.w_scanner_enable {
+                self.w_scanner_radius += delta * W_SCANNER_EXPANDING_SPEED;
+    
+                if self.w_scanner_radius >= W_SCANNER_MAX_RADIUS {
+                    self.w_scanner_enable = false;
+                    self.w_scanner_reloading_time = 0.0;
+                }
+            }
+    
+            if !self.w_scanner_enable {
+    
+                if self.w_scanner_reloading_time < W_SCANNER_RELOAD_TIME {
+                    self.w_scanner_reloading_time += delta;
+                }
+            }
+    
+            if input.jump_w.is_action_just_pressed() {
+                self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+                // self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+            };
+    
+            if self.inner_state.collider.is_enable {
+    
+                if self.is_gravity_y_enabled {
+                    movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+    
+                    if self.inner_state.collider.is_on_ground {
+                        self.inner_state.collider.set_wish_direction(
+                            movement_vec,
+                            1.0
+                        );
+                    } else {
+                        self.inner_state.collider.set_wish_direction(
+                            movement_vec,
+                            self.player_settings.air_speed_mult
+                        );
+                    }
+    
+                    self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
+    
+                } else {
+                   movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+    
+                   self.inner_state.collider.set_wish_direction(movement_vec, 1.0);
+    
+                }
+    
+                if self.is_gravity_w_enabled {
+                    self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.gravity_w_speed);
+                }
+    
             } else {
-               movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+                
+                movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+    
+                const MAX_SPEED: f32 = 24.0;
+                const MAX_ACCEL: f32 = 32.0;
+    
+                if movement_vec.length().is_normal() {
+                    let current_speed_in_wishdir = self.no_collider_veclocity.dot(movement_vec);
+        
+                    let speed = MAX_SPEED - current_speed_in_wishdir;
+        
+                    let add_speed = 0.0_f32.max(speed.min(MAX_ACCEL * delta));
+        
+                    self.no_collider_veclocity += movement_vec * add_speed;
+        
+                }
+    
+                self.inner_state.transform.increment_position(self.no_collider_veclocity * delta);
+            }
+    
+            self.no_collider_veclocity *= 1.0 - delta*3.4;
+    
+            log::info!("Position: {:.2}", self.get_position());
+    
+            self.screen_effects.w_scaner_is_active = self.w_scanner_enable;
+            self.screen_effects.w_scaner_radius = self.w_scanner_radius;
+            self.screen_effects.w_scaner_intesity = {
+                let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
+    
+                intensity /= W_SCANNER_MAX_RADIUS/3.0;
+    
+                intensity.clamp(0.0, 1.0)
+            };
+        } else {
+            //while player is not alive
 
-               self.inner_state.collider.set_wish_direction(movement_vec, 1.0);
+            self.after_death_timer += delta;
 
+            match self.active_hands_slot {
+                ActiveHandsSlot::Zero => {
+                    self.hands_slot_0.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                },
+                ActiveHandsSlot::First => {
+                    if let Some(device) = self.hands_slot_1.as_mut() {
+                        device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                },
+                ActiveHandsSlot::Second => {
+                    if let Some(device) = self.hands_slot_2.as_mut() {
+                        device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                },
+                ActiveHandsSlot::Third => {
+                    if let Some(device) = self.hands_slot_3.as_mut() {
+                        device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                }
+            }
+    
+            for device in self.devices.iter_mut() {
+                if let Some(device) = device {
+                    device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                }
+            }
+
+            if self.need_to_die_slowly {
+                if self.after_death_timer >= TIME_TO_DIE_SLOWLY {
+                    self.need_to_die_slowly = false;
+                    self.inner_state.is_enable = false;
+                    
+                    self.play_die_effects(engine_handle);
+                }
             }
 
             if self.is_gravity_w_enabled {
                 self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.gravity_w_speed);
             }
 
-        } else {
-            
-            movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
-
-            const MAX_SPEED: f32 = 24.0;
-            const MAX_ACCEL: f32 = 32.0;
-
-            if movement_vec.length().is_normal() {
-                let current_speed_in_wishdir = self.no_collider_veclocity.dot(movement_vec);
-    
-                let speed = MAX_SPEED - current_speed_in_wishdir;
-    
-                let add_speed = 0.0_f32.max(speed.min(MAX_ACCEL * delta));
-    
-                self.no_collider_veclocity += movement_vec * add_speed;
-    
+            if self.is_gravity_y_enabled {
+                self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
             }
 
-            self.inner_state.transform.increment_position(self.no_collider_veclocity * delta);
+            if self.after_death_timer >= MAX_TIME_BEFORE_RESPAWN {
+                engine_handle.send_command(
+                    Command {
+                        sender: self.get_id().expect("Player have not ActorID"),
+                        command_type: CommandType::RespawnPlayer(
+                            self.get_id().expect("Player have not ActorID")
+                        )
+                    }
+                );
+                return;
+            }
+
+            if input.first_mouse.is_action_just_pressed() {
+                if self.after_death_timer >= MIN_TIME_BEFORE_RESPAWN {
+                    engine_handle.send_command(
+                        Command {
+                            sender: self.get_id().expect("Player have not ActorID"),
+                            command_type: CommandType::RespawnPlayer(
+                                self.get_id().expect("Player have not ActorID")
+                            )
+                        }
+                    );
+                    return;
+                }
+            }
+
+            self.screen_effects.w_scaner_is_active = self.w_scanner_enable;
+            self.screen_effects.w_scaner_radius = self.w_scanner_radius;
+            self.screen_effects.w_scaner_intesity = {
+                let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
+    
+                intensity /= W_SCANNER_MAX_RADIUS/3.0;
+    
+                intensity = intensity.clamp(0.0, 1.0);
+
+                intensity -= self.after_death_timer * 2.0;
+                    
+                intensity.clamp(0.0, 1.0)
+            };
         }
-
-        self.no_collider_veclocity *= 1.0 - delta*3.4;
-
-        log::info!("Position: {:.2}", self.get_position());
 
         engine_handle.send_command(Command{
             sender: my_id,
@@ -573,16 +692,6 @@ impl Actor for Player {
             )
         });
 
-
-        self.screen_effects.w_scaner_is_active = self.w_scanner_enable;
-        self.screen_effects.w_scaner_radius = self.w_scanner_radius;
-        self.screen_effects.w_scaner_intesity = {
-            let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
-
-            intensity /= W_SCANNER_MAX_RADIUS/3.0;
-
-            intensity.clamp(0.0, 1.0)
-        };
     }
 }
 
@@ -603,7 +712,7 @@ impl Player {
         Player {
             id: None,
 
-            inner_state: PlayerInnerState::new(Transform::new(), &player_settings),
+            inner_state: PlayerInnerState::new(Transform::new(), &player_settings, false, false),
             active_hands_slot: ActiveHandsSlot::Zero,
 
             hands_slot_0: Box::new(HoleGun::new()),
@@ -632,6 +741,9 @@ impl Player {
             w_scanner_enable: false,
             w_scanner_radius: 0.0,
             w_scanner_reloading_time: W_SCANNER_RELOAD_TIME,
+
+            after_death_timer: 0.0,
+            need_to_die_slowly: false
         }
     }
 
@@ -666,11 +778,53 @@ impl Player {
         self.inner_state.collider.get_collider_radius()
     }
 
-    pub fn die(&mut self, engine_handle: &mut EngineHandle) {
-        self.inner_state.is_alive = false;
 
-        self.inner_state.collider.reboot_forces_and_velocity();
+    fn get_damage_and_add_force(&mut self, damage: i32, force: Vec4, engine_handle: &mut EngineHandle) {
+        self.inner_state.hp -= damage;
+        self.inner_state.collider.add_force(force);
 
+        if self.inner_state.hp <= 0 {
+            if damage >= PLAYER_MAX_HP {
+                self.die_immediately(engine_handle)
+            } else {
+                self.die_slowly(engine_handle)
+            }
+        }
+    }
+
+
+    pub fn telefrag(&mut self, engine_handle: &mut EngineHandle) {
+        self.die_immediately(engine_handle);
+    }
+
+    pub fn die_immediately(&mut self, engine_handle: &mut EngineHandle) {
+        if self.inner_state.is_alive {
+
+            self.inner_state.is_alive = false;
+            self.inner_state.is_enable = false;
+            self.need_to_die_slowly = false;
+            self.after_death_timer = 0.0;
+
+            self.play_die_effects(engine_handle);
+
+            engine_handle.send_command(
+                Command {
+                    sender: self.get_id().expect("Player have not ActorID"),
+                    command_type: CommandType::NetCommand(
+                        NetCommand::SendBoardcastNetMessageReliable(
+                            NetMessage::RemoteDirectMessage(
+                                self.get_id().expect("Player have not ActorID"),
+                                RemoteMessage::DieImmediately
+                            )
+                        )
+                    )
+                }
+            );
+        }
+    }
+
+    fn play_die_effects(&mut self, engine_handle: &mut EngineHandle) {
+        
         let players_death_explode = PlayerDeathExplode::new(
             self.get_transform().get_position()
         );
@@ -683,37 +837,73 @@ impl Player {
                 )
             }
         );
+    }
+
+
+    pub fn die_slowly(&mut self, engine_handle: &mut EngineHandle) {
+        if self.inner_state.is_alive {
+        
+            self.inner_state.is_alive = false;
+            self.inner_state.is_enable = true;
+            self.need_to_die_slowly = true;
+            self.after_death_timer = 0.0;
+
+            engine_handle.send_command(
+                Command {
+                    sender: self.get_id().expect("Player have not ActorID"),
+                    command_type: CommandType::NetCommand(
+                        NetCommand::SendBoardcastNetMessageReliable(
+                            NetMessage::RemoteDirectMessage(
+                                self.get_id().expect("Player have not ActorID"),
+                                RemoteMessage::DieSlowly
+                            )
+                        )
+                    )
+                }
+            );
+        }
+    }
+
+
+
+    pub fn respawn(&mut self, spawn_position: Vec4, engine_handle: &mut EngineHandle, physics_system: &PhysicsSystem) {
+        self.inner_state.is_alive = true;
+        self.inner_state.is_enable = true;
+        self.inner_state.hp = PLAYER_MAX_HP;
+
+        self.inner_state.collider.reset_forces_and_velocity();
+
+        self.inner_state.transform = Transform::from_position(spawn_position);
+
+        let hits = physics_system.sphere_cast_on_dynamic_colliders(spawn_position, self.get_collider_radius());
+
+        for hit in hits {
+            engine_handle.send_direct_message(
+                hit.hited_actors_id.expect("In respawn func in death on resapwn hit have not ActorID"),
+                Message {
+                    from: self.get_id().expect("Player have not ID in respawn func"),
+                    message: MessageType::SpecificActorMessage(
+                        SpecificActorMessage::PLayerMessages(
+                            PlayerMessages::Telefrag
+                        )
+                    )
+                }
+            )
+        }
 
         engine_handle.send_command(
             Command {
                 sender: self.get_id().expect("Player have not ActorID"),
                 command_type: CommandType::NetCommand(
                     NetCommand::SendBoardcastNetMessageReliable(
-                        NetMessage::RemoteCommand(
-                            RemoteCommand::SpawnPlayerDeathExplode(
-                                self.get_transform().get_position().to_array()
-                            )
+                        NetMessage::RemoteDirectMessage(
+                            self.get_id().expect("Player have not ActorID"),
+                            RemoteMessage::PlayerRespawn(spawn_position.to_array())
                         )
                     )
                 )
             }
-        );
-
-        engine_handle.send_command(
-            Command {
-                sender: self.get_id().expect("Player have not ActorID"),
-                command_type: CommandType::RespawnPlayer(
-                    self.get_id().expect("Player have not ActorID")
-                )
-            }
-        );
-    }
-
-    pub fn respawn(&mut self, spawn_position: Vec4, engine_handle: &mut EngineHandle) {
-        self.inner_state.is_alive = true;
-        self.inner_state.hp = 100;
-
-        self.inner_state.transform = Transform::from_position(spawn_position);
+        )
     }
 
 

@@ -5,7 +5,7 @@ use crate::{
                 InputMaster,
                 LocalMaster
             }, Player
-        }, ActorWrapper, CommonActorsMessages, Message, MessageType
+        }, Actor, ActorWrapper, CommonActorsMessages, Message, MessageType
     }, engine::{
         engine_handle::{Command, CommandType}, input::ActionsFrameState, Engine
     }, transform::Transform
@@ -202,7 +202,11 @@ fn main_loop_tick(
         systems.time.target_frame_duration.as_secs_f32()
     );
 
-    systems.world.send_messages_and_process_commands(&mut systems.net, &mut systems.engine_handle);
+    systems.world.send_messages_and_process_commands(
+        &mut systems.net,
+        &systems.physic,
+        &mut systems.engine_handle
+    );
 
     systems.physic.process_physics(
         &mut systems.world, 
@@ -210,7 +214,11 @@ fn main_loop_tick(
         &mut systems.engine_handle
     );
 
-    systems.world.send_messages_and_process_commands(&mut systems.net, &mut systems.engine_handle);
+    systems.world.send_messages_and_process_commands(
+        &mut systems.net,
+        &systems.physic,
+        &mut systems.engine_handle
+    );
 
     systems.render.render_frame(&systems.world, &systems.time);
 
@@ -222,25 +230,18 @@ fn main_loop_tick(
 }
 
 fn init(systems: &mut Engine) {
-    let main_player = Player::new(
+    let mut main_player = Player::new(
         InputMaster::LocalMaster(
             LocalMaster::new(ActionsFrameState::empty())
         ),
         systems.world.players_settings.clone()
     );
 
+    main_player.get_mut_transform().position = systems.world.level.get_random_spawn_position();
+
     let main_player_id = systems.world.add_actor_to_world(
         ActorWrapper::Player(main_player),
         &mut systems.engine_handle,
-    );
-
-    systems.engine_handle.send_command(
-        Command {
-            sender: 0u128,
-            command_type: CommandType::RespawnPlayer(
-                main_player_id,
-            )
-        }
     );
 
     systems.world.main_player_id = main_player_id;

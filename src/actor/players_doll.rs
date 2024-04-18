@@ -1,9 +1,10 @@
+use bincode::de;
 use glam::{Vec3, Vec4};
 use matchbox_socket::PeerId;
 
 use crate::{engine::{engine_handle::{Command, CommandType, EngineHandle}, net::{NetCommand, NetMessage, RemoteMessage}, physics::{colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, SphericalVolumeArea, StaticObject, VolumeArea}}, transform::Transform};
 
-use super::{device::holegun::HOLE_GUN_COLOR, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::PlayerMessages, Actor, ActorID, ActorWrapper, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
+use super::{device::holegun::HOLE_GUN_COLOR, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::{PlayerMessages, TIME_TO_DIE_SLOWLY}, players_death_explode::PlayerDeathExplode, Actor, ActorID, ActorWrapper, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
 
 
 const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
@@ -12,25 +13,36 @@ pub struct PlayersDoll {
     transform: Transform,
     masters_peer_id: PeerId,
     weapon_shooting_point: Vec4,
+    is_alive: bool,
 
     volume_area: Vec<VolumeArea>,
     charging_time: f32,
 
     dynamic_colliders: Vec<PlayersDollCollider>,
     is_enable: bool,
+
+    need_to_die_slowly: bool,
+    die_slowly_timer: f32,
 }
 
 pub enum PlayersDollMessages{
-    SpawnHoleGunShotActor([f32;4], f32, [f32;3], f32),
-    SpawHoleGunMissActor([f32;4], f32, [f32;3], f32),
+    SpawnHoleGunShotActor(Vec4, f32, Vec3, f32),
+    SpawHoleGunMissActor(Vec4, f32, Vec3, f32),
     HoleGunStartCharging,
+    Respawn(Vec4),
 }
 
 const VISUAL_BEAM_MULT: f32 = 2.0;
 const VISUAL_FIRE_SHPERE_MULT: f32 = 2.4;
 
 impl PlayersDoll {
-    pub fn new(masters_peer_id: PeerId, id: ActorID, player_sphere_radius: f32, transform: Transform) -> Self {
+    pub fn new(
+        masters_peer_id: PeerId,
+        id: ActorID,
+        player_sphere_radius: f32,
+        transform: Transform,
+        is_alive: bool
+    ) -> Self {
 
         let weapon_offset = {
             Vec4::new(
@@ -63,14 +75,96 @@ impl PlayersDoll {
             transform,
             charging_time: 0.0,
             volume_area: Vec::with_capacity(1),
-            is_enable: true,
+            is_alive,
+            is_enable: is_alive,
             dynamic_colliders,
+            need_to_die_slowly: false,
+            die_slowly_timer: 0.0,
         }
+    }
+
+
+
+    fn die_immediately(&mut self, engine_handle: &mut EngineHandle) {
+        if self.is_alive {
+
+            self.volume_area.clear();
+
+            self.is_alive = false;
+            self.is_enable = false;
+            self.need_to_die_slowly = false;
+
+            self.play_die_effects(engine_handle);
+        }
+    }
+
+
+
+    fn play_die_effects(&mut self, engine_handle: &mut EngineHandle) {
+        let players_death_explode = PlayerDeathExplode::new(
+            self.get_transform().get_position()
+        );
+        
+        engine_handle.send_command(
+            Command {
+                sender: self.get_id().expect("Player have not ActorID"),
+                command_type: CommandType::SpawnActor(
+                    super::ActorWrapper::PlayerDeathExplode(players_death_explode)
+                )
+            }
+        );
+    }
+
+
+
+    fn die_slowly(&mut self, engine_handle: &mut EngineHandle) {
+        if self.is_alive {
+
+            self.volume_area.clear();
+
+            self.is_alive = false;
+            self.is_enable = true;
+            self.need_to_die_slowly = true;
+            self.die_slowly_timer = 0.0;
+        }
+    }
+
+
+
+    fn respawn(
+        &mut self,
+        spawn_position: Vec4,
+        engine_handle: &mut EngineHandle,
+        physics_system: &PhysicsSystem
+    ) {
+        let collider_radius = self.dynamic_colliders[0].radius;
+
+        let hits = physics_system.sphere_cast_on_dynamic_colliders(spawn_position, collider_radius);
+
+        for hit in hits {
+            engine_handle.send_direct_message(
+                hit.hited_actors_id.expect("In respawn func in death on resapwn hit have not ActorID"),
+                Message {
+                    from: self.get_id().expect("Player have not ID in respawn func"),
+                    message: MessageType::SpecificActorMessage(
+                        SpecificActorMessage::PLayerMessages(
+                            PlayerMessages::Telefrag
+                        )
+                    )
+                }
+            )
+        }
+
+        self.is_alive = true;
+        self.is_enable = true;
+        self.transform = Transform::from_position(spawn_position);
     }
 }
 
+
+
 impl Actor for PlayersDoll {
-    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
+    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle, physics_system: &PhysicsSystem) {
         let from = message.from;
 
         let message = &message.message;
@@ -81,10 +175,12 @@ impl Actor for PlayersDoll {
                     &CommonActorsMessages::SetTransform(transform) => {
                         self.transform = transform.clone();
                     },
-                    CommonActorsMessages::Enable(switch) => {},
+                    CommonActorsMessages::Enable(switch) => {
+                        self.is_enable = *switch;
+                    },
 
                     CommonActorsMessages::IncrementPosition(increment) => {
-                        self.transform.increment_position(increment.clone());
+                        self.transform.increment_position(*increment);
                     },
                     CommonActorsMessages::IWasChangedMyId(new_id) => {}
                 }
@@ -98,6 +194,30 @@ impl Actor for PlayersDoll {
                 match message {
                     SpecificActorMessage::PLayerMessages(message) => {
                         match message {
+                            PlayerMessages::Telefrag => {
+                                self.die_immediately(engine_handle);
+
+                                engine_handle.send_command(
+                                    Command {
+                                        sender: self.id.expect("Player's Doll have not Actor's ID"),
+                                        command_type: CommandType::NetCommand(
+                                            NetCommand::SendDirectNetMessageReliable(
+                                                NetMessage::RemoteDirectMessage(
+                                                    self.id.expect("Player's Doll have not Actor's ID"),
+                                                    RemoteMessage::DieImmediately
+                                                ),
+                                                self.masters_peer_id
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                            PlayerMessages::DieImmediately => {
+                                self.die_immediately(engine_handle);
+                            }
+                            PlayerMessages::DieSlowly => {
+                                self.die_slowly(engine_handle);
+                            }
                             PlayerMessages::DealDamageAndAddForce(damage, force) => {
                                 engine_handle.send_command(
                                     Command {
@@ -137,6 +257,9 @@ impl Actor for PlayersDoll {
                                     self.volume_area.push(volume_area);
                                 }
                             }
+                            PlayersDollMessages::Respawn(spawn_position) => {
+                                self.respawn(*spawn_position, engine_handle, physics_system)
+                            }
                             PlayersDollMessages::SpawnHoleGunShotActor(
                                 position,
                                 radius,
@@ -152,15 +275,15 @@ impl Actor for PlayersDoll {
                                     SphericalVolumeArea {
                                         translation: shooted_from,
                                         radius: (*charging_volume_area + 0.05) *VISUAL_FIRE_SHPERE_MULT,
-                                        color: Vec3::from_array(*color),
+                                        color: *color,
                                     }
                                 );
     
                                 let holegun_shot = HoleGunShot::new(
-                                    Vec4::from_array(*position),
+                                    *position,
                                     shooted_from,
                                     *radius,
-                                    Vec3::from_array(*color),
+                                    *color,
                                     charging_volume_area,
                                     VISUAL_BEAM_MULT,
                                 );
@@ -190,15 +313,15 @@ impl Actor for PlayersDoll {
                                     SphericalVolumeArea {
                                         translation: shooted_from,
                                         radius: (*charging_volume_area + 0.05) *VISUAL_FIRE_SHPERE_MULT,
-                                        color: Vec3::from_array(*color),
+                                        color: *color,
                                     }
                                 );
 
                                 let holegun_miss = HoleGunMiss::new(
-                                    Vec4::from_array(*position),
+                                    *position,
                                     shooted_from,
                                     *radius,
-                                    Vec3::from_array(*color),
+                                    *color,
                                     charging_volume_area,
                                     VISUAL_BEAM_MULT,
                                 );
@@ -297,22 +420,35 @@ impl Actor for PlayersDoll {
         engine_handle: &mut EngineHandle,
         delta: f32
     ) {
-        if !self.volume_area.is_empty() {
-
-            self.charging_time += delta * 1.6;
-
-            match &mut self.volume_area[0] {
-
-                VolumeArea::SphericalVolumeArea(area) => {
-                    if self.charging_time < 3.4 {
-                        area.radius = self.charging_time * 0.08 * VISUAL_FIRE_SHPERE_MULT;
+        if self.is_alive {
+            
+            if !self.volume_area.is_empty() {
+    
+                self.charging_time += delta * 1.6;
+    
+                match &mut self.volume_area[0] {
+    
+                    VolumeArea::SphericalVolumeArea(area) => {
+                        if self.charging_time < 3.4 {
+                            area.radius = self.charging_time * 0.08 * VISUAL_FIRE_SHPERE_MULT;
+                        }
+                        area.translation = self.transform.rotation.inverse() * self.weapon_shooting_point;
                     }
-                    area.translation = self.transform.rotation.inverse() * self.weapon_shooting_point;
+                    _ => {
+                        panic!("charging volume area in PLayersDoll is not SphericalVolumeArea")
+                    }
                 }
-                _ => {
-                    panic!("charging volume area in PLayersDoll is not SphericalVolumeArea")
+            } 
+        } else {
+            if self.need_to_die_slowly {
+                self.die_slowly_timer += delta;
+
+                if self.die_slowly_timer >= TIME_TO_DIE_SLOWLY {
+                    self.is_enable = false;
+                    self.need_to_die_slowly = false;
+                    self.play_die_effects(engine_handle);
                 }
             }
-        } 
+        }
     }
 }

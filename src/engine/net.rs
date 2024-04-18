@@ -28,8 +28,8 @@ pub enum NetMessage {
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum RemoteCommand {
-
-    SpawnPlayersDollActor(SerializableTransform, f32),
+    // transform, radius, is_alive status
+    SpawnPlayersDollActor(SerializableTransform, f32, bool),
     SpawnPlayerDeathExplode([f32;4]),
     RemoveActor(ActorID),
 }
@@ -38,6 +38,9 @@ pub enum RemoteCommand {
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum RemoteMessage {
     DealDamageAndAddForce(u32, [f32;4]),
+    DieImmediately,
+    DieSlowly,
+    PlayerRespawn([f32;4]),
     Enable(bool),
     SetTransform(SerializableTransform),
     SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
@@ -257,14 +260,15 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                     });
                 },
                 
-                RemoteCommand::SpawnPlayersDollActor(tr, player_sphere_radius) => {
+                RemoteCommand::SpawnPlayersDollActor(tr, player_sphere_radius, is_alive) => {
                     let transform = Transform::from_serializable_transform(tr);
 
                     let players_doll = PlayersDoll::new(
                         peer_id,
                         peer_id.0.as_u128(),
                         player_sphere_radius,
-                        transform
+                        transform,
+                        is_alive
                     );
 
                     let actor = ActorWrapper::PlayersDoll(players_doll);
@@ -280,6 +284,21 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
 
         NetMessage::RemoteDirectMessage(actor_id, message) => {
             match message {
+                RemoteMessage::PlayerRespawn(position) => {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::Respawn(
+                                        Vec4::from_array(position)
+                                    )
+                                )
+                            )
+                        }
+                    )
+                }
                 RemoteMessage::HoleGunStartCharging => {
                     engine_handle.send_direct_message(
                         actor_id,
@@ -288,6 +307,32 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessages(
                                     PlayersDollMessages::HoleGunStartCharging
+                                )
+                            )
+                        }
+                    )
+                }
+                RemoteMessage::DieImmediately => {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PLayerMessages(
+                                    PlayerMessages::DieImmediately
+                                )
+                            )
+                        }
+                    )
+                },
+                RemoteMessage::DieSlowly => {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PLayerMessages(
+                                    PlayerMessages::DieSlowly
                                 )
                             )
                         }
@@ -307,9 +352,9 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessages(
                                     PlayersDollMessages::SpawHoleGunMissActor(
-                                        position,
+                                        Vec4::from_array(position),
                                         radius,
-                                        color,
+                                        Vec3::from_array(color),
                                         charging_volume_area
                                     )
                                 )
@@ -331,9 +376,9 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessages(
                                     PlayersDollMessages::SpawnHoleGunShotActor(
-                                        position,
+                                        Vec4::from_array(position),
                                         radius,
-                                        color,
+                                        Vec3::from_array(color),
                                         charging_volume_area
                                     )
                                 )
@@ -386,6 +431,44 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
 
         NetMessage::RemoteBoardCastMessage(message) => {
             match message {
+                RemoteMessage::PlayerRespawn(position) => {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::Respawn(
+                                        Vec4::from_array(position)
+                                    )
+                                )
+                            )
+                        }
+                    )
+                }
+                RemoteMessage::DieImmediately => {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PLayerMessages(
+                                    PlayerMessages::DieImmediately
+                                )
+                            )
+                        }
+                    )
+                },
+                RemoteMessage::DieSlowly => {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PLayerMessages(
+                                    PlayerMessages::DieSlowly
+                                )
+                            )
+                        }
+                    )
+                }
                 RemoteMessage::HoleGunStartCharging => {
                     engine_handle.send_boardcast_message(
                         Message {
@@ -411,9 +494,9 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessages(
                                     PlayersDollMessages::SpawHoleGunMissActor(
-                                        position,
+                                        Vec4::from_array(position),
                                         radius,
-                                        color,
+                                        Vec3::from_array(color),
                                         charging_volume_area
                                     )
                                 )
@@ -434,9 +517,9 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessages(
                                     PlayersDollMessages::SpawnHoleGunShotActor(
-                                        position,
+                                        Vec4::from_array(position),
                                         radius,
-                                        color,
+                                        Vec3::from_array(color),
                                         charging_volume_area
                                     )
                                 )
