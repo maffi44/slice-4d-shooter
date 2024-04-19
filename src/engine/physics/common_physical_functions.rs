@@ -6,7 +6,9 @@ use glam::{
     FloatExt,
 };
 
-use super::physics_system_data::PhysicsState;
+use crate::actor::{ActorID, Component};
+
+use super::physics_system_data::{PhysicsState, ShapeType};
 
 pub const THRESHOLD: f32 = 0.009;
 pub const MAX_DIST: f32 = 700_f32;
@@ -54,6 +56,263 @@ fn smin(a: f32, b: f32, k: f32) -> f32
     let x = (b-a)/k;
     let g = 0.5*(x-(x*x+0.25).sqrt());
     return a + k * g;
+}
+
+
+// pub fn get_id(p: Vec4, static_objects: &PhysicsState) -> Option<ActorID> {
+//     let mut d = MAX_DIST;
+
+//     let mut nearest_collider = None;
+
+//     let stickiness = static_objects.stickiness;
+
+//     for collider in static_objects.cubes.iter_stickiness() {
+//         let new_d = sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
+        
+//         let dd = smin(d, new_d, stickiness);
+        
+//         if dd < d {
+//             nearest_collider = Some(collider);
+//         }
+
+//         d = dd;
+//     }
+//     for collider in static_objects.inf_w_cubes.iter_stickiness() {
+//         let new_d = sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness;
+
+//         let dd = smin(d, new_d, stickiness);
+        
+//         if dd < d {
+//             nearest_collider = Some(collider);
+//         }
+
+//         d = dd;
+//     }
+//     for collider in static_objects.spheres.iter_stickiness() {
+//         let new_d = sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness;
+
+//         let dd = smin(d, new_d, stickiness);
+        
+//         if dd < d {
+//             nearest_collider = Some(collider);
+//         }
+
+//         d = dd;
+//     }
+//     for collider in static_objects.sph_cubes.iter_stickiness() {
+//         let new_d = sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
+
+//         let dd = smin(d, new_d, stickiness);
+        
+//         if dd < d {
+//             nearest_collider = Some(collider);
+//         }
+
+//         d = dd;
+//     }
+    
+
+//     for collider in static_objects.cubes.iter_normal() {
+//         let new_d = sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
+
+//         if new_d < d {
+//             nearest_collider = Some(collider);
+
+//             d = new_d;
+//         };
+//     }
+//     for collider in static_objects.inf_w_cubes.iter_normal() {
+//         let new_d = sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness;
+
+//         if new_d < d {
+//             nearest_collider = Some(collider);
+
+//             d = new_d;
+//         };
+//     }
+//     for collider in static_objects.spheres.iter_normal() {
+//         let new_d = sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness;
+
+//         if new_d < d {
+//             nearest_collider = Some(collider);
+
+//             d = new_d;
+//         };
+//     }
+//     for collider in static_objects.sph_cubes.iter_normal() {
+//         let new_d = sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness;
+
+//         if new_d < d {
+//             nearest_collider = Some(collider);
+
+//             d = new_d;
+//         };
+//     }
+
+//     let mut dd = MAX_DIST;
+
+//     for collider in static_objects.cubes.iter_neg_stickiness() {
+//         dd = smin(
+//             dd,
+//             sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
+//             stickiness
+//         );
+//     }
+//     for collider in static_objects.inf_w_cubes.iter_neg_stickiness() {
+//             dd = smin(
+//             dd,
+//             sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness,
+//             stickiness
+//         );
+//     }
+//     for collider in static_objects.spheres.iter_neg_stickiness() {
+//             dd = smin(
+//             dd,
+//             sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness,
+//             stickiness
+//         );
+//     }
+//     for collider in static_objects.sph_cubes.iter_neg_stickiness() {
+//             dd = smin(
+//             dd,
+//             sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
+//             stickiness
+//         );
+//     }
+
+//     if -dd > d {
+//         nearest_collider = None;
+//     }
+
+//     d = d.max(-dd);
+
+//     let prev_d = d;
+    
+
+//     for collider in static_objects.cubes.iter_negative() {
+//         d = d.max(-(sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness));
+//     }
+//     for collider in static_objects.inf_w_cubes.iter_negative() {
+//         d = d.max(-(sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness));
+//     }
+//     for collider in static_objects.spheres.iter_negative() {
+//         d = d.max(-(sd_sphere(p - collider.position.clone(),collider.size.x) - collider.roundness));
+//     }
+//     for collider in static_objects.sph_cubes.iter_negative() {
+//         d = d.max(-(sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness));
+//     }
+
+//     if d > prev_d {
+//         nearest_collider = None;
+//     }
+
+//     let mut new_new_d = MAX_DIST;
+
+//     let mut nearest_player = None;
+
+//     for collider in static_objects.dyn_spheres.iter() {
+//         let new_d = sd_sphere(p - collider.position.clone(), collider.radius);
+
+//         if new_d < new_new_d {
+//             nearest_player = Some(collider);
+
+//             new_new_d = new_d;
+//         };
+//     }
+
+//     if nearest_collider.is_none() && nearest_player.is_none() {
+//         return None;
+//     }
+
+//     if !nearest_collider.is_none() && nearest_player.is_none() {
+
+//         let collider = nearest_collider.unwrap();
+
+//         let mut d = MAX_DIST;
+
+//         match collider.shape_type {
+//             ShapeType::Cube => {
+//                 d = sd_box(p, collider.size) - collider.roundness;
+//             }
+//             ShapeType::CubeInfW => {
+//                 d = sd_inf_box(p, collider.size.xyz()) - collider.roundness;
+//             }
+//             ShapeType::Sphere => {
+//                 d = sd_sphere(p, collider.size.x) - collider.roundness;
+//             }
+//             ShapeType::SphCube => {
+//                 d = sd_sph_box(p, collider.size) - collider.roundness;
+//             }
+//         }
+
+//         if d < THRESHOLD {
+//             return collider.get_id();
+//         } else {
+//             return None;
+//         }
+//     }
+
+//     if nearest_collider.is_none() && !nearest_player.is_none() {
+
+//         let player = nearest_player.unwrap();
+
+//         let d = sd_sphere(p, player.radius);
+
+//         if d < THRESHOLD {
+//             return player.get_id();
+//         } else {
+//             return None;
+//         }
+//     }
+
+//     if !nearest_collider.is_none() && !nearest_player.is_none() {
+
+//         let collider = nearest_collider.unwrap();
+
+//         let mut collider_d = MAX_DIST;
+
+//         match collider.shape_type {
+//             ShapeType::Cube => {
+//                 collider_d = sd_box(p, collider.size) - collider.roundness;
+//             }
+//             ShapeType::CubeInfW => {
+//                 collider_d = sd_inf_box(p, collider.size.xyz()) - collider.roundness;
+//             }
+//             ShapeType::Sphere => {
+//                 collider_d = sd_sphere(p, collider.size.x) - collider.roundness;
+//             }
+//             ShapeType::SphCube => {
+//                 collider_d = sd_sph_box(p, collider.size) - collider.roundness;
+//             }
+//         }
+
+//         let player = nearest_player.unwrap();
+
+//         let player_d = sd_sphere(p, player.radius);
+
+//         if player_d < THRESHOLD {
+//             return player.get_id();
+//         } else if collider_d < THRESHOLD {
+//             return collider.get_id();
+//         } else {
+//             return None;
+//         }
+//     }
+    
+//     None
+// }
+
+pub fn get_id(p: Vec4, static_objects: &PhysicsState) -> Option<ActorID> {
+
+    for collider in static_objects.dyn_spheres.iter() {
+        let d = sd_sphere(p - collider.position.clone(), collider.radius);
+
+        if d < THRESHOLD {
+            return  collider.get_id();
+        }
+    }
+
+    None
 }
 
 

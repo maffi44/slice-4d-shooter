@@ -31,7 +31,7 @@ use bincode::de;
 use glam::{Vec4, Mat4};
 use matchbox_socket::PeerId;
 
-use super::players_death_explode::PlayerDeathExplode;
+use super::{device::machinegun::MachineGun, players_death_explode::PlayerDeathExplode};
 
 // use super::holegun_hole::HoleGunHole;
 
@@ -395,20 +395,54 @@ impl Actor for Player {
             match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
                     self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+
+                    if let Some(device) = &mut self.hands_slot_1 {
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                    if let Some(device) = &mut self.hands_slot_2 {
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                    if let Some(device) = &mut self.hands_slot_3 {
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
                 },
                 ActiveHandsSlot::First => {
                     if let Some(device) = self.hands_slot_1.as_mut() {
                         device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+
+                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    if let Some(device) = &mut self.hands_slot_2 {
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                    if let Some(device) = &mut self.hands_slot_3 {
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
                     }
                 },
                 ActiveHandsSlot::Second => {
                     if let Some(device) = self.hands_slot_2.as_mut() {
                         device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
                     }
+
+                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    if let Some(device) = &mut self.hands_slot_1 {
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                    if let Some(device) = &mut self.hands_slot_3 {
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
                 },
                 ActiveHandsSlot::Third => {
                     if let Some(device) = self.hands_slot_3.as_mut() {
                         device.process_input(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+
+                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    if let Some(device) = &mut self.hands_slot_1 {
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+                    }
+                    if let Some(device) = &mut self.hands_slot_2 {
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
                     }
                 }
             }
@@ -596,21 +630,25 @@ impl Actor for Player {
             match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
                     self.hands_slot_0.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
+
                 },
                 ActiveHandsSlot::First => {
                     if let Some(device) = self.hands_slot_1.as_mut() {
                         device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
                     }
+
                 },
                 ActiveHandsSlot::Second => {
                     if let Some(device) = self.hands_slot_2.as_mut() {
                         device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
                     }
+
                 },
                 ActiveHandsSlot::Third => {
                     if let Some(device) = self.hands_slot_3.as_mut() {
                         device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, engine_handle, delta);
                     }
+
                 }
             }
     
@@ -716,7 +754,7 @@ impl Player {
             active_hands_slot: ActiveHandsSlot::Zero,
 
             hands_slot_0: Box::new(HoleGun::new()),
-            hands_slot_1: None,
+            hands_slot_1: Some(Box::new(MachineGun::new())),
             hands_slot_2: None,
             hands_slot_3: None,
 
@@ -742,7 +780,7 @@ impl Player {
             w_scanner_radius: 0.0,
             w_scanner_reloading_time: W_SCANNER_RELOAD_TIME,
 
-            after_death_timer: 0.0,
+            after_death_timer: MIN_TIME_BEFORE_RESPAWN,
             need_to_die_slowly: false
         }
     }

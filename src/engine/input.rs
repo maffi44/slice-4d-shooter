@@ -258,19 +258,19 @@ impl InputSystem {
             (ButtonActions::WDown, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Digit0),
+            SomeButton::KeyCode(KeyCode::Digit1),
             (ButtonActions::HandSlot0, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Digit1),
+            SomeButton::KeyCode(KeyCode::Digit2),
             (ButtonActions::HandSlot1, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Digit2),
+            SomeButton::KeyCode(KeyCode::Digit3),
             (ButtonActions::HandSlot2, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Digit3),
+            SomeButton::KeyCode(KeyCode::Digit4),
             (ButtonActions::HandSlot3, Action::new())
         );
         actions_table.insert(

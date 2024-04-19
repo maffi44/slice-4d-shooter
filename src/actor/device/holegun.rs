@@ -28,7 +28,7 @@ use crate::{
         net::{
             NetCommand,
             NetMessage,
-            RemoteCommand, RemoteMessage
+            RemoteMessage
         },
         physics::PhysicsSystem,
         render::VisualElement,
@@ -54,7 +54,7 @@ pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(1.0, 0.6, 0.0);
 
 impl HoleGun {
     pub fn new() -> Self {
-        let shooted_from_pivot_point_mult = Vec4::new(
+        let shooted_from_pivot_point_dir = Vec4::new(
             1.0,
             -0.42,
             -1.0,
@@ -66,7 +66,7 @@ impl HoleGun {
             shooted_on_this_charge: false,
             color: HOLE_GUN_COLOR,
             volume_area: Vec::with_capacity(1),
-            shooted_from_pivot_point_dir: shooted_from_pivot_point_mult,
+            shooted_from_pivot_point_dir,
             is_charging: false,
         }
     }
@@ -120,8 +120,6 @@ impl HoleGun {
                 let damage = (radius * 100.0) / (1.0 + dist_to_hited_point*10.0);
 
                 let force = hit.hit_normal * damage / -4.5;
-
-                log::error!("SET DAMAGE and FORCE: {}, {}", damage, force);
 
                 engine_handle.send_direct_message(
                     hit.hited_actors_id.expect("Hited Player have not Actor's ID"),

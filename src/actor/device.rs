@@ -1,4 +1,5 @@
 pub mod holegun;
+pub mod machinegun;
 
 use crate::{
     actor::{
@@ -72,6 +73,16 @@ pub trait Device {
     }
 
     fn process_while_player_is_not_alive(
+        &mut self,
+        player_id: ActorID,
+        player: &mut PlayerInnerState,
+        input: &ActionsFrameState,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32,
+    ) {}
+
+    fn process_while_deactive(
         &mut self,
         player_id: ActorID,
         player: &mut PlayerInnerState,

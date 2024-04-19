@@ -46,6 +46,7 @@ pub enum RemoteMessage {
     SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
     SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
     HoleGunStartCharging,
+    SpawnMachineGunShot([f32;4], bool)
 }
 
 impl NetMessage {
@@ -284,6 +285,22 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
 
         NetMessage::RemoteDirectMessage(actor_id, message) => {
             match message {
+                RemoteMessage::SpawnMachineGunShot(pos, is_miss) => {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::SpawnMachineGunShot(
+                                        Vec4::from_array(pos),
+                                        is_miss
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
                 RemoteMessage::PlayerRespawn(position) => {
                     engine_handle.send_direct_message(
                         actor_id,
@@ -431,6 +448,21 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
 
         NetMessage::RemoteBoardCastMessage(message) => {
             match message {
+                RemoteMessage::SpawnMachineGunShot(pos, is_miss) => {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::SpawnMachineGunShot(
+                                        Vec4::from_array(pos),
+                                        is_miss
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
                 RemoteMessage::PlayerRespawn(position) => {
                     engine_handle.send_boardcast_message(
                         Message {

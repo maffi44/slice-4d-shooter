@@ -14,18 +14,10 @@ use crate::{
 };
 
 use self::{
-    area::Area,
-    kinematic_collider::KinematicCollider,
-    dynamic_collider::PlayersDollCollider,
-    physics_system_data::{
-        Hit,
-        FrameCollidersBuffers,
-        PhysicsState
-    },
-    common_physical_functions::{
-        get_dist,
-        get_normal,
-        THRESHOLD,
+    area::Area, common_physical_functions::{
+        get_dist, get_id, get_normal, THRESHOLD
+    }, dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, physics_system_data::{
+        FrameCollidersBuffers, Hit, PhysicsState
     }
 };
 
@@ -199,11 +191,14 @@ impl PhysicsSystem {
             let dist = get_dist(pos, &self.physics_state);
 
             if dist < THRESHOLD {
+
+                let hited_actors_id = get_id(pos, &self.physics_state);
+
                 return Some(
                         Hit {
                         hit_point: pos,
                         hit_normal: get_normal(pos, &self.physics_state),
-                        hited_actors_id: None,
+                        hited_actors_id,
                     }
                 );
             }

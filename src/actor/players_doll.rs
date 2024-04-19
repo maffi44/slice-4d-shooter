@@ -4,7 +4,7 @@ use matchbox_socket::PeerId;
 
 use crate::{engine::{engine_handle::{Command, CommandType, EngineHandle}, net::{NetCommand, NetMessage, RemoteMessage}, physics::{colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, world::static_object::{self, ObjectMatrial, SphericalVolumeArea, StaticObject, VolumeArea}}, transform::Transform};
 
-use super::{device::holegun::HOLE_GUN_COLOR, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, player::{PlayerMessages, TIME_TO_DIE_SLOWLY}, players_death_explode::PlayerDeathExplode, Actor, ActorID, ActorWrapper, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
+use super::{device::holegun::HOLE_GUN_COLOR, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, player::{PlayerMessages, TIME_TO_DIE_SLOWLY}, players_death_explode::PlayerDeathExplode, Actor, ActorID, ActorWrapper, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
 
 
 const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
@@ -28,6 +28,7 @@ pub struct PlayersDoll {
 pub enum PlayersDollMessages{
     SpawnHoleGunShotActor(Vec4, f32, Vec3, f32),
     SpawHoleGunMissActor(Vec4, f32, Vec3, f32),
+    SpawnMachineGunShot(Vec4, bool),
     HoleGunStartCharging,
     Respawn(Vec4),
 }
@@ -333,6 +334,25 @@ impl Actor for PlayersDoll {
                                     command_type: CommandType::SpawnActor(actor)
                                 })
                             },
+
+                            PlayersDollMessages::SpawnMachineGunShot(position, it_is_miss) => {
+                                let shooted_from = self.transform.get_position() + self.transform.rotation.inverse() * self.weapon_shooting_point;
+
+                                let machinegun_shot = MachinegunShot::new(
+                                    *position,
+                                    shooted_from,
+                                    2.0,
+                                    2.0,
+                                    *it_is_miss,
+                                );
+
+                                let actor = ActorWrapper::MachinegunShot(machinegun_shot);
+
+                                engine_handle.send_command(Command {
+                                    sender: 0u128,
+                                    command_type: CommandType::SpawnActor(actor)
+                                })
+                            }
                         }
                     }
                 }
