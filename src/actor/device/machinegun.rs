@@ -16,13 +16,17 @@ use super::{Device, DeviceType};
 
 const FIRE_RATE: f32 = 0.11;
 const MAX_TEMPERTURE: f32 = 60.0;
-const TEMPERATURE_SHOT_INCR: f32 = 6.15;
+const MAX_SHOOTING_RANGE: f32 = 0.009;
+const SHOOTING_RANGE_INCR_SPEED: f32 = 15.0;
+const SHOOTING_RANGE_DCR_SPEED: f32 = 15.0;
+const TEMPERATURE_SHOT_INCR: f32 = 4.15;
 const TEMPERTURE_TO_DELTA_MULT: f32 = 21.5;
 const DAMAGE: u32 = 5;
 const FORCE_ON_HIT: f32 = 0.8;
 
 pub struct MachineGun {
     temperature: f32,
+    shooting_range: f32,
     time_from_prev_shot: f32,
     is_overheating: bool,
 
@@ -40,6 +44,7 @@ impl MachineGun {
 
         MachineGun {
             temperature: 0.0,
+            shooting_range: 0.0,
             time_from_prev_shot: 0.0,
             is_overheating: false,
             shooted_from_pivot_point_dir,
@@ -63,8 +68,8 @@ impl MachineGun {
     ) {
         let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
                 
-        let random_dir_y = glam::Mat4::from_rotation_y((random() - 0.5) as f32 * (self.temperature * 0.001));
-        let random_dir_x = glam::Mat4::from_rotation_x((random() - 0.5) as f32 * (self.temperature * 0.001));
+        let random_dir_y = glam::Mat4::from_rotation_y((random() - 0.5) as f32 * (self.shooting_range));
+        let random_dir_x = glam::Mat4::from_rotation_x((random() - 0.5) as f32 * (self.shooting_range));
         
         let forward_dir = random_dir_x * random_dir_y * Vec4::NEG_Z;
         
@@ -207,6 +212,9 @@ impl Device for MachineGun {
                         engine_handle,
                     );
                     self.temperature += TEMPERATURE_SHOT_INCR;
+                    if self.shooting_range < MAX_SHOOTING_RANGE {
+                        self.shooting_range += MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_INCR_SPEED * 1.0/FIRE_RATE;
+                    }
                     self.time_from_prev_shot = 0.0;
                 } else {
                     self.cool_machinegun(delta);
@@ -215,6 +223,11 @@ impl Device for MachineGun {
             } else {
                self.cool_machinegun(delta);
                self.time_from_prev_shot += delta;
+               if self.shooting_range > MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_DCR_SPEED {
+                self.shooting_range -= MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_DCR_SPEED;
+            } else {
+                self.shooting_range = 0.0;
+            }
             }
     }
 
