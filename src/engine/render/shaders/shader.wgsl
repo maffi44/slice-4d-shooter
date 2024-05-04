@@ -200,6 +200,7 @@ struct Intersections {
     ismd: IntersectedShapesMetadata,
     ish: array<u32, 64>,
     offset: f32,
+    ray_w_rotated: bool,
 }
 
 struct SphericalAreasMetadata {
@@ -272,8 +273,6 @@ struct OtherStaticData {
 @group(1) @binding(0) var<uniform> dyn_spherical_areas: array<SphericalArea, 256>;
 @group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 64>;
 @group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
-
-var<private> ray_w_rotated: bool;
 
 const MAX_STEPS: i32 = 128;
 const PI: f32 = 3.1415926535897;
@@ -901,101 +900,101 @@ fn get_color_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f
     return color;
 }
 
-fn map(p: vec4<f32>, in: Intersections) -> f32 {
+fn map(p: vec4<f32>, in: ptr<function,Intersections>) -> f32 {
     var d = MAX_DIST;
 
-    let rish = &(in.ish);
+    // let rish = &(in.ish);
 
     // static stickiness shapes
-    for (var i = in.ismd.st_s_cubes_start; i < in.ismd.st_s_cubes_amount + in.ismd.st_s_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_s_cubes_start; i < (*in).ismd.st_s_cubes_amount + (*in).ismd.st_s_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = smin(d, sd_box(p - stickiness_shapes[j].pos, stickiness_shapes[j].size) - stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.st_s_spheres_start; i < in.ismd.st_s_spheres_amount + in.ismd.st_s_spheres_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_s_spheres_start; i < (*in).ismd.st_s_spheres_amount + (*in).ismd.st_s_spheres_start; i++) {
+        let j = (*in).ish[i];
         d = smin(d, sd_sphere(p - stickiness_shapes[j].pos, stickiness_shapes[j].size.x) - stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.st_s_sph_cubes_start; i < in.ismd.st_s_sph_cubes_amount + in.ismd.st_s_sph_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_s_sph_cubes_start; i < (*in).ismd.st_s_sph_cubes_amount + (*in).ismd.st_s_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = smin(d, sd_sph_box(p - stickiness_shapes[j].pos, stickiness_shapes[j].size) - stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.st_s_inf_cubes_start; i < in.ismd.st_s_inf_cubes_amount + in.ismd.st_s_inf_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_s_inf_cubes_start; i < (*in).ismd.st_s_inf_cubes_amount + (*in).ismd.st_s_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = smin(d, sd_inf_box(p - stickiness_shapes[j].pos, stickiness_shapes[j].size.xyz) - stickiness_shapes[j].roundness, static_data.stickiness);
     }
 
     // dynamic stickiness
-    for (var i = in.ismd.dyn_s_cubes_start; i < in.ismd.dyn_s_cubes_amount + in.ismd.dyn_s_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_s_cubes_start; i < (*in).ismd.dyn_s_cubes_amount + (*in).ismd.dyn_s_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = smin(d, sd_box(p - dyn_stickiness_shapes[j].pos, dyn_stickiness_shapes[j].size) - dyn_stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.dyn_s_spheres_start; i < in.ismd.dyn_s_spheres_amount + in.ismd.dyn_s_spheres_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_s_spheres_start; i < (*in).ismd.dyn_s_spheres_amount + (*in).ismd.dyn_s_spheres_start; i++) {
+        let j = (*in).ish[i];
         d = smin(d, sd_sphere(p - dyn_stickiness_shapes[j].pos, dyn_stickiness_shapes[j].size.x) - dyn_stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.dyn_s_sph_cubes_start; i < in.ismd.dyn_s_sph_cubes_amount + in.ismd.dyn_s_sph_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_s_sph_cubes_start; i < (*in).ismd.dyn_s_sph_cubes_amount + (*in).ismd.dyn_s_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[j].pos, dyn_stickiness_shapes[j].size) - dyn_stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.dyn_s_inf_cubes_start; i < in.ismd.dyn_s_inf_cubes_amount + in.ismd.dyn_s_inf_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_s_inf_cubes_start; i < (*in).ismd.dyn_s_inf_cubes_amount + (*in).ismd.dyn_s_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = smin(d, sd_inf_box(p - dyn_stickiness_shapes[j].pos, dyn_stickiness_shapes[j].size.xyz) - dyn_stickiness_shapes[j].roundness, static_data.stickiness);
     }
 
 
     // static normal shapes
-    for (var i =in.ismd.st_cubes_start; i < in.ismd.st_cubes_amount + in.ismd.st_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i =(*in).ismd.st_cubes_start; i < (*in).ismd.st_cubes_amount + (*in).ismd.st_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = min(d, sd_box(p - normal_shapes[j].pos, normal_shapes[j].size) - normal_shapes[j].roundness);
     }
-    for (var i = in.ismd.st_spheres_start; i < in.ismd.st_spheres_amount + in.ismd.st_spheres_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_spheres_start; i < (*in).ismd.st_spheres_amount + (*in).ismd.st_spheres_start; i++) {
+        let j = (*in).ish[i];
         d = min(d, sd_sphere(p - normal_shapes[j].pos, normal_shapes[j].size.x) - normal_shapes[j].roundness);
     }
-    for (var i = in.ismd.st_sph_cubes_start; i < in.ismd.st_sph_cubes_amount + in.ismd.st_sph_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_sph_cubes_start; i < (*in).ismd.st_sph_cubes_amount + (*in).ismd.st_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = min(d, sd_sph_box(p - normal_shapes[j].pos, normal_shapes[j].size) - normal_shapes[j].roundness);
     }
-    for (var i = in.ismd.st_inf_cubes_start; i < in.ismd.st_inf_cubes_amount + in.ismd.st_inf_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_inf_cubes_start; i < (*in).ismd.st_inf_cubes_amount + (*in).ismd.st_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = min(d, sd_inf_box(p - normal_shapes[j].pos, normal_shapes[j].size.xyz) - normal_shapes[j].roundness);
     }
 
     // dynamic normal shapes
-    for (var i = in.ismd.dyn_cubes_start; i < in.ismd.dyn_cubes_amount + in.ismd.dyn_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_cubes_start; i < (*in).ismd.dyn_cubes_amount + (*in).ismd.dyn_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = min(d, sd_box(p - dyn_normal_shapes[j].pos, dyn_normal_shapes[j].size) - dyn_normal_shapes[j].roundness);
     }
-    for (var i = in.ismd.dyn_spheres_start; i < in.ismd.dyn_spheres_amount + in.ismd.dyn_spheres_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_spheres_start; i < (*in).ismd.dyn_spheres_amount + (*in).ismd.dyn_spheres_start; i++) {
+        let j = (*in).ish[i];
         d = min(d, sd_sphere(p - dyn_normal_shapes[j].pos, dyn_normal_shapes[j].size.x) - dyn_normal_shapes[j].roundness);
     }
-    for (var i = in.ismd.dyn_sph_cubes_start; i < in.ismd.dyn_sph_cubes_amount + in.ismd.dyn_sph_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_sph_cubes_start; i < (*in).ismd.dyn_sph_cubes_amount + (*in).ismd.dyn_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = min(d, sd_sph_box(p - dyn_normal_shapes[j].pos, dyn_normal_shapes[j].size) - dyn_normal_shapes[j].roundness);
     }
-    for (var i = in.ismd.dyn_inf_cubes_start; i < in.ismd.dyn_inf_cubes_amount + in.ismd.dyn_inf_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_inf_cubes_start; i < (*in).ismd.dyn_inf_cubes_amount + (*in).ismd.dyn_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = min(d, sd_inf_box(p - dyn_normal_shapes[j].pos, dyn_normal_shapes[j].size.xyz) - dyn_normal_shapes[j].roundness);
     }
 
     // static negative stickiness shapes
     var dd = MAX_DIST;
 
-    for (var i = in.ismd.st_s_neg_cubes_start; i < in.ismd.st_s_neg_cubes_amount + in.ismd.st_s_neg_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_s_neg_cubes_start; i < (*in).ismd.st_s_neg_cubes_amount + (*in).ismd.st_s_neg_cubes_start; i++) {
+        let j = (*in).ish[i];
         dd = smin(dd, sd_box(p - neg_stickiness_shapes[j].pos, neg_stickiness_shapes[j].size) - neg_stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.st_s_neg_spheres_start; i < in.ismd.st_s_neg_spheres_amount + in.ismd.st_s_neg_spheres_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_s_neg_spheres_start; i < (*in).ismd.st_s_neg_spheres_amount + (*in).ismd.st_s_neg_spheres_start; i++) {
+        let j = (*in).ish[i];
         dd = smin(dd, sd_sphere(p - neg_stickiness_shapes[j].pos, neg_stickiness_shapes[j].size.x) - neg_stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.st_s_neg_sph_cubes_start; i < in.ismd.st_s_neg_sph_cubes_amount + in.ismd.st_s_neg_sph_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_s_neg_sph_cubes_start; i < (*in).ismd.st_s_neg_sph_cubes_amount + (*in).ismd.st_s_neg_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
         dd = smin(dd, sd_sph_box(p - neg_stickiness_shapes[j].pos, neg_stickiness_shapes[j].size) - neg_stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.st_s_neg_inf_cubes_start; i < in.ismd.st_s_neg_inf_cubes_amount + in.ismd.st_s_neg_inf_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_s_neg_inf_cubes_start; i < (*in).ismd.st_s_neg_inf_cubes_amount + (*in).ismd.st_s_neg_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
         dd = smin(dd, sd_inf_box(p - neg_stickiness_shapes[j].pos, neg_stickiness_shapes[j].size.xyz) - neg_stickiness_shapes[j].roundness, static_data.stickiness);
     }
     d = max(d, -dd);
@@ -1003,64 +1002,64 @@ fn map(p: vec4<f32>, in: Intersections) -> f32 {
     // dynamic negative stickiness shapes
     var ddd = dd;
 
-    for (var i = in.ismd.dyn_s_neg_cubes_start; i < in.ismd.dyn_s_neg_cubes_amount + in.ismd.dyn_s_neg_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_s_neg_cubes_start; i < (*in).ismd.dyn_s_neg_cubes_amount + (*in).ismd.dyn_s_neg_cubes_start; i++) {
+        let j = (*in).ish[i];
         ddd = smin(ddd, sd_box(p - dyn_neg_stickiness_shapes[j].pos, dyn_neg_stickiness_shapes[j].size) - dyn_neg_stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.dyn_s_neg_spheres_start; i < in.ismd.dyn_s_neg_spheres_amount + in.ismd.dyn_s_neg_spheres_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_s_neg_spheres_start; i < (*in).ismd.dyn_s_neg_spheres_amount + (*in).ismd.dyn_s_neg_spheres_start; i++) {
+        let j = (*in).ish[i];
         ddd = smin(ddd, sd_sphere(p - dyn_neg_stickiness_shapes[j].pos, dyn_neg_stickiness_shapes[j].size.x) - dyn_neg_stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.dyn_s_neg_sph_cubes_start; i < in.ismd.dyn_s_neg_sph_cubes_amount + in.ismd.dyn_s_neg_sph_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_s_neg_sph_cubes_start; i < (*in).ismd.dyn_s_neg_sph_cubes_amount + (*in).ismd.dyn_s_neg_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
         ddd = smin(ddd, sd_sph_box(p - dyn_neg_stickiness_shapes[j].pos, dyn_neg_stickiness_shapes[j].size) - dyn_neg_stickiness_shapes[j].roundness, static_data.stickiness);
     }
-    for (var i = in.ismd.dyn_s_neg_inf_cubes_start; i < in.ismd.dyn_s_neg_inf_cubes_amount + in.ismd.dyn_s_neg_inf_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_s_neg_inf_cubes_start; i < (*in).ismd.dyn_s_neg_inf_cubes_amount + (*in).ismd.dyn_s_neg_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
         ddd = smin(ddd, sd_inf_box(p - dyn_neg_stickiness_shapes[j].pos, dyn_neg_stickiness_shapes[j].size.xyz) - dyn_neg_stickiness_shapes[j].roundness, static_data.stickiness);
     }
     d = max(d, -ddd);
 
     // static negative shapes
-    for (var i = in.ismd.st_neg_cubes_start; i < in.ismd.st_neg_cubes_amount + in.ismd.st_neg_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_neg_cubes_start; i < (*in).ismd.st_neg_cubes_amount + (*in).ismd.st_neg_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = max(d, -(sd_box(p - negatives_shapes[j].pos, negatives_shapes[j].size) - negatives_shapes[j].roundness));
     }
-    for (var i = in.ismd.st_neg_spheres_start; i < in.ismd.st_neg_spheres_amount + in.ismd.st_neg_spheres_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_neg_spheres_start; i < (*in).ismd.st_neg_spheres_amount + (*in).ismd.st_neg_spheres_start; i++) {
+        let j = (*in).ish[i];
         d = max(d, -(sd_sphere(p - negatives_shapes[j].pos, negatives_shapes[j].size.x) - negatives_shapes[j].roundness));
     }
-    for (var i = in.ismd.st_neg_sph_cubes_start; i < in.ismd.st_neg_sph_cubes_amount + in.ismd.st_neg_sph_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_neg_sph_cubes_start; i < (*in).ismd.st_neg_sph_cubes_amount + (*in).ismd.st_neg_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = max(d, -(sd_sph_box(p - negatives_shapes[j].pos, negatives_shapes[j].size) - negatives_shapes[j].roundness));
     }
-    for (var i = in.ismd.st_neg_inf_cubes_start; i < in.ismd.st_neg_inf_cubes_amount + in.ismd.st_neg_inf_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.st_neg_inf_cubes_start; i < (*in).ismd.st_neg_inf_cubes_amount + (*in).ismd.st_neg_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = max(d, -(sd_inf_box(p - negatives_shapes[j].pos, negatives_shapes[j].size.xyz) - negatives_shapes[j].roundness));
     }
 
     // dynamic negative shapes
-    for (var i = in.ismd.dyn_neg_cubes_start; i < in.ismd.dyn_neg_cubes_amount + in.ismd.dyn_neg_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_neg_cubes_start; i < (*in).ismd.dyn_neg_cubes_amount + (*in).ismd.dyn_neg_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = max(d, -(sd_box(p - dyn_negatives_shapes[j].pos, dyn_negatives_shapes[j].size) - dyn_negatives_shapes[j].roundness));
     }
-    for (var i = in.ismd.dyn_neg_spheres_start; i < in.ismd.dyn_neg_spheres_amount + in.ismd.dyn_neg_spheres_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_neg_spheres_start; i < (*in).ismd.dyn_neg_spheres_amount + (*in).ismd.dyn_neg_spheres_start; i++) {
+        let j = (*in).ish[i];
         d = max(d, -(sd_sphere(p - dyn_negatives_shapes[j].pos, dyn_negatives_shapes[j].size.x) - dyn_negatives_shapes[j].roundness));
     }
-    for (var i = in.ismd.dyn_neg_sph_cubes_start; i < in.ismd.dyn_neg_sph_cubes_amount + in.ismd.dyn_neg_sph_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_neg_sph_cubes_start; i < (*in).ismd.dyn_neg_sph_cubes_amount + (*in).ismd.dyn_neg_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[j].pos, dyn_negatives_shapes[j].size) - dyn_negatives_shapes[j].roundness));
     }
-    for (var i = in.ismd.dyn_neg_inf_cubes_start; i < in.ismd.dyn_neg_inf_cubes_amount + in.ismd.dyn_neg_inf_cubes_start; i++) {
-        let j = (*rish)[i];
+    for (var i = (*in).ismd.dyn_neg_inf_cubes_start; i < (*in).ismd.dyn_neg_inf_cubes_amount + (*in).ismd.dyn_neg_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
         d = max(d, -(sd_inf_box(p - dyn_negatives_shapes[j].pos, dyn_negatives_shapes[j].size.xyz) - dyn_negatives_shapes[j].roundness));
     }
 
     var dddd = MAX_DIST;
-    for (var j = in.ismd.player_forms_start; j < in.ismd.player_forms_amount + in.ismd.player_forms_start; j++) {
+    for (var j = (*in).ismd.player_forms_start; j < (*in).ismd.player_forms_amount + (*in).ismd.player_forms_start; j++) {
         
-        let i = (*rish)[j];
+        let i = (*in).ish[j];
         
         dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
         dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
@@ -1160,7 +1159,7 @@ fn map(p: vec4<f32>, in: Intersections) -> f32 {
     d = min(d, dddd);
     
     if static_data.is_w_floor_exist == 1 {
-        if ray_w_rotated {
+        if (*in).ray_w_rotated {
             d = min(d, p.w - static_data.w_floor);
         }
     }
@@ -1398,44 +1397,44 @@ fn map(p: vec4<f32>, in: Intersections) -> f32 {
 //     return d;
 // }
 
-fn get_normal(p: vec4<f32>) -> vec4<f32> {
-    var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
+// fn get_normal(p: vec4<f32>) -> vec4<f32> {
+//     var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
     
-    var a: vec4<f32> = p + h.yxxz;
-    var b: vec4<f32> = p + h.xyxz;
-    var c: vec4<f32> = p + h.xxyz;
-    var d: vec4<f32> = p + h.yyyz;
-    var e: vec4<f32> = p + h.zzzx;
-    var f: vec4<f32> = p + h.zzzy;
+//     var a: vec4<f32> = p + h.yxxz;
+//     var b: vec4<f32> = p + h.xyxz;
+//     var c: vec4<f32> = p + h.xxyz;
+//     var d: vec4<f32> = p + h.yyyz;
+//     var e: vec4<f32> = p + h.zzzx;
+//     var f: vec4<f32> = p + h.zzzy;
 
-    var fa: f32 = map(a);
-    var fb: f32 = map(b);
-    var fc: f32 = map(c);
-    var fd: f32 = map(d);
-    var fe: f32 = map(e);
-    var ff: f32 = map(f);
+//     var fa: f32 = map(a);
+//     var fb: f32 = map(b);
+//     var fc: f32 = map(c);
+//     var fd: f32 = map(d);
+//     var fe: f32 = map(e);
+//     var ff: f32 = map(f);
 
-    return normalize(
-        h.yxxz * fa +
-        h.xyxz * fb +
-        h.xxyz * fc +
-        h.yyyz * fd +
-        h.zzzx * fe +
-        h.zzzy * ff
-    );
-}
+//     return normalize(
+//         h.yxxz * fa +
+//         h.xyxz * fb +
+//         h.xxyz * fc +
+//         h.yyyz * fd +
+//         h.zzzx * fe +
+//         h.zzzy * ff
+//     );
+// }
 
 const MIN_STEP: f32 = 0.005;
 
-fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, in: Intersections) -> vec2<f32>  {
+fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, in: ptr<function,Intersections>) -> vec2<f32>  {
     // var color: vec3<f32> = vec3<f32>(0., 0., 0.);
-    if in.offset < 0.0 {
+    if (*in).offset < 0.0 {
         return vec2(MAX_DIST, 0.0);
     }
 
-    var total_distance: f32 = in.offset;
+    var total_distance: f32 = (*in).offset;
     
-    var ray_origin = ray_origin_base + (ray_direction * in.offset);
+    var ray_origin = ray_origin_base + (ray_direction * (*in).offset);
 
     var i: i32 = 0;
     for (; i < MAX_STEPS; i++) {
@@ -1564,7 +1563,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_s_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1586,7 +1585,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_s_spheres_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1608,7 +1607,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_s_sph_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1630,7 +1629,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_s_inf_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1655,7 +1654,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_s_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1677,7 +1676,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_s_spheres_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1699,7 +1698,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_s_sph_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1721,7 +1720,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_s_inf_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1745,7 +1744,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1767,7 +1766,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_spheres_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1789,7 +1788,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_sph_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1811,7 +1810,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_inf_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1835,7 +1834,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1857,7 +1856,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_spheres_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1879,7 +1878,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_sph_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1901,7 +1900,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_inf_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -1924,7 +1923,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_s_neg_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -1942,7 +1941,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_s_neg_spheres_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -1960,7 +1959,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_s_neg_sph_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -1978,7 +1977,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_s_neg_inf_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -1997,7 +1996,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_s_neg_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2015,7 +2014,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_s_neg_spheres_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2033,7 +2032,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_s_neg_sph_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2051,7 +2050,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_s_neg_inf_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2071,7 +2070,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_neg_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2089,7 +2088,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_neg_spheres_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2107,7 +2106,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_neg_sph_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2125,7 +2124,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.st_neg_inf_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2145,7 +2144,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_neg_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2163,7 +2162,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_neg_spheres_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2181,7 +2180,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_neg_sph_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2199,7 +2198,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.dyn_neg_inf_cubes_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
         }
@@ -2220,7 +2219,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         if intr.y > 0.0 {
             in.ismd.player_forms_amount += 1u;
 
-            (*rish)[ish_index] = i;
+            in.ish[ish_index] = i;
             is_intersected = 1.0;
             ish_index += 1u;
 
@@ -2231,10 +2230,10 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
     }
 
 
-    ray_w_rotated = false;
+    in.ray_w_rotated = false;
 
     if rd.w < -0.0002{
-        ray_w_rotated = true;
+        in.ray_w_rotated = true;
     }
 
     if is_intersected > 0.0 {
@@ -2288,9 +2287,9 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     let camera_position = dynamic_data.camera_data.cam_pos;
 
-    let in = find_intersection(camera_position, ray_direction);
-
-    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, in); 
+    var in = find_intersection(camera_position, ray_direction);
+    
+    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, &in); 
 
     // let normal: vec4<f32> = get_normal(dist_and_depth.x * ray_direction + camera_position);
 
@@ -2325,7 +2324,10 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     // color += (0.006 - clamp(length(uv), 0.0, 0.006))*200.0;
 
     // color.r += f32(dist_and_depth.y) / f32(MAX_STEPS / 10);
-    // var color = vec3(offset.x / (MAX_DIST / 12.0));
+    // var color = vec3(in.offset / (MAX_DIST / 12.0));
+
+    // color += normal_shapes[in.ish[0]].color;
+
     var color = vec3(dist_and_depth.x / (MAX_DIST / 12.0));
     color.r += dist_and_depth.y / 25.0;
 
