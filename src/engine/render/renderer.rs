@@ -14,7 +14,7 @@ use wgpu::{
     Buffer,
     BufferUsages,
     Color,
-    InstanceFlags
+    InstanceFlags, MaintainResult
 };
 
 
@@ -565,6 +565,11 @@ impl Renderer {
 
 
     pub fn render(&mut self, window: &Window) -> Result<(), wgpu::SurfaceError> {
+
+        match self.device.poll(wgpu::MaintainBase::Poll) {
+            MaintainResult::SubmissionQueueEmpty => {},
+            MaintainResult::Ok => {return Ok(());}
+        }
         
         let output = self.surface.get_current_texture()?;
         let view = output
@@ -608,10 +613,10 @@ impl Renderer {
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
 
-        // let instant = web_time::Instant::now();
-        // self.queue.on_submitted_work_done(move || {
-        //     log::error!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
-        // });
+        let instant = web_time::Instant::now();
+        self.queue.on_submitted_work_done(move || {
+            log::error!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
+        });
 
         window.pre_present_notify();
 
