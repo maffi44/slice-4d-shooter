@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::engine::render::render_data::RenderData;
 
 use winit::window::Window;
@@ -73,6 +75,9 @@ pub struct Renderer {
     pub spherical_areas_data_buffer: Buffer,
     pub beam_areas_data_buffer: Buffer,
     pub player_forms_data_buffer: Buffer,
+
+    total_time: Arc<Mutex<f64>>,
+    total_frames_count: Arc<Mutex<u64>>,
 }
 
 impl Renderer {
@@ -560,6 +565,9 @@ impl Renderer {
             spherical_areas_data_buffer,
             beam_areas_data_buffer,
             player_forms_data_buffer,
+
+            total_frames_count: Arc::new(Mutex::new(0u64)),
+            total_time: Arc::new(Mutex::new(0.0)),
         }
     }
 
@@ -567,9 +575,14 @@ impl Renderer {
     pub fn render(&mut self, window: &Window) -> Result<(), wgpu::SurfaceError> {
 
         match self.device.poll(wgpu::MaintainBase::Poll) {
-            MaintainResult::SubmissionQueueEmpty => {},
             MaintainResult::Ok => {return Ok(());}
+            MaintainResult::SubmissionQueueEmpty => {},
         }
+
+        log::error!(
+            "AVARANGE FRAME RATE IS {}",
+            *self.total_time.lock().unwrap() / ((*self.total_frames_count.lock().unwrap()) as f64)
+        );
         
         let output = self.surface.get_current_texture()?;
         let view = output
@@ -614,8 +627,12 @@ impl Renderer {
         self.queue.submit(std::iter::once(encoder.finish()));
 
         let instant = web_time::Instant::now();
+        let time = self.total_time.clone();
+        let frames = self.total_frames_count.clone();
+
         self.queue.on_submitted_work_done(move || {
-            log::error!("RENDER DONE with {}", instant.elapsed().as_secs_f32())
+            *time.lock().unwrap() += instant.elapsed().as_secs_f64();
+            *frames.lock().unwrap() += 1;
         });
 
         window.pre_present_notify();

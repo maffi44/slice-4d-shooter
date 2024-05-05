@@ -2331,7 +2331,12 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, &in); 
     // let dist_and_depth: vec2<f32> = old_ray_march(camera_position, ray_direction); 
 
-    let normal: vec4<f32> = get_normal(dist_and_depth.x * ray_direction + camera_position, &in);
+
+    var normal: vec4<f32> = vec4(1.0);
+
+    if dist_and_depth.x < MAX_DIST {
+        normal = get_normal(dist_and_depth.x * ray_direction + camera_position, &in);
+    }
 
     // let shade_coefficient: f32 = dot(normal, normalize(vec4<f32>(0.2, 1., 0.5, 0.1)));
 
@@ -2375,5 +2380,6 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     // color.r += dist_and_depth.y / 25.0;
 
 
+    // color = pow(color, vec3(0.4545));
     return vec4<f32>(color, 1.0);
 }
