@@ -1,0 +1,64 @@
+{
+    "level_name" : "test_level",
+
+    "defaults" : {
+        "is_positive": true,
+        "friction": 0.1,
+        "bounce_rate": 0.0,
+        "material": {
+            "color" : {
+                "red": 0.75,
+                "green": 0.55,
+                "blue": 0.85
+            }
+        },
+        "roundness": 0.05,
+        "stickiness": false
+    },
+
+    "all_shapes_stickiness_radius": 0.1,
+
+    "spawn_positions" : [
+        {
+            "transform" : {
+                "position" : {
+                    "x": 1.0,
+                    "y": 2.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 14.0,
+                    "y": 2.0,
+                    "z": 4.0,
+                    "w": 1.0
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 4.0,
+                    "y": 2.0,
+                    "z": 14.0,
+                    "w": 1.0
+                }
+            }
+        }
+    ],
+
+    "w_cups" : {
+        "w_floor" : -0.5
+    },
+
+
+    "actors" : [
+    ],
+    
+    "static_objects": [
+    ]
+}

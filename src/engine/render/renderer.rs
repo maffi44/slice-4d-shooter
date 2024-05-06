@@ -579,10 +579,7 @@ impl Renderer {
             MaintainResult::SubmissionQueueEmpty => {},
         }
 
-        log::error!(
-            "AVARANGE FRAME RATE IS {}",
-            *self.total_time.lock().unwrap() / ((*self.total_frames_count.lock().unwrap()) as f64)
-        );
+        
         
         let output = self.surface.get_current_texture()?;
         let view = output
@@ -631,8 +628,15 @@ impl Renderer {
         let frames = self.total_frames_count.clone();
 
         self.queue.on_submitted_work_done(move || {
-            *time.lock().unwrap() += instant.elapsed().as_secs_f64();
+            let current_frame_time = instant.elapsed().as_secs_f64();
+            *time.lock().unwrap() += current_frame_time;
             *frames.lock().unwrap() += 1;
+
+            log::error!(
+                "AV DT {}, CUR DT: {}",
+                *time.lock().unwrap() / ((*frames.lock().unwrap()) as f64),
+                current_frame_time,
+            );
         });
 
         window.pre_present_notify();

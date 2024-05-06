@@ -50,14 +50,21 @@ pub fn sd_box(p: Vec4, b: Vec4) -> f32 {
     return f32::min(f32::max(d.x,f32::max(d.y,f32::max(d.z, d.w))),0.0) + d.max(Vec4::ZERO).length();
 }
 
-#[inline]
-fn smin(a: f32, b: f32, k: f32) -> f32
-{
-    let x = (b-a)/k;
-    let g = 0.5*(x-(x*x+0.25).sqrt());
-    return a + k * g;
-}
+// #[inline]
+// fn smin(a: f32, b: f32, k: f32) -> f32
+// {
+//     let x = (b-a)/k;
+//     let g = 0.5*(x-(x*x+0.25).sqrt());
+//     return a + k * g;
+// }
 
+#[inline]
+fn smin( a: f32, b: f32, k: f32 ) -> f32
+{
+    let kk = k * 1.0/(1.0-0.5_f32.sqrt());
+    let h = (kk-(a-b).abs()).max(0.0)/kk;
+    return a.min(b) - kk*0.5*(1.0+h-(1.0-h*(h-2.0)).sqrt());
+}
 
 // pub fn get_id(p: Vec4, static_objects: &PhysicsState) -> Option<ActorID> {
 //     let mut d = MAX_DIST;

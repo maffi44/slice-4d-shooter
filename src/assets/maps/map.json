@@ -16,7 +16,7 @@
         "stickiness": false
     },
 
-    "all_shapes_stickiness_radius": 3.2,
+    "all_shapes_stickiness_radius": 0.4,
 
     "spawn_positions" : [
         {
@@ -54,30 +54,6 @@
     "w_cups" : {
         "w_floor" : -0.5
     },
-
-    "transform" : {
-        "position" : {
-            "x": -18.0,
-            "y": 2.0,
-            "z": 0.0,
-            "w": 0.0
-        },
-        "rotation" : {
-            "yz": 0.0,
-            "xz": 0.0,
-            "xy": 0.0,
-            "wx": 0.0,
-            "wy": 0.0,
-            "wz": 0.0
-        }
-    },
-    "size" : {
-        "x": 7.5,
-        "y": 1.8,
-        "z": 2.2,
-        "w": 10.2
-    },
-
 
     "actors" : [
         {

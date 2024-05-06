@@ -364,11 +364,18 @@ fn smin_2(a: f32, b: f32, k: f32) -> f32
     return a + kk * g;
 }
 
-fn smin(a: f32, b: f32, k: f32) -> f32
+// fn smin(a: f32, b: f32, k: f32) -> f32
+// {
+//     let x = (b-a)/k;
+//     let g = 0.5*(x-sqrt(x*x+0.25));
+//     return a + k * g;
+// }
+
+fn smin( a: f32, b: f32, k: f32 ) -> f32
 {
-    let x = (b-a)/k;
-    let g = 0.5*(x-sqrt(x*x+0.25));
-    return a + k * g;
+    let kk = k * 1.0/(1.0-sqrt(0.5));
+    let h = max( kk-abs(a-b), 0.0 )/kk;
+    return min(a,b) - kk*0.5*(1.0+h-sqrt(1.0-h*(h-2.0)));
 }
 
 fn get_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f32> {
@@ -1606,7 +1613,7 @@ fn sph_intersection( ro: vec4<f32>, rd: vec4<f32>, ra: f32) -> vec2<f32> {  // c
 }
 
 
-fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
+fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
     
     var in: Intersections;
 
@@ -1620,7 +1627,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - stickiness_shapes[i].pos,
             rd,
-            stickiness_shapes[i].size + stickiness_shapes[i].roundness + static_data.stickiness
+            stickiness_shapes[i].size + stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -1641,7 +1648,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = sph_intersection(
             ro - stickiness_shapes[i].pos,
             rd,
-            stickiness_shapes[i].size.x + stickiness_shapes[i].roundness + static_data.stickiness
+            stickiness_shapes[i].size.x + stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -1662,7 +1669,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - stickiness_shapes[i].pos,
             rd,
-            stickiness_shapes[i].size + stickiness_shapes[i].roundness + static_data.stickiness
+            stickiness_shapes[i].size + stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -1683,7 +1690,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = inf_cube_intersection(
             ro - stickiness_shapes[i].pos,
             rd,
-            stickiness_shapes[i].size.xyz + stickiness_shapes[i].roundness + static_data.stickiness
+            stickiness_shapes[i].size.xyz + stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -1707,7 +1714,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - dyn_stickiness_shapes[i].pos,
             rd,
-            dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness + static_data.stickiness
+            dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -1728,7 +1735,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = sph_intersection(
             ro - dyn_stickiness_shapes[i].pos,
             rd,
-            dyn_stickiness_shapes[i].size.x + dyn_stickiness_shapes[i].roundness + static_data.stickiness
+            dyn_stickiness_shapes[i].size.x + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -1749,7 +1756,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - dyn_stickiness_shapes[i].pos,
             rd,
-            dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness + static_data.stickiness
+            dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -1770,7 +1777,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = inf_cube_intersection(
             ro - dyn_stickiness_shapes[i].pos,
             rd,
-            dyn_stickiness_shapes[i].size.xyz + dyn_stickiness_shapes[i].roundness + static_data.stickiness
+            dyn_stickiness_shapes[i].size.xyz + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -1965,7 +1972,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - neg_stickiness_shapes[i].pos,
             rd,
-            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness + static_data.stickiness
+            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -1983,7 +1990,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = sph_intersection(
             ro - neg_stickiness_shapes[i].pos,
             rd,
-            neg_stickiness_shapes[i].size.x + neg_stickiness_shapes[i].roundness + static_data.stickiness
+            neg_stickiness_shapes[i].size.x + neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -2001,7 +2008,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - neg_stickiness_shapes[i].pos,
             rd,
-            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness + static_data.stickiness
+            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -2019,7 +2026,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = inf_cube_intersection(
             ro - neg_stickiness_shapes[i].pos,
             rd,
-            neg_stickiness_shapes[i].size.xyz + neg_stickiness_shapes[i].roundness + static_data.stickiness
+            neg_stickiness_shapes[i].size.xyz + neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -2038,7 +2045,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - dyn_neg_stickiness_shapes[i].pos,
             rd,
-            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness + static_data.stickiness
+            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -2056,7 +2063,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = sph_intersection(
             ro - dyn_neg_stickiness_shapes[i].pos,
             rd,
-            dyn_neg_stickiness_shapes[i].size.x + dyn_neg_stickiness_shapes[i].roundness + static_data.stickiness
+            dyn_neg_stickiness_shapes[i].size.x + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -2074,7 +2081,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - dyn_neg_stickiness_shapes[i].pos,
             rd,
-            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness + static_data.stickiness
+            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -2092,7 +2099,7 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = inf_cube_intersection(
             ro - dyn_neg_stickiness_shapes[i].pos,
             rd,
-            dyn_neg_stickiness_shapes[i].size.xyz + dyn_neg_stickiness_shapes[i].roundness + static_data.stickiness
+            dyn_neg_stickiness_shapes[i].size.xyz + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
         );
         
         if intr.y > 0.0 {
@@ -2283,8 +2290,10 @@ fn find_intersection(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         in.ray_w_rotated = true;
     }
 
-    offset = clamp(offset, 0.0, MAX_DIST * 2.0);
-
+    offset = clamp(offset, 0.0, MAX_DIST * 4.0);
+    
+    in.offset = offset;
+    
     return in;
 }
 
@@ -2326,7 +2335,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     let camera_position = dynamic_data.camera_data.cam_pos;
 
-    var in = find_intersection(camera_position, ray_direction);
+    var in = find_intersections(camera_position, ray_direction);
     
     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, &in); 
     // let dist_and_depth: vec2<f32> = old_ray_march(camera_position, ray_direction); 
@@ -2343,7 +2352,14 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     // let shade = mix(0.32, 0.98, shade_coefficient);
 
     // var color = vec3(dist_and_depth.x / (MAX_DIST / 12.0));
-    var color = normal.xyz;
+    var color = vec3(dot(normal, vec4(1.0, 0.5, 0.3, 0.0)));
+
+
+
+    // var color = clamp(normal.xyz, vec3(0.0), vec3(1.0));
+    // color = mix(color, vec3(0.0), in.offset / (MAX_DIST / 12.0));
+
+
 
     // var color = get_color(camera_position, ray_direction, dist_and_depth.x, ray_w_rotated);
 
@@ -2369,10 +2385,9 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
 
     //crosshair
-    // color += (0.006 - clamp(length(uv), 0.0, 0.006))*200.0;
 
-    // color.r += f32(dist_and_depth.y) / f32(MAX_STEPS / 10);
-    // var color = vec3(in.offset / (MAX_DIST / 12.0));
+    // var color = vec3(in.offset / (MAX_DIST / 4.0));
+    // var color = vec3(f32(dist_and_depth.y) / 50.0);
 
     // color += normal_shapes[in.ish[0]].color;
 
@@ -2380,6 +2395,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     // color.r += dist_and_depth.y / 25.0;
 
 
-    // color = pow(color, vec3(0.4545));
+    color = pow(color, vec3(0.4545));
+    color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
     return vec4<f32>(color, 1.0);
 }
