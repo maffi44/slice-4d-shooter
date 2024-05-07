@@ -21,7 +21,7 @@ use crate::{
         world::static_object::{
             BeamVolumeArea,
             ColoringArea,
-            ObjectMatrial,
+            ObjectMaterial,
             SphericalVolumeArea,
             StaticObject,
             VolumeArea
@@ -114,9 +114,7 @@ impl MachinegunShot {
                     bounce_rate: 0.0,
                     actors_id: None,
                 },
-                material: ObjectMatrial {
-                    color: COLOR,
-                }
+                material_index: -1,
             };
     
             static_objects.push(static_object);

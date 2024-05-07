@@ -5,15 +5,49 @@
         "is_positive": true,
         "friction": 0.1,
         "bounce_rate": 0.0,
-        "material": {
+        "visual_material": "wall",
+        "roundness": 0.05,
+        "stickiness": false
+    },
+
+    "visual_materials" : [
+        {
+            "name" : "wall",
             "color" : {
                 "red": 0.75,
                 "green": 0.55,
                 "blue": 0.85
             }
         },
-        "roundness": 0.05,
-        "stickiness": false
+        {
+            "name" : "floor",
+            "color" : {
+                "red": 0.15,
+                "green": 0.55,
+                "blue": 0.45
+            }
+        },
+        {
+            "name" : "metallic",
+            "color" : {
+                "red": 0.75,
+                "green": 0.55,
+                "blue": 0.85
+            }
+        },
+        {
+            "name" : "metallic_red",
+            "color" : {
+                "red": 0.75,
+                "green": 0.55,
+                "blue": 0.85
+            }
+        }
+    ],
+
+    "players_visual_materials" : {
+        "inner" : "metallic_red",
+        "outer" : "metallic"
     },
 
     "all_shapes_stickiness_radius": 0.4,
@@ -242,13 +276,7 @@
                 },
                 "is_positive" : true,
                 "friction": 0.1,
-                "material": {
-                    "color" : {
-                        "red": 0.3,
-                        "green": 0.3,
-                        "blue": 0.6
-                    }
-                },
+                "visual_material" : "floor" ,
                 "stickiness" : true
             }
         },
@@ -270,13 +298,7 @@
                 "is_positive" : true,
                 "friction": 0.0,
                 "bounce_rate" : 0.5,
-                "material": {
-                    "color" : {
-                        "red": 1.0,
-                        "green": 1.0,
-                        "blue": 1.0
-                    }
-                },
+                "visual_material": "floor",
                 "stickiness" : false
             }
         },

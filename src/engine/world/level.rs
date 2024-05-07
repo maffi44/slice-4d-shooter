@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use crate::{
     transform::Transform,
     engine::{
         world::static_object::{
             StaticObject,
-            ObjectMatrial
+            ObjectMaterial
         },
         physics::{
             static_collider::StaticCollider,
@@ -22,7 +24,6 @@ use crate::{
 use glam::{Vec4, Vec3};
 use wasm_bindgen_futures::JsFuture;
 use serde_json::Value;
-use web_sys::js_sys::Math::random;
 
 use super::static_object::{WFloor, WRoof};
 
@@ -31,7 +32,7 @@ use super::static_object::{WFloor, WRoof};
 pub struct DefaultStaticObjectSettings {
     friction: f32,
     bounce_rate: f32,
-    material: ObjectMatrial,
+    default_material_index: i32,
     roundness: f32,
     stickiness: bool,
     is_positive: bool,
@@ -45,6 +46,8 @@ pub struct Level {
     pub all_shapes_stickiness_radius: f32,
     pub w_floor: Option<WFloor>,
     pub w_roof: Option<WRoof>,
+    pub visual_materials: Vec<ObjectMaterial>,
+    pub players_visual_materials: (i32, i32),
 }
 
 
@@ -149,12 +152,29 @@ fn parse_json_level(
         spawn_positions  
     };
 
+
+    let (visual_materials, materials_table) = {
+        let json_visual_materials = json_level
+            .get("visual_materials")
+            .expect("Wrong JSON map format. JSON level must have visual_materials property");
+
+        parse_visual_materials(json_visual_materials)
+    };
+
     let default_settings = {
         let json_defaults = json_level
             .get("defaults")
             .expect("Wrong JSON map format. JSON level must have defaults property");
 
-        parse_json_defaults(json_defaults)
+        parse_json_defaults(json_defaults, &materials_table)
+    };
+
+    let players_visual_materials = {
+        let json_players_visual_materials = json_level
+            .get("players_visual_materials")
+            .expect("Wrong JSON map format. JSON level must have players_visual_materials property");
+
+        parse_players_visual_materials(json_players_visual_materials, &materials_table)
     };
 
     let (w_floor, w_roof) = {
@@ -170,7 +190,7 @@ fn parse_json_level(
             .get("static_objects")
             .expect("Wrong JSON map format. JSON level must have static_objects property");
 
-        parse_json_static_objects(json_static_objects, &default_settings)
+        parse_json_static_objects(json_static_objects, &default_settings, &materials_table)
     };
 
     let actors = {
@@ -178,7 +198,7 @@ fn parse_json_level(
             .get("actors")
             .expect("Wrong JSON map format. JSON level must have static_objects property");
 
-        parse_json_actors(json_actors, &default_settings)
+        parse_json_actors(json_actors, &default_settings, &materials_table)
     };
 
     let level = Level {
@@ -188,9 +208,127 @@ fn parse_json_level(
         all_shapes_stickiness_radius,
         w_floor,
         w_roof,
+        visual_materials,
+        players_visual_materials,
     };
 
     (level, actors)
+}
+
+
+fn parse_players_visual_materials(
+    json: &Value,
+    materials_table: &HashMap<String, i32>
+) -> (i32, i32) {
+    let obj = json
+        .as_object()
+        .expect("Wrong JSON map format. Root of players_visual_materials property must be an object");
+
+    let inner_material_name = obj
+        .get("inner")
+        .expect("players_visual_materials have not an inner property")
+        .as_str()
+        .expect("inner property in players_visual_materials is not a string")
+        .to_string();
+
+    let inner_material_index = materials_table
+        .get(&inner_material_name)
+        .expect("inner material in players_visual_materials not exist")
+        .clone();
+
+    let outer_material_name = obj
+        .get("outer")
+        .expect("players_visual_materials have not an outer property")
+        .as_str()
+        .expect("outer property in players_visual_materials is not a string")
+        .to_string();
+
+    let outer_material_index = materials_table
+        .get(&outer_material_name)
+        .expect("outer material in players_visual_materials not exist")
+        .clone();
+
+    (inner_material_index, outer_material_index)
+}
+
+
+fn parse_visual_materials(
+    json: &Value
+) -> (Vec<ObjectMaterial>, HashMap<String, i32>) {
+    let mut visual_materials = Vec::new();
+    let mut materials_table = HashMap::new();
+
+    let array = json
+        .as_array()
+        .expect("Wrong JSON map format. Root of visual_materials property must be array");
+
+    let mut index = 0i32;
+
+    for json_material in array {
+        let (material, name) = parse_material(json_material);
+
+        visual_materials.push(material);
+
+        materials_table.insert(name, index);
+
+        index += 1;
+    }
+
+    (visual_materials, materials_table)
+}
+
+
+fn parse_material(
+    json: &Value
+) -> (ObjectMaterial, String) {
+    let obj = json
+        .as_object()
+        .expect("Wrong JSON map format. Material in visual_materials must be an object");
+
+    let name = obj.get("name")
+        .expect("Visual material in Visual materials have not name property")
+        .as_str()
+        .expect("Property name in Visual Material is not an string")
+        .to_string();
+
+        let color = obj
+                .get("color")
+                .expect("Wrong JSON map format. material must have color property")
+                .as_object()
+                .expect("Wrong JSON map format. color value must be object");
+    
+        let red = {
+            color
+                .get("red")
+                .expect("Wrong JSON map format. color must have red property")
+                .as_f64()
+                .expect("Wrong JSON map format. red value must be float number")
+                as f32
+        };
+    
+        let green = {
+            color
+                .get("green")
+                .expect("Wrong JSON map format. color must have green property")
+                .as_f64()
+                .expect("Wrong JSON map format. green value must be float number")
+                as f32
+        };
+    
+        let blue = {
+            color
+                .get("blue")
+                .expect("Wrong JSON map format. color must have blue property")
+                .as_f64()
+                .expect("Wrong JSON map format. blue value must be float number")
+                as f32
+        };
+    
+        let color = Vec3::new(red, green, blue);
+    
+        let material = ObjectMaterial::new(color);
+
+        (material, name)
 }
 
 
@@ -236,7 +374,8 @@ fn parse_w_cups(
 
 
 fn parse_json_defaults(
-    json: &Value
+    json: &Value,
+    materials_table: &HashMap<String, i32>
 ) -> DefaultStaticObjectSettings {
     let json_settings = json
         .as_object()
@@ -285,57 +424,22 @@ fn parse_json_defaults(
             .expect("Wrong JSON map format. is_positive value must be boolean")
     };
 
-    let material = {
-        json_settings
-            .get("material")
-            .expect("Wrong JSON map format. JSON defaults must have material property")
-            .as_object()
-            .expect("Wrong JSON map format. material value must be object")
-    };
-
-    let color = {
-        material
-            .get("color")
-            .expect("Wrong JSON map format. JSON defaults must have color property")
-            .as_object()
-            .expect("Wrong JSON map format. color value must be object")
-    };
-
-    let red = {
-        color
-            .get("red")
-            .expect("Wrong JSON map format. JSON defaults must have red property")
-            .as_f64()
-            .expect("Wrong JSON map format. red value must be float number")
-            as f32
-    };
-
-    let green = {
-        color
-            .get("green")
-            .expect("Wrong JSON map format. JSON defaults must have green property")
-            .as_f64()
-            .expect("Wrong JSON map format. green value must be float number")
-            as f32
-    };
-
-    let blue = {
-        color
-            .get("blue")
-            .expect("Wrong JSON map format. JSON defaults must have blue property")
-            .as_f64()
-            .expect("Wrong JSON map format. blue value must be float number")
-            as f32
-    };
-
-    let color = Vec3::new(red, green, blue);
-
-    let material = ObjectMatrial::new(color);
+    let visual_material_name = json_settings
+        .get("visual_material")
+        .expect("Wrong JSON map format. JSON defaults must have visual_material property")
+        .as_str()
+        .expect("Wrong JSON map format. visual_material value must be object")
+        .to_string();
+    
+    let default_material_index = materials_table
+        .get(&visual_material_name)
+        .expect("default visual material in defaults have wrong material name")
+        .clone();
 
     DefaultStaticObjectSettings {
         friction,
         bounce_rate,
-        material,
+        default_material_index,
         roundness,
         stickiness,
         is_positive
@@ -345,7 +449,9 @@ fn parse_json_defaults(
 
 
 fn parse_json_static_objects(
-    json_map: &Value, defaults: &DefaultStaticObjectSettings
+    json_map: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>,
 ) -> Vec<StaticObject>
 {
     let mut static_objects: Vec<StaticObject> = Vec::with_capacity(100);
@@ -363,7 +469,7 @@ fn parse_json_static_objects(
 
         for (name, shape) in object {
             let static_object = parse_json_specific_shape(
-                name, shape, &defaults
+                name, shape, defaults, materials_table
             );
             static_objects.push(static_object)
         }
@@ -375,7 +481,10 @@ fn parse_json_static_objects(
 
 
 fn parse_json_specific_shape(
-    shape_name: &String, json_shape: &Value, defaults: &DefaultStaticObjectSettings
+    shape_name: &String,
+    json_shape: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>,
 ) -> StaticObject {
     let shape_name = shape_name.as_str();
 
@@ -423,9 +532,9 @@ fn parse_json_specific_shape(
         json_shape, shape_name
     ).unwrap_or(defaults.stickiness);
 
-    let material = parse_json_into_material(
-        json_shape, shape_name
-    ).unwrap_or(defaults.material);
+    let material_index = parse_json_into_material_index(
+        json_shape, shape_name, materials_table
+    ).unwrap_or(defaults.default_material_index);
 
     let collider = StaticCollider {
         shape_type,
@@ -441,7 +550,7 @@ fn parse_json_specific_shape(
 
     StaticObject {
         collider,
-        material,
+        material_index,
     }
 }
 
@@ -956,7 +1065,11 @@ fn parse_json_into_stickiness(json_shape: &Value, shape_name: &str) -> Option<bo
 
 
 
-fn parse_json_into_material(json_shape: &Value, shape_name: &str) -> Option<ObjectMatrial> {
+fn parse_json_into_material_index(
+    json_shape: &Value,
+    shape_name: &str,
+    materials_table: &HashMap<String, i32>,
+) -> Option<i32> {
 
     let shape = json_shape
         .as_object()
@@ -974,101 +1087,32 @@ fn parse_json_into_material(json_shape: &Value, shape_name: &str) -> Option<Obje
         return None
     }
 
-    let material = json_material
+    let material_name = json_material
         .unwrap()
-        .as_object()
+        .as_str()
         .expect(
             &format!
             (
-                "Wrong JSON map format, material property is not object type in {}",
-                shape_name
-            )
-        );
-    
-    let color = material
-        .get("color")
-        .expect(
-            &format!
-            (
-                "Wrong JSON map format, color property is not exist in material in {}",
+                "Wrong JSON map format, material property is not string type in {}",
                 shape_name
             )
         )
-        .as_object()
-        .expect(
-            &format!
-            (
-                "Wrong JSON map format, color property is not object type in {}",
-                shape_name
-            )
-        );
-    
-    let red = color
-        .get("red")
-        .expect(
-            &format!
-            (
-                "Wrong JSON map format, red property in color is not exist in {}",
-                shape_name
-            )
-        )
-        .as_f64()
-        .expect(
-            &format!
-            (
-                "Wrong JSON map format, red property in color is not float number type in {}",
-                shape_name
-            )
-        ) as f32;
-    
-    let green = color
-        .get("green")
-        .expect(
-            &format!
-            (
-                "Wrong JSON map format, green property in color is not exist in {}",
-                shape_name
-            )
-        )
-        .as_f64()
-        .expect(
-            &format!
-            (
-                "Wrong JSON map format, green property in color is not float number type in {}",
-                shape_name
-            )
-        ) as f32;
-    
-    let blue = color
-        .get("blue")
-        .expect(
-            &format!
-            (
-                "Wrong JSON map format, blue property in color is not exist in {}",
-                shape_name
-            )
-        )
-        .as_f64()
-        .expect(
-            &format!
-            (
-                "Wrong JSON map format, blue property in color is not float number type in {}",
-                shape_name
-            )
-        ) as f32;
+        .to_string();
 
-    let material = ObjectMatrial::new(
-        Vec3::new(red, green, blue)
-    );
+    let material_index = materials_table
+        .get(&material_name)
+        .expect("Wrong material name in shape")
+        .clone();
     
-    Some(material)
+    Some(material_index)
 }
 
 
 
 fn parse_json_actors(
     json: &Value,
-    defaults: &DefaultStaticObjectSettings
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>,
 ) -> Vec<ActorWrapper>
 {
 
@@ -1088,7 +1132,7 @@ fn parse_json_actors(
             match actor_type.as_str() {
                 "wandering_actor" => {
 
-                    let actor = parse_wandering_actor(actor_value, defaults);
+                    let actor = parse_wandering_actor(actor_value, defaults, materials_table);
 
                     actors.push(ActorWrapper::WonderingActor(actor));
                 }
@@ -1101,7 +1145,11 @@ fn parse_json_actors(
 }
 
 
-fn parse_wandering_actor(actor_value: &Value, defaults: &DefaultStaticObjectSettings) -> WanderingActor {
+fn parse_wandering_actor(
+    actor_value: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>
+) -> WanderingActor {
 
     let actor_object = actor_value
         .as_object()
@@ -1146,7 +1194,7 @@ fn parse_wandering_actor(actor_value: &Value, defaults: &DefaultStaticObjectSett
         .get("static_objects")
         .expect("Wrong JSON map format, wandering_actor must have static_objects property");
 
-    let static_objects = parse_json_static_objects(static_objects_value, defaults);
+    let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
 
 
     WanderingActor::new(

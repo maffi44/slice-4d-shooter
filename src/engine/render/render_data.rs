@@ -46,7 +46,8 @@ impl RenderData {
 pub struct Shape {
     pub pos: [f32;4],
     pub size: [f32;4],
-    pub color: [f32;3],
+    pub material: i32,
+    pub empty_bytes: [u32; 2],
     pub roundness: f32,
 }
 
@@ -66,7 +67,8 @@ impl Default for Shape {
         Shape {
             pos: [0.0, 0.0, 0.0, 0.0],
             size: [1.0, 1.0, 1.0, 1.0],
-            color: [0.0, 0.0, 0.0],
+            material: 0i32,
+            empty_bytes: [0,0],
             roundness: 0.0,
         }
     }

@@ -2,13 +2,13 @@ use crate::engine::physics::static_collider::StaticCollider;
 use glam::{Vec3, Vec4};
 
 #[derive(Debug, Clone, Copy)]
-pub struct ObjectMatrial {
+pub struct ObjectMaterial {
     pub color: Vec3
 }
 
-impl ObjectMatrial {
+impl ObjectMaterial {
     pub fn new(color: Vec3) -> Self {
-        ObjectMatrial {
+        ObjectMaterial {
             color
         }
     }
@@ -17,7 +17,7 @@ impl ObjectMatrial {
 #[derive(Debug)]
 pub struct  StaticObject {
     pub collider: StaticCollider,
-    pub material: ObjectMatrial,
+    pub material_index: i32,
 }
 
 #[derive(Clone)]

@@ -1,3 +1,5 @@
+use glam::Vec3Swizzles;
+
 use crate::engine::{
     world::World,
     physics::physics_system_data::ShapeType,
@@ -17,6 +19,12 @@ pub struct StaticRenderData {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct VisualMaterial {
+    color: [f32;4]
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Default, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct OtherStaticData {
     shapes_arrays_metadata: ShapesArraysMetadata,
 
@@ -28,7 +36,9 @@ pub struct OtherStaticData {
 
     empty_bytes: [f32; 3],
 
-    static_shapes_stickiness: f32 
+    static_shapes_stickiness: f32,
+
+    materials: [VisualMaterial; 32],
 }
 
 impl OtherStaticData {
@@ -60,6 +70,18 @@ impl OtherStaticData {
             }
         };
 
+        let mut materials = [VisualMaterial::default(); 32];
+
+        let mut index = 0usize;
+        for obj_material in &world.level.visual_materials {
+            let material = VisualMaterial {
+                color: obj_material.color.xyzx().to_array(),
+            };
+
+            materials[index] = material;
+
+            index += 1;
+        }
 
         OtherStaticData {
             shapes_arrays_metadata,
@@ -71,7 +93,8 @@ impl OtherStaticData {
 
             empty_bytes: [0.0, 0.0, 0.0],
 
-            static_shapes_stickiness: stickiness
+            static_shapes_stickiness: stickiness,
+            materials,
         }
     }
 }
@@ -165,7 +188,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -178,7 +202,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -191,7 +216,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -202,7 +228,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -219,7 +246,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -230,7 +258,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -241,7 +270,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -250,7 +280,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -265,7 +296,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -276,7 +308,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -287,7 +320,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -296,7 +330,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -311,7 +346,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -322,7 +358,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -333,7 +370,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 
@@ -342,7 +380,8 @@ impl StaticRenderData {
                             let shape = Shape {
                                 pos: obj.collider.position.to_array(),
                                 size: obj.collider.size.to_array(),
-                                color: obj.material.color.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
 

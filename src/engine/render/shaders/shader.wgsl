@@ -242,6 +242,10 @@ struct OtherDynamicData {
     time: f32,
 }
 
+struct Material {
+    color: vec4<f32>,
+}
+
 struct OtherStaticData {
     shapes_arrays_metadata: ShapesMetadata,
     
@@ -251,7 +255,8 @@ struct OtherStaticData {
     w_roof: f32,
 
     empty_bytes: vec3<f32>,
-    stickiness: f32
+    stickiness: f32,
+    materials: array<Material, 32>,
 }
 
 
@@ -375,7 +380,7 @@ fn smin( a: f32, b: f32, k: f32 ) -> f32
 {
     let kk = k * 1.0/(1.0-sqrt(0.5));
     let h = max( kk-abs(a-b), 0.0 )/kk;
-    return min(a,b) - kk*0.5*(1.0+h-sqrt(1.0-h*(h-2.0)));
+    return min(a,b) - kk*0.5*(1.0+h-sqrt(1.0-h*(h - 2.0)));
 }
 
 fn get_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f32> {

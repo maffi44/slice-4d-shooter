@@ -21,7 +21,7 @@ use crate::{
         world::static_object::{
             BeamVolumeArea,
             ColoringArea,
-            ObjectMatrial,
+            ObjectMaterial,
             SphericalVolumeArea,
             StaticObject,
             VolumeArea
@@ -72,9 +72,7 @@ impl HoleGunShot {
                 bounce_rate: 0.0,
                 actors_id: None,
             },
-            material: ObjectMatrial {
-                color: Vec3::new(0.0, 1.0, 0.0),
-            }
+            material_index: -1,
         };
 
         let mut static_objects = Vec::with_capacity(1);

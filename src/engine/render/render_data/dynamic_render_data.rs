@@ -69,13 +69,14 @@ impl DynamicRenderData {
                         
                         let position = static_object.collider.position + transform.get_position();
                         let size = static_object.collider.size * transform.get_scale();
-                        let color = static_object.material.color;
+                        let material_index = static_object.material_index;
                         let roundness = static_object.collider.roundness;
                         
                         let shape = Shape {
                             pos: position.to_array(),
                             size: size.to_array(),
-                            color: color.to_array(),
+                            material: material_index,
+                            empty_bytes: [0,0],
                             roundness,
                         };
     
