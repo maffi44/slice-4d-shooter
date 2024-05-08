@@ -50,6 +50,8 @@
         "outer" : "metallic"
     },
 
+    "w_cups_visual_materials" : "floor",
+
     "all_shapes_stickiness_radius": 0.4,
 
     "spawn_positions" : [

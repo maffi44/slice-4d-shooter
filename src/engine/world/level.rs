@@ -48,6 +48,7 @@ pub struct Level {
     pub w_roof: Option<WRoof>,
     pub visual_materials: Vec<ObjectMaterial>,
     pub players_visual_materials: (i32, i32),
+    pub w_cups_visual_materials: i32,
 }
 
 
@@ -177,6 +178,14 @@ fn parse_json_level(
         parse_players_visual_materials(json_players_visual_materials, &materials_table)
     };
 
+    let w_cups_visual_materials = {
+        let json_players_visual_materials = json_level
+            .get("w_cups_visual_materials")
+            .expect("Wrong JSON map format. JSON level must have w_cups_visual_materials property");
+
+        parse_w_cups_visual_materials(json_players_visual_materials, &materials_table)
+    };
+
     let (w_floor, w_roof) = {
         let json_w_cups = json_level
             .get("w_cups")
@@ -201,6 +210,8 @@ fn parse_json_level(
         parse_json_actors(json_actors, &default_settings, &materials_table)
     };
 
+
+
     let level = Level {
         level_name,
         static_objects,
@@ -210,6 +221,7 @@ fn parse_json_level(
         w_roof,
         visual_materials,
         players_visual_materials,
+        w_cups_visual_materials,
     };
 
     (level, actors)
@@ -249,6 +261,24 @@ fn parse_players_visual_materials(
         .clone();
 
     (inner_material_index, outer_material_index)
+}
+
+
+fn parse_w_cups_visual_materials(
+    json: &Value,
+    materials_table: &HashMap<String, i32>
+) -> i32 {
+    let material_name = json
+        .as_str()
+        .expect("Wrong JSON map format. Value of w_cups_visual_materials property must be an string")
+        .to_string();
+
+    let material_index = materials_table
+        .get(&material_name)
+        .expect("material in w_cups_visual_materials not exist")
+        .clone();
+
+    material_index
 }
 
 
