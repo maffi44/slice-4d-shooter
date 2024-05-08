@@ -9,7 +9,8 @@ struct CameraUniform {
 struct Shape {
     pos: vec4<f32>,
     size: vec4<f32>,
-    color: vec3<f32>,
+    material: i32,
+    empty_bytes: vec2<f32>,
     roundness: f32,
 }
 
@@ -254,7 +255,10 @@ struct OtherStaticData {
     is_w_roof_exist: i32,
     w_roof: f32,
 
-    empty_bytes: vec3<f32>,
+    players_mat1: i32,
+    players_mat2: i32,
+
+    empty_bytes: u32,
     stickiness: f32,
     materials: array<Material, 32>,
 }
@@ -282,7 +286,9 @@ struct OtherStaticData {
 const MAX_STEPS: i32 = 128;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
-const MAX_DIST: f32 = 350.0;    
+const MAX_DIST: f32 = 350.0;
+
+const STICKINESS_EFFECT_COEF: f32 = 3.05;
 
 fn rotate(angle: f32) -> mat2x2<f32> {
     //angle *= 0.017453;
@@ -592,18 +598,29 @@ fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direct
     return color;
 }
 
-fn get_color_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f32> {
+fn get_mat_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f32> {
 
-    var d = MAX_DIST;
-    var color = vec3(0.0, 0.0, 0.0);
-
-    if distance == MAX_DIST {
+    if distance > MAX_DIST {
         return vec3(1.0);
     }
+    
+    var d = MAX_DIST;
+    var color = vec3(0.0, 0.0, 0.0);
+    var mat_counter = 0;
+
+    var mats: array<f32, 8>;
 
     // static stickiness shapes
     for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
         let new_d = sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness;
+
+        if new_d < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+            if new_d < MAX_DIST || mat_counter == 0 {
+
+            }
+
+        }
         
         let dd = smin(d, new_d, static_data.stickiness);
 
@@ -911,6 +928,238 @@ fn get_color_at_point(p: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f
 
     return color;
 }
+
+
+fn get_mat() -> i32 {
+    var d = MAX_DIST;
+
+    // intersected shapes metadata
+    let ismda = (*in).ismd;
+
+    
+    for (var j = ismda.player_forms_start; j < ismda.player_forms_amount + ismda.player_forms_start; j++) {
+        
+        let shape = dyn_player_forms[ (*in).ish[j] ];
+        
+        var d = sd_sphere(p - shape.pos, shape.radius);
+        d = max(d, -sd_sphere(p - shape.pos, shape.radius * 0.86));
+        
+        let rotated_p = shape.rotation * (p - shape.pos);
+        d = max(d, -sd_box(
+            rotated_p,
+            vec4(
+                shape.radius * 0.18,
+                shape.radius* 1.2,
+                shape.radius* 1.2,
+                shape.radius * 1.2
+            )));
+        
+        d = max(
+            d,
+            -sd_sphere(
+                rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0),
+                shape.radius * 0.53
+            )
+        );
+
+        if d < MIN_DIST {
+            return static_data.players_mat1
+        }
+
+        d = sd_sphere(
+                p - shape.pos,
+                shape.radius * 0.6
+            );
+        
+        d = max(
+            d,
+            -sd_sphere(
+                rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0)*0.6,
+                shape.radius * 0.34
+            )
+        );
+
+        if d < MIN_DIST {
+            return static_data.players_mat2
+        }
+
+        d = sd_sphere(
+                rotated_p - shape.weapon_offset,
+                shape.radius * 0.286,
+            );
+
+        d = max(
+            d,
+            -sd_capsule(
+                rotated_p,
+                shape.weapon_offset,
+                shape.weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    shape.radius* 0.49,
+                    0.0
+                ),
+                shape.radius* 0.18
+            )
+        );
+
+        if d < MIN_DIST {
+            return static_data.players_mat1
+        }
+
+        d = sd_capsule(
+                rotated_p,
+                shape.weapon_offset,
+                shape.weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    shape.radius* 0.43,
+                    0.0
+                ),
+                shape.radius* 0.1
+            );
+
+        d = max(
+            d,
+            -sd_capsule(
+                rotated_p,
+                shape.weapon_offset,
+                shape.weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    shape.radius* 0.65,
+                    0.0
+                ),
+                shape.radius* 0.052
+            )
+        );
+
+        if d < MIN_DIST {
+            return static_data.players_mat2
+        }
+    }
+
+    // static normal shapes
+    for (var i =ismda.st_cubes_start; i < ismda.st_cubes_amount + ismda.st_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = normal_shapes[j];
+        if sd_box(p - shape.pos, shape.size) - shape.roundness < MAX_DIST {
+            return shape.material;
+        }
+    }
+    for (var i = ismda.st_spheres_start; i < ismda.st_spheres_amount + ismda.st_spheres_start; i++) {
+        let j = (*in).ish[i];
+        let shape = normal_shapes[j];
+        if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MAX_DIST {
+            return shape.material;
+        }
+    }
+    for (var i = ismda.st_sph_cubes_start; i < ismda.st_sph_cubes_amount + ismda.st_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = normal_shapes[j];
+        if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MAX_DIST {
+            return shape.material;
+        }
+    }
+    for (var i = ismda.st_inf_cubes_start; i < ismda.st_inf_cubes_amount + ismda.st_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = normal_shapes[j];
+        if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MAX_DIST {
+            return shape.material;
+        }
+    }
+
+    // dynamic normal shapes
+    for (var i = ismda.dyn_cubes_start; i < ismda.dyn_cubes_amount + ismda.dyn_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = dyn_normal_shapes[j];
+        if sd_box(p - shape.pos, shape.size) - shape.roundness < MAX_DIST {
+            return shape.material;
+        }
+    }
+    for (var i = ismda.dyn_spheres_start; i < ismda.dyn_spheres_amount + ismda.dyn_spheres_start; i++) {
+        let j = (*in).ish[i];
+        let shape = dyn_normal_shapes[j];
+        if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MAX_DIST {
+            return shape.material;
+        }
+    }
+    for (var i = ismda.dyn_sph_cubes_start; i < ismda.dyn_sph_cubes_amount + ismda.dyn_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = dyn_normal_shapes[j];
+        if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MAX_DIST {
+            return shape.material;
+        }
+    }
+    for (var i = ismda.dyn_inf_cubes_start; i < ismda.dyn_inf_cubes_amount + ismda.dyn_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = dyn_normal_shapes[j];
+        if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MAX_DIST {
+            return shape.material;
+        }
+    }
+
+    
+
+    // static stickiness shapes
+    for (var i = ismda.st_s_cubes_start; i < ismda.st_s_cubes_amount + ismda.st_s_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = stickiness_shapes[j];
+        d = smin(d, sd_box(p - shape.pos, shape.size) - shape.roundness, static_data.stickiness);
+    }
+    for (var i = ismda.st_s_spheres_start; i < ismda.st_s_spheres_amount + ismda.st_s_spheres_start; i++) {
+        let j = (*in).ish[i];
+        let shape = stickiness_shapes[j];
+        d = smin(d, sd_sphere(p - shape.pos, shape.size.x) - shape.roundness, static_data.stickiness);
+    }
+    for (var i = ismda.st_s_sph_cubes_start; i < ismda.st_s_sph_cubes_amount + ismda.st_s_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = stickiness_shapes[j];
+        d = smin(d, sd_sph_box(p - shape.pos, shape.size) - shape.roundness, static_data.stickiness);
+    }
+    for (var i = ismda.st_s_inf_cubes_start; i < ismda.st_s_inf_cubes_amount + ismda.st_s_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = stickiness_shapes[j];
+        d = smin(d, sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness, static_data.stickiness);
+    }
+
+    // dynamic stickiness
+    for (var i = ismda.dyn_s_cubes_start; i < ismda.dyn_s_cubes_amount + ismda.dyn_s_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = dyn_stickiness_shapes[j];
+        d = smin(d, sd_box(p - shape.pos, shape.size) - shape.roundness, static_data.stickiness);
+    }
+    for (var i = ismda.dyn_s_spheres_start; i < ismda.dyn_s_spheres_amount + ismda.dyn_s_spheres_start; i++) {
+        let j = (*in).ish[i];
+        let shape = dyn_stickiness_shapes[j];
+        d = smin(d, sd_sphere(p - shape.pos, shape.size.x) - shape.roundness, static_data.stickiness);
+    }
+    for (var i = ismda.dyn_s_sph_cubes_start; i < ismda.dyn_s_sph_cubes_amount + ismda.dyn_s_sph_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = dyn_stickiness_shapes[j];
+        d = smin(d, sd_sph_box(p - shape.pos, shape.size) - shape.roundness, static_data.stickiness);
+    }
+    for (var i = ismda.dyn_s_inf_cubes_start; i < ismda.dyn_s_inf_cubes_amount + ismda.dyn_s_inf_cubes_start; i++) {
+        let j = (*in).ish[i];
+        let shape = dyn_stickiness_shapes[j];
+        d = smin(d, sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness, static_data.stickiness);
+    }
+
+
+    d = min(d, dddd);
+    
+    if static_data.is_w_floor_exist == 1 {
+        if (*in).ray_w_rotated {
+            d = min(d, p.w - static_data.w_floor);
+        }
+    }
+
+    return d;
+}
+
 
 fn map(p: vec4<f32>, in: ptr<function,Intersections>) -> f32 {
     var d = MAX_DIST;
@@ -1632,7 +1881,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - stickiness_shapes[i].pos,
             rd,
-            stickiness_shapes[i].size + stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            stickiness_shapes[i].size + stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -1653,7 +1902,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = sph_intersection(
             ro - stickiness_shapes[i].pos,
             rd,
-            stickiness_shapes[i].size.x + stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            stickiness_shapes[i].size.x + stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -1674,7 +1923,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - stickiness_shapes[i].pos,
             rd,
-            stickiness_shapes[i].size + stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            stickiness_shapes[i].size + stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -1695,7 +1944,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = inf_cube_intersection(
             ro - stickiness_shapes[i].pos,
             rd,
-            stickiness_shapes[i].size.xyz + stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            stickiness_shapes[i].size.xyz + stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -1719,7 +1968,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - dyn_stickiness_shapes[i].pos,
             rd,
-            dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -1740,7 +1989,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = sph_intersection(
             ro - dyn_stickiness_shapes[i].pos,
             rd,
-            dyn_stickiness_shapes[i].size.x + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            dyn_stickiness_shapes[i].size.x + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -1761,7 +2010,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - dyn_stickiness_shapes[i].pos,
             rd,
-            dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -1782,7 +2031,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = inf_cube_intersection(
             ro - dyn_stickiness_shapes[i].pos,
             rd,
-            dyn_stickiness_shapes[i].size.xyz + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            dyn_stickiness_shapes[i].size.xyz + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -1977,7 +2226,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - neg_stickiness_shapes[i].pos,
             rd,
-            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -1995,7 +2244,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = sph_intersection(
             ro - neg_stickiness_shapes[i].pos,
             rd,
-            neg_stickiness_shapes[i].size.x + neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            neg_stickiness_shapes[i].size.x + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -2013,7 +2262,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - neg_stickiness_shapes[i].pos,
             rd,
-            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -2031,7 +2280,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = inf_cube_intersection(
             ro - neg_stickiness_shapes[i].pos,
             rd,
-            neg_stickiness_shapes[i].size.xyz + neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            neg_stickiness_shapes[i].size.xyz + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -2050,7 +2299,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - dyn_neg_stickiness_shapes[i].pos,
             rd,
-            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -2068,7 +2317,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = sph_intersection(
             ro - dyn_neg_stickiness_shapes[i].pos,
             rd,
-            dyn_neg_stickiness_shapes[i].size.x + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            dyn_neg_stickiness_shapes[i].size.x + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -2086,7 +2335,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = cube_intersection(
             ro - dyn_neg_stickiness_shapes[i].pos,
             rd,
-            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -2104,7 +2353,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> Intersections {
         let intr = inf_cube_intersection(
             ro - dyn_neg_stickiness_shapes[i].pos,
             rd,
-            dyn_neg_stickiness_shapes[i].size.xyz + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * 3.05)
+            dyn_neg_stickiness_shapes[i].size.xyz + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {

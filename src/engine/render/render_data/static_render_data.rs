@@ -34,6 +34,9 @@ pub struct OtherStaticData {
     is_w_roof_exist: i32,
     w_roof: f32,
 
+    players_mat1: i32,
+    players_mat2: i32,
+
     empty_bytes: [f32; 3],
 
     static_shapes_stickiness: f32,
@@ -83,6 +86,8 @@ impl OtherStaticData {
             index += 1;
         }
 
+        let (players_mat1, players_mat2) = world.level.players_visual_materials;
+
         OtherStaticData {
             shapes_arrays_metadata,
 
@@ -90,6 +95,9 @@ impl OtherStaticData {
             is_w_floor_exist,
             w_roof,
             is_w_roof_exist,
+
+            players_mat1,
+            players_mat2,
 
             empty_bytes: [0.0, 0.0, 0.0],
 
