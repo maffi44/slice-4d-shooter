@@ -10,7 +10,8 @@ struct Shape {
     pos: vec4<f32>,
     size: vec4<f32>,
     material: i32,
-    empty_bytes: vec2<f32>,
+    empty_bytes1: u32,
+    empty_bytes2: u32,
     roundness: f32,
 }
 
@@ -251,7 +252,7 @@ struct OtherDynamicData {
 }
 
 struct Material {
-    color: vec3<f32>,
+    color: vec4<f32>,
 }
 
 struct OtherStaticData {
@@ -1813,7 +1814,7 @@ const MIN_STEP: f32 = 0.005;
 fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, in: ptr<function,Intersections>) -> vec2<f32>  {
     
     if (*in).offset > MAX_DIST {
-        return vec2(MAX_DIST, 0.0);
+        return vec2(MAX_DIST*2.0, 0.0);
     }
 
     var total_distance: f32 = (*in).offset;
@@ -1835,7 +1836,7 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, in: ptr<funct
         }
         if (total_distance > MAX_DIST) {
             // color.y = 1.;
-            return vec2<f32>(MAX_DIST, f32(i));
+            return vec2<f32>(MAX_DIST*2.0, f32(i));
         }
 
         ray_origin += ray_direction * d;
@@ -2623,11 +2624,11 @@ fn apply_material(
         return vec3(0.7);
     }
 
-    let diffuse = static_data.materials[material].color;
+    let diffuse = static_data.materials[material].color.xyz;
 
     let normal = get_normal(pos + ray_dir * dist, in);
 
-    let dir_shade: f32 = dot(normal, normalize(vec4<f32>(1.0, 0.5, 0.3, 0.1)));
+    let dir_shade = dot(normal, normalize(vec4<f32>(1.0, 0.5, 0.3, 0.1)));
 
     // let shade = mix(0.32, 0.98, shade_coefficient);
 

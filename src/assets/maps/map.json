@@ -14,7 +14,7 @@
         {
             "name" : "wall",
             "color" : {
-                "red": 0.75,
+                "red": 0.95,
                 "green": 0.55,
                 "blue": 0.85
             }
@@ -23,7 +23,7 @@
             "name" : "floor",
             "color" : {
                 "red": 0.15,
-                "green": 0.55,
+                "green": 0.95,
                 "blue": 0.45
             }
         },
@@ -32,14 +32,14 @@
             "color" : {
                 "red": 0.75,
                 "green": 0.55,
-                "blue": 0.85
+                "blue": 0.15
             }
         },
         {
             "name" : "metallic_red",
             "color" : {
                 "red": 0.75,
-                "green": 0.55,
+                "green": 0.15,
                 "blue": 0.85
             }
         }
