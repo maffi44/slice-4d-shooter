@@ -200,7 +200,7 @@ struct IntersectedShapesMetadata {
 
 struct Intersections {
     ismd: IntersectedShapesMetadata,
-    ish: array<u32, 64>,
+    ish: array<u32, 16>,
     offset: f32,
     ray_w_rotated: bool,
 }
@@ -1809,6 +1809,33 @@ fn get_normal(p: vec4<f32>, in: ptr<function,Intersections>) -> vec4<f32> {
     );
 }
 
+// fn old_get_normal(p: vec4<f32>) -> vec4<f32> {
+//     var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
+    
+//     var a: vec4<f32> = p + h.yxxz;
+//     var b: vec4<f32> = p + h.xyxz;
+//     var c: vec4<f32> = p + h.xxyz;
+//     var d: vec4<f32> = p + h.yyyz;
+//     var e: vec4<f32> = p + h.zzzx;
+//     var f: vec4<f32> = p + h.zzzy;
+
+//     var fa: f32 = old_map(a);
+//     var fb: f32 = old_map(b);
+//     var fc: f32 = old_map(c);
+//     var fd: f32 = old_map(d);
+//     var fe: f32 = old_map(e);
+//     var ff: f32 = old_map(f);
+
+//     return normalize(
+//         h.yxxz * fa +
+//         h.xyxz * fb +
+//         h.xxyz * fc +
+//         h.yyyz * fd +
+//         h.zzzx * fe +
+//         h.zzzy * ff
+//     );
+// }// 
+
 const MIN_STEP: f32 = 0.005;
 
 fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, in: ptr<function,Intersections>) -> vec2<f32>  {
@@ -2679,6 +2706,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     var in = find_intersections(camera_position, ray_direction);
     
     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, &in); 
+    // let dist_and_depth: vec2<f32> = old_ray_march(camera_position, ray_direction); 
 
     var mats = get_mat(camera_position, ray_direction, dist_and_depth.x, &in);
 

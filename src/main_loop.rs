@@ -188,7 +188,8 @@ impl MainLoop {
 fn main_loop_tick(
     systems : &mut Engine,
 ) {
-    // log::info!("Main loop iter number {}", systems.time.frame_counter);
+    
+    let instant = web_time::Instant::now();
 
     systems.time.start_of_frame();
 
@@ -199,7 +200,7 @@ fn main_loop_tick(
     systems.world.tick(
         &systems.physic,
         &mut systems.engine_handle,
-        systems.time.target_frame_duration.as_secs_f32()
+        systems.time.prev_frame_duration
     );
 
     systems.world.send_messages_and_process_commands(
@@ -210,7 +211,7 @@ fn main_loop_tick(
 
     systems.physic.process_physics(
         &mut systems.world, 
-        systems.time.target_frame_duration.as_secs_f32(),
+        systems.time.prev_frame_duration,
         &mut systems.engine_handle
     );
 
@@ -224,9 +225,9 @@ fn main_loop_tick(
 
     systems.input.reset_input();
 
-    systems.time.end_of_frame(); 
+    systems.time.end_of_frame();
 
-
+    log::error!("main loop DT is {}", instant.elapsed().as_secs_f64());
 }
 
 fn init(systems: &mut Engine) {

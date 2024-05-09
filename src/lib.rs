@@ -9,6 +9,7 @@ use main_loop::MainLoop;
 use wasm_bindgen::prelude::*;
 use log;
 
+
 #[wasm_bindgen(start)]
 async fn client_main() {
 

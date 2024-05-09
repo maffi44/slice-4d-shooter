@@ -21,6 +21,7 @@ use self::{
     render_data::RenderData,
 };
 
+use serde_json::error;
 use winit::window::Window;
 
 use super::physics::dynamic_collider::PlayersDollCollider;
@@ -70,8 +71,11 @@ impl RenderSystem {
 
     pub fn render_frame(&mut self, world: &World, time: &TimeSystem) {
 
+        let inst = web_time::Instant::now();
         self.render_data.update_dynamic_render_data(world, time, &self.window);
+        log::error!("update_dynamic_render_data ---> {}", inst.elapsed().as_secs_f64());
 
+        let inst = web_time::Instant::now();
         self.renderer.queue.write_buffer(
             &self.renderer.other_dynamic_data_buffer,
             0,
@@ -119,8 +123,10 @@ impl RenderSystem {
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.player_forms_data.as_slice()),
         );
+        log::error!("write buffers ---> {}", inst.elapsed().as_secs_f64());
         
 
+        let inst = web_time::Instant::now();
         if let Err(err) = self.renderer.render(&self.window) {
             match err {
                 wgpu::SurfaceError::Lost => self.resize_frame_buffer(),
@@ -132,12 +138,15 @@ impl RenderSystem {
                 _ => log::error!("{:?}", err),
             }
         }
+        log::error!("render ---> {}", inst.elapsed().as_secs_f64());
+
     }
 
 
 
     pub fn resize_frame_buffer(&mut self) {
         self.renderer.resize(self.window.inner_size());
+        log::error!("RESIZE");
     }
 }
 

@@ -16,7 +16,7 @@ use wgpu::{
     Buffer,
     BufferUsages,
     Color,
-    InstanceFlags, MaintainResult
+    InstanceFlags, MaintainResult, PipelineCompilationOptions, SurfaceTexture
 };
 
 
@@ -76,12 +76,17 @@ pub struct Renderer {
     pub beam_areas_data_buffer: Buffer,
     pub player_forms_data_buffer: Buffer,
 
-    total_time: Arc<Mutex<f64>>,
-    total_frames_count: Arc<Mutex<u64>>,
+    total_time: f64,
+    prev_time_instant: Option<web_time::Instant>,
+    total_frames_count: u64,
+    prev_surface_texture: Option<SurfaceTexture>,
+    prev_frame_rendered: Arc<Mutex<bool>>,
+
 }
 
 impl Renderer {
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        self.prev_surface_texture = None;
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
             self.config.width = new_size.width;
@@ -489,9 +494,11 @@ impl Renderer {
                 buffers: &[
                     Vertex::desc(),
                 ], // 2.
+                compilation_options: PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState { // 3.
                 module: &shader,
+                compilation_options: PipelineCompilationOptions::default(),
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
@@ -566,20 +573,56 @@ impl Renderer {
             beam_areas_data_buffer,
             player_forms_data_buffer,
 
-            total_frames_count: Arc::new(Mutex::new(0u64)),
-            total_time: Arc::new(Mutex::new(0.0)),
+            total_frames_count: 0u64,
+            total_time: 0.0,
+            prev_time_instant: None,
+            prev_surface_texture: None,
+            prev_frame_rendered: Arc::new(Mutex::new(true)),
         }
     }
 
 
     pub fn render(&mut self, window: &Window) -> Result<(), wgpu::SurfaceError> {
 
-        match self.device.poll(wgpu::MaintainBase::Poll) {
-            MaintainResult::Ok => {return Ok(());}
-            MaintainResult::SubmissionQueueEmpty => {},
-        }
+        let instatnt_full = web_time::Instant::now();
+
+        // match self.device.poll(wgpu::MaintainBase::Poll) {
+        //     MaintainResult::Ok => {return Ok(());}
+        //     MaintainResult::SubmissionQueueEmpty => {},
+        // }
+        // match self.device.poll(M) {
+        //     MaintainResult::Ok => {return Ok(());}
+        //     MaintainResult::SubmissionQueueEmpty => {},
+        // }
+
+        // if *self.prev_frame_rendered.lock().unwrap() {
+        //     *self.prev_frame_rendered.lock().unwrap() = false;
+        // } else {
+        //     return Ok(());
+        // }
 
         
+        // if let Some(texture) = self.prev_surface_texture.take() {
+        //     let s_inst = web_time::Instant::now();
+        //     window.pre_present_notify();
+
+        //     texture.present();
+        //     log::error!("---PRESENT TIME {}", s_inst.elapsed().as_secs_f64());
+        // }
+
+        if let Some(instant) = self.prev_time_instant {
+            let current_frame_time = instant.elapsed().as_secs_f64();
+            self.total_time += current_frame_time;
+            self.total_frames_count += 1;
+
+            log::error!(
+                "AV DT {}, CUR DT: {}",
+                self.total_time / (self.total_frames_count) as f64,
+                current_frame_time,
+            );
+        }
+
+        self.prev_time_instant = Some(web_time::Instant::now());
         
         let output = self.surface.get_current_texture()?;
         let view = output
@@ -621,28 +664,26 @@ impl Renderer {
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
         }
         // submit will accept anything that implements IntoIter
+        // self.queue.submit(command_buffers)
+        
+
+        let istts = web_time::Instant::now();
         self.queue.submit(std::iter::once(encoder.finish()));
+        log::error!("submit : {}",istts.elapsed().as_secs_f64());
 
-        let instant = web_time::Instant::now();
-        let time = self.total_time.clone();
-        let frames = self.total_frames_count.clone();
-
-        self.queue.on_submitted_work_done(move || {
-            let current_frame_time = instant.elapsed().as_secs_f64();
-            *time.lock().unwrap() += current_frame_time;
-            *frames.lock().unwrap() += 1;
-
-            log::error!(
-                "AV DT {}, CUR DT: {}",
-                *time.lock().unwrap() / ((*frames.lock().unwrap()) as f64),
-                current_frame_time,
-            );
-        });
-
-        window.pre_present_notify();
-
+        // window.pre_present_notify();
+        
+        let istts = web_time::Instant::now();
         output.present();
+        log::error!("output : {}",istts.elapsed().as_secs_f64());
 
+
+        // let is_rendered = self.prev_frame_rendered.clone();
+        // self.queue.on_submitted_work_done(move || {
+        //     *is_rendered.lock().unwrap() = true;
+        // });
+
+        log::error!("--------------full render time {}", instatnt_full.elapsed().as_secs_f64());
         Ok(())
     }
 

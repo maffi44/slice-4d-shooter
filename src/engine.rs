@@ -24,11 +24,10 @@ use self::{
     net::NetSystem,
 };
 
-use wasm_bindgen_futures::JsFuture;
-use web_sys::js_sys::Promise;
-use winit::{
-    platform::web::WindowBuilderExtWebSys, window::{Window, WindowBuilder}
-};
+use winit::window::{Window, WindowBuilder};
+
+#[cfg(target_arch = "wasm32")]
+use winit::platform::web::WindowBuilderExtWebSys;
 
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 
@@ -80,26 +79,44 @@ impl Engine {
         // async_runtime: &Runtime,
     ) -> Engine {
 
-        let document = web_sys::window().unwrap().document().unwrap();
-        let canvas = document.get_element_by_id("game_canvas").unwrap();
-        let canvas: web_sys::HtmlCanvasElement = JsValue::from(canvas).into();
+        let window;
 
-        let window_builder = WindowBuilder::new();
-        let window = window_builder
-            .with_canvas(Some(canvas))
-            .with_active(true)
-            // .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
-            // .with_inner_size(PhysicalSize::new(1200, 800))
-            .build(&cleint_main_loop.event_loop)
-            .unwrap();
+        #[cfg(target_arch = "wasm32")]
+        {
+            let document = web_sys::window().unwrap().document().unwrap();
+            let canvas = document.get_element_by_id("game_canvas").unwrap();
+            let canvas: web_sys::HtmlCanvasElement = JsValue::from(canvas).into();
+    
+            let window_builder = WindowBuilder::new();
+            window = window_builder
+                .with_canvas(Some(canvas))
+                .with_active(true)
+                // .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
+                // .with_inner_size(PhysicalSize::new(1200, 800))
+                .build(&cleint_main_loop.event_loop)
+                .unwrap();
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let window_builder = WindowBuilder::new();
+            window = window_builder
+                .with_active(true)
+                .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
+                // .with_inner_size(PhysicalSize::new(1200, 800))
+                .build(&cleint_main_loop.event_loop)
+                .unwrap();
+        }
         log::info!("engine systems: window init");
 
 
-        // it is necessary because immidiatly after creating the window the inner size of the this window
-        // is zero. It will make an error when creating the wgpu surface when initializing the render system
-        let window_ready_future = WindowReadyFuture {window: &window};
-        window_ready_future.await;
-        log::info!("window is ready");
+        #[cfg(target_arch = "wasm32")]
+        {
+            // it is necessary because immidiatly after creating the window the inner size of the this window
+            // is zero. It will make an error when creating the wgpu surface when initializing the render system
+            let window_ready_future = WindowReadyFuture {window: &window};
+            window_ready_future.await;
+            log::info!("window is ready");
+        }
 
         let mut engine_handle = EngineHandle::new();
         log::info!("engine systems:engine_handle init");
