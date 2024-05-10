@@ -61,19 +61,20 @@ impl MainLoop {
                             start,
                             requested_resume
                         } => {
+                            // set wake up time gof the next interation
+                            elwt.set_control_flow(ControlFlow::WaitUntil(
+                                Instant::now() + systems.time.target_frame_duration
+                                // Instant::from(
+                                //     systems.time.timestamp_of_main_loop_start +
+                                //     Duration::from_secs_f64(
+                                //         systems.time.target_frame_duration.as_secs_f64() *
+                                //         (systems.time.frame_counter + 1) as f64
+                                //     )
+                                // )
+                            ));
                             
                             main_loop_tick(systems);
 
-                            // set wake up time gof the next interation
-                            elwt.set_control_flow(ControlFlow::WaitUntil(
-                                Instant::from(
-                                    systems.time.timestamp_of_main_loop_start +
-                                    Duration::from_secs_f64(
-                                        systems.time.target_frame_duration.as_secs_f64() *
-                                        (systems.time.frame_counter + 1) as f64
-                                    )
-                                )
-                            ));
                         }
                         StartCause::WaitCancelled {
                             start,
@@ -228,6 +229,7 @@ fn main_loop_tick(
     systems.time.end_of_frame();
 
     log::error!("main loop DT is {}", instant.elapsed().as_secs_f64());
+    log::error!("PREV FRAME DUR is {}", systems.time.prev_frame_duration);
 }
 
 fn init(systems: &mut Engine) {

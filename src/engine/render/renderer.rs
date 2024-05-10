@@ -586,29 +586,10 @@ impl Renderer {
 
         let instatnt_full = web_time::Instant::now();
 
-        // match self.device.poll(wgpu::MaintainBase::Poll) {
-        //     MaintainResult::Ok => {return Ok(());}
-        //     MaintainResult::SubmissionQueueEmpty => {},
-        // }
-        // match self.device.poll(M) {
-        //     MaintainResult::Ok => {return Ok(());}
-        //     MaintainResult::SubmissionQueueEmpty => {},
-        // }
-
-        // if *self.prev_frame_rendered.lock().unwrap() {
-        //     *self.prev_frame_rendered.lock().unwrap() = false;
-        // } else {
-        //     return Ok(());
-        // }
-
-        
-        // if let Some(texture) = self.prev_surface_texture.take() {
-        //     let s_inst = web_time::Instant::now();
-        //     window.pre_present_notify();
-
-        //     texture.present();
-        //     log::error!("---PRESENT TIME {}", s_inst.elapsed().as_secs_f64());
-        // }
+        match self.device.poll(wgpu::MaintainBase::Poll) {
+            MaintainResult::Ok => {return Ok(());}
+            MaintainResult::SubmissionQueueEmpty => {},
+        }
 
         if let Some(instant) = self.prev_time_instant {
             let current_frame_time = instant.elapsed().as_secs_f64();
@@ -663,27 +644,19 @@ impl Renderer {
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
         }
-        // submit will accept anything that implements IntoIter
-        // self.queue.submit(command_buffers)
-        
 
         let istts = web_time::Instant::now();
         self.queue.submit(std::iter::once(encoder.finish()));
-        log::error!("submit : {}",istts.elapsed().as_secs_f64());
+        log::error!("submit time: {}",istts.elapsed().as_secs_f64());
 
-        // window.pre_present_notify();
+        window.pre_present_notify();
         
         let istts = web_time::Instant::now();
         output.present();
-        log::error!("output : {}",istts.elapsed().as_secs_f64());
+        log::error!("output time: {}",istts.elapsed().as_secs_f64());
 
 
-        // let is_rendered = self.prev_frame_rendered.clone();
-        // self.queue.on_submitted_work_done(move || {
-        //     *is_rendered.lock().unwrap() = true;
-        // });
-
-        log::error!("--------------full render time {}", instatnt_full.elapsed().as_secs_f64());
+        log::error!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
         Ok(())
     }
 

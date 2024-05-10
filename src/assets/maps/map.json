@@ -14,33 +14,33 @@
         {
             "name" : "wall",
             "color" : {
-                "red": 0.95,
-                "green": 0.55,
-                "blue": 0.85
+                "red": 1.0,
+                "green": 0.0,
+                "blue": 0.0
             }
         },
         {
             "name" : "floor",
             "color" : {
-                "red": 0.15,
-                "green": 0.95,
-                "blue": 0.45
+                "red": 0.0,
+                "green": 1.0,
+                "blue": 0.0
             }
         },
         {
             "name" : "metallic",
             "color" : {
-                "red": 0.75,
-                "green": 0.55,
-                "blue": 0.15
+                "red": 0.0,
+                "green": 0.0,
+                "blue": 1.0
             }
         },
         {
             "name" : "metallic_red",
             "color" : {
-                "red": 0.75,
-                "green": 0.15,
-                "blue": 0.85
+                "red": 1.0,
+                "green": 0.0,
+                "blue": 1.0
             }
         }
     ],
@@ -50,7 +50,7 @@
         "outer" : "metallic"
     },
 
-    "w_cups_visual_materials" : "floor",
+    "w_cups_visual_materials" : "metallic",
 
     "all_shapes_stickiness_radius": 0.4,
 
@@ -324,7 +324,9 @@
                 },
                 "size" : {
                     "x": 1.4
-                }
+                },
+                "visual_material" : "floor"
+
             }
         },
         {

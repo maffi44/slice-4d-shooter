@@ -1111,7 +1111,7 @@ fn parse_json_into_material_index(
             )
         );
 
-    let json_material = shape.get("material");
+    let json_material = shape.get("visual_material");
 
     if json_material.is_none() {
         return None

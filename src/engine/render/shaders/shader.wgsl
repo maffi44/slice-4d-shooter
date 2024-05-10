@@ -263,16 +263,17 @@ struct OtherStaticData {
     // is_w_roof_exist: i32,
     // w_roof: f32,
 
-
-
-
-    empty_bytes: vec2<f32>,
-    materials: array<Material, 32>,
-
     players_mat1: i32,
     players_mat2: i32,
     w_cups_mat: i32,
     stickiness: f32,
+
+
+
+    empty_byte1: u32,
+    empty_byte2: u32,
+    materials: array<Material, 32>,
+
 }
 
 
@@ -300,7 +301,7 @@ const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
 const MAX_DIST: f32 = 350.0;
 
-const STICKINESS_EFFECT_COEF: f32 = 3.05;
+const STICKINESS_EFFECT_COEF: f32 = 3.1415926535897;
 
 fn rotate(angle: f32) -> mat2x2<f32> {
     //angle *= 0.017453;
@@ -370,22 +371,22 @@ fn sd_capsule(p: vec4<f32>, a: vec4<f32>, b: vec4<f32>, r: f32) -> f32
     return length(pa - ba*h) - r;
 }
 
-fn smin_2(a: f32, b: f32, k: f32) -> f32
-{
-    let kk = k * (1.0/(1.0-sqrt(0.5)));
-    let x: f32 = (b-a)/k;
-    var g: f32 = 0.0;
-    if (x > 1.0) {
-        g = 0.0;
-    } else {
-        if (x < -1.0) {
-            g = x;
-        } else {
-            g = sin(PI/4.0+asin(x*0.7071067))-1.0;
-        }
-    }
-    return a + kk * g;
-}
+// fn smin_2(a: f32, b: f32, k: f32) -> f32
+// {
+//     let kk = k * (1.0/(1.0-sqrt(0.5)));
+//     let x: f32 = (b-a)/k;
+//     var g: f32 = 0.0;
+//     if (x > 1.0) {
+//         g = 0.0;
+//     } else {
+//         if (x < -1.0) {
+//             g = x;
+//         } else {
+//             g = sin(PI/4.0+asin(x*0.7071067))-1.0;
+//         }
+//     }
+//     return a + kk * g;
+// }
 
 // fn smin(a: f32, b: f32, k: f32) -> f32
 // {
@@ -1085,7 +1086,7 @@ fn get_mat(
     for (var i =ismda.st_cubes_start; i < ismda.st_cubes_amount + ismda.st_cubes_start; i++) {
         let j = (*in).ish[i];
         let shape = normal_shapes[j];
-        if sd_box(p - shape.pos, shape.size) - shape.roundness < MAX_DIST {
+        if sd_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1095,7 +1096,7 @@ fn get_mat(
     for (var i = ismda.st_spheres_start; i < ismda.st_spheres_amount + ismda.st_spheres_start; i++) {
         let j = (*in).ish[i];
         let shape = normal_shapes[j];
-        if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MAX_DIST {
+        if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1105,7 +1106,7 @@ fn get_mat(
     for (var i = ismda.st_sph_cubes_start; i < ismda.st_sph_cubes_amount + ismda.st_sph_cubes_start; i++) {
         let j = (*in).ish[i];
         let shape = normal_shapes[j];
-        if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MAX_DIST {
+        if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1115,7 +1116,7 @@ fn get_mat(
     for (var i = ismda.st_inf_cubes_start; i < ismda.st_inf_cubes_amount + ismda.st_inf_cubes_start; i++) {
         let j = (*in).ish[i];
         let shape = normal_shapes[j];
-        if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MAX_DIST {
+        if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1127,7 +1128,7 @@ fn get_mat(
     for (var i = ismda.dyn_cubes_start; i < ismda.dyn_cubes_amount + ismda.dyn_cubes_start; i++) {
         let j = (*in).ish[i];
         let shape = dyn_normal_shapes[j];
-        if sd_box(p - shape.pos, shape.size) - shape.roundness < MAX_DIST {
+        if sd_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1137,7 +1138,7 @@ fn get_mat(
     for (var i = ismda.dyn_spheres_start; i < ismda.dyn_spheres_amount + ismda.dyn_spheres_start; i++) {
         let j = (*in).ish[i];
         let shape = dyn_normal_shapes[j];
-        if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MAX_DIST {
+        if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1147,7 +1148,7 @@ fn get_mat(
     for (var i = ismda.dyn_sph_cubes_start; i < ismda.dyn_sph_cubes_amount + ismda.dyn_sph_cubes_start; i++) {
         let j = (*in).ish[i];
         let shape = dyn_normal_shapes[j];
-        if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MAX_DIST {
+        if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1157,7 +1158,7 @@ fn get_mat(
     for (var i = ismda.dyn_inf_cubes_start; i < ismda.dyn_inf_cubes_amount + ismda.dyn_inf_cubes_start; i++) {
         let j = (*in).ish[i];
         let shape = dyn_normal_shapes[j];
-        if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MAX_DIST {
+        if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1168,7 +1169,7 @@ fn get_mat(
     // w_floor
     if static_data.is_w_floor_exist == 1 {
         if (*in).ray_w_rotated {
-            if p.w - static_data.w_floor < MIN_DIST {
+            if p.w - static_data.w_floor < MIN_DIST*2.0 {
                 output.materials_count = 1u;
                 output.material_weights[0] = 1.0;
                 output.materials[0] = static_data.w_cups_mat;
@@ -1185,7 +1186,7 @@ fn get_mat(
         let shape = stickiness_shapes[j];
         let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
         
-        if dd < MIN_DIST {
+        if dd < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1199,8 +1200,17 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                let ddd = smin(d, dd, static_data.stickiness);
-                let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                ////let ddd = smin(d, dd, static_data.stickiness);
+                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
+                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
+                var coef = 0.0;
+                if d<dd {
+                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                } else {
+                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                }
+                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
 
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
@@ -1212,7 +1222,7 @@ fn get_mat(
                 }
 
                 output.materials_count += 1u;
-                d = ddd;
+                d = min(d,dd);
             }
         }
     }
@@ -1221,7 +1231,7 @@ fn get_mat(
         let shape = stickiness_shapes[j];
         let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
         
-        if dd < MIN_DIST {
+        if dd < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1235,8 +1245,17 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                let ddd = smin(d, dd, static_data.stickiness);
-                let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let ddd = smin(d, dd, static_data.stickiness);
+                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
+                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
+                var coef = 0.0;
+                if d<dd {
+                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                } else {
+                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                }
+                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
 
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
@@ -1248,7 +1267,7 @@ fn get_mat(
                 }
 
                 output.materials_count += 1u;
-                d = ddd;
+                d = min(d,dd);
             }
         }
     }
@@ -1257,7 +1276,7 @@ fn get_mat(
         let shape = stickiness_shapes[j];
         let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
         
-        if dd < MIN_DIST {
+        if dd < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1271,8 +1290,17 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                let ddd = smin(d, dd, static_data.stickiness);
-                let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let ddd = smin(d, dd, static_data.stickiness);
+                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
+                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
+                var coef = 0.0;
+                if d<dd {
+                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                } else {
+                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                }
+                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
 
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
@@ -1284,7 +1312,7 @@ fn get_mat(
                 }
 
                 output.materials_count += 1u;
-                d = ddd;
+                d = min(d,dd);
             }
         }
     }
@@ -1293,7 +1321,7 @@ fn get_mat(
         let shape = stickiness_shapes[j];
         let dd = sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness;
         
-        if dd < MIN_DIST {
+        if dd < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1307,8 +1335,17 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                let ddd = smin(d, dd, static_data.stickiness);
-                let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let ddd = smin(d, dd, static_data.stickiness);
+                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
+                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
+                var coef = 0.0;
+                if d<dd {
+                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                } else {
+                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                }
+                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
 
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
@@ -1320,7 +1357,7 @@ fn get_mat(
                 }
 
                 output.materials_count += 1u;
-                d = ddd;
+                d = min(d,dd);
             }
         }
     }
@@ -1331,7 +1368,7 @@ fn get_mat(
         let shape = dyn_stickiness_shapes[j];
         let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
         
-        if dd < MIN_DIST {
+        if dd < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1345,8 +1382,17 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                let ddd = smin(d, dd, static_data.stickiness);
-                let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let ddd = smin(d, dd, static_data.stickiness);
+                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
+                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
+                var coef = 0.0;
+                if d<dd {
+                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                } else {
+                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                }
+                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
 
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
@@ -1358,7 +1404,7 @@ fn get_mat(
                 }
 
                 output.materials_count += 1u;
-                d = ddd;
+                d = min(d,dd);
             }
         }
     }
@@ -1367,7 +1413,7 @@ fn get_mat(
         let shape = dyn_stickiness_shapes[j];
         let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
         
-        if dd < MIN_DIST {
+        if dd < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1381,8 +1427,17 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                let ddd = smin(d, dd, static_data.stickiness);
-                let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let ddd = smin(d, dd, static_data.stickiness);
+                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
+                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
+                var coef = 0.0;
+                if d<dd {
+                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                } else {
+                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                }
+                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
 
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
@@ -1394,7 +1449,7 @@ fn get_mat(
                 }
 
                 output.materials_count += 1u;
-                d = ddd;
+                d = min(d,dd);
             }
         }
     }
@@ -1403,7 +1458,7 @@ fn get_mat(
         let shape = dyn_stickiness_shapes[j];
         let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
         
-        if dd < MIN_DIST {
+        if dd < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1417,8 +1472,18 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                let ddd = smin(d, dd, static_data.stickiness);
-                let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let ddd = smin(d, dd, static_data.stickiness);
+                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
+                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
+                var coef = 0.0;
+                if d<dd {
+                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                } else {
+                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                }
+                
+                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
 
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
@@ -1430,7 +1495,7 @@ fn get_mat(
                 }
 
                 output.materials_count += 1u;
-                d = ddd;
+                d = min(d,dd);
             }
         }
     }
@@ -1439,7 +1504,7 @@ fn get_mat(
         let shape = dyn_stickiness_shapes[j];
         let dd = sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness;
         
-        if dd < MIN_DIST {
+        if dd < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = shape.material;
@@ -1453,8 +1518,17 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                let ddd = smin(d, dd, static_data.stickiness);
-                let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let ddd = smin(d, dd, static_data.stickiness);
+                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
+                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
+                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
+                var coef = 0.0;
+                if d<dd {
+                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                } else {
+                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                }
+                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
 
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
@@ -1466,7 +1540,7 @@ fn get_mat(
                 }
 
                 output.materials_count += 1u;
-                d = ddd;
+                d = min(d,dd);
             }
         }
     }
@@ -2720,6 +2794,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     }
 
 
+    // var color = vec3(dist_and_depth.x / (MAX_DIST*0.1));
 
     // var color = clamp(normal.xyz, vec3(0.0), vec3(1.0));
     // color = mix(color, vec3(0.0), in.offset / (MAX_DIST / 12.0));
@@ -2762,5 +2837,6 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     color = pow(color, vec3(0.4545));
     color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
+
     return vec4<f32>(color, 1.0);
 }

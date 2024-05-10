@@ -33,15 +33,15 @@ pub struct OtherStaticData {
 
     // is_w_roof_exist: i32,
     // w_roof: f32,
-
-    empty_bytes: [f32; 2],
-
-    materials: [VisualMaterial; 32],
-
     players_mat1: i32,
     players_mat2: i32,
     w_cups_mat: i32,
     static_shapes_stickiness: f32,
+
+    empty_byte1: u32,
+    empty_byte2: u32,
+    materials: [VisualMaterial; 32],
+
 }
 
 impl OtherStaticData {
@@ -103,7 +103,8 @@ impl OtherStaticData {
             static_shapes_stickiness: stickiness,
 
             
-            empty_bytes: [0.0; 2],
+            empty_byte1: 0u32,
+            empty_byte2: 0u32,
             materials,
         }
     }
