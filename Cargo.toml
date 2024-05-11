@@ -9,11 +9,12 @@ edition = "2021"
 [dependencies]
 # matchbox_socket = "*"
 # webrtc = "*"
-# env_logger = "*"
+env_logger = "*"
 winit = {version = "0.29", features = ["rwh_05"]}
 wgpu = { version = "*", default-features = false, features = ["webgl", "wgsl"]}
 bytemuck = { version = "*", features = [ "derive" ] }
 pollster = "*"
+tokio = "*"
 web-time = "0.2.4"
 glam = "*"
 #glm = "*"

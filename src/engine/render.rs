@@ -140,7 +140,6 @@ impl RenderSystem {
 
     pub fn resize_frame_buffer(&mut self) {
         self.renderer.resize(self.window.inner_size());
-        log::error!("RESIZE");
     }
 }
 

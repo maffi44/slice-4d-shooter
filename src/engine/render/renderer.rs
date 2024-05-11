@@ -79,14 +79,14 @@ pub struct Renderer {
     total_time: f64,
     prev_time_instant: Option<web_time::Instant>,
     total_frames_count: u64,
-    prev_surface_texture: Option<SurfaceTexture>,
-    prev_frame_rendered: Arc<Mutex<bool>>,
+    // prev_surface_texture: Option<SurfaceTexture>,
+    // prev_frame_rendered: Arc<Mutex<bool>>,
 
 }
 
 impl Renderer {
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        self.prev_surface_texture = None;
+        // self.prev_surface_texture = None;
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
             self.config.width = new_size.width;
@@ -104,6 +104,7 @@ impl Renderer {
             flags: InstanceFlags::empty(),
             gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
         });
+
         log::info!("renderer: wgpu instance init");
 
         let surface = unsafe { instance.create_surface_unsafe(
@@ -116,7 +117,7 @@ impl Renderer {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -127,7 +128,11 @@ impl Renderer {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    required_features: wgpu::Features::empty(),
+                    required_features: if cfg!(target_arch = "wasm32") {
+                        wgpu::Features::empty()
+                    } else {
+                        wgpu::Features::default()
+                    },
                     // WebGL doesn't support all of wgpu's features, so if
                     // we're building for the web we'll have to disable some.
                     required_limits: if cfg!(target_arch = "wasm32") {
@@ -551,6 +556,8 @@ impl Renderer {
 
         let num_indices = INDICES.len() as u32;
 
+        
+
         Renderer {
             surface,
             device,
@@ -576,8 +583,8 @@ impl Renderer {
             total_frames_count: 0u64,
             total_time: 0.0,
             prev_time_instant: None,
-            prev_surface_texture: None,
-            prev_frame_rendered: Arc::new(Mutex::new(true)),
+            // prev_surface_texture: None,
+            // prev_frame_rendered: Arc::new(Mutex::new(true)),
         }
     }
 
@@ -596,11 +603,11 @@ impl Renderer {
             self.total_time += current_frame_time;
             self.total_frames_count += 1;
 
-            log::error!(
-                "AV DT {}, CUR DT: {}",
-                self.total_time / (self.total_frames_count) as f64,
-                current_frame_time,
-            );
+            // log::info!(
+            //     "AV DT {}, CUR DT: {}",
+            //     self.total_time / (self.total_frames_count) as f64,
+            //     current_frame_time,
+            // );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());
@@ -641,22 +648,22 @@ impl Renderer {
             render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
             render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
         }
 
-        let istts = web_time::Instant::now();
+        // let istts = web_time::Instant::now();
         self.queue.submit(std::iter::once(encoder.finish()));
-        log::error!("submit time: {}",istts.elapsed().as_secs_f64());
+        // log::error!("submit time: {}",istts.elapsed().as_secs_f64());
 
         window.pre_present_notify();
         
-        let istts = web_time::Instant::now();
+        // let istts = web_time::Instant::now();
         output.present();
-        log::error!("output time: {}",istts.elapsed().as_secs_f64());
+        // log::error!("output time: {}",istts.elapsed().as_secs_f64());
 
 
-        log::error!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
+        // log::error!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
         Ok(())
     }
 

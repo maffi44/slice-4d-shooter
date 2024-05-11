@@ -35,7 +35,7 @@ impl World {
         // 0 it is id of engine
         // in case when engine send message to the some actor
         // sender property will be 0      
-        let (level, actors) = Level::download_level_from_server().await;
+        let (level, actors) = Level::load_level().await;
 
         log::info!("world system: level downloaded and init");
 

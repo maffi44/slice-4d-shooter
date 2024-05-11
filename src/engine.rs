@@ -7,6 +7,7 @@ pub mod effects;
 pub mod world;
 pub mod engine_handle;
 
+#[cfg(target_arch = "wasm32")]
 use std::{future::Future, pin::Pin, rc::Rc, task::{Context, Poll}};
 
 use crate::{
@@ -28,7 +29,7 @@ use winit::window::{Window, WindowBuilder};
 
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::WindowBuilderExtWebSys;
-
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 
 pub struct Engine {
@@ -39,14 +40,17 @@ pub struct Engine {
     pub world: World,
     pub engine_handle: EngineHandle,
     pub net: NetSystem,
+    #[cfg(not(target_arch = "wasm32"))]
+    pub runtime: tokio::runtime::Runtime,
     // pub runtime: RuntimeSystem,
     // pub net: ClientNetSystem,
 }
 
+#[cfg(target_arch = "wasm32")]
 struct WindowReadyFuture<'a> {
     window: &'a Window
 }
-
+#[cfg(target_arch = "wasm32")]
 impl<'a> Future for WindowReadyFuture<'a> {
     type Output = ();
 
@@ -80,6 +84,13 @@ impl Engine {
     ) -> Engine {
 
         let window;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let mut runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build()
+            .expect("Can't build tokio async runtime");
 
         #[cfg(target_arch = "wasm32")]
         {
@@ -136,7 +147,10 @@ impl Engine {
         let time = TimeSystem::new(60_u32);
         log::info!("engine systems: time init");
 
+        #[cfg(target_arch = "wasm32")]
         let net = NetSystem::new().await;
+        #[cfg(not(target_arch = "wasm32"))]
+        let net = NetSystem::new(&mut runtime).await;
         log::info!("engine systems: net init");
 
         let render = RenderSystem::new(window, &world, &time).await;
@@ -150,6 +164,8 @@ impl Engine {
             world,
             engine_handle,
             net,
+            #[cfg(not(target_arch = "wasm32"))]
+            runtime,
         }
     }
 }

@@ -121,11 +121,13 @@ impl MainLoop {
                                     KeyCode::Escape => {
                                         if event.state.is_pressed() {
                                             systems.render.window.set_cursor_visible(true);
+                                            #[cfg(target_arch="wasm32")]
                                             systems.render.window.set_cursor_grab(window::CursorGrabMode::None).unwrap();
                                             systems.render.window.set_fullscreen(None);
                                         }
                                     },
                                     KeyCode::Enter => {
+                                        #[cfg(target_arch="wasm32")]
                                         systems.render.window.set_cursor_grab(window::CursorGrabMode::Locked).unwrap();
                                         systems.render.window.set_cursor_visible(false);
 
@@ -150,7 +152,9 @@ impl MainLoop {
                             // if left click set cursor grabbed
                             match button {
                                 MouseButton::Left => {
+
                                     if state.is_pressed() {
+                                        #[cfg(target_arch="wasm32")]
                                         systems.render.window.set_cursor_grab(window::CursorGrabMode::Locked).unwrap();
                                         systems.render.window.set_cursor_visible(false);
                                     }
@@ -190,11 +194,20 @@ fn main_loop_tick(
     systems : &mut Engine,
 ) {
     
-    let instant = web_time::Instant::now();
+    // let instant = web_time::Instant::now();
 
     systems.time.start_of_frame();
 
-    systems.net.tick(&mut systems.engine_handle);
+    #[cfg(target_arch= "wasm32")]
+    systems.net.tick(
+        &mut systems.engine_handle,
+    );
+
+    #[cfg(not(target_arch= "wasm32"))]
+    systems.net.tick(
+        &mut systems.engine_handle,
+        &mut systems.runtime
+    );
 
     systems.input.get_input(&mut systems.world, &mut systems.net);
 
@@ -228,8 +241,8 @@ fn main_loop_tick(
 
     systems.time.end_of_frame();
 
-    log::error!("main loop DT is {}", instant.elapsed().as_secs_f64());
-    log::error!("PREV FRAME DUR is {}", systems.time.prev_frame_duration);
+    // log::error!("main loop DT is {}", instant.elapsed().as_secs_f64());
+    // log::error!("PREV FRAME DUR is {}", systems.time.prev_frame_duration);
 }
 
 fn init(systems: &mut Engine) {

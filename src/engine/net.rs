@@ -1,6 +1,9 @@
 use std::vec;
 
 use glam::{Vec3, Vec4};
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::runtime::Runtime;
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsValue;
 
 use matchbox_socket::{
@@ -89,7 +92,10 @@ pub struct NetSystem {
 }
 
 impl NetSystem {
-    pub async fn new() -> Self {
+    pub async fn new(
+        #[cfg(not(target_arch = "wasm32"))]
+        async_runtime: &mut Runtime
+    ) -> Self {
 
         let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new("ws://localhost:3536/")
             .ice_server(RtcIceServerConfig::default())
@@ -97,13 +103,20 @@ impl NetSystem {
             .add_unreliable_channel()
             .build();
 
-        let promise = wasm_bindgen_futures::future_to_promise(async {
-            let _ = socket_future.await;
+        #[cfg(target_arch = "wasm32")]
+        {
+            let promise = wasm_bindgen_futures::future_to_promise(async {
+                let _ = socket_future.await;
+    
+                Result::Ok(JsValue::null())
+            });
 
-            Result::Ok(JsValue::null())
-        });
+            let _ = wasm_bindgen_futures::JsFuture::from(promise);
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        async_runtime.spawn(socket_future);
 
-        let _ = wasm_bindgen_futures::JsFuture::from(promise);
+
 
         NetSystem {
             socket,
@@ -112,11 +125,19 @@ impl NetSystem {
         }
     }
 
-    pub fn tick(&mut self, engine_handle: &mut EngineHandle) {
+    pub fn tick(
+        &mut self,
+        engine_handle: &mut EngineHandle,
+        #[cfg(not(target_arch = "wasm32"))]
+        async_runtime: &mut Runtime,
+    ) {
 
         if self.socket.any_closed() {
 
             log::warn!("Net system: connection to signaling server is lost");
+            #[cfg(not(target_arch = "wasm32"))]
+            self.reconnect(async_runtime);
+            #[cfg(target_arch = "wasm32")]
             self.reconnect();
             return;
         }
@@ -188,7 +209,11 @@ impl NetSystem {
         }
     }
 
-    fn reconnect(&mut self) {
+    fn reconnect(
+        &mut self,
+        #[cfg(not(target_arch = "wasm32"))]
+        async_runtime: &mut Runtime,
+    ) {
         
         log::info!("trying to reconnect");
 
@@ -197,13 +222,18 @@ impl NetSystem {
             .add_unreliable_channel()
             .build();
 
-        let promise = wasm_bindgen_futures::future_to_promise(async {
-            let _ = socket_future.await;
+        #[cfg(target_arch = "wasm32")]
+        {
+            let promise = wasm_bindgen_futures::future_to_promise(async {
+                let _ = socket_future.await;
+    
+                Result::Ok(JsValue::null())
+            });
 
-            Result::Ok(JsValue::null())
-        });
-
-        let _ = wasm_bindgen_futures::JsFuture::from(promise);
+            let _ = wasm_bindgen_futures::JsFuture::from(promise);
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        async_runtime.spawn(socket_future);
 
         self.socket = socket;
         self.connected = false;

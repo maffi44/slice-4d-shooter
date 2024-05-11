@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File, io::Read};
 
 use crate::{
     transform::Transform,
@@ -21,8 +21,9 @@ use crate::{
     },
 };
 
-use glam::{Vec4, Vec3};
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::JsFuture;
+use glam::{Vec4, Vec3};
 use serde_json::Value;
 
 use super::static_object::{WFloor, WRoof};
@@ -66,45 +67,69 @@ impl Level {
     }
 
 
-    pub async fn download_level_from_server() -> (Level, Vec<ActorWrapper>)
+    pub async fn load_level() -> (Level, Vec<ActorWrapper>)
     {
-        let window = web_sys::window().unwrap();
-    
-        let target = "http://127.0.0.1:5500/src/assets/maps/map.json";
+        #[cfg(target_arch = "wasm32")]
+        {
+            let window = web_sys::window().unwrap();
         
-        let promise = window.fetch_with_str(target);
-    
-        let result = JsFuture::from(promise).await;
-    
-        let output = match result {
-            Ok(val) => {
-                let response: web_sys::Response = val.into();
-    
-                let json_text = JsFuture::from(response.text().unwrap()).await;
-                
-                match json_text {
-                    Ok(text) => {
-                        let json_map = serde_json::from_str(&text.as_string().unwrap()).unwrap();
-                        
-                        parse_json_level(json_map)
-                    },
-                    Err(val) => {
-                        panic!(
-                            "ERROR: cannot converting map.json file into text, err is: {:?}",
-                            val
-                        );
-                    },
+            let target = "http://127.0.0.1:5500/src/assets/maps/map.json";
+            
+            let promise = window.fetch_with_str(target);
+        
+            let result = JsFuture::from(promise).await;
+        
+            let output = match result {
+                Ok(val) => {
+                    let response: web_sys::Response = val.into();
+        
+                    let json_text = JsFuture::from(response.text().unwrap()).await;
+                    
+                    match json_text {
+                        Ok(text) => {
+                            let json_map = serde_json::from_str(&text.as_string().unwrap()).unwrap();
+                            
+                            parse_json_level(json_map)
+                        },
+                        Err(val) => {
+                            panic!(
+                                "ERROR: cannot converting map.json file into text, err is: {:?}",
+                                val
+                            );
+                        },
+                    }
+                },
+                Err(val) => {
+                    panic!(
+                        "ERROR: the map cannot be loaded, err: {}",
+                        val.as_string().unwrap_or("".to_string())
+                    );
+                }  
+            };
+        
+            return output;
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let mut file = File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/map.json")
+                .expect("Can't find map.fson file");
+
+            let mut file_content = String::new();
+            match file.read_to_string(&mut file_content) {
+                Ok(_) => {
+                    let json_map = serde_json::from_str(&file_content)
+                        .expect("Can't parse map.json file");
+
+                    return parse_json_level(json_map);
+                },
+                Err(e) => {
+                    panic!(
+                        "ERROR: the map.json cannot be loaded, err: {}",
+                        e.to_string()
+                    );
                 }
-            },
-            Err(val) => {
-                panic!(
-                    "ERROR: the map cannot be loaded, err: {}",
-                    val.as_string().unwrap_or("".to_string())
-                );
-            }  
-        };
-    
-        output
+            }
+        }
     }
 }
 
