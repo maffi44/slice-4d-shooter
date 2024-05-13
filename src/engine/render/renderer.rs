@@ -170,7 +170,7 @@ impl Renderer {
             present_mode: wgpu::PresentMode::AutoNoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::default(),
             view_formats: vec![],
-            desired_maximum_frame_latency: 3,
+            desired_maximum_frame_latency: 2,
         };
         log::info!("renderer: wgpu config init");
 
