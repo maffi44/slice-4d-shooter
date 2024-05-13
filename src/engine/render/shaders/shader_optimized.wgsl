@@ -2769,12 +2769,6 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
     ray_direction *= dynamic_data.camera_data.cam_rot;
 
-    var ray_w_rotated: i32 = 1;
-
-    if ray_direction.w < 0.0002 && ray_direction.w > -0.0002{
-        ray_w_rotated = 0;
-    }
-
     let camera_position = dynamic_data.camera_data.cam_pos;
 
     var in = find_intersections(camera_position, ray_direction);

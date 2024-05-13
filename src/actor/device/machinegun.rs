@@ -1,5 +1,4 @@
 use glam::Vec4;
-use web_sys::js_sys::Math::random;
 
 use crate::{
     actor::{
@@ -67,9 +66,28 @@ impl MachineGun {
         engine_handle: &mut EngineHandle,
     ) {
         let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
+
+        let mut bytes = [0_u8;4];
+        getrandom::getrandom(&mut bytes).expect("Func getrandom is fail in mahinegun shoot fn");
+        let mut rnd_x = f32::from_be_bytes(bytes);
+        if rnd_x.is_normal() {
+            rnd_x = rnd_x.sin();
+        } else {
+            rnd_x = 0.0;
+        }
+
+        let mut bytes = [0_u8;4];
+        getrandom::getrandom(&mut bytes).expect("Func getrandom is fail in mahinegun shoot fn");
+        let mut rnd_y = f32::from_be_bytes(bytes);
+        if rnd_y.is_normal() {
+            rnd_y = rnd_y.sin();
+        } else {
+            rnd_y = 0.0;
+        }
+
                 
-        let random_dir_y = glam::Mat4::from_rotation_y((random() - 0.5) as f32 * (self.shooting_range));
-        let random_dir_x = glam::Mat4::from_rotation_x((random() - 0.5) as f32 * (self.shooting_range));
+        let random_dir_y = glam::Mat4::from_rotation_y((rnd_y - 0.5) as f32 * (self.shooting_range));
+        let random_dir_x = glam::Mat4::from_rotation_x((rnd_x - 0.5) as f32 * (self.shooting_range));
         
         let forward_dir = random_dir_x * random_dir_y * Vec4::NEG_Z;
         
