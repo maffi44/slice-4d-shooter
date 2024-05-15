@@ -25,7 +25,7 @@ use self::{
     net::NetSystem,
 };
 
-use winit::window::{Window, WindowBuilder};
+use winit::window::WindowBuilder;
 
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::WindowBuilderExtWebSys;

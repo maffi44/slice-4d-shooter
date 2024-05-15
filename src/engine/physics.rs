@@ -76,7 +76,7 @@ impl PhysicsSystem {
         let mut areas: Vec<&mut Area> = unsafe {
             std::mem::transmute_copy(&self.frame_colliders_buffers.areas)
         };
-        let mut dynamic_colliders: Vec<&mut PlayersDollCollider> = unsafe {
+        let dynamic_colliders: Vec<&mut PlayersDollCollider> = unsafe {
             std::mem::transmute_copy(&self.frame_colliders_buffers.dynamic_colliders)
         };
 
@@ -125,11 +125,11 @@ impl PhysicsSystem {
                     for dynamic_collider in colliders {
                         
                         // temporary solution to immitate kinematic physic
-                        let mut temporal_dynamoc_collider = dynamic_collider.clone();
+                        let mut temporal_dynamic_collider = dynamic_collider.clone();
 
-                        temporal_dynamoc_collider.position += transform.get_position();
+                        temporal_dynamic_collider.position += transform.get_position();
 
-                        self.physics_state.add_temporal_dynamic_collider(temporal_dynamoc_collider);
+                        self.physics_state.add_temporal_dynamic_collider(temporal_dynamic_collider);
                         
                         // dynamic_colliders.push(dynamic_collider);
                     }

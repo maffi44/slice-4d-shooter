@@ -21,7 +21,6 @@ use self::{
     render_data::RenderData,
 };
 
-use serde_json::error;
 use winit::window::Window;
 
 use super::physics::dynamic_collider::PlayersDollCollider;

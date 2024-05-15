@@ -5,21 +5,30 @@ use crate::{
                 InputMaster,
                 LocalMaster
             }, Player
-        }, Actor, ActorWrapper, CommonActorsMessages, Message, MessageType
-    }, engine::{
-        engine_handle::{Command, CommandType}, input::ActionsFrameState, Engine
-    }, transform::Transform
+        },
+        Actor,
+        ActorWrapper,
+    },
+    engine::{
+        input::ActionsFrameState,
+        Engine
+    },
 };
 
-use std::time::Duration;
 use web_time::Instant;
 use glam::Vec2;
 
 use winit::{
     event::*,
-    event_loop::{ControlFlow, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
-    window::{self, Fullscreen}
+    event_loop::{
+        ControlFlow,
+        EventLoop
+    },
+    keyboard::{
+        KeyCode,
+        PhysicalKey
+    },
+    window::Fullscreen
 };
 
 pub struct 
@@ -193,9 +202,6 @@ impl MainLoop {
 fn main_loop_tick(
     systems : &mut Engine,
 ) {
-    
-    // let instant = web_time::Instant::now();
-
     systems.time.start_of_frame();
 
     #[cfg(target_arch= "wasm32")]
@@ -240,10 +246,9 @@ fn main_loop_tick(
     systems.input.reset_input();
 
     systems.time.end_of_frame();
-
-    // log::error!("main loop DT is {}", instant.elapsed().as_secs_f64());
-    // log::error!("PREV FRAME DUR is {}", systems.time.prev_frame_duration);
 }
+
+
 
 fn init(systems: &mut Engine) {
     let mut main_player = Player::new(

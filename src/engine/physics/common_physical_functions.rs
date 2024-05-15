@@ -8,7 +8,7 @@ use glam::{
 
 use crate::actor::{ActorID, Component};
 
-use super::physics_system_data::{PhysicsState, ShapeType};
+use super::physics_system_data::PhysicsState;
 
 pub const THRESHOLD: f32 = 0.009;
 pub const MAX_DIST: f32 = 700_f32;

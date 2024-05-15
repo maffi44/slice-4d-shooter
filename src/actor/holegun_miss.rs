@@ -9,14 +9,16 @@ use crate::{
         engine_handle::{
             Command,
             CommandType,
-            EngineHandle},
+            EngineHandle
+        },
         physics::{
             colliders_container::PhysicalElement,
             PhysicsSystem
         },
         render::VisualElement,
         world::static_object::{
-            BeamVolumeArea, SphericalVolumeArea, VolumeArea
+            BeamVolumeArea,
+            VolumeArea
         },
     },
     transform::Transform,

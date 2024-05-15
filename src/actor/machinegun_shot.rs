@@ -1,4 +1,4 @@
-use glam::{Vec3, Vec4, FloatExt};
+use glam::{Vec3, Vec4};
 
 use crate::{
     actor::{
@@ -21,7 +21,6 @@ use crate::{
         world::static_object::{
             BeamVolumeArea,
             ColoringArea,
-            ObjectMaterial,
             SphericalVolumeArea,
             StaticObject,
             VolumeArea

@@ -1,16 +1,22 @@
-use std::{borrow::Cow, collections::HashMap, hash::{BuildHasher, BuildHasherDefault}, sync::{Arc, Mutex}};
-
 use crate::engine::render::render_data::RenderData;
 
 use winit::window::Window;
 use wgpu::{
-    include_spirv, rwh::{
+    rwh::{
         HasDisplayHandle,
         HasWindowHandle
-    }, util::{
+    },
+    util::{
         BufferInitDescriptor,
-        DeviceExt
-    }, BindGroup, Buffer, BufferUsages, Color, InstanceFlags, MaintainResult, PipelineCompilationOptions, SurfaceTexture
+        DeviceExt,
+    },
+    BindGroup,
+    Buffer,
+    BufferUsages,
+    Color,
+    InstanceFlags,
+    MaintainResult,
+    PipelineCompilationOptions,
 };
 
 

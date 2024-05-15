@@ -16,7 +16,7 @@ use crate::{
 
 use self::action::Action;
 
-use std::{collections::HashMap, iter::Cloned};
+use std::collections::HashMap;
 
 use winit::{
     event::{

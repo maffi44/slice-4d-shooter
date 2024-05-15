@@ -5,7 +5,16 @@ use self::level::Level;
 
 use crate::{
     actor::{
-        player::{player_settings::PlayerSettings, PlayerMessages}, players_doll::PlayersDoll, Actor, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage
+        player::{
+            player_settings::PlayerSettings,
+            PlayerMessages
+        },
+        Actor,
+        ActorID,
+        ActorWrapper,
+        Message,
+        MessageType,
+        SpecificActorMessage,
     },
     engine::{
         engine_handle::{

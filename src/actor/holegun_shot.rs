@@ -21,7 +21,6 @@ use crate::{
         world::static_object::{
             BeamVolumeArea,
             ColoringArea,
-            ObjectMaterial,
             SphericalVolumeArea,
             StaticObject,
             VolumeArea
