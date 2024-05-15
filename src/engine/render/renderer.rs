@@ -1,22 +1,16 @@
-use std::sync::{Arc, Mutex};
+use std::{borrow::Cow, collections::HashMap, hash::{BuildHasher, BuildHasherDefault}, sync::{Arc, Mutex}};
 
 use crate::engine::render::render_data::RenderData;
 
 use winit::window::Window;
 use wgpu::{
-    rwh::{
+    include_spirv, rwh::{
         HasDisplayHandle,
         HasWindowHandle
-    },
-    util::{
+    }, util::{
         BufferInitDescriptor,
         DeviceExt
-    },
-    BindGroup,
-    Buffer,
-    BufferUsages,
-    Color,
-    InstanceFlags, MaintainResult, PipelineCompilationOptions, SurfaceTexture
+    }, BindGroup, Buffer, BufferUsages, Color, InstanceFlags, MaintainResult, PipelineCompilationOptions, SurfaceTexture
 };
 
 
@@ -176,13 +170,45 @@ impl Renderer {
 
         surface.configure(&device, &config);
         log::info!("renderer: wgpu surface configurated");
-        
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Shader"),
 
-            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader.wgsl").into()),
+        // for WGSL shaders
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Vertex Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader_new_opt.wgsl").into())
         });
-        log::info!("renderer: wgpu shader init");
+
+        
+        // for GLSL shaders
+        // let vert_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        //     label: Some("Vertex Shader"),
+
+        //     source: wgpu::ShaderSource::Glsl {
+        //         shader: include_str!("shaders/shader_optimized_2.vert").into(),
+        //         stage: wgpu::naga::ShaderStage::Vertex,
+        //         defines: HashMap::<String,String,BuildHasherDefault<rustc_hash::FxHasher>>::with_hasher(
+        //             BuildHasherDefault::default() 
+        //         ),
+
+        //     },
+        // });
+        // let frag_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        //     label: Some("Fragment Shader"),
+
+        //     source: wgpu::ShaderSource::Glsl {
+        //         shader: include_str!("shaders/shader_optimized_2.frag").into(),
+        //         stage: wgpu::naga::ShaderStage::Fragment,
+        //         defines: HashMap::<String,String,BuildHasherDefault<rustc_hash::FxHasher>>::with_hasher(
+        //             BuildHasherDefault::default() 
+        //         ),
+                
+        //     },
+        // });
+
+        //for Spir-V shaders
+        // let vert_shader = unsafe {device.create_shader_module_unchecked(include_spirv!("shaders/vert_2.spv"))};
+        // let frag_shader = unsafe {device.create_shader_module_unchecked(include_spirv!("shaders/frag_2.spv"))};
+
+        log::info!("renderer: wgpu shaders init");
 
         let static_normal_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("time_buffer"),
@@ -603,11 +629,11 @@ impl Renderer {
             self.total_time += current_frame_time;
             self.total_frames_count += 1;
 
-            // log::info!(
-            //     "AV DT {}, CUR DT: {}",
-            //     self.total_time / (self.total_frames_count) as f64,
-            //     current_frame_time,
-            // );
+            log::error!(
+                "AV DT {}, CUR DT: {}",
+                self.total_time / (self.total_frames_count) as f64,
+                current_frame_time,
+            );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());

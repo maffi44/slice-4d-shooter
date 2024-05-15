@@ -11,7 +11,7 @@ edition = "2021"
 # webrtc = "*"
 env_logger = "*"
 winit = {version = "0.29", features = ["rwh_05"]}
-wgpu = { version = "*", default-features = false, features = ["webgl", "wgsl"]}
+wgpu = { version = "*", default-features = false, features = ["webgl", "glsl", "spirv", "wgsl", "naga"]}
 bytemuck = { version = "*", features = [ "derive" ] }
 pollster = "*"
 tokio = "*"
@@ -36,6 +36,7 @@ web-sys = { version = "*", features = [
     "Response"
 ]}
 matchbox_socket = "*"
+rustc-hash = "1.1.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
