@@ -83,10 +83,10 @@ pub struct ShapesArrays {
 
 impl Default for ShapesArrays {
     fn default() -> Self {
-        let normal = Box::new([Shape::default(); 256]);
-        let negative = Box::new([Shape::default(); 256]);
-        let stickiness = Box::new([Shape::default(); 256]);
-        let neg_stickiness = Box::new([Shape::default(); 256]);
+        let normal = {Box::new([Shape::default(); 256])};
+        let negative = {Box::new([Shape::default(); 256])};
+        let stickiness = {Box::new([Shape::default(); 256])};
+        let neg_stickiness = {Box::new([Shape::default(); 256])};
 
         ShapesArrays {
             normal,

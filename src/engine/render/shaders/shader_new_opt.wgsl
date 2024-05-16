@@ -1116,6 +1116,241 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
     return offset;
 }
 
+fn not_opt_map(p: vec4<f32>) -> f32 {
+    var d = MAX_DIST*2.0;
+
+    // static stickiness shapes
+    for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
+        d = smin(d, sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = static_data.shapes_arrays_metadata.s_spheres_start; i < static_data.shapes_arrays_metadata.s_spheres_amount + static_data.shapes_arrays_metadata.s_spheres_start; i++) {
+        d = smin(d, sd_sphere(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.x) - stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+        d = smin(d, sd_sph_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = static_data.shapes_arrays_metadata.s_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_inf_cubes_amount + static_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+        d = smin(d, sd_inf_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.xyz) - stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+
+    // dynamic stickiness
+    for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
+        d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
+        d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+        d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+        d = smin(d, sd_inf_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.xyz) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+
+
+    // static normal shapes
+    for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
+        d = min(d, sd_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
+    }
+    for (var i = static_data.shapes_arrays_metadata.spheres_start; i < static_data.shapes_arrays_metadata.spheres_amount + static_data.shapes_arrays_metadata.spheres_start; i++) {
+        d = min(d, sd_sphere(p - normal_shapes[i].pos, normal_shapes[i].size.x) - normal_shapes[i].roundness);
+    }
+    for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+        d = min(d, sd_sph_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
+    }
+    for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+        d = min(d, sd_inf_box(p - normal_shapes[i].pos, normal_shapes[i].size.xyz) - normal_shapes[i].roundness);
+    }
+
+    // dynamic normal shapes
+    for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
+        d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.spheres_start; i < dynamic_data.shapes_arrays_metadata.spheres_amount + dynamic_data.shapes_arrays_metadata.spheres_start; i++) {
+        d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+        d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.inf_cubes_amount + dynamic_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+        d = min(d, sd_inf_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.xyz) - dyn_normal_shapes[i].roundness);
+    }
+
+    // static negative stickiness shapes
+    var dd = MAX_DIST;
+
+    for (var i = static_data.shapes_arrays_metadata.s_neg_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_cubes_amount + static_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+        dd = smin(dd, sd_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = static_data.shapes_arrays_metadata.s_neg_spheres_start; i < static_data.shapes_arrays_metadata.s_neg_spheres_amount + static_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+        dd = smin(dd, sd_sphere(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.x) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+        dd = smin(dd, sd_sph_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
+        dd = smin(dd, sd_inf_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.xyz) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    d = max(d, -dd);
+
+    // dynamic negative stickiness shapes
+    var ddd = dd;
+
+    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+        ddd = smin(ddd, sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_amount + dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+        ddd = smin(ddd, sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+        ddd = smin(ddd, sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
+        ddd = smin(ddd, sd_inf_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.xyz) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
+    }
+    d = max(d, -ddd);
+
+    // static negative shapes
+    for (var i = static_data.shapes_arrays_metadata.neg_cubes_start; i < static_data.shapes_arrays_metadata.neg_cubes_amount + static_data.shapes_arrays_metadata.neg_cubes_start; i++) {
+        d = max(d, -(sd_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
+    }
+    for (var i = static_data.shapes_arrays_metadata.neg_spheres_start; i < static_data.shapes_arrays_metadata.neg_spheres_amount + static_data.shapes_arrays_metadata.neg_spheres_start; i++) {
+        d = max(d, -(sd_sphere(p - negatives_shapes[i].pos, negatives_shapes[i].size.x) - negatives_shapes[i].roundness));
+    }
+    for (var i = static_data.shapes_arrays_metadata.neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.neg_sph_cubes_amount + static_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+        d = max(d, -(sd_sph_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
+    }
+    for (var i = static_data.shapes_arrays_metadata.neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.neg_inf_cubes_amount + static_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
+        d = max(d, -(sd_inf_box(p - negatives_shapes[i].pos, negatives_shapes[i].size.xyz) - negatives_shapes[i].roundness));
+    }
+
+    // dynamic negative shapes
+    for (var i = dynamic_data.shapes_arrays_metadata.neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_cubes_start; i++) {
+        d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount + dynamic_data.shapes_arrays_metadata.neg_spheres_start; i++) {
+        d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+        d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+    }
+    for (var i = dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
+        d = max(d, -(sd_inf_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.xyz) - dyn_negatives_shapes[i].roundness));
+    }
+
+    var dddd = MAX_DIST;
+    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+        dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
+        dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
+        
+        let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
+        dddd = max(dddd, -sd_box(
+            rotated_p,
+            vec4(
+                dyn_player_forms[i].radius * 0.18,
+                dyn_player_forms[i].radius* 1.2,
+                dyn_player_forms[i].radius* 1.2,
+                dyn_player_forms[i].radius * 1.2
+            )));
+        
+        dddd = max(
+            dddd,
+            -sd_sphere(
+                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
+                dyn_player_forms[i].radius * 0.53
+            )
+        );
+
+        dddd = min(
+            dddd,
+            sd_sphere(
+                p - dyn_player_forms[i].pos,
+                dyn_player_forms[i].radius * 0.6
+            )
+        );
+        dddd = max(
+            dddd,
+            -sd_sphere(
+                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
+                dyn_player_forms[i].radius * 0.34
+            )
+        );
+
+        dddd = min(
+            dddd,
+            sd_sphere(
+                rotated_p - dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].radius * 0.286,
+            )
+        );
+
+        dddd = max(
+            dddd,
+            -sd_capsule(
+                rotated_p,
+                dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    dyn_player_forms[i].radius* 0.49,
+                    0.0
+                ),
+                dyn_player_forms[i].radius* 0.18
+            )
+        );
+
+        dddd = min(
+            dddd,
+            sd_capsule(
+                rotated_p,
+                dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    dyn_player_forms[i].radius* 0.43,
+                    0.0
+                ),
+                dyn_player_forms[i].radius* 0.1
+            )
+        );
+
+        dddd = max(
+            dddd,
+            -sd_capsule(
+                rotated_p,
+                dyn_player_forms[i].weapon_offset,
+                dyn_player_forms[i].weapon_offset -
+                vec4(
+                    0.0,
+                    0.0,
+                    dyn_player_forms[i].radius* 0.65,
+                    0.0
+                ),
+                dyn_player_forms[i].radius* 0.052
+            )
+        );
+        
+
+    }
+    d = min(d, dddd);
+    
+    if static_data.is_w_floor_exist == 1 {
+        if ray_w_rotated {
+            d = min(d, p.w - static_data.w_floor);
+        }
+    }
+
+    // if static_data.is_w_roof_exist == 1 {
+    //     if ray_w_rotated == 1 {
+    //         d = min(d, static_data.w_roof - p.w);
+    //     }
+    // }
+
+    return d;
+}
+
 
 fn map(p: vec4<f32>) -> f32 {
     var d = MAX_DIST*2.0;
@@ -1616,18 +1851,12 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                ////let ddd = smin(d, dd, static_data.stickiness);
-                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
-                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
-                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
                 var coef = 0.0;
                 if d<dd {
                     coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
                 } else {
                     coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
                 }
-                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
-
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
 
@@ -1660,18 +1889,12 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                //let ddd = smin(d, dd, static_data.stickiness);
-                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
-                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
-                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
                 var coef = 0.0;
                 if d<dd {
                     coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
                 } else {
                     coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
                 }
-                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
-
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
 
@@ -1704,18 +1927,12 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                //let ddd = smin(d, dd, static_data.stickiness);
-                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
-                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
-                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
                 var coef = 0.0;
                 if d<dd {
                     coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
                 } else {
                     coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
                 }
-                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
-
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
 
@@ -1748,18 +1965,12 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                //let ddd = smin(d, dd, static_data.stickiness);
-                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
-                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
-                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
                 var coef = 0.0;
                 if d<dd {
                     coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
                 } else {
                     coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
                 }
-                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
-
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
 
@@ -1794,18 +2005,12 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                //let ddd = smin(d, dd, static_data.stickiness);
-                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
-                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
-                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
                 var coef = 0.0;
                 if d<dd {
                     coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
                 } else {
                     coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
                 }
-                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
-
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
 
@@ -1838,18 +2043,12 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                //let ddd = smin(d, dd, static_data.stickiness);
-                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
-                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
-                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
                 var coef = 0.0;
                 if d<dd {
                     coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
                 } else {
                     coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
                 }
-                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
-
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
 
@@ -1882,19 +2081,12 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                //let ddd = smin(d, dd, static_data.stickiness);
-                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
-                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
-                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
                 var coef = 0.0;
                 if d<dd {
                     coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
                 } else {
                     coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
                 }
-                
-                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
-
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
 
@@ -1927,18 +2119,12 @@ fn get_mat(
                 output.materials[0] = shape.material;
                 d = dd;
             } else {
-                //let ddd = smin(d, dd, static_data.stickiness);
-                //let coef = clamp((dd - d) / (ddd - d), 0.0, 1.0);
-                //let coef = clamp((static_data.stickiness - dd)/static_data.stickiness, 0.0, 1.0);
-                //let kk = static_data.stickiness * 1.0/(1.0-sqrt(0.5));
                 var coef = 0.0;
                 if d<dd {
                     coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
                 } else {
                     coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
                 }
-                //let coef = clamp(0.5 + ((d-dd)/(static_data.stickiness)), 0.0, 1.0);
-
                 output.materials[output.materials_count] = shape.material;
                 output.material_weights[output.materials_count] = coef;
 
@@ -2068,6 +2254,42 @@ fn add_w_scnner_color(pos: vec4<f32>, dist: f32, dir: vec4<f32>) -> vec3<f32> {
     return clamp(scanner_color, vec3(0.0), vec3(1.0));
 }
 
+
+fn get_shadow(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32) -> f32 {
+    if offset > MAX_DIST {
+        return 1.0;
+    }
+
+    var total_distance: f32 = offset;
+    
+    var ray_origin = ray_origin_base + ray_direction*offset;
+
+    var i: i32 = 0;
+    for (; i < MAX_STEPS; i++) {
+        var d: f32  = map(ray_origin);
+        total_distance += d;
+
+        if (d < 0.) {
+            return 0.0;
+        }
+        if (d < MIN_DIST) {
+            return 0.0;
+        }
+        if (total_distance > MAX_DIST) {
+            return 1.0;
+        }
+
+        ray_origin += ray_direction * d;
+    }
+    return 1.0;
+}
+
+
+const SKY_COLOR: vec3<f32> = vec3(0.1, 0.2, 0.2);
+const SUN_COLOR: vec3<f32> = vec3(2.6, 1.3, 1.3);
+const FOG_COLOR: vec3<f32> = vec3(0.7, 0.8, 0.9);
+const SUN_DIR: vec4<f32> = vec4(1.0, 0.5, 0.3, 0.0);
+
 fn apply_material(
     pos: vec4<f32>,
     ray_dir: vec4<f32>,
@@ -2075,21 +2297,51 @@ fn apply_material(
     material: i32,
 ) -> vec3<f32> {
     
+    // sky
     if material < 0 {
-        return vec3(0.7);
+        var color =  SKY_COLOR;// - max(ray_dir.y, 0.0)*0.5;
+
+        color += 0.2*(sin(ray_dir.y*5.0+dynamic_data.time)+sin(ray_dir.x*5.0+dynamic_data.time)+sin(ray_dir.w* 5.0+dynamic_data.time));
+
+        color =  mix(color, FOG_COLOR, 1.0-ray_dir.y);
+
+        return color;
     }
 
+    let hited_pos = pos + ray_dir * dist;
+
+    let normal = get_normal(hited_pos);
+    
+    let sky_light = vec3(0.7,0.6,0.5) * normal.y;
+
+    let sun_dir = normalize(SUN_DIR);
+    let sun_dif = clamp(dot(normal, sun_dir),0.0,1.0);
+    let sky_dif = clamp(0.5 + 0.5*normal.y,0.0,1.0);
+    let bound_dif = clamp(0.5 + 0.5*-normal.y, 0.0, 1.0);
+
+    let reflection = reflect(ray_dir, normal);
+    let frenel = clamp(1.0 + dot(normal, ray_dir), 0.0, 1.0);
+
+    let sun_hal = normalize(sun_dir-ray_dir);
+    let sun_spe = pow(clamp(dot(normal,sun_hal),0.0,1.0),3.0)*sun_dif*(0.04+0.96*pow(clamp(1.0+dot(sun_hal,ray_dir),0.0,1.0),2.0));
+    let sky_spe = smoothstep( 0.0, 0.5, reflection.y )*(0.04+0.96*pow(frenel,4.0));
+
+
+    let offset = find_intersections(hited_pos + normal*MIN_DIST*2.0, sun_dir);
+    let sun_shadow = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir, offset);
+
     let diffuse = static_data.materials[material].color.xyz;
+    var light = vec3(0.0);
+    light += SUN_COLOR * sun_dif * (sun_shadow);
+    light += SKY_COLOR * sky_dif;
+    light += SUN_COLOR*0.1 * bound_dif;
+    light += sun_spe * SUN_COLOR*3.0 * sun_shadow;
+    light += sky_spe*vec3(0.20,0.30,0.65);
+    light += frenel*vec3(1.0,0.7,0.6)*1.0*(0.5+0.5*sun_dif);
 
-    let normal = get_normal(pos + ray_dir * dist);
+    var color = diffuse * light;
 
-    let dir_shade = dot(normal, normalize(vec4<f32>(1.0, 0.5, 0.3, 0.1)));
-
-    // let shade = mix(0.32, 0.98, shade_coefficient);
-
-    // var color = vec3(dist_and_depth.x / (MAX_DIST / 12.0));
-    var color = diffuse * dir_shade;
-
+    color = clamp(color, vec3(0.0), vec3(1.0));
     return color;
 }
 

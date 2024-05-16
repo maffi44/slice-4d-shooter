@@ -131,13 +131,13 @@ impl MainLoop {
                                         if event.state.is_pressed() {
                                             systems.render.window.set_cursor_visible(true);
                                             #[cfg(target_arch="wasm32")]
-                                            systems.render.window.set_cursor_grab(window::CursorGrabMode::None).unwrap();
+                                            systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
                                             systems.render.window.set_fullscreen(None);
                                         }
                                     },
                                     KeyCode::Enter => {
                                         #[cfg(target_arch="wasm32")]
-                                        systems.render.window.set_cursor_grab(window::CursorGrabMode::Locked).unwrap();
+                                        systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Locked).unwrap();
                                         systems.render.window.set_cursor_visible(false);
 
                                         if event.state.is_pressed() {
@@ -164,7 +164,7 @@ impl MainLoop {
 
                                     if state.is_pressed() {
                                         #[cfg(target_arch="wasm32")]
-                                        systems.render.window.set_cursor_grab(window::CursorGrabMode::Locked).unwrap();
+                                        systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Locked).unwrap();
                                         systems.render.window.set_cursor_visible(false);
                                     }
                                 },

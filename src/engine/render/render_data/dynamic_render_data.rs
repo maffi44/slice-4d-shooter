@@ -40,9 +40,9 @@ impl DynamicRenderData {
     pub fn new() -> Self {
         DynamicRenderData {
             dynamic_shapes_data: ShapesArrays::default(),
-            spherical_areas_data: Box::new([SphericalArea::default(); 256]),
-            beam_areas_data: Box::new([BeamArea::default(); 64]),
-            player_forms_data: Box::new([PlayerForm::default(); 16]),
+            spherical_areas_data: {Box::new([SphericalArea::default(); 256])},
+            beam_areas_data: {Box::new([BeamArea::default(); 64])},
+            player_forms_data: {Box::new([PlayerForm::default(); 16])},
             other_dynamic_data: OtherDynamicData::default(),
 
             frame_cubes_buffer: SpecificShapeBuffers::default(),

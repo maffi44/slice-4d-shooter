@@ -48,7 +48,7 @@ pub struct Engine {
 
 #[cfg(target_arch = "wasm32")]
 struct WindowReadyFuture<'a> {
-    window: &'a Window
+    window: &'a winit::window::Window
 }
 #[cfg(target_arch = "wasm32")]
 impl<'a> Future for WindowReadyFuture<'a> {
