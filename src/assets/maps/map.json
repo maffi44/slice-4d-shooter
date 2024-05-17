@@ -14,17 +14,17 @@
         {
             "name" : "wall",
             "color" : {
-                "red": 0.12,
-                "green": 0.1,
-                "blue": 0.11
+                "red": 0.25,
+                "green": 0.25,
+                "blue": 0.25
             }
         },
         {
             "name" : "floor",
             "color" : {
-                "red": 0.16,
+                "red": 0.2,
                 "green": 0.2,
-                "blue": 0.18
+                "blue": 0.2
             }
         },
         {
