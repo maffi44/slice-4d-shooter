@@ -1,12 +1,9 @@
 use glam::Vec3Swizzles;
 
 use crate::engine::{
-    world::World,
-    physics::physics_system_data::ShapeType,
-    render::render_data::{
-        ShapesArraysMetadata,
-        Shape
-    },
+    physics::physics_system_data::ShapeType, render::render_data::{
+        BoundingBox, Shape, ShapesArraysMetadata
+    }, world::World
 };
 
 use super::ShapesArrays;
@@ -14,6 +11,7 @@ use super::ShapesArrays;
 pub struct StaticRenderData {
     pub static_shapes_data: ShapesArrays,
     pub other_static_data: OtherStaticData,
+    pub static_bounding_box: BoundingBox,
 }
 
 
@@ -185,9 +183,11 @@ impl StaticRenderData {
         let mut s_inf_w_cubes: Vec<Shape> = Vec::new();
         let mut neg_inf_w_cubes: Vec<Shape> = Vec::new();
         let mut s_neg_inf_w_cubes: Vec<Shape> = Vec::new();
-
+        
+        let mut static_bounding_box = BoundingBox::new();
+        
         for obj in &world.level.static_objects {
-
+            
             log::info!("static objects amount is {}", world.level.static_objects.len());
 
             match obj.collider.shape_type {
@@ -203,7 +203,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             cubes.push(shape);
 
                             cubes_amount += 1;
@@ -217,7 +217,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             s_cubes.push(shape);
 
                             s_cubes_amount += 1;
@@ -231,7 +231,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             neg_cubes.push(shape);
 
                             neg_cubes_amount += 1;
@@ -243,7 +243,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             s_neg_cubes.push(shape);
 
                             s_neg_cubes_amount += 1;
@@ -261,7 +261,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             spheres.push(shape);
 
                         } else {
@@ -273,7 +273,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             s_spheres.push(shape);
                         }
                     } else {
@@ -285,7 +285,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             neg_spheres.push(shape);
                         } else {
                             let shape = Shape {
@@ -295,7 +295,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             s_neg_spheres.push(shape);
                         }
                     }
@@ -311,7 +311,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             inf_w_cubes.push(shape);
 
                         } else {
@@ -323,7 +323,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             s_inf_w_cubes.push(shape);
                         }
                     } else {
@@ -335,7 +335,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             neg_inf_w_cubes.push(shape);
                         } else {
                             let shape = Shape {
@@ -345,7 +345,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             s_neg_inf_w_cubes.push(shape);
                         }
                     }
@@ -361,7 +361,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             sph_cubes.push(shape);
 
                         } else {
@@ -373,7 +373,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             s_sph_cubes.push(shape);
                         }
                     } else {
@@ -385,7 +385,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             neg_sph_cubes.push(shape);
                         } else {
                             let shape = Shape {
@@ -395,7 +395,7 @@ impl StaticRenderData {
                                 empty_bytes: [0,0],
                                 roundness: obj.collider.roundness,
                             };
-
+                            static_bounding_box.expand_by_shape(&shape);
                             s_neg_sph_cubes.push(shape);
                         }
                     }
@@ -624,6 +624,7 @@ impl StaticRenderData {
         StaticRenderData {
             static_shapes_data: shapes,
             other_static_data,
+            static_bounding_box,
         }
     }
 }

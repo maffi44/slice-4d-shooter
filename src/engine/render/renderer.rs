@@ -117,7 +117,7 @@ impl Renderer {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
+                power_preference: wgpu::PowerPreference::LowPower,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -635,7 +635,7 @@ impl Renderer {
             self.total_time += current_frame_time;
             self.total_frames_count += 1;
 
-            log::error!(
+            println!(
                 "AV DT {}, CUR DT: {}",
                 self.total_time / (self.total_frames_count) as f64,
                 current_frame_time,

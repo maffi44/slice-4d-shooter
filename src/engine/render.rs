@@ -70,7 +70,12 @@ impl RenderSystem {
 
     pub fn render_frame(&mut self, world: &World, time: &TimeSystem) {
 
-        self.render_data.update_dynamic_render_data(world, time, &self.window);
+        self.render_data.update_dynamic_render_data(
+            world,
+            time,
+            &self.window,
+            &self.render_data.static_data.static_bounding_box.clone()
+        );
 
         self.renderer.queue.write_buffer(
             &self.renderer.other_dynamic_data_buffer,

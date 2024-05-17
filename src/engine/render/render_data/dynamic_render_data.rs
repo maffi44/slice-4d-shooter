@@ -13,7 +13,7 @@ use crate::{
 use glam::{Mat4, Vec4};
 use winit::window::Window;
 
-use super::{BeamArea, PlayerForm};
+use super::{BeamArea, BoundingBox, PlayerForm};
 
 
 
@@ -57,7 +57,14 @@ impl DynamicRenderData {
         }
     }
 
-    fn get_data_from_actors_visual_elements(&mut self, world: &World) {
+    fn get_data_from_actors_visual_elements(
+        &mut self,
+        world: &World,
+        static_bounding_box: &BoundingBox
+    ) -> BoundingBox {
+        
+        let mut frame_bounding_box = static_bounding_box.clone();
+        
         for (_, actor) in world.actors.iter() {
 
             if let Some(visual_element) = actor.get_visual_element() {
@@ -79,6 +86,7 @@ impl DynamicRenderData {
                             empty_bytes: [0,0],
                             roundness,
                         };
+                        frame_bounding_box.expand_by_shape(&shape);
     
                         let is_positive = static_object.collider.is_positive;
                         let is_stickiness = static_object.collider.stickiness;
@@ -204,11 +212,14 @@ impl DynamicRenderData {
                         rotation: actor.get_transform().rotation.to_cols_array(),
                         weapon_offset: player_sphere.weapon_offset.to_array()
                     };
+                    frame_bounding_box.expand_by_player_form(&player_form);
 
                     self.frame_player_forms_buffer.push(player_form);
                 }
             }
-        }
+        };
+
+        frame_bounding_box
     }
 
     fn clear_all_frame_buffers(&mut self) {
@@ -552,10 +563,11 @@ impl DynamicRenderData {
         world: &World,
         time: &TimeSystem,
         window: &Window,
+        static_bounding_box: &BoundingBox,
     ) {
         self.clear_all_frame_buffers();
 
-        self.get_data_from_actors_visual_elements(world);
+        let dyn_bb = self.get_data_from_actors_visual_elements(world, static_bounding_box);
 
         let shapes_arrays_metadata = self.update_dynamic_shapes_buffers_and_get_metadata();
 
@@ -576,6 +588,7 @@ impl DynamicRenderData {
             beams_areas_amount,
             player_forms_amount,
             players_screen_effects,
+            dyn_bb,
         );
     }
 }
@@ -613,7 +626,9 @@ pub struct OtherDynamicData {
     getting_damage_screen_effect: f32,
     stickiness: f32,
     screen_aspect: f32,
-    time: f32,   
+    time: f32,
+    bouding_box_pos_side: [f32;4],
+    bouding_box_neg_side: [f32;4],
 }
 
 impl OtherDynamicData {
@@ -627,13 +642,17 @@ impl OtherDynamicData {
         beams_areas_amount: u32,
         player_forms_amount: u32,
         players_screen_effects: &PlayerScreenEffects,
+        frame_bounding_box: BoundingBox,
     ) {
-        
+
         let cam_pos;
         let cam_rot;
 
         let explore_w_pos;
         let explore_w_coef;
+
+        self.bouding_box_pos_side = frame_bounding_box.pos_surfs.to_array();
+        self.bouding_box_neg_side = frame_bounding_box.neg_surfs.to_array();
         
         if let Some(actor) = world.actors.get(&world.main_player_id) {
             if let ActorWrapper::Player(main_player) = actor {
@@ -701,6 +720,8 @@ impl Default for OtherDynamicData {
             stickiness: 0.5,
             screen_aspect: 1.0,
             time: 0.0,
+            bouding_box_pos_side: [0.0;4],
+            bouding_box_neg_side: [0.0;4],
         }
     }
 }

@@ -11,9 +11,52 @@ use self::{
     static_render_data::StaticRenderData,
 };
 
+use glam::Vec4;
 use winit::window::Window;
 
+#[derive(Debug, Copy, Clone)]
+pub struct BoundingBox {
+    pos_surfs: Vec4,
+    neg_surfs: Vec4,
+}
 
+impl BoundingBox {
+    fn new() -> Self {
+    // create impossible bounding box on purpose
+        BoundingBox {
+            pos_surfs: Vec4::NEG_INFINITY,
+            neg_surfs: Vec4::INFINITY,
+        }
+    }
+
+    fn expand_by_shape(&mut self, shape: &Shape) {
+
+        let shape_pos_bound = 
+            Vec4::from_array(shape.pos) +
+            (Vec4::from_array(shape.size) + shape.roundness);
+        let shape_neg_bound = 
+            Vec4::from_array(shape.pos) -
+            (Vec4::from_array(shape.size) + shape.roundness);
+
+        self.pos_surfs = self.pos_surfs.max(shape_pos_bound);
+        self.neg_surfs = self.neg_surfs.min(shape_neg_bound);
+    }
+
+    fn expand_by_player_form(&mut self, player_form: &PlayerForm) {
+
+        let player_form_pos_bound =  Vec4::from_array(player_form.pos) + player_form.radius;
+        let player_form_neg_bound =  Vec4::from_array(player_form.pos) - player_form.radius;
+
+        self.pos_surfs = self.pos_surfs.max(player_form_pos_bound);
+        self.neg_surfs = self.neg_surfs.min(player_form_neg_bound);
+    }
+
+    fn expand_by_bounding_box(&mut self, other_bb: &BoundingBox) {
+        self.pos_surfs = self.pos_surfs.max(other_bb.pos_surfs);
+        self.neg_surfs = self.neg_surfs.min(other_bb.neg_surfs);
+    }
+
+}
 
 pub struct RenderData {
     pub dynamic_data: DynamicRenderData,
@@ -35,9 +78,10 @@ impl RenderData {
         &mut self,
         world: &World,
         time: &TimeSystem,
-        window: &Window
+        window: &Window,
+        static_bounding_box: &BoundingBox,
     ) {
-        self.dynamic_data.update(world, time, window);
+        self.dynamic_data.update(world, time, window, static_bounding_box);
     }
 }
 

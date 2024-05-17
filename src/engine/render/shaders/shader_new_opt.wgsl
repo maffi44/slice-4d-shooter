@@ -249,6 +249,9 @@ struct OtherDynamicData {
     stickiness: f32,
     screen_aspect: f32,
     time: f32,
+    //all shapes bounding box sides
+    bb_pos_side: vec4<f32>,
+    bb_neg_side: vec4<f32>,
 }
 
 struct Material {
@@ -315,6 +318,39 @@ var<private> st_neg_stickiness_intersected: bool = false;
 var<private> dyn_neg_stickiness_intersected: bool = false;
 var<private> player_forms_intersected: bool = false;
 
+var<private> st_cubes_intersected: bool = false;
+var<private> dyn_cubes_intersected: bool = false;
+var<private> st_spheres_intersected: bool = false;
+var<private> dyn_spheres_intersected: bool = false;
+var<private> st_inf_cubes_intersected: bool = false;
+var<private> dyn_inf_cubes_intersected: bool = false;
+var<private> st_sph_cubes_intersected: bool = false;
+var<private> dyn_sph_cubes_intersected: bool = false;
+var<private> st_s_cubes_intersected: bool = false;
+var<private> dyn_s_cubes_intersected: bool = false;
+var<private> st_s_spheres_intersected: bool = false;
+var<private> dyn_s_spheres_intersected: bool = false;
+var<private> st_s_inf_cubes_intersected: bool = false;
+var<private> dyn_s_inf_cubes_intersected: bool = false;
+var<private> st_s_sph_cubes_intersected: bool = false;
+var<private> dyn_s_sph_cubes_intersected: bool = false;
+var<private> st_neg_cubes_intersected: bool = false;
+var<private> dyn_neg_cubes_intersected: bool = false;
+var<private> st_neg_spheres_intersected: bool = false;
+var<private> dyn_neg_spheres_intersected: bool = false;
+var<private> st_neg_inf_cubes_intersected: bool = false;
+var<private> dyn_neg_inf_cubes_intersected: bool = false;
+var<private> st_neg_sph_cubes_intersected: bool = false;
+var<private> dyn_neg_sph_cubes_intersected: bool = false;
+var<private> st_s_neg_cubes_intersected: bool = false;
+var<private> dyn_s_neg_cubes_intersected: bool = false;
+var<private> st_s_neg_spheres_intersected: bool = false;
+var<private> dyn_s_neg_spheres_intersected: bool = false;
+var<private> st_s_neg_inf_cubes_intersected: bool = false;
+var<private> dyn_s_neg_inf_cubes_intersected: bool = false;
+var<private> st_s_neg_sph_cubes_intersected: bool = false;
+var<private> dyn_s_neg_sph_cubes_intersected: bool = false;
+
 
 fn rotate(angle: f32) -> mat2x2<f32> {
     //angle *= 0.017453;
@@ -332,8 +368,8 @@ fn cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec4<f32>) -> vec2<f32
     let tN = max( max( max( t1.x, t1.y ), t1.z ), t1.w);
     let tF = min( min( min( t2.x, t2.y ), t2.z ), t2.w);
     if( tN>tF || tF<0.0) {
-        return vec2(-1.0);
-    } // no intersection
+        return vec2(-1.0); // no intersection
+    }
     return vec2( tN, tF );
 }
 
@@ -346,8 +382,8 @@ fn inf_cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec3<f32>) -> vec2
     let tN = max( max( t1.x, t1.y ), t1.z );
     let tF = min( min( t2.x, t2.y ), t2.z );
     if( tN>tF || tF<0.0) {
-        return vec2(-1.0);
-    } // no intersection
+        return vec2(-1.0); // no intersection
+    }
     return vec2( tN, tF );
 }
 
@@ -356,8 +392,8 @@ fn sph_intersection( ro: vec4<f32>, rd: vec4<f32>, ra: f32) -> vec2<f32> {  // c
     let c = dot( ro, ro ) - ra*ra;
     var h = b*b - c;
     if( h<0.0 ) {
-        return vec2(-1.0);
-    } // no intersection
+        return vec2(-1.0); // no intersection
+    }
     h = sqrt( h );
     return vec2( -b-h, -b+h );
 }
@@ -2208,8 +2244,28 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32) 
         }
 
         ray_origin += ray_direction * d;
+
+        // if is_outside_of_bouding_box(ray_origin) {
+        //     return vec2<f32>(MAX_DIST*2.0, f32(i));
+        // }
     }
     return vec2<f32>(total_distance, f32(i));
+}
+
+fn is_outside_of_bouding_box(p: vec4<f32>) -> bool {
+    if p.x > dynamic_data.bb_pos_side.x ||
+       p.y > dynamic_data.bb_pos_side.y ||
+       p.z > dynamic_data.bb_pos_side.z ||
+       p.w > dynamic_data.bb_pos_side.w ||
+       p.x < dynamic_data.bb_neg_side.x ||
+       p.y < dynamic_data.bb_neg_side.y ||
+       p.z < dynamic_data.bb_neg_side.z ||
+       p.w < dynamic_data.bb_neg_side.w
+    {
+        return true;
+    }
+    return false;
+
 }
 
 
@@ -2254,8 +2310,30 @@ fn add_w_scnner_color(pos: vec4<f32>, dist: f32, dir: vec4<f32>) -> vec3<f32> {
     return clamp(scanner_color, vec3(0.0), vec3(1.0));
 }
 
+fn get_soft_shadow( ro: vec4<f32>, rd: vec4<f32>) -> f32
+{
+    var res = 1.0;
 
-fn get_shadow(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32) -> f32 {
+    let tmax = 12.0;
+    
+    var t = 0.02;
+    for( var i=0; i<50; i++ )
+    {
+		var h = not_opt_map( ro + rd*t);
+        res = min(res, 16.0*h/t,);
+        t += clamp( h, 0.05, 0.40 );
+        if( res<0.005 || t>tmax ) {
+            break;
+        }
+    }
+    return clamp( res, 0.0, 1.0 );
+}
+
+
+fn get_shadow(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>) -> f32 {
+
+    let offset = find_intersections(ray_origin_base, ray_direction);
+    
     if offset > MAX_DIST {
         return 1.0;
     }
@@ -2280,8 +2358,26 @@ fn get_shadow(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32)
         }
 
         ray_origin += ray_direction * d;
+
+        // if is_outside_of_bouding_box(ray_origin) {
+        //     return 1.0;
+        // }
     }
     return 1.0;
+}
+
+fn calc_ambient_occlusion( pos: vec4<f32>, nor: vec4<f32>) -> f32
+{
+	var occ = 0.0;
+    var sca = 1.0;
+    for(var i = 0; i<5; i++)
+    {
+        let h = 0.01 + 0.14*f32(i)/4.0;
+        let d = not_opt_map(pos+h*nor);
+        occ += (h-d)*sca;
+        sca *= 0.95;
+    }
+    return clamp( 1.0 - 3.0*occ, 0.0, 1.0 );
 }
 
 
@@ -2314,6 +2410,8 @@ fn apply_material(
     
     let sky_light = vec3(0.7,0.6,0.5) * normal.y;
 
+    // let aocc = calc_ambient_occlusion(hited_pos, normal);
+
     let sun_dir = normalize(SUN_DIR);
     let sun_dif = clamp(dot(normal, sun_dir),0.0,1.0);
     let sky_dif = clamp(0.5 + 0.5*normal.y,0.0,1.0);
@@ -2326,18 +2424,16 @@ fn apply_material(
     let sun_spe = pow(clamp(dot(normal,sun_hal),0.0,1.0),3.0)*sun_dif*(0.04+0.96*pow(clamp(1.0+dot(sun_hal,ray_dir),0.0,1.0),2.0));
     let sky_spe = smoothstep( 0.0, 0.5, reflection.y )*(0.04+0.96*pow(frenel,4.0));
 
-
-    let offset = find_intersections(hited_pos + normal*MIN_DIST*2.0, sun_dir);
-    let sun_shadow = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir, offset);
+    let sun_shadow = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir);
 
     let diffuse = static_data.materials[material].color.xyz;
     var light = vec3(0.0);
-    light += SUN_COLOR * sun_dif * (sun_shadow);
-    light += SKY_COLOR * sky_dif;
-    light += SUN_COLOR*0.1 * bound_dif;
-    light += sun_spe * SUN_COLOR*3.0 * sun_shadow;
-    light += sky_spe*vec3(0.20,0.30,0.65);
-    light += frenel*vec3(1.0,0.7,0.6)*1.0*(0.5+0.5*sun_dif);
+    light += SUN_COLOR * sun_dif * (sun_shadow);// * aocc;
+    light += SKY_COLOR * sky_dif;// * aocc;
+    light += SUN_COLOR*0.1 * bound_dif;// * (0.2+aocc);
+    light += sun_spe * SUN_COLOR*3.0 * sun_shadow;// * aocc;
+    light += sky_spe*vec3(0.20,0.30,0.65);// * aocc;
+    light += frenel*vec3(1.0,0.7,0.6)*1.0*(0.5+0.5*sun_dif);// * aocc;
 
     var color = diffuse * light;
 
