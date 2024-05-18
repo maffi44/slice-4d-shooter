@@ -198,12 +198,11 @@ struct IntersectedShapesMetadata {
     player_forms_amount: u32,
 }
 
-struct Intersections {
-    ismd: IntersectedShapesMetadata,
-    ish: array<u32, 16>,
-    offset: f32,
-    ray_w_rotated: bool,
-}
+// struct Intersections {
+//     ismd: IntersectedShapesMetadata,
+//     ish: array<u32, 16>,
+//     offset: f32,
+// }
 
 struct SphericalAreasMetadata {
     holegun_colorized_areas_start: u32,
@@ -299,10 +298,10 @@ struct OtherStaticData {
 @group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 64>;
 @group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
 
-const MAX_STEPS: i32 = 128;
+const MAX_STEPS: i32 = 50;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
-const MAX_DIST: f32 = 350.0;
+const MAX_DIST: f32 = 250.0;
 
 const STICKINESS_EFFECT_COEF: f32 = 3.1415926535897;
 
@@ -584,7 +583,7 @@ fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32
 
             let color_coef = abs(dot(sphere_normal, direction));
 
-            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 4.0) + vec3(0.05);
+            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.05);
 
             break;
         }
@@ -683,7 +682,7 @@ fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direct
 
             let color_coef = abs(dot(beam_normal, beam_perpendicular));
 
-            color = mix(beam.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 4.0);
+            color = mix(beam.color, vec3(1.0), pow(color_coef, 80.5)) * pow(color_coef, 20.0);
 
             break;
         }
@@ -693,6 +692,12 @@ fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direct
     }
 
     return color;
+}
+
+
+fn plane_w_intersect( ro: vec4<f32>, rd: vec4<f32>, h: f32 ) -> f32
+{
+    return (ro.w-h)/-rd.w;
 }
 
 
@@ -1143,14 +1148,20 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
 
     ray_w_rotated = false;
 
-    if rd.w < -0.0002{
+
+    let w_offset = plane_w_intersect(ro, rd, static_data.w_floor);
+    
+    if w_offset < MAX_DIST && w_offset > 0.0 {
         ray_w_rotated = true;
+        offset = min(offset, w_offset);
     }
 
     offset = clamp(offset, 0.0, MAX_DIST * 4.0);
     
     return offset;
 }
+
+
 
 fn not_opt_map(p: vec4<f32>) -> f32 {
     var d = MAX_DIST*2.0;
@@ -1367,15 +1378,11 @@ fn not_opt_map(p: vec4<f32>) -> f32 {
                 dyn_player_forms[i].radius* 0.052
             )
         );
-        
-
+        d = min(d, dddd);
     }
-    d = min(d, dddd);
     
-    if static_data.is_w_floor_exist == 1 {
-        if ray_w_rotated {
-            d = min(d, p.w - static_data.w_floor);
-        }
+    if ray_w_rotated {
+        d = min(d, p.w - static_data.w_floor);
     }
 
     // if static_data.is_w_roof_exist == 1 {
@@ -1386,6 +1393,7 @@ fn not_opt_map(p: vec4<f32>) -> f32 {
 
     return d;
 }
+
 
 
 fn map(p: vec4<f32>) -> f32 {
@@ -1619,17 +1627,13 @@ fn map(p: vec4<f32>) -> f32 {
                     dyn_player_forms[i].radius* 0.052
                 )
             );
-            
-
         }
         d = min(d, dddd);
     }
 
     
-    if static_data.is_w_floor_exist == 1 {
-        if ray_w_rotated {
-            d = min(d, p.w - static_data.w_floor);
-        }
+    if ray_w_rotated {
+        d = min(d, p.w - static_data.w_floor);
     }
 
     // if static_data.is_w_roof_exist == 1 {
@@ -1642,7 +1646,7 @@ fn map(p: vec4<f32>) -> f32 {
 }
 
 
-fn get_mat(
+fn get_mats(
     cam_pos: vec4<f32>,
     ray_dir: vec4<f32>,
     dist: f32,
@@ -1855,14 +1859,12 @@ fn get_mat(
     }
 
     // w_floor
-    if static_data.is_w_floor_exist == 1 {
-        if ray_w_rotated {
-            if p.w - static_data.w_floor < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = static_data.w_cups_mat;
-                return output;
-            }
+    if ray_w_rotated {
+        if p.w - static_data.w_floor < MIN_DIST*2.0 {
+            output.materials_count = 1u;
+            output.material_weights[0] = 1.0;
+            output.materials[0] = static_data.w_cups_mat;
+            return output;
         }
     }
 
@@ -2230,10 +2232,7 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32) 
         var d: f32  = map(ray_origin);
         total_distance += d;
 
-        if (d < 0.) {
-            // color.z = 1.;
-            return vec2<f32>(total_distance, f32(i));
-        }
+
         if (d < MIN_DIST) {
             // color.x = 1.;
             return vec2<f32>(total_distance, f32(i));
@@ -2402,14 +2401,15 @@ fn noise( x: vec2<f32> ) -> f32
 }
 
 
-const SKY_COLOR: vec3<f32> = vec3(0.17, 0.14, 0.42);
-const FOG_COLOR: vec3<f32> = vec3(0.14, 0.1, 0.2);
-const LINES_COLOR_1: vec3<f32> = vec3(0.2, 1.0, 2.5);
+const HORIZONT_COLOR: vec3<f32> = vec3(0.2, 0.4, 1.1);
+const SKY_COLOR: vec3<f32> = vec3(0.17, 0.14, 0.42)*0.5;
+const FOG_COLOR: vec3<f32> = vec3(0.001, 0.01, 0.002);
+const LINES_COLOR_1: vec3<f32> = vec3(0.2, 1.0, 3.5);
 const LINES_COLOR_2: vec3<f32> = vec3(2.5, 0.2, 1.0);
 const FRENEL_COLOR: vec3<f32> = vec3(0.3,0.3,0.7);
 const BOUND_COLOR: vec3<f32> = vec3(0.2,0.8,0.2);
 
-const SUN_COLOR_1: vec3<f32> = vec3(5.6, 1.8, 1.8);
+const SUN_COLOR_1: vec3<f32> = vec3(5.6, 1.8, 1.8)*0.6;
 const SUN_DIR_1: vec4<f32> = vec4(1.0, 2.4, -2.3, 0.0);
 
 const SUN_COLOR_2: vec3<f32> = vec3(1.2, 1.8, 2.6);
@@ -2425,19 +2425,21 @@ fn apply_material(
     
     // sky
     if material < 0 {
-        var color =  1.5*SKY_COLOR* mix(vec3(.3,0.0,0.05), vec3(0.2,0.2,0.3), sqrt(max(ray_dir.y, 0.001)));
+        var color =  3.9*SKY_COLOR* mix(vec3(.3,0.0,0.05), vec3(0.2,0.2,0.3), sqrt(abs(ray_dir.y)+0.1));
+        color = mix(HORIZONT_COLOR*0.12, color, sqrt(clamp(abs(ray_dir.y*2.0),0.0,1.0)));
+        // var color =  1.5*SKY_COLOR* mix(vec3(.3,0.0,0.05), SUN_COLOR_1*SKY_COLOR, sqrt(max(ray_dir.y, 0.001)));
 
-        let sun = pow(clamp(dot(normalize(SUN_DIR_1),ray_dir), 0.0, 1.0), 15.0);
+        let sun = pow(clamp(dot(normalize(SUN_DIR_1),ray_dir), 0.0, 1.0), 5.0);
     	color += 0.4*vec3(.4,.2,0.67)*sun;
-        color += SUN_COLOR_1*pow(sun, 30.0);
+        color += SUN_COLOR_1*pow(sun, 20.0);
 
         let v = 1.0/( 2. * ( 1. + ray_dir.z ) );
         let xy = vec2(ray_dir.y * v, ray_dir.x * v);
         // ray_dir.z += time*.002;
         var s = noise(ray_dir.xz*134.0);
-        s += noise(ray_dir.xz*370.);
-        s += noise(ray_dir.xz*870.);
-        s = pow(s,19.0) * 0.00000001 * max(ray_dir.y, 0.0);
+        s += noise(ray_dir.xz*270.);
+        s += noise(ray_dir.xz*170.);
+        s = pow(s,19.0) * 0.00000005 * abs(ray_dir.y);
         if (s > 0.0)
         {
             let backStars = vec3((1.0-sin(xy.x*20.0+13.0*ray_dir.x+xy.y*30.0))*.5*s,s, s); 
@@ -2468,7 +2470,11 @@ fn apply_material(
 
     let hited_pos = pos + ray_dir * dist;
     let normal = get_normal(hited_pos);
+    let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*4.8);
     // let aocc = calc_ambient_occlusion(hited_pos, normal);
+
+    let wireframe_fog = exp(-0.007*dist*dist);
+    let wireframe_dif = clamp(1.0-abs(dot(normal, next_normal)),0.0,1.0);
 
     // sun light 1
     let sun_dir_1 = normalize(SUN_DIR_1);
@@ -2494,9 +2500,9 @@ fn apply_material(
     let sky_hal = normalize(vec4(0.0,1.0,0.0,0.0)-ray_dir);
     let sky_spe = pow(clamp(dot(normal,sky_hal),0.0,1.0),3.0);
 
-    let lines_dif = abs(0.5-fract((hited_pos.z+hited_pos.y+hited_pos.w)*0.1)) +
-        abs(0.5-fract((hited_pos.z-hited_pos.y+hited_pos.w)*0.1)) +
-        abs(0.5-fract((hited_pos.x+hited_pos.y+hited_pos.w)*0.1));
+    // let lines_dif = abs(0.5-fract((hited_pos.z+hited_pos.y+hited_pos.w)*0.1)) +
+    //     abs(0.5-fract((hited_pos.z-hited_pos.y+hited_pos.w)*0.1)) +
+    //     abs(0.5-fract((hited_pos.x+hited_pos.y+hited_pos.w)*0.1));
     // let lines_dif = 
     //     // (1.0-
     //     // clamp(
@@ -2526,20 +2532,27 @@ fn apply_material(
 
     var light = vec3(0.0);
 
+
     light += SUN_COLOR_1  * sun_dif_1 * sun_shadow_1 * 0.72;// * aocc;
     light += SUN_COLOR_1  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 2.0;// * aocc;
     light += SKY_COLOR    * sky_dif   * 4.8 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
     light += FRENEL_COLOR * frenel    * 0.8 * (0.6+0.4*sun_dif_1);// * aocc;
+    light += LINES_COLOR_1* wireframe_dif*20.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * wireframe_fog; 
     
     // light += mix(LINES_COLOR_1, LINES_COLOR_2, clamp(hited_pos.w/10.0,0.0,1.0)) * 2.8*pow(lines_dif, 5.8);
 
     // light += SUN_COLOR_2 * sun_dif_2 * sun_shadow_2 * 0.6;// * aocc;
     // light += SUN_COLOR_2 * sun_dif_2 * sun_spe_2 * sun_shadow_2 * 4.0;// * aocc;
+    
     // let diffuse = clamp(static_data.materials[material].color.xyz+vec3(10.0)*pow(lines_dif,25.0),vec3(0.0),vec3(1.0));
-    let diffuse = static_data.materials[material].color.xyz;
+    let diffuse = static_data.materials[material].color.xyz + LINES_COLOR_1 * pow(wireframe_dif,2.5)*10.0*(0.1+0.9*wireframe_fog);
     var color = diffuse * light;
 
     color = clamp(color, vec3(0.0), vec3(1.0));
+
+    let air_perspective = clamp(1.0-exp(-0.00002*dist*dist*dist),0.2,1.0);
+
+    color = mix(color, SKY_COLOR, air_perspective);
     return color;
 }
 
@@ -2575,28 +2588,31 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     let camera_position = dynamic_data.camera_data.cam_pos;
 
-    if ray_direction.w < -0.0002{
-        ray_w_rotated = true;
-    }
-
     let offset = find_intersections(camera_position, ray_direction);
 
     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, offset); 
 
-    var mats = get_mat(camera_position, ray_direction, dist_and_depth.x);
+    var color = vec3(0.0);
+    // color.b = dist_and_depth.x/MAX_DIST;
+    color.g = dist_and_depth.y/f32(MAX_STEPS);
+    // color.r = offset/MAX_DIST;
 
-    var color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[0]);
+    var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
 
-    for (var i = 1u; i < mats.materials_count; i++) {
+    // var color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[0]);
 
-        let new_color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
+    // for (var i = 1u; i < mats.materials_count; i++) {
 
-        color = mix(color, new_color, mats.material_weights[i]);
-    }
+    //     let new_color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
 
+    //     color = mix(color, new_color, mats.material_weights[i]);
+    // }
 
-    color = pow(color, vec3(0.4545));
-    color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
+    // color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
+    // color += 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
+
+    // color = pow(color, vec3(0.4545));
+    // color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
 
     return vec4<f32>(color, 1.0);
 }

@@ -49,8 +49,7 @@ pub struct HoleGun {
     shooted_from_pivot_point_dir: Vec4,
 }
 
-pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(1.0, 0.6, 0.0);
-
+pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
 
 impl HoleGun {
     pub fn new() -> Self {

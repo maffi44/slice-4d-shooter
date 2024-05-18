@@ -30,17 +30,17 @@
         {
             "name" : "metallic",
             "color" : {
-                "red": 0.0,
-                "green": 0.0,
-                "blue": 0.2
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
             }
         },
         {
             "name" : "metallic_red",
             "color" : {
-                "red": 0.2,
-                "green": 0.0,
-                "blue": 0.2
+                "red": 0.45,
+                "green": 0.46,
+                "blue": 0.04
             }
         }
     ],
