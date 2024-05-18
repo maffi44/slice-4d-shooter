@@ -2402,14 +2402,19 @@ fn noise( x: vec2<f32> ) -> f32
 }
 
 
-const SKY_COLOR: vec3<f32> = vec3(0.05, 0.07, 0.32);
+const SKY_COLOR: vec3<f32> = vec3(0.17, 0.14, 0.42);
 const FOG_COLOR: vec3<f32> = vec3(0.14, 0.1, 0.2);
+const LINES_COLOR_1: vec3<f32> = vec3(0.2, 1.0, 2.5);
+const LINES_COLOR_2: vec3<f32> = vec3(2.5, 0.2, 1.0);
+const FRENEL_COLOR: vec3<f32> = vec3(0.3,0.3,0.7);
+const BOUND_COLOR: vec3<f32> = vec3(0.2,0.8,0.2);
 
-const SUN_COLOR_1: vec3<f32> = vec3(3.6, 1.2, 2.8);
-const SUN_DIR_1: vec4<f32> = vec4(-1.0, 3.5, 2.3, 0.0);
+const SUN_COLOR_1: vec3<f32> = vec3(5.6, 1.8, 1.8);
+const SUN_DIR_1: vec4<f32> = vec4(1.0, 2.4, -2.3, 0.0);
 
 const SUN_COLOR_2: vec3<f32> = vec3(1.2, 1.8, 2.6);
 const SUN_DIR_2: vec4<f32> = vec4(0.5, 1.0, 0.4, 0.5);
+
 
 fn apply_material(
     pos: vec4<f32>,
@@ -2420,10 +2425,10 @@ fn apply_material(
     
     // sky
     if material < 0 {
-        var color =  SKY_COLOR* mix(vec3(.3,0.0,0.05), vec3(0.2,0.2,0.3), sqrt(max(ray_dir.y, 0.001)));
+        var color =  1.5*SKY_COLOR* mix(vec3(.3,0.0,0.05), vec3(0.2,0.2,0.3), sqrt(max(ray_dir.y, 0.001)));
 
-        let sun = clamp(dot(normalize(SUN_DIR_1),ray_dir), 0.0, 2.0);
-    	color += .4*vec3(.4,.2,0.67)*sun;
+        let sun = pow(clamp(dot(normalize(SUN_DIR_1),ray_dir), 0.0, 1.0), 15.0);
+    	color += 0.4*vec3(.4,.2,0.67)*sun;
         color += SUN_COLOR_1*pow(sun, 30.0);
 
         let v = 1.0/( 2. * ( 1. + ray_dir.z ) );
@@ -2462,57 +2467,76 @@ fn apply_material(
     }
 
     let hited_pos = pos + ray_dir * dist;
-
     let normal = get_normal(hited_pos);
-    
-    let sky_light = vec3(0.7,0.6,0.5) * normal.y;
-
     // let aocc = calc_ambient_occlusion(hited_pos, normal);
 
+    // sun light 1
     let sun_dir_1 = normalize(SUN_DIR_1);
     let sun_dif_1 = clamp(dot(normal, sun_dir_1),0.0,1.0);
     let sun_hal_1 = normalize(sun_dir_1-ray_dir);
     let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),20.0);
     let sun_shadow_1 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_1);
 
+    // sun light 2
     // let sun_dir_2 = normalize(SUN_DIR_2);
     // let sun_dif_2 = clamp(dot(normal, sun_dir_2),0.0,1.0);
     // let sun_hal_2 = normalize(sun_dir_2-ray_dir);
     // let sun_spe_2 = pow(clamp(dot(normal,sun_hal_2),0.0,1.0),20.0);
     // let sun_shadow_2 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_2);
+    // let bound_dif = clamp(0.5 + 0.5*-normal.y, 0.0, 1.0);
 
-
-    let sky_dif = clamp(0.5 + 0.5*normal.y,0.0,1.0);
-    
-    let bound_dif = clamp(0.5 + 0.5*-normal.y, 0.0, 1.0);
-
+    // frenel reflection
     let reflection = reflect(ray_dir, normal);
-    let frenel = clamp(1.0 + dot(normal, ray_dir), 0.0, 1.0);
+    let frenel = smoothstep(0.0, 2.0,clamp(1.0 + dot(normal, ray_dir), 0.0, 1.0));
 
-
-    
+    // sky light    
+    let sky_dif = clamp(0.5 + 0.5*normal.y,0.0,1.0);
     let sky_hal = normalize(vec4(0.0,1.0,0.0,0.0)-ray_dir);
-    
-    
     let sky_spe = pow(clamp(dot(normal,sky_hal),0.0,1.0),3.0);
 
+    let lines_dif = abs(0.5-fract((hited_pos.z+hited_pos.y+hited_pos.w)*0.1)) +
+        abs(0.5-fract((hited_pos.z-hited_pos.y+hited_pos.w)*0.1)) +
+        abs(0.5-fract((hited_pos.x+hited_pos.y+hited_pos.w)*0.1));
+    // let lines_dif = 
+    //     // (1.0-
+    //     // clamp(
+    //     //     // abs(
+    //     //         0.5 + 0.5*0.33333*(
+    //     //             sin(hited_pos.x*5.0) + 
+    //     //             sin(hited_pos.z*5.0) +
+    //     //             sin(hited_pos.y*5.0)
+    //     //             // sin(hited_pos.w*50.0)
+    //     //         ),
+    //     //     // ),
+    //     //     0.0,1.0
+    //     // ));// +
+    //     (1.0-
+    //     clamp(
+    //         abs(
+    //             3.5*(
+    //                 sin(hited_pos.x*2.0+4.0) +
+    //                 sin(hited_pos.z*2.0+3.0) +
+    //                 sin(hited_pos.y*2.0+2.0) +
+    //                 sin(hited_pos.w*2.0+1.0)
+    //             )
+    //         ),
+    //         0.0,1.0
+    //     ));
 
 
-    let diffuse = static_data.materials[material].color.xyz;
     var light = vec3(0.0);
 
-    light += SUN_COLOR_1 * sun_dif_1 * sun_shadow_1 * 0.6;// * aocc;
-    light += SUN_COLOR_1 * sun_dif_1 * sun_spe_1 *sun_shadow_1 * 2.0;// * aocc;
+    light += SUN_COLOR_1  * sun_dif_1 * sun_shadow_1 * 0.72;// * aocc;
+    light += SUN_COLOR_1  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 2.0;// * aocc;
+    light += SKY_COLOR    * sky_dif   * 4.8 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
+    light += FRENEL_COLOR * frenel    * 0.8 * (0.6+0.4*sun_dif_1);// * aocc;
+    
+    // light += mix(LINES_COLOR_1, LINES_COLOR_2, clamp(hited_pos.w/10.0,0.0,1.0)) * 2.8*pow(lines_dif, 5.8);
 
     // light += SUN_COLOR_2 * sun_dif_2 * sun_shadow_2 * 0.6;// * aocc;
     // light += SUN_COLOR_2 * sun_dif_2 * sun_spe_2 * sun_shadow_2 * 4.0;// * aocc;
-
-    light += SKY_COLOR * sky_dif * 3.0 * clamp(sky_spe, 0.18, 1.0);// * 0.8;// * aocc;
-    // light += SUN_COLOR*0.1 * bound_dif;// * (0.2+aocc);
-    // light += sun_spe * SUN_COLOR*3.0 * sun_shadow;// * aocc;
-    // light += sky_spe*vec3(0.20,0.30,0.65);// * aocc;
-    // light += frenel*vec3(1.0,0.7,0.6)*1.0*(0.5+0.5*sun_dif);// * aocc;
-
+    // let diffuse = clamp(static_data.materials[material].color.xyz+vec3(10.0)*pow(lines_dif,25.0),vec3(0.0),vec3(1.0));
+    let diffuse = static_data.materials[material].color.xyz;
     var color = diffuse * light;
 
     color = clamp(color, vec3(0.0), vec3(1.0));
