@@ -635,11 +635,11 @@ impl Renderer {
             self.total_time += current_frame_time;
             self.total_frames_count += 1;
 
-            println!(
-                "AV DT {}, CUR DT: {}",
-                self.total_time / (self.total_frames_count) as f64,
-                current_frame_time,
-            );
+            // println!(
+            //     "AV DT {}, CUR DT: {}",
+            //     self.total_time / (self.total_frames_count) as f64,
+            //     current_frame_time,
+            // );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());

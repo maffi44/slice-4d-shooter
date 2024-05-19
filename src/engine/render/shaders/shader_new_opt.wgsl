@@ -298,14 +298,14 @@ struct OtherStaticData {
 @group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 64>;
 @group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
 
-const MAX_STEPS: i32 = 50;
+const MAX_STEPS: i32 = 120;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
 const MAX_DIST: f32 = 250.0;
 
 const STICKINESS_EFFECT_COEF: f32 = 3.1415926535897;
 
-var<private> ray_w_rotated: bool = false;
+var<private> w_plane_intersected: bool = false;
     
 var<private> st_noramls_intersected: bool = false;
 var<private> dyn_noramls_intersected: bool = false;
@@ -317,38 +317,38 @@ var<private> st_neg_stickiness_intersected: bool = false;
 var<private> dyn_neg_stickiness_intersected: bool = false;
 var<private> player_forms_intersected: bool = false;
 
-var<private> st_cubes_intersected: bool = false;
-var<private> dyn_cubes_intersected: bool = false;
-var<private> st_spheres_intersected: bool = false;
-var<private> dyn_spheres_intersected: bool = false;
-var<private> st_inf_cubes_intersected: bool = false;
-var<private> dyn_inf_cubes_intersected: bool = false;
-var<private> st_sph_cubes_intersected: bool = false;
-var<private> dyn_sph_cubes_intersected: bool = false;
-var<private> st_s_cubes_intersected: bool = false;
-var<private> dyn_s_cubes_intersected: bool = false;
-var<private> st_s_spheres_intersected: bool = false;
-var<private> dyn_s_spheres_intersected: bool = false;
-var<private> st_s_inf_cubes_intersected: bool = false;
-var<private> dyn_s_inf_cubes_intersected: bool = false;
-var<private> st_s_sph_cubes_intersected: bool = false;
-var<private> dyn_s_sph_cubes_intersected: bool = false;
-var<private> st_neg_cubes_intersected: bool = false;
-var<private> dyn_neg_cubes_intersected: bool = false;
-var<private> st_neg_spheres_intersected: bool = false;
-var<private> dyn_neg_spheres_intersected: bool = false;
-var<private> st_neg_inf_cubes_intersected: bool = false;
-var<private> dyn_neg_inf_cubes_intersected: bool = false;
-var<private> st_neg_sph_cubes_intersected: bool = false;
-var<private> dyn_neg_sph_cubes_intersected: bool = false;
-var<private> st_s_neg_cubes_intersected: bool = false;
-var<private> dyn_s_neg_cubes_intersected: bool = false;
-var<private> st_s_neg_spheres_intersected: bool = false;
-var<private> dyn_s_neg_spheres_intersected: bool = false;
-var<private> st_s_neg_inf_cubes_intersected: bool = false;
-var<private> dyn_s_neg_inf_cubes_intersected: bool = false;
-var<private> st_s_neg_sph_cubes_intersected: bool = false;
-var<private> dyn_s_neg_sph_cubes_intersected: bool = false;
+// var<private> st_cubes_intersected: bool = false;
+// var<private> dyn_cubes_intersected: bool = false;
+// var<private> st_spheres_intersected: bool = false;
+// var<private> dyn_spheres_intersected: bool = false;
+// var<private> st_inf_cubes_intersected: bool = false;
+// var<private> dyn_inf_cubes_intersected: bool = false;
+// var<private> st_sph_cubes_intersected: bool = false;
+// var<private> dyn_sph_cubes_intersected: bool = false;
+// var<private> st_s_cubes_intersected: bool = false;
+// var<private> dyn_s_cubes_intersected: bool = false;
+// var<private> st_s_spheres_intersected: bool = false;
+// var<private> dyn_s_spheres_intersected: bool = false;
+// var<private> st_s_inf_cubes_intersected: bool = false;
+// var<private> dyn_s_inf_cubes_intersected: bool = false;
+// var<private> st_s_sph_cubes_intersected: bool = false;
+// var<private> dyn_s_sph_cubes_intersected: bool = false;
+// var<private> st_neg_cubes_intersected: bool = false;
+// var<private> dyn_neg_cubes_intersected: bool = false;
+// var<private> st_neg_spheres_intersected: bool = false;
+// var<private> dyn_neg_spheres_intersected: bool = false;
+// var<private> st_neg_inf_cubes_intersected: bool = false;
+// var<private> dyn_neg_inf_cubes_intersected: bool = false;
+// var<private> st_neg_sph_cubes_intersected: bool = false;
+// var<private> dyn_neg_sph_cubes_intersected: bool = false;
+// var<private> st_s_neg_cubes_intersected: bool = false;
+// var<private> dyn_s_neg_cubes_intersected: bool = false;
+// var<private> st_s_neg_spheres_intersected: bool = false;
+// var<private> dyn_s_neg_spheres_intersected: bool = false;
+// var<private> st_s_neg_inf_cubes_intersected: bool = false;
+// var<private> dyn_s_neg_inf_cubes_intersected: bool = false;
+// var<private> st_s_neg_sph_cubes_intersected: bool = false;
+// var<private> dyn_s_neg_sph_cubes_intersected: bool = false;
 
 
 fn rotate(angle: f32) -> mat2x2<f32> {
@@ -491,10 +491,10 @@ fn smin( a: f32, b: f32, k: f32 ) -> f32
     return min(a,b) - kk*0.5*(1.0+h-sqrt(1.0-h*(h - 2.0)));
 }
 
-// fn get_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32, ray_w_rotated: i32) -> vec3<f32> {
+// fn get_color(start_pos: vec4<f32>, direction: vec4<f32>, distance: f32, w_plane_intersected: i32) -> vec3<f32> {
 //     let point = start_pos + direction * distance;
     
-//     var color = get_color_at_point(point, distance, ray_w_rotated);
+//     var color = get_color_at_point(point, distance, w_plane_intersected);
 
 //     // color += get_coloring_areas_color(point); 
 
@@ -1146,13 +1146,13 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         }
     }
 
-    ray_w_rotated = false;
+    w_plane_intersected = false;
 
 
     let w_offset = plane_w_intersect(ro, rd, static_data.w_floor);
     
-    if w_offset < MAX_DIST && w_offset > 0.0 {
-        ray_w_rotated = true;
+    if w_offset < MAX_DIST*0.3333 && w_offset > 0.0 {
+        w_plane_intersected = true;
         offset = min(offset, w_offset);
     }
 
@@ -1378,15 +1378,15 @@ fn not_opt_map(p: vec4<f32>) -> f32 {
                 dyn_player_forms[i].radius* 0.052
             )
         );
-        d = min(d, dddd);
     }
+    d = min(d, dddd);
     
-    if ray_w_rotated {
+    if w_plane_intersected {
         d = min(d, p.w - static_data.w_floor);
     }
 
     // if static_data.is_w_roof_exist == 1 {
-    //     if ray_w_rotated == 1 {
+    //     if w_plane_intersected == 1 {
     //         d = min(d, static_data.w_roof - p.w);
     //     }
     // }
@@ -1632,12 +1632,12 @@ fn map(p: vec4<f32>) -> f32 {
     }
 
     
-    if ray_w_rotated {
+    if w_plane_intersected {
         d = min(d, p.w - static_data.w_floor);
     }
 
     // if static_data.is_w_roof_exist == 1 {
-    //     if ray_w_rotated == 1 {
+    //     if w_plane_intersected == 1 {
     //         d = min(d, static_data.w_roof - p.w);
     //     }
     // }
@@ -1653,7 +1653,7 @@ fn get_mats(
 ) -> OutputMaterials {
     var output: OutputMaterials;
 
-    if dist > MAX_DIST {
+    if dist > MAX_DIST-MIN_DIST {
         output.materials_count = 1u;
         output.material_weights[0] = 1.0;
         output.materials[0] = -1;
@@ -1783,402 +1783,420 @@ fn get_mats(
     }
 
     // static normal shapes
-    for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
-        let shape = normal_shapes[i];
-        if sd_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
+    if st_noramls_intersected {
+        for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
+            let shape = normal_shapes[i];
+            if sd_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
         }
-    }
-    for (var i = static_data.shapes_arrays_metadata.spheres_start; i < static_data.shapes_arrays_metadata.spheres_amount + static_data.shapes_arrays_metadata.spheres_start; i++) {
-        let shape = normal_shapes[i];
-        if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
+        for (var i = static_data.shapes_arrays_metadata.spheres_start; i < static_data.shapes_arrays_metadata.spheres_amount + static_data.shapes_arrays_metadata.spheres_start; i++) {
+            let shape = normal_shapes[i];
+            if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
         }
-    }
-    for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-        let shape = normal_shapes[i];
-        if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
+        for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+            let shape = normal_shapes[i];
+            if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
         }
-    }
-    for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
-        let shape = normal_shapes[i];
-        if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
+        for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+            let shape = normal_shapes[i];
+            if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
         }
     }
 
     // dynamic normal shapes
-    for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
-        let shape = dyn_normal_shapes[i];
-        if sd_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
+    if dyn_noramls_intersected {
+        for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
+            let shape = dyn_normal_shapes[i];
+            if sd_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
         }
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.spheres_start; i < dynamic_data.shapes_arrays_metadata.spheres_amount + dynamic_data.shapes_arrays_metadata.spheres_start; i++) {
-        let shape = dyn_normal_shapes[i];
-        if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
+        for (var i = dynamic_data.shapes_arrays_metadata.spheres_start; i < dynamic_data.shapes_arrays_metadata.spheres_amount + dynamic_data.shapes_arrays_metadata.spheres_start; i++) {
+            let shape = dyn_normal_shapes[i];
+            if sd_sphere(p - shape.pos, shape.size.x) - shape.roundness < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
         }
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-        let shape = dyn_normal_shapes[i];
-        if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
+        for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+            let shape = dyn_normal_shapes[i];
+            if sd_sph_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
         }
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.inf_cubes_amount + dynamic_data.shapes_arrays_metadata.inf_cubes_start; i++) {
-        let shape = dyn_normal_shapes[i];
-        if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
-        }
-    }
-
-    // w_floor
-    if ray_w_rotated {
-        if p.w - static_data.w_floor < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = static_data.w_cups_mat;
-            return output;
+        for (var i = dynamic_data.shapes_arrays_metadata.inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.inf_cubes_amount + dynamic_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+            let shape = dyn_normal_shapes[i];
+            if sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
         }
     }
 
     
-    var d = MAX_DIST * 2.0;
+
+    
     // static stickiness shapes
-    for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
-        let shape = stickiness_shapes[i];
-        let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
-        
-        if dd < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
-        }
-
-        if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-            if output.materials_count == 0u {
+    var d = MAX_DIST * 2.0;
+    if st_stickiness_intersected {
+        for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
+            let shape = stickiness_shapes[i];
+            let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
+            
+            if dd < MIN_DIST*2.0 {
                 output.materials_count = 1u;
                 output.material_weights[0] = 1.0;
                 output.materials[0] = shape.material;
-                d = dd;
-            } else {
-                var coef = 0.0;
-                if d<dd {
-                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                return output;
+            }
+
+            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                if output.materials_count == 0u {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = shape.material;
+                    d = dd;
                 } else {
-                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    var coef = 0.0;
+                    if d<dd {
+                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                    } else {
+                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    }
+                    output.materials[output.materials_count] = shape.material;
+                    output.material_weights[output.materials_count] = coef;
+
+                    let mult = 1.0 - coef;
+
+                    for (var k = 0u; k < output.materials_count; k++) {
+                        output.material_weights[k] *= mult;
+                    }
+
+                    output.materials_count += 1u;
+                    d = min(d,dd);
                 }
-                output.materials[output.materials_count] = shape.material;
-                output.material_weights[output.materials_count] = coef;
-
-                let mult = 1.0 - coef;
-
-                for (var k = 0u; k < output.materials_count; k++) {
-                    output.material_weights[k] *= mult;
-                }
-
-                output.materials_count += 1u;
-                d = min(d,dd);
             }
         }
-    }
-    for (var i = static_data.shapes_arrays_metadata.s_spheres_start; i < static_data.shapes_arrays_metadata.s_spheres_amount + static_data.shapes_arrays_metadata.s_spheres_start; i++) {
-        let shape = stickiness_shapes[i];
-        let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
-        
-        if dd < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
-        }
-
-        if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-            if output.materials_count == 0u {
+        for (var i = static_data.shapes_arrays_metadata.s_spheres_start; i < static_data.shapes_arrays_metadata.s_spheres_amount + static_data.shapes_arrays_metadata.s_spheres_start; i++) {
+            let shape = stickiness_shapes[i];
+            let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
+            
+            if dd < MIN_DIST*2.0 {
                 output.materials_count = 1u;
                 output.material_weights[0] = 1.0;
                 output.materials[0] = shape.material;
-                d = dd;
-            } else {
-                var coef = 0.0;
-                if d<dd {
-                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                return output;
+            }
+
+            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                if output.materials_count == 0u {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = shape.material;
+                    d = dd;
                 } else {
-                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    var coef = 0.0;
+                    if d<dd {
+                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                    } else {
+                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    }
+                    output.materials[output.materials_count] = shape.material;
+                    output.material_weights[output.materials_count] = coef;
+
+                    let mult = 1.0 - coef;
+
+                    for (var k = 0u; k < output.materials_count; k++) {
+                        output.material_weights[k] *= mult;
+                    }
+
+                    output.materials_count += 1u;
+                    d = min(d,dd);
                 }
-                output.materials[output.materials_count] = shape.material;
-                output.material_weights[output.materials_count] = coef;
-
-                let mult = 1.0 - coef;
-
-                for (var k = 0u; k < output.materials_count; k++) {
-                    output.material_weights[k] *= mult;
-                }
-
-                output.materials_count += 1u;
-                d = min(d,dd);
             }
         }
-    }
-    for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-        let shape = stickiness_shapes[i];
-        let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
-        
-        if dd < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
-        }
-
-        if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-            if output.materials_count == 0u {
+        for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+            let shape = stickiness_shapes[i];
+            let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
+            
+            if dd < MIN_DIST*2.0 {
                 output.materials_count = 1u;
                 output.material_weights[0] = 1.0;
                 output.materials[0] = shape.material;
-                d = dd;
-            } else {
-                var coef = 0.0;
-                if d<dd {
-                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                return output;
+            }
+
+            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                if output.materials_count == 0u {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = shape.material;
+                    d = dd;
                 } else {
-                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    var coef = 0.0;
+                    if d<dd {
+                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                    } else {
+                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    }
+                    output.materials[output.materials_count] = shape.material;
+                    output.material_weights[output.materials_count] = coef;
+
+                    let mult = 1.0 - coef;
+
+                    for (var k = 0u; k < output.materials_count; k++) {
+                        output.material_weights[k] *= mult;
+                    }
+
+                    output.materials_count += 1u;
+                    d = min(d,dd);
                 }
-                output.materials[output.materials_count] = shape.material;
-                output.material_weights[output.materials_count] = coef;
-
-                let mult = 1.0 - coef;
-
-                for (var k = 0u; k < output.materials_count; k++) {
-                    output.material_weights[k] *= mult;
-                }
-
-                output.materials_count += 1u;
-                d = min(d,dd);
             }
         }
-    }
-    for (var i = static_data.shapes_arrays_metadata.s_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_inf_cubes_amount + static_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
-        let shape = stickiness_shapes[i];
-        let dd = sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness;
-        
-        if dd < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
-        }
-
-        if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-            if output.materials_count == 0u {
+        for (var i = static_data.shapes_arrays_metadata.s_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_inf_cubes_amount + static_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+            let shape = stickiness_shapes[i];
+            let dd = sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness;
+            
+            if dd < MIN_DIST*2.0 {
                 output.materials_count = 1u;
                 output.material_weights[0] = 1.0;
                 output.materials[0] = shape.material;
-                d = dd;
-            } else {
-                var coef = 0.0;
-                if d<dd {
-                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                return output;
+            }
+
+            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                if output.materials_count == 0u {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = shape.material;
+                    d = dd;
                 } else {
-                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    var coef = 0.0;
+                    if d<dd {
+                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                    } else {
+                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    }
+                    output.materials[output.materials_count] = shape.material;
+                    output.material_weights[output.materials_count] = coef;
+
+                    let mult = 1.0 - coef;
+
+                    for (var k = 0u; k < output.materials_count; k++) {
+                        output.material_weights[k] *= mult;
+                    }
+
+                    output.materials_count += 1u;
+                    d = min(d,dd);
                 }
-                output.materials[output.materials_count] = shape.material;
-                output.material_weights[output.materials_count] = coef;
-
-                let mult = 1.0 - coef;
-
-                for (var k = 0u; k < output.materials_count; k++) {
-                    output.material_weights[k] *= mult;
-                }
-
-                output.materials_count += 1u;
-                d = min(d,dd);
             }
         }
     }
 
     // dynamic stickiness
-    for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
-        let shape = dyn_stickiness_shapes[i];
-        let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
-        
-        if dd < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
-        }
-
-        if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-            if output.materials_count == 0u {
+    if dyn_stickiness_intersected {
+        for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
+            let shape = dyn_stickiness_shapes[i];
+            let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
+            
+            if dd < MIN_DIST*2.0 {
                 output.materials_count = 1u;
                 output.material_weights[0] = 1.0;
                 output.materials[0] = shape.material;
-                d = dd;
-            } else {
-                var coef = 0.0;
-                if d<dd {
-                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                return output;
+            }
+
+            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                if output.materials_count == 0u {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = shape.material;
+                    d = dd;
                 } else {
-                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    var coef = 0.0;
+                    if d<dd {
+                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                    } else {
+                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    }
+                    output.materials[output.materials_count] = shape.material;
+                    output.material_weights[output.materials_count] = coef;
+
+                    let mult = 1.0 - coef;
+
+                    for (var k = 0u; k < output.materials_count; k++) {
+                        output.material_weights[k] *= mult;
+                    }
+
+                    output.materials_count += 1u;
+                    d = min(d,dd);
                 }
-                output.materials[output.materials_count] = shape.material;
-                output.material_weights[output.materials_count] = coef;
+            }
+        }
+        for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
+            let shape = dyn_stickiness_shapes[i];
+            let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
+            
+            if dd < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
 
-                let mult = 1.0 - coef;
+            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                if output.materials_count == 0u {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = shape.material;
+                    d = dd;
+                } else {
+                    var coef = 0.0;
+                    if d<dd {
+                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                    } else {
+                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    }
+                    output.materials[output.materials_count] = shape.material;
+                    output.material_weights[output.materials_count] = coef;
 
-                for (var k = 0u; k < output.materials_count; k++) {
-                    output.material_weights[k] *= mult;
+                    let mult = 1.0 - coef;
+
+                    for (var k = 0u; k < output.materials_count; k++) {
+                        output.material_weights[k] *= mult;
+                    }
+
+                    output.materials_count += 1u;
+                    d = min(d,dd);
                 }
+            }
+        }
+        for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+            let shape = dyn_stickiness_shapes[i];
+            let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
+            
+            if dd < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
 
-                output.materials_count += 1u;
-                d = min(d,dd);
+            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                if output.materials_count == 0u {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = shape.material;
+                    d = dd;
+                } else {
+                    var coef = 0.0;
+                    if d<dd {
+                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                    } else {
+                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    }
+                    output.materials[output.materials_count] = shape.material;
+                    output.material_weights[output.materials_count] = coef;
+
+                    let mult = 1.0 - coef;
+
+                    for (var k = 0u; k < output.materials_count; k++) {
+                        output.material_weights[k] *= mult;
+                    }
+
+                    output.materials_count += 1u;
+                    d = min(d,dd);
+                }
+            }
+        }
+        for (var i = dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+            let shape = dyn_stickiness_shapes[i];
+            let dd = sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness;
+            
+            if dd < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = shape.material;
+                return output;
+            }
+
+            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                if output.materials_count == 0u {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = shape.material;
+                    d = dd;
+                } else {
+                    var coef = 0.0;
+                    if d<dd {
+                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                    } else {
+                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                    }
+                    output.materials[output.materials_count] = shape.material;
+                    output.material_weights[output.materials_count] = coef;
+
+                    let mult = 1.0 - coef;
+
+                    for (var k = 0u; k < output.materials_count; k++) {
+                        output.material_weights[k] *= mult;
+                    }
+
+                    output.materials_count += 1u;
+                    d = min(d,dd);
+                }
             }
         }
     }
-    for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
-        let shape = dyn_stickiness_shapes[i];
-        let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
-        
-        if dd < MIN_DIST*2.0 {
+
+    // w plane
+    if w_plane_intersected {
+        if p.w - static_data.w_floor < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
+            output.materials[0] = -2;
             return output;
-        }
-
-        if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-            if output.materials_count == 0u {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = shape.material;
-                d = dd;
-            } else {
-                var coef = 0.0;
-                if d<dd {
-                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                } else {
-                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
-                }
-                output.materials[output.materials_count] = shape.material;
-                output.material_weights[output.materials_count] = coef;
-
-                let mult = 1.0 - coef;
-
-                for (var k = 0u; k < output.materials_count; k++) {
-                    output.material_weights[k] *= mult;
-                }
-
-                output.materials_count += 1u;
-                d = min(d,dd);
-            }
-        }
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-        let shape = dyn_stickiness_shapes[i];
-        let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
-        
-        if dd < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
-        }
-
-        if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-            if output.materials_count == 0u {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = shape.material;
-                d = dd;
-            } else {
-                var coef = 0.0;
-                if d<dd {
-                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                } else {
-                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
-                }
-                output.materials[output.materials_count] = shape.material;
-                output.material_weights[output.materials_count] = coef;
-
-                let mult = 1.0 - coef;
-
-                for (var k = 0u; k < output.materials_count; k++) {
-                    output.material_weights[k] *= mult;
-                }
-
-                output.materials_count += 1u;
-                d = min(d,dd);
-            }
-        }
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
-        let shape = dyn_stickiness_shapes[i];
-        let dd = sd_inf_box(p - shape.pos, shape.size.xyz) - shape.roundness;
-        
-        if dd < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = shape.material;
-            return output;
-        }
-
-        if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-            if output.materials_count == 0u {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = shape.material;
-                d = dd;
-            } else {
-                var coef = 0.0;
-                if d<dd {
-                    coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                } else {
-                    coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
-                }
-                output.materials[output.materials_count] = shape.material;
-                output.material_weights[output.materials_count] = coef;
-
-                let mult = 1.0 - coef;
-
-                for (var k = 0u; k < output.materials_count; k++) {
-                    output.material_weights[k] *= mult;
-                }
-
-                output.materials_count += 1u;
-                d = min(d,dd);
-            }
         }
     }
     
     if output.materials_count == 0u {
+        
+        // for case steps in raymarch is maximum
+        if w_plane_intersected {
+            output.materials_count = 1u;
+            output.material_weights[0] = 1.0;
+            output.materials[0] = -2;
+            return output;
+        }
         output.materials_count = 1u;
         output.material_weights[0] = 1.0;
         output.materials[0] = -1;
@@ -2401,15 +2419,17 @@ fn noise( x: vec2<f32> ) -> f32
 }
 
 
-const HORIZONT_COLOR: vec3<f32> = vec3(0.2, 0.4, 1.1);
-const SKY_COLOR: vec3<f32> = vec3(0.17, 0.14, 0.42)*0.5;
+const HORIZONT_COLOR: vec3<f32> = vec3(0.4, 0.8, 2.1);
+// const HORIZONT_COLOR: vec3<f32> = vec3(2.1, 0.5, 0.1);
+const SKY_COLOR: vec3<f32> = vec3(0.17, 0.14, 0.42)*0.4;
 const FOG_COLOR: vec3<f32> = vec3(0.001, 0.01, 0.002);
 const LINES_COLOR_1: vec3<f32> = vec3(0.2, 1.0, 3.5);
 const LINES_COLOR_2: vec3<f32> = vec3(2.5, 0.2, 1.0);
 const FRENEL_COLOR: vec3<f32> = vec3(0.3,0.3,0.7);
 const BOUND_COLOR: vec3<f32> = vec3(0.2,0.8,0.2);
+const W_PLANE_COLOR: vec3<f32> = vec3(0.2, 0.4, 1.1);
 
-const SUN_COLOR_1: vec3<f32> = vec3(5.6, 1.8, 1.8)*0.6;
+const SUN_COLOR_1: vec3<f32> = vec3(5.6, 1.8, 1.8)*0.9;
 const SUN_DIR_1: vec4<f32> = vec4(1.0, 2.4, -2.3, 0.0);
 
 const SUN_COLOR_2: vec3<f32> = vec3(1.2, 1.8, 2.6);
@@ -2424,9 +2444,19 @@ fn apply_material(
 ) -> vec3<f32> {
     
     // sky
-    if material < 0 {
-        var color =  3.9*SKY_COLOR* mix(vec3(.3,0.0,0.05), vec3(0.2,0.2,0.3), sqrt(abs(ray_dir.y)+0.1));
-        color = mix(HORIZONT_COLOR*0.12, color, sqrt(clamp(abs(ray_dir.y*2.0),0.0,1.0)));
+    if material == -2 {
+
+        let normal = vec4(0.0, 0.0, 0.0, 1.0);
+
+        let frenel = clamp(pow(1.0 + dot(normal, ray_dir), 5.0), 0.0, 1.0);
+
+        var color = W_PLANE_COLOR*frenel;
+
+        return color;
+    }
+    if material == -1 {
+        var color =  2.9*SKY_COLOR*FOG_COLOR* mix(vec3(.1,0.2,0.55), vec3(0.1,1.2,2.4), sqrt(abs(ray_dir.y)+0.1));
+        color = mix(HORIZONT_COLOR*0.12, color, sqrt(clamp(abs(ray_dir.y*2.0)+0.1,0.0,1.0)));
         // var color =  1.5*SKY_COLOR* mix(vec3(.3,0.0,0.05), SUN_COLOR_1*SKY_COLOR, sqrt(max(ray_dir.y, 0.001)));
 
         let sun = pow(clamp(dot(normalize(SUN_DIR_1),ray_dir), 0.0, 1.0), 5.0);
@@ -2590,29 +2620,31 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     let offset = find_intersections(camera_position, ray_direction);
 
+    
+
     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, offset); 
 
-    var color = vec3(0.0);
+    // var color = vec3(0.0);
     // color.b = dist_and_depth.x/MAX_DIST;
-    color.g = dist_and_depth.y/f32(MAX_STEPS);
+    // color.g = dist_and_depth.y/f32(MAX_STEPS);
     // color.r = offset/MAX_DIST;
 
     var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
 
-    // var color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[0]);
+    var color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[0]);
 
-    // for (var i = 1u; i < mats.materials_count; i++) {
+    for (var i = 1u; i < mats.materials_count; i++) {
 
-    //     let new_color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
+        let new_color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
 
-    //     color = mix(color, new_color, mats.material_weights[i]);
-    // }
+        color = mix(color, new_color, mats.material_weights[i]);
+    }
 
-    // color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
-    // color += 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
+    color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
+    color += 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
 
-    // color = pow(color, vec3(0.4545));
-    // color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
+    color = pow(color, vec3(0.4545));
+    color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
 
     return vec4<f32>(color, 1.0);
 }
