@@ -6,20 +6,17 @@ use crate::{
         ActorID,
     },
     engine::{
-        engine_handle::{
+        audio::AudioSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle
-        },
-        physics::{
+        }, physics::{
             colliders_container::PhysicalElement,
             PhysicsSystem
-        },
-        render::VisualElement,
-        world::static_object::{
+        }, render::VisualElement, world::static_object::{
             BeamVolumeArea,
             VolumeArea
-        },
+        }
     },
     transform::Transform,
 };
@@ -128,6 +125,7 @@ impl Actor for HoleGunMiss {
         &mut self,
         physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
         delta: f32
     ) {
         if self.target_size_reached {

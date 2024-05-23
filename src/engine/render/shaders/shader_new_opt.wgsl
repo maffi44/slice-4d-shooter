@@ -2620,8 +2620,6 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     let offset = find_intersections(camera_position, ray_direction);
 
-    
-
     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, offset); 
 
     // var color = vec3(0.0);

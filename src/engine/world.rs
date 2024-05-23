@@ -28,7 +28,7 @@ use crate::{
 use core::panic;
 use std::collections::HashMap;
 
-use super::{engine_handle::Command, net::{NetCommand, NetSystem}};
+use super::{audio::AudioSystem, engine_handle::Command, net::{NetCommand, NetSystem}};
 
 pub struct World {
     pub level: Level,
@@ -62,7 +62,13 @@ impl World {
         world
     }
 
-    pub fn send_messages_and_process_commands(&mut self, net_system: &mut NetSystem, physics_system: &PhysicsSystem, engine_handle: &mut EngineHandle) {
+    pub fn send_messages_and_process_commands(
+        &mut self,
+        net_system: &mut NetSystem,
+        physics_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle
+    ) {
         
         loop {
                 while let Some(message) = engine_handle.boardcast_message_buffer.pop() {
@@ -250,10 +256,11 @@ impl World {
         &mut self,
         physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
         delta: f32
     ) {
         for (_, actor) in self.actors.iter_mut() {
-            actor.tick(physic_system, engine_handle, delta)
+            actor.tick(physic_system, engine_handle, audio_system, delta)
         }
     }
 

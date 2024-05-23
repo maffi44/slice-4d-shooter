@@ -220,13 +220,15 @@ fn main_loop_tick(
     systems.world.tick(
         &systems.physic,
         &mut systems.engine_handle,
-        systems.time.prev_frame_duration
+        &mut systems.audio,
+        systems.time.prev_frame_duration,
     );
 
     systems.world.send_messages_and_process_commands(
         &mut systems.net,
         &systems.physic,
-        &mut systems.engine_handle
+        &mut systems.audio,
+        &mut systems.engine_handle,
     );
 
     systems.physic.process_physics(
@@ -238,7 +240,8 @@ fn main_loop_tick(
     systems.world.send_messages_and_process_commands(
         &mut systems.net,
         &systems.physic,
-        &mut systems.engine_handle
+        &mut systems.audio,
+        &mut systems.engine_handle,
     );
 
     systems.render.render_frame(&systems.world, &systems.time);

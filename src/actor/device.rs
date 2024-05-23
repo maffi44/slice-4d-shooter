@@ -6,8 +6,7 @@ use crate::{
         player::PlayerInnerState,
         ActorID,
     }, engine::{
-        engine_handle::EngineHandle,
-        input::ActionsFrameState, physics::PhysicsSystem, render::VisualElement,
+        audio::AudioSystem, engine_handle::EngineHandle, input::ActionsFrameState, physics::PhysicsSystem, render::VisualElement
     }, transform::Transform
 };
 
@@ -39,6 +38,7 @@ impl Device for DefaultPointer {
             player: &mut PlayerInnerState,
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
             engine_handle: &mut EngineHandle,
             delta: f32,
     ) {
@@ -62,6 +62,7 @@ pub trait Device {
         player: &mut PlayerInnerState,
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
         delta: f32,
     );
@@ -78,6 +79,7 @@ pub trait Device {
         player: &mut PlayerInnerState,
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
         delta: f32,
     ) {}
@@ -88,6 +90,7 @@ pub trait Device {
         player: &mut PlayerInnerState,
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
         delta: f32,
     ) {}

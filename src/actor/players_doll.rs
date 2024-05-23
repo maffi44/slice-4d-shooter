@@ -3,23 +3,19 @@ use matchbox_socket::PeerId;
 
 use crate::{
     engine::{
-        engine_handle::{
+        audio::AudioSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle
-        },
-        net::{
+        }, net::{
             NetCommand,
             NetMessage,
             RemoteMessage
-        },
-        physics::{
+        }, physics::{
             colliders_container::PhysicalElement,
             dynamic_collider::PlayersDollCollider,
             PhysicsSystem
-        },
-        render::VisualElement,
-        world::static_object::{
+        }, render::VisualElement, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
@@ -461,6 +457,7 @@ impl Actor for PlayersDoll {
         &mut self,
         physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
         delta: f32
     ) {
         if self.is_alive {

@@ -5,7 +5,7 @@ use crate::{
         machinegun_shot::MachinegunShot, player::{PlayerInnerState, PlayerMessages}, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage
     },
     engine::{
-        engine_handle::{Command, CommandType, EngineHandle}, input::ActionsFrameState, net::{NetCommand, NetMessage, RemoteMessage}, physics::PhysicsSystem, render::VisualElement
+        audio::AudioSystem, engine_handle::{Command, CommandType, EngineHandle}, input::ActionsFrameState, net::{NetCommand, NetMessage, RemoteMessage}, physics::PhysicsSystem, render::VisualElement
     },
     transform::Transform
 };
@@ -63,8 +63,11 @@ impl MachineGun {
         player_id: ActorID,
         player: &mut PlayerInnerState,
         physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
+        audio_system.play_sound(crate::engine::audio::Sound::Laser);
+
         let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
 
         let mut bytes = [0_u8;4];
@@ -218,6 +221,7 @@ impl Device for MachineGun {
             player: &mut PlayerInnerState,
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
             engine_handle: &mut EngineHandle,
             delta: f32,
         ) {
@@ -227,6 +231,7 @@ impl Device for MachineGun {
                         player_id,
                         player,
                         physic_system,
+                        audio_system,
                         engine_handle,
                     );
                     self.temperature += TEMPERATURE_SHOT_INCR;
@@ -255,6 +260,7 @@ impl Device for MachineGun {
             player: &mut PlayerInnerState,
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
             engine_handle: &mut EngineHandle,
             delta: f32,
         ) {
@@ -267,6 +273,7 @@ impl Device for MachineGun {
             player: &mut PlayerInnerState,
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
             engine_handle: &mut EngineHandle,
             delta: f32,
         ) {

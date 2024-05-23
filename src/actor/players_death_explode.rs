@@ -1,6 +1,6 @@
 use glam::{Vec3, Vec4};
 
-use crate::{engine::{engine_handle::{Command, CommandType, EngineHandle}, render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}}, transform::Transform};
+use crate::{engine::{audio::AudioSystem, engine_handle::{Command, CommandType, EngineHandle}, render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}}, transform::Transform};
 
 use super::{Actor, ActorID};
 
@@ -69,6 +69,7 @@ impl Actor for PlayerDeathExplode {
         &mut self,
         physic_system: &crate::engine::physics::PhysicsSystem,
         engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
         delta: f32
     ) {
         if let VolumeArea::SphericalVolumeArea(area) = &mut self.volume_areas[0] {

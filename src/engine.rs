@@ -6,13 +6,13 @@ pub mod physics;
 pub mod effects;
 pub mod world;
 pub mod engine_handle;
+pub mod audio;
 
 #[cfg(target_arch = "wasm32")]
 use std::{future::Future, pin::Pin, rc::Rc, task::{Context, Poll}};
 
 use crate::{
-    actor::player::player_settings::PlayerSettings,
-    main_loop::MainLoop,
+    actor::player::player_settings::PlayerSettings, engine::audio::AudioSystem, main_loop::MainLoop
 };
 
 use self::{
@@ -42,6 +42,7 @@ pub struct Engine {
     pub net: NetSystem,
     #[cfg(not(target_arch = "wasm32"))]
     pub runtime: tokio::runtime::Runtime,
+    pub audio: AudioSystem,
     // pub runtime: RuntimeSystem,
     // pub net: ClientNetSystem,
 }
@@ -119,7 +120,6 @@ impl Engine {
         }
         log::info!("engine systems: window init");
 
-
         #[cfg(target_arch = "wasm32")]
         {
             // it is necessary because immidiatly after creating the window the inner size of the this window
@@ -156,6 +156,9 @@ impl Engine {
         let render = RenderSystem::new(window, &world, &time).await;
         log::info!("engine systems: render init");
 
+        let audio = AudioSystem::new().await;
+
+
         Engine {
             physic,
             input,
@@ -166,6 +169,7 @@ impl Engine {
             net,
             #[cfg(not(target_arch = "wasm32"))]
             runtime,
+            audio,
         }
     }
 }

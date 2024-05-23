@@ -6,25 +6,22 @@ use crate::{
         ActorID,
     },
     engine::{
-        engine_handle::{
+        audio::AudioSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle
-        },
-        physics::{
+        }, physics::{
             colliders_container::PhysicalElement,
             physics_system_data::ShapeType,
             static_collider::StaticCollider,
             PhysicsSystem
-        },
-        render::VisualElement,
-        world::static_object::{
+        }, render::VisualElement, world::static_object::{
             BeamVolumeArea,
             ColoringArea,
             SphericalVolumeArea,
             StaticObject,
             VolumeArea
-        },
+        }
     },
     transform::Transform,
 };
@@ -179,6 +176,7 @@ impl Actor for HoleGunShot {
         &mut self,
         physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
         delta: f32
     ) {
         if self.target_size_reached {

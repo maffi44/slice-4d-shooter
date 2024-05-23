@@ -19,20 +19,15 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        engine_handle::{
+        audio::AudioSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle,
-        },
-        input::ActionsFrameState,
-        net::{
+        }, input::ActionsFrameState, net::{
             NetCommand,
             NetMessage,
             RemoteMessage
-        },
-        physics::PhysicsSystem,
-        render::VisualElement,
-        world::static_object::{
+        }, physics::PhysicsSystem, render::VisualElement, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
@@ -244,6 +239,7 @@ impl Device for HoleGun {
             player: &mut PlayerInnerState,
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
             engine_handle: &mut EngineHandle,
             delta: f32,
         ) {
@@ -256,6 +252,7 @@ impl Device for HoleGun {
         player: &mut PlayerInnerState,
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
         delta: f32,
     )

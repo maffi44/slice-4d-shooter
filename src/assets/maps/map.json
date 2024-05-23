@@ -262,6 +262,34 @@
             }
         },
         {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 0.0 ,
+                        "z": 8.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5.0,
+                    "y": 2.0,
+                    "z": 2.0,
+                    "w": 2.0
+                },
+                "bounce_rate" : 0,
+                "stickiness" : true
+            }
+        },
+        {
             "cube_w_inf" : {
                 "transform" : {
                     "position" : {
