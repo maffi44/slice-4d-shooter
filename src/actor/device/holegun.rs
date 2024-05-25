@@ -45,6 +45,7 @@ pub struct HoleGun {
 }
 
 pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
+pub const CHARGING_COEF: f32 = 0.7;
 
 impl HoleGun {
     pub fn new() -> Self {
@@ -70,10 +71,13 @@ impl HoleGun {
         player_id: ActorID,
         player: &mut PlayerInnerState,
         physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
         charging_time: f32,
         color: Vec3,
     ) {
+        audio_system.play_sound_with_pitch(crate::engine::audio::Sound::HolegunShot, (charging_time * 0.5).clamp(0.4, 0.8), (1.2 - charging_time * 0.6).clamp(0.9, 1.2));
+
         let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
                 
         let direction = player.transform.rotation.inverse() * Vec4::NEG_Z;
@@ -99,7 +103,7 @@ impl HoleGun {
 
             let position = hit.hit_point;
             let shooted_from = player.transform.get_position() + weapon_offset;
-            let radius = charging_time*1.2;
+            let radius = charging_time*CHARGING_COEF;
 
             let hited_players = physic_system.sphere_cast_on_dynamic_colliders(
                 position,
@@ -172,7 +176,7 @@ impl HoleGun {
         } else {
             let position = from + (direction * 700.0);
             let shooted_from = player.transform.get_position() + weapon_offset;
-            let radius = charging_time*1.2;
+            let radius = charging_time*CHARGING_COEF;
 
             let miss = HoleGunMiss::new(
                 position,
@@ -322,6 +326,7 @@ impl Device for HoleGun {
                         player_id,
                         player,
                         physic_system,
+                        audio_system,
                         engine_handle,
                         self.charging_time,
                         self.color,
@@ -342,6 +347,7 @@ impl Device for HoleGun {
                     player_id,
                     player,
                     physic_system,
+                    audio_system,
                     engine_handle,
                     self.charging_time,
                     self.color,

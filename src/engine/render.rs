@@ -23,6 +23,7 @@ use self::{
     render_data::RenderData,
 };
 
+#[cfg(not(target_arch="wasm32"))]
 use tokio::{runtime::Runtime, time::sleep};
 use winit::window::Window;
 

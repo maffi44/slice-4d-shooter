@@ -17,6 +17,7 @@ use web_sys::{js_sys::{ArrayBuffer, Uint8Array}, Response};
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Sound {
     MachinegunShot,
+    HolegunShot,
 } 
 pub struct AudioSystem {
     sound_engine: SoundEngine,
@@ -29,11 +30,32 @@ impl AudioSystem {
     pub fn play_sound(&mut self, sound: Sound, gain: f32) {
         let sound_buffer = self.sounds
             .get(&sound)
-            .expect("Some sounde is not exist");
+            .expect("Some sound is not exist");
 
         let source = SoundSourceBuilder::new()
             .with_buffer(sound_buffer.clone())
             .with_status(Status::Playing)
+            .with_gain(gain)
+            .with_play_once(true)
+            .build()
+            .unwrap();
+
+        let engine_state = self.sound_engine.state();
+
+        let mut context_state = engine_state.contexts()[0].state();
+
+        let _ = context_state.add_source(source);
+    }
+
+    pub fn play_sound_with_pitch(&mut self, sound: Sound, gain: f32, pitch: f32) {
+        let sound_buffer = self.sounds
+            .get(&sound)
+            .expect("Some sound is not exist");
+
+        let source = SoundSourceBuilder::new()
+            .with_buffer(sound_buffer.clone())
+            .with_status(Status::Playing)
+            .with_pitch(pitch as  f64)
             .with_gain(gain)
             .with_play_once(true)
             .build()
@@ -85,14 +107,30 @@ impl AudioSystem {
         let mut sounds = HashMap::with_capacity(20);
 
         #[cfg(not(target_arch="wasm32"))]
-        let laser_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_file(
-                "/home/maffi/Dream/web-engine4d/src/assets/sounds/machinegun_shot.wav",
-                &fyrox_resource::io::FsResourceIo
-            )
-            .await
-            .expect("can't open file")
-        ).expect("can't create sound buffer resourse");
+        {
+            let machinegun_shot_sound_resource = SoundBufferResource::new_generic(
+                DataSource::from_file(
+                    "/home/maffi/Dream/web-engine4d/src/assets/sounds/machinegun_shot.wav",
+                    &fyrox_resource::io::FsResourceIo
+                )
+                .await
+                .expect("can't open file")
+            ).expect("can't create sound buffer resourse");
+
+            let holegun_shot_sound_resource = SoundBufferResource::new_generic(
+                DataSource::from_file(
+                    "/home/maffi/Dream/web-engine4d/src/assets/sounds/holegun_shot.wav",
+                    &fyrox_resource::io::FsResourceIo
+                )
+                .await
+                .expect("can't open file")
+            ).expect("can't create sound buffer resourse");
+
+            sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
+            sounds.insert(Sound::HolegunShot, holegun_shot_sound_resource);
+        }
+
+        
 
         // Currently  have very freaky bug on web (connection isn't done)
         #[cfg(target_arch="wasm32")]
@@ -131,7 +169,6 @@ impl AudioSystem {
         // };
 
 
-        sounds.insert(Sound::MachinegunShot, laser_sound_resource);
         
         
         AudioSystem {
