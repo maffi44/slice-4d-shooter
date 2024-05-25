@@ -61,7 +61,7 @@ impl RenderSystem {
         
         let renderer = Arc::new(
             Mutex::new(
-                Renderer::new(&window, &render_data).await
+                Renderer::new(&window, &render_data, time.target_frame_duration.as_secs_f64()).await
             )
         );
 

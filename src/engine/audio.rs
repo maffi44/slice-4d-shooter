@@ -87,7 +87,7 @@ impl AudioSystem {
         #[cfg(not(target_arch="wasm32"))]
         let laser_sound_resource = SoundBufferResource::new_generic(
             DataSource::from_file(
-                "./src/assets/sounds/machinegun_shot.wav",
+                "/home/maffi/Dream/web-engine4d/src/assets/sounds/machinegun_shot.wav",
                 &fyrox_resource::io::FsResourceIo
             )
             .await

@@ -298,10 +298,10 @@ struct OtherStaticData {
 @group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 64>;
 @group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
 
-const MAX_STEPS: i32 = 80;
+const MAX_STEPS: i32 = 120;
 const PI: f32 = 3.1415926535897;
-const MIN_DIST: f32 = 0.01;
-const MAX_DIST: f32 = 250.0;
+const MIN_DIST: f32 = 0.011;
+const MAX_DIST: f32 = 150.0;
 
 const STICKINESS_EFFECT_COEF: f32 = 3.1415926535897;
 
@@ -930,7 +930,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             st_neg_stickiness_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -943,7 +943,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             st_neg_stickiness_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -956,7 +956,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             st_neg_stickiness_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -969,7 +969,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             st_neg_stickiness_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -983,7 +983,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             dyn_neg_stickiness_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -996,7 +996,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             dyn_neg_stickiness_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1009,7 +1009,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             dyn_neg_stickiness_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1022,7 +1022,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             dyn_neg_stickiness_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1036,7 +1036,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             st_negative_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1049,7 +1049,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             st_negative_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1062,7 +1062,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             st_negative_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1075,7 +1075,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             st_negative_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1089,7 +1089,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             dyn_negative_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1102,7 +1102,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             dyn_negative_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1115,7 +1115,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             dyn_negative_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1128,7 +1128,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         
         if intr.y > 0.0 {
             dyn_negative_intersected = true;
-            offset = min(offset, intr.x);
+            // offset = min(offset, intr.x);
         }
     }
 
@@ -1162,237 +1162,236 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
 }
 
 
+// fn not_opt_map(p: vec4<f32>) -> f32 {
+//     var d = MAX_DIST*2.0;
 
-fn not_opt_map(p: vec4<f32>) -> f32 {
-    var d = MAX_DIST*2.0;
+//     // static stickiness shapes
+//     for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
+//         d = smin(d, sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.s_spheres_start; i < static_data.shapes_arrays_metadata.s_spheres_amount + static_data.shapes_arrays_metadata.s_spheres_start; i++) {
+//         d = smin(d, sd_sphere(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.x) - stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+//         d = smin(d, sd_sph_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.s_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_inf_cubes_amount + static_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+//         d = smin(d, sd_inf_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.xyz) - stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
 
-    // static stickiness shapes
-    for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
-        d = smin(d, sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = static_data.shapes_arrays_metadata.s_spheres_start; i < static_data.shapes_arrays_metadata.s_spheres_amount + static_data.shapes_arrays_metadata.s_spheres_start; i++) {
-        d = smin(d, sd_sphere(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.x) - stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-        d = smin(d, sd_sph_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = static_data.shapes_arrays_metadata.s_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_inf_cubes_amount + static_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
-        d = smin(d, sd_inf_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.xyz) - stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-
-    // dynamic stickiness
-    for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
-        d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
-        d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-        d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
-        d = smin(d, sd_inf_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.xyz) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
+//     // dynamic stickiness
+//     for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
+//         d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
+//         d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+//         d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+//         d = smin(d, sd_inf_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.xyz) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
 
 
-    // static normal shapes
-    for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
-        d = min(d, sd_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
-    }
-    for (var i = static_data.shapes_arrays_metadata.spheres_start; i < static_data.shapes_arrays_metadata.spheres_amount + static_data.shapes_arrays_metadata.spheres_start; i++) {
-        d = min(d, sd_sphere(p - normal_shapes[i].pos, normal_shapes[i].size.x) - normal_shapes[i].roundness);
-    }
-    for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-        d = min(d, sd_sph_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
-    }
-    for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
-        d = min(d, sd_inf_box(p - normal_shapes[i].pos, normal_shapes[i].size.xyz) - normal_shapes[i].roundness);
-    }
+//     // static normal shapes
+//     for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
+//         d = min(d, sd_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.spheres_start; i < static_data.shapes_arrays_metadata.spheres_amount + static_data.shapes_arrays_metadata.spheres_start; i++) {
+//         d = min(d, sd_sphere(p - normal_shapes[i].pos, normal_shapes[i].size.x) - normal_shapes[i].roundness);
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+//         d = min(d, sd_sph_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+//         d = min(d, sd_inf_box(p - normal_shapes[i].pos, normal_shapes[i].size.xyz) - normal_shapes[i].roundness);
+//     }
 
-    // dynamic normal shapes
-    for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
-        d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.spheres_start; i < dynamic_data.shapes_arrays_metadata.spheres_amount + dynamic_data.shapes_arrays_metadata.spheres_start; i++) {
-        d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-        d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.inf_cubes_amount + dynamic_data.shapes_arrays_metadata.inf_cubes_start; i++) {
-        d = min(d, sd_inf_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.xyz) - dyn_normal_shapes[i].roundness);
-    }
+//     // dynamic normal shapes
+//     for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
+//         d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.spheres_start; i < dynamic_data.shapes_arrays_metadata.spheres_amount + dynamic_data.shapes_arrays_metadata.spheres_start; i++) {
+//         d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+//         d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.inf_cubes_amount + dynamic_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+//         d = min(d, sd_inf_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.xyz) - dyn_normal_shapes[i].roundness);
+//     }
 
-    // static negative stickiness shapes
-    var dd = MAX_DIST;
+//     // static negative stickiness shapes
+//     var dd = MAX_DIST;
 
-    for (var i = static_data.shapes_arrays_metadata.s_neg_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_cubes_amount + static_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
-        dd = smin(dd, sd_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = static_data.shapes_arrays_metadata.s_neg_spheres_start; i < static_data.shapes_arrays_metadata.s_neg_spheres_amount + static_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
-        dd = smin(dd, sd_sphere(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.x) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
-        dd = smin(dd, sd_sph_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
-        dd = smin(dd, sd_inf_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.xyz) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    d = max(d, -dd);
+//     for (var i = static_data.shapes_arrays_metadata.s_neg_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_cubes_amount + static_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+//         dd = smin(dd, sd_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.s_neg_spheres_start; i < static_data.shapes_arrays_metadata.s_neg_spheres_amount + static_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+//         dd = smin(dd, sd_sphere(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.x) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+//         dd = smin(dd, sd_sph_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
+//         dd = smin(dd, sd_inf_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.xyz) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     d = max(d, -dd);
 
-    // dynamic negative stickiness shapes
-    var ddd = dd;
+//     // dynamic negative stickiness shapes
+//     var ddd = dd;
 
-    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
-        ddd = smin(ddd, sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_amount + dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
-        ddd = smin(ddd, sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
-        ddd = smin(ddd, sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
-        ddd = smin(ddd, sd_inf_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.xyz) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
-    }
-    d = max(d, -ddd);
+//     for (var i = dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+//         ddd = smin(ddd, sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_amount + dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+//         ddd = smin(ddd, sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+//         ddd = smin(ddd, sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
+//         ddd = smin(ddd, sd_inf_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.xyz) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
+//     }
+//     d = max(d, -ddd);
 
-    // static negative shapes
-    for (var i = static_data.shapes_arrays_metadata.neg_cubes_start; i < static_data.shapes_arrays_metadata.neg_cubes_amount + static_data.shapes_arrays_metadata.neg_cubes_start; i++) {
-        d = max(d, -(sd_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
-    }
-    for (var i = static_data.shapes_arrays_metadata.neg_spheres_start; i < static_data.shapes_arrays_metadata.neg_spheres_amount + static_data.shapes_arrays_metadata.neg_spheres_start; i++) {
-        d = max(d, -(sd_sphere(p - negatives_shapes[i].pos, negatives_shapes[i].size.x) - negatives_shapes[i].roundness));
-    }
-    for (var i = static_data.shapes_arrays_metadata.neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.neg_sph_cubes_amount + static_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
-        d = max(d, -(sd_sph_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
-    }
-    for (var i = static_data.shapes_arrays_metadata.neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.neg_inf_cubes_amount + static_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
-        d = max(d, -(sd_inf_box(p - negatives_shapes[i].pos, negatives_shapes[i].size.xyz) - negatives_shapes[i].roundness));
-    }
+//     // static negative shapes
+//     for (var i = static_data.shapes_arrays_metadata.neg_cubes_start; i < static_data.shapes_arrays_metadata.neg_cubes_amount + static_data.shapes_arrays_metadata.neg_cubes_start; i++) {
+//         d = max(d, -(sd_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.neg_spheres_start; i < static_data.shapes_arrays_metadata.neg_spheres_amount + static_data.shapes_arrays_metadata.neg_spheres_start; i++) {
+//         d = max(d, -(sd_sphere(p - negatives_shapes[i].pos, negatives_shapes[i].size.x) - negatives_shapes[i].roundness));
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.neg_sph_cubes_amount + static_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+//         d = max(d, -(sd_sph_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
+//     }
+//     for (var i = static_data.shapes_arrays_metadata.neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.neg_inf_cubes_amount + static_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
+//         d = max(d, -(sd_inf_box(p - negatives_shapes[i].pos, negatives_shapes[i].size.xyz) - negatives_shapes[i].roundness));
+//     }
 
-    // dynamic negative shapes
-    for (var i = dynamic_data.shapes_arrays_metadata.neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_cubes_start; i++) {
-        d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount + dynamic_data.shapes_arrays_metadata.neg_spheres_start; i++) {
-        d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
-        d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
-    }
-    for (var i = dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
-        d = max(d, -(sd_inf_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.xyz) - dyn_negatives_shapes[i].roundness));
-    }
+//     // dynamic negative shapes
+//     for (var i = dynamic_data.shapes_arrays_metadata.neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_cubes_start; i++) {
+//         d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount + dynamic_data.shapes_arrays_metadata.neg_spheres_start; i++) {
+//         d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+//         d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+//     }
+//     for (var i = dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
+//         d = max(d, -(sd_inf_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.xyz) - dyn_negatives_shapes[i].roundness));
+//     }
 
-    var dddd = MAX_DIST;
-    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-        dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
-        dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
+//     var dddd = MAX_DIST;
+//     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+//         dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
+//         dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
         
-        let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
-        dddd = max(dddd, -sd_box(
-            rotated_p,
-            vec4(
-                dyn_player_forms[i].radius * 0.18,
-                dyn_player_forms[i].radius* 1.2,
-                dyn_player_forms[i].radius* 1.2,
-                dyn_player_forms[i].radius * 1.2
-            )));
+//         let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
+//         dddd = max(dddd, -sd_box(
+//             rotated_p,
+//             vec4(
+//                 dyn_player_forms[i].radius * 0.18,
+//                 dyn_player_forms[i].radius* 1.2,
+//                 dyn_player_forms[i].radius* 1.2,
+//                 dyn_player_forms[i].radius * 1.2
+//             )));
         
-        dddd = max(
-            dddd,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
-                dyn_player_forms[i].radius * 0.53
-            )
-        );
+//         dddd = max(
+//             dddd,
+//             -sd_sphere(
+//                 rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
+//                 dyn_player_forms[i].radius * 0.53
+//             )
+//         );
 
-        dddd = min(
-            dddd,
-            sd_sphere(
-                p - dyn_player_forms[i].pos,
-                dyn_player_forms[i].radius * 0.6
-            )
-        );
-        dddd = max(
-            dddd,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
-                dyn_player_forms[i].radius * 0.34
-            )
-        );
+//         dddd = min(
+//             dddd,
+//             sd_sphere(
+//                 p - dyn_player_forms[i].pos,
+//                 dyn_player_forms[i].radius * 0.6
+//             )
+//         );
+//         dddd = max(
+//             dddd,
+//             -sd_sphere(
+//                 rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
+//                 dyn_player_forms[i].radius * 0.34
+//             )
+//         );
 
-        dddd = min(
-            dddd,
-            sd_sphere(
-                rotated_p - dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].radius * 0.286,
-            )
-        );
+//         dddd = min(
+//             dddd,
+//             sd_sphere(
+//                 rotated_p - dyn_player_forms[i].weapon_offset,
+//                 dyn_player_forms[i].radius * 0.286,
+//             )
+//         );
 
-        dddd = max(
-            dddd,
-            -sd_capsule(
-                rotated_p,
-                dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    dyn_player_forms[i].radius* 0.49,
-                    0.0
-                ),
-                dyn_player_forms[i].radius* 0.18
-            )
-        );
+//         dddd = max(
+//             dddd,
+//             -sd_capsule(
+//                 rotated_p,
+//                 dyn_player_forms[i].weapon_offset,
+//                 dyn_player_forms[i].weapon_offset -
+//                 vec4(
+//                     0.0,
+//                     0.0,
+//                     dyn_player_forms[i].radius* 0.49,
+//                     0.0
+//                 ),
+//                 dyn_player_forms[i].radius* 0.18
+//             )
+//         );
 
-        dddd = min(
-            dddd,
-            sd_capsule(
-                rotated_p,
-                dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    dyn_player_forms[i].radius* 0.43,
-                    0.0
-                ),
-                dyn_player_forms[i].radius* 0.1
-            )
-        );
+//         dddd = min(
+//             dddd,
+//             sd_capsule(
+//                 rotated_p,
+//                 dyn_player_forms[i].weapon_offset,
+//                 dyn_player_forms[i].weapon_offset -
+//                 vec4(
+//                     0.0,
+//                     0.0,
+//                     dyn_player_forms[i].radius* 0.43,
+//                     0.0
+//                 ),
+//                 dyn_player_forms[i].radius* 0.1
+//             )
+//         );
 
-        dddd = max(
-            dddd,
-            -sd_capsule(
-                rotated_p,
-                dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    dyn_player_forms[i].radius* 0.65,
-                    0.0
-                ),
-                dyn_player_forms[i].radius* 0.052
-            )
-        );
-    }
-    d = min(d, dddd);
+//         dddd = max(
+//             dddd,
+//             -sd_capsule(
+//                 rotated_p,
+//                 dyn_player_forms[i].weapon_offset,
+//                 dyn_player_forms[i].weapon_offset -
+//                 vec4(
+//                     0.0,
+//                     0.0,
+//                     dyn_player_forms[i].radius* 0.65,
+//                     0.0
+//                 ),
+//                 dyn_player_forms[i].radius* 0.052
+//             )
+//         );
+//     }
+//     d = min(d, dddd);
     
-    if w_plane_intersected {
-        d = min(d, p.w - static_data.w_floor);
-    }
+//     if w_plane_intersected {
+//         d = min(d, p.w - static_data.w_floor);
+//     }
 
-    // if static_data.is_w_roof_exist == 1 {
-    //     if w_plane_intersected == 1 {
-    //         d = min(d, static_data.w_roof - p.w);
-    //     }
-    // }
+//     // if static_data.is_w_roof_exist == 1 {
+//     //     if w_plane_intersected == 1 {
+//     //         d = min(d, static_data.w_roof - p.w);
+//     //     }
+//     // }
 
-    return d;
-}
+//     return d;
+// }
 
 
 
@@ -2269,21 +2268,21 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32) 
     return vec2<f32>(total_distance, f32(i));
 }
 
-fn is_outside_of_bouding_box(p: vec4<f32>) -> bool {
-    if p.x > dynamic_data.bb_pos_side.x ||
-       p.y > dynamic_data.bb_pos_side.y ||
-       p.z > dynamic_data.bb_pos_side.z ||
-       p.w > dynamic_data.bb_pos_side.w ||
-       p.x < dynamic_data.bb_neg_side.x ||
-       p.y < dynamic_data.bb_neg_side.y ||
-       p.z < dynamic_data.bb_neg_side.z ||
-       p.w < dynamic_data.bb_neg_side.w
-    {
-        return true;
-    }
-    return false;
+// fn is_outside_of_bouding_box(p: vec4<f32>) -> bool {
+//     if p.x > dynamic_data.bb_pos_side.x ||
+//        p.y > dynamic_data.bb_pos_side.y ||
+//        p.z > dynamic_data.bb_pos_side.z ||
+//        p.w > dynamic_data.bb_pos_side.w ||
+//        p.x < dynamic_data.bb_neg_side.x ||
+//        p.y < dynamic_data.bb_neg_side.y ||
+//        p.z < dynamic_data.bb_neg_side.z ||
+//        p.w < dynamic_data.bb_neg_side.w
+//     {
+//         return true;
+//     }
+//     return false;
 
-}
+// }
 
 
 fn add_w_scnner_color(pos: vec4<f32>, dist: f32, dir: vec4<f32>) -> vec3<f32> {
@@ -2327,24 +2326,24 @@ fn add_w_scnner_color(pos: vec4<f32>, dist: f32, dir: vec4<f32>) -> vec3<f32> {
     return clamp(scanner_color, vec3(0.0), vec3(1.0));
 }
 
-fn get_soft_shadow( ro: vec4<f32>, rd: vec4<f32>) -> f32
-{
-    var res = 1.0;
+// fn get_soft_shadow( ro: vec4<f32>, rd: vec4<f32>) -> f32
+// {
+//     var res = 1.0;
 
-    let tmax = 12.0;
+//     let tmax = 12.0;
     
-    var t = 0.02;
-    for( var i=0; i<50; i++ )
-    {
-		var h = not_opt_map( ro + rd*t);
-        res = min(res, 16.0*h/t,);
-        t += clamp( h, 0.05, 0.40 );
-        if( res<0.005 || t>tmax ) {
-            break;
-        }
-    }
-    return clamp( res, 0.0, 1.0 );
-}
+//     var t = 0.02;
+//     for( var i=0; i<50; i++ )
+//     {
+// 		var h = not_opt_map( ro + rd*t);
+//         res = min(res, 16.0*h/t,);
+//         t += clamp( h, 0.05, 0.40 );
+//         if( res<0.005 || t>tmax ) {
+//             break;
+//         }
+//     }
+//     return clamp( res, 0.0, 1.0 );
+// }
 
 
 fn get_shadow(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>) -> f32 {
@@ -2383,19 +2382,19 @@ fn get_shadow(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>) -> f32 {
     return 1.0;
 }
 
-fn calc_ambient_occlusion( pos: vec4<f32>, nor: vec4<f32>) -> f32
-{
-	var occ = 0.0;
-    var sca = 1.0;
-    for(var i = 0; i<5; i++)
-    {
-        let h = 0.01 + 0.14*f32(i)/4.0;
-        let d = not_opt_map(pos+h*nor);
-        occ += (h-d)*sca;
-        sca *= 0.95;
-    }
-    return clamp( 1.0 - 3.0*occ, 0.0, 1.0 );
-}
+// fn calc_ambient_occlusion( pos: vec4<f32>, nor: vec4<f32>) -> f32
+// {
+// 	var occ = 0.0;
+//     var sca = 1.0;
+//     for(var i = 0; i<5; i++)
+//     {
+//         let h = 0.01 + 0.14*f32(i)/4.0;
+//         let d = not_opt_map(pos+h*nor);
+//         occ += (h-d)*sca;
+//         sca *= 0.95;
+//     }
+//     return clamp( 1.0 - 3.0*occ, 0.0, 1.0 );
+// }
 
 
 fn hash( n: f32 ) -> f32
@@ -2620,6 +2619,8 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     let offset = find_intersections(camera_position, ray_direction);
 
+    
+
     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, offset); 
 
     // var color = vec3(0.0);
@@ -2643,6 +2644,8 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     color = pow(color, vec3(0.4545));
     color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
+
+    // color.r += (dist_and_depth.y / f32(MAX_STEPS));
 
     return vec4<f32>(color, 1.0);
 }

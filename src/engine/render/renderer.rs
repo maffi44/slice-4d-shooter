@@ -79,6 +79,7 @@ pub struct Renderer {
     total_time: f64,
     prev_time_instant: Option<web_time::Instant>,
     total_frames_count: u64,
+    target_frame_duration: f64,
     // prev_surface_texture: Option<SurfaceTexture>,
     // prev_frame_rendered: Arc<Mutex<bool>>,
 
@@ -95,7 +96,7 @@ impl Renderer {
         }
     }
  
-    pub async fn new(window: &Window, render_data: &RenderData) -> Renderer {
+    pub async fn new(window: &Window, render_data: &RenderData, target_frame_duration: f64) -> Renderer {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -615,6 +616,7 @@ impl Renderer {
             total_frames_count: 0u64,
             total_time: 0.0,
             prev_time_instant: None,
+            target_frame_duration,
             // prev_surface_texture: None,
             // prev_frame_rendered: Arc::new(Mutex::new(true)),
         }
@@ -632,14 +634,19 @@ impl Renderer {
 
         if let Some(instant) = self.prev_time_instant {
             let current_frame_time = instant.elapsed().as_secs_f64();
-            self.total_time += current_frame_time;
-            self.total_frames_count += 1;
 
-            println!(
-                "AV DT {}, CUR DT: {}",
-                self.total_time / (self.total_frames_count) as f64,
-                current_frame_time,
-            );
+            if current_frame_time < self.target_frame_duration - 0.001 {
+                return Ok(());
+            }
+
+            // self.total_time += current_frame_time;
+            // self.total_frames_count += 1;
+
+            // println!(
+            //     "AV DT {}, CUR DT: {}",
+            //     self.total_time / (self.total_frames_count) as f64,
+            //     current_frame_time,
+            // );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());

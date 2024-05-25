@@ -52,7 +52,7 @@
 
     "w_cups_visual_materials" : "metallic",
 
-    "all_shapes_stickiness_radius": 0.4,
+    "all_shapes_stickiness_radius": 0.3,
 
     "spawn_positions" : [
         {
