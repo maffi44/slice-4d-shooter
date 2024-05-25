@@ -16,7 +16,7 @@ use web_sys::{js_sys::{ArrayBuffer, Uint8Array}, Response};
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Sound {
-    Laser,
+    MachinegunShot,
 } 
 pub struct AudioSystem {
     sound_engine: SoundEngine,
@@ -26,7 +26,7 @@ pub struct AudioSystem {
 
 impl AudioSystem {
 
-    pub fn play_sound(&mut self, sound: Sound) {
+    pub fn play_sound(&mut self, sound: Sound, gain: f32) {
         let sound_buffer = self.sounds
             .get(&sound)
             .expect("Some sounde is not exist");
@@ -34,6 +34,7 @@ impl AudioSystem {
         let source = SoundSourceBuilder::new()
             .with_buffer(sound_buffer.clone())
             .with_status(Status::Playing)
+            .with_gain(gain)
             .with_play_once(true)
             .build()
             .unwrap();
@@ -86,7 +87,7 @@ impl AudioSystem {
         #[cfg(not(target_arch="wasm32"))]
         let laser_sound_resource = SoundBufferResource::new_generic(
             DataSource::from_file(
-                "./src/assets/sounds/test.wav",
+                "./src/assets/sounds/machinegun_shot.wav",
                 &fyrox_resource::io::FsResourceIo
             )
             .await
@@ -97,7 +98,7 @@ impl AudioSystem {
         #[cfg(target_arch="wasm32")]
         let laser_sound_resource = SoundBufferResource::new_generic(
             DataSource::from_file(
-                "../src/assets/sounds/test.wav",
+                "../src/assets/sounds/machinegun_shot.wav",
                 &fyrox_resource::io::FsResourceIo
             )
             .await
@@ -130,7 +131,7 @@ impl AudioSystem {
         // };
 
 
-        sounds.insert(Sound::Laser, laser_sound_resource);
+        sounds.insert(Sound::MachinegunShot, laser_sound_resource);
         
         
         AudioSystem {

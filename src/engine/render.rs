@@ -1,6 +1,8 @@
 pub mod render_data;
 mod renderer;
 
+use std::sync::{Arc, Mutex};
+
 use crate::{
     transform::Transform,
     engine::{
@@ -21,6 +23,7 @@ use self::{
     render_data::RenderData,
 };
 
+use tokio::{runtime::Runtime, time::sleep};
 use winit::window::Window;
 
 use super::physics::dynamic_collider::PlayersDollCollider;
@@ -40,7 +43,7 @@ pub struct VisualElement<'a> {
 pub struct RenderSystem {
     render_data: RenderData,
     pub window: Window,
-    renderer: Renderer,
+    renderer: Arc<Mutex<Renderer>>,
 }
 
 
@@ -50,12 +53,46 @@ impl RenderSystem {
         window: Window,
         world: &World,
         time: &TimeSystem,
+        #[cfg(not(target_arch="wasm32"))]
+        runtime: &mut Runtime,
     ) -> Self {
         
         let render_data = RenderData::new(world, time, &window);
         
-        let renderer = Renderer::new(&window, &render_data).await;
-        
+        let renderer = Arc::new(
+            Mutex::new(
+                Renderer::new(&window, &render_data).await
+            )
+        );
+
+        // spawn async tusk for renderer
+        let async_renderer = renderer.clone();
+        #[cfg(not(target_arch="wasm32"))]
+        runtime.spawn(async move {
+            loop {
+
+                match async_renderer.try_lock() {
+                    Ok(mut renderer_lock) => {
+                        if let Err(err) = renderer_lock.render(/*&self.window*/) {
+                            match err {
+                                // wgpu::SurfaceError::Lost => renderer_lock.resize(self.window.inner_size()),
+                
+                                // The system is out of memory, we should probably quit
+                                wgpu::SurfaceError::OutOfMemory => panic!("Out of GPU memory"),
+                
+                                // All other errors (Outdated, Timeout) should be resolved by the next frame
+                                _ => log::error!("{:?}", err),
+                            }
+                        }
+                    }
+                    Err(_) => {}
+                }
+
+                tokio::time::sleep(tokio::time::Duration::from_micros(500)).await;
+            }
+        });
+
+
         log::info!("render system: renderer init");
         
         RenderSystem {
@@ -68,7 +105,7 @@ impl RenderSystem {
 
 
 
-    pub fn render_frame(&mut self, world: &World, time: &TimeSystem) {
+    pub fn send_data_to_renderer(&mut self, world: &World, time: &TimeSystem) {
 
         self.render_data.update_dynamic_render_data(
             world,
@@ -77,58 +114,60 @@ impl RenderSystem {
             &self.render_data.static_data.static_bounding_box.clone()
         );
 
-        self.renderer.queue.write_buffer(
-            &self.renderer.other_dynamic_data_buffer,
+        let mut renderer_lock = self.renderer.lock().unwrap();
+
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.other_dynamic_data_buffer,
             0,
             bytemuck::cast_slice(&[self.render_data.dynamic_data.other_dynamic_data]),
         );
 
-        self.renderer.queue.write_buffer(
-            &self.renderer.dynamic_normal_shapes_buffer,
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.dynamic_normal_shapes_buffer,
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
         );
 
-        self.renderer.queue.write_buffer(
-            &self.renderer.dynamic_negative_shapes_buffer,
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.dynamic_negative_shapes_buffer,
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.negative.as_slice()),
         );
 
-        self.renderer.queue.write_buffer(
-            &self.renderer.dynamic_stickiness_shapes_buffer,
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.dynamic_stickiness_shapes_buffer,
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
         );
 
-        self.renderer.queue.write_buffer(
-            &self.renderer.dynamic_neg_stickiness_shapes_buffer,
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.dynamic_neg_stickiness_shapes_buffer,
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
         );
 
-        self.renderer.queue.write_buffer(
-            &self.renderer.spherical_areas_data_buffer,
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.spherical_areas_data_buffer,
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.spherical_areas_data.as_slice()),
         );
 
-        self.renderer.queue.write_buffer(
-            &self.renderer.beam_areas_data_buffer,
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.beam_areas_data_buffer,
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.beam_areas_data.as_slice()),
         );
 
-        self.renderer.queue.write_buffer(
-            &self.renderer.player_forms_data_buffer,
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.player_forms_data_buffer,
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.player_forms_data.as_slice()),
         );
-        
 
-        if let Err(err) = self.renderer.render(&self.window) {
+        #[cfg(target_arch="wasm32")]
+        if let Err(err) = renderer_lock.render(/*&self.window*/) {
             match err {
-                wgpu::SurfaceError::Lost => self.resize_frame_buffer(),
+                wgpu::SurfaceError::Lost => renderer_lock.resize(self.window.inner_size()),
 
                 // The system is out of memory, we should probably quit
                 wgpu::SurfaceError::OutOfMemory => panic!("Out of GPU memory"),
@@ -137,13 +176,18 @@ impl RenderSystem {
                 _ => log::error!("{:?}", err),
             }
         }
+        
 
+        
     }
 
 
 
     pub fn resize_frame_buffer(&mut self) {
-        self.renderer.resize(self.window.inner_size());
+        self.renderer
+            .lock()
+            .unwrap()
+            .resize(self.window.inner_size());
     }
 }
 

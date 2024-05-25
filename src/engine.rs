@@ -153,7 +153,10 @@ impl Engine {
         let net = NetSystem::new(&mut runtime).await;
         log::info!("engine systems: net init");
 
+        #[cfg(target_arch = "wasm32")]
         let render = RenderSystem::new(window, &world, &time).await;
+        #[cfg(not(target_arch = "wasm32"))]
+        let render = RenderSystem::new(window, &world, &time, &mut runtime).await;
         log::info!("engine systems: render init");
 
         let audio = AudioSystem::new().await;

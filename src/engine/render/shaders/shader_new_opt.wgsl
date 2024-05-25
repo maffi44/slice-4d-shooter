@@ -298,7 +298,7 @@ struct OtherStaticData {
 @group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 64>;
 @group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
 
-const MAX_STEPS: i32 = 120;
+const MAX_STEPS: i32 = 80;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.01;
 const MAX_DIST: f32 = 250.0;

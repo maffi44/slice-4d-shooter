@@ -621,9 +621,9 @@ impl Renderer {
     }
 
 
-    pub fn render(&mut self, window: &Window) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, /*window: &Window*/) -> Result<(), wgpu::SurfaceError> {
 
-        let instatnt_full = web_time::Instant::now();
+        // let instatnt_full = web_time::Instant::now();
 
         match self.device.poll(wgpu::MaintainBase::Poll) {
             MaintainResult::Ok => {return Ok(());}
@@ -635,11 +635,11 @@ impl Renderer {
             self.total_time += current_frame_time;
             self.total_frames_count += 1;
 
-            // println!(
-            //     "AV DT {}, CUR DT: {}",
-            //     self.total_time / (self.total_frames_count) as f64,
-            //     current_frame_time,
-            // );
+            println!(
+                "AV DT {}, CUR DT: {}",
+                self.total_time / (self.total_frames_count) as f64,
+                current_frame_time,
+            );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());
@@ -686,16 +686,16 @@ impl Renderer {
 
         // let istts = web_time::Instant::now();
         self.queue.submit(std::iter::once(encoder.finish()));
-        // log::error!("submit time: {}",istts.elapsed().as_secs_f64());
+        // println!("submit time: {}",istts.elapsed().as_secs_f64());
 
-        window.pre_present_notify();
+        // window.pre_present_notify();
         
         // let istts = web_time::Instant::now();
         output.present();
-        // log::error!("output time: {}",istts.elapsed().as_secs_f64());
+        // println!("output time: {}",istts.elapsed().as_secs_f64());
 
 
-        // log::error!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
+        // println!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
         Ok(())
     }
 

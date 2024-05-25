@@ -244,7 +244,7 @@ fn main_loop_tick(
         &mut systems.engine_handle,
     );
 
-    systems.render.render_frame(&systems.world, &systems.time);
+    systems.render.send_data_to_renderer(&systems.world, &systems.time);
 
     systems.input.reset_input();
 
