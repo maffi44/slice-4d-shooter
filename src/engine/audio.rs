@@ -118,6 +118,19 @@ impl AudioSystem {
         }
     }
 
+    pub fn sound_set_pitch_and_gain(&mut self, handle: Handle<SoundSource>, pitch: f64, gain: f32) {
+        let st = self.sound_engine.state();
+        let mut state = st.contexts()[0].state();
+
+        if state.is_valid_handle(handle) {
+            let sound = state.source_mut(handle);
+
+            sound.set_pitch(pitch);
+            sound.set_gain(gain);
+        }
+    }
+
+
 
     pub fn sound_set_looping(&mut self, handle: Handle<SoundSource>, looping: bool) {
         let st = self.sound_engine.state();

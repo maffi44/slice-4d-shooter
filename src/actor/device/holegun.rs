@@ -49,6 +49,7 @@ pub struct HoleGun {
 
 pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
 pub const CHARGING_COEF: f32 = 0.7;
+pub const MAX_CHARGING_TIME: f32 = 3.4;
 
 impl HoleGun {
     pub fn new() -> Self {
@@ -86,8 +87,8 @@ impl HoleGun {
 
         audio_system.spawn_sound(
             crate::engine::audio::Sound::HolegunShot,
-            (charging_time * 0.5).clamp(0.4, 0.8), 
-            (1.2 - charging_time * 0.6).clamp(0.9, 1.2) as f64,
+            (charging_time/ MAX_CHARGING_TIME).powf(1.2).clamp(0.4, 0.9), 
+        ((MAX_CHARGING_TIME*0.2+1.0) - charging_time*0.2) as f64,
             false,
             true,
             fyrox_sound::source::Status::Playing,
@@ -287,8 +288,8 @@ impl Device for HoleGun {
 
                     self.charging_sound = Some(audio_system.spawn_sound(
                         crate::engine::audio::Sound::HolegunCharging,
-                        0.3,
-                        1.0,
+                        0.8,
+                        1.2,
                         false,
                         true,
                         fyrox_sound::source::Status::Playing
@@ -327,6 +328,12 @@ impl Device for HoleGun {
                 }
 
                 self.charging_time += delta * 1.6;
+
+                // audio_system.sound_set_pitch_and_gain(
+                //     self.charging_sound.expect("Holegun have not charging sound on charging"),
+                //     1.3 + (self.charging_time*0.5) as f64,
+                //     0.4 + (self.charging_time*0.13),
+                // );
                 
                 match &mut self.volume_area[0] {
                     
@@ -345,7 +352,7 @@ impl Device for HoleGun {
                     }
                 }
     
-                if self.charging_time > 3.4 {
+                if self.charging_time > MAX_CHARGING_TIME {
     
                     self.shooted_on_this_charge = true;
                     

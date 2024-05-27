@@ -68,7 +68,7 @@ impl MachineGun {
     ) {
         audio_system.spawn_sound(
             crate::engine::audio::Sound::MachinegunShot,
-            0.27,
+            0.87,
             1.1,
             false,
             true,
