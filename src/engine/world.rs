@@ -72,15 +72,15 @@ impl World {
         
         loop {
                 while let Some(message) = engine_handle.boardcast_message_buffer.pop() {
-                    self.send_boardcast_messages(message, engine_handle, physics_system)                
+                    self.send_boardcast_messages(message, engine_handle, physics_system, audio_system)                
                 }
 
                 while let Some((to, message)) = engine_handle.direct_message_buffer.pop() {
-                    self.send_direct_messages(to, message, engine_handle, physics_system)                
+                    self.send_direct_messages(to, message, engine_handle, physics_system, audio_system)                
                 }
 
                 while let Some(command) = engine_handle.command_buffer.pop() {
-                    self.execute_command(command, net_system, physics_system, engine_handle);
+                    self.execute_command(command, net_system, physics_system, engine_handle, audio_system);
                 }
 
                 if engine_handle.direct_message_buffer.is_empty() &&
@@ -98,6 +98,7 @@ impl World {
         net_system: &mut NetSystem,
         physics_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
     ) {
         let from = command.sender;
 
@@ -186,11 +187,12 @@ impl World {
         to: ActorID,
         message: Message,
         engine_handle: &mut EngineHandle,
-        physics_system: &PhysicsSystem
+        physics_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
 
     ) {
         if let Some(actor) = self.actors.get_mut(&to) {
-            actor.recieve_message(&message, engine_handle, physics_system);
+            actor.recieve_message(&message, engine_handle, physics_system, audio_system);
         }
     }
 
@@ -198,11 +200,13 @@ impl World {
         &mut self,
         message: Message,
         engine_handle: &mut EngineHandle,
-        physics_system: &PhysicsSystem
+        physics_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+
     ) {
         for (_, actor) in self.actors.iter_mut() {
             if actor.get_id().expect("actor does not have id") != message.from {
-                actor.recieve_message(&message, engine_handle, physics_system);
+                actor.recieve_message(&message, engine_handle, physics_system, audio_system);
             } 
         }
     }

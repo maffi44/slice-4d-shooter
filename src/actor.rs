@@ -28,7 +28,13 @@ pub type ActorID = u128;
 
 pub trait Actor {
 
-    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle,  physics_system: &PhysicsSystem) {}
+    fn recieve_message(
+        &mut self,
+        message: &Message,
+        engine_handle: &mut EngineHandle,
+        physics_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem
+    ) {}
 
     fn get_mut_transform(&mut self) -> &mut Transform;
     
@@ -123,28 +129,34 @@ impl Actor for ActorWrapper {
         }
     }
 
-    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle,  physics_system: &PhysicsSystem) {
+    fn recieve_message(
+        &mut self,
+        message: &Message,
+        engine_handle: &mut EngineHandle,
+        physics_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem
+    ) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
             ActorWrapper::PlayerDeathExplode(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},

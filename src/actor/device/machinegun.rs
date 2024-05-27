@@ -66,7 +66,14 @@ impl MachineGun {
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
-        audio_system.play_sound_with_pitch(crate::engine::audio::Sound::MachinegunShot, 0.27, 1.1);
+        audio_system.spawn_sound(
+            crate::engine::audio::Sound::MachinegunShot,
+            0.27,
+            1.1,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing,
+        );
 
         let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
 

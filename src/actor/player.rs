@@ -73,6 +73,7 @@ impl PlayerInnerState {
 }
 
 
+#[derive(PartialEq)]
 enum ActiveHandsSlot {
     Zero,
     First,
@@ -158,7 +159,13 @@ pub enum PlayerMessages {
 
 
 impl Actor for Player {
-    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle, physic_system: &PhysicsSystem) {
+    fn recieve_message(
+        &mut self,
+        message: &Message,
+        engine_handle: &mut EngineHandle,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem
+    ) {
         let from = message.from;
 
         let message = &message.message;
@@ -188,19 +195,19 @@ impl Actor for Player {
                     SpecificActorMessage::PLayerMessages(message) => {
                         match message {
                             PlayerMessages::Telefrag => {
-                                self.die_immediately(engine_handle);
+                                self.die(true, engine_handle, physic_system, audio_system);
                             }
 
                             PlayerMessages::DieImmediately => {
-                                self.die_immediately(engine_handle);
+                                self.die(true, engine_handle, physic_system, audio_system);
                             }
 
                             PlayerMessages::DieSlowly => {
-                                self.die_slowly(engine_handle);
+                                self.die(false, engine_handle, physic_system, audio_system);
                             }
 
                             PlayerMessages::DealDamageAndAddForce(damage, force) => {
-                                self.get_damage_and_add_force(*damage as i32, *force, engine_handle);
+                                self.get_damage_and_add_force(*damage as i32, *force, engine_handle, physic_system, audio_system);
                             }
 
                             PlayerMessages::NewPeerConnected(peer_id) => {
@@ -473,18 +480,42 @@ impl Actor for Player {
             }
     
             if input.activate_hand_slot_0.is_action_just_pressed() {
+                self.deavctivate_previous_device(
+                    ActiveHandsSlot::Zero,
+                    physic_system,
+                    audio_system,
+                    engine_handle,
+                );
                 self.active_hands_slot = ActiveHandsSlot::Zero;
             }
     
             if input.activate_hand_slot_1.is_action_just_pressed() {
+                self.deavctivate_previous_device(
+                    ActiveHandsSlot::First,
+                    physic_system,
+                    audio_system,
+                    engine_handle,
+                );
                 self.active_hands_slot = ActiveHandsSlot::First;
             }
     
             if input.activate_hand_slot_2.is_action_just_pressed() {
+                self.deavctivate_previous_device(
+                    ActiveHandsSlot::Second,
+                    physic_system,
+                    audio_system,
+                    engine_handle,
+                );
                 self.active_hands_slot = ActiveHandsSlot::Second;
             }
     
             if input.activate_hand_slot_3.is_action_just_pressed() {
+                self.deavctivate_previous_device(
+                    ActiveHandsSlot::Third,
+                    physic_system,
+                    audio_system,
+                    engine_handle,
+                );
                 self.active_hands_slot = ActiveHandsSlot::Third;
             }
     
@@ -824,25 +855,99 @@ impl Player {
     }
 
 
-    fn get_damage_and_add_force(&mut self, damage: i32, force: Vec4, engine_handle: &mut EngineHandle) {
+    fn get_damage_and_add_force(
+        &mut self,
+        damage: i32,
+        force: Vec4,
+        engine_handle: &mut EngineHandle,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+    ) {
+
         self.inner_state.hp -= damage;
         self.inner_state.collider.add_force(force);
 
         if self.inner_state.hp <= 0 {
             if damage >= PLAYER_MAX_HP {
-                self.die_immediately(engine_handle)
+                self.die(true, engine_handle, physic_system, audio_system);
             } else {
-                self.die_slowly(engine_handle)
+                self.die(false, engine_handle, physic_system, audio_system);
             }
         }
     }
 
+    fn deavctivate_previous_device(&mut self,
+        new_active_slot: ActiveHandsSlot,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle,
+    ) {
+        let my_id = self.get_id().expect("Player have nit ActorID");
 
-    pub fn telefrag(&mut self, engine_handle: &mut EngineHandle) {
+        match self.active_hands_slot {
+            ActiveHandsSlot::Zero => {
+                if new_active_slot != ActiveHandsSlot::Zero {
+                    self
+                        .hands_slot_0
+                        .deactivate(
+                            my_id,
+                            &mut self.inner_state,
+                            physic_system,
+                            audio_system,
+                            engine_handle
+                        );
+                }
+            },
+            ActiveHandsSlot::First => {
+                if new_active_slot != ActiveHandsSlot::First {
+                    self
+                        .hands_slot_1.as_mut().expect("Player have not any device in active hand's slot")
+                        .deactivate(
+                            my_id,
+                            &mut self.inner_state,
+                            physic_system,
+                            audio_system,
+                            engine_handle
+                        );
+                }
+            }
+            ActiveHandsSlot::Second => {
+                if new_active_slot != ActiveHandsSlot::Second {
+                    self
+                        .hands_slot_2.as_mut().expect("Player have not any device in active hand's slot")
+                        .deactivate(
+                            my_id,
+                            &mut self.inner_state,
+                            physic_system,
+                            audio_system,
+                            engine_handle
+                        );
+                }
+            }
+            ActiveHandsSlot::Third => {
+                if new_active_slot != ActiveHandsSlot::Third {
+                    self
+                        .hands_slot_3.as_mut().expect("Player have not any device in active hand's slot")
+                        .deactivate(
+                            my_id,
+                            &mut self.inner_state,
+                            physic_system,
+                            audio_system,
+                            engine_handle
+                        );
+                }
+            }
+        }
+    }
+
+    fn telefrag(&mut self, engine_handle: &mut EngineHandle) {
         self.die_immediately(engine_handle);
     }
 
-    pub fn die_immediately(&mut self, engine_handle: &mut EngineHandle) {
+    fn die_immediately(
+        &mut self,
+        engine_handle: &mut EngineHandle,
+    ) {
         if self.inner_state.is_alive {
 
             self.inner_state.is_alive = false;
@@ -885,7 +990,7 @@ impl Player {
     }
 
 
-    pub fn die_slowly(&mut self, engine_handle: &mut EngineHandle) {
+    fn die_slowly(&mut self, engine_handle: &mut EngineHandle) {
         if self.inner_state.is_alive {
         
             self.inner_state.is_alive = false;
@@ -906,6 +1011,54 @@ impl Player {
                     )
                 }
             );
+        }
+    }
+
+    fn die(
+        &mut self,
+        die_immediately: bool,
+        engine_handle: &mut EngineHandle,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+
+    ) {
+        let my_id = self.get_id().expect("Player have not ActorID");
+
+        match self.active_hands_slot {
+            ActiveHandsSlot::Zero => {
+                self.hands_slot_0.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+
+            },
+            ActiveHandsSlot::First => {
+                if let Some(device) = self.hands_slot_1.as_mut() {
+                    device.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+                }
+
+            },
+            ActiveHandsSlot::Second => {
+                if let Some(device) = self.hands_slot_2.as_mut() {
+                    device.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+                }
+
+            },
+            ActiveHandsSlot::Third => {
+                if let Some(device) = self.hands_slot_3.as_mut() {
+                    device.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+                }
+
+            }
+        }
+
+        for device in self.devices.iter_mut() {
+            if let Some(device) = device {
+                device.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+            }
+        }
+
+        if die_immediately {
+            self.die_immediately(engine_handle);
+        } else {
+            self.die_slowly(engine_handle);
         }
     }
 
@@ -952,7 +1105,7 @@ impl Player {
     }
 
 
-    pub fn set_gun_to_1_slot(
+    fn set_gun_to_1_slot(
         &mut self,
         device: Box<dyn Device>
     ) -> Option<Box<dyn Device>>
@@ -972,7 +1125,7 @@ impl Player {
     }
 
 
-    pub fn set_gun_to_2_slot(
+    fn set_gun_to_2_slot(
         &mut self,
         device: Box<dyn Device>
     ) -> Option<Box<dyn Device>>
@@ -992,7 +1145,7 @@ impl Player {
     }
 
 
-    pub fn set_gun_to_3_slot(
+    fn set_gun_to_3_slot(
         &mut self,
         device: Box<dyn Device>
     ) -> Option<Box<dyn Device>>
@@ -1012,7 +1165,7 @@ impl Player {
     }
 
 
-    pub fn set_device_to_device_slot(
+    fn set_device_to_device_slot(
         &mut self,
         slot_number: PlayersDeviceSlotNumber,
         device: Box<dyn Device>

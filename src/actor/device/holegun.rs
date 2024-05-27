@@ -1,3 +1,5 @@
+use fyrox_core::pool::Handle;
+use fyrox_sound::source::SoundSource;
 use glam::{Vec3, Vec4};
 
 use crate::{
@@ -42,6 +44,7 @@ pub struct HoleGun {
     color: Vec3,
     volume_area: Vec<VolumeArea>,
     shooted_from_pivot_point_dir: Vec4,
+    charging_sound: Option<Handle<SoundSource>>,
 }
 
 pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
@@ -63,6 +66,7 @@ impl HoleGun {
             volume_area: Vec::with_capacity(1),
             shooted_from_pivot_point_dir,
             is_charging: false,
+            charging_sound: None
         }
     }
 
@@ -76,7 +80,18 @@ impl HoleGun {
         charging_time: f32,
         color: Vec3,
     ) {
-        audio_system.play_sound_with_pitch(crate::engine::audio::Sound::HolegunShot, (charging_time * 0.5).clamp(0.4, 0.8), (1.2 - charging_time * 0.6).clamp(0.9, 1.2));
+        audio_system.remove_sound(
+            self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
+        );
+
+        audio_system.spawn_sound(
+            crate::engine::audio::Sound::HolegunShot,
+            (charging_time * 0.5).clamp(0.4, 0.8), 
+            (1.2 - charging_time * 0.6).clamp(0.9, 1.2) as f64,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing,
+        );
 
         let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
                 
@@ -267,6 +282,18 @@ impl Device for HoleGun {
 
                 if !self.is_charging {
                     self.is_charging = true;
+                    
+                    // start charging
+
+                    self.charging_sound = Some(audio_system.spawn_sound(
+                        crate::engine::audio::Sound::HolegunCharging,
+                        0.3,
+                        1.0,
+                        false,
+                        true,
+                        fyrox_sound::source::Status::Playing
+                    ));
+
     
                     let shooted_from_offset = {
                         (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
@@ -359,4 +386,32 @@ impl Device for HoleGun {
         }
     }
 
+    fn deactivate(
+        &mut self,
+        player_id: ActorID,
+        player: &mut PlayerInnerState,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle,
+    ) {
+        self.shooted_on_this_charge = false;
+        
+        if self.is_charging {
+            if self.charging_time > 0.0 {
+
+                self.shoot(
+                    player_id,
+                    player,
+                    physic_system,
+                    audio_system,
+                    engine_handle,
+                    self.charging_time,
+                    self.color,
+                );
+
+                self.charging_time = 0.0;
+                self.is_charging = false;
+            }
+        }
+    }
 }

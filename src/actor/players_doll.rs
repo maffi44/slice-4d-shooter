@@ -184,7 +184,13 @@ impl PlayersDoll {
 
 
 impl Actor for PlayersDoll {
-    fn recieve_message(&mut self, message: &Message, engine_handle: &mut EngineHandle, physics_system: &PhysicsSystem) {
+    fn recieve_message(
+        &mut self,
+        message: &Message,
+        engine_handle: &mut EngineHandle,
+        physics_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem
+    ) {
         let from = message.from;
 
         let message = &message.message;

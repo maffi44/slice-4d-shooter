@@ -18,6 +18,7 @@ use web_sys::{js_sys::{ArrayBuffer, Uint8Array}, Response};
 pub enum Sound {
     MachinegunShot,
     HolegunShot,
+    HolegunCharging,
 } 
 pub struct AudioSystem {
     sound_engine: SoundEngine,
@@ -27,16 +28,25 @@ pub struct AudioSystem {
 
 impl AudioSystem {
 
-    pub fn play_sound(&mut self, sound: Sound, gain: f32) {
+    pub fn spawn_sound(
+        &mut self,
+        sound: Sound,
+        gain: f32,
+        pitch: f64,
+        looping: bool,
+        is_play_once: bool,
+        status: Status,
+    ) -> Handle<SoundSource> {
         let sound_buffer = self.sounds
             .get(&sound)
             .expect("Some sound is not exist");
 
         let source = SoundSourceBuilder::new()
             .with_buffer(sound_buffer.clone())
-            .with_status(Status::Playing)
+            .with_status(status)
             .with_gain(gain)
-            .with_play_once(true)
+            .with_play_once(is_play_once)
+            .with_pitch(pitch)
             .build()
             .unwrap();
 
@@ -44,57 +54,92 @@ impl AudioSystem {
 
         let mut context_state = engine_state.contexts()[0].state();
 
-        let _ = context_state.add_source(source);
+        let handle = context_state.add_source(source);
+
+        return handle;
     }
 
-    pub fn play_sound_with_pitch(&mut self, sound: Sound, gain: f32, pitch: f32) {
-        let sound_buffer = self.sounds
-            .get(&sound)
-            .expect("Some sound is not exist");
 
-        let source = SoundSourceBuilder::new()
-            .with_buffer(sound_buffer.clone())
-            .with_status(Status::Playing)
-            .with_pitch(pitch as  f64)
-            .with_gain(gain)
-            .with_play_once(true)
-            .build()
-            .unwrap();
+    pub fn pause_sound(&mut self, handle: Handle<SoundSource>) {
+        let st = self.sound_engine.state();
+        let mut state = st.contexts()[0].state();
 
-        let engine_state = self.sound_engine.state();
+        if state.is_valid_handle(handle) {
+            let sound = state.source_mut(handle);
 
-        let mut context_state = engine_state.contexts()[0].state();
-
-        let _ = context_state.add_source(source);
+            sound.pause();
+        }
     }
 
-    // pub fn stop_sound(&mut self, sound: Sound) {
-    //     let handle = self.sounds
-    //         .get(&sound)
-    //         .expect("Some sounde is not exist");
 
-    //     let engine_state = self.sound_engine.state();
+    pub fn stop_sound(&mut self, handle: Handle<SoundSource>, pause: bool) {
+        let st = self.sound_engine.state();
+        let mut state = st.contexts()[0].state();
 
-    //     let mut context_state = engine_state.contexts()[0].state();
+        if state.is_valid_handle(handle) {
+            let sound = state.source_mut(handle);
 
-    //     let sound_source = context_state.source_mut(*handle);
+            sound.stop();
+        }
+    }
 
-    //     let _ = sound_source.stop();
-    // }
+    pub fn play_sound(&mut self, handle: Handle<SoundSource>) {
+        let st = self.sound_engine.state();
+        let mut state = st.contexts()[0].state();
 
-    // pub fn set_loop_sound(&mut self, sound: Sound, looping: bool) {
-    //     let handle = self.sounds
-    //         .get(&sound)
-    //         .expect("Some sounde is not exist");
+        if state.is_valid_handle(handle) {
+            let sound = state.source_mut(handle);
 
-    //     let engine_state = self.sound_engine.state();
+            sound.play();
+        }
+    }
 
-    //     let mut context_state = engine_state.contexts()[0].state();
 
-    //     let sound_source = context_state.source_mut(*handle);
+    pub fn sound_set_gain(&mut self, handle: Handle<SoundSource>, gain: f32) {
+        let st = self.sound_engine.state();
+        let mut state = st.contexts()[0].state();
 
-    //     sound_source.set_looping(looping);
-    // }
+        if state.is_valid_handle(handle) {
+            let sound = state.source_mut(handle);
+
+            sound.set_gain(gain);
+        }
+    }
+
+
+    pub fn sound_set_pitch(&mut self, handle: Handle<SoundSource>, pitch: f64) {
+        let st = self.sound_engine.state();
+        let mut state = st.contexts()[0].state();
+
+        if state.is_valid_handle(handle) {
+            let sound = state.source_mut(handle);
+
+            sound.set_pitch(pitch);
+        }
+    }
+
+
+    pub fn sound_set_looping(&mut self, handle: Handle<SoundSource>, looping: bool) {
+        let st = self.sound_engine.state();
+        let mut state = st.contexts()[0].state();
+
+        if state.is_valid_handle(handle) {
+            let sound = state.source_mut(handle);
+
+            sound.set_looping(looping);
+        }
+    }
+
+
+    pub fn remove_sound(&mut self, handle: Handle<SoundSource>) {
+        let st = self.sound_engine.state();
+        let mut state = st.contexts()[0].state();
+
+        if state.is_valid_handle(handle) {
+            state.remove_source(handle);
+        }
+    }
+
 
     pub async fn new() -> Self {
 
@@ -126,8 +171,18 @@ impl AudioSystem {
                 .expect("can't open file")
             ).expect("can't create sound buffer resourse");
 
+            let holegun_charging_sound_resource = SoundBufferResource::new_generic(
+                DataSource::from_file(
+                    "/home/maffi/Dream/web-engine4d/src/assets/sounds/holegun_charging.wav",
+                    &fyrox_resource::io::FsResourceIo
+                )
+                .await
+                .expect("can't open file")
+            ).expect("can't create sound buffer resourse");
+
             sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
             sounds.insert(Sound::HolegunShot, holegun_shot_sound_resource);
+            sounds.insert(Sound::HolegunCharging, holegun_charging_sound_resource);
         }
 
         

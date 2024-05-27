@@ -73,6 +73,15 @@ pub trait Device {
         None
     }
 
+    fn deactivate(
+        &mut self,
+        player_id: ActorID,
+        player: &mut PlayerInnerState,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle,
+    ) {}
+
     fn process_while_player_is_not_alive(
         &mut self,
         player_id: ActorID,
@@ -84,7 +93,7 @@ pub trait Device {
         delta: f32,
     ) {}
 
-    fn process_while_deactive(
+fn process_while_deactive(
         &mut self,
         player_id: ActorID,
         player: &mut PlayerInnerState,
