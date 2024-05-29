@@ -5,8 +5,9 @@ pub mod device;
 pub mod holegun_shot;
 pub mod holegun_miss;
 pub mod players_doll;
-pub mod players_death_explode;
+pub mod players_death_explosion;
 pub mod machinegun_shot;
+pub mod shooting_impact;
 
 use crate::{
     engine::{
@@ -20,7 +21,7 @@ use crate::{
 use self::{
     holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, player::{
         Player, PlayerMessages
-    }, players_death_explode::PlayerDeathExplode, players_doll::{PlayersDoll, PlayersDollMessages}, wandering_actor::WanderingActor
+    }, players_death_explosion::PlayersDeathExplosion, players_doll::{PlayersDoll, PlayersDollMessages}, shooting_impact::ShootingImpact, wandering_actor::WanderingActor
 };
 
 
@@ -65,8 +66,9 @@ pub enum ActorWrapper {
     HoleGunShot(HoleGunShot),
     HoleGunMiss(HoleGunMiss),
     PlayersDoll(PlayersDoll),
-    PlayerDeathExplode(PlayerDeathExplode),
+    PlayersDeathExplosion(PlayersDeathExplosion),
     MachinegunShot(MachinegunShot),
+    ShootingImpact(ShootingImpact),
     Diamond,
     Exit,
 }
@@ -90,10 +92,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.get_transform()
             }
-            ActorWrapper::PlayerDeathExplode(actor) => {
+            ActorWrapper::PlayersDeathExplosion(actor) => {
                 actor.get_transform()
             }
             ActorWrapper::MachinegunShot(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::ShootingImpact(actor) => {
                 actor.get_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -118,10 +123,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.get_mut_transform()
             },
-            ActorWrapper::PlayerDeathExplode(actor) => {
+            ActorWrapper::PlayersDeathExplosion(actor) => {
                 actor.get_mut_transform()
             },
             ActorWrapper::MachinegunShot(actor) => {
+                actor.get_mut_transform()
+            },
+            ActorWrapper::ShootingImpact(actor) => {
                 actor.get_mut_transform()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -152,10 +160,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
-            ActorWrapper::PlayerDeathExplode(actor) => {
+            ActorWrapper::PlayersDeathExplosion(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
             ActorWrapper::MachinegunShot(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system);
+            },
+            ActorWrapper::ShootingImpact(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -186,10 +197,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, delta);
             },
-            ActorWrapper::PlayerDeathExplode(actor) => {
+            ActorWrapper::PlayersDeathExplosion(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, delta);
             },
             ActorWrapper::MachinegunShot(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, delta);
+            },
+            ActorWrapper::ShootingImpact(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, delta);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -214,10 +228,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.get_physical_element()
             },
-            ActorWrapper::PlayerDeathExplode(actor) => {
+            ActorWrapper::PlayersDeathExplosion(actor) => {
                 actor.get_physical_element()
             },
             ActorWrapper::MachinegunShot(actor) => {
+                actor.get_physical_element()
+            },
+            ActorWrapper::ShootingImpact(actor) => {
                 actor.get_physical_element()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -242,10 +259,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.get_visual_element()
             },
-            ActorWrapper::PlayerDeathExplode(actor) => {
+            ActorWrapper::PlayersDeathExplosion(actor) => {
                 actor.get_visual_element()
             },
             ActorWrapper::MachinegunShot(actor) => {
+                actor.get_visual_element()
+            },
+            ActorWrapper::ShootingImpact(actor) => {
                 actor.get_visual_element()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -270,10 +290,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.get_id()
             },
-            ActorWrapper::PlayerDeathExplode(actor) => {
+            ActorWrapper::PlayersDeathExplosion(actor) => {
                 actor.get_id()
             },
             ActorWrapper::MachinegunShot(actor) => {
+                actor.get_id()
+            },
+            ActorWrapper::ShootingImpact(actor) => {
                 actor.get_id()
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -298,10 +321,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.set_id(id, engine_handle);
             },
-            ActorWrapper::PlayerDeathExplode(actor) => {
+            ActorWrapper::PlayersDeathExplosion(actor) => {
                 actor.set_id(id, engine_handle);
             },
             ActorWrapper::MachinegunShot(actor) => {
+                actor.set_id(id, engine_handle);
+            },
+            ActorWrapper::ShootingImpact(actor) => {
                 actor.set_id(id, engine_handle);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -326,10 +352,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::PlayersDoll(actor) => {
                 actor.init(id);
             },
-            ActorWrapper::PlayerDeathExplode(actor) => {
+            ActorWrapper::PlayersDeathExplosion(actor) => {
                 actor.init(id);
             },
             ActorWrapper::MachinegunShot(actor) => {
+                actor.init(id);
+            },
+            ActorWrapper::ShootingImpact(actor) => {
                 actor.init(id);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},

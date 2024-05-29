@@ -131,6 +131,7 @@ impl MachineGun {
                                 PlayerMessages::DealDamageAndAddForce(
                                     DAMAGE,
                                     force,
+                                    position,
                                 )
                             )
                         )

@@ -23,7 +23,7 @@ use crate::{
     transform::Transform
 };
 
-use super::{device::holegun::HOLE_GUN_COLOR, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, player::{PlayerMessages, TIME_TO_DIE_SLOWLY}, players_death_explode::PlayerDeathExplode, Actor, ActorID, ActorWrapper, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
+use super::{device::holegun::HOLE_GUN_COLOR, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, player::{PlayerMessages, TIME_TO_DIE_SLOWLY}, players_death_explosion::PlayersDeathExplosion, shooting_impact::ShootingImpact, Actor, ActorID, ActorWrapper, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
 
 
 const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
@@ -121,7 +121,7 @@ impl PlayersDoll {
 
 
     fn play_die_effects(&mut self, engine_handle: &mut EngineHandle) {
-        let players_death_explode = PlayerDeathExplode::new(
+        let players_death_explode = PlayersDeathExplosion::new(
             self.get_transform().get_position()
         );
         
@@ -129,7 +129,7 @@ impl PlayersDoll {
             Command {
                 sender: self.get_id().expect("Player have not ActorID"),
                 command_type: CommandType::SpawnActor(
-                    super::ActorWrapper::PlayerDeathExplode(players_death_explode)
+                    super::ActorWrapper::PlayersDeathExplosion(players_death_explode)
                 )
             }
         );
@@ -244,7 +244,7 @@ impl Actor for PlayersDoll {
                             PlayerMessages::DieSlowly => {
                                 self.die_slowly(engine_handle);
                             }
-                            PlayerMessages::DealDamageAndAddForce(damage, force) => {
+                            PlayerMessages::DealDamageAndAddForce(damage, force, impact_pos) => {
                                 engine_handle.send_command(
                                     Command {
                                         sender: self.id.expect("Player's Doll have not Actor's ID"),
@@ -255,13 +255,24 @@ impl Actor for PlayersDoll {
                                                     RemoteMessage::DealDamageAndAddForce(
                                                         *damage,
                                                         force.to_array(),
+                                                        impact_pos.to_array(),
                                                     )
                                                 ),
                                                 self.masters_peer_id
                                             )
                                         )
                                     }
-                                )
+                                );
+
+                                engine_handle.send_command(Command {
+                                    sender: 0u128,
+                                    command_type: CommandType::SpawnActor(
+                                        ActorWrapper::ShootingImpact(
+                                            ShootingImpact::new(*impact_pos, *damage)
+                                        )
+                                    )
+                                })
+
                             }
                             PlayerMessages::NewPeerConnected(_) => {}
                         }

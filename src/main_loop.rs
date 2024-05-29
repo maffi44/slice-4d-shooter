@@ -55,6 +55,9 @@ impl MainLoop {
 
         log::info!("init(systems) called");
 
+        #[cfg(target_arch="wasm32")]
+        let mut it_is_first_action = true;
+
         let _ = self.event_loop.run(move |event, elwt|{
             match event {
                 Event::NewEvents(cause) => {
@@ -130,14 +133,16 @@ impl MainLoop {
                                     KeyCode::Escape => {
                                         if event.state.is_pressed() {
                                             systems.render.window.set_cursor_visible(true);
-                                            #[cfg(target_arch="wasm32")]
+                                            // #[cfg(target_arch="wasm32")]
                                             systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
                                             systems.render.window.set_fullscreen(None);
                                         }
                                     },
                                     KeyCode::Enter => {
-                                        #[cfg(target_arch="wasm32")]
-                                        systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Locked).unwrap();
+                                        // #[cfg(target_arch="wasm32")]
+                                        systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Confined).or_else(
+                                            |_| systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                                        ).unwrap();
                                         systems.render.window.set_cursor_visible(false);
 
                                         if event.state.is_pressed() {
@@ -158,13 +163,24 @@ impl MainLoop {
                         },
 
                         WindowEvent::MouseInput {button, state,..} => {
+
                             // if left click set cursor grabbed
                             match button {
                                 MouseButton::Left => {
 
                                     if state.is_pressed() {
+
+                                        // it is necessary on web target because a browsers is prevent 
+                                        // to create an audio context before first input action
                                         #[cfg(target_arch="wasm32")]
-                                        systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Locked).unwrap();
+                                        if it_is_first_action {
+                                            systems.audio.sound_engine.initialize_audio_output_device().unwrap();
+                                            it_is_first_action = false
+                                        }
+                                        
+                                        systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Confined).or_else(
+                                            |_| systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                                        ).unwrap();
                                         systems.render.window.set_cursor_visible(false);
                                     }
                                 },
@@ -180,7 +196,7 @@ impl MainLoop {
                     device_id, event
                 } => {
                     match event {
-                        DeviceEvent::MouseMotion {delta} => {
+                        DeviceEvent::MouseMotion {delta} => {             
                             let (x,y) = delta;
                             systems.input.add_mouse_delta(Vec2::new(x as f32, y as f32))
         
@@ -254,11 +270,13 @@ fn main_loop_tick(
 
 
 fn init(systems: &mut Engine) {
+
     let mut main_player = Player::new(
         InputMaster::LocalMaster(
             LocalMaster::new(ActionsFrameState::empty())
         ),
-        systems.world.players_settings.clone()
+        systems.world.players_settings.clone(),
+        &mut systems.audio
     );
 
     main_player.get_mut_transform().position = systems.world.level.get_random_spawn_position();

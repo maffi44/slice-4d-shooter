@@ -87,7 +87,7 @@ impl HoleGun {
 
         audio_system.spawn_sound(
             crate::engine::audio::Sound::HolegunShot,
-            (charging_time/ MAX_CHARGING_TIME).powf(1.2).clamp(0.4, 0.9), 
+            (charging_time/ MAX_CHARGING_TIME).powf(1.2).clamp(0.4, 1.0), 
         ((MAX_CHARGING_TIME*0.2+1.0) - charging_time*0.2) as f64,
             false,
             true,
@@ -144,6 +144,7 @@ impl HoleGun {
                                 PlayerMessages::DealDamageAndAddForce(
                                     damage as u32,
                                     force,
+                                    hit.hit_point,
                                 )
                             )
                         )

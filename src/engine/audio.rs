@@ -19,11 +19,44 @@ pub enum Sound {
     MachinegunShot,
     HolegunShot,
     HolegunCharging,
-} 
+    RotatingAroundW,
+}
 pub struct AudioSystem {
-    sound_engine: SoundEngine,
+    pub sound_engine: SoundEngine,
     sounds: HashMap<Sound, Resource<SoundBuffer>>
 }
+
+// #[cfg(target_arch = "wasm32")]
+// struct StartAudioContextOnWebFuture {
+//     sound_engine: SoundEngine
+// }
+// #[cfg(target_arch = "wasm32")]
+// impl Future for StartAudioContextOnWebFuture {
+//     type Output = ();
+
+//     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+//         self.sound_engine.
+//         if self.window.inner_size().width == 0 || self.window.inner_size().height == 0 {
+//             let wait_fn = {
+//                 let waker = Rc::new(cx.waker().clone());
+//                 Closure::wrap(Box::new(move || {
+//                     waker.as_ref().clone().wake();
+//                 }) as Box<dyn Fn()>)
+//             };
+//             let _ = web_sys::window()
+//                 .unwrap()
+//                 .set_timeout_with_callback_and_timeout_and_arguments_0(
+//                     wait_fn.as_ref().unchecked_ref(),
+//                     50,
+//                 );
+//             wait_fn.forget();
+
+//             Poll::Pending
+//         } else {
+//             Poll::Ready(())
+//         }
+//     }
+// }
 
 
 impl AudioSystem {
@@ -47,6 +80,7 @@ impl AudioSystem {
             .with_gain(gain)
             .with_play_once(is_play_once)
             .with_pitch(pitch)
+            .with_looping(looping)
             .build()
             .unwrap();
 
@@ -79,7 +113,7 @@ impl AudioSystem {
         if state.is_valid_handle(handle) {
             let sound = state.source_mut(handle);
 
-            sound.stop();
+            let _ = sound.stop();
         }
     }
 
@@ -156,7 +190,7 @@ impl AudioSystem {
 
     pub async fn new() -> Self {
 
-        let sound_engine = SoundEngine::new().unwrap();
+        let sound_engine = SoundEngine::new().expect("Can't initialize sound engine");
 
         let context = SoundContext::new();
         
@@ -165,80 +199,51 @@ impl AudioSystem {
         let mut sounds = HashMap::with_capacity(20);
 
         #[cfg(not(target_arch="wasm32"))]
-        {
-            let machinegun_shot_sound_resource = SoundBufferResource::new_generic(
-                DataSource::from_file(
-                    "/home/maffi/Dream/web-engine4d/src/assets/sounds/machinegun_shot.wav",
-                    &fyrox_resource::io::FsResourceIo
-                )
-                .await
-                .expect("can't open file")
-            ).expect("can't create sound buffer resourse");
-
-            let holegun_shot_sound_resource = SoundBufferResource::new_generic(
-                DataSource::from_file(
-                    "/home/maffi/Dream/web-engine4d/src/assets/sounds/holegun_shot.wav",
-                    &fyrox_resource::io::FsResourceIo
-                )
-                .await
-                .expect("can't open file")
-            ).expect("can't create sound buffer resourse");
-
-            let holegun_charging_sound_resource = SoundBufferResource::new_generic(
-                DataSource::from_file(
-                    "/home/maffi/Dream/web-engine4d/src/assets/sounds/holegun_charging.wav",
-                    &fyrox_resource::io::FsResourceIo
-                )
-                .await
-                .expect("can't open file")
-            ).expect("can't create sound buffer resourse");
-
-            sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
-            sounds.insert(Sound::HolegunShot, holegun_shot_sound_resource);
-            sounds.insert(Sound::HolegunCharging, holegun_charging_sound_resource);
-        }
-
-        
-
-        // Currently  have very freaky bug on web (connection isn't done)
+        let path = "/home/maffi/Dream/web-engine4d".to_string();
         #[cfg(target_arch="wasm32")]
-        let laser_sound_resource = SoundBufferResource::new_generic(
+        let path = "http://127.0.0.1:5500".to_string();
+
+        let machinegun_shot_sound_resource = SoundBufferResource::new_generic(
             DataSource::from_file(
-                "../src/assets/sounds/machinegun_shot.wav",
+                path.clone() + "/src/assets/sounds/machinegun_shot.wav",
                 &fyrox_resource::io::FsResourceIo
             )
             .await
             .expect("can't open file")
         ).expect("can't create sound buffer resourse");
 
-        // #[cfg(target_arch="wasm32")]
-        // let sound_buffer = {
-        //     let window = web_sys::window().unwrap();
-        
-        //     let target = "http://127.0.0.1:5500/src/assets/sounds/test.wav";
-            
-        //     let promise = window.fetch_with_str(target);
-        
-        //     let result = JsFuture::from(promise).await;
+        let holegun_shot_sound_resource = SoundBufferResource::new_generic(
+            DataSource::from_file(
+                path.clone() + "/src/assets/sounds/holegun_shot.wav",
+                &fyrox_resource::io::FsResourceIo
+            )
+            .await
+            .expect("can't open file")
+        ).expect("can't create sound buffer resourse");
 
-        //     let response: Response = result.unwrap().dyn_into().unwrap();
+        let holegun_charging_sound_resource = SoundBufferResource::new_generic(
+            DataSource::from_file(
+                path.clone() + "/src/assets/sounds/holegun_charging.wav",
+                &fyrox_resource::io::FsResourceIo
+            )
+            .await
+            .expect("can't open file")
+        ).expect("can't create sound buffer resourse");
 
-        //     let res: ArrayBuffer = JsFuture::from(response.array_buffer().unwrap()).await.unwrap().unchecked_into();
+        let rotating_around_w_sound_resource = SoundBufferResource::new_generic(
+            DataSource::from_file(
+                path.clone() + "/src/assets/sounds/rotating_around_w.wav",
+                &fyrox_resource::io::FsResourceIo
+            )
+            .await
+            .expect("can't open file")
+        ).expect("can't create sound buffer resourse");
 
-        //     let array = Uint8Array::new(&res);
+        sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
+        sounds.insert(Sound::HolegunShot, holegun_shot_sound_resource);
+        sounds.insert(Sound::HolegunCharging, holegun_charging_sound_resource);
+        sounds.insert(Sound::RotatingAroundW, rotating_around_w_sound_resource);
 
-        //     let bytes = array.to_vec();
-
-        //     SoundBufferResource::new_generic(
-        //         DataSource::from_memory(
-        //             bytes
-        //         )
-        //     ).expect("can't create sound buffer resourse")
-        // };
-
-
-        
-        
         AudioSystem {
             sound_engine,
             sounds

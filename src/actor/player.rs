@@ -14,7 +14,7 @@ use crate::{
         MessageType,
         SpecificActorMessage
     }, engine::{
-        audio::AudioSystem, engine_handle::{
+        audio::{AudioSystem, Sound}, engine_handle::{
             Command,
             CommandType,
             EngineHandle
@@ -37,10 +37,12 @@ use self::{
 };
 
 use std::f32::consts::PI;
-use glam::{Vec4, Mat4};
+use fyrox_core::pool::Handle;
+use fyrox_sound::source::SoundSource;
+use glam::{FloatExt, Mat4, Vec4};
 use matchbox_socket::PeerId;
 
-use super::{device::machinegun::MachineGun, players_death_explode::PlayerDeathExplode};
+use super::{device::machinegun::MachineGun, players_death_explosion::PlayersDeathExplosion};
 
 
 pub struct PlayerInnerState {
@@ -135,9 +137,13 @@ pub struct Player {
 
     after_death_timer: f32,
     need_to_die_slowly: bool,
+
+    rotating_around_w_sound_handle: Handle<SoundSource>,
+    rotating_around_w_sound_pitch: f64,
+    rotating_around_w_sound_gain: f32,
 }
 
-const PLAYER_MAX_HP: i32 = 100;
+pub const PLAYER_MAX_HP: i32 = 100;
 
 const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
 const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
@@ -146,11 +152,11 @@ const W_SCANNER_RELOAD_TIME: f32 = 0.5;
 const W_SCANNER_MAX_RADIUS: f32 = 22.0;
 const W_SCANNER_EXPANDING_SPEED: f32 = 7.5;
 
-pub const TIME_TO_DIE_SLOWLY: f32 = 1.2;
+pub const TIME_TO_DIE_SLOWLY: f32 = 0.5;
 
 
 pub enum PlayerMessages {
-    DealDamageAndAddForce(u32, Vec4),
+    DealDamageAndAddForce(u32, Vec4, Vec4),
     NewPeerConnected(PeerId),
     Telefrag,
     DieImmediately,
@@ -206,7 +212,7 @@ impl Actor for Player {
                                 self.die(false, engine_handle, physic_system, audio_system);
                             }
 
-                            PlayerMessages::DealDamageAndAddForce(damage, force) => {
+                            PlayerMessages::DealDamageAndAddForce(damage, force, _) => {
                                 self.get_damage_and_add_force(*damage as i32, *force, engine_handle, physic_system, audio_system);
                             }
 
@@ -349,6 +355,8 @@ impl Actor for Player {
             let mut y = self.view_angle.y;
             let mut xw = self.view_angle.z;
             let mut yw = self.view_angle.w;
+
+            let prev_yw = yw;
     
             if input.second_mouse.is_action_pressed() {
                 xw = input.mouse_axis.x + xw;
@@ -395,14 +403,41 @@ impl Actor for Player {
             // ]));
     
             // self.set_rotation_matrix(Mat4::from_cols_slice(&[
-            //     1.0,    0.0,        0.0,    0.0,
+            //     1.0,    0.0,        0a0,    0.0,
             //     0.0,    y.cos(),    0.0,    y.sin(),
             //     0.0,    0.0,        1.0,    0.0,
             //     0.0,    -y.sin(),   0.0,    y.cos()
             // ]));
     
             let xz_player_rotation = Mat4::from_rotation_y(x);
-            self.view_angle = Vec4::new(x, y, xw, yw);  
+            self.view_angle = Vec4::new(x, y, xw, yw);
+
+            let base_pitch = {
+                0.8.lerp(
+                    1.5,
+                    (std::f64::consts::PI/2.0 + yw as f64) / std::f64::consts::PI
+                )
+            };
+
+            let addition_pitch = {
+                self.rotating_around_w_sound_pitch * (1.0-delta as f64*22.0) +
+                ((prev_yw - yw) as f64).abs() * 2.0
+            };
+
+            self.rotating_around_w_sound_pitch = addition_pitch;
+
+            let gain = {
+                self.rotating_around_w_sound_gain * (1.0-(delta*42.0)) +
+                (prev_yw - yw).abs() * 33.0
+            };
+
+            self.rotating_around_w_sound_gain = gain;
+
+            audio_system.sound_set_pitch_and_gain(
+                self.rotating_around_w_sound_handle,
+                base_pitch,//D + addition_pitch,
+                gain
+            );
     
             // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
     
@@ -775,7 +810,7 @@ impl Actor for Player {
 
 impl Player {
 
-    pub fn new(master: InputMaster, player_settings: PlayerSettings) -> Self {
+    pub fn new(master: InputMaster, player_settings: PlayerSettings, audio_system: &mut AudioSystem) -> Self {
         
         let screen_effects = PlayerScreenEffects {
             w_scaner_is_active: false,
@@ -784,6 +819,15 @@ impl Player {
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
         };
+
+        let rotating_around_w_sound_handle = audio_system.spawn_sound(
+            Sound::RotatingAroundW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
         
         Player {
             id: None,
@@ -819,7 +863,11 @@ impl Player {
             w_scanner_reloading_time: W_SCANNER_RELOAD_TIME,
 
             after_death_timer: MIN_TIME_BEFORE_RESPAWN,
-            need_to_die_slowly: false
+            need_to_die_slowly: false,
+
+            rotating_around_w_sound_handle,
+            rotating_around_w_sound_pitch: 1.0,
+            rotating_around_w_sound_gain: 0.0,
         }
     }
 
@@ -871,7 +919,11 @@ impl Player {
             if damage >= PLAYER_MAX_HP {
                 self.die(true, engine_handle, physic_system, audio_system);
             } else {
-                self.die(false, engine_handle, physic_system, audio_system);
+                
+                // self.die(false, engine_handle, physic_system, audio_system);
+                
+                // temproral solution
+                self.die(true, engine_handle, physic_system, audio_system);
             }
         }
     }
@@ -975,7 +1027,7 @@ impl Player {
 
     fn play_die_effects(&mut self, engine_handle: &mut EngineHandle) {
         
-        let players_death_explode = PlayerDeathExplode::new(
+        let players_death_explode = PlayersDeathExplosion::new(
             self.get_transform().get_position()
         );
 
@@ -983,7 +1035,7 @@ impl Player {
             Command {
                 sender: self.get_id().expect("Player have not ActorID"),
                 command_type: CommandType::SpawnActor(
-                    super::ActorWrapper::PlayerDeathExplode(players_death_explode)
+                    super::ActorWrapper::PlayersDeathExplosion(players_death_explode)
                 )
             }
         );
