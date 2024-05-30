@@ -1,6 +1,6 @@
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
-use glam::{Vec3, Vec4};
+use glam::{FloatExt, Vec3, Vec4};
 use matchbox_socket::PeerId;
 
 use crate::{
@@ -31,8 +31,7 @@ use super::{
     holegun_shot::HoleGunShot,
     machinegun_shot::MachinegunShot,
     player::{
-        PlayerMessages,
-        TIME_TO_DIE_SLOWLY
+        PlayerMessages, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
     },
     players_death_explosion::PlayersDeathExplosion,
     shooting_impact::ShootingImpact,
@@ -64,7 +63,9 @@ pub struct PlayersDoll {
     need_to_die_slowly: bool,
     die_slowly_timer: f32,
 
-    test_sound: Handle<SoundSource>
+    holegun_charge_sound: Option<Handle<SoundSource>>
+
+    // test_sound: Handle<SoundSource>
 }
 
 pub enum PlayersDollMessages{
@@ -88,18 +89,18 @@ impl PlayersDoll {
         audio_system: &mut AudioSystem,
     ) -> Self {
 
-        let test_sound = audio_system.spawn_spatial_sound(
-            Sound::RotatingAroundW,
-            0.6,
-            1.0,
-            true,
-            false,
-            fyrox_sound::source::Status::Playing,
-            transform.get_position(),
-            2.0,
-            4.0,
-            50.0
-        );
+        // let test_sound = audio_system.spawn_spatial_sound(
+        //     Sound::RotatingAroundW,
+        //     0.6,
+        //     1.0,
+        //     true,
+        //     false,
+        //     fyrox_sound::source::Status::Playing,
+        //     transform.get_position(),
+        //     2.0,
+        //     4.0,
+        //     50.0
+        // );
 
         let weapon_offset = {
             Vec4::new(
@@ -137,7 +138,8 @@ impl PlayersDoll {
             dynamic_colliders,
             need_to_die_slowly: false,
             die_slowly_timer: 0.0,
-            test_sound,
+            holegun_charge_sound: None
+            // test_sound,
         }
     }
 
@@ -173,17 +175,30 @@ impl PlayersDoll {
         );
 
         audio_system.spawn_spatial_sound(
-            Sound::PlayerExplosion,
-            0.6,
-            1.0,
+            Sound::PlayerDeathSignal,
+            0.8,
+            1.3,
             false,
             true,
             fyrox_sound::source::Status::Playing,
             self.transform.get_position(),
             2.0,
-            4.0,
+            1.0,
             50.0
         );
+
+        audio_system.spawn_non_spatial_sound(
+            Sound::PlayerDeathSignal,
+            1.0,
+            1.2,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing,
+        );
+
+        if let Some(handle) = self.holegun_charge_sound.take() {
+            audio_system.remove_sound(handle);
+        }
     }
 
 
@@ -322,8 +337,16 @@ impl Actor for PlayersDoll {
                                             ShootingImpact::new(*impact_pos, *damage)
                                         )
                                     )
-                                })
+                                });
 
+                                audio_system.spawn_non_spatial_sound(
+                                    Sound::PlayerHitSignal,
+                                    0.14.lerp(0.22, (*damage as f32 / PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing
+                                );                          
                             }
                             PlayerMessages::NewPeerConnected(_) => {}
                         }
@@ -343,6 +366,20 @@ impl Actor for PlayersDoll {
                                     );
                     
                                     self.volume_area.push(volume_area);
+
+                                    self.holegun_charge_sound = Some(audio_system.spawn_spatial_sound(
+                                        Sound::HolegunCharging,
+                                        0.08,
+                                        1.0,
+                                        false,
+                                        true,
+                                        fyrox_sound::source::Status::Playing,
+                                        self.transform.get_position(),
+                                        1.0,
+                                        1.0,
+                                        50.0
+                                    ));
+
                                 }
                             }
                             PlayersDollMessages::Respawn(spawn_position) => {
@@ -356,6 +393,23 @@ impl Actor for PlayersDoll {
                             ) => {
                                 self.volume_area.clear();
                                 self.charging_time = 0.0;
+
+                                if let Some(handle) = self.holegun_charge_sound.take() {
+                                    audio_system.remove_sound(handle);
+                                }
+
+                                audio_system.spawn_spatial_sound(
+                                    Sound::HolegunShot,
+                                    0.08,
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing,
+                                    self.transform.get_position(),
+                                    1.0,
+                                    1.0,
+                                    50.0
+                                );
 
                                 let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
 
@@ -395,6 +449,23 @@ impl Actor for PlayersDoll {
                                 self.volume_area.clear();
                                 self.charging_time = 0.0;
 
+                                if let Some(handle) = self.holegun_charge_sound.take() {
+                                    audio_system.remove_sound(handle);
+                                }
+
+                                audio_system.spawn_spatial_sound(
+                                    Sound::HolegunShot,
+                                    0.08,
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing,
+                                    self.transform.get_position(),
+                                    1.0,
+                                    1.0,
+                                    50.0
+                                );
+
                                 let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
 
                                 let charging_volume_area = VolumeArea::SphericalVolumeArea(
@@ -424,6 +495,19 @@ impl Actor for PlayersDoll {
 
                             PlayersDollMessages::SpawnMachineGunShot(position, it_is_miss) => {
                                 let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
+
+                                audio_system.spawn_spatial_sound(
+                                    Sound::MachinegunShot,
+                                    0.17,
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing,
+                                    self.transform.get_position(),
+                                    1.0,
+                                    1.0,
+                                    50.0
+                                );
 
                                 let machinegun_shot = MachinegunShot::new(
                                     *position,
@@ -529,6 +613,13 @@ impl Actor for PlayersDoll {
         delta: f32
     ) {
         if self.is_alive {
+
+            if let Some(handle) = &self.holegun_charge_sound {
+                audio_system.sound_set_position(
+                    handle.clone(),
+                    self.transform.get_position()
+                );
+            }
             
             if !self.volume_area.is_empty() {
     
@@ -559,9 +650,9 @@ impl Actor for PlayersDoll {
             }
         }
 
-        audio_system.sound_set_position(
-            self.test_sound,
-            self.transform.get_position()
-        );
+        // audio_system.sound_set_position(
+        //     self.test_sound,
+        //     self.transform.get_position()
+        // );
     }
 }

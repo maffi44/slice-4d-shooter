@@ -66,9 +66,9 @@ impl MachineGun {
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
-        audio_system.spawn_not_spatial_sound(
+        audio_system.spawn_non_spatial_sound(
             crate::engine::audio::Sound::MachinegunShot,
-            0.87,
+            0.33,
             1.1,
             false,
             true,

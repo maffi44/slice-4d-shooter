@@ -23,6 +23,8 @@ pub enum Sound {
     HolegunCharging,
     RotatingAroundW,
     PlayerExplosion,
+    PlayerHitSignal,
+    PlayerDeathSignal,
 }
 pub struct AudioSystem {
     pub sound_engine: SoundEngine,
@@ -77,7 +79,7 @@ impl AudioSystem {
     //     state.listener_mut().set_basis(matrix)
     // }
 
-    pub fn spawn_not_spatial_sound(
+    pub fn spawn_non_spatial_sound(
         &mut self,
         sound: Sound,
         gain: f32,
@@ -435,11 +437,31 @@ impl AudioSystem {
             .expect("can't open file")
         ).expect("can't create sound buffer resourse");
 
+        let player_hit_signal = SoundBufferResource::new_generic(
+            DataSource::from_file(
+                path.clone() + "/src/assets/sounds/player_hit_signal.wav",
+                &fyrox_resource::io::FsResourceIo
+            )
+            .await
+            .expect("can't open file")
+        ).expect("can't create sound buffer resourse");
+
+        let player_death_signal = SoundBufferResource::new_generic(
+            DataSource::from_file(
+                path.clone() + "/src/assets/sounds/player_death_signal.wav",
+                &fyrox_resource::io::FsResourceIo
+            )
+            .await
+            .expect("can't open file")
+        ).expect("can't create sound buffer resourse");
+
         sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
         sounds.insert(Sound::HolegunShot, holegun_shot_sound_resource);
         sounds.insert(Sound::HolegunCharging, holegun_charging_sound_resource);
         sounds.insert(Sound::RotatingAroundW, rotating_around_w_sound_resource);
         sounds.insert(Sound::PlayerExplosion, player_explosion);
+        sounds.insert(Sound::PlayerHitSignal, player_hit_signal);
+        sounds.insert(Sound::PlayerDeathSignal, player_death_signal);
 
         AudioSystem {
             sound_engine,

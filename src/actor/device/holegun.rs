@@ -21,7 +21,7 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        audio::AudioSystem, engine_handle::{
+        audio::{AudioSystem, Sound}, engine_handle::{
             Command,
             CommandType,
             EngineHandle,
@@ -85,9 +85,9 @@ impl HoleGun {
             self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
         );
 
-        audio_system.spawn_not_spatial_sound(
-            crate::engine::audio::Sound::HolegunShot,
-            (charging_time/ MAX_CHARGING_TIME).powf(1.2).clamp(0.4, 1.0), 
+        audio_system.spawn_non_spatial_sound(
+            Sound::HolegunShot,
+            (charging_time/ (MAX_CHARGING_TIME*2.0)).powf(1.6).clamp(0.1, 0.44), 
         ((MAX_CHARGING_TIME*0.2+1.0) - charging_time*0.2) as f64,
             false,
             true,
@@ -287,9 +287,9 @@ impl Device for HoleGun {
                     
                     // start charging
 
-                    self.charging_sound = Some(audio_system.spawn_not_spatial_sound(
+                    self.charging_sound = Some(audio_system.spawn_non_spatial_sound(
                         crate::engine::audio::Sound::HolegunCharging,
-                        0.8,
+                        0.38,
                         1.2,
                         false,
                         true,

@@ -428,7 +428,7 @@ impl Actor for Player {
 
             let gain = {
                 self.rotating_around_w_sound_gain * (1.0-(delta*42.0)) +
-                (prev_yw - yw).abs() * 33.0
+                (prev_yw - yw).abs() * 10.0
             };
 
             self.rotating_around_w_sound_gain = gain;
@@ -525,33 +525,39 @@ impl Actor for Player {
             }
     
             if input.activate_hand_slot_1.is_action_just_pressed() {
-                self.deavctivate_previous_device(
-                    ActiveHandsSlot::First,
-                    physic_system,
-                    audio_system,
-                    engine_handle,
-                );
-                self.active_hands_slot = ActiveHandsSlot::First;
+                if self.hands_slot_1.is_some() {
+                    self.deavctivate_previous_device(
+                        ActiveHandsSlot::First,
+                        physic_system,
+                        audio_system,
+                        engine_handle,
+                    );
+                    self.active_hands_slot = ActiveHandsSlot::First;
+                }
             }
     
             if input.activate_hand_slot_2.is_action_just_pressed() {
-                self.deavctivate_previous_device(
-                    ActiveHandsSlot::Second,
-                    physic_system,
-                    audio_system,
-                    engine_handle,
-                );
-                self.active_hands_slot = ActiveHandsSlot::Second;
+                if self.hands_slot_2.is_some() {
+                    self.deavctivate_previous_device(
+                        ActiveHandsSlot::Second,
+                        physic_system,
+                        audio_system,
+                        engine_handle,
+                    );
+                    self.active_hands_slot = ActiveHandsSlot::Second;
+                }
             }
     
             if input.activate_hand_slot_3.is_action_just_pressed() {
-                self.deavctivate_previous_device(
-                    ActiveHandsSlot::Third,
-                    physic_system,
-                    audio_system,
-                    engine_handle,
-                );
-                self.active_hands_slot = ActiveHandsSlot::Third;
+                if self.hands_slot_3.is_some() {
+                    self.deavctivate_previous_device(
+                        ActiveHandsSlot::Third,
+                        physic_system,
+                        audio_system,
+                        engine_handle,
+                    );
+                    self.active_hands_slot = ActiveHandsSlot::Third;
+                }
             }
     
             let mut movement_vec = Vec4::ZERO;
@@ -825,7 +831,7 @@ impl Player {
             getting_damage_screen_effect: 0.0,
         };
 
-        let rotating_around_w_sound_handle = audio_system.spawn_not_spatial_sound(
+        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
             Sound::RotatingAroundW,
             0.0,
             1.0,
