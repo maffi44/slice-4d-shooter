@@ -789,6 +789,11 @@ impl Actor for Player {
             };
         }
 
+        audio_system.set_listener_position_and_look_vector(
+            self.get_position(),
+            self.get_transform().get_direction_for_audio_system()
+        );
+
         engine_handle.send_command(Command{
             sender: my_id,
             command_type: CommandType::NetCommand(
@@ -820,7 +825,7 @@ impl Player {
             getting_damage_screen_effect: 0.0,
         };
 
-        let rotating_around_w_sound_handle = audio_system.spawn_sound(
+        let rotating_around_w_sound_handle = audio_system.spawn_not_spatial_sound(
             Sound::RotatingAroundW,
             0.0,
             1.0,
@@ -885,7 +890,7 @@ impl Player {
 
 
     pub fn get_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.transform.rotation.clone()
+        self.inner_state.transform.get_rotation()
     }
 
     pub fn get_player_visual_effects(&self) -> &PlayerScreenEffects {
@@ -894,7 +899,7 @@ impl Player {
 
 
     pub fn set_rotation_matrix(&mut self, new_rotation: Mat4) {
-        self.inner_state.transform.rotation = new_rotation
+        self.inner_state.transform.set_rotation(new_rotation)
     }
 
 
@@ -919,7 +924,7 @@ impl Player {
             if damage >= PLAYER_MAX_HP {
                 self.die(true, engine_handle, physic_system, audio_system);
             } else {
-                
+
                 // self.die(false, engine_handle, physic_system, audio_system);
                 
                 // temproral solution

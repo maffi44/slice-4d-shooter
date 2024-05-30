@@ -1,9 +1,11 @@
+use fyrox_core::pool::Handle;
+use fyrox_sound::source::SoundSource;
 use glam::{Vec3, Vec4};
 use matchbox_socket::PeerId;
 
 use crate::{
     engine::{
-        audio::AudioSystem, engine_handle::{
+        audio::{AudioSystem, Sound}, engine_handle::{
             Command,
             CommandType,
             EngineHandle
@@ -23,7 +25,26 @@ use crate::{
     transform::Transform
 };
 
-use super::{device::holegun::HOLE_GUN_COLOR, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, player::{PlayerMessages, TIME_TO_DIE_SLOWLY}, players_death_explosion::PlayersDeathExplosion, shooting_impact::ShootingImpact, Actor, ActorID, ActorWrapper, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage};
+use super::{
+    device::holegun::HOLE_GUN_COLOR,
+    holegun_miss::HoleGunMiss,
+    holegun_shot::HoleGunShot,
+    machinegun_shot::MachinegunShot,
+    player::{
+        PlayerMessages,
+        TIME_TO_DIE_SLOWLY
+    },
+    players_death_explosion::PlayersDeathExplosion,
+    shooting_impact::ShootingImpact,
+    Actor,
+    ActorID,
+    ActorWrapper,
+    CommonActorsMessages,
+    Component,
+    Message,
+    MessageType,
+    SpecificActorMessage
+};
 
 
 const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
@@ -42,6 +63,8 @@ pub struct PlayersDoll {
 
     need_to_die_slowly: bool,
     die_slowly_timer: f32,
+
+    test_sound: Handle<SoundSource>
 }
 
 pub enum PlayersDollMessages{
@@ -61,8 +84,22 @@ impl PlayersDoll {
         id: ActorID,
         player_sphere_radius: f32,
         transform: Transform,
-        is_alive: bool
+        is_alive: bool,
+        audio_system: &mut AudioSystem,
     ) -> Self {
+
+        let test_sound = audio_system.spawn_spatial_sound(
+            Sound::RotatingAroundW,
+            0.6,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing,
+            transform.get_position(),
+            2.0,
+            4.0,
+            50.0
+        );
 
         let weapon_offset = {
             Vec4::new(
@@ -100,12 +137,13 @@ impl PlayersDoll {
             dynamic_colliders,
             need_to_die_slowly: false,
             die_slowly_timer: 0.0,
+            test_sound,
         }
     }
 
 
 
-    fn die_immediately(&mut self, engine_handle: &mut EngineHandle) {
+    fn die_immediately(&mut self, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
         if self.is_alive {
 
             self.volume_area.clear();
@@ -114,13 +152,13 @@ impl PlayersDoll {
             self.is_enable = false;
             self.need_to_die_slowly = false;
 
-            self.play_die_effects(engine_handle);
+            self.play_die_effects(engine_handle, audio_system);
         }
     }
 
 
 
-    fn play_die_effects(&mut self, engine_handle: &mut EngineHandle) {
+    fn play_die_effects(&mut self, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
         let players_death_explode = PlayersDeathExplosion::new(
             self.get_transform().get_position()
         );
@@ -132,6 +170,19 @@ impl PlayersDoll {
                     super::ActorWrapper::PlayersDeathExplosion(players_death_explode)
                 )
             }
+        );
+
+        audio_system.spawn_spatial_sound(
+            Sound::PlayerExplosion,
+            0.6,
+            1.0,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing,
+            self.transform.get_position(),
+            2.0,
+            4.0,
+            50.0
         );
     }
 
@@ -221,7 +272,7 @@ impl Actor for PlayersDoll {
                     SpecificActorMessage::PLayerMessages(message) => {
                         match message {
                             PlayerMessages::Telefrag => {
-                                self.die_immediately(engine_handle);
+                                self.die_immediately(engine_handle, audio_system);
 
                                 engine_handle.send_command(
                                     Command {
@@ -239,7 +290,7 @@ impl Actor for PlayersDoll {
                                 )
                             }
                             PlayerMessages::DieImmediately => {
-                                self.die_immediately(engine_handle);
+                                self.die_immediately(engine_handle, audio_system);
                             }
                             PlayerMessages::DieSlowly => {
                                 self.die_slowly(engine_handle);
@@ -286,7 +337,7 @@ impl Actor for PlayersDoll {
                                     let volume_area = VolumeArea::SphericalVolumeArea(
                                         SphericalVolumeArea {
                                             color: HOLE_GUN_COLOR,
-                                            translation: self.transform.rotation.inverse() * self.weapon_shooting_point,
+                                            translation: self.transform.get_rotation().inverse() * self.weapon_shooting_point,
                                             radius: 0.1 * VISUAL_FIRE_SHPERE_MULT,
                                         }
                                     );
@@ -306,7 +357,7 @@ impl Actor for PlayersDoll {
                                 self.volume_area.clear();
                                 self.charging_time = 0.0;
 
-                                let shooted_from = self.transform.get_position() + self.transform.rotation.inverse() * self.weapon_shooting_point;
+                                let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
 
                                 let charging_volume_area = VolumeArea::SphericalVolumeArea(
                                     SphericalVolumeArea {
@@ -344,7 +395,7 @@ impl Actor for PlayersDoll {
                                 self.volume_area.clear();
                                 self.charging_time = 0.0;
 
-                                let shooted_from = self.transform.get_position() + self.transform.rotation.inverse() * self.weapon_shooting_point;
+                                let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
 
                                 let charging_volume_area = VolumeArea::SphericalVolumeArea(
                                     SphericalVolumeArea {
@@ -372,7 +423,7 @@ impl Actor for PlayersDoll {
                             },
 
                             PlayersDollMessages::SpawnMachineGunShot(position, it_is_miss) => {
-                                let shooted_from = self.transform.get_position() + self.transform.rotation.inverse() * self.weapon_shooting_point;
+                                let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
 
                                 let machinegun_shot = MachinegunShot::new(
                                     *position,
@@ -489,7 +540,7 @@ impl Actor for PlayersDoll {
                         if self.charging_time < 3.4 {
                             area.radius = self.charging_time * 0.08 * VISUAL_FIRE_SHPERE_MULT;
                         }
-                        area.translation = self.transform.rotation.inverse() * self.weapon_shooting_point;
+                        area.translation = self.transform.get_rotation().inverse() * self.weapon_shooting_point;
                     }
                     _ => {
                         panic!("charging volume area in PLayersDoll is not SphericalVolumeArea")
@@ -503,9 +554,14 @@ impl Actor for PlayersDoll {
                 if self.die_slowly_timer >= TIME_TO_DIE_SLOWLY {
                     self.is_enable = false;
                     self.need_to_die_slowly = false;
-                    self.play_die_effects(engine_handle);
+                    self.play_die_effects(engine_handle, audio_system);
                 }
             }
         }
+
+        audio_system.sound_set_position(
+            self.test_sound,
+            self.transform.get_position()
+        );
     }
 }

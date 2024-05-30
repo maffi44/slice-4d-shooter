@@ -85,7 +85,7 @@ impl HoleGun {
             self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
         );
 
-        audio_system.spawn_sound(
+        audio_system.spawn_not_spatial_sound(
             crate::engine::audio::Sound::HolegunShot,
             (charging_time/ MAX_CHARGING_TIME).powf(1.2).clamp(0.4, 1.0), 
         ((MAX_CHARGING_TIME*0.2+1.0) - charging_time*0.2) as f64,
@@ -96,11 +96,11 @@ impl HoleGun {
 
         let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
                 
-        let direction = player.transform.rotation.inverse() * Vec4::NEG_Z;
+        let direction = player.transform.get_rotation().inverse() * Vec4::NEG_Z;
     
         let weapon_offset = {
             (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
-            (player.transform.rotation.inverse() *
+            (player.transform.get_rotation().inverse() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
 
@@ -287,7 +287,7 @@ impl Device for HoleGun {
                     
                     // start charging
 
-                    self.charging_sound = Some(audio_system.spawn_sound(
+                    self.charging_sound = Some(audio_system.spawn_not_spatial_sound(
                         crate::engine::audio::Sound::HolegunCharging,
                         0.8,
                         1.2,
@@ -299,7 +299,7 @@ impl Device for HoleGun {
     
                     let shooted_from_offset = {
                         (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
-                        (player.transform.rotation.inverse() *
+                        (player.transform.get_rotation().inverse() *
                         (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
                     };
     
@@ -341,7 +341,7 @@ impl Device for HoleGun {
                     VolumeArea::SphericalVolumeArea(area) => {
                         let shooted_from_offset = {
                             (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
-                            (player.transform.rotation.inverse() *
+                            (player.transform.get_rotation().inverse() *
                             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
                         };
 

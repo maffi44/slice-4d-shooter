@@ -28,11 +28,11 @@ use crate::{
     }
 };
 
-use super::engine_handle::{
+use super::{audio::{self, AudioSystem}, engine_handle::{
         Command,
         CommandType,
         EngineHandle
-    };
+    }};
 
 use alkahest::{alkahest, Serialize};
 
@@ -148,6 +148,7 @@ impl NetSystem {
         engine_handle: &mut EngineHandle,
         #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime,
+        audio_system: &mut AudioSystem
     ) {
 
         if self.socket.any_closed() {
@@ -215,14 +216,14 @@ impl NetSystem {
         for (peer, packet) in self.socket.channel_mut(0).receive() {
             
             if let Some(message) = NetMessage::from_packet(packet) {
-                process_message(peer, message, engine_handle);
+                process_message(peer, message, engine_handle, audio_system);
             }
         }
 
         for (peer, packet) in self.socket.channel_mut(1).receive() {
             
             if let Some(message) = NetMessage::from_packet(packet) {
-                process_message(peer, message, engine_handle);
+                process_message(peer, message, engine_handle, audio_system);
             }
         }
     }
@@ -286,7 +287,7 @@ impl NetSystem {
     }
 }
 
-fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut EngineHandle) {
+fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
     match message {
         NetMessage::RemoteCommand(command) => {
             match command {
@@ -317,7 +318,8 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
                         peer_id.0.as_u128(),
                         player_sphere_radius,
                         transform,
-                        is_alive
+                        is_alive,
+                        audio_system
                     );
 
                     let actor = ActorWrapper::PlayersDoll(players_doll);

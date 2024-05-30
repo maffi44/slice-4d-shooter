@@ -66,7 +66,7 @@ impl MachineGun {
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
-        audio_system.spawn_sound(
+        audio_system.spawn_not_spatial_sound(
             crate::engine::audio::Sound::MachinegunShot,
             0.87,
             1.1,
@@ -101,12 +101,12 @@ impl MachineGun {
         
         let forward_dir = random_dir_x * random_dir_y * Vec4::NEG_Z;
         
-        let direction = player.transform.rotation.inverse() * forward_dir;
+        let direction = player.transform.get_rotation().inverse() * forward_dir;
         // direction = random_dir_x * direction;
 
         let weapon_offset = {
             (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
-            (player.transform.rotation.inverse() *
+            (player.transform.get_rotation().inverse() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
 

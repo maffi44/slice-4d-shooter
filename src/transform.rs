@@ -6,9 +6,9 @@ use alkahest::alkahest;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Transform {
-    pub position: Vec4,
-    pub rotation: Mat4,
-    pub scale: Vec4,
+    position: Vec4,
+    rotation: Mat4,
+    scale: Vec4,
 }
 
 #[repr(C)]
@@ -100,16 +100,21 @@ impl Transform {
     #[inline]
     pub fn set_position(&mut self, position: Vec4) {
         self.position = position;
-    } 
+    }
 
     #[inline]
-    pub fn get_position(&self) -> Vec4 {
-        self.position
-    }
+    pub fn set_rotation(&mut self, rotation: Mat4) {
+        self.rotation = rotation;
+    } 
 
     #[inline]
     pub fn set_scale(&mut self, scale: Vec4) {
         self.scale = scale;
+    }
+    
+    #[inline]
+    pub fn get_position(&self) -> Vec4 {
+        self.position
     }
 
     #[inline]
@@ -118,7 +123,12 @@ impl Transform {
     }
 
     #[inline]
-    pub fn get_direction(&mut self) -> Vec4 {
-        self.rotation * Vec4::Z
+    pub fn get_rotation(&self) -> Mat4 {
+        self.rotation
+    }
+
+    #[inline]
+    pub fn get_direction_for_audio_system(&self) -> Vec4 {
+        self.rotation.inverse() * Vec4::Z
     }
 }

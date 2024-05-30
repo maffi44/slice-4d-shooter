@@ -223,12 +223,14 @@ fn main_loop_tick(
     #[cfg(target_arch= "wasm32")]
     systems.net.tick(
         &mut systems.engine_handle,
+        &mut systems.audio
     );
 
     #[cfg(not(target_arch= "wasm32"))]
     systems.net.tick(
         &mut systems.engine_handle,
-        &mut systems.runtime
+        &mut systems.runtime,
+        &mut systems.audio
     );
 
     systems.input.get_input(&mut systems.world, &mut systems.net);
@@ -279,7 +281,7 @@ fn init(systems: &mut Engine) {
         &mut systems.audio
     );
 
-    main_player.get_mut_transform().position = systems.world.level.get_random_spawn_position();
+    main_player.get_mut_transform().set_position(systems.world.level.get_random_spawn_position());
 
     let main_player_id = systems.world.add_actor_to_world(
         ActorWrapper::Player(main_player),

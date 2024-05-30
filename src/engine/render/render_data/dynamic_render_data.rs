@@ -209,7 +209,7 @@ impl DynamicRenderData {
                         empty_bytes: [0;4],
                         color: [1.0, 0.0, 0.0],
                         radius: player_sphere.radius,
-                        rotation: actor.get_transform().rotation.to_cols_array(),
+                        rotation: actor.get_transform().get_rotation().to_cols_array(),
                         weapon_offset: player_sphere.weapon_offset.to_array()
                     };
                     frame_bounding_box.expand_by_player_form(&player_form);
