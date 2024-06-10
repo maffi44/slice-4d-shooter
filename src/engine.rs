@@ -7,7 +7,9 @@ pub mod effects;
 pub mod world;
 pub mod engine_handle;
 pub mod audio;
+pub mod ui;
 
+use std::sync::{Arc, Mutex};
 #[cfg(target_arch = "wasm32")]
 use std::{future::Future, pin::Pin, rc::Rc, task::{Context, Poll}};
 
@@ -25,7 +27,11 @@ use self::{
     net::NetSystem,
 };
 
-use winit::window::WindowBuilder;
+use egui::ViewportId;
+use render::{render_data::RenderData, renderer::Renderer};
+use tokio::runtime::Runtime;
+use ui::UISystem;
+use winit::window::{Window, WindowBuilder};
 
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::WindowBuilderExtWebSys;
@@ -43,6 +49,7 @@ pub struct Engine {
     #[cfg(not(target_arch = "wasm32"))]
     pub runtime: tokio::runtime::Runtime,
     pub audio: AudioSystem,
+    pub ui: UISystem,
     // pub runtime: RuntimeSystem,
     // pub net: ClientNetSystem,
 }
@@ -147,17 +154,19 @@ impl Engine {
         let time = TimeSystem::new(60_u32);
         log::info!("engine systems: time init");
 
-        #[cfg(target_arch = "wasm32")]
-        let net = NetSystem::new().await;
-        #[cfg(not(target_arch = "wasm32"))]
-        let net = NetSystem::new(&mut runtime).await;
+        let net = NetSystem::new(
+            #[cfg(not(target_arch = "wasm32"))]
+            &mut runtime
+        ).await;
         log::info!("engine systems: net init");
 
-        #[cfg(target_arch = "wasm32")]
-        let render = RenderSystem::new(window, &world, &time).await;
-        #[cfg(not(target_arch = "wasm32"))]
-        let render = RenderSystem::new(window, &world, &time, &mut runtime).await;
-        log::info!("engine systems: render init");
+        let (render, ui) = create_render_and_ui_systems(
+            window,
+            &world,
+            &time,
+            #[cfg(not(target_arch = "wasm32"))]
+            &mut runtime
+        ).await;
 
         let audio = AudioSystem::new().await;
 
@@ -170,9 +179,78 @@ impl Engine {
             world,
             engine_handle,
             net,
+            audio,
+            ui,
             #[cfg(not(target_arch = "wasm32"))]
             runtime,
-            audio,
         }
     }
+}
+
+async fn create_render_and_ui_systems(
+    window: Window,
+    world: &World,
+    time: &TimeSystem,
+    #[cfg(not(target_arch = "wasm32"))]
+    runtime: &mut Runtime,
+) -> (RenderSystem, UISystem) {
+
+    let render_data = RenderData::new(world, time, &window);
+
+    let egui_paint_jobs = Arc::new(Mutex::new(Vec::new()));
+    
+    let (renderer, window) = Renderer::new(
+        window,
+        &render_data,
+        time.target_frame_duration.as_secs_f64(),
+        egui_paint_jobs.clone(),
+    ).await;
+
+    let renderer = Arc::new(
+        Mutex::new(
+            renderer
+        )
+    );
+
+    // spawn async tusk for renderer
+    let async_renderer = renderer.clone();
+    #[cfg(not(target_arch="wasm32"))]
+    runtime.spawn(async move {
+        loop {
+
+            match async_renderer.try_lock() {
+                Ok(mut renderer_lock) => {
+                    if let Err(err) = renderer_lock.render(/*&self.window*/) {
+                        match err {
+                            // wgpu::SurfaceError::Lost => renderer_lock.resize(self.window.inner_size()),
+            
+                            // The system is out of memory, we should probably quit
+                            wgpu::SurfaceError::OutOfMemory => panic!("Out of GPU memory"),
+            
+                            // All other errors (Outdated, Timeout) should be resolved by the next frame
+                            _ => log::error!("{:?}", err),
+                        }
+                    }
+                }
+                Err(_) => {}
+            }
+
+            tokio::time::sleep(tokio::time::Duration::from_micros(500)).await;
+        }
+    });
+
+
+    log::info!("render system: renderer init");
+
+    
+    let ui = UISystem {};
+    
+    let render = RenderSystem {
+        window,
+        renderer,
+
+        render_data,
+    };
+
+    (render, ui)
 }

@@ -131,22 +131,25 @@ impl MainLoop {
                             if let PhysicalKey::Code(code) = event.physical_key {
                                 match code {
                                     KeyCode::Escape => {
+                                        let window = systems.render.window.lock().unwrap();
+
                                         if event.state.is_pressed() {
-                                            systems.render.window.set_cursor_visible(true);
+                                            window.set_cursor_visible(true);
                                             // #[cfg(target_arch="wasm32")]
-                                            systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
-                                            systems.render.window.set_fullscreen(None);
+                                            window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
+                                            window.set_fullscreen(None);
                                         }
                                     },
                                     KeyCode::Enter => {
+                                        let window = systems.render.window.lock().unwrap();
                                         // #[cfg(target_arch="wasm32")]
-                                        systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Confined).or_else(
-                                            |_| systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                                        window.set_cursor_grab(winit::window::CursorGrabMode::Confined).or_else(
+                                            |_| window.set_cursor_grab(winit::window::CursorGrabMode::Locked)
                                         ).unwrap();
-                                        systems.render.window.set_cursor_visible(false);
+                                        window.set_cursor_visible(false);
 
                                         if event.state.is_pressed() {
-                                            systems.render.window
+                                            window
                                                 .set_fullscreen(Some(
                                                     Fullscreen::Borderless(
                                                         None
@@ -177,11 +180,13 @@ impl MainLoop {
                                             systems.audio.sound_engine.initialize_audio_output_device().unwrap();
                                             it_is_first_action = false
                                         }
+
+                                        let window = systems.render.window.lock().unwrap();
                                         
-                                        systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Confined).or_else(
-                                            |_| systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Locked)
+                                        window.set_cursor_grab(winit::window::CursorGrabMode::Confined).or_else(
+                                            |_| window.set_cursor_grab(winit::window::CursorGrabMode::Locked)
                                         ).unwrap();
-                                        systems.render.window.set_cursor_visible(false);
+                                        window.set_cursor_visible(false);
                                     }
                                 },
                                 _ => {},
@@ -262,7 +267,11 @@ fn main_loop_tick(
         &mut systems.engine_handle,
     );
 
-    systems.render.send_data_to_renderer(&systems.world, &systems.time);
+    systems.render.send_data_to_renderer(
+        &systems.world,
+        &systems.time,
+        &mut systems.ui
+    );
 
     systems.input.reset_input();
 
