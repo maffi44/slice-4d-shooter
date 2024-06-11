@@ -1,10 +1,5 @@
-use std::sync::{Arc, Mutex};
-
 use crate::engine::render::render_data::RenderData;
 
-use egui::{epaint::ImageDelta, Align2, ClippedPrimitive, Context, FontImage, Id, Image, ImageData, TextureOptions, ViewportId};
-use egui_wgpu::ScreenDescriptor;
-use egui_winit::State;
 use winit::window::Window;
 use wgpu::{
     rwh::{
@@ -87,10 +82,7 @@ pub struct Renderer {
     target_frame_duration: f64,
     // prev_surface_texture: Option<SurfaceTexture>,
     // prev_frame_rendered: Arc<Mutex<bool>>,
-    egui_renderer: egui_wgpu::Renderer,
-    egui_context: Context,
-    egui_state: State,
-    window: Arc<Mutex<Window>>,
+
 }
 
 impl Renderer {
@@ -104,12 +96,7 @@ impl Renderer {
         }
     }
  
-    pub async fn new(
-        window: Window,
-        render_data: &RenderData,
-        target_frame_duration: f64,
-        egui_paint_jobs: Arc<Mutex<Vec<ClippedPrimitive>>>,
-    ) -> (Renderer, Arc<Mutex<Window>>) {
+    pub async fn new(window: &Window, render_data: &RenderData, target_frame_duration: f64) -> Renderer {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -163,6 +150,9 @@ impl Renderer {
         log::info!("renderer: wgpu device and queue init");
 
         let surface_caps = surface.get_capabilities(&adapter);
+        // Shader code in this tutorial assumes an sRGB surface texture. Using a different
+        // one will result all the colors coming out darker. If you want to support non
+        // sRGB surfaces, you'll need to account for that when drawing to the frame.
         log::info!("renderer: gpu surface_caps init");
 
         let surface_format = surface_caps
@@ -175,7 +165,7 @@ impl Renderer {
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface_format.clone(),
+            format: surface_format,
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::AutoNoVsync,
@@ -191,7 +181,7 @@ impl Renderer {
         // for WGSL shaders
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Vertex Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/shader_new_opt.wgsl").into())
+            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/main_shader.wgsl").into())
         });
 
         
@@ -599,26 +589,9 @@ impl Renderer {
 
         let num_indices = INDICES.len() as u32;
 
-        let egui_context = egui::Context::default();
         
-        let egui_state = egui_winit::State::new(
-            egui_context.clone(),
-            ViewportId::ROOT,
-            &window,
-            Some(window.scale_factor() as f32),
-            None
-        );
 
-        let egui_renderer = egui_wgpu::Renderer::new(
-            &device,
-            surface_format,
-            None,
-            1
-        );
-
-        let window = Arc::new(Mutex::new(window));      
-
-        (Renderer {
+        Renderer {
             surface,
             device,
             queue,
@@ -646,12 +619,7 @@ impl Renderer {
             target_frame_duration,
             // prev_surface_texture: None,
             // prev_frame_rendered: Arc::new(Mutex::new(true)),
-            egui_renderer,
-            egui_context,
-            egui_state,
-            window: window.clone(),
-        },
-        window)
+        }
     }
 
 
@@ -723,116 +691,10 @@ impl Renderer {
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
         }
 
-        
-        let mut commands = Vec::with_capacity(2);
-
-
-        commands.push(encoder.finish());
         // let istts = web_time::Instant::now();
+        self.queue.submit(std::iter::once(encoder.finish()));
         // println!("submit time: {}",istts.elapsed().as_secs_f64());
-        let mut ui_encoder = self
-        .device
-        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("UI Render Encoder"),
-        });
 
-        let window = self.window.lock().unwrap();
-
-        let raw_input = self.egui_state.take_egui_input(&window);
-
-        let full_output = self.egui_context.run(
-            raw_input,
-            |ui| {
-                egui::Area::new(Id::new(0))
-                .show(&ui, |ui| {
-                    if ui.add(egui::Button::new("Click me")).clicked() {
-                        println!("PRESSED")
-                    }
-        
-                    ui.label("Slider");
-                    // ui.add(egui::Slider::new(_, 0..=120).text("age"));
-                    ui.end_row();
-        
-                    // proto_scene.egui(ui);
-                });
-            }
-        );
-
-        self.egui_state.handle_platform_output(
-            &window,
-            full_output.platform_output
-        );
-
-        let scrn_dscr = ScreenDescriptor {
-            size_in_pixels: [output.texture.width(), output.texture.height()],
-            pixels_per_point: window.scale_factor() as f32,
-        };
-
-        let paint_jobs = self.egui_context.tessellate(
-            full_output.shapes,
-            full_output.pixels_per_point,
-        );
-
-        for (id, image_delta) in &full_output.textures_delta.set {
-            self.egui_renderer.update_texture(
-                &self.device,
-                &self.queue,
-                *id,
-                image_delta
-            );
-        };
-
-        self.egui_renderer.update_buffers(
-            &self.device,
-            &self.queue,
-            &mut ui_encoder,
-            &paint_jobs,
-            &scrn_dscr,
-        );
-
-        {
-            let mut render_pass = ui_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            // self.egui_renderer.update_texture(
-            //     &self.device,
-            //     &self.queue,
-            //     egui::TextureId::Managed(0),
-            //     &ImageDelta::full(
-            //         ImageData::Font(FontImage::new([500,500])),
-            //         TextureOptions::LINEAR
-            //     )
-            // );
-
-
-            self.egui_renderer.render(
-                &mut render_pass,
-                &paint_jobs,
-                &scrn_dscr,
-            );
-        }
-
-        for id in &full_output.textures_delta.free {
-            self.egui_renderer.free_texture(id);
-        }
-
-
-        commands.push(ui_encoder.finish());
-
-
-        self.queue.submit(commands);
         // window.pre_present_notify();
         
         // let istts = web_time::Instant::now();

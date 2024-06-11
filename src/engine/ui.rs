@@ -1,63 +1,80 @@
-use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
-use egui::{ClippedPrimitive, Context, FullOutput};
-use egui_winit::State;
-use winit::window::Window;
+use wgpu::Buffer;
+
+#[repr(C)]
+pub struct ProgressBarUniform {
+    pub vertex_scale: [f32;2],
+    pub vertex_translation: [f32;2],
+    pub empty_bytes: [f32;2],
+    pub vertex_rotation: f32,
+    pub bar_value: f32,
+}
+
+#[repr(C)]
+pub struct ImageUniform {
+    pub vertex_scale: [f32;2],
+    pub vertex_translation: [f32;2],
+    pub empty_bytes: [f32;3],
+    pub vertex_rotation: f32,
+}
+
+pub struct ProgressBar {
+    vertex_scale: [f32;2],
+    vertex_translation: [f32;2],
+    vertex_rotation: f32,
+
+    bar_texture: String,
+    bar_mask_texture: String,
+
+    bar_value: f32,
+
+    progress_bar_uniform_buffer: Buffer,
+}
+
+pub struct Image {
+    vertex_scale: [f32;2],
+    vertex_translation: [f32;2],
+    vertex_rotation: f32,
+
+    texture: String,
+
+    image_uniform_buffer: Buffer,
+} 
+
+pub enum UIElement {
+    Image(Image),
+    ProgressBar(ProgressBar),
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub enum ConcreteUIElement {
+    HeathBar,
+    EnergyGunEnergyBar,
+    MachinegunEnergyBar,
+    Crosshair,
+    WRotationPointer,
+    WHeightPointer,
+}
 
 
 pub struct UISystem {
-    // pub egui_context: Context,
-    // pub egui_state: State,
-    // pub egui_paint_jobs: Arc<Mutex<FullOutput>>,
+    texture_sources: HashMap<String, &'static [u8]>,
+
+    ui_elements: HashMap<ConcreteUIElement, UIElement>,
 }
 
 impl UISystem {
-    // pub fn new(window: &Window) -> Self {
 
-    //     UISystem {
+    pub fn get_ui_element(
+        &mut self,
+        element: ConcreteUIElement
+    ) -> &mut UIElement {
+        self.ui_elements.get_mut(&element)
+            .expect("Some concrete UI element is not exist")
+    }
 
-    //     }
-    // }
-
-    pub fn update_ui(&mut self, window: &Window) {
-
-        // let raw_input = self.egui_state.take_egui_input(window);
-
-        // let full_output = self.egui_context.run(
-        //     raw_input,
-        //     |ui| {
-        //         egui::CentralPanel::default()
-        //         .show(
-        //             &ui,
-        //             |ui| {
-        //                 ui.heading("HEADING");
-        //                 ui.label("1");
-        //                 ui.label("2");
-        //                 ui.label("3");
-        //                 ui.label("4");
-        //                 ui.image(egui::include_image!(
-        //                     "/home/maffi/Pictures/Screenshots/Screenshot from 2024-01-10 09-44-32.png"
-        //                 ));
-        //             }
-        //         );
-        //         egui::Window::new("title")
-        //         .show(
-        //             &ui,
-        //             |ui| {
-        //                 ui.heading("HEADING");
-        //                 ui.label("1");
-        //                 ui.label("2");
-        //                 ui.label("3");
-        //                 ui.label("4");
-        //                 ui.image(egui::include_image!(
-        //                     "/home/maffi/Pictures/Screenshots/Screenshot from 2024-01-10 09-44-32.png"
-        //                 ));
-        //             }
-        //         );
-        //     }
-        // );
-
-        
+    pub fn write_buffers_ui(&mut self) {
 
     }
 }

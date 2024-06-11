@@ -1,5 +1,5 @@
 pub mod render_data;
-pub mod renderer;
+mod renderer;
 
 use std::sync::{Arc, Mutex};
 
@@ -27,7 +27,7 @@ use self::{
 use tokio::{runtime::Runtime, time::sleep};
 use winit::window::Window;
 
-use super::{physics::dynamic_collider::PlayersDollCollider, ui::UISystem};
+use super::physics::dynamic_collider::PlayersDollCollider;
 
 
 
@@ -42,9 +42,9 @@ pub struct VisualElement<'a> {
 
 
 pub struct RenderSystem {
-    pub render_data: RenderData,
-    pub window: Arc<Mutex<Window>>,
-    pub renderer: Arc<Mutex<Renderer>>,
+    render_data: RenderData,
+    pub window: Window,
+    renderer: Arc<Mutex<Renderer>>,
 }
 
 
@@ -60,20 +60,9 @@ impl RenderSystem {
         
         let render_data = RenderData::new(world, time, &window);
         
-        let egui_paint_jobs = Arc::new(Mutex::new(Vec::new()));
-
-        
-
-        let (renderer, window) = Renderer::new(
-            window,
-            &render_data,
-            time.target_frame_duration.as_secs_f64(),
-            egui_paint_jobs.clone(),
-        ).await;
-
         let renderer = Arc::new(
             Mutex::new(
-                renderer
+                Renderer::new(&window, &render_data, time.target_frame_duration.as_secs_f64()).await
             )
         );
 
@@ -117,21 +106,16 @@ impl RenderSystem {
 
 
 
-    pub fn send_data_to_renderer(
-        &mut self,
-        world: &World,
-        time: &TimeSystem,
-        ui: &mut UISystem,
-    ) {
+    pub fn send_data_to_renderer(&mut self, world: &World, time: &TimeSystem) {
 
         self.render_data.update_dynamic_render_data(
             world,
             time,
-            &self.window.lock().unwrap(),
+            &self.window,
             &self.render_data.static_data.static_bounding_box.clone()
         );
 
-        let renderer_lock = self.renderer.lock().unwrap();
+        let mut renderer_lock = self.renderer.lock().unwrap();
 
         renderer_lock.queue.write_buffer(
             &renderer_lock.other_dynamic_data_buffer,
@@ -181,8 +165,6 @@ impl RenderSystem {
             bytemuck::cast_slice(self.render_data.dynamic_data.player_forms_data.as_slice()),
         );
 
-        // ui.update_ui(&self.window);
-
         #[cfg(target_arch="wasm32")]
         if let Err(err) = renderer_lock.render(/*&self.window*/) {
             match err {
@@ -206,7 +188,7 @@ impl RenderSystem {
         self.renderer
             .lock()
             .unwrap()
-            .resize(self.window.lock().unwrap().inner_size());
+            .resize(self.window.inner_size());
     }
 }
 
