@@ -1,18 +1,48 @@
 use std::collections::HashMap;
 
-use fyrox_core::{algebra::{Matrix, Vector3}, pool::Handle};
-use fyrox_resource::{core::reflect::GetField, Resource};
+use fyrox_core::{
+    algebra::{
+        Matrix,
+        Vector3
+    },
+    pool::Handle
+};
+use fyrox_resource::{
+    core::reflect::GetField,
+    Resource
+};
 use fyrox_sound::{
     buffer::{
-        DataSource, SoundBuffer, SoundBufferResource, SoundBufferResourceExtension
-    }, context::{DistanceModel, SoundContext}, engine::{self, SoundEngine}, source::{
-        SoundSource, SoundSourceBuilder, Status
+        DataSource,
+        SoundBuffer,
+        SoundBufferResource,
+        SoundBufferResourceExtension
+    },
+    context::{
+        DistanceModel,
+        SoundContext
+    },
+    engine::{
+        self,
+        SoundEngine
+    },
+    source::{
+        SoundSource,
+        SoundSourceBuilder,
+        Status
     }
 };
+
 use glam::Vec4;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{js_sys::{ArrayBuffer, Uint8Array}, Response};
+use web_sys::{
+    js_sys::{
+        ArrayBuffer,
+        Uint8Array
+    },
+    Response
+};
 use winit::dpi::Position;
 
 

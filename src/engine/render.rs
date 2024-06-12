@@ -1,5 +1,6 @@
 pub mod render_data;
 mod renderer;
+mod ui_renderer;
 
 use std::sync::{Arc, Mutex};
 
@@ -27,7 +28,7 @@ use self::{
 use tokio::{runtime::Runtime, time::sleep};
 use winit::window::Window;
 
-use super::physics::dynamic_collider::PlayersDollCollider;
+use super::{physics::dynamic_collider::PlayersDollCollider, ui::UISystem};
 
 
 
@@ -54,6 +55,7 @@ impl RenderSystem {
         window: Window,
         world: &World,
         time: &TimeSystem,
+        ui: &mut UISystem,
         #[cfg(not(target_arch="wasm32"))]
         runtime: &mut Runtime,
     ) -> Self {
@@ -62,7 +64,12 @@ impl RenderSystem {
         
         let renderer = Arc::new(
             Mutex::new(
-                Renderer::new(&window, &render_data, time.target_frame_duration.as_secs_f64()).await
+                Renderer::new(
+                    &window,
+                    &render_data,
+                    ui,
+                    time.target_frame_duration.as_secs_f64()
+                ).await
             )
         );
 

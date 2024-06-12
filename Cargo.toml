@@ -21,7 +21,9 @@ glam = "*"
 fyrox-sound = "*"
 fyrox-resource = "*"
 fyrox-core = "*"
-#glm = "*"
+
+image = "*"
+
 log = "*"
 serde_json = "*"
 alkahest = { version = "*", features = [ "derive" ] }

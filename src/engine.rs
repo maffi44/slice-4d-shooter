@@ -26,6 +26,7 @@ use self::{
     net::NetSystem,
 };
 
+use ui::UISystem;
 use winit::window::WindowBuilder;
 
 #[cfg(target_arch = "wasm32")]
@@ -41,11 +42,11 @@ pub struct Engine {
     pub world: World,
     pub engine_handle: EngineHandle,
     pub net: NetSystem,
+    pub audio: AudioSystem,
+    pub ui: UISystem,
+
     #[cfg(not(target_arch = "wasm32"))]
     pub runtime: tokio::runtime::Runtime,
-    pub audio: AudioSystem,
-    // pub runtime: RuntimeSystem,
-    // pub net: ClientNetSystem,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -148,17 +149,26 @@ impl Engine {
         let time = TimeSystem::new(60_u32);
         log::info!("engine systems: time init");
 
-        #[cfg(target_arch = "wasm32")]
-        let net = NetSystem::new().await;
-        #[cfg(not(target_arch = "wasm32"))]
-        let net = NetSystem::new(&mut runtime).await;
+        
+        let net = NetSystem::new(
+            #[cfg(not(target_arch = "wasm32"))]
+            &mut runtime
+        ).await;
         log::info!("engine systems: net init");
 
-        #[cfg(target_arch = "wasm32")]
-        let render = RenderSystem::new(window, &world, &time).await;
-        #[cfg(not(target_arch = "wasm32"))]
-        let render = RenderSystem::new(window, &world, &time, &mut runtime).await;
+        let mut pre_initialized_ui = UISystem::new(); 
+
+        let render = RenderSystem::new(
+            window,
+            &world,
+            &time,
+            &mut pre_initialized_ui,
+            #[cfg(not(target_arch = "wasm32"))]
+            &mut runtime
+        ).await;
         log::info!("engine systems: render init");
+
+        let initialized_ui = pre_initialized_ui;
 
         let audio = AudioSystem::new().await;
 
@@ -171,9 +181,11 @@ impl Engine {
             world,
             engine_handle,
             net,
+            audio,
+            ui: initialized_ui,
+            
             #[cfg(not(target_arch = "wasm32"))]
             runtime,
-            audio,
         }
     }
 }

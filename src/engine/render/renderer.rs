@@ -1,4 +1,4 @@
-use crate::engine::render::render_data::RenderData;
+use crate::engine::{render::{render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
 use winit::window::Window;
 use wgpu::{
@@ -83,6 +83,8 @@ pub struct Renderer {
     // prev_surface_texture: Option<SurfaceTexture>,
     // prev_frame_rendered: Arc<Mutex<bool>>,
 
+    ui_renderer: UIRenderer,
+
 }
 
 impl Renderer {
@@ -96,7 +98,12 @@ impl Renderer {
         }
     }
  
-    pub async fn new(window: &Window, render_data: &RenderData, target_frame_duration: f64) -> Renderer {
+    pub async fn new(
+        window: &Window,
+        render_data: &RenderData,
+        ui_system: &mut UISystem,
+        target_frame_duration: f64
+    ) -> Renderer {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -218,80 +225,80 @@ impl Renderer {
         log::info!("renderer: wgpu shaders init");
 
         let static_normal_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
+            label: Some("static_normal_shapes_buffer"),
             contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.normal.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let static_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
+            label: Some("static_stickiness_shapes_buffer"),
             contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let static_negative_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
+            label: Some("static_negative_shapes_buffer"),
             contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.negative.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let static_neg_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
+            label: Some("static_neg_stickiness_shapes_buffer"),
             contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.neg_stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let other_static_data = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("camera_buffer"),
+            label: Some("other_static_data"),
             contents: bytemuck::cast_slice(&[render_data.static_data.other_static_data]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
 
         let dynamic_normal_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
+            label: Some("dynamic_normal_shapes_buffer"),
             contents: bytemuck::cast_slice(render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let dynamic_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
+            label: Some("dynamic_stickiness_shapes_buffer"),
             contents: bytemuck::cast_slice(render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let dynamic_negative_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
+            label: Some("dynamic_negative_shapes_buffer"),
             contents: bytemuck::cast_slice(render_data.dynamic_data.dynamic_shapes_data.negative.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let dynamic_neg_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("time_buffer"),
+            label: Some("dynamic_neg_stickiness_shapes_buffer"),
             contents: bytemuck::cast_slice(render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let other_dynamic_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("camera_buffer"),
+            label: Some("other_dynamic_data_buffer"),
             contents: bytemuck::cast_slice(&[render_data.dynamic_data.other_dynamic_data]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let spherical_areas_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("camera_buffer"),
+            label: Some("spherical_areas_data_buffer"),
             contents: bytemuck::cast_slice(render_data.dynamic_data.spherical_areas_data.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let beam_areas_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("camera_buffer"),
+            label: Some("beam_areas_data_buffer"),
             contents: bytemuck::cast_slice(render_data.dynamic_data.beam_areas_data.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
         let player_forms_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("camera_buffer"),
+            label: Some("player_forms_data_buffer"),
             contents: bytemuck::cast_slice(render_data.dynamic_data.player_forms_data.as_slice()),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
@@ -516,7 +523,7 @@ impl Renderer {
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
+            label: Some("main shader render pipeline layout"),
             bind_group_layouts: &[&uniform_bind_group_layout_0, &uniform_bind_group_layout_1],
             push_constant_ranges: &[],
         });
@@ -524,7 +531,7 @@ impl Renderer {
         log::info!("renderer: wgpu render_pipeline_layout init");
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
+            label: Some("main shader render pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
@@ -569,7 +576,7 @@ impl Renderer {
         
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
+                label: Some("main shader vertex buffer"),
                 contents: bytemuck::cast_slice(VERTICES),
                 usage: wgpu::BufferUsages::VERTEX,
             }
@@ -579,7 +586,7 @@ impl Renderer {
 
         let index_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
+                label: Some("main shader index buffer"),
                 contents: bytemuck::cast_slice(INDICES),
                 usage: wgpu::BufferUsages::INDEX,
             }
@@ -589,7 +596,12 @@ impl Renderer {
 
         let num_indices = INDICES.len() as u32;
 
-        
+        let ui_renderer = UIRenderer::new(
+            ui_system,
+            &device,
+            &config,
+            &queue,
+        );
 
         Renderer {
             surface,
@@ -617,6 +629,8 @@ impl Renderer {
             total_time: 0.0,
             prev_time_instant: None,
             target_frame_duration,
+
+            ui_renderer,
             // prev_surface_texture: None,
             // prev_frame_rendered: Arc::new(Mutex::new(true)),
         }
@@ -658,11 +672,11 @@ impl Renderer {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
+                label: Some("main shader render encoder"),
             });
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
+                label: Some("main shader render pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -690,6 +704,8 @@ impl Renderer {
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
         }
+
+        self.ui_renderer.render_ui(&mut encoder, &view);
 
         // let istts = web_time::Instant::now();
         self.queue.submit(std::iter::once(encoder.finish()));
