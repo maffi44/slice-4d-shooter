@@ -1,6 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::{collections::HashMap, sync::{Arc, Mutex}};
 
-use crate::engine::{render::render_data::RenderData, ui::{UIElement, UISystem}};
+use crate::engine::{render::render_data::RenderData, ui::{TextureType, UIElement, UISystem}};
 
 use glam::Vec2;
 use winit::window::Window;
@@ -70,6 +70,7 @@ impl UIRenderer {
         device: &Device,
         config: &SurfaceConfiguration,
         queue: &Queue,
+        screen_aspect: f32,
     ) -> UIRenderer {
 
         let rect_vertex_buffer = device.create_buffer_init(
@@ -178,7 +179,7 @@ impl UIRenderer {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -266,7 +267,7 @@ impl UIRenderer {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -304,24 +305,40 @@ impl UIRenderer {
         let mut images_bind_groups = Vec::new();
         let mut progress_bars_bind_groups = Vec::new();
 
-        for (_, ui_elem) in ui_system.iter_mut_ui_elems() {
+        let mut textures_views: HashMap<TextureType, (TextureView, (u32,u32))> = HashMap::new();
+
+        for (_, ui_elem) in &mut ui_system.ui_elements {
             match ui_elem {
                 UIElement::Image(ui_image) => {
                     
-                    let (texture_view, (tex_width, tex_height)) = get_texture_view(
-                        ui_system.get_texture_source(ui_image.get_texture_type()),
+                    make_texture_view(
+                        &mut textures_views,
+                        ui_image.get_texture_type(),
+                        ui_system.texture_sources.get(ui_image.get_texture_type()).unwrap(),
                         device,
                         queue
                     );
 
-                    let texture_aspect = tex_width as f32 / tex_height as f32;
+                    let (texture_view, (tex_width, tex_height)) = textures_views
+                        .get(ui_image.get_texture_type())
+                        .unwrap();
 
-                    let texture_size = Vec2::new(tex_width as f32, tex_height as f32);
+                    let texture_aspect = *tex_width as f32 / *tex_height as f32;
+
+                    let texture_size = Vec2::new(*tex_width as f32, *tex_height as f32);
                     
                     let rect_transform_buffer = device.create_buffer_init(
                         &BufferInitDescriptor {
                             label: Some("rect transform buffer"),
-                            contents: bytemuck::cast_slice(&[ui_image.rect.get_rect_transform_uniform(texture_aspect)]),
+                            contents: bytemuck::cast_slice(&[
+                                ui_image
+                                    .ui_data
+                                    .rect
+                                    .get_rect_transform_uniform(
+                                        texture_aspect,
+                                        screen_aspect
+                                    )
+                            ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
                         }
                     );
@@ -359,30 +376,51 @@ impl UIRenderer {
                 },
                 UIElement::ProgressBar(ui_progress_bar) => {
 
-                    let (texture_view, (tex_width, tex_height)) = get_texture_view(
-                        ui_system.get_texture_source(ui_progress_bar.get_texture_type()),
+                    make_texture_view(
+                        &mut textures_views,
+                        ui_progress_bar.get_texture_type(),
+                        ui_system.texture_sources.get(ui_progress_bar.get_texture_type()).unwrap(),
                         device,
                         queue
                     );
 
-                    let texture_aspect = tex_width as f32 / tex_height as f32;
-
-                    let texture_size = Vec2::new(tex_width as f32, tex_height as f32);
-
-                    let (mask_texture_view, (mask_width, mask_height)) = get_texture_view(
-                        ui_system.get_texture_source(ui_progress_bar.get_mask_texture_type()),
+                    make_texture_view(
+                        &mut textures_views,
+                        ui_progress_bar.get_mask_texture_type(),
+                        ui_system.texture_sources.get(ui_progress_bar.get_mask_texture_type()).unwrap(),
                         device,
                         queue
                     );
 
-                    let mask_texture_aspect = mask_width as f32 / mask_height as f32;
+                    let (texture_view, (tex_width, tex_height)) = textures_views
+                        .get(ui_progress_bar.get_texture_type())
+                        .unwrap();
 
-                    let mask_texture_size = Vec2::new(mask_width as f32, mask_height as f32);
+                    let (mask_texture_view, (mask_width, mask_height)) = textures_views
+                        .get(ui_progress_bar.get_mask_texture_type())
+                        .unwrap();
+
+                    let texture_aspect = *tex_width as f32 / *tex_height as f32;
+
+                    let texture_size = Vec2::new(*tex_width as f32, *tex_height as f32);
+
+
+                    let mask_texture_aspect = *mask_width as f32 / *mask_height as f32;
+
+                    let mask_texture_size = Vec2::new(*mask_width as f32, *mask_height as f32);
                     
                     let rect_transform_buffer = device.create_buffer_init(
                         &BufferInitDescriptor {
                             label: Some("rect transform buffer"),
-                            contents: bytemuck::cast_slice(&[ui_progress_bar.rect.get_rect_transform_uniform(texture_aspect)]),
+                            contents: bytemuck::cast_slice(&[
+                                ui_progress_bar
+                                    .ui_data
+                                    .rect
+                                    .get_rect_transform_uniform(
+                                        texture_aspect,
+                                        screen_aspect,
+                                    )
+                                ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
                         }
                     );
@@ -397,7 +435,7 @@ impl UIRenderer {
 
                     let progress_bar_bind_group = device.create_bind_group(
                         &wgpu::BindGroupDescriptor {
-                            layout: &image_bind_group_layout ,
+                            layout: &progress_bar_bind_group_layout ,
                             entries: &[
                                 wgpu::BindGroupEntry {
                                     binding: 0,
@@ -522,11 +560,17 @@ impl UIRenderer {
 
 }
 
-pub fn get_texture_view(
+pub fn make_texture_view(
+    textures_views: &mut HashMap<TextureType, (TextureView, (u32,u32))>,
+    texture_type: &TextureType,
     texture_source: &[u8],
     device: &Device,
     queue: &Queue
-) -> (TextureView, (u32, u32)) {
+) {
+    if textures_views.contains_key(texture_type) {
+        return;
+    }
+
     let diffuse_image = image::load_from_memory(texture_source).unwrap();
     let diffuse_rgba = diffuse_image.to_rgba8();
 
@@ -573,5 +617,5 @@ pub fn get_texture_view(
         &wgpu::TextureViewDescriptor::default()
     );
 
-    (texture_view, dimensions)
+    textures_views.insert(texture_type.clone(), (texture_view, dimensions));
 }

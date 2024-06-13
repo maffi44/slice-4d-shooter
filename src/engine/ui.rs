@@ -2,7 +2,7 @@ use std::{collections::{hash_map::IterMut, HashMap}, sync::{Arc, Mutex}};
 
 use fyrox_core::math::Rect;
 use glam::Vec2;
-use wgpu::Buffer;
+use wgpu::{Buffer, Queue};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -29,7 +29,7 @@ pub enum UIElement {
 }
 
 #[derive(PartialEq, Eq, Hash)]
-pub enum ConcreteUIElement {
+pub enum UIElementType {
     HeathBar,
     EnergyGunEnergyBar,
     MachinegunEnergyBar,
@@ -38,7 +38,7 @@ pub enum ConcreteUIElement {
     WHeightPointer,
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TextureType {
     HeathBar,
     EnergyGunEnergyBar,
@@ -53,9 +53,9 @@ pub enum TextureType {
 
 
 pub struct UISystem {
-    texture_sources: HashMap<TextureType, &'static [u8]>,
+    pub texture_sources: HashMap<TextureType, &'static [u8]>,
 
-    pub ui_elements: HashMap<ConcreteUIElement, UIElement>,
+    pub ui_elements: HashMap<UIElementType, UIElement>,
 }
 
 impl UISystem {
@@ -68,25 +68,78 @@ impl UISystem {
             TextureType::Crosshair,
             include_bytes!("../assets/textures/crosshair.png").as_slice()
         );
+        texture_sources.insert(
+            TextureType::HeathBar,
+            include_bytes!("../assets/textures/healthbar.png").as_slice()
+        );
 
         let mut ui_elements = HashMap::with_capacity(10);
 
         ui_elements.insert(
-            ConcreteUIElement::Crosshair,
+            UIElementType::Crosshair,
             UIElement::Image(
                 UIImage::new(
-                    UIRect {
-                        anchor: RectAnchor::CenterCenter,
-                        position: Vec2::ZERO,
-                        size: RectSize::LockedHeight(
-                            0.3
-                        ),
-                        rotation_around_rect_center: 0.0,
-                        rotation_around_screen_center: 0.0,
-
-                        is_visible: Arc::new(Mutex::new(true)),
-                    },
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::ZERO,
+                            size: RectSize::LockedHeight(
+                                0.15
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                        },
+                        true,
+                    ),
                     TextureType::Crosshair
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::HeathBar,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownLeft,
+                            position: Vec2::new(-1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.2
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                        },
+                        true,
+                    ),
+                    TextureType::HeathBar,
+                    TextureType::HeathBar,
+                    0.1,
+                    0.9,
+                    ProgressBarDirection::LeftRight,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::EnergyGunEnergyBar,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.2
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                        },
+                        true,
+                    ),
+                    TextureType::HeathBar,
+                    TextureType::HeathBar,
+                    0.1,
+                    0.9,
+                    ProgressBarDirection::RightLeft,
                 )
             )
         );
@@ -98,26 +151,75 @@ impl UISystem {
 
     }
 
+
     pub fn get_texture_source(&self, texture_type: &TextureType) -> &[u8] {
         self.texture_sources.get(texture_type).expect("ui system have not some texture's source")
     }
 
+
     pub fn get_ui_element(
         &mut self,
-        element: ConcreteUIElement
+        element: UIElementType
     ) -> &mut UIElement {
         self.ui_elements.get_mut(&element)
             .expect("Some concrete UI element is not exist")
     }
 
+
     pub fn iter_mut_ui_elems(
         &mut self
-    ) -> IterMut<ConcreteUIElement, UIElement> {
+    ) -> IterMut<UIElementType, UIElement> {
         self.ui_elements.iter_mut()
     }
 
-    pub fn write_buffers_ui(&mut self) {
 
+    pub fn write_buffers_ui(&self, queue: &Queue, screen_aspect: f32) {
+
+        for (_, ui_elem) in &self.ui_elements {
+            match ui_elem {
+                UIElement::Image(elem) => {
+                    queue.write_buffer(
+                        elem.rect_transform_buffer
+                            .as_ref()
+                            .expect("UI Image have not rect transform buffer"),
+                        0,
+                        bytemuck::cast_slice(&[
+                            elem.ui_data.rect
+                                .get_rect_transform_uniform(
+                                    elem
+                                        .texture_aspect
+                                        .expect("UI Image have not texture aspect"),
+                                    screen_aspect
+                        )]),
+                    );
+                }
+                UIElement::ProgressBar(elem) => {
+                    queue.write_buffer(
+                        &elem.rect_transform_buffer
+                            .as_ref()
+                            .expect("UI Progress bar have not rect transform buffer"),
+                        0,
+                        bytemuck::cast_slice(&[
+                            elem.ui_data.rect
+                                .get_rect_transform_uniform(
+                                    elem
+                                        .texture_aspect
+                                        .expect("UI Progress bar have not texture aspect"),
+                                    screen_aspect,
+                        )]),
+                    );
+                    queue.write_buffer(
+                        &elem.progress_bar_value_buffer
+                            .as_ref()
+                            .expect("UI Progress bar have not value buffer"),
+                        0,
+                        bytemuck::cast_slice(&[
+                            elem.get_progress_bar_uniform()
+                        ]),
+                    );
+                }
+            }
+        }
     }
 }
 
@@ -154,25 +256,25 @@ pub struct UIRect {
     pub rotation_around_rect_center: f32,
     pub rotation_around_screen_center: f32,
 
-    pub is_visible: Arc<Mutex<bool>>,
 }
 
 impl UIRect {
     pub fn get_rect_transform_uniform(
         &self,
-        aspect: f32
+        texture_aspect: f32,
+        screen_aspect: f32,
     ) -> RectTransformUniform {
 
         let scale = {
             match self.size {
                 RectSize::LockedBoth(x, y) => {
-                    [x*2.0, y*2.0]
+                    [x, y]
                 },
                 RectSize::LockedHeight(y) => {
-                    [y*aspect*2.0, y*2.0]
+                    [((y*texture_aspect)/screen_aspect), y]
                 },
                 RectSize::LockedWight(x) => {
-                    [x*2.0, (x/aspect)*2.0]
+                    [x, ((x/texture_aspect)*screen_aspect)]
                 }
             }
         };
@@ -192,35 +294,35 @@ impl UIRect {
                     self.position.to_array()
                 }
                 RectAnchor::TopRight => {
-                    [self.position.x - scale[0]*0.5,
-                    self.position.y - scale[1]*0.5]
+                    [self.position.x - scale[0],
+                    self.position.y - scale[1]]
                 }
                 RectAnchor::TopLeft => {
-                    [self.position.x + scale[0]*0.5,
-                    self.position.y - scale[1]*0.5]
+                    [self.position.x + scale[0],
+                    self.position.y - scale[1]]
                 }
                 RectAnchor::CenterTop => {
                     [self.position.x,
-                    self.position.y - scale[1]*0.5]
+                    self.position.y - scale[1]]
                 }
                 RectAnchor::DownLeft => {
-                    [self.position.x + scale[0]*0.5,
-                    self.position.y + scale[1]*0.5]
+                    [self.position.x + scale[0],
+                    self.position.y + scale[1]]
                 }
                 RectAnchor::DownRight => {
-                    [self.position.x - scale[0]*0.5,
-                    self.position.y + scale[1]*0.5]
+                    [self.position.x - scale[0],
+                    self.position.y + scale[1]]
                 }
                 RectAnchor::CenterDown => {
                     [self.position.x,
-                    self.position.y + scale[1]*0.5]
+                    self.position.y + scale[1]]
                 }
                 RectAnchor::CenterLeft => {
-                    [self.position.x + scale[0]*0.5,
+                    [self.position.x + scale[0],
                     self.position.y]
                 }
                 RectAnchor::CenterRight => {
-                    [self.position.x - scale[0]*0.5,
+                    [self.position.x - scale[0],
                     self.position.y]
                 }
             }
@@ -235,6 +337,35 @@ impl UIRect {
         }
     }
 
+
+}
+
+// pub struct Texture {
+//     texture_type: TextureType,
+//     source: &'static [u8],
+//     di
+// }
+
+pub struct UIData {
+    pub is_visible: Arc<Mutex<bool>>,
+    pub rect: UIRect,
+    pub need_to_redraw: bool
+}
+
+impl UIData {
+    pub fn new(
+        rect: UIRect,
+        is_visible: bool,
+    ) -> Self {
+        let is_visible =  Arc::new(Mutex::new(is_visible));
+
+        UIData {
+            is_visible,
+            rect,
+            need_to_redraw: true
+        }
+    }
+
     pub fn set_is_visible(&mut self, is_visible: bool) {
         *self.is_visible.lock().unwrap() = is_visible;
     }
@@ -245,7 +376,7 @@ impl UIRect {
 }
 
 pub struct UIImage {
-    pub rect: UIRect,
+    pub ui_data: UIData,
     texture: TextureType,
 
     rect_transform_buffer: Option<Buffer>,
@@ -255,12 +386,12 @@ pub struct UIImage {
 
 impl UIImage {
     fn new(
-        rect: UIRect,
+        ui_data: UIData,
         texture: TextureType,
     ) -> Self {
         
         UIImage {
-            rect,
+            ui_data,
             texture,
 
             rect_transform_buffer: None,
@@ -285,11 +416,11 @@ impl UIImage {
     }
 
     pub fn set_is_visible(&mut self, is_visible: bool) {
-        self.rect.set_is_visible(is_visible);
+        self.ui_data.set_is_visible(is_visible);
     }
 
     pub fn get_is_visible_cloned_arc(&self) -> Arc<Mutex<bool>> {
-        self.rect.get_is_visible_cloned_arc()
+        self.ui_data.get_is_visible_cloned_arc()
     }
 }
 
@@ -302,7 +433,7 @@ pub enum ProgressBarDirection {
 
 
 pub struct UIProgressBar {
-    pub rect: UIRect,
+    pub ui_data: UIData,
     texture: TextureType,
     bar_mask: TextureType,
 
@@ -321,7 +452,7 @@ pub struct UIProgressBar {
 
 impl UIProgressBar {
     fn new(
-        rect: UIRect,
+        ui_data: UIData,
         texture: TextureType,
         bar_mask: TextureType,
 
@@ -331,7 +462,7 @@ impl UIProgressBar {
     ) -> Self {
 
         UIProgressBar {
-            rect,
+            ui_data,
             texture,
             bar_mask,
 
@@ -394,10 +525,10 @@ impl UIProgressBar {
     }
 
     pub fn set_is_visible(&mut self, is_visible: bool) {
-        self.rect.set_is_visible(is_visible);
+        self.ui_data.set_is_visible(is_visible);
     }
 
     pub fn get_is_visible_cloned_arc(&self) -> Arc<Mutex<bool>> {
-        self.rect.get_is_visible_cloned_arc()
+        self.ui_data.get_is_visible_cloned_arc()
     }
 }

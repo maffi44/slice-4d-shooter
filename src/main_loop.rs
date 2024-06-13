@@ -262,7 +262,11 @@ fn main_loop_tick(
         &mut systems.engine_handle,
     );
 
-    systems.render.send_data_to_renderer(&systems.world, &systems.time);
+    systems.render.send_data_to_renderer(
+        &systems.world,
+        &systems.time,
+        &systems.ui,
+    );
 
     systems.input.reset_input();
 

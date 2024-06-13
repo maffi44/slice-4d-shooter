@@ -601,6 +601,8 @@ impl Renderer {
             &device,
             &config,
             &queue,
+            window.inner_size().width as f32 /
+            window.inner_size().height as f32
         );
 
         Renderer {

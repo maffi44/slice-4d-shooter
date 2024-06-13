@@ -113,7 +113,12 @@ impl RenderSystem {
 
 
 
-    pub fn send_data_to_renderer(&mut self, world: &World, time: &TimeSystem) {
+    pub fn send_data_to_renderer(
+        &mut self,
+        world: &World,
+        time: &TimeSystem,
+        ui: &UISystem,
+    ) {
 
         self.render_data.update_dynamic_render_data(
             world,
@@ -122,7 +127,13 @@ impl RenderSystem {
             &self.render_data.static_data.static_bounding_box.clone()
         );
 
-        let mut renderer_lock = self.renderer.lock().unwrap();
+        let renderer_lock = self.renderer.lock().unwrap();
+
+        ui.write_buffers_ui(
+            &renderer_lock.queue,
+            self.window.inner_size().width as f32 /
+            self.window.inner_size().height as f32
+        );
 
         renderer_lock.queue.write_buffer(
             &renderer_lock.other_dynamic_data_buffer,
