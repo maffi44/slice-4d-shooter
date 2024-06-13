@@ -13,7 +13,7 @@ use crate::{
         }, physics::{
             colliders_container::PhysicalElement,
             PhysicsSystem
-        }, render::VisualElement, world::static_object::{
+        }, render::VisualElement, ui::UISystem, world::static_object::{
             BeamVolumeArea,
             VolumeArea
         }
@@ -126,6 +126,7 @@ impl Actor for HoleGunMiss {
         physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         delta: f32
     ) {
         if self.target_size_reached {

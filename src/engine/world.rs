@@ -28,7 +28,7 @@ use crate::{
 use core::panic;
 use std::collections::HashMap;
 
-use super::{audio::AudioSystem, engine_handle::Command, net::{NetCommand, NetSystem}};
+use super::{audio::AudioSystem, engine_handle::Command, net::{NetCommand, NetSystem}, ui::UISystem};
 
 pub struct World {
     pub level: Level,
@@ -67,20 +67,21 @@ impl World {
         net_system: &mut NetSystem,
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle
     ) {
         
         loop {
                 while let Some(message) = engine_handle.boardcast_message_buffer.pop() {
-                    self.send_boardcast_messages(message, engine_handle, physics_system, audio_system)                
+                    self.send_boardcast_messages(message, engine_handle, physics_system, audio_system, ui_system)                
                 }
 
                 while let Some((to, message)) = engine_handle.direct_message_buffer.pop() {
-                    self.send_direct_messages(to, message, engine_handle, physics_system, audio_system)                
+                    self.send_direct_messages(to, message, engine_handle, physics_system, audio_system, ui_system)                
                 }
 
                 while let Some(command) = engine_handle.command_buffer.pop() {
-                    self.execute_command(command, net_system, physics_system, engine_handle, audio_system);
+                    self.execute_command(command, net_system, physics_system, engine_handle, audio_system, ui_system);
                 }
 
                 if engine_handle.direct_message_buffer.is_empty() &&
@@ -99,6 +100,7 @@ impl World {
         physics_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
     ) {
         let from = command.sender;
 
@@ -117,7 +119,7 @@ impl World {
                 if let Some(player) = self.actors.get_mut(&id) {
                     
                     if let ActorWrapper::Player(player) = player {
-                        player.respawn(spawn_position, engine_handle, physics_system)
+                        player.respawn(spawn_position, engine_handle, physics_system, ui_system);
                     } else {
                         panic!("Player send wrong ID into RespawnPlayer command. Actor with this ID is not player")
                     }
@@ -131,7 +133,7 @@ impl World {
                     let player = self.actors.get_mut(&self.main_player_id).expect("World have not actor with main_player_id");
                     
                     if let ActorWrapper::Player(player) = player {
-                        player.respawn(spawn_position, engine_handle, physics_system)
+                        player.respawn(spawn_position, engine_handle, physics_system, ui_system);
                     } else {
                         panic!("Actor with main_player_id is not Player");
                     }
@@ -189,10 +191,10 @@ impl World {
         engine_handle: &mut EngineHandle,
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
-
+        ui_system: &mut UISystem,
     ) {
         if let Some(actor) = self.actors.get_mut(&to) {
-            actor.recieve_message(&message, engine_handle, physics_system, audio_system);
+            actor.recieve_message(&message, engine_handle, physics_system, audio_system, ui_system);
         }
     }
 
@@ -202,11 +204,11 @@ impl World {
         engine_handle: &mut EngineHandle,
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
-
+        ui_system: &mut UISystem,
     ) {
         for (_, actor) in self.actors.iter_mut() {
             if actor.get_id().expect("actor does not have id") != message.from {
-                actor.recieve_message(&message, engine_handle, physics_system, audio_system);
+                actor.recieve_message(&message, engine_handle, physics_system, audio_system, ui_system);
             } 
         }
     }
@@ -261,10 +263,17 @@ impl World {
         physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         delta: f32
     ) {
         for (_, actor) in self.actors.iter_mut() {
-            actor.tick(physic_system, engine_handle, audio_system, delta)
+            actor.tick(
+                physic_system,
+                engine_handle,
+                audio_system,
+                ui_system,
+                delta
+            )
         }
     }
 

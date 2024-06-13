@@ -29,7 +29,7 @@ use crate::{
             NetCommand,
             NetMessage,
             RemoteMessage
-        }, physics::PhysicsSystem, render::VisualElement, world::static_object::{
+        }, physics::PhysicsSystem, render::VisualElement, ui::UISystem, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
@@ -261,6 +261,7 @@ impl Device for HoleGun {
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
             audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
             engine_handle: &mut EngineHandle,
             delta: f32,
         ) {
@@ -274,6 +275,7 @@ impl Device for HoleGun {
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
         delta: f32,
     )

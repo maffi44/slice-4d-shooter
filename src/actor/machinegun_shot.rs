@@ -15,7 +15,7 @@ use crate::{
             physics_system_data::ShapeType,
             static_collider::StaticCollider,
             PhysicsSystem
-        }, render::VisualElement, world::static_object::{
+        }, render::VisualElement, ui::UISystem, world::static_object::{
             BeamVolumeArea,
             ColoringArea,
             SphericalVolumeArea,
@@ -192,6 +192,7 @@ impl Actor for MachinegunShot {
         physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         delta: f32
     ) {
         if self.hole_target_size_reached {

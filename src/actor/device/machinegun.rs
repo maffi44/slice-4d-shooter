@@ -5,7 +5,7 @@ use crate::{
         machinegun_shot::MachinegunShot, player::{PlayerInnerState, PlayerMessages}, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage
     },
     engine::{
-        audio::AudioSystem, engine_handle::{Command, CommandType, EngineHandle}, input::ActionsFrameState, net::{NetCommand, NetMessage, RemoteMessage}, physics::PhysicsSystem, render::VisualElement
+        audio::AudioSystem, engine_handle::{Command, CommandType, EngineHandle}, input::ActionsFrameState, net::{NetCommand, NetMessage, RemoteMessage}, physics::PhysicsSystem, render::VisualElement, ui::{UIElement, UIElementType, UISystem}
     },
     transform::Transform
 };
@@ -224,42 +224,54 @@ impl Device for MachineGun {
     }
 
     fn process_input(
-            &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            engine_handle: &mut EngineHandle,
-            delta: f32,
-        ) {
-            if input.first_mouse.is_action_pressed() && self.temperature < MAX_TEMPERTURE {
-                if self.time_from_prev_shot >= FIRE_RATE {
-                    self.shoot(
-                        player_id,
-                        player,
-                        physic_system,
-                        audio_system,
-                        engine_handle,
-                    );
-                    self.temperature += TEMPERATURE_SHOT_INCR;
-                    if self.shooting_range < MAX_SHOOTING_RANGE {
-                        self.shooting_range += MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_INCR_SPEED * 1.0/FIRE_RATE;
-                    }
-                    self.time_from_prev_shot = 0.0;
-                } else {
-                    self.cool_machinegun(delta);
-                    self.time_from_prev_shot += delta;
+        &mut self,
+        player_id: ActorID,
+        player: &mut PlayerInnerState,
+        input: &ActionsFrameState,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32,
+    ) {
+        if input.first_mouse.is_action_pressed() && self.temperature < MAX_TEMPERTURE {
+            if self.time_from_prev_shot >= FIRE_RATE {
+                self.shoot(
+                    player_id,
+                    player,
+                    physic_system,
+                    audio_system,
+                    engine_handle,
+                );
+                self.temperature += TEMPERATURE_SHOT_INCR;
+                if self.shooting_range < MAX_SHOOTING_RANGE {
+                    self.shooting_range += MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_INCR_SPEED * 1.0/FIRE_RATE;
                 }
+                self.time_from_prev_shot = 0.0;
             } else {
-               self.cool_machinegun(delta);
-               self.time_from_prev_shot += delta;
-               if self.shooting_range > MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_DCR_SPEED {
+                self.cool_machinegun(delta);
+                self.time_from_prev_shot += delta;
+            }
+        } else {
+            self.cool_machinegun(delta);
+            self.time_from_prev_shot += delta;
+            if self.shooting_range > MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_DCR_SPEED {
                 self.shooting_range -= MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_DCR_SPEED;
             } else {
                 self.shooting_range = 0.0;
             }
-            }
+        }
+
+        let bar = ui_system.get_ui_element(UIElementType::EnergyGunEnergyBar);
+
+        if let UIElement::ProgressBar(bar) = bar {
+            let value = {
+                (self.temperature / MAX_TEMPERTURE)
+                    .clamp(0.0, 1.0)
+            };
+            
+            bar.set_bar_value(value)
+        }
     }
 
     fn process_while_player_is_not_alive(
@@ -269,6 +281,7 @@ impl Device for MachineGun {
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
             audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
             engine_handle: &mut EngineHandle,
             delta: f32,
         ) {
@@ -282,10 +295,22 @@ impl Device for MachineGun {
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
             audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
             engine_handle: &mut EngineHandle,
             delta: f32,
         ) {
             self.cool_machinegun(delta);
             self.time_from_prev_shot += delta;
+
+            let bar = ui_system.get_ui_element(UIElementType::EnergyGunEnergyBar);
+
+            if let UIElement::ProgressBar(bar) = bar {
+                let value = {
+                    (self.temperature / MAX_TEMPERTURE)
+                        .clamp(0.0, 1.0)
+                };
+                
+                bar.set_bar_value(value)
+            }
     }
 }

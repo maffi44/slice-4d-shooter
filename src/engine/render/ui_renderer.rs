@@ -1,18 +1,28 @@
-use std::{collections::HashMap, sync::{Arc, Mutex}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex}
+};
 
-use crate::engine::{render::render_data::RenderData, ui::{TextureType, UIElement, UISystem}};
+use crate::engine::ui::{
+    TextureType,
+    UIElement,
+    UISystem
+};
 
 use glam::Vec2;
-use winit::window::Window;
 use wgpu::{
-    hal::empty::Encoder, rwh::{
-        HasDisplayHandle,
-        HasWindowHandle
-    }, util::{
+    util::{
         BufferInitDescriptor,
         DeviceExt,
-    }, BindGroup, Buffer, BufferUsages, Color, CommandEncoder, Device, InstanceFlags, MaintainResult, Queue, ShaderStages, Surface, SurfaceConfiguration, TextureView
-    // PipelineCompilationOptions,
+    },
+    BindGroup,
+    BufferUsages,
+    CommandEncoder,
+    Device,
+    Queue,
+    ShaderStages,
+    SurfaceConfiguration,
+    TextureView
 };
 
 
@@ -102,7 +112,7 @@ impl UIRenderer {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: ShaderStages::VERTEX,
+                        visibility: ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
@@ -212,7 +222,7 @@ impl UIRenderer {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: ShaderStages::VERTEX,
+                        visibility: ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,

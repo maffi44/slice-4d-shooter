@@ -17,7 +17,7 @@ use crate::{
             colliders_container::PhysicalElement,
             dynamic_collider::PlayersDollCollider,
             PhysicsSystem
-        }, render::VisualElement, world::static_object::{
+        }, render::VisualElement, ui::UISystem, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
@@ -255,7 +255,8 @@ impl Actor for PlayersDoll {
         message: &Message,
         engine_handle: &mut EngineHandle,
         physics_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
     ) {
         let from = message.from;
 
@@ -610,6 +611,7 @@ impl Actor for PlayersDoll {
         physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         delta: f32
     ) {
         if self.is_alive {

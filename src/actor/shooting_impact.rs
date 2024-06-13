@@ -1,8 +1,24 @@
 use glam::{FloatExt, Vec3, Vec4};
 
-use crate::{engine::{audio::AudioSystem, engine_handle::{Command, CommandType, EngineHandle}, render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}}, transform::Transform};
+use crate::{
+    engine::{
+        audio::AudioSystem, engine_handle::{
+            Command,
+            CommandType,
+            EngineHandle
+        }, physics::PhysicsSystem, render::VisualElement, ui::UISystem, world::static_object::{
+            SphericalVolumeArea,
+            VolumeArea
+        }
+    },
+    transform::Transform
+};
 
-use super::{player::{self, Player}, Actor, ActorID};
+use super::{
+    player::{self},
+    Actor,
+    ActorID
+};
 
 pub struct ShootingImpact {
     id: Option<ActorID>,
@@ -74,9 +90,10 @@ impl Actor for ShootingImpact {
 
     fn tick(
         &mut self,
-        physic_system: &crate::engine::physics::PhysicsSystem,
+        physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         delta: f32
     ) {
         if let VolumeArea::SphericalVolumeArea(area) = &mut self.volume_areas[0] {

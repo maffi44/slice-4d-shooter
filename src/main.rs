@@ -8,8 +8,6 @@ use main_loop::MainLoop;
 use pollster;
 
 fn main() {
-    #[cfg(debug_assertions)]
-    {}
     env_logger::init();
 
     let main_loop = MainLoop::new();

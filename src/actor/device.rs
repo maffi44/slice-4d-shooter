@@ -6,7 +6,7 @@ use crate::{
         player::PlayerInnerState,
         ActorID,
     }, engine::{
-        audio::AudioSystem, engine_handle::EngineHandle, input::ActionsFrameState, physics::PhysicsSystem, render::VisualElement
+        audio::AudioSystem, engine_handle::EngineHandle, input::ActionsFrameState, physics::PhysicsSystem, render::VisualElement, ui::UISystem
     }, transform::Transform
 };
 
@@ -39,6 +39,7 @@ impl Device for DefaultPointer {
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
             audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
             engine_handle: &mut EngineHandle,
             delta: f32,
     ) {
@@ -63,6 +64,7 @@ pub trait Device {
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
         delta: f32,
     );
@@ -89,6 +91,7 @@ pub trait Device {
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
         delta: f32,
     ) {}
@@ -100,6 +103,7 @@ fn process_while_deactive(
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
         delta: f32,
     ) {}

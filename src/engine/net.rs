@@ -28,11 +28,14 @@ use crate::{
     }
 };
 
-use super::{audio::{self, AudioSystem}, engine_handle::{
+use super::{
+    audio::AudioSystem,
+    engine_handle::{
         Command,
         CommandType,
         EngineHandle
-    }};
+    }
+};
 
 use alkahest::{alkahest, Serialize};
 

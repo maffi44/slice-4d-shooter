@@ -239,6 +239,7 @@ fn main_loop_tick(
         &systems.physic,
         &mut systems.engine_handle,
         &mut systems.audio,
+        &mut systems.ui,
         systems.time.prev_frame_duration,
     );
 
@@ -246,6 +247,7 @@ fn main_loop_tick(
         &mut systems.net,
         &systems.physic,
         &mut systems.audio,
+        &mut systems.ui,
         &mut systems.engine_handle,
     );
 
@@ -259,6 +261,7 @@ fn main_loop_tick(
         &mut systems.net,
         &systems.physic,
         &mut systems.audio,
+        &mut systems.ui,
         &mut systems.engine_handle,
     );
 

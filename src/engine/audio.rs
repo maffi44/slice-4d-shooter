@@ -1,16 +1,10 @@
 use std::collections::HashMap;
 
 use fyrox_core::{
-    algebra::{
-        Matrix,
-        Vector3
-    },
+    algebra::Vector3,
     pool::Handle
 };
-use fyrox_resource::{
-    core::reflect::GetField,
-    Resource
-};
+use fyrox_resource::Resource;
 use fyrox_sound::{
     buffer::{
         DataSource,
@@ -22,10 +16,7 @@ use fyrox_sound::{
         DistanceModel,
         SoundContext
     },
-    engine::{
-        self,
-        SoundEngine
-    },
+    engine::SoundEngine,
     source::{
         SoundSource,
         SoundSourceBuilder,

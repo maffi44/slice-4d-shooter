@@ -1,7 +1,8 @@
 struct RectTransformUniform {
     scale: vec2<f32>,
     translation: vec2<f32>,
-    empty_bytes: vec2<f32>,
+    transparency: f32,
+    empty_byte: f32,
     rotation_around_rect_center: f32,
     rotation_around_screen_center: f32,
 }
@@ -31,6 +32,13 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>
 };
 
+fn rotation_mat(angle: f32) -> mat2x2<f32> {
+    var c: f32 = cos(angle);
+    var s: f32 = sin(angle);
+
+    return mat2x2<f32>(c, -s, s, c);
+}
+
 @vertex
 fn vs_main(
     model: VertexInput,
@@ -38,9 +46,15 @@ fn vs_main(
 
     var coords = model.position;
 
+    let c = vec2(coords.x, coords.y) * rotation_mat(rect_transform.rotation_around_screen_center);
+
+    coords.x = c.x;
+    coords.y = c.y;
+    
     coords *= vec3(rect_transform.scale, 0.0);
 
     coords += vec3(rect_transform.translation, 0.0);
+
 
     var out: VertexOutput;
     out.clip_position = vec4<f32>(coords, 1.0);
@@ -51,5 +65,49 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(texture, tex_sampler, in.uv);
+
+    var col = textureSample(texture, tex_sampler, in.uv);
+
+    if bar_uni.direction > 2.5 {
+        // from top to down direction
+
+    } else if bar_uni.direction > 1.5 {
+        // from down to top direction
+
+    } else if bar_uni.direction > 0.5 {
+        // from right to left direction
+
+        let x = 1.0 - in.uv.x;
+
+        if x > bar_uni.v_to && x < bar_uni.v_from {
+            let d = bar_uni.v_from - bar_uni.v_to;
+
+            let ot = bar_uni.v_to + bar_uni.value * d;
+
+            if x < ot {
+                let bar_col = textureSample(mask, tex_sampler, in.uv);
+
+                col += bar_col;
+            }
+        }
+
+    } else {
+        // from left to right direction
+        if in.uv.x > bar_uni.v_from && in.uv.x < bar_uni.v_to {
+            let d = bar_uni.v_to - bar_uni.v_from;
+
+            let ot = bar_uni.v_from + bar_uni.value * d;
+
+            if in.uv.x < ot {
+                let bar_col = textureSample(mask, tex_sampler, in.uv);
+
+                col += bar_col;
+            }
+        }
+
+    }
+
+    col.a *= rect_transform.transparency;
+
+    return col;
 }

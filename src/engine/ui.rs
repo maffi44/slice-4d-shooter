@@ -1,6 +1,5 @@
 use std::{collections::{hash_map::IterMut, HashMap}, sync::{Arc, Mutex}};
 
-use fyrox_core::math::Rect;
 use glam::Vec2;
 use wgpu::{Buffer, Queue};
 
@@ -18,7 +17,8 @@ pub struct ProgressBarUniform {
 pub struct RectTransformUniform {
     pub scale: [f32;2],
     pub translation: [f32;2],
-    pub empty_bytes: [f32;2],
+    pub transparency: f32,
+    pub empty_bytes: f32,
     pub rotation_around_rect_center: f32,
     pub rotation_around_screen_center: f32,
 }
@@ -41,6 +41,7 @@ pub enum UIElementType {
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TextureType {
     HeathBar,
+    HeathBarMask,
     EnergyGunEnergyBar,
     EnergyGunEnergyBarMask,
     MachinegunEnergyBar,
@@ -72,6 +73,22 @@ impl UISystem {
             TextureType::HeathBar,
             include_bytes!("../assets/textures/healthbar.png").as_slice()
         );
+        texture_sources.insert(
+            TextureType::HeathBarMask,
+            include_bytes!("../assets/textures/healthbar_mask.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::EnergyGunEnergyBarMask,
+            include_bytes!("../assets/textures/energybar_mask.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::WRotationPointer,
+            include_bytes!("../assets/textures/crosshair_w_rotation_pointer.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::WHeightPointer,
+            include_bytes!("../assets/textures/crosshair_w_position_pointer.png").as_slice()
+        );
 
         let mut ui_elements = HashMap::with_capacity(10);
 
@@ -84,14 +101,57 @@ impl UISystem {
                             anchor: RectAnchor::CenterCenter,
                             position: Vec2::ZERO,
                             size: RectSize::LockedHeight(
-                                0.15
+                                0.25
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
                         },
                         true,
                     ),
                     TextureType::Crosshair
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::WRotationPointer,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::ZERO,
+                            size: RectSize::LockedHeight(
+                                0.25
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                        },
+                        true,
+                    ),
+                    TextureType::WRotationPointer
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::WHeightPointer,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::ZERO,
+                            size: RectSize::LockedHeight(
+                                0.25
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                        },
+                        true,
+                    ),
+                    TextureType::WHeightPointer
                 )
             )
         );
@@ -108,13 +168,14 @@ impl UISystem {
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
                         },
                         true,
                     ),
                     TextureType::HeathBar,
-                    TextureType::HeathBar,
-                    0.1,
-                    0.9,
+                    TextureType::HeathBarMask,
+                    0.02,
+                    0.98,
                     ProgressBarDirection::LeftRight,
                 )
             )
@@ -132,13 +193,14 @@ impl UISystem {
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
                         },
                         true,
                     ),
                     TextureType::HeathBar,
-                    TextureType::HeathBar,
-                    0.1,
-                    0.9,
+                    TextureType::EnergyGunEnergyBarMask,
+                    0.98,
+                    0.02,
                     ProgressBarDirection::RightLeft,
                 )
             )
@@ -153,7 +215,9 @@ impl UISystem {
 
 
     pub fn get_texture_source(&self, texture_type: &TextureType) -> &[u8] {
-        self.texture_sources.get(texture_type).expect("ui system have not some texture's source")
+        self.texture_sources
+            .get(texture_type)
+            .expect("ui system have not some texture's source")
     }
 
 
@@ -161,7 +225,8 @@ impl UISystem {
         &mut self,
         element: UIElementType
     ) -> &mut UIElement {
-        self.ui_elements.get_mut(&element)
+        self.ui_elements
+            .get_mut(&element)
             .expect("Some concrete UI element is not exist")
     }
 
@@ -256,6 +321,7 @@ pub struct UIRect {
     pub rotation_around_rect_center: f32,
     pub rotation_around_screen_center: f32,
 
+    pub transparency: f32
 }
 
 impl UIRect {
@@ -331,7 +397,8 @@ impl UIRect {
         RectTransformUniform {
             rotation_around_rect_center: self.rotation_around_rect_center,
             rotation_around_screen_center: self.rotation_around_screen_center,
-            empty_bytes: [0.0,0.0],
+            transparency: self.transparency,
+            empty_bytes: 0.0,
             scale,
             translation,
         }
@@ -372,6 +439,38 @@ impl UIData {
 
     pub fn get_is_visible_cloned_arc(&self) -> Arc<Mutex<bool>> {
         self.is_visible.clone()
+    }
+
+    pub fn set_transparecy(&mut self, transparency: f32) {
+        self.rect.transparency = transparency;
+    }
+
+    pub fn get_transparecy(&self) -> f32 {
+        self.rect.transparency
+    }
+
+    pub fn set_position(&mut self, position: Vec2) {
+        self.rect.position = position;
+    }
+
+    pub fn get_position(&self) -> Vec2 {
+        self.rect.position
+    }
+
+    pub fn set_rotation_around_screen_center(&mut self, rotation_around_screen_center: f32) {
+        self.rect.rotation_around_screen_center = rotation_around_screen_center;
+    }
+
+    pub fn get_rotation_around_screen_center(&self) -> f32 {
+        self.rect.rotation_around_screen_center
+    }
+
+    pub fn set_rotation_around_rect_center(&mut self, rotation_around_rect_center: f32) {
+        self.rect.rotation_around_rect_center = rotation_around_rect_center;
+    }
+
+    pub fn get_rotation_around_rect_center(&self) -> f32 {
+        self.rect.rotation_around_rect_center
     }
 }
 
@@ -421,6 +520,38 @@ impl UIImage {
 
     pub fn get_is_visible_cloned_arc(&self) -> Arc<Mutex<bool>> {
         self.ui_data.get_is_visible_cloned_arc()
+    }
+
+    pub fn set_transparecy(&mut self, transparency: f32) {
+        self.ui_data.set_transparecy(transparency);
+    }
+
+    pub fn get_transparecy(&self) -> f32 {
+        self.ui_data.get_transparecy()
+    }
+
+    pub fn set_position(&mut self, position: Vec2) {
+        self.ui_data.set_position(position);
+    }
+
+    pub fn get_position(&self) -> Vec2 {
+        self.ui_data.get_position()
+    }
+
+    pub fn set_rotation_around_screen_center(&mut self, rotation_around_screen_center: f32) {
+        self.ui_data.set_rotation_around_screen_center(rotation_around_screen_center);
+    }
+
+    pub fn get_rotation_around_screen_center(&self) -> f32 {
+        self.ui_data.get_rotation_around_screen_center()
+    }
+
+    pub fn set_rotation_around_rect_center(&mut self, rotation_around_rect_center: f32) {
+        self.ui_data.set_rotation_around_rect_center(rotation_around_rect_center);
+    }
+
+    pub fn get_rotation_around_rect_center(&self) -> f32 {
+        self.ui_data.get_rotation_around_rect_center()
     }
 }
 
@@ -478,6 +609,14 @@ impl UIProgressBar {
             rect_transform_buffer: None,
             progress_bar_value_buffer: None,
         }
+    }
+
+    pub fn set_bar_value(&mut self, value: f32) {
+        self.bar_value = value;
+    }
+
+    pub fn get_bar_value(&self) -> f32 {
+        self.bar_value
     }
 
     pub fn get_texture_type(&self) -> &TextureType {

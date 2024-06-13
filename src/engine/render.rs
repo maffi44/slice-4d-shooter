@@ -25,7 +25,7 @@ use self::{
 };
 
 #[cfg(not(target_arch="wasm32"))]
-use tokio::{runtime::Runtime, time::sleep};
+use tokio::runtime::Runtime;
 use winit::window::Window;
 
 use super::{physics::dynamic_collider::PlayersDollCollider, ui::UISystem};

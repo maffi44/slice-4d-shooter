@@ -26,7 +26,7 @@ use crate::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicCollider,
             PhysicsSystem
-        }, render::VisualElement
+        }, render::VisualElement, ui::{UIElement, UIElementType, UISystem}
     },
     transform::Transform
 };
@@ -36,6 +36,7 @@ use self::{
     player_settings::PlayerSettings,
 };
 
+use core::panic;
 use std::f32::consts::PI;
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
@@ -170,7 +171,8 @@ impl Actor for Player {
         message: &Message,
         engine_handle: &mut EngineHandle,
         physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
     ) {
         let from = message.from;
 
@@ -213,7 +215,14 @@ impl Actor for Player {
                             }
 
                             PlayerMessages::DealDamageAndAddForce(damage, force, _) => {
-                                self.get_damage_and_add_force(*damage as i32, *force, engine_handle, physic_system, audio_system);
+                                self.get_damage_and_add_force(
+                                    *damage as i32,
+                                    *force,
+                                    engine_handle,
+                                    physic_system,
+                                    audio_system,
+                                    ui_system,
+                                );
                             }
 
                             PlayerMessages::NewPeerConnected(peer_id) => {
@@ -336,6 +345,7 @@ impl Actor for Player {
         physic_system: &PhysicsSystem,
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         delta: f32
     ) {
         let my_id = self.id.expect("Player does not have id");
@@ -354,20 +364,41 @@ impl Actor for Player {
             let mut x = self.view_angle.x;
             let mut y = self.view_angle.y;
             let mut xw = self.view_angle.z;
-            let mut yw = self.view_angle.w;
+            let mut zw = self.view_angle.w;
 
-            let prev_yw = yw;
+            let prev_zw = zw;
     
             if input.second_mouse.is_action_pressed() {
                 xw = input.mouse_axis.x + xw;
-                yw = (input.mouse_axis.y + yw).clamp(-PI/2.0, PI/2.0);
+                zw = (input.mouse_axis.y + zw).clamp(-PI/2.0, PI/2.0);
                 
             } else {
                 xw *= 1.0 - delta * 3.0;
-                yw *= 1.0 - delta * 3.0;
+                zw *= 1.0 - delta * 3.0;
     
                 x = input.mouse_axis.x + x;
                 y = (input.mouse_axis.y + y).clamp(-PI/2.0, PI/2.0);
+            }
+
+            let r_pointer = ui_system.get_ui_element(UIElementType::WRotationPointer);
+
+            if let UIElement::Image(r_pointer) = r_pointer {
+                r_pointer.set_rotation_around_screen_center(zw);
+            } else {
+                panic!("UI Element WRotationPointer is not UIImage")
+            }
+
+            let h_pointer = ui_system.get_ui_element(UIElementType::WHeightPointer);
+
+            if let UIElement::Image(h_pointer) = h_pointer {
+                let r = {
+                    (self.get_position().w / 14.0)
+                        .clamp(0.0, 1.0) * -PI
+                };
+                
+                h_pointer.set_rotation_around_screen_center(r);
+            } else {
+                panic!("UI Element WHeightPointer is not UIImage")
             }
     
     
@@ -388,8 +419,8 @@ impl Actor for Player {
             let yw_rotation = Mat4::from_cols_slice(&[
                 1.0,    0.0,    0.0,        0.0,
                 0.0,    1.0,    0.0,        0.0,
-                0.0,    0.0,    yw.cos(),   yw.sin(),
-                0.0,    0.0,    -yw.sin(),   yw.cos()
+                0.0,    0.0,    zw.cos(),   zw.sin(),
+                0.0,    0.0,    -zw.sin(),   zw.cos()
             ]);
     
     
@@ -410,25 +441,25 @@ impl Actor for Player {
             // ]));
     
             let xz_player_rotation = Mat4::from_rotation_y(x);
-            self.view_angle = Vec4::new(x, y, xw, yw);
+            self.view_angle = Vec4::new(x, y, xw, zw);
 
             let base_pitch = {
                 0.8.lerp(
                     1.5,
-                    (std::f64::consts::PI/2.0 + yw as f64) / std::f64::consts::PI
+                    (std::f64::consts::PI/2.0 + zw as f64) / std::f64::consts::PI
                 )
             };
 
             let addition_pitch = {
                 self.rotating_around_w_sound_pitch * (1.0-delta as f64*22.0) +
-                ((prev_yw - yw) as f64).abs() * 2.0
+                ((prev_zw - zw) as f64).abs() * 2.0
             };
 
             self.rotating_around_w_sound_pitch = addition_pitch;
 
             let gain = {
                 self.rotating_around_w_sound_gain * (1.0-(delta*42.0)) +
-                (prev_yw - yw).abs() * 10.0
+                (prev_zw - zw).abs() * 10.0
             };
 
             self.rotating_around_w_sound_gain = gain;
@@ -443,62 +474,62 @@ impl Actor for Player {
     
             match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
-                    self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                    self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
 
                     if let Some(device) = &mut self.hands_slot_1 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
                     if let Some(device) = &mut self.hands_slot_2 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
                     if let Some(device) = &mut self.hands_slot_3 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
                 },
                 ActiveHandsSlot::First => {
                     if let Some(device) = self.hands_slot_1.as_mut() {
-                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
 
-                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     if let Some(device) = &mut self.hands_slot_2 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
                     if let Some(device) = &mut self.hands_slot_3 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
                 },
                 ActiveHandsSlot::Second => {
                     if let Some(device) = self.hands_slot_2.as_mut() {
-                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
 
-                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     if let Some(device) = &mut self.hands_slot_1 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
                     if let Some(device) = &mut self.hands_slot_3 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
                 },
                 ActiveHandsSlot::Third => {
                     if let Some(device) = self.hands_slot_3.as_mut() {
-                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
 
-                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     if let Some(device) = &mut self.hands_slot_1 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
                     if let Some(device) = &mut self.hands_slot_2 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
                 }
             }
     
             for device in self.devices.iter_mut() {
                 if let Some(device) = device {
-                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                 }
             }
     
@@ -708,24 +739,24 @@ impl Actor for Player {
 
             match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
-                    self.hands_slot_0.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                    self.hands_slot_0.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
 
                 },
                 ActiveHandsSlot::First => {
                     if let Some(device) = self.hands_slot_1.as_mut() {
-                        device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
 
                 },
                 ActiveHandsSlot::Second => {
                     if let Some(device) = self.hands_slot_2.as_mut() {
-                        device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
 
                 },
                 ActiveHandsSlot::Third => {
                     if let Some(device) = self.hands_slot_3.as_mut() {
-                        device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                        device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                     }
 
                 }
@@ -733,7 +764,7 @@ impl Actor for Player {
     
             for device in self.devices.iter_mut() {
                 if let Some(device) = device {
-                    device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, engine_handle, delta);
+                    device.process_while_player_is_not_alive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
                 }
             }
 
@@ -921,10 +952,25 @@ impl Player {
         engine_handle: &mut EngineHandle,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
     ) {
 
         self.inner_state.hp -= damage;
         self.inner_state.collider.add_force(force);
+
+        let health_bar = ui_system.get_ui_element(UIElementType::HeathBar);
+
+        if let UIElement::ProgressBar(bar) = health_bar {
+            let bar_value = {
+                (self.inner_state.hp as f32 / PLAYER_MAX_HP as f32)
+                    .clamp(0.0, 1.0)
+            };
+
+            bar.set_bar_value(bar_value)
+
+        } else {
+            panic!("Health Bar is not Progress Bar")
+        }
 
         if self.inner_state.hp <= 0 {
             if damage >= PLAYER_MAX_HP {
@@ -1127,10 +1173,31 @@ impl Player {
 
 
 
-    pub fn respawn(&mut self, spawn_position: Vec4, engine_handle: &mut EngineHandle, physics_system: &PhysicsSystem) {
+    pub fn respawn(
+        &mut self,
+        spawn_position: Vec4,
+        engine_handle: &mut EngineHandle,
+        physics_system: &PhysicsSystem,
+        ui_system: &mut UISystem
+    ) {
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
+
+        let health_bar = ui_system.get_ui_element(UIElementType::HeathBar);
+
+        if let UIElement::ProgressBar(bar) = health_bar {
+            let bar_value = {
+                (self.inner_state.hp as f32 / PLAYER_MAX_HP as f32)
+                    .clamp(0.0, 1.0)
+            };
+
+            bar.set_bar_value(bar_value)
+            
+        } else {
+            panic!("Health Bar is not Progress Bar")
+        }
+
 
         self.inner_state.collider.reset_forces_and_velocity();
 
