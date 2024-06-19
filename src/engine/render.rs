@@ -74,6 +74,7 @@ impl RenderSystem {
         );
 
         // spawn async tusk for renderer
+        #[cfg(not(target_arch="wasm32"))]
         let async_renderer = renderer.clone();
         #[cfg(not(target_arch="wasm32"))]
         runtime.spawn(async move {
@@ -127,7 +128,7 @@ impl RenderSystem {
             &self.render_data.static_data.static_bounding_box.clone()
         );
 
-        let renderer_lock = self.renderer.lock().unwrap();
+        let mut renderer_lock = self.renderer.lock().unwrap();
 
         ui.write_buffers_ui(
             &renderer_lock.queue,

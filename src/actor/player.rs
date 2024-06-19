@@ -40,7 +40,7 @@ use core::panic;
 use std::f32::consts::PI;
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
-use glam::{FloatExt, Mat4, Vec4};
+use glam::{FloatExt, Mat4, Vec2, Vec4};
 use matchbox_socket::PeerId;
 
 use super::{device::machinegun::MachineGun, players_death_explosion::PlayersDeathExplosion};
@@ -380,23 +380,31 @@ impl Actor for Player {
                 y = (input.mouse_axis.y + y).clamp(-PI/2.0, PI/2.0);
             }
 
-            let r_pointer = ui_system.get_ui_element(UIElementType::WRotationPointer);
+            let zw_arrow = ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrow);
 
-            if let UIElement::Image(r_pointer) = r_pointer {
-                r_pointer.set_rotation_around_screen_center(zw);
+            if let UIElement::Image(arrow) = zw_arrow {
+                arrow.set_rotation_around_screen_center(-zw+PI/2.0);
             } else {
                 panic!("UI Element WRotationPointer is not UIImage")
             }
 
-            let h_pointer = ui_system.get_ui_element(UIElementType::WHeightPointer);
+            let zx_arrow = ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrow);
+
+            if let UIElement::Image(arrow) = zx_arrow {
+                arrow.set_rotation_around_screen_center(x-PI/2.0);
+            } else {
+                panic!("UI Element WRotationPointer is not UIImage")
+            }
+
+            let h_pointer = ui_system.get_mut_ui_element(&UIElementType::ScannerHPointer);
 
             if let UIElement::Image(h_pointer) = h_pointer {
-                let r = {
-                    (self.get_position().w / 14.0)
-                        .clamp(0.0, 1.0) * -PI
+                let h = {
+                    ((self.get_position().w / 19.0) - 0.7)
+                        .clamp(-0.7, 0.8)
                 };
                 
-                h_pointer.set_rotation_around_screen_center(r);
+                h_pointer.set_position(Vec2::new(0.002, h));
             } else {
                 panic!("UI Element WHeightPointer is not UIImage")
             }
@@ -958,7 +966,7 @@ impl Player {
         self.inner_state.hp -= damage;
         self.inner_state.collider.add_force(force);
 
-        let health_bar = ui_system.get_ui_element(UIElementType::HeathBar);
+        let health_bar = ui_system.get_mut_ui_element(&UIElementType::HeathBar);
 
         if let UIElement::ProgressBar(bar) = health_bar {
             let bar_value = {
@@ -1184,7 +1192,7 @@ impl Player {
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
 
-        let health_bar = ui_system.get_ui_element(UIElementType::HeathBar);
+        let health_bar = ui_system.get_mut_ui_element(&UIElementType::HeathBar);
 
         if let UIElement::ProgressBar(bar) = health_bar {
             let bar_value = {

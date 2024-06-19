@@ -262,7 +262,7 @@ impl Device for MachineGun {
             }
         }
 
-        let bar = ui_system.get_ui_element(UIElementType::EnergyGunEnergyBar);
+        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
 
         if let UIElement::ProgressBar(bar) = bar {
             let value = {
@@ -302,7 +302,7 @@ impl Device for MachineGun {
             self.cool_machinegun(delta);
             self.time_from_prev_shot += delta;
 
-            let bar = ui_system.get_ui_element(UIElementType::EnergyGunEnergyBar);
+            let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
 
             if let UIElement::ProgressBar(bar) = bar {
                 let value = {

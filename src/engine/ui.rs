@@ -1,4 +1,4 @@
-use std::{collections::{hash_map::IterMut, HashMap}, sync::{Arc, Mutex}};
+use std::{collections::{hash_map::IterMut, HashMap}, sync::{Arc, Mutex}, thread::panicking};
 
 use glam::Vec2;
 use wgpu::{Buffer, Queue};
@@ -31,24 +31,28 @@ pub enum UIElement {
 #[derive(PartialEq, Eq, Hash)]
 pub enum UIElementType {
     HeathBar,
-    EnergyGunEnergyBar,
-    MachinegunEnergyBar,
+    EnergyGunBar,
+    MachinegunBar,
     Crosshair,
-    WRotationPointer,
-    WHeightPointer,
+    Scanner,
+    ScannerHPointer,
+    ZXScannerArrow,
+    ZWScannerArrow,
+    HUDBottomLine,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TextureType {
-    HeathBar,
+    HeathBarTexture,
     HeathBarMask,
-    EnergyGunEnergyBar,
-    EnergyGunEnergyBarMask,
-    MachinegunEnergyBar,
-    MachinegunEnergyBarMask,
+    EnergyGunBarTexture,
+    RightGunBarMask,
+    MachinegunBarTexture,
     Crosshair,
-    WRotationPointer,
-    WHeightPointer,
+    ScannerTexture,
+    ScannerPointer,
+    ScannerArrow,
+    BottomLine
 }
 
 
@@ -67,28 +71,45 @@ impl UISystem {
 
         texture_sources.insert(
             TextureType::Crosshair,
-            include_bytes!("../assets/textures/crosshair.png").as_slice()
+            include_bytes!("../assets/textures/crosshair_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::HeathBar,
-            include_bytes!("../assets/textures/healthbar.png").as_slice()
+            TextureType::HeathBarTexture,
+            include_bytes!("../assets/textures/health_bar_texture_hud.png").as_slice()
         );
         texture_sources.insert(
             TextureType::HeathBarMask,
-            include_bytes!("../assets/textures/healthbar_mask.png").as_slice()
+            include_bytes!("../assets/textures/health_bar_mask_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::EnergyGunEnergyBarMask,
-            include_bytes!("../assets/textures/energybar_mask.png").as_slice()
+            TextureType::EnergyGunBarTexture,
+            include_bytes!("../assets/textures/energy_gun_bar_texture_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::WRotationPointer,
-            include_bytes!("../assets/textures/crosshair_w_rotation_pointer.png").as_slice()
+            TextureType::RightGunBarMask,
+            include_bytes!("../assets/textures/right_bar_mask_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::WHeightPointer,
-            include_bytes!("../assets/textures/crosshair_w_position_pointer.png").as_slice()
+            TextureType::MachinegunBarTexture,
+            include_bytes!("../assets/textures/machinegun_bar_texture_hud.png").as_slice()
         );
+        texture_sources.insert(
+            TextureType::ScannerTexture,
+            include_bytes!("../assets/textures/scanner_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScannerPointer,
+            include_bytes!("../assets/textures/scanner_pointer_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScannerArrow,
+            include_bytes!("../assets/textures/scanner_arrow_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::BottomLine,
+            include_bytes!("../assets/textures/bottom_lines_hud.png").as_slice()
+        );
+        
 
         let mut ui_elements = HashMap::with_capacity(10);
 
@@ -101,57 +122,129 @@ impl UISystem {
                             anchor: RectAnchor::CenterCenter,
                             position: Vec2::ZERO,
                             size: RectSize::LockedHeight(
-                                0.25
+                                0.04
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                         },
                         true,
+                        None,
                     ),
                     TextureType::Crosshair
                 )
             )
         );
         ui_elements.insert(
-            UIElementType::WRotationPointer,
+            UIElementType::Scanner,
             UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
-                            anchor: RectAnchor::CenterCenter,
-                            position: Vec2::ZERO,
-                            size: RectSize::LockedHeight(
-                                0.25
+                            anchor: RectAnchor::CenterDown,
+                            position: Vec2::new(0.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.320
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                         },
                         true,
+                        None,
                     ),
-                    TextureType::WRotationPointer
+                    TextureType::ScannerTexture
                 )
             )
         );
         ui_elements.insert(
-            UIElementType::WHeightPointer,
+            UIElementType::HUDBottomLine,
             UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
-                            anchor: RectAnchor::CenterCenter,
-                            position: Vec2::ZERO,
-                            size: RectSize::LockedHeight(
-                                0.25
+                            anchor: RectAnchor::CenterDown,
+                            position: Vec2::new(0.0, -1.0),
+                            size: RectSize::LockedBoth(
+                                0.9, 0.01
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                         },
                         true,
+                        None,
                     ),
-                    TextureType::WHeightPointer
+                    TextureType::BottomLine
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ScannerHPointer,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, -0.3),
+                            size: RectSize::LockedBoth(
+                                0.03,
+                                0.05
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                        },
+                        true,
+                        Some(UIElementType::Scanner),
+                    ),
+                    TextureType::ScannerPointer
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ZXScannerArrow,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(-0.305, 0.063),
+                            size: RectSize::LockedBoth(
+                                0.229,
+                                0.81
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                        },
+                        true,
+                        Some(UIElementType::Scanner),
+                    ),
+                    TextureType::ScannerArrow
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ZWScannerArrow,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.305, 0.063),
+                            size: RectSize::LockedBoth(
+                                0.229,
+                                0.81
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                        },
+                        true,
+                        Some(UIElementType::Scanner),
+                    ),
+                    TextureType::ScannerArrow
                 )
             )
         );
@@ -164,15 +257,16 @@ impl UISystem {
                             anchor: RectAnchor::DownLeft,
                             position: Vec2::new(-1.0, -1.0),
                             size: RectSize::LockedWight(
-                                0.2
+                                0.224
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                         },
                         true,
+                        None,
                     ),
-                    TextureType::HeathBar,
+                    TextureType::HeathBarTexture,
                     TextureType::HeathBarMask,
                     0.02,
                     0.98,
@@ -181,7 +275,7 @@ impl UISystem {
             )
         );
         ui_elements.insert(
-            UIElementType::EnergyGunEnergyBar,
+            UIElementType::EnergyGunBar,
             UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
@@ -189,16 +283,17 @@ impl UISystem {
                             anchor: RectAnchor::DownRight,
                             position: Vec2::new(1.0, -1.0),
                             size: RectSize::LockedWight(
-                                0.2
+                                0.224
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                         },
                         true,
+                        None,
                     ),
-                    TextureType::HeathBar,
-                    TextureType::EnergyGunEnergyBarMask,
+                    TextureType::EnergyGunBarTexture,
+                    TextureType::RightGunBarMask,
                     0.98,
                     0.02,
                     ProgressBarDirection::RightLeft,
@@ -221,12 +316,21 @@ impl UISystem {
     }
 
 
-    pub fn get_ui_element(
+    pub fn get_mut_ui_element(
         &mut self,
-        element: UIElementType
+        element: &UIElementType
     ) -> &mut UIElement {
         self.ui_elements
-            .get_mut(&element)
+            .get_mut(element)
+            .expect("Some concrete UI element is not exist")
+    }
+
+    pub fn get_ui_element(
+        &self,
+        element: &UIElementType
+    ) -> &UIElement {
+        self.ui_elements
+            .get(element)
             .expect("Some concrete UI element is not exist")
     }
 
@@ -243,6 +347,29 @@ impl UISystem {
         for (_, ui_elem) in &self.ui_elements {
             match ui_elem {
                 UIElement::Image(elem) => {
+                    if elem.ui_data.parent_ui_elem.is_none() {
+                        continue;
+                    }
+                    
+                    let parent_transform = {
+                        match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
+                            UIElement::Image(elem) => {
+                                elem.ui_data.rect.get_rect_transform_uniform(
+                                    elem.texture_aspect.unwrap(),
+                                    screen_aspect,
+                                    None,
+                                )
+                            },
+                            UIElement::ProgressBar(elem) => {
+                                elem.ui_data.rect.get_rect_transform_uniform(
+                                    elem.texture_aspect.unwrap(),
+                                    screen_aspect,
+                                    None,
+                                )
+                            }
+                        }
+                    };
+
                     queue.write_buffer(
                         elem.rect_transform_buffer
                             .as_ref()
@@ -254,11 +381,35 @@ impl UISystem {
                                     elem
                                         .texture_aspect
                                         .expect("UI Image have not texture aspect"),
-                                    screen_aspect
+                                    screen_aspect,
+                                    Some(parent_transform),
                         )]),
                     );
                 }
                 UIElement::ProgressBar(elem) => {
+                    if elem.ui_data.parent_ui_elem.is_none() {
+                        continue;
+                    }
+
+                    let parent_transform = {
+                        match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
+                            UIElement::Image(elem) => {
+                                elem.ui_data.rect.get_rect_transform_uniform(
+                                    elem.texture_aspect.unwrap(),
+                                    screen_aspect,
+                                    None,
+                                )
+                            },
+                            UIElement::ProgressBar(elem) => {
+                                elem.ui_data.rect.get_rect_transform_uniform(
+                                    elem.texture_aspect.unwrap(),
+                                    screen_aspect,
+                                    None,
+                                )
+                            }
+                        }
+                    };
+
                     queue.write_buffer(
                         &elem.rect_transform_buffer
                             .as_ref()
@@ -271,6 +422,61 @@ impl UISystem {
                                         .texture_aspect
                                         .expect("UI Progress bar have not texture aspect"),
                                     screen_aspect,
+                                    Some(parent_transform),
+                        )]),
+                    );
+                    queue.write_buffer(
+                        &elem.progress_bar_value_buffer
+                            .as_ref()
+                            .expect("UI Progress bar have not value buffer"),
+                        0,
+                        bytemuck::cast_slice(&[
+                            elem.get_progress_bar_uniform()
+                        ]),
+                    );
+                }
+            }
+        }
+
+        for (_, ui_elem) in &self.ui_elements {
+            match ui_elem {
+                UIElement::Image(elem) => {
+                    if elem.ui_data.parent_ui_elem.is_some() {
+                        continue;
+                    }
+                    queue.write_buffer(
+                        elem.rect_transform_buffer
+                            .as_ref()
+                            .expect("UI Image have not rect transform buffer"),
+                        0,
+                        bytemuck::cast_slice(&[
+                            elem.ui_data.rect
+                                .get_rect_transform_uniform(
+                                    elem
+                                        .texture_aspect
+                                        .expect("UI Image have not texture aspect"),
+                                    screen_aspect,
+                                    None,
+                        )]),
+                    );
+                }
+                UIElement::ProgressBar(elem) => {
+                    if elem.ui_data.parent_ui_elem.is_some() {
+                        continue;
+                    }
+                    queue.write_buffer(
+                        &elem.rect_transform_buffer
+                            .as_ref()
+                            .expect("UI Progress bar have not rect transform buffer"),
+                        0,
+                        bytemuck::cast_slice(&[
+                            elem.ui_data.rect
+                                .get_rect_transform_uniform(
+                                    elem
+                                        .texture_aspect
+                                        .expect("UI Progress bar have not texture aspect"),
+                                    screen_aspect,
+                                    None,
                         )]),
                     );
                     queue.write_buffer(
@@ -329,78 +535,141 @@ impl UIRect {
         &self,
         texture_aspect: f32,
         screen_aspect: f32,
+        parent_transform: Option<RectTransformUniform>,
     ) -> RectTransformUniform {
 
-        let scale = {
-            match self.size {
-                RectSize::LockedBoth(x, y) => {
-                    [x, y]
-                },
-                RectSize::LockedHeight(y) => {
-                    [((y*texture_aspect)/screen_aspect), y]
-                },
-                RectSize::LockedWight(x) => {
-                    [x, ((x/texture_aspect)*screen_aspect)]
-                }
-            }
-        };
+        if let Some(parent) = parent_transform {
 
-        //         ________________
-        //         |              + (1,1)
-        //         | wgpu screeen |
-        //         |              |
-        //         |      +(0,0)  |
-        //         |              |
-        //         |              |
-        // (-1,-1) +______________|
+            let scale = {
+                match self.size {
+                    RectSize::LockedBoth(x, y) => {
+                        [parent.scale[0] * x, parent.scale[1] * y]
+                    },
+                    RectSize::LockedHeight(y) => {
+                        unimplemented!()
+                    },
+                    RectSize::LockedWight(x) => {
+                        unimplemented!()
+                    }
+                }
+            };
 
-        let translation = {
-            match self.anchor {
-                RectAnchor::CenterCenter => {
-                    self.position.to_array()
+            let translation = {
+                match self.anchor {
+                    RectAnchor::CenterCenter => {
+                        [
+                            parent.translation[0] + self.position.x * parent.scale[0],
+                            parent.translation[1] + self.position.y * parent.scale[1]
+                        ]
+                    }
+                    RectAnchor::TopRight => {
+                        unimplemented!()
+                    }
+                    RectAnchor::TopLeft => {
+                        unimplemented!()
+                    }
+                    RectAnchor::CenterTop => {
+                        unimplemented!()
+                    }
+                    RectAnchor::DownLeft => {
+                        unimplemented!()
+                    }
+                    RectAnchor::DownRight => {
+                        unimplemented!()
+                    }
+                    RectAnchor::CenterDown => {
+                        unimplemented!()
+                    }
+                    RectAnchor::CenterLeft => {
+                        unimplemented!()
+                    }
+                    RectAnchor::CenterRight => {
+                        unimplemented!()
+                    }
                 }
-                RectAnchor::TopRight => {
-                    [self.position.x - scale[0],
-                    self.position.y - scale[1]]
+            };
+
+            return RectTransformUniform {
+                rotation_around_rect_center: self.rotation_around_rect_center,
+                rotation_around_screen_center: self.rotation_around_screen_center,
+                transparency: self.transparency,
+                empty_bytes: 0.0,
+                scale,
+                translation,
+            };
+        } else {
+
+            let scale = {
+                match self.size {
+                    RectSize::LockedBoth(x, y) => {
+                        [x, y]
+                    },
+                    RectSize::LockedHeight(y) => {
+                        [((y*texture_aspect)/screen_aspect), y]
+                    },
+                    RectSize::LockedWight(x) => {
+                        [x, ((x/texture_aspect)*screen_aspect)]
+                    }
                 }
-                RectAnchor::TopLeft => {
-                    [self.position.x + scale[0],
-                    self.position.y - scale[1]]
+            };
+    
+            //         ________________
+            //         |              + (1,1)
+            //         | wgpu screeen |
+            //         |              |
+            //         |      +(0,0)  |
+            //         |              |
+            //         |              |
+            // (-1,-1) +______________|
+    
+            let translation = {
+                match self.anchor {
+                    RectAnchor::CenterCenter => {
+                        self.position.to_array()
+                    }
+                    RectAnchor::TopRight => {
+                        [self.position.x - scale[0],
+                        self.position.y - scale[1]]
+                    }
+                    RectAnchor::TopLeft => {
+                        [self.position.x + scale[0],
+                        self.position.y - scale[1]]
+                    }
+                    RectAnchor::CenterTop => {
+                        [self.position.x,
+                        self.position.y - scale[1]]
+                    }
+                    RectAnchor::DownLeft => {
+                        [self.position.x + scale[0],
+                        self.position.y + scale[1]]
+                    }
+                    RectAnchor::DownRight => {
+                        [self.position.x - scale[0],
+                        self.position.y + scale[1]]
+                    }
+                    RectAnchor::CenterDown => {
+                        [self.position.x,
+                        self.position.y + scale[1]]
+                    }
+                    RectAnchor::CenterLeft => {
+                        [self.position.x + scale[0],
+                        self.position.y]
+                    }
+                    RectAnchor::CenterRight => {
+                        [self.position.x - scale[0],
+                        self.position.y]
+                    }
                 }
-                RectAnchor::CenterTop => {
-                    [self.position.x,
-                    self.position.y - scale[1]]
-                }
-                RectAnchor::DownLeft => {
-                    [self.position.x + scale[0],
-                    self.position.y + scale[1]]
-                }
-                RectAnchor::DownRight => {
-                    [self.position.x - scale[0],
-                    self.position.y + scale[1]]
-                }
-                RectAnchor::CenterDown => {
-                    [self.position.x,
-                    self.position.y + scale[1]]
-                }
-                RectAnchor::CenterLeft => {
-                    [self.position.x + scale[0],
-                    self.position.y]
-                }
-                RectAnchor::CenterRight => {
-                    [self.position.x - scale[0],
-                    self.position.y]
-                }
-            }
-        };
-        
-        RectTransformUniform {
-            rotation_around_rect_center: self.rotation_around_rect_center,
-            rotation_around_screen_center: self.rotation_around_screen_center,
-            transparency: self.transparency,
-            empty_bytes: 0.0,
-            scale,
-            translation,
+            };
+            
+            return RectTransformUniform {
+                rotation_around_rect_center: self.rotation_around_rect_center,
+                rotation_around_screen_center: self.rotation_around_screen_center,
+                transparency: self.transparency,
+                empty_bytes: 0.0,
+                scale,
+                translation,
+            };
         }
     }
 
@@ -416,20 +685,23 @@ impl UIRect {
 pub struct UIData {
     pub is_visible: Arc<Mutex<bool>>,
     pub rect: UIRect,
-    pub need_to_redraw: bool
+    pub need_to_redraw: bool,
+    pub parent_ui_elem: Option<UIElementType>,
 }
 
 impl UIData {
     pub fn new(
         rect: UIRect,
         is_visible: bool,
+        parent_ui_elem: Option<UIElementType>,
     ) -> Self {
         let is_visible =  Arc::new(Mutex::new(is_visible));
 
         UIData {
             is_visible,
             rect,
-            need_to_redraw: true
+            need_to_redraw: true,
+            parent_ui_elem,
         }
     }
 

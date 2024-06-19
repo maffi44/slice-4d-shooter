@@ -2643,7 +2643,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     color += 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
 
     color = pow(color, vec3(0.4545));
-    color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
+    // color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
 
     // color.r += (dist_and_depth.y / f32(MAX_STEPS));
 

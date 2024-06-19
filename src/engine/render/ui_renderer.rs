@@ -346,7 +346,8 @@ impl UIRenderer {
                                     .rect
                                     .get_rect_transform_uniform(
                                         texture_aspect,
-                                        screen_aspect
+                                        screen_aspect,
+                                        None,
                                     )
                             ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
@@ -429,6 +430,7 @@ impl UIRenderer {
                                     .get_rect_transform_uniform(
                                         texture_aspect,
                                         screen_aspect,
+                                        None,
                                     )
                                 ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
