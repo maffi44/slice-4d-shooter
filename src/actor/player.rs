@@ -14,7 +14,11 @@ use crate::{
         MessageType,
         SpecificActorMessage
     }, engine::{
-        audio::{AudioSystem, Sound}, engine_handle::{
+        audio::{
+            AudioSystem,
+            Sound
+        },
+        engine_handle::{
             Command,
             CommandType,
             EngineHandle
@@ -25,8 +29,15 @@ use crate::{
         }, physics::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicCollider,
-            PhysicsSystem
-        }, render::VisualElement, ui::{RectSize, UIElement, UIElementType, UIImage, UISystem}
+            PhysicsSystem,
+        },
+        render::VisualElement,
+        ui::{
+            RectSize,
+            UIElement,
+            UIElementType,
+            UISystem,
+        }
     },
     transform::Transform
 };
@@ -98,9 +109,9 @@ pub enum PlayersDeviceSlotNumber {
 }
 
 pub struct PlayerScreenEffects {
-    pub w_scaner_is_active: bool,
-    pub w_scaner_radius: f32,
-    pub w_scaner_intesity: f32,
+    pub w_scanner_is_active: bool,
+    pub w_scanner_radius: f32,
+    pub w_scanner_intesity: f32,
 
     pub death_screen_effect: f32,
     pub getting_damage_screen_effect: f32,
@@ -155,8 +166,8 @@ const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
 const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
 
 const W_SCANNER_RELOAD_TIME: f32 = 0.5;
-const W_SCANNER_MAX_RADIUS: f32 = 22.0;
-const W_SCANNER_EXPANDING_SPEED: f32 = 7.5;
+const W_SCANNER_MAX_RADIUS: f32 = 43.0;
+const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
 
 pub const TIME_TO_DIE_SLOWLY: f32 = 0.5;
 
@@ -418,7 +429,7 @@ impl Actor for Player {
             if let UIElement::Image(arrow) = zw_arrow {
                 arrow.set_rotation_around_screen_center(-zw+PI/2.0);
             } else {
-                panic!("UI Element WRotationPointer is not UIImage")
+                panic!("UI Element ZWScannerArrow is not UIImage")
             }
 
             let zx_arrow = ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrow);
@@ -426,7 +437,7 @@ impl Actor for Player {
             if let UIElement::Image(arrow) = zx_arrow {
                 arrow.set_rotation_around_screen_center(x-PI/2.0);
             } else {
-                panic!("UI Element WRotationPointer is not UIImage")
+                panic!("UI Element ZXScannerArrow is not UIImage")
             }
 
             let h_pointer = ui_system.get_mut_ui_element(&UIElementType::ScannerHPointer);
@@ -439,7 +450,7 @@ impl Actor for Player {
                 
                 h_pointer.set_position(Vec2::new(0.002, h));
             } else {
-                panic!("UI Element WHeightPointer is not UIImage")
+                panic!("UI Element ScannerHPointer is not UIImage")
             }
     
     
@@ -678,7 +689,7 @@ impl Actor for Player {
                 }
             }
     
-            if input.w_scaner.is_action_just_pressed() {
+            if input.w_scanner.is_action_just_pressed() {
                 if !self.w_scanner_enable {
                     if self.w_scanner_reloading_time >= W_SCANNER_RELOAD_TIME {
                         self.w_scanner_enable = true;
@@ -764,9 +775,9 @@ impl Actor for Player {
     
             log::info!("Position: {:.2}", self.get_position());
     
-            self.screen_effects.w_scaner_is_active = self.w_scanner_enable;
-            self.screen_effects.w_scaner_radius = self.w_scanner_radius;
-            self.screen_effects.w_scaner_intesity = {
+            self.screen_effects.w_scanner_is_active = self.w_scanner_enable;
+            self.screen_effects.w_scanner_radius = self.w_scanner_radius;
+            self.screen_effects.w_scanner_intesity = {
                 let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
     
                 intensity /= W_SCANNER_MAX_RADIUS/3.0;
@@ -852,9 +863,9 @@ impl Actor for Player {
                 }
             }
 
-            self.screen_effects.w_scaner_is_active = self.w_scanner_enable;
-            self.screen_effects.w_scaner_radius = self.w_scanner_radius;
-            self.screen_effects.w_scaner_intesity = {
+            self.screen_effects.w_scanner_is_active = self.w_scanner_enable;
+            self.screen_effects.w_scanner_radius = self.w_scanner_radius;
+            self.screen_effects.w_scanner_intesity = {
                 let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
     
                 intensity /= W_SCANNER_MAX_RADIUS/3.0;
@@ -896,9 +907,9 @@ impl Player {
     pub fn new(master: InputMaster, player_settings: PlayerSettings, audio_system: &mut AudioSystem) -> Self {
         
         let screen_effects = PlayerScreenEffects {
-            w_scaner_is_active: false,
-            w_scaner_radius: 0.0,
-            w_scaner_intesity: 0.0,
+            w_scanner_is_active: false,
+            w_scanner_radius: 0.0,
+            w_scanner_intesity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
         };
@@ -1236,9 +1247,13 @@ impl Player {
             bar.set_bar_value(bar_value)
             
         } else {
-            panic!("Health Bar is not Progress Bar")
+            panic!("Health Bar is not UIProgressBar")
         }
 
+        self.screen_effects.w_scanner_intesity = 0.0;
+        self.screen_effects.w_scanner_radius = 0.0;
+        self.screen_effects.w_scanner_is_active = false;
+        self.w_scanner_reloading_time = W_SCANNER_RELOAD_TIME;
 
         self.inner_state.collider.reset_forces_and_velocity();
 

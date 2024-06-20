@@ -620,8 +620,8 @@ pub struct OtherDynamicData {
     empty_bytes1: [u32;3],
     beam_areas_amount: u32,
     player_forms_amount: u32,
-    w_scaner_radius: f32,
-    w_scaner_intesity: f32,
+    w_scanner_radius: f32,
+    w_scanner_intesity: f32,
     death_screen_effect: f32,
     getting_damage_screen_effect: f32,
     stickiness: f32,
@@ -690,14 +690,20 @@ impl OtherDynamicData {
 
         self.player_forms_amount = player_forms_amount;
 
-        self.w_scaner_radius = {
-            if players_screen_effects.w_scaner_is_active {
-                players_screen_effects.w_scaner_radius
+        self.w_scanner_radius = {
+            if players_screen_effects.w_scanner_is_active {
+                players_screen_effects.w_scanner_radius
             } else {
                 0.0
             }
         };
-        self.w_scaner_intesity = players_screen_effects.w_scaner_intesity;
+        self.w_scanner_intesity = {
+            if players_screen_effects.w_scanner_is_active {
+                players_screen_effects.w_scanner_intesity
+            } else {
+                0.0
+            }
+        };
         self.death_screen_effect = players_screen_effects.death_screen_effect;
         self.getting_damage_screen_effect = players_screen_effects.getting_damage_screen_effect;
     }
@@ -713,8 +719,8 @@ impl Default for OtherDynamicData {
             empty_bytes1: [0;3],
             beam_areas_amount: 0,
             player_forms_amount: 0,
-            w_scaner_intesity: 0.0,
-            w_scaner_radius: 0.0,
+            w_scanner_intesity: 0.0,
+            w_scanner_radius: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
             stickiness: 0.5,

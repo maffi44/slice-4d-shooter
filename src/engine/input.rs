@@ -43,7 +43,7 @@ pub struct ActionsFrameState {
     pub move_left: Action,
     pub w_down: Action,
     pub w_up: Action,
-    pub w_scaner: Action,
+    pub w_scanner: Action,
     pub activate_hand_slot_0: Action,
     pub activate_hand_slot_1: Action,
     pub activate_hand_slot_2: Action,
@@ -64,7 +64,7 @@ impl ActionsFrameState {
         let mut move_backward = Action::new();
         let mut move_right = Action::new();
         let mut move_left = Action::new();
-        let mut w_scaner = Action::new();
+        let mut w_scanner = Action::new();
         let mut w_down = Action::new();
         let mut w_up = Action::new();
         let mut jump = Action::new();
@@ -86,7 +86,7 @@ impl ActionsFrameState {
                 ButtonActions::MoveBackward => move_backward = action.clone(),
                 ButtonActions::MoveRight => move_right = action.clone(),
                 ButtonActions::MoveLeft => move_left = action.clone(),
-                ButtonActions::WScaner => w_scaner = action.clone(),
+                ButtonActions::WScaner => w_scanner = action.clone(),
                 ButtonActions::Jump => jump = action.clone(),
                 ButtonActions::JumpW => jump_w = action.clone(),
                 ButtonActions::HandSlot0 => activate_hand_slot_0 = action.clone(),
@@ -108,7 +108,7 @@ impl ActionsFrameState {
             move_backward,
             move_right,
             move_left,
-            w_scaner,
+            w_scanner,
             activate_hand_slot_0,
             activate_hand_slot_1,
             activate_hand_slot_2,
@@ -131,7 +131,7 @@ impl ActionsFrameState {
         let move_backward = Action::new();
         let move_right = Action::new();
         let move_left = Action::new();
-        let w_scaner = Action::new();
+        let w_scanner = Action::new();
         let w_down = Action::new();
         let w_up = Action::new();
         let jump = Action::new();
@@ -152,7 +152,7 @@ impl ActionsFrameState {
             move_backward,
             move_right,
             move_left,
-            w_scaner,
+            w_scanner,
             activate_hand_slot_0,
             activate_hand_slot_1,
             activate_hand_slot_2,

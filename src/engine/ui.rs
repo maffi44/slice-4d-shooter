@@ -23,9 +23,19 @@ pub struct RectTransformUniform {
     pub rotation_around_screen_center: f32,
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ScannerDataUniform {
+    empty_byte0: u32,
+    empty_byte1: u32,
+    empty_byte2: u32,
+    orientation: u32,
+}
+
 pub enum UIElement {
     Image(UIImage),
     ProgressBar(UIProgressBar),
+    ScannerDisplay(UIScannerDisplay),
 }
 
 #[derive(PartialEq, Eq, Hash)]
@@ -39,6 +49,8 @@ pub enum UIElementType {
     ZXScannerArrow,
     ZWScannerArrow,
     HUDBottomLine,
+    LeftScannerDsiplay,
+    RightScannerDsiplay,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -128,6 +140,7 @@ impl UISystem {
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
+                            transform_buffer: None,
                         },
                         true,
                         None,
@@ -151,6 +164,7 @@ impl UISystem {
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
+                            transform_buffer: None,
                         },
                         true,
                         None,
@@ -174,6 +188,7 @@ impl UISystem {
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
+                            transform_buffer: None,
                         },
                         true,
                         None,
@@ -198,6 +213,7 @@ impl UISystem {
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
+                            transform_buffer: None,
                         },
                         true,
                         Some(UIElementType::Scanner),
@@ -222,6 +238,7 @@ impl UISystem {
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
+                            transform_buffer: None,
                         },
                         true,
                         Some(UIElementType::Scanner),
@@ -246,11 +263,62 @@ impl UISystem {
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
+                            transform_buffer: None,
                         },
                         true,
                         Some(UIElementType::Scanner),
                     ),
                     TextureType::ScannerArrow
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::LeftScannerDsiplay,
+            UIElement::ScannerDisplay(
+                UIScannerDisplay::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(-0.305, 0.063),
+                            size: RectSize::LockedBoth(
+                                0.229,
+                                0.81
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 2,
+                            transform_buffer: None,
+                        },
+                        true,
+                        Some(UIElementType::Scanner),
+                    ),
+                    ScannerDisplayPlaneOrientation::ZX
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::RightScannerDsiplay,
+            UIElement::ScannerDisplay(
+                UIScannerDisplay::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.305, 0.063),
+                            size: RectSize::LockedBoth(
+                                0.229,
+                                0.81
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 2,
+                            transform_buffer: None,
+                        },
+                        true,
+                        Some(UIElementType::Scanner),
+                    ),
+                    ScannerDisplayPlaneOrientation::ZW
                 )
             )
         );
@@ -269,6 +337,7 @@ impl UISystem {
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
+                            transform_buffer: None,
                         },
                         true,
                         None,
@@ -296,9 +365,11 @@ impl UISystem {
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
+                            transform_buffer: None,
                         },
                         true,
                         None,
+                        
                     ),
                     TextureType::EnergyGunBarTexture,
                     TextureType::RightGunBarMask,
@@ -374,12 +445,19 @@ impl UISystem {
                                     screen_aspect,
                                     None,
                                 )
+                            },
+                            UIElement::ScannerDisplay(elem) => {
+                                elem.ui_data.rect.get_rect_transform_uniform(
+                                    1.0,
+                                    screen_aspect,
+                                    None,
+                                )
                             }
                         }
                     };
 
                     queue.write_buffer(
-                        elem.rect_transform_buffer
+                        elem.ui_data.rect.transform_buffer
                             .as_ref()
                             .expect("UI Image have not rect transform buffer"),
                         0,
@@ -414,12 +492,19 @@ impl UISystem {
                                     screen_aspect,
                                     None,
                                 )
+                            },
+                            UIElement::ScannerDisplay(elem) => {
+                                elem.ui_data.rect.get_rect_transform_uniform(
+                                    1.0,
+                                    screen_aspect,
+                                    None,
+                                )
                             }
                         }
                     };
 
                     queue.write_buffer(
-                        &elem.rect_transform_buffer
+                        elem.ui_data.rect.transform_buffer
                             .as_ref()
                             .expect("UI Progress bar have not rect transform buffer"),
                         0,
@@ -442,6 +527,51 @@ impl UISystem {
                             elem.get_progress_bar_uniform()
                         ]),
                     );
+                },
+                UIElement::ScannerDisplay(elem) => {
+                    if elem.ui_data.parent_ui_elem.is_none() {
+                        continue;
+                    }
+                    
+                    let parent_transform = {
+                        match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
+                            UIElement::Image(elem) => {
+                                elem.ui_data.rect.get_rect_transform_uniform(
+                                    elem.texture_aspect.unwrap(),
+                                    screen_aspect,
+                                    None,
+                                )
+                            },
+                            UIElement::ProgressBar(elem) => {
+                                elem.ui_data.rect.get_rect_transform_uniform(
+                                    elem.texture_aspect.unwrap(),
+                                    screen_aspect,
+                                    None,
+                                )
+                            },
+                            UIElement::ScannerDisplay(elem) => {
+                                elem.ui_data.rect.get_rect_transform_uniform(
+                                    1.0,
+                                    screen_aspect,
+                                    None,
+                                )
+                            }
+                        }
+                    };
+
+                    queue.write_buffer(
+                        elem.ui_data.rect.transform_buffer
+                            .as_ref()
+                            .expect("UI Image have not rect transform buffer"),
+                        0,
+                        bytemuck::cast_slice(&[
+                            elem.ui_data.rect
+                                .get_rect_transform_uniform(
+                                    1.0,
+                                    screen_aspect,
+                                    Some(parent_transform),
+                        )]),
+                    );
                 }
             }
         }
@@ -453,7 +583,7 @@ impl UISystem {
                         continue;
                     }
                     queue.write_buffer(
-                        elem.rect_transform_buffer
+                        elem.ui_data.rect.transform_buffer
                             .as_ref()
                             .expect("UI Image have not rect transform buffer"),
                         0,
@@ -473,7 +603,7 @@ impl UISystem {
                         continue;
                     }
                     queue.write_buffer(
-                        &elem.rect_transform_buffer
+                        elem.ui_data.rect.transform_buffer
                             .as_ref()
                             .expect("UI Progress bar have not rect transform buffer"),
                         0,
@@ -495,6 +625,24 @@ impl UISystem {
                         bytemuck::cast_slice(&[
                             elem.get_progress_bar_uniform()
                         ]),
+                    );
+                },
+                UIElement::ScannerDisplay(elem) => {
+                    if elem.ui_data.parent_ui_elem.is_some() {
+                        continue;
+                    }
+                    queue.write_buffer(
+                        &elem.ui_data.rect.transform_buffer
+                            .as_ref()
+                            .expect("UI Image have not rect transform buffer"),
+                        0,
+                        bytemuck::cast_slice(&[
+                            elem.ui_data.rect
+                                .get_rect_transform_uniform(
+                                    1.0,
+                                    screen_aspect,
+                                    None,
+                        )]),
                     );
                 }
             }
@@ -537,6 +685,8 @@ pub struct UIRect {
 
     pub transparency: f32,
     pub drawing_order: usize,
+
+    pub transform_buffer: Option<Buffer>,
 }
 
 impl UIRect {
@@ -714,6 +864,10 @@ impl UIData {
         }
     }
 
+    pub fn initialize(&mut self, rect_transform_buffer: Buffer) {
+        self.rect.transform_buffer = Some(rect_transform_buffer);
+    }
+
     pub fn set_is_visible(&mut self, is_visible: bool) {
         *self.is_visible.lock().unwrap() = is_visible;
     }
@@ -759,7 +913,6 @@ pub struct UIImage {
     pub ui_data: UIData,
     texture: TextureType,
 
-    rect_transform_buffer: Option<Buffer>,
     texture_aspect: Option<f32>,
     texture_size: Option<Vec2>,
 }
@@ -774,7 +927,6 @@ impl UIImage {
             ui_data,
             texture,
 
-            rect_transform_buffer: None,
             texture_aspect: None,
             texture_size: None,
         }
@@ -790,17 +942,14 @@ impl UIImage {
         texture_aspect: f32,
         rect_transform_buffer: Buffer,
     ) {
-        self.rect_transform_buffer = Some(rect_transform_buffer);
         self.texture_aspect = Some(texture_aspect);
         self.texture_size = Some(texture_size);
+
+        self.ui_data.initialize(rect_transform_buffer);
     }
 
     pub fn set_is_visible(&mut self, is_visible: bool) {
         self.ui_data.set_is_visible(is_visible);
-    }
-
-    pub fn get_is_visible_cloned_arc(&self) -> Arc<Mutex<bool>> {
-        self.ui_data.get_is_visible_cloned_arc()
     }
 
     pub fn set_transparecy(&mut self, transparency: f32) {
@@ -858,7 +1007,6 @@ pub struct UIProgressBar {
     texture_aspect: Option<f32>,
     mask_texture_size: Option<Vec2>,
     mask_texture_aspect: Option<f32>,
-    rect_transform_buffer: Option<Buffer>,
     progress_bar_value_buffer: Option<Buffer>,
 }
 
@@ -887,7 +1035,6 @@ impl UIProgressBar {
             texture_aspect: None,
             mask_texture_size: None,
             mask_texture_aspect: None,
-            rect_transform_buffer: None,
             progress_bar_value_buffer: None,
         }
     }
@@ -921,8 +1068,9 @@ impl UIProgressBar {
         self.texture_aspect = Some(texture_aspect);
         self.mask_texture_size = Some(mask_texture_size);
         self.mask_texture_aspect = Some(mask_texture_aspect);
-        self.rect_transform_buffer = Some(rect_transform_buffer);
         self.progress_bar_value_buffer = Some(progress_bar_value_buffer);
+
+        self.ui_data.initialize(rect_transform_buffer);
     }
 
     pub fn get_progress_bar_uniform(&self) -> ProgressBarUniform {
@@ -947,8 +1095,65 @@ impl UIProgressBar {
     pub fn set_is_visible(&mut self, is_visible: bool) {
         self.ui_data.set_is_visible(is_visible);
     }
+}
 
-    pub fn get_is_visible_cloned_arc(&self) -> Arc<Mutex<bool>> {
-        self.ui_data.get_is_visible_cloned_arc()
+
+pub enum ScannerDisplayPlaneOrientation {
+    ZX,
+    ZW,
+}
+
+pub struct UIScannerDisplay {
+    pub ui_data: UIData,
+    orientation: ScannerDisplayPlaneOrientation,
+
+    scanner_data_buffer: Option<Buffer>,
+}
+
+impl UIScannerDisplay {
+
+    pub fn new(
+        ui_data: UIData,
+        orientation: ScannerDisplayPlaneOrientation,
+    ) -> Self {
+
+        UIScannerDisplay {
+            ui_data,
+            orientation,
+            scanner_data_buffer: None
+        }
+    }
+
+    pub fn initialize(
+        &mut self,
+        rect_transform_buffer: Buffer,
+        scanner_data_buffer: Buffer
+    ) {
+        self.ui_data.initialize(rect_transform_buffer);
+
+        self.scanner_data_buffer = Some(scanner_data_buffer);
+    }
+
+    pub fn get_scanner_data_uniform(&self) -> ScannerDataUniform {
+        match self.orientation {
+            ScannerDisplayPlaneOrientation::ZX => {
+                ScannerDataUniform {
+                    empty_byte0: 0u32,
+                    empty_byte1: 0u32,
+                    empty_byte2: 0u32,
+
+                    orientation: 0u32,
+                }
+            },
+            ScannerDisplayPlaneOrientation::ZW => {
+                ScannerDataUniform {
+                    empty_byte0: 0u32,
+                    empty_byte1: 0u32,
+                    empty_byte2: 0u32,
+                    
+                    orientation: 1u32,
+                }
+            }
+        }
     }
 }

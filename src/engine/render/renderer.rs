@@ -555,7 +555,7 @@ impl Renderer {
                 topology: wgpu::PrimitiveTopology::TriangleList, // 1.
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw, // 2.
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: None,
                 // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
                 polygon_mode: wgpu::PolygonMode::Fill,
                 // Requires Features::DEPTH_CLIP_CONTROL
@@ -602,7 +602,9 @@ impl Renderer {
             &config,
             &queue,
             window.inner_size().width as f32 /
-            window.inner_size().height as f32
+            window.inner_size().height as f32,
+            &other_dynamic_data_buffer,
+            &player_forms_data_buffer,
         );
 
         Renderer {

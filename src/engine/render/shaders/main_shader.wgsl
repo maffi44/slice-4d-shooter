@@ -241,8 +241,8 @@ struct OtherDynamicData {
     empty_bytes1: vec3<u32>,
     beam_areas_amount: u32,
     player_forms_amount: u32,
-    w_scaner_radius: f32,
-    w_scaner_intesity: f32,
+    w_scanner_radius: f32,
+    w_scanner_intesity: f32,
     death_screen_effect: f32,
     getting_damage_screen_effect: f32,
     stickiness: f32,
@@ -2285,43 +2285,55 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32) 
 // }
 
 
-fn add_w_scnner_color(pos: vec4<f32>, dist: f32, dir: vec4<f32>) -> vec3<f32> {
+fn add_w_scanner_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec3<f32> {
     var scanner_color = vec3(0.0);
     
-    if dist > dynamic_data.w_scaner_radius {
+    if dynamic_data.w_scanner_intesity > 0.0 {
 
-        let y_coof = clamp(pow(1.0 - dir.y,3.0), 0.0, 1.0);
+        if dist > dynamic_data.w_scanner_radius {
 
-        scanner_color = vec3(0.4 * y_coof);
-    }
+            let view_dir = vec4(0.0, 0.0, -1.0, 0.0)*dynamic_data.camera_data.cam_rot;
 
-    scanner_color += clamp(pow(1.0 - abs(dist - dynamic_data.w_scaner_radius), 5.0), 0.0, 1.0);
+            let y_coof = clamp(pow((1.0-dot(ray_dir, view_dir))*3.0,2.4), 0.0, 1.0);
+            let y_coof2 = clamp(pow(1.0-ray_dir.y , 6.0), 0.0, 1.0);
 
-    scanner_color *= dynamic_data.w_scaner_intesity;
+            scanner_color = vec3(0.13 * (y_coof+y_coof2));
+            scanner_color += vec3(y_coof2)*0.12;
 
-    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+            scanner_color *= clamp((33.0 - dynamic_data.w_scanner_radius)/33.0, 0.0, 0.9);
+        }
 
-        let d = sd_sphere(pos - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
-
-        let visible = clamp((dynamic_data.w_scaner_radius - d) * 5.0, 0.0, 1.0);
-
-        let vis_d = length(
-            (
-                (
-                    pos + dir * min(
-                        dynamic_data.w_scaner_radius,
-                        length(pos.xyz - dyn_player_forms[i].pos.xyz)
-                    )
-                ) - dyn_player_forms[i].pos
-            ).xyz
-        ) - dyn_player_forms[i].radius;
-
-        var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0) * visible;
-        red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0) * visible;
-        red *= dynamic_data.w_scaner_intesity * 2.0;
+        let edge_intensity = clamp(pow(1.0 - abs(dist - dynamic_data.w_scanner_radius), 5.0), 0.0, 1.0);
         
-        scanner_color.r += red;
+        scanner_color += vec3(edge_intensity*0.3, edge_intensity*0.5, edge_intensity);
+
+        scanner_color *= dynamic_data.w_scanner_intesity;
+
+        for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+
+            let d = sd_sphere(pos - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
+
+            let visible = clamp((dynamic_data.w_scanner_radius - d) * 5.0, 0.0, 1.0);
+
+            let vis_d = length(
+                (
+                    (
+                        pos + ray_dir * min(
+                            dynamic_data.w_scanner_radius,
+                            length(pos.xyz - dyn_player_forms[i].pos.xyz)
+                        )
+                    ) - dyn_player_forms[i].pos
+                ).xyz
+            ) - dyn_player_forms[i].radius;
+
+            var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0) * visible;
+            red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0) * visible;
+            red *= dynamic_data.w_scanner_intesity * 2.0;
+            
+            scanner_color.r += red;
+        }
     }
+
     
     return clamp(scanner_color, vec3(0.0), vec3(1.0));
 }
@@ -2641,6 +2653,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
     color += 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
+    color += add_w_scanner_color(camera_position, dist_and_depth.x, ray_direction);
 
     color = pow(color, vec3(0.4545));
     // color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;

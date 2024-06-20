@@ -14,15 +14,7 @@ use wgpu::{
     util::{
         BufferInitDescriptor,
         DeviceExt,
-    },
-    BindGroup,
-    BufferUsages,
-    CommandEncoder,
-    Device,
-    Queue,
-    ShaderStages,
-    SurfaceConfiguration,
-    TextureView
+    }, BindGroup, Buffer, BufferUsages, CommandEncoder, Device, Queue, ShaderStages, SurfaceConfiguration, TextureView
 };
 
 
@@ -66,9 +58,10 @@ pub struct UIRenderer {
 
     image_render_pipeline: wgpu::RenderPipeline,
     progress_bar_render_pipeline: wgpu::RenderPipeline,
+    scanner_render_pipeline: wgpu::RenderPipeline,
 
     // first vector in bundle element is for image bind grups, second is for progress bar bind groups 
-    bind_groups_in_drawing_order: Vec<(BindGroupsVector, BindGroupsVector)>,
+    bind_groups_in_drawing_order: Vec<(BindGroupsVector, BindGroupsVector, BindGroupsVector)>,
 
     rect_vertex_buffer: wgpu::Buffer,
     rect_index_buffer: wgpu::Buffer,
@@ -83,7 +76,13 @@ impl UIRenderer {
         config: &SurfaceConfiguration,
         queue: &Queue,
         screen_aspect: f32,
+        other_dynamic_data_buffer: &Buffer,
+        player_forms_data_buffer: &Buffer,
     ) -> UIRenderer {
+
+        // ------------------------------------------------------------
+        // create vertex and indecies buffers
+        // ------------------------------------------------------------
 
         let rect_vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -102,6 +101,10 @@ impl UIRenderer {
         );
 
         let rect_num_indices = INDICES.len() as u32;
+
+        // ------------------------------------------------------------
+        // create UIProgressBar render pipeline and other render stuff
+        // ------------------------------------------------------------
 
         let progress_bar_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("progerss_bar_shader"),
@@ -199,7 +202,7 @@ impl UIRenderer {
                 topology: wgpu::PrimitiveTopology::TriangleList, // 1.
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw, // 2.
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: None,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,
@@ -212,6 +215,10 @@ impl UIRenderer {
             },
             multiview: None, // 5.
         });
+
+        // ------------------------------------------------------------
+        // create UIImage render pipeline and other render stuff
+        // ------------------------------------------------------------
 
         let image_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("image_shader"),
@@ -287,7 +294,7 @@ impl UIRenderer {
                 topology: wgpu::PrimitiveTopology::TriangleList, // 1.
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw, // 2.
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: None,
                 // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
                 polygon_mode: wgpu::PolygonMode::Fill,
                 // Requires Features::DEPTH_CLIP_CONTROL
@@ -304,6 +311,115 @@ impl UIRenderer {
             multiview: None, // 5.
         });
 
+        // --------------------------------------------------------------
+        // create UIScannerDisplay render pipeline and other render stuff
+        // --------------------------------------------------------------
+
+        let scanner_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("scanner_shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/scanner_shader.wgsl").into())
+        });
+
+        let scanner_bind_group_layout = device.create_bind_group_layout(
+            &wgpu::BindGroupLayoutDescriptor {
+                label: Some("scanner_bind_group_layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: ShaderStages::VERTEX_FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ]
+            }
+        );
+
+        let scanner_render_pipeline_layout = device.create_pipeline_layout(
+            &wgpu::PipelineLayoutDescriptor {
+                label: Some("scanner_pipeline layout"),
+                bind_group_layouts: &[&scanner_bind_group_layout],
+                push_constant_ranges: &[],
+            }
+        );
+
+        let scanner_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("scanner pipeline"),
+            layout: Some(&scanner_render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &scanner_shader,
+                entry_point: "vs_main", // 1.
+                buffers: &[
+                    Vertex::desc(),
+                ], // 2.
+                // compilation_options: PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState { // 3.
+                module: &scanner_shader,
+                // compilation_options: PipelineCompilationOptions::default(),
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState { // 4.
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw, // 2.
+                cull_mode: None,
+                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                polygon_mode: wgpu::PolygonMode::Fill,
+                // Requires Features::DEPTH_CLIP_CONTROL
+                unclipped_depth: false,
+                // Requires Features::CONSERVATIVE_RASTERIZATION
+                conservative: false,
+            },
+            depth_stencil: None, // 1.
+            multisample: wgpu::MultisampleState {
+                count: 1, // 2.
+                mask: !0, // 3.
+                alpha_to_coverage_enabled: false, // 4.
+            },
+            multiview: None, // 5.
+        });
+
+
+
         let ui_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -314,10 +430,12 @@ impl UIRenderer {
             ..Default::default()
         });
 
+
+
         let mut bind_groups_in_drawing_order = Vec::new();
 
         // first vector in bundle is for image bind grups, second is for progress bar bind groups 
-        bind_groups_in_drawing_order.push((Vec::new(), Vec::new()));
+        bind_groups_in_drawing_order.push((Vec::new(), Vec::new(), Vec::new()));
 
         let mut textures_views: HashMap<TextureType, (TextureView, (u32,u32))> = HashMap::new();
 
@@ -386,14 +504,14 @@ impl UIRenderer {
                     );
 
                     while bind_groups_in_drawing_order.len() <= ui_image.ui_data.rect.drawing_order {
-                        bind_groups_in_drawing_order.push((Vec::new(), Vec::new()))
+                        bind_groups_in_drawing_order.push((Vec::new(), Vec::new(), Vec::new()))
                     }
 
-                    let (im, pb) =
+                    let (im, pb, sc) =
                         &mut bind_groups_in_drawing_order[ui_image.ui_data.rect.drawing_order];
 
                     im.push(
-                        (image_bind_group, ui_image.get_is_visible_cloned_arc())
+                        (image_bind_group, ui_image.ui_data.get_is_visible_cloned_arc())
                     )
                 },
                 UIElement::ProgressBar(ui_progress_bar) => {
@@ -495,15 +613,92 @@ impl UIRenderer {
                     );
 
                     while bind_groups_in_drawing_order.len() <= ui_progress_bar.ui_data.rect.drawing_order {
-                        bind_groups_in_drawing_order.push((Vec::new(), Vec::new()))
+                        bind_groups_in_drawing_order.push((Vec::new(), Vec::new(), Vec::new()))
                     }
 
-                    let (im, pb) =
+                    let (im, pb, sc) =
                         &mut bind_groups_in_drawing_order[ui_progress_bar.ui_data.rect.drawing_order];
 
                     pb.push(
-                        (progress_bar_bind_group, ui_progress_bar.get_is_visible_cloned_arc())
+                        (progress_bar_bind_group, ui_progress_bar.ui_data.get_is_visible_cloned_arc())
                     );
+                },
+                UIElement::ScannerDisplay(scanner) => {
+                    
+                    let rect_transform_buffer = device.create_buffer_init(
+                        &BufferInitDescriptor {
+                            label: Some("rect transform buffer"),
+                            contents: bytemuck::cast_slice(&[
+                                scanner
+                                    .ui_data
+                                    .rect
+                                    .get_rect_transform_uniform(
+                                        1.0,
+                                        screen_aspect,
+                                        None,
+                                    )
+                            ]),
+                            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+                        }
+                    );
+
+                    let scanner_data_buffer = device.create_buffer_init(
+                        &BufferInitDescriptor {
+                            label: Some("scanner data buffer"),
+                            contents: bytemuck::cast_slice(&[
+                                scanner.get_scanner_data_uniform()
+                            ]),
+                            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+                        }
+                    );
+
+
+        // @group(0) @binding(0) var<uniform> rect_transform: RectTransformUniform;
+        // @group(0) @binding(1) var<uniform> dynamic_data: OtherDynamicData;
+        // @group(0) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
+        // @group(0) @binding(3) var<uniform> scanner_data: ScannerData;
+
+
+                    let scanner_bind_group = device.create_bind_group(
+                        &wgpu::BindGroupDescriptor {
+                            layout: &scanner_bind_group_layout ,
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: rect_transform_buffer.as_entire_binding(),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: other_dynamic_data_buffer.as_entire_binding(),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 2,
+                                    resource: player_forms_data_buffer.as_entire_binding(),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 3,
+                                    resource: scanner_data_buffer.as_entire_binding(),
+                                }
+                            ],
+                            label: Some("scanner_bind_group"),
+                        }
+                    );
+
+                    scanner.initialize(
+                        rect_transform_buffer,
+                        scanner_data_buffer,
+                    );
+
+                    while bind_groups_in_drawing_order.len() <= scanner.ui_data.rect.drawing_order {
+                        bind_groups_in_drawing_order.push((Vec::new(), Vec::new(), Vec::new()))
+                    }
+
+                    let (im, pb, sc) =
+                        &mut bind_groups_in_drawing_order[scanner.ui_data.rect.drawing_order];
+
+                    sc.push(
+                        (scanner_bind_group, scanner.ui_data.get_is_visible_cloned_arc())
+                    )
                 }
             }
         }
@@ -511,6 +706,7 @@ impl UIRenderer {
         UIRenderer {
             image_render_pipeline,
             progress_bar_render_pipeline,
+            scanner_render_pipeline,
 
             bind_groups_in_drawing_order,
 
@@ -530,7 +726,7 @@ impl UIRenderer {
 
     ) {
 
-        for (image_bgs, progerss_bar_bgs) in &self.bind_groups_in_drawing_order {
+        for (image_bgs, progerss_bar_bgs, scanner_bgs) in &self.bind_groups_in_drawing_order {
 
             for (bindgroup, is_visible) in image_bgs {
     
@@ -580,6 +776,34 @@ impl UIRenderer {
                     });
             
                     render_pass.set_pipeline(&self.progress_bar_render_pipeline);
+                    render_pass.set_bind_group(0, bindgroup, &[]);
+                    render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
+                    render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                    render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
+        
+                }
+            }
+
+            for (bindgroup, is_visible) in scanner_bgs {
+    
+                if *is_visible.lock().unwrap() {
+    
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+            
+                    render_pass.set_pipeline(&self.scanner_render_pipeline);
                     render_pass.set_bind_group(0, bindgroup, &[]);
                     render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
                     render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
