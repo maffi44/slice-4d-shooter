@@ -26,7 +26,7 @@ use crate::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicCollider,
             PhysicsSystem
-        }, render::VisualElement, ui::{UIElement, UIElementType, UISystem}
+        }, render::VisualElement, ui::{RectSize, UIElement, UIElementType, UIImage, UISystem}
     },
     transform::Transform
 };
@@ -51,7 +51,9 @@ pub struct PlayerInnerState {
     pub transform: Transform,
     pub hp: i32,
     pub is_alive: bool,
-    pub is_enable: bool
+    pub is_enable: bool,
+    pub crosshair_target_size: f32,
+    pub crosshair_size: f32,
     // pub weapon_offset: Vec4,
 }
 
@@ -71,6 +73,9 @@ impl PlayerInnerState {
             hp: 0,
             is_alive,
             is_enable,
+            crosshair_target_size: 0.04,
+            crosshair_size: 0.04,
+
         }
     }
 }
@@ -155,6 +160,10 @@ const W_SCANNER_EXPANDING_SPEED: f32 = 7.5;
 
 pub const TIME_TO_DIE_SLOWLY: f32 = 0.5;
 
+const CROSSHAIR_INCREASING_SPEED: f32 = 0.35f32;
+const CROSSHAIR_DECREASING_SPEED: f32 = 0.04f32;
+const CROSSHAIR_MAX_SIZE: f32 = 0.038;
+const CROSSHAIR_MIN_SIZE: f32 = 0.028;
 
 pub enum PlayerMessages {
     DealDamageAndAddForce(u32, Vec4, Vec4),
@@ -358,6 +367,30 @@ impl Actor for Player {
                master.current_input.clone()
             }   
         };
+
+        let crosshair = ui_system.get_mut_ui_element(&UIElementType::Crosshair);
+
+        if let UIElement::Image(crosshair) = crosshair {
+            crosshair.ui_data.rect.size = RectSize::LockedHeight(self.inner_state.crosshair_size);
+        }
+
+        self.inner_state.crosshair_target_size = self.inner_state.crosshair_target_size
+            .min(CROSSHAIR_MAX_SIZE); 
+
+        if self.inner_state.crosshair_size < self.inner_state.crosshair_target_size {
+
+            self.inner_state.crosshair_size += CROSSHAIR_INCREASING_SPEED*delta;
+
+            if self.inner_state.crosshair_size >= self.inner_state.crosshair_target_size {
+                self.inner_state.crosshair_size = self.inner_state.crosshair_target_size;
+                
+                self.inner_state.crosshair_target_size = CROSSHAIR_MIN_SIZE;
+            }
+        } else {
+            self.inner_state.crosshair_size =
+                (self.inner_state.crosshair_size - CROSSHAIR_DECREASING_SPEED*delta)
+                .max(CROSSHAIR_MIN_SIZE);
+        }
 
         if self.inner_state.is_alive {
 

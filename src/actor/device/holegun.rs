@@ -81,6 +81,8 @@ impl HoleGun {
         charging_time: f32,
         color: Vec3,
     ) {
+        player.crosshair_target_size += 1.0;
+
         audio_system.remove_sound(
             self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
         );

@@ -22,6 +22,7 @@ const TEMPERATURE_SHOT_INCR: f32 = 4.15;
 const TEMPERTURE_TO_DELTA_MULT: f32 = 21.5;
 const DAMAGE: u32 = 5;
 const FORCE_ON_HIT: f32 = 0.8;
+const CROSSHAIR_INCREASE_ON_SHOOT: f32 = 0.2;
 
 pub struct MachineGun {
     temperature: f32,
@@ -243,6 +244,9 @@ impl Device for MachineGun {
                     audio_system,
                     engine_handle,
                 );
+
+                player.crosshair_target_size += CROSSHAIR_INCREASE_ON_SHOOT;
+
                 self.temperature += TEMPERATURE_SHOT_INCR;
                 if self.shooting_range < MAX_SHOOTING_RANGE {
                     self.shooting_range += MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_INCR_SPEED * 1.0/FIRE_RATE;

@@ -127,6 +127,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
+                            drawing_order: 0,
                         },
                         true,
                         None,
@@ -149,6 +150,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
+                            drawing_order: 0,
                         },
                         true,
                         None,
@@ -166,11 +168,12 @@ impl UISystem {
                             anchor: RectAnchor::CenterDown,
                             position: Vec2::new(0.0, -1.0),
                             size: RectSize::LockedBoth(
-                                0.9, 0.01
+                                0.9, 0.013
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
+                            drawing_order: 0,
                         },
                         true,
                         None,
@@ -188,12 +191,13 @@ impl UISystem {
                             anchor: RectAnchor::CenterCenter,
                             position: Vec2::new(0.0, -0.3),
                             size: RectSize::LockedBoth(
-                                0.03,
-                                0.05
+                                0.0315,
+                                0.053
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
+                            drawing_order: 1,
                         },
                         true,
                         Some(UIElementType::Scanner),
@@ -217,6 +221,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
+                            drawing_order: 1,
                         },
                         true,
                         Some(UIElementType::Scanner),
@@ -240,6 +245,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
+                            drawing_order: 1,
                         },
                         true,
                         Some(UIElementType::Scanner),
@@ -262,6 +268,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
+                            drawing_order: 0,
                         },
                         true,
                         None,
@@ -288,6 +295,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
                             transparency: 1.0,
+                            drawing_order: 0,
                         },
                         true,
                         None,
@@ -527,7 +535,8 @@ pub struct UIRect {
     pub rotation_around_rect_center: f32,
     pub rotation_around_screen_center: f32,
 
-    pub transparency: f32
+    pub transparency: f32,
+    pub drawing_order: usize,
 }
 
 impl UIRect {

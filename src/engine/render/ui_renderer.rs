@@ -59,14 +59,16 @@ const RECT_VERTICES: &[Vertex] = &[
 
 const INDICES: &[u16] = &[0, 1, 2, 0, 3, 1];
 
+type BindGroupsVector = Vec<(BindGroup, Arc<Mutex<bool>>)>;
+
 
 pub struct UIRenderer {
 
     image_render_pipeline: wgpu::RenderPipeline,
     progress_bar_render_pipeline: wgpu::RenderPipeline,
 
-    images_bind_groups: Vec<(BindGroup, Arc<Mutex<bool>>)>,
-    progress_bars_bind_groups: Vec<(BindGroup, Arc<Mutex<bool>>)>,
+    // first vector in bundle element is for image bind grups, second is for progress bar bind groups 
+    bind_groups_in_drawing_order: Vec<(BindGroupsVector, BindGroupsVector)>,
 
     rect_vertex_buffer: wgpu::Buffer,
     rect_index_buffer: wgpu::Buffer,
@@ -312,8 +314,10 @@ impl UIRenderer {
             ..Default::default()
         });
 
-        let mut images_bind_groups = Vec::new();
-        let mut progress_bars_bind_groups = Vec::new();
+        let mut bind_groups_in_drawing_order = Vec::new();
+
+        // first vector in bundle is for image bind grups, second is for progress bar bind groups 
+        bind_groups_in_drawing_order.push((Vec::new(), Vec::new()));
 
         let mut textures_views: HashMap<TextureType, (TextureView, (u32,u32))> = HashMap::new();
 
@@ -381,9 +385,16 @@ impl UIRenderer {
                         rect_transform_buffer
                     );
 
-                    images_bind_groups.push(
+                    while bind_groups_in_drawing_order.len() <= ui_image.ui_data.rect.drawing_order {
+                        bind_groups_in_drawing_order.push((Vec::new(), Vec::new()))
+                    }
+
+                    let (im, pb) =
+                        &mut bind_groups_in_drawing_order[ui_image.ui_data.rect.drawing_order];
+
+                    im.push(
                         (image_bind_group, ui_image.get_is_visible_cloned_arc())
-                    );
+                    )
                 },
                 UIElement::ProgressBar(ui_progress_bar) => {
 
@@ -483,7 +494,14 @@ impl UIRenderer {
                         progress_bar_value_buffer,
                     );
 
-                    progress_bars_bind_groups.push(
+                    while bind_groups_in_drawing_order.len() <= ui_progress_bar.ui_data.rect.drawing_order {
+                        bind_groups_in_drawing_order.push((Vec::new(), Vec::new()))
+                    }
+
+                    let (im, pb) =
+                        &mut bind_groups_in_drawing_order[ui_progress_bar.ui_data.rect.drawing_order];
+
+                    pb.push(
                         (progress_bar_bind_group, ui_progress_bar.get_is_visible_cloned_arc())
                     );
                 }
@@ -494,8 +512,7 @@ impl UIRenderer {
             image_render_pipeline,
             progress_bar_render_pipeline,
 
-            images_bind_groups,
-            progress_bars_bind_groups,
+            bind_groups_in_drawing_order,
 
             rect_num_indices,
             rect_vertex_buffer,
@@ -513,61 +530,65 @@ impl UIRenderer {
 
     ) {
 
-        for (bindgroup, is_visible) in &self.images_bind_groups {
+        for (image_bgs, progerss_bar_bgs) in &self.bind_groups_in_drawing_order {
 
-            if *is_visible.lock().unwrap() {
-
-                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Render Pass"),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })],
-                    depth_stencil_attachment: None,
-                    timestamp_writes: None,
-                    occlusion_query_set: None,
-                });
-        
-                render_pass.set_pipeline(&self.image_render_pipeline);
-                render_pass.set_bind_group(0, bindgroup, &[]);
-                render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
-                render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
+            for (bindgroup, is_visible) in image_bgs {
     
+                if *is_visible.lock().unwrap() {
+    
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+            
+                    render_pass.set_pipeline(&self.image_render_pipeline);
+                    render_pass.set_bind_group(0, bindgroup, &[]);
+                    render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
+                    render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                    render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
+        
+                }
+            }
+    
+            for (bindgroup, is_visible) in progerss_bar_bgs {
+    
+                if *is_visible.lock().unwrap() {
+    
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+            
+                    render_pass.set_pipeline(&self.progress_bar_render_pipeline);
+                    render_pass.set_bind_group(0, bindgroup, &[]);
+                    render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
+                    render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                    render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
+        
+                }
             }
         }
 
-        for (bindgroup, is_visible) in &self.progress_bars_bind_groups {
-
-            if *is_visible.lock().unwrap() {
-
-                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Render Pass"),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })],
-                    depth_stencil_attachment: None,
-                    timestamp_writes: None,
-                    occlusion_query_set: None,
-                });
-        
-                render_pass.set_pipeline(&self.progress_bar_render_pipeline);
-                render_pass.set_bind_group(0, bindgroup, &[]);
-                render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
-                render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
-    
-            }
-        }
     }
 
 }
