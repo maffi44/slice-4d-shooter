@@ -2690,5 +2690,9 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
     );
 
+    let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32);
+
+    color *= v;
+
     return vec4<f32>(color, 1.0);
 }
