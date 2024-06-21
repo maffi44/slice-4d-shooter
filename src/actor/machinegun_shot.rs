@@ -45,7 +45,7 @@ const BEAM_START_RADIUS: f32 = 0.02;
 const BEAM_FINAL_RADIUS: f32 = 0.06;
 const BEAM_GROWING_SPEED: f32 = 3.0;
 
-const COLOR: Vec3 = Vec3::new(50.0, 0.0, 0.0);
+const COLOR: Vec3 = Vec3::new(10.0, 0.8, 0.0);
 
 pub struct MachinegunShot {
     id: Option<ActorID>,

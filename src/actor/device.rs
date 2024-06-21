@@ -81,6 +81,17 @@ pub trait Device {
         player: &mut PlayerInnerState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
+    ) {}
+
+    fn activate(
+        &mut self,
+        player_id: ActorID,
+        player: &mut PlayerInnerState,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
     ) {}
 

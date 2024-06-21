@@ -609,15 +609,15 @@ fn get_players_screen_effects(world: &World) -> &PlayerScreenEffects {
     }
 }
 
-
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct OtherDynamicData {
     dynamic_shapes_arrays_metadata: ShapesArraysMetadata,
     spherical_areas_metadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
-    empty_bytes1: [u32;3],
+    empty_bytes0: u32,
+    empty_bytes1: u32,
+    empty_bytes2: u32,
     beam_areas_amount: u32,
     player_forms_amount: u32,
     w_scanner_radius: f32,
@@ -716,7 +716,9 @@ impl Default for OtherDynamicData {
             dynamic_shapes_arrays_metadata: ShapesArraysMetadata::default(),
             spherical_areas_metadata: SphericalAreasMetadata::default(),
             camera_data: CameraUniform::default(),
-            empty_bytes1: [0;3],
+            empty_bytes0: 0u32,
+            empty_bytes1: 0u32,
+            empty_bytes2: 0u32,
             beam_areas_amount: 0,
             player_forms_amount: 0,
             w_scanner_intesity: 0.0,

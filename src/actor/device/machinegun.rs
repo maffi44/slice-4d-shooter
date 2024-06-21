@@ -19,9 +19,10 @@ const MAX_SHOOTING_RANGE: f32 = 0.009;
 const SHOOTING_RANGE_INCR_SPEED: f32 = 15.0;
 const SHOOTING_RANGE_DCR_SPEED: f32 = 15.0;
 const TEMPERATURE_SHOT_INCR: f32 = 4.15;
-const TEMPERTURE_TO_DELTA_MULT: f32 = 21.5;
+const MACHINEGUN_COOLING_SPEED: f32 = 15.5;
 const DAMAGE: u32 = 5;
 const FORCE_ON_HIT: f32 = 0.8;
+
 const CROSSHAIR_INCREASE_ON_SHOOT: f32 = 0.2;
 
 pub struct MachineGun {
@@ -52,8 +53,8 @@ impl MachineGun {
     }
 
     fn cool_machinegun(&mut self, delta: f32) {
-        if self.temperature > delta * TEMPERTURE_TO_DELTA_MULT {
-            self.temperature -= delta * TEMPERTURE_TO_DELTA_MULT;
+        if self.temperature > delta * MACHINEGUN_COOLING_SPEED {
+            self.temperature -= delta * MACHINEGUN_COOLING_SPEED;
         } else {
             self.temperature = 0.0;
         }
@@ -266,7 +267,7 @@ impl Device for MachineGun {
             }
         }
 
-        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
+        let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBar);
 
         if let UIElement::ProgressBar(bar) = bar {
             let value = {
@@ -306,7 +307,7 @@ impl Device for MachineGun {
             self.cool_machinegun(delta);
             self.time_from_prev_shot += delta;
 
-            let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
+            let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBar);
 
             if let UIElement::ProgressBar(bar) = bar {
                 let value = {
@@ -315,6 +316,40 @@ impl Device for MachineGun {
                 };
                 
                 bar.set_bar_value(value)
+            }
+    }
+
+    fn deactivate(
+            &mut self,
+            player_id: ActorID,
+            player: &mut PlayerInnerState,
+            physic_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
+            engine_handle: &mut EngineHandle,
+        ) {
+
+            let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBar);
+
+            if let UIElement::ProgressBar(bar) = bar {
+                *bar.ui_data.is_visible.lock().unwrap() = false;
+            }
+    }
+
+    fn activate(
+            &mut self,
+            player_id: ActorID,
+            player: &mut PlayerInnerState,
+            physic_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
+            engine_handle: &mut EngineHandle,
+        ) {
+            
+            let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBar);
+
+            if let UIElement::ProgressBar(bar) = bar {
+                *bar.ui_data.is_visible.lock().unwrap() = true;
             }
     }
 }

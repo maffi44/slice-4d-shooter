@@ -238,7 +238,9 @@ struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     spherical_areas_meatadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
-    empty_bytes1: vec3<u32>,
+    empty_bytes0: u32,
+    empty_bytes1: u32,
+    empty_bytes2: u32,
     beam_areas_amount: u32,
     player_forms_amount: u32,
     w_scanner_radius: f32,
@@ -2659,6 +2661,34 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     // color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
 
     // color.r += (dist_and_depth.y / f32(MAX_STEPS));
+
+    // making damage effect
+    let q = (inn.position.xy+vec2(1.0))/2.0;
+
+    let hurt_col = max(
+        clamp(0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.3),0.0,1.0),
+        (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
+    );
+    color.r *= clamp(hurt_col*4.0, 0.0, 1.0);
+    color.g *= hurt_col;
+    color.b *= hurt_col;
+
+    // making death effect
+    let death_eff_col = max(
+        clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
+        (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
+    );
+    color *= death_eff_col;
+
+    var bw_col = clamp(color, vec3(color.r), vec3(100.0));
+    bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
+    bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
+
+    color = mix(
+        color,
+        bw_col*(bw_col*1.4),
+        clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
+    );
 
     return vec4<f32>(color, 1.0);
 }

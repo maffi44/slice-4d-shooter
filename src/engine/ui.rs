@@ -58,8 +58,9 @@ pub enum TextureType {
     HeathBarTexture,
     HeathBarMask,
     EnergyGunBarTexture,
-    RightGunBarMask,
+    EnergyGunBarMask,
     MachinegunBarTexture,
+    MachinegunBarMask,
     Crosshair,
     ScannerTexture,
     ScannerPointer,
@@ -98,8 +99,12 @@ impl UISystem {
             include_bytes!("../assets/textures/energy_gun_bar_texture_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::RightGunBarMask,
-            include_bytes!("../assets/textures/right_bar_mask_hud.png").as_slice()
+            TextureType::EnergyGunBarMask,
+            include_bytes!("../assets/textures/energy_gun_bar_mask_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::MachinegunBarMask,
+            include_bytes!("../assets/textures/machinegun_bar_mask_hud.png").as_slice()
         );
         texture_sources.insert(
             TextureType::MachinegunBarTexture,
@@ -158,7 +163,7 @@ impl UISystem {
                             anchor: RectAnchor::CenterDown,
                             position: Vec2::new(0.0, -1.0),
                             size: RectSize::LockedWight(
-                                0.320
+                                0.322
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -173,30 +178,30 @@ impl UISystem {
                 )
             )
         );
-        ui_elements.insert(
-            UIElementType::HUDBottomLine,
-            UIElement::Image(
-                UIImage::new(
-                    UIData::new(
-                        UIRect {
-                            anchor: RectAnchor::CenterDown,
-                            position: Vec2::new(0.0, -1.0),
-                            size: RectSize::LockedBoth(
-                                0.9, 0.013
-                            ),
-                            rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
-                            transparency: 1.0,
-                            drawing_order: 0,
-                            transform_buffer: None,
-                        },
-                        true,
-                        None,
-                    ),
-                    TextureType::BottomLine
-                )
-            )
-        );
+        // ui_elements.insert(
+        //     UIElementType::HUDBottomLine,
+        //     UIElement::Image(
+        //         UIImage::new(
+        //             UIData::new(
+        //                 UIRect {
+        //                     anchor: RectAnchor::CenterDown,
+        //                     position: Vec2::new(0.0, -1.0),
+        //                     size: RectSize::LockedWight(
+        //                         0.562
+        //                     ),
+        //                     rotation_around_rect_center: 0.0,
+        //                     rotation_around_screen_center: 0.0,
+        //                     transparency: 1.0,
+        //                     drawing_order: 0,
+        //                     transform_buffer: None,
+        //                 },
+        //                 true,
+        //                 None,
+        //             ),
+        //             TextureType::BottomLine
+        //         )
+        //     )
+        // );
         ui_elements.insert(
             UIElementType::ScannerHPointer,
             UIElement::Image(
@@ -344,8 +349,8 @@ impl UISystem {
                     ),
                     TextureType::HeathBarTexture,
                     TextureType::HeathBarMask,
-                    0.02,
-                    0.98,
+                    0.17,
+                    0.95,
                     ProgressBarDirection::LeftRight,
                 )
             )
@@ -372,9 +377,38 @@ impl UISystem {
                         
                     ),
                     TextureType::EnergyGunBarTexture,
-                    TextureType::RightGunBarMask,
-                    0.98,
-                    0.02,
+                    TextureType::EnergyGunBarMask,
+                    0.95,
+                    0.17,
+                    ProgressBarDirection::RightLeft,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::MachinegunBar,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                        
+                    ),
+                    TextureType::MachinegunBarTexture,
+                    TextureType::MachinegunBarMask,
+                    0.95,
+                    0.17,
                     ProgressBarDirection::RightLeft,
                 )
             )

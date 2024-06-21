@@ -176,6 +176,10 @@ const CROSSHAIR_DECREASING_SPEED: f32 = 0.04f32;
 const CROSSHAIR_MAX_SIZE: f32 = 0.038;
 const CROSSHAIR_MIN_SIZE: f32 = 0.028;
 
+const GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED: f32 = 10.0;
+const DEATH_EFFECT_COEF_INCREASE_SPEED: f32 = 10.0;
+const DEATH_EFFECT_COEF_DECREASE_SPEED: f32 = 3.0;
+
 pub enum PlayerMessages {
     DealDamageAndAddForce(u32, Vec4, Vec4),
     NewPeerConnected(PeerId),
@@ -223,25 +227,43 @@ impl Actor for Player {
                     SpecificActorMessage::PLayerMessages(message) => {
                         match message {
                             PlayerMessages::Telefrag => {
-                                self.die(true, engine_handle, physic_system, audio_system);
+                                self.die(
+                                    true,
+                                    engine_handle,
+                                    physic_system,
+                                    audio_system,
+                                    ui_system,
+                                );
                             }
 
                             PlayerMessages::DieImmediately => {
-                                self.die(true, engine_handle, physic_system, audio_system);
+                                self.die(
+                                    true,
+                                    engine_handle,
+                                    physic_system,
+                                    audio_system,
+                                    ui_system,
+                                );
                             }
 
                             PlayerMessages::DieSlowly => {
-                                self.die(false, engine_handle, physic_system, audio_system);
+                                self.die(
+                                    true,
+                                    engine_handle,
+                                    physic_system,
+                                    audio_system,
+                                    ui_system,
+                                );
                             }
 
                             PlayerMessages::DealDamageAndAddForce(damage, force, _) => {
                                 self.get_damage_and_add_force(
                                     *damage as i32,
                                     *force,
-                                    engine_handle,
                                     physic_system,
                                     audio_system,
                                     ui_system,
+                                    engine_handle,
                                 );
                             }
 
@@ -403,7 +425,16 @@ impl Actor for Player {
                 .max(CROSSHAIR_MIN_SIZE);
         }
 
+
+        self.screen_effects.getting_damage_screen_effect -= delta * GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED;
+        self.screen_effects.getting_damage_screen_effect = self.screen_effects.getting_damage_screen_effect.clamp(0.0, 1.0);
+
+        self.make_hud_transparency_as_death_screen_effect(ui_system);
+
         if self.inner_state.is_alive {
+
+            self.screen_effects.death_screen_effect -= delta*DEATH_EFFECT_COEF_DECREASE_SPEED;
+            self.screen_effects.death_screen_effect = self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
             let mut x = self.view_angle.x;
             let mut y = self.view_angle.y;
@@ -602,9 +633,19 @@ impl Actor for Player {
                     ActiveHandsSlot::Zero,
                     physic_system,
                     audio_system,
+                    ui_system,
                     engine_handle,
                 );
                 self.active_hands_slot = ActiveHandsSlot::Zero;
+
+                self.hands_slot_0.activate(
+                    self.get_id().expect("Player have not ActorID"),
+                    &mut self.inner_state,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
             }
     
             if input.activate_hand_slot_1.is_action_just_pressed() {
@@ -613,9 +654,19 @@ impl Actor for Player {
                         ActiveHandsSlot::First,
                         physic_system,
                         audio_system,
+                        ui_system,
                         engine_handle,
                     );
                     self.active_hands_slot = ActiveHandsSlot::First;
+
+                    self.hands_slot_1.as_mut().unwrap().activate(
+                        self.id.expect("Player have not ActorID"),
+                        &mut self.inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
                 }
             }
     
@@ -625,9 +676,19 @@ impl Actor for Player {
                         ActiveHandsSlot::Second,
                         physic_system,
                         audio_system,
+                        ui_system,
                         engine_handle,
                     );
                     self.active_hands_slot = ActiveHandsSlot::Second;
+
+                    self.hands_slot_2.as_mut().unwrap().activate(
+                        self.id.expect("Player have not ActorID"),
+                        &mut self.inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
                 }
             }
     
@@ -637,9 +698,19 @@ impl Actor for Player {
                         ActiveHandsSlot::Third,
                         physic_system,
                         audio_system,
+                        ui_system,
                         engine_handle,
                     );
                     self.active_hands_slot = ActiveHandsSlot::Third;
+
+                    self.hands_slot_3.as_mut().unwrap().activate(
+                        self.id.expect("Player have not ActorID"),
+                        &mut self.inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
                 }
             }
     
@@ -788,6 +859,9 @@ impl Actor for Player {
             //while player is not alive
 
             self.after_death_timer += delta;
+
+            self.screen_effects.death_screen_effect += delta*DEATH_EFFECT_COEF_INCREASE_SPEED;
+            self.screen_effects.death_screen_effect = self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
             match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
@@ -1001,11 +1075,13 @@ impl Player {
         &mut self,
         damage: i32,
         force: Vec4,
-        engine_handle: &mut EngineHandle,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
     ) {
+
+        self.screen_effects.getting_damage_screen_effect = 1.0;
 
         self.inner_state.hp -= damage;
         self.inner_state.collider.add_force(force);
@@ -1026,13 +1102,25 @@ impl Player {
 
         if self.inner_state.hp <= 0 {
             if damage >= PLAYER_MAX_HP {
-                self.die(true, engine_handle, physic_system, audio_system);
+                self.die(
+                    true,
+                    engine_handle,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                );
             } else {
 
                 // self.die(false, engine_handle, physic_system, audio_system);
                 
                 // temproral solution
-                self.die(true, engine_handle, physic_system, audio_system);
+                self.die(
+                    true,
+                    engine_handle,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                );
             }
         }
     }
@@ -1041,6 +1129,7 @@ impl Player {
         new_active_slot: ActiveHandsSlot,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
     ) {
         let my_id = self.get_id().expect("Player have nit ActorID");
@@ -1055,6 +1144,7 @@ impl Player {
                             &mut self.inner_state,
                             physic_system,
                             audio_system,
+                            ui_system,
                             engine_handle
                         );
                 }
@@ -1068,7 +1158,8 @@ impl Player {
                             &mut self.inner_state,
                             physic_system,
                             audio_system,
-                            engine_handle
+                            ui_system,
+                            engine_handle,
                         );
                 }
             }
@@ -1081,7 +1172,8 @@ impl Player {
                             &mut self.inner_state,
                             physic_system,
                             audio_system,
-                            engine_handle
+                            ui_system,
+                            engine_handle,
                         );
                 }
             }
@@ -1094,7 +1186,8 @@ impl Player {
                             &mut self.inner_state,
                             physic_system,
                             audio_system,
-                            engine_handle
+                            ui_system,
+                            engine_handle,
                         );
                 }
             }
@@ -1134,11 +1227,79 @@ impl Player {
         }
     }
 
+    fn make_hud_transparency_as_death_screen_effect(&mut self, ui: &mut UISystem) {
+        let a = 1.0 - self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
+
+        if let UIElement::Image(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::Scanner);
+
+        if let UIElement::Image(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointer);
+
+        if let UIElement::Image(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrow);
+
+        if let UIElement::Image(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrow);
+
+        if let UIElement::Image(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBar);
+
+        if let UIElement::ProgressBar(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::EnergyGunBar);
+
+        if let UIElement::ProgressBar(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunBar);
+
+        if let UIElement::ProgressBar(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplay);
+
+        if let UIElement::ScannerDisplay(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplay);
+
+        if let UIElement::ScannerDisplay(elem) = hud_elem {
+            elem.ui_data.rect.transparency = a;
+        }
+
+    }
+
     fn play_die_effects(&mut self, engine_handle: &mut EngineHandle) {
         
         let players_death_explode = PlayersDeathExplosion::new(
             self.get_transform().get_position()
         );
+
+        self.screen_effects.death_screen_effect = 0.0;
+        self.screen_effects.getting_damage_screen_effect = 1.0;
 
         engine_handle.send_command(
             Command {
@@ -1181,30 +1342,59 @@ impl Player {
         engine_handle: &mut EngineHandle,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
 
     ) {
         let my_id = self.get_id().expect("Player have not ActorID");
 
         match self.active_hands_slot {
             ActiveHandsSlot::Zero => {
-                self.hands_slot_0.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+                self.hands_slot_0.deactivate(
+                    my_id,
+                    &mut self.inner_state,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
 
             },
             ActiveHandsSlot::First => {
                 if let Some(device) = self.hands_slot_1.as_mut() {
-                    device.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+                    device.deactivate(
+                        my_id,
+                        &mut self.inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
                 }
 
             },
             ActiveHandsSlot::Second => {
                 if let Some(device) = self.hands_slot_2.as_mut() {
-                    device.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+                    device.deactivate(
+                        my_id,
+                        &mut self.inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
                 }
 
             },
             ActiveHandsSlot::Third => {
                 if let Some(device) = self.hands_slot_3.as_mut() {
-                    device.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+                    device.deactivate(
+                        my_id,
+                        &mut self.inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
                 }
 
             }
@@ -1212,7 +1402,14 @@ impl Player {
 
         for device in self.devices.iter_mut() {
             if let Some(device) = device {
-                device.deactivate(my_id, &mut self.inner_state, physic_system, audio_system, engine_handle);
+                device.deactivate(
+                    my_id,
+                    &mut self.inner_state,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
             }
         }
 

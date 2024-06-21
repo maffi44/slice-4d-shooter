@@ -29,7 +29,7 @@ use crate::{
             NetCommand,
             NetMessage,
             RemoteMessage
-        }, physics::PhysicsSystem, render::VisualElement, ui::UISystem, world::static_object::{
+        }, physics::PhysicsSystem, render::VisualElement, ui::{UIElement, UIElementType, UISystem}, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
@@ -38,18 +38,25 @@ use crate::{
 };
 
 pub struct HoleGun {
-    charging_time: f32,
     shooted_on_this_charge: bool,
     is_charging: bool,
     color: Vec3,
     volume_area: Vec<VolumeArea>,
     shooted_from_pivot_point_dir: Vec4,
     charging_sound: Option<Handle<SoundSource>>,
+
+    energy: f32,
+    current_shot_charging_energy: f32,
 }
 
 pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
 pub const CHARGING_COEF: f32 = 0.7;
 pub const MAX_CHARGING_TIME: f32 = 3.4;
+
+pub const MAX_ENERGY: f32 = 60.0;
+pub const ENERGY_DECREASING_SPEED: f32 = 20.0;
+pub const ENERGY_INCREASING_SPEED: f32 = 20.0;
+pub const ENERGY_SHOT_COST: f32 = 9.0;
 
 impl HoleGun {
     pub fn new() -> Self {
@@ -61,13 +68,15 @@ impl HoleGun {
         );
 
         HoleGun {
-            charging_time: 0.0,
             shooted_on_this_charge: false,
             color: HOLE_GUN_COLOR,
             volume_area: Vec::with_capacity(1),
             shooted_from_pivot_point_dir,
             is_charging: false,
-            charging_sound: None
+            charging_sound: None,
+
+            energy: 100.0,
+            current_shot_charging_energy: 0.0,
         }
     }
 
@@ -78,7 +87,7 @@ impl HoleGun {
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
-        charging_time: f32,
+        charging_energy: f32,
         color: Vec3,
     ) {
         player.crosshair_target_size += 1.0;
@@ -87,10 +96,12 @@ impl HoleGun {
             self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
         );
 
+        let volume_area = self.volume_area.pop().expect("Hole Gun doesn't have volume area on shoot");
+        
         audio_system.spawn_non_spatial_sound(
             Sound::HolegunShot,
-            (charging_time/ (MAX_CHARGING_TIME*2.0)).powf(1.6).clamp(0.1, 0.44), 
-        ((MAX_CHARGING_TIME*0.2+1.0) - charging_time*0.2) as f64,
+            (charging_energy*0.5/ (MAX_CHARGING_TIME*2.0)).powf(1.6).clamp(0.1, 0.44), 
+        ((MAX_CHARGING_TIME*0.2+1.0) - charging_energy*0.5*0.2) as f64,
             false,
             true,
             fyrox_sound::source::Status::Playing,
@@ -105,8 +116,6 @@ impl HoleGun {
             (player.transform.get_rotation().inverse() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
-
-        let volume_area = self.volume_area.pop().expect("Hole Gun doesn't have volume area on shoot");
         
         let volume_area_radius = match &volume_area {
             VolumeArea::SphericalVolumeArea(area) => {
@@ -121,7 +130,7 @@ impl HoleGun {
 
             let position = hit.hit_point;
             let shooted_from = player.transform.get_position() + weapon_offset;
-            let radius = charging_time*CHARGING_COEF;
+            let radius = charging_energy*CHARGING_COEF;
 
             let hited_players = physic_system.sphere_cast_on_dynamic_colliders(
                 position,
@@ -195,7 +204,7 @@ impl HoleGun {
         } else {
             let position = from + (direction * 700.0);
             let shooted_from = player.transform.get_position() + weapon_offset;
-            let radius = charging_time*CHARGING_COEF;
+            let radius = charging_energy*CHARGING_COEF;
 
             let miss = HoleGunMiss::new(
                 position,
@@ -267,7 +276,7 @@ impl Device for HoleGun {
             engine_handle: &mut EngineHandle,
             delta: f32,
         ) {
-        self.volume_area.clear();
+        
     }
 
     fn process_input(
@@ -284,7 +293,12 @@ impl Device for HoleGun {
     {
         if input.first_mouse.is_action_pressed() {
 
-            if !self.shooted_on_this_charge {
+            if self.energy < ENERGY_SHOT_COST {
+
+                self.energy += delta*ENERGY_INCREASING_SPEED;
+                self.energy = self.energy.clamp(0.0, MAX_ENERGY);
+
+            } else {
 
                 if !self.is_charging {
                     self.is_charging = true;
@@ -332,7 +346,12 @@ impl Device for HoleGun {
                     )
                 }
 
-                self.charging_time += delta * 1.6;
+                self.energy -= delta * ENERGY_DECREASING_SPEED;
+
+                self.energy = self.energy.clamp(0.0, MAX_ENERGY);
+                
+                self.current_shot_charging_energy += (delta*ENERGY_DECREASING_SPEED).min(self.energy);
+
 
                 // audio_system.sound_set_pitch_and_gain(
                 //     self.charging_sound.expect("Holegun have not charging sound on charging"),
@@ -349,7 +368,7 @@ impl Device for HoleGun {
                             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
                         };
 
-                        area.radius = self.charging_time * 0.08;
+                        area.radius = self.current_shot_charging_energy*0.03 * 0.08;
                         area.translation = shooted_from_offset;
                     }
                     _ => {
@@ -357,7 +376,9 @@ impl Device for HoleGun {
                     }
                 }
     
-                if self.charging_time > MAX_CHARGING_TIME {
+                if self.energy < ENERGY_SHOT_COST+ENERGY_DECREASING_SPEED*delta &&
+                    self.energy > ENERGY_SHOT_COST-ENERGY_DECREASING_SPEED*delta
+                {
     
                     self.shooted_on_this_charge = true;
                     
@@ -367,36 +388,85 @@ impl Device for HoleGun {
                         physic_system,
                         audio_system,
                         engine_handle,
-                        self.charging_time,
+                        self.current_shot_charging_energy*0.12+ENERGY_SHOT_COST*0.04,
                         self.color,
                     );
     
-                    self.charging_time = 0.0;
+                    self.current_shot_charging_energy = 0.0;
+                    self.energy = 0.0;
+                    
                     self.is_charging = false;
 
                 }
+
+
             }
+
         } else {
 
             self.shooted_on_this_charge = false;
 
-            if self.charging_time > 0.0 {
+            if self.is_charging {
 
-                self.shoot(
-                    player_id,
-                    player,
-                    physic_system,
-                    audio_system,
-                    engine_handle,
-                    self.charging_time,
-                    self.color,
-                );
+                if self.current_shot_charging_energy > 0.0 && self.energy >= ENERGY_SHOT_COST
+                {
+                    self.shoot(
+                        player_id,
+                        player,
+                        physic_system,
+                        audio_system,
+                        engine_handle,
+                        self.current_shot_charging_energy*0.12+ENERGY_SHOT_COST*0.04,
+                        self.color,
+                    );
+    
+                    self.current_shot_charging_energy = 0.0;
+                    self.energy -= ENERGY_SHOT_COST;
+                    self.energy = self.energy.clamp(0.0, MAX_ENERGY);
+                    
+                } else {
 
-                self.charging_time = 0.0;
+                    audio_system.remove_sound(
+                        self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
+                    );
+            
+                    let volume_area = self.volume_area.pop().expect("Hole Gun doesn't have volume area on shoot");
+
+                    self.current_shot_charging_energy = 0.0;
+
+                }
+
                 self.is_charging = false;
             }
+
+            self.energy += delta*ENERGY_INCREASING_SPEED;
+
+            self.energy = self.energy.clamp(0.0, MAX_ENERGY);
+        }
+
+        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
+
+        if let UIElement::ProgressBar(bar) = bar {
+            bar.set_bar_value(self.energy / MAX_ENERGY)
         }
     }
+
+    fn process_while_deactive(
+            &mut self,
+            player_id: ActorID,
+            player: &mut PlayerInnerState,
+            input: &ActionsFrameState,
+            physic_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
+            engine_handle: &mut EngineHandle,
+            delta: f32,
+        ) {
+            self.energy += delta*ENERGY_INCREASING_SPEED;
+
+            self.energy = self.energy.clamp(0.0, MAX_ENERGY);
+    }
+
 
     fn deactivate(
         &mut self,
@@ -404,12 +474,13 @@ impl Device for HoleGun {
         player: &mut PlayerInnerState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
     ) {
         self.shooted_on_this_charge = false;
         
         if self.is_charging {
-            if self.charging_time > 0.0 {
+            if self.current_shot_charging_energy > 0.0 {
 
                 self.shoot(
                     player_id,
@@ -417,13 +488,40 @@ impl Device for HoleGun {
                     physic_system,
                     audio_system,
                     engine_handle,
-                    self.charging_time,
+                    self.current_shot_charging_energy*0.12+ENERGY_SHOT_COST*0.04,
                     self.color,
                 );
 
-                self.charging_time = 0.0;
-                self.is_charging = false;
+                self.current_shot_charging_energy = 0.0;
+                self.energy -= ENERGY_SHOT_COST;
+                self.energy = self.energy.clamp(0.0, MAX_ENERGY);
             }
+            self.is_charging = false;
+        }
+
+        self.volume_area.clear();
+
+
+        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
+
+        if let UIElement::ProgressBar(bar) = bar {
+            *bar.ui_data.is_visible.lock().unwrap() = false;
+        }
+    }
+
+    fn activate(
+        &mut self,
+        player_id: ActorID,
+        player: &mut PlayerInnerState,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
+    ) {
+        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
+
+        if let UIElement::ProgressBar(bar) = bar {
+            *bar.ui_data.is_visible.lock().unwrap() = true;
         }
     }
 }
