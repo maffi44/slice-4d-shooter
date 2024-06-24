@@ -119,7 +119,13 @@ impl World {
                 if let Some(player) = self.actors.get_mut(&id) {
                     
                     if let ActorWrapper::Player(player) = player {
-                        player.respawn(spawn_position, engine_handle, physics_system, ui_system);
+                        player.respawn(
+                            spawn_position,
+                            physics_system,
+                            ui_system,
+                            audio_system,
+                            engine_handle
+                        );
                     } else {
                         panic!("Player send wrong ID into RespawnPlayer command. Actor with this ID is not player")
                     }
@@ -133,7 +139,15 @@ impl World {
                     let player = self.actors.get_mut(&self.main_player_id).expect("World have not actor with main_player_id");
                     
                     if let ActorWrapper::Player(player) = player {
-                        player.respawn(spawn_position, engine_handle, physics_system, ui_system);
+                        
+                        player.respawn(
+                            spawn_position,
+                            physics_system,
+                            ui_system,
+                            audio_system,
+                            engine_handle
+                        );
+
                     } else {
                         panic!("Actor with main_player_id is not Player");
                     }

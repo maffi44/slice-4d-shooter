@@ -167,6 +167,11 @@ pub struct Player {
     rotating_around_w_sound_handle: Handle<SoundSource>,
     rotating_around_w_sound_pitch: f64,
     rotating_around_w_sound_gain: f32,
+
+    shifting_along_w_sound_handle: Handle<SoundSource>,
+    shifting_along_w_sound_pitch: f64,
+    shifting_along_w_sound_gain: f32,
+    player_previous_w_position: f32,
 }
 
 pub const PLAYER_MAX_HP: i32 = 100;
@@ -562,6 +567,50 @@ impl Actor for Player {
                 base_pitch,//D + addition_pitch,
                 gain
             );
+
+
+
+
+            let shift_pitch = {
+                1.0.lerp(
+                    1.5,
+                    0.5 +
+                    (
+                        (self.get_position().w - self.player_previous_w_position) *
+                        10.0
+                    ).clamp(-0.5, 0.5)
+                )
+            };
+
+            let shift_gain = {
+                0.0.lerp(
+                    1.0,
+                    (
+                        (self.get_position().w - self.player_previous_w_position).abs() *
+                        20.0
+                    ).clamp(0.0, 1.0)
+                )
+            };
+
+            // let addition_pitch = {
+            //     self.rotating_around_w_sound_pitch * (1.0-delta as f64*22.0) +
+            //     ((prev_zw - zw) as f64).abs() * 2.0
+            // };
+
+            // self.rotating_around_w_sound_pitch = addition_pitch;
+
+            // let gain = {
+            //     self.rotating_around_w_sound_gain * (1.0-(delta*42.0)) +
+            //     (prev_zw - zw).abs() * 10.0
+            // };
+
+            self.rotating_around_w_sound_gain = gain;
+
+            audio_system.sound_set_pitch_and_gain(
+                self.shifting_along_w_sound_handle,
+                shift_pitch as f64,//D + addition_pitch,
+                shift_gain
+            );
     
             // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
     
@@ -775,6 +824,15 @@ impl Actor for Player {
                     if self.w_scanner_reloading_time >= W_SCANNER_RELOAD_TIME {
                         self.w_scanner_enable = true;
 
+                        audio_system.spawn_non_spatial_sound(
+                            Sound::ScannerSound,
+                            1.0,
+                            1.0,
+                            false,
+                            true,
+                            fyrox_sound::source::Status::Playing
+                        );
+
                         self.w_scanner_enemies_show_time = 0.0;
     
                         self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
@@ -876,6 +934,9 @@ impl Actor for Player {
     
                 intensity.clamp(0.0, 1.0)
             };
+
+            self.player_previous_w_position = self.get_position().w;
+
         } else {
             //while player is not alive
 
@@ -920,7 +981,7 @@ impl Actor for Player {
                     self.need_to_die_slowly = false;
                     self.inner_state.is_enable = false;
                     
-                    self.play_die_effects(engine_handle);
+                    self.play_die_effects(audio_system, engine_handle);
                 }
             }
 
@@ -1030,6 +1091,15 @@ impl Player {
             false,
             fyrox_sound::source::Status::Playing
         );
+
+        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::ShiftingAlongW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
         
         Player {
             id: None,
@@ -1071,6 +1141,11 @@ impl Player {
             rotating_around_w_sound_handle,
             rotating_around_w_sound_pitch: 1.0,
             rotating_around_w_sound_gain: 0.0,
+
+            shifting_along_w_sound_handle,
+            shifting_along_w_sound_pitch: 1.0,
+            shifting_along_w_sound_gain: 0.0,
+            player_previous_w_position: 0.0,
         }
     }
 
@@ -1127,6 +1202,15 @@ impl Player {
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
     ) {
+
+        audio_system.spawn_non_spatial_sound(
+            Sound::PlayerHited,
+            0.5,
+            1.0,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing
+        );
 
         self.screen_effects.getting_damage_screen_effect = 1.0;
 
@@ -1241,12 +1325,13 @@ impl Player {
         }
     }
 
-    fn telefrag(&mut self, engine_handle: &mut EngineHandle) {
-        self.die_immediately(engine_handle);
+    fn telefrag(&mut self, audio_system: &mut AudioSystem, engine_handle: &mut EngineHandle) {
+        self.die_immediately(audio_system, engine_handle);
     }
 
     fn die_immediately(
         &mut self,
+        audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
         if self.inner_state.is_alive {
@@ -1256,7 +1341,7 @@ impl Player {
             self.need_to_die_slowly = false;
             self.after_death_timer = 0.0;
 
-            self.play_die_effects(engine_handle);
+            self.play_die_effects(audio_system, engine_handle);
 
             engine_handle.send_command(
                 Command {
@@ -1339,8 +1424,17 @@ impl Player {
 
     }
 
-    fn play_die_effects(&mut self, engine_handle: &mut EngineHandle) {
+    fn play_die_effects(&mut self, audio_system: &mut AudioSystem, engine_handle: &mut EngineHandle) {
         
+        audio_system.spawn_non_spatial_sound(
+            Sound::PlayerDied,
+            0.37,
+            1.0,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing
+        );
+
         let players_death_explode = PlayersDeathExplosion::new(
             self.get_transform().get_position()
         );
@@ -1461,7 +1555,7 @@ impl Player {
         }
 
         if die_immediately {
-            self.die_immediately(engine_handle);
+            self.die_immediately(audio_system, engine_handle);
         } else {
             self.die_slowly(engine_handle);
         }
@@ -1472,13 +1566,23 @@ impl Player {
     pub fn respawn(
         &mut self,
         spawn_position: Vec4,
-        engine_handle: &mut EngineHandle,
         physics_system: &PhysicsSystem,
-        ui_system: &mut UISystem
+        ui_system: &mut UISystem,
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle,
     ) {
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
+
+        audio_system.spawn_non_spatial_sound(
+            Sound::PlayerRespawned,
+            1.0,
+            1.0,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing,
+        );
 
         let health_bar = ui_system.get_mut_ui_element(&UIElementType::HeathBar);
 
@@ -1502,6 +1606,8 @@ impl Player {
         self.inner_state.collider.reset_forces_and_velocity();
 
         self.inner_state.transform = Transform::from_position(spawn_position);
+
+        self.player_previous_w_position = spawn_position.w;
 
         let hits = physics_system.sphere_cast_on_dynamic_colliders(spawn_position, self.get_collider_radius());
 

@@ -46,6 +46,11 @@ pub enum Sound {
     PlayerExplosion,
     PlayerHitSignal,
     PlayerDeathSignal,
+    ScannerSound,
+    PlayerHited,
+    PlayerDied,
+    ShiftingAlongW,
+    PlayerRespawned,
 }
 pub struct AudioSystem {
     pub sound_engine: SoundEngine,
@@ -408,72 +413,81 @@ impl AudioSystem {
 
         let mut sounds = HashMap::with_capacity(20);
 
-        #[cfg(not(target_arch="wasm32"))]
-        let path = "/home/maffi/Dream/web-engine4d".to_string();
-        #[cfg(target_arch="wasm32")]
-        let path = "http://127.0.0.1:5500".to_string();
+        // #[cfg(not(target_arch="wasm32"))]
+        // let path = "/home/maffi/Dream/web-engine4d".to_string();
+        // #[cfg(target_arch="wasm32")]
+        // let path = "http://127.0.0.1:5500".to_string();
 
         let machinegun_shot_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_file(
-                path.clone() + "/src/assets/sounds/machinegun_shot.wav",
-                &fyrox_resource::io::FsResourceIo
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/machinegun_shot.wav").into(),
             )
-            .await
-            .expect("can't open file")
         ).expect("can't create sound buffer resourse");
 
         let holegun_shot_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_file(
-                path.clone() + "/src/assets/sounds/holegun_shot.wav",
-                &fyrox_resource::io::FsResourceIo
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/holegun_shot.wav").into()
             )
-            .await
-            .expect("can't open file")
         ).expect("can't create sound buffer resourse");
 
         let holegun_charging_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_file(
-                path.clone() + "/src/assets/sounds/holegun_charging.wav",
-                &fyrox_resource::io::FsResourceIo
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/holegun_charging.wav").into(),
             )
-            .await
-            .expect("can't open file")
         ).expect("can't create sound buffer resourse");
 
         let rotating_around_w_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_file(
-                path.clone() + "/src/assets/sounds/rotating_around_w.wav",
-                &fyrox_resource::io::FsResourceIo
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/rotating_around_w.wav").into(),
             )
-            .await
-            .expect("can't open file")
         ).expect("can't create sound buffer resourse");
 
         let player_explosion = SoundBufferResource::new_generic(
-            DataSource::from_file(
-                path.clone() + "/src/assets/sounds/player_explosion.wav",
-                &fyrox_resource::io::FsResourceIo
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/player_explosion.wav").into(),
             )
-            .await
-            .expect("can't open file")
         ).expect("can't create sound buffer resourse");
 
         let player_hit_signal = SoundBufferResource::new_generic(
-            DataSource::from_file(
-                path.clone() + "/src/assets/sounds/player_hit_signal.wav",
-                &fyrox_resource::io::FsResourceIo
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/player_hit_signal.wav").into(),
             )
-            .await
-            .expect("can't open file")
         ).expect("can't create sound buffer resourse");
 
         let player_death_signal = SoundBufferResource::new_generic(
-            DataSource::from_file(
-                path.clone() + "/src/assets/sounds/player_death_signal.wav",
-                &fyrox_resource::io::FsResourceIo
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/player_death_signal.wav").into(),
             )
-            .await
-            .expect("can't open file")
+        ).expect("can't create sound buffer resourse");
+
+        let scanner_sound = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/scanner_sound.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let player_hited = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/player_hited.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+        
+        let player_died = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/player_died.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let shifting_along_w = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/shifting_along_w.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let player_respawned = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/player_respawned.wav").into(),
+            )
         ).expect("can't create sound buffer resourse");
 
         sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
@@ -483,6 +497,11 @@ impl AudioSystem {
         sounds.insert(Sound::PlayerExplosion, player_explosion);
         sounds.insert(Sound::PlayerHitSignal, player_hit_signal);
         sounds.insert(Sound::PlayerDeathSignal, player_death_signal);
+        sounds.insert(Sound::ScannerSound, scanner_sound);
+        sounds.insert(Sound::PlayerHited, player_hited);
+        sounds.insert(Sound::PlayerDied, player_died);
+        sounds.insert(Sound::ShiftingAlongW, shifting_along_w);
+        sounds.insert(Sound::PlayerRespawned, player_respawned);
 
         AudioSystem {
             sound_engine,

@@ -1,12 +1,9 @@
-// Fragment shader
-
 struct CameraUniform {
     cam_pos: vec4<f32>,
     cam_zw_rot: mat4x4<f32>,
     cam_zy_rot: mat4x4<f32>,
     cam_zx_rot: mat4x4<f32>,
 }
-
 
 struct Shape {
     pos: vec4<f32>,
@@ -233,9 +230,6 @@ struct OutputMaterials {
     material_weights: array<f32, 16>,
 }
 
-
-
-
 struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     spherical_areas_meatadata: SphericalAreasMetadata,
@@ -276,12 +270,9 @@ struct OtherStaticData {
     w_cups_mat: i32,
     stickiness: f32,
 
-
-
     empty_byte1: u32,
     empty_byte2: u32,
     materials: array<Material, 32>,
-
 }
 
 
@@ -291,7 +282,6 @@ struct OtherStaticData {
 @group(0) @binding(3) var<uniform> neg_stickiness_shapes: array<Shape, 256>;
 
 @group(0) @binding(4) var<uniform> static_data: OtherStaticData;
-
 
 @group(0) @binding(5) var<uniform> dyn_normal_shapes: array<Shape, 256>;
 @group(0) @binding(6) var<uniform> dyn_negatives_shapes: array<Shape, 256>;
@@ -2652,24 +2642,14 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     let camera_position = dynamic_data.camera_data.cam_pos;
 
     let offset = find_intersections(camera_position, ray_direction);
-
-    
-
     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, offset); 
 
-    // var color = vec3(0.0);
-    // color.b = dist_and_depth.x/MAX_DIST;
-    // color.g = dist_and_depth.y/f32(MAX_STEPS);
-    // color.r = offset/MAX_DIST;
 
     var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
-
     var color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[0]);
 
     for (var i = 1u; i < mats.materials_count; i++) {
-
         let new_color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
-
         color = mix(color, new_color, mats.material_weights[i]);
     }
 
@@ -2678,14 +2658,11 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
     let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
-
     color = mix(color, sc_r_c.rgb, sc_r_c.a);
-
     color = mix(color, sc_e_c.rgb, sc_e_c.a*0.75);
 
+    // color correction
     color = pow(color, vec3(0.4545));
-    // color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
-    // color.r += (dist_and_depth.y / f32(MAX_STEPS));
 
     // making damage effect
     let q = (inn.position.xy+vec2(1.0))/2.0;

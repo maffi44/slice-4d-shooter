@@ -220,9 +220,23 @@ impl PlayersDoll {
     fn respawn(
         &mut self,
         spawn_position: Vec4,
+        physics_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
-        physics_system: &PhysicsSystem
     ) {
+        // audio_system.spawn_spatial_sound(
+        //     Sound::PlayerRespawned,
+        //     1.0,
+        //     1.0,
+        //     false,
+        //     true,
+        //     fyrox_sound::source::Status::Playing,
+        //     spawn_position,
+        //     1.5,
+        //     1.0,
+        //     50.0
+        // );
+
         let collider_radius = self.dynamic_colliders[0].radius;
 
         let hits = physics_system.sphere_cast_on_dynamic_colliders(spawn_position, collider_radius);
@@ -384,7 +398,12 @@ impl Actor for PlayersDoll {
                                 }
                             }
                             PlayersDollMessages::Respawn(spawn_position) => {
-                                self.respawn(*spawn_position, engine_handle, physics_system)
+                                self.respawn(
+                                    *spawn_position,
+                                    physics_system,
+                                    audio_system,
+                                    engine_handle
+                                );
                             }
                             PlayersDollMessages::SpawnHoleGunShotActor(
                                 position,
