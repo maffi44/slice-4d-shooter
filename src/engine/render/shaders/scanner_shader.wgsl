@@ -1,7 +1,9 @@
 // Fragment shader
 struct CameraUniform {
     cam_pos: vec4<f32>,
-    cam_rot: mat4x4<f32>,
+    cam_zw_rot: mat4x4<f32>,
+    cam_zy_rot: mat4x4<f32>,
+    cam_zx_rot: mat4x4<f32>,
 }
 
 struct SphericalAreasMetadata {
@@ -191,14 +193,19 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
 
-        let en_pos  = (dynamic_data.camera_data.cam_pos - dyn_player_forms[i].pos) / MAX_SCANNER_RADIUS;
+        var en_pos  = (dynamic_data.camera_data.cam_pos - dyn_player_forms[i].pos) / MAX_SCANNER_RADIUS;
         
         let visible = clamp(((sc_ring_radius + 0.1) - length(en_pos)) * 10.0, 0.0, 1.0);
 
         if scanner_data.orientation == 0 {
             en_a += clamp(pow(1.0- length(uv_pos-en_pos.zx*vec2(1.0,-1.0)), 4.0)*visible,0.0,1.0);
         } else {
-            en_a += clamp(pow(1.0- length(uv_pos-en_pos.zw*vec2(-1.0,1.0)), 4.0)*visible,0.0,1.0);
+
+            en_pos *= vec4(1.0, 1.0, -1.0, 1.0);
+
+            en_pos *= dynamic_data.camera_data.cam_zx_rot;
+            
+            en_a += clamp(pow(1.0- length(uv_pos-en_pos.zw*vec2(1.0,1.0)), 4.0)*visible,0.0,1.0);
         }
     }
 

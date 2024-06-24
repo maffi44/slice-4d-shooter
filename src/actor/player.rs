@@ -65,6 +65,10 @@ pub struct PlayerInnerState {
     pub is_enable: bool,
     pub crosshair_target_size: f32,
     pub crosshair_size: f32,
+
+    pub zw_rotation: Mat4,
+    pub zy_rotation: Mat4,
+    pub zx_rotation: Mat4,
     // pub weapon_offset: Vec4,
 }
 
@@ -87,6 +91,9 @@ impl PlayerInnerState {
             crosshair_target_size: 0.04,
             crosshair_size: 0.04,
 
+            zw_rotation: Mat4::IDENTITY,
+            zy_rotation: Mat4::IDENTITY,
+            zx_rotation: Mat4::IDENTITY,
         }
     }
 }
@@ -485,29 +492,29 @@ impl Actor for Player {
             }
     
     
-            let normal_rotation = Mat4::from_cols_slice(&[
-                x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
-                0.0,        y.cos(),            -y.sin(),           0.0,
-                -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
-                0.0,        0.0,                0.0,                1.0
-            ]);
-    
-            // let xw_rotation = Mat4::from_cols_slice(&[
-            //     yw.cos(),    0.0,    0.0,    yw.sin(),
-            //     0.0,        1.0,    0.0,    0.0,
-            //     0.0,        0.0,    1.0,    0.0,
-            //     -yw.sin(),   0.0,    0.0,    yw.cos()
+            // let normal_rotation = Mat4::from_cols_slice(&[
+            //     x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
+            //     0.0,        y.cos(),            -y.sin(),           0.0,
+            //     -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
+            //     0.0,        0.0,                0.0,                1.0
             // ]);
+
+            let zy_rotation = Mat4::from_rotation_x(-y);
+
+            let zx_rotation = Mat4::from_rotation_y(-x);
     
-            let yw_rotation = Mat4::from_cols_slice(&[
+            let zw_rotation = Mat4::from_cols_slice(&[
                 1.0,    0.0,    0.0,        0.0,
                 0.0,    1.0,    0.0,        0.0,
                 0.0,    0.0,    zw.cos(),   zw.sin(),
                 0.0,    0.0,    -zw.sin(),   zw.cos()
             ]);
+
+            self.inner_state.zw_rotation = zw_rotation;
+            self.inner_state.zy_rotation = zy_rotation;
+            self.inner_state.zx_rotation = zx_rotation;
     
-    
-            self.set_rotation_matrix(yw_rotation * normal_rotation);
+            self.set_rotation_matrix(zw_rotation * zy_rotation * zx_rotation);
     
             // self.set_rotation_matrix(Mat4::from_cols_slice(&[
             //     y.cos(),    0.0,    0.0,    y.sin(),
@@ -1054,6 +1061,18 @@ impl Player {
 
     pub fn get_rotation_matrix(&self) -> Mat4 {
         self.inner_state.transform.get_rotation()
+    }
+
+    pub fn get_zw_rotation_matrix(&self) -> Mat4 {
+        self.inner_state.zw_rotation
+    }
+
+    pub fn get_zy_rotation_matrix(&self) -> Mat4 {
+        self.inner_state.zy_rotation
+    }
+
+    pub fn get_zx_rotation_matrix(&self) -> Mat4 {
+        self.inner_state.zx_rotation
     }
 
     pub fn get_player_visual_effects(&self) -> &PlayerScreenEffects {

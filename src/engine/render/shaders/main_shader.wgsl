@@ -2,7 +2,9 @@
 
 struct CameraUniform {
     cam_pos: vec4<f32>,
-    cam_rot: mat4x4<f32>,
+    cam_zw_rot: mat4x4<f32>,
+    cam_zy_rot: mat4x4<f32>,
+    cam_zx_rot: mat4x4<f32>,
 }
 
 
@@ -2294,7 +2296,7 @@ fn add_w_scanner_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec3<f3
 
         if dist > dynamic_data.w_scanner_radius {
 
-            let view_dir = vec4(0.0, 0.0, -1.0, 0.0)*dynamic_data.camera_data.cam_rot;
+            let view_dir = vec4(0.0, 0.0, -1.0, 0.0)*dynamic_data.camera_data.cam_zw_rot*dynamic_data.camera_data.cam_zy_rot*dynamic_data.camera_data.cam_zx_rot;
 
             let y_coof = clamp(pow((1.0-dot(ray_dir, view_dir))*3.0,2.4), 0.0, 1.0);
             let y_coof2 = clamp(pow(1.0-ray_dir.y , 6.0), 0.0, 1.0);
@@ -2627,7 +2629,10 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     uv.x *= dynamic_data.screen_aspect;
 
     var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
-    ray_direction *= dynamic_data.camera_data.cam_rot;
+
+    ray_direction *= dynamic_data.camera_data.cam_zw_rot;
+    ray_direction *= dynamic_data.camera_data.cam_zy_rot;
+    ray_direction *= dynamic_data.camera_data.cam_zx_rot;
 
     let camera_position = dynamic_data.camera_data.cam_pos;
 
@@ -2690,7 +2695,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
     );
 
-    let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32);
+    let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
 
     color *= v;
 

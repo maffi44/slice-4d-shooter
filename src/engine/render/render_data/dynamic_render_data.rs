@@ -646,10 +646,12 @@ impl OtherDynamicData {
     ) {
 
         let cam_pos;
-        let cam_rot;
+        let cam_zw_rot;
+        let cam_zy_rot;
+        let cam_zx_rot;
 
-        let explore_w_pos;
-        let explore_w_coef;
+        // let explore_w_pos;
+        // let explore_w_coef;
 
         self.bouding_box_pos_side = frame_bounding_box.pos_surfs.to_array();
         self.bouding_box_neg_side = frame_bounding_box.neg_surfs.to_array();
@@ -657,10 +659,13 @@ impl OtherDynamicData {
         if let Some(actor) = world.actors.get(&world.main_player_id) {
             if let ActorWrapper::Player(main_player) = actor {
                 cam_pos = main_player.get_position() + Vec4::Y * main_player.get_collider_radius() * 0.98;
-                cam_rot = main_player.get_rotation_matrix();
+                
+                cam_zw_rot = main_player.get_zw_rotation_matrix().to_cols_array();
+                cam_zy_rot = main_player.get_zy_rotation_matrix().to_cols_array();
+                cam_zx_rot = main_player.get_zx_rotation_matrix().to_cols_array();        
 
-                explore_w_pos = main_player.get_explore_w_position();
-                explore_w_coef = main_player.get_explore_w_coefficient();
+                // explore_w_pos = main_player.get_explore_w_position();
+                // explore_w_coef = main_player.get_explore_w_coefficient();
             } else {
                 panic!("main camera is connected to the actor that is not a Player")
             }
@@ -673,7 +678,9 @@ impl OtherDynamicData {
 
         self.camera_data = CameraUniform {
             cam_pos: cam_pos.to_array(),
-            cam_rot: cam_rot.to_cols_array(),
+            cam_zw_rot: cam_zw_rot,
+            cam_zy_rot: cam_zy_rot,
+            cam_zx_rot: cam_zx_rot,
         };
 
         self.dynamic_shapes_arrays_metadata = shapes_arrays_metadata;
@@ -738,17 +745,23 @@ impl Default for OtherDynamicData {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
     pub cam_pos: [f32; 4],
-    pub cam_rot: [f32; 16],
+    cam_zw_rot: [f32; 16],
+    cam_zy_rot: [f32; 16],
+    cam_zx_rot: [f32; 16],
 }
 
 impl Default for CameraUniform {
     fn default() -> Self {
         let cam_pos = [0.0, 0.0, 0.0, 0.0];
-        let cam_rot = Mat4::IDENTITY.to_cols_array();
+        let cam_zw_rot = Mat4::IDENTITY.to_cols_array();
+        let cam_zy_rot = Mat4::IDENTITY.to_cols_array();
+        let cam_zx_rot = Mat4::IDENTITY.to_cols_array();
 
         CameraUniform {
             cam_pos,
-            cam_rot,
+            cam_zw_rot,
+            cam_zy_rot,
+            cam_zx_rot,
         }
     }
 }

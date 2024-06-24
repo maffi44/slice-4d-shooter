@@ -57,6 +57,7 @@ pub const MAX_ENERGY: f32 = 60.0;
 pub const ENERGY_DECREASING_SPEED: f32 = 20.0;
 pub const ENERGY_INCREASING_SPEED: f32 = 20.0;
 pub const ENERGY_SHOT_COST: f32 = 9.0;
+pub const CHARGING_ENERGY_MULT: f32 = 0.1;
 
 impl HoleGun {
     pub fn new() -> Self {
@@ -100,8 +101,8 @@ impl HoleGun {
         
         audio_system.spawn_non_spatial_sound(
             Sound::HolegunShot,
-            (charging_energy*0.5/ (MAX_CHARGING_TIME*2.0)).powf(1.6).clamp(0.1, 0.44), 
-        ((MAX_CHARGING_TIME*0.2+1.0) - charging_energy*0.5*0.2) as f64,
+            (charging_energy*0.9/ (MAX_CHARGING_TIME*2.0)).powf(1.6).clamp(0.1, 0.44), 
+        ((MAX_CHARGING_TIME*0.13+1.0) - charging_energy*0.5*0.2) as f64,
             false,
             true,
             fyrox_sound::source::Status::Playing,
@@ -388,7 +389,7 @@ impl Device for HoleGun {
                         physic_system,
                         audio_system,
                         engine_handle,
-                        self.current_shot_charging_energy*0.12+ENERGY_SHOT_COST*0.04,
+                        self.current_shot_charging_energy*CHARGING_ENERGY_MULT+ENERGY_SHOT_COST*0.04,
                         self.color,
                     );
     
@@ -416,7 +417,7 @@ impl Device for HoleGun {
                         physic_system,
                         audio_system,
                         engine_handle,
-                        self.current_shot_charging_energy*0.12+ENERGY_SHOT_COST*0.04,
+                        self.current_shot_charging_energy*CHARGING_ENERGY_MULT+ENERGY_SHOT_COST*0.04,
                         self.color,
                     );
     
@@ -488,7 +489,7 @@ impl Device for HoleGun {
                     physic_system,
                     audio_system,
                     engine_handle,
-                    self.current_shot_charging_energy*0.12+ENERGY_SHOT_COST*0.04,
+                    self.current_shot_charging_energy*CHARGING_ENERGY_MULT+ENERGY_SHOT_COST*0.04,
                     self.color,
                 );
 
