@@ -80,13 +80,18 @@ struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     spherical_areas_meatadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
-    empty_bytes1: vec3<u32>,
+    empty_byte0: u32,
+    empty_byte1: u32,
     beam_areas_amount: u32,
     player_forms_amount: u32,
+
     w_scanner_radius: f32,
-    w_scanner_intesity: f32,
+    w_scanner_ring_intesity: f32,
+    w_scanner_enemies_intesity: f32,
+
     death_screen_effect: f32,
     getting_damage_screen_effect: f32,
+    
     stickiness: f32,
     screen_aspect: f32,
     time: f32,
@@ -169,23 +174,23 @@ const MAX_SCANNER_RADIUS: f32 = 43.0;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
-    if dynamic_data.w_scanner_intesity == 0.0 {
-        return vec4(0.0);
-    }
+    // if dynamic_data.w_scanner_ring_intesity == 0.0 {
+    //     return vec4(0.0);
+    // }
 
     let uv_pos = (in.uv-vec2(0.5))*2.0;
 
     let dist_to_cntr = length(uv_pos);
 
-    if dist_to_cntr > 1.0 {
-        return vec4(0.0);
-    }
+    // if dist_to_cntr > 1.0 {
+    //     return vec4(0.0);
+    // }
 
     var col = vec4(1.0, 1.0, 1.0, 0.0);
 
     let sc_ring_radius = dynamic_data.w_scanner_radius / MAX_SCANNER_RADIUS;
 
-    let ring_a = pow(1.0-abs(dist_to_cntr-sc_ring_radius), 13.0);
+    let ring_a = pow(1.0-abs(dist_to_cntr-sc_ring_radius), 13.0)*dynamic_data.w_scanner_ring_intesity;
 
     col.a += ring_a;
 
@@ -198,22 +203,24 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let visible = clamp(((sc_ring_radius + 0.1) - length(en_pos)) * 10.0, 0.0, 1.0);
 
         if scanner_data.orientation == 0 {
-            en_a += clamp(pow(1.0- length(uv_pos-en_pos.zx*vec2(1.0,-1.0)), 4.0)*visible,0.0,1.0);
+            en_a += clamp(pow(1.0- length(uv_pos-en_pos.zx*vec2(1.0,-1.0)), 10.0)*visible,0.0,1.0);
         } else {
 
             en_pos *= vec4(1.0, 1.0, -1.0, 1.0);
 
             en_pos *= dynamic_data.camera_data.cam_zx_rot;
             
-            en_a += clamp(pow(1.0- length(uv_pos-en_pos.zw*vec2(1.0,1.0)), 4.0)*visible,0.0,1.0);
+            en_a += clamp(pow(1.0- length(uv_pos-en_pos.zw*vec2(1.0,1.0)), 10.0)*visible,0.0,1.0);
         }
     }
+
+    en_a *= dynamic_data.w_scanner_enemies_intesity*2.0;
 
     col.a += en_a;
     col.g -= en_a;
     col.b -= en_a;
 
-    col.a *= dynamic_data.w_scanner_intesity * rect_transform.transparency;
+    col.a *= rect_transform.transparency;
 
     return col;
 }

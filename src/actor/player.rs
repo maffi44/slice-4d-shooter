@@ -118,7 +118,8 @@ pub enum PlayersDeviceSlotNumber {
 pub struct PlayerScreenEffects {
     pub w_scanner_is_active: bool,
     pub w_scanner_radius: f32,
-    pub w_scanner_intesity: f32,
+    pub w_scanner_ring_intesity: f32,
+    pub w_scanner_enemies_intesity: f32,
 
     pub death_screen_effect: f32,
     pub getting_damage_screen_effect: f32,
@@ -158,6 +159,7 @@ pub struct Player {
     w_scanner_enable: bool,
     w_scanner_radius: f32,
     w_scanner_reloading_time: f32,
+    w_scanner_enemies_show_time: f32,
 
     after_death_timer: f32,
     need_to_die_slowly: bool,
@@ -172,7 +174,8 @@ pub const PLAYER_MAX_HP: i32 = 100;
 const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
 const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
 
-const W_SCANNER_RELOAD_TIME: f32 = 0.5;
+const W_SCANNER_RELOAD_TIME: f32 = 6.5;
+const W_SCANNER_SHOW_ENEMIES_TIME: f32 = 5.5;
 const W_SCANNER_MAX_RADIUS: f32 = 43.0;
 const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
 
@@ -771,6 +774,8 @@ impl Actor for Player {
                 if !self.w_scanner_enable {
                     if self.w_scanner_reloading_time >= W_SCANNER_RELOAD_TIME {
                         self.w_scanner_enable = true;
+
+                        self.w_scanner_enemies_show_time = 0.0;
     
                         self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
                     }
@@ -785,12 +790,16 @@ impl Actor for Player {
                     self.w_scanner_reloading_time = 0.0;
                 }
             }
+
+            self.w_scanner_enemies_show_time += delta;
     
             if !self.w_scanner_enable {
     
                 if self.w_scanner_reloading_time < W_SCANNER_RELOAD_TIME {
                     self.w_scanner_reloading_time += delta;
                 }
+
+                
             }
     
             if input.jump_w.is_action_just_pressed() {
@@ -855,10 +864,15 @@ impl Actor for Player {
     
             self.screen_effects.w_scanner_is_active = self.w_scanner_enable;
             self.screen_effects.w_scanner_radius = self.w_scanner_radius;
-            self.screen_effects.w_scanner_intesity = {
+            self.screen_effects.w_scanner_ring_intesity = {
                 let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
     
                 intensity /= W_SCANNER_MAX_RADIUS/3.0;
+    
+                intensity.clamp(0.0, 1.0)
+            };
+            self.screen_effects.w_scanner_enemies_intesity = {
+                let mut intensity = W_SCANNER_SHOW_ENEMIES_TIME - self.w_scanner_enemies_show_time;
     
                 intensity.clamp(0.0, 1.0)
             };
@@ -946,7 +960,19 @@ impl Actor for Player {
 
             self.screen_effects.w_scanner_is_active = self.w_scanner_enable;
             self.screen_effects.w_scanner_radius = self.w_scanner_radius;
-            self.screen_effects.w_scanner_intesity = {
+            self.screen_effects.w_scanner_ring_intesity = {
+                let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
+    
+                intensity /= W_SCANNER_MAX_RADIUS/3.0;
+    
+                intensity = intensity.clamp(0.0, 1.0);
+
+                intensity -= self.after_death_timer * 2.0;
+                    
+                intensity.clamp(0.0, 1.0)
+            };
+            self.screen_effects.w_scanner_enemies_intesity = {
+
                 let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
     
                 intensity /= W_SCANNER_MAX_RADIUS/3.0;
@@ -990,7 +1016,8 @@ impl Player {
         let screen_effects = PlayerScreenEffects {
             w_scanner_is_active: false,
             w_scanner_radius: 0.0,
-            w_scanner_intesity: 0.0,
+            w_scanner_ring_intesity: 0.0,
+            w_scanner_enemies_intesity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
         };
@@ -1036,6 +1063,7 @@ impl Player {
             w_scanner_enable: false,
             w_scanner_radius: 0.0,
             w_scanner_reloading_time: W_SCANNER_RELOAD_TIME,
+            w_scanner_enemies_show_time: W_SCANNER_SHOW_ENEMIES_TIME,
 
             after_death_timer: MIN_TIME_BEFORE_RESPAWN,
             need_to_die_slowly: false,
@@ -1466,7 +1494,7 @@ impl Player {
             panic!("Health Bar is not UIProgressBar")
         }
 
-        self.screen_effects.w_scanner_intesity = 0.0;
+        self.screen_effects.w_scanner_ring_intesity = 0.0;
         self.screen_effects.w_scanner_radius = 0.0;
         self.screen_effects.w_scanner_is_active = false;
         self.w_scanner_reloading_time = W_SCANNER_RELOAD_TIME;

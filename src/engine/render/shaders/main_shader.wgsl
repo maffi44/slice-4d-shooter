@@ -242,11 +242,13 @@ struct OtherDynamicData {
     camera_data: CameraUniform,
     empty_bytes0: u32,
     empty_bytes1: u32,
-    empty_bytes2: u32,
     beam_areas_amount: u32,
     player_forms_amount: u32,
+
     w_scanner_radius: f32,
-    w_scanner_intesity: f32,
+    w_scanner_ring_intesity: f32,
+    w_scanner_enemies_intesity: f32,
+
     death_screen_effect: f32,
     getting_damage_screen_effect: f32,
     stickiness: f32,
@@ -2289,10 +2291,10 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32) 
 // }
 
 
-fn add_w_scanner_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec3<f32> {
-    var scanner_color = vec3(0.0);
+fn w_scanner_ring_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec4<f32> {
+    var scanner_color = vec4(1.0,1.0,1.0,0.0);
     
-    if dynamic_data.w_scanner_intesity > 0.0 {
+    if dynamic_data.w_scanner_ring_intesity > 0.0 {
 
         if dist > dynamic_data.w_scanner_radius {
 
@@ -2301,45 +2303,58 @@ fn add_w_scanner_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec3<f3
             let y_coof = clamp(pow((1.0-dot(ray_dir, view_dir))*3.0,2.4), 0.0, 1.0);
             let y_coof2 = clamp(pow(1.0-ray_dir.y , 6.0), 0.0, 1.0);
 
-            scanner_color = vec3(0.13 * (y_coof+y_coof2));
-            scanner_color += vec3(y_coof2)*0.12;
+            scanner_color.a = 0.13 * (y_coof+y_coof2);
+            scanner_color.a += y_coof2*0.12;
 
-            scanner_color *= clamp((33.0 - dynamic_data.w_scanner_radius)/33.0, 0.0, 0.9);
+            scanner_color.a *= clamp((33.0 - dynamic_data.w_scanner_radius)/33.0, 0.0, 0.9);
         }
 
         let edge_intensity = clamp(pow(1.0 - abs(dist - dynamic_data.w_scanner_radius), 5.0), 0.0, 1.0);
         
-        scanner_color += vec3(edge_intensity*0.3, edge_intensity*0.5, edge_intensity);
+        scanner_color.a += edge_intensity;
 
-        scanner_color *= dynamic_data.w_scanner_intesity;
+        scanner_color.a = clamp(scanner_color.a, 0.0, 1.0);
 
-        for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+        scanner_color.a *= dynamic_data.w_scanner_ring_intesity;
 
-            let d = sd_sphere(pos - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
-
-            let visible = clamp((dynamic_data.w_scanner_radius - d) * 5.0, 0.0, 1.0);
-
-            let vis_d = length(
-                (
-                    (
-                        pos + ray_dir * min(
-                            dynamic_data.w_scanner_radius,
-                            length(pos.xyz - dyn_player_forms[i].pos.xyz)
-                        )
-                    ) - dyn_player_forms[i].pos
-                ).xyz
-            ) - dyn_player_forms[i].radius;
-
-            var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0) * visible;
-            red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0) * visible;
-            red *= dynamic_data.w_scanner_intesity * 2.0;
-            
-            scanner_color.r += red;
-        }
     }
 
+    // return clamp(scanner_color, vec3(0.0), vec3(1.0));
+    return scanner_color;
+}
+
+
+fn w_scanner_enemies_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec4<f32> {
+    var scanner_color = vec4(1.0,0.0,0.0,0.0);
     
-    return clamp(scanner_color, vec3(0.0), vec3(1.0));
+    
+    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+
+        let d = sd_sphere(pos - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
+
+        let visible = clamp((dynamic_data.w_scanner_radius - d) * 5.0, 0.0, 1.0);
+
+        let vis_d = length(
+            (
+                (
+                    pos + ray_dir * min(
+                        dynamic_data.w_scanner_radius,
+                        length(pos.xyz - dyn_player_forms[i].pos.xyz)
+                    )
+                ) - dyn_player_forms[i].pos
+            ).xyz
+        ) - dyn_player_forms[i].radius;
+
+        var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0) * visible;
+        red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0) * visible;
+        red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
+        
+        scanner_color.a += red;
+    }
+    
+    scanner_color.a = clamp(scanner_color.a, 0.0, 1.0);
+    
+    return scanner_color;
 }
 
 // fn get_soft_shadow( ro: vec4<f32>, rd: vec4<f32>) -> f32
@@ -2660,11 +2675,16 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
     color += 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
-    color += add_w_scanner_color(camera_position, dist_and_depth.x, ray_direction);
+
+    let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
+    let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
+
+    color = mix(color, sc_r_c.rgb, sc_r_c.a);
+
+    color = mix(color, sc_e_c.rgb, sc_e_c.a*0.75);
 
     color = pow(color, vec3(0.4545));
     // color += (0.007 - clamp(length(uv), 0.0, 0.007))*1000.0;
-
     // color.r += (dist_and_depth.y / f32(MAX_STEPS));
 
     // making damage effect
@@ -2695,6 +2715,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
     );
 
+    // making vignetting effect
     let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
 
     color *= v;

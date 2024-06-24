@@ -615,18 +615,23 @@ pub struct OtherDynamicData {
     dynamic_shapes_arrays_metadata: ShapesArraysMetadata,
     spherical_areas_metadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
+
     empty_bytes0: u32,
     empty_bytes1: u32,
-    empty_bytes2: u32,
+
     beam_areas_amount: u32,
     player_forms_amount: u32,
+
     w_scanner_radius: f32,
-    w_scanner_intesity: f32,
+    w_scanner_ring_intesity: f32,
+    w_scanner_enemies_intesity: f32,
+
     death_screen_effect: f32,
     getting_damage_screen_effect: f32,
     stickiness: f32,
     screen_aspect: f32,
     time: f32,
+
     bouding_box_pos_side: [f32;4],
     bouding_box_neg_side: [f32;4],
 }
@@ -698,19 +703,19 @@ impl OtherDynamicData {
         self.player_forms_amount = player_forms_amount;
 
         self.w_scanner_radius = {
+            players_screen_effects.w_scanner_radius
+        };
+        self.w_scanner_ring_intesity = {
             if players_screen_effects.w_scanner_is_active {
-                players_screen_effects.w_scanner_radius
+                players_screen_effects.w_scanner_ring_intesity
             } else {
                 0.0
             }
         };
-        self.w_scanner_intesity = {
-            if players_screen_effects.w_scanner_is_active {
-                players_screen_effects.w_scanner_intesity
-            } else {
-                0.0
-            }
+        self.w_scanner_enemies_intesity = {
+            players_screen_effects.w_scanner_enemies_intesity
         };
+
         self.death_screen_effect = players_screen_effects.death_screen_effect;
         self.getting_damage_screen_effect = players_screen_effects.getting_damage_screen_effect;
     }
@@ -725,11 +730,13 @@ impl Default for OtherDynamicData {
             camera_data: CameraUniform::default(),
             empty_bytes0: 0u32,
             empty_bytes1: 0u32,
-            empty_bytes2: 0u32,
             beam_areas_amount: 0,
             player_forms_amount: 0,
-            w_scanner_intesity: 0.0,
+
             w_scanner_radius: 0.0,
+            w_scanner_ring_intesity: 0.0,
+            w_scanner_enemies_intesity: 0.0,
+
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
             stickiness: 0.5,
