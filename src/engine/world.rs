@@ -119,6 +119,7 @@ impl World {
                 if let Some(player) = self.actors.get_mut(&id) {
                     
                     if let ActorWrapper::Player(player) = player {
+                        
                         player.respawn(
                             spawn_position,
                             physics_system,
@@ -126,7 +127,9 @@ impl World {
                             audio_system,
                             engine_handle
                         );
+
                     } else {
+                        
                         panic!("Player send wrong ID into RespawnPlayer command. Actor with this ID is not player")
                     }
                 } else {

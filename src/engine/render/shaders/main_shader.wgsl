@@ -2626,6 +2626,18 @@ fn vs_main(
     return out;
 }
 
+fn tv_hash(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+fn tv_noise(uv: vec2<f32>, time: f32) -> f32 {
+    let scale = 10.0;
+    let p = uv * scale + vec2<f32>(time);
+    return tv_hash(p);
+}
+
 
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
@@ -2664,16 +2676,25 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     // color correction
     color = pow(color, vec3(0.4545));
 
+    let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
+    
     // making damage effect
     let q = (inn.position.xy+vec2(1.0))/2.0;
+    
+    // making vignetting effect
+    let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
+    color *= v;
 
-    let hurt_col = max(
-        clamp(0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.3),0.0,1.0),
+    let hurt_coef = max(
+        clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
         (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
     );
-    color.r *= clamp(hurt_col*4.0, 0.0, 1.0);
-    color.g *= hurt_col;
-    color.b *= hurt_col;
+    // color.g *= clamp(hurt_coef*1.4, 0.0, 1.0);
+    // color.b *= clamp(hurt_coef*1.5, 0.0, 1.0);
+    // color.r *= hurt_coef;
+    color -= (1.0-hurt_coef)*0.2;
+
+    color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
 
     // making death effect
     let death_eff_col = max(
@@ -2682,9 +2703,12 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     );
     color *= death_eff_col;
 
+    // color = mix(vec3(tv_noise(uv*100.0, dynamic_data.time)),color, death_eff_col*0.7);
+
     var bw_col = clamp(color, vec3(color.r), vec3(100.0));
     bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
     bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
+    bw_col += (tv_noise - 0.5)*(1.0-death_eff_col*0.5)*0.3;
 
     color = mix(
         color,
@@ -2692,10 +2716,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
     );
 
-    // making vignetting effect
-    let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
-
-    color *= v;
+    
 
     return vec4<f32>(color, 1.0);
 }
