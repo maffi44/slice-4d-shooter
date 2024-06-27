@@ -221,7 +221,7 @@ impl PhysicsSystem {
     ) -> Vec<Hit> {
         let mut hits = Vec::with_capacity(4);
 
-        for dyn_sphere in &self.physics_state.dyn_spheres {
+        for dyn_sphere in &self.physics_state.player_forms {
             let vec_between_centers = casted_sphere_pos - dyn_sphere.position;
 
             if vec_between_centers.length() - (dyn_sphere.radius + casted_sphere_radius) < 0.0 {

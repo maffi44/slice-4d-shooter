@@ -172,7 +172,7 @@ pub struct PhysicsState {
     pub sph_cubes: CollidersShapeTypeArrays,
     pub inf_w_cubes: CollidersShapeTypeArrays,
 
-    pub dyn_spheres: Vec<PlayersDollCollider>,
+    pub player_forms: Vec<PlayersDollCollider>,
 
     pub w_floor: Option<WFloor>,
     pub w_roof: Option<WRoof>,
@@ -226,7 +226,7 @@ impl PhysicsState {
             spheres,
             sph_cubes,
 
-            dyn_spheres: Vec::with_capacity(4),
+            player_forms: Vec::with_capacity(4),
 
             w_floor: world.level.w_floor.clone(),
             w_roof: world.level.w_roof.clone(),
@@ -253,7 +253,7 @@ impl PhysicsState {
     }
 
     pub fn add_temporal_dynamic_collider(&mut self, collider: PlayersDollCollider) {
-        self.dyn_spheres.push(collider);
+        self.player_forms.push(collider);
     }
 
     pub fn clear_temporal_colliders(&mut self) {
@@ -262,7 +262,7 @@ impl PhysicsState {
         self.sph_cubes.clear_temporal_static_colliders();
         self.inf_w_cubes.clear_temporal_static_colliders();
 
-        self.dyn_spheres.clear();
+        self.player_forms.clear();
     }
 }
 

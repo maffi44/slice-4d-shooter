@@ -303,15 +303,15 @@ const STICKINESS_EFFECT_COEF: f32 = 3.1415926535897;
 
 var<private> w_plane_intersected: bool = false;
     
-var<private> st_noramls_intersected: bool = false;
-var<private> dyn_noramls_intersected: bool = false;
-var<private> st_negative_intersected: bool = false;
-var<private> dyn_negative_intersected: bool = false;
-var<private> st_stickiness_intersected: bool = false;
-var<private> dyn_stickiness_intersected: bool = false;
-var<private> st_neg_stickiness_intersected: bool = false;
-var<private> dyn_neg_stickiness_intersected: bool = false;
-var<private> player_forms_intersected: bool = false;
+// var<private> st_noramls_intersected: bool = true;
+// var<private> dyn_noramls_intersected: bool = true;
+// var<private> st_negative_intersected: bool = false;
+// var<private> dyn_negative_intersected: bool = false;
+// var<private> st_stickiness_intersected: bool = true;
+// var<private> dyn_stickiness_intersected: bool = true;
+// var<private> st_neg_stickiness_intersected: bool = false;
+// var<private> dyn_neg_stickiness_intersected: bool = false;
+// var<private> player_forms_intersected: bool = false;
 
 // var<private> st_cubes_intersected: bool = false;
 // var<private> dyn_cubes_intersected: bool = false;
@@ -355,7 +355,7 @@ fn rotate(angle: f32) -> mat2x2<f32> {
 }
 
 fn cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec4<f32>) -> vec2<f32> {  // can precompute if traversing a set of aligned boxes
-    let m = 1.0/rd;
+    let m = 1.0/(rd+0.000001);
     let n = m*ro;
     let k = abs(m)*size;
     let t1 = -n - k;
@@ -657,7 +657,7 @@ fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direct
 
     for (var i = 0; i < MAX_STEPS; i++) {
 
-        if total_dist > max_distance {
+        if total_dist > max_distance*2.0 {
             break;
         }
 
@@ -710,7 +710,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            st_stickiness_intersected = true;
+            // st_stickiness_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -723,7 +723,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            st_stickiness_intersected = true;
+            // st_stickiness_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -736,7 +736,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            st_stickiness_intersected = true;
+            // st_stickiness_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -749,7 +749,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            st_stickiness_intersected = true;
+            // st_stickiness_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -765,7 +765,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            dyn_stickiness_intersected = true;
+            // dyn_stickiness_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -778,7 +778,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            dyn_stickiness_intersected = true;
+            // dyn_stickiness_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -791,7 +791,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            dyn_stickiness_intersected = true;
+            // dyn_stickiness_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -804,7 +804,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            dyn_stickiness_intersected = true;
+            // dyn_stickiness_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -819,7 +819,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            st_noramls_intersected = true;
+            // st_noramls_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -832,7 +832,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            st_noramls_intersected = true;
+            // st_noramls_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -845,7 +845,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            st_noramls_intersected = true;
+            // st_noramls_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -858,7 +858,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            st_noramls_intersected = true;
+            // st_noramls_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -872,7 +872,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            dyn_noramls_intersected = true;
+            // dyn_noramls_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -885,7 +885,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            dyn_noramls_intersected = true;
+            // dyn_noramls_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -898,7 +898,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            dyn_noramls_intersected = true;
+            // dyn_noramls_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -911,224 +911,224 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            dyn_noramls_intersected = true;
+            // dyn_noramls_intersected = true;
             offset = min(offset, intr.x);
         }
     }
 
     // static negative stickiness shapes
-    for (var i = static_data.shapes_arrays_metadata.s_neg_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_cubes_amount + static_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
-        let intr = cube_intersection(
-            ro - neg_stickiness_shapes[i].pos,
-            rd,
-            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-        );
+    // for (var i = static_data.shapes_arrays_metadata.s_neg_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_cubes_amount + static_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+    //     let intr = cube_intersection(
+    //         ro - neg_stickiness_shapes[i].pos,
+    //         rd,
+    //         neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+    //     );
         
-        if intr.y > 0.0 {
-            st_neg_stickiness_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         st_neg_stickiness_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = static_data.shapes_arrays_metadata.s_neg_spheres_start; i < static_data.shapes_arrays_metadata.s_neg_spheres_amount + static_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
-        let intr = sph_intersection(
-            ro - neg_stickiness_shapes[i].pos,
-            rd,
-            neg_stickiness_shapes[i].size.x + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-        );
+    // for (var i = static_data.shapes_arrays_metadata.s_neg_spheres_start; i < static_data.shapes_arrays_metadata.s_neg_spheres_amount + static_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+    //     let intr = sph_intersection(
+    //         ro - neg_stickiness_shapes[i].pos,
+    //         rd,
+    //         neg_stickiness_shapes[i].size.x + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+    //     );
         
-        if intr.y > 0.0 {
-            st_neg_stickiness_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         st_neg_stickiness_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
-        let intr = cube_intersection(
-            ro - neg_stickiness_shapes[i].pos,
-            rd,
-            neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-        );
+    // for (var i = static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+    //     let intr = cube_intersection(
+    //         ro - neg_stickiness_shapes[i].pos,
+    //         rd,
+    //         neg_stickiness_shapes[i].size + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+    //     );
         
-        if intr.y > 0.0 {
-            st_neg_stickiness_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         st_neg_stickiness_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
-        let intr = inf_cube_intersection(
-            ro - neg_stickiness_shapes[i].pos,
-            rd,
-            neg_stickiness_shapes[i].size.xyz + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-        );
+    // for (var i = static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
+    //     let intr = inf_cube_intersection(
+    //         ro - neg_stickiness_shapes[i].pos,
+    //         rd,
+    //         neg_stickiness_shapes[i].size.xyz + neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+    //     );
         
-        if intr.y > 0.0 {
-            st_neg_stickiness_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         st_neg_stickiness_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    // dynamic negative stickiness shapes
-    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
-        let intr = cube_intersection(
-            ro - dyn_neg_stickiness_shapes[i].pos,
-            rd,
-            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-        );
+    // // dynamic negative stickiness shapes
+    // for (var i = dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+    //     let intr = cube_intersection(
+    //         ro - dyn_neg_stickiness_shapes[i].pos,
+    //         rd,
+    //         dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+    //     );
         
-        if intr.y > 0.0 {
-            dyn_neg_stickiness_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         dyn_neg_stickiness_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_amount + dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
-        let intr = sph_intersection(
-            ro - dyn_neg_stickiness_shapes[i].pos,
-            rd,
-            dyn_neg_stickiness_shapes[i].size.x + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-        );
+    // for (var i = dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_amount + dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+    //     let intr = sph_intersection(
+    //         ro - dyn_neg_stickiness_shapes[i].pos,
+    //         rd,
+    //         dyn_neg_stickiness_shapes[i].size.x + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+    //     );
         
-        if intr.y > 0.0 {
-            dyn_neg_stickiness_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         dyn_neg_stickiness_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
-        let intr = cube_intersection(
-            ro - dyn_neg_stickiness_shapes[i].pos,
-            rd,
-            dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-        );
+    // for (var i = dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+    //     let intr = cube_intersection(
+    //         ro - dyn_neg_stickiness_shapes[i].pos,
+    //         rd,
+    //         dyn_neg_stickiness_shapes[i].size + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+    //     );
         
-        if intr.y > 0.0 {
-            dyn_neg_stickiness_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         dyn_neg_stickiness_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
-        let intr = inf_cube_intersection(
-            ro - dyn_neg_stickiness_shapes[i].pos,
-            rd,
-            dyn_neg_stickiness_shapes[i].size.xyz + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-        );
+    // for (var i = dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
+    //     let intr = inf_cube_intersection(
+    //         ro - dyn_neg_stickiness_shapes[i].pos,
+    //         rd,
+    //         dyn_neg_stickiness_shapes[i].size.xyz + dyn_neg_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+    //     );
         
-        if intr.y > 0.0 {
-            dyn_neg_stickiness_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         dyn_neg_stickiness_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    // static negative shapes
-    for (var i = static_data.shapes_arrays_metadata.neg_cubes_start; i < static_data.shapes_arrays_metadata.neg_cubes_amount + static_data.shapes_arrays_metadata.neg_cubes_start; i++) {
-        let intr = cube_intersection(
-            ro - negatives_shapes[i].pos,
-            rd,
-            negatives_shapes[i].size + negatives_shapes[i].roundness
-        );
+    // // static negative shapes
+    // for (var i = static_data.shapes_arrays_metadata.neg_cubes_start; i < static_data.shapes_arrays_metadata.neg_cubes_amount + static_data.shapes_arrays_metadata.neg_cubes_start; i++) {
+    //     let intr = cube_intersection(
+    //         ro - negatives_shapes[i].pos,
+    //         rd,
+    //         negatives_shapes[i].size + negatives_shapes[i].roundness
+    //     );
         
-        if intr.y > 0.0 {
-            st_negative_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         st_negative_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = static_data.shapes_arrays_metadata.neg_spheres_start; i < static_data.shapes_arrays_metadata.neg_spheres_amount + static_data.shapes_arrays_metadata.neg_spheres_start; i++) {
-        let intr = sph_intersection(
-            ro - negatives_shapes[i].pos,
-            rd,
-            negatives_shapes[i].size.x + negatives_shapes[i].roundness
-        );
+    // for (var i = static_data.shapes_arrays_metadata.neg_spheres_start; i < static_data.shapes_arrays_metadata.neg_spheres_amount + static_data.shapes_arrays_metadata.neg_spheres_start; i++) {
+    //     let intr = sph_intersection(
+    //         ro - negatives_shapes[i].pos,
+    //         rd,
+    //         negatives_shapes[i].size.x + negatives_shapes[i].roundness
+    //     );
         
-        if intr.y > 0.0 {
-            st_negative_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         st_negative_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = static_data.shapes_arrays_metadata.neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.neg_sph_cubes_amount + static_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
-        let intr = cube_intersection(
-            ro - negatives_shapes[i].pos,
-            rd,
-            negatives_shapes[i].size + negatives_shapes[i].roundness
-        );
+    // for (var i = static_data.shapes_arrays_metadata.neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.neg_sph_cubes_amount + static_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+    //     let intr = cube_intersection(
+    //         ro - negatives_shapes[i].pos,
+    //         rd,
+    //         negatives_shapes[i].size + negatives_shapes[i].roundness
+    //     );
         
-        if intr.y > 0.0 {
-            st_negative_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         st_negative_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = static_data.shapes_arrays_metadata.neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.neg_inf_cubes_amount + static_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
-        let intr = inf_cube_intersection(
-            ro - negatives_shapes[i].pos,
-            rd,
-            negatives_shapes[i].size.xyz + negatives_shapes[i].roundness
-        );
+    // for (var i = static_data.shapes_arrays_metadata.neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.neg_inf_cubes_amount + static_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
+    //     let intr = inf_cube_intersection(
+    //         ro - negatives_shapes[i].pos,
+    //         rd,
+    //         negatives_shapes[i].size.xyz + negatives_shapes[i].roundness
+    //     );
         
-        if intr.y > 0.0 {
-            st_negative_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         st_negative_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    // dynamic negative shapes
-    for (var i = dynamic_data.shapes_arrays_metadata.neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_cubes_start; i++) {
-        let intr = cube_intersection(
-            ro - dyn_negatives_shapes[i].pos,
-            rd,
-            dyn_negatives_shapes[i].size + dyn_negatives_shapes[i].roundness
-        );
+    // // dynamic negative shapes
+    // for (var i = dynamic_data.shapes_arrays_metadata.neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_cubes_start; i++) {
+    //     let intr = cube_intersection(
+    //         ro - dyn_negatives_shapes[i].pos,
+    //         rd,
+    //         dyn_negatives_shapes[i].size + dyn_negatives_shapes[i].roundness
+    //     );
         
-        if intr.y > 0.0 {
-            dyn_negative_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         dyn_negative_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount + dynamic_data.shapes_arrays_metadata.neg_spheres_start; i++) {
-        let intr = sph_intersection(
-            ro - dyn_negatives_shapes[i].pos,
-            rd,
-            dyn_negatives_shapes[i].size.x + dyn_negatives_shapes[i].roundness
-        );
+    // for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount + dynamic_data.shapes_arrays_metadata.neg_spheres_start; i++) {
+    //     let intr = sph_intersection(
+    //         ro - dyn_negatives_shapes[i].pos,
+    //         rd,
+    //         dyn_negatives_shapes[i].size.x + dyn_negatives_shapes[i].roundness
+    //     );
         
-        if intr.y > 0.0 {
-            dyn_negative_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         dyn_negative_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
-        let intr = cube_intersection(
-            ro - dyn_negatives_shapes[i].pos,
-            rd,
-            dyn_negatives_shapes[i].size + dyn_negatives_shapes[i].roundness
-        );
+    // for (var i = dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+    //     let intr = cube_intersection(
+    //         ro - dyn_negatives_shapes[i].pos,
+    //         rd,
+    //         dyn_negatives_shapes[i].size + dyn_negatives_shapes[i].roundness
+    //     );
         
-        if intr.y > 0.0 {
-            dyn_negative_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         dyn_negative_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    for (var i = dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
-        let intr = inf_cube_intersection(
-            ro - dyn_negatives_shapes[i].pos,
-            rd,
-            dyn_negatives_shapes[i].size.xyz + dyn_negatives_shapes[i].roundness
-        );
+    // for (var i = dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
+    //     let intr = inf_cube_intersection(
+    //         ro - dyn_negatives_shapes[i].pos,
+    //         rd,
+    //         dyn_negatives_shapes[i].size.xyz + dyn_negatives_shapes[i].roundness
+    //     );
         
-        if intr.y > 0.0 {
-            dyn_negative_intersected = true;
-            // offset = min(offset, intr.x);
-        }
-    }
+    //     if intr.y > 0.0 {
+    //         dyn_negative_intersected = true;
+    //         // offset = min(offset, intr.x);
+    //     }
+    // }
 
-    // player forms
+    // // player forms
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
         let intr = sph_intersection(
             ro - dyn_player_forms[i].pos,
@@ -1137,7 +1137,7 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
         );
         
         if intr.y > 0.0 {
-            player_forms_intersected = true;
+            // player_forms_intersected = true;
             offset = min(offset, intr.x);
         }
     }
@@ -1394,41 +1394,8 @@ fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
 fn map(p: vec4<f32>) -> f32 {
     var d = MAX_DIST*2.0;
 
-    // static stickiness shapes
-    if st_stickiness_intersected {
-        for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
-            d = smin(d, sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
-        }
-        for (var i = static_data.shapes_arrays_metadata.s_spheres_start; i < static_data.shapes_arrays_metadata.s_spheres_amount + static_data.shapes_arrays_metadata.s_spheres_start; i++) {
-            d = smin(d, sd_sphere(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.x) - stickiness_shapes[i].roundness, static_data.stickiness);
-        }
-        for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-            d = smin(d, sd_sph_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
-        }
-        for (var i = static_data.shapes_arrays_metadata.s_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_inf_cubes_amount + static_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
-            d = smin(d, sd_inf_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.xyz) - stickiness_shapes[i].roundness, static_data.stickiness);
-        }
-    }
-
-    // dynamic stickiness
-    if dyn_stickiness_intersected {
-        for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
-            d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-        }
-        for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
-            d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-        }
-        for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-            d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-        }
-        for (var i = dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
-            d = smin(d, sd_inf_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.xyz) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-        }
-    }
-
-
     // static normal shapes
-    if st_noramls_intersected {
+    // if st_noramls_intersected {
         for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
             d = min(d, sd_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
         }
@@ -1441,10 +1408,10 @@ fn map(p: vec4<f32>) -> f32 {
         for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
             d = min(d, sd_inf_box(p - normal_shapes[i].pos, normal_shapes[i].size.xyz) - normal_shapes[i].roundness);
         }
-    }
+    // }
 
     // dynamic normal shapes
-    if dyn_noramls_intersected {
+    // if dyn_noramls_intersected {
         for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
             d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
         }
@@ -1457,11 +1424,43 @@ fn map(p: vec4<f32>) -> f32 {
         for (var i = dynamic_data.shapes_arrays_metadata.inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.inf_cubes_amount + dynamic_data.shapes_arrays_metadata.inf_cubes_start; i++) {
             d = min(d, sd_inf_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.xyz) - dyn_normal_shapes[i].roundness);
         }
-    }
+    // }
+
+    // static stickiness shapes
+    // if st_stickiness_intersected {
+        for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
+            d = smin(d, sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
+        }
+        for (var i = static_data.shapes_arrays_metadata.s_spheres_start; i < static_data.shapes_arrays_metadata.s_spheres_amount + static_data.shapes_arrays_metadata.s_spheres_start; i++) {
+            d = smin(d, sd_sphere(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.x) - stickiness_shapes[i].roundness, static_data.stickiness);
+        }
+        for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+            d = smin(d, sd_sph_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, static_data.stickiness);
+        }
+        for (var i = static_data.shapes_arrays_metadata.s_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_inf_cubes_amount + static_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+            d = smin(d, sd_inf_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.xyz) - stickiness_shapes[i].roundness, static_data.stickiness);
+        }
+    // }
+
+    // dynamic stickiness
+    // if dyn_stickiness_intersected {
+        for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
+            d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+        }
+        for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
+            d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+        }
+        for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+            d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+        }
+        for (var i = dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+            d = smin(d, sd_inf_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.xyz) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+        }
+    // }
 
     // static negative stickiness shapes
     var dd = MAX_DIST;
-    if st_neg_stickiness_intersected {
+    // if st_neg_stickiness_intersected {
         for (var i = static_data.shapes_arrays_metadata.s_neg_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_cubes_amount + static_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
             dd = smin(dd, sd_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
         }
@@ -1475,10 +1474,10 @@ fn map(p: vec4<f32>) -> f32 {
             dd = smin(dd, sd_inf_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.xyz) - neg_stickiness_shapes[i].roundness, static_data.stickiness);
         }
         d = max(d, -dd);
-    }
+    // }
 
     // dynamic negative stickiness shapes
-    if dyn_neg_stickiness_intersected {
+    // if dyn_neg_stickiness_intersected {
         var ddd = dd;
 
         for (var i = dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
@@ -1494,10 +1493,10 @@ fn map(p: vec4<f32>) -> f32 {
             ddd = smin(ddd, sd_inf_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.xyz) - dyn_neg_stickiness_shapes[i].roundness, static_data.stickiness);
         }
         d = max(d, -ddd);
-    }
+    // }
 
     // static negative shapes
-    if st_negative_intersected {
+    // if st_negative_intersected {
         for (var i = static_data.shapes_arrays_metadata.neg_cubes_start; i < static_data.shapes_arrays_metadata.neg_cubes_amount + static_data.shapes_arrays_metadata.neg_cubes_start; i++) {
             d = max(d, -(sd_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
         }
@@ -1510,10 +1509,10 @@ fn map(p: vec4<f32>) -> f32 {
         for (var i = static_data.shapes_arrays_metadata.neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.neg_inf_cubes_amount + static_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
             d = max(d, -(sd_inf_box(p - negatives_shapes[i].pos, negatives_shapes[i].size.xyz) - negatives_shapes[i].roundness));
         }
-    }
+    // }
 
     // dynamic negative shapes
-    if dyn_negative_intersected {
+    // if dyn_negative_intersected {
         for (var i = dynamic_data.shapes_arrays_metadata.neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_cubes_start; i++) {
             d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
         }
@@ -1526,9 +1525,9 @@ fn map(p: vec4<f32>) -> f32 {
         for (var i = dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
             d = max(d, -(sd_inf_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.xyz) - dyn_negatives_shapes[i].roundness));
         }
-    }
+    // }
 
-    if player_forms_intersected {
+    // if player_forms_intersected {
         var dddd = MAX_DIST;
         for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
             dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
@@ -1624,7 +1623,7 @@ fn map(p: vec4<f32>) -> f32 {
             );
         }
         d = min(d, dddd);
-    }
+    // }
 
     
     if w_plane_intersected {
@@ -1651,7 +1650,7 @@ fn get_mats(
     if dist > MAX_DIST-MIN_DIST {
         output.materials_count = 1u;
         output.material_weights[0] = 1.0;
-        output.materials[0] = -1;
+        output.materials[0] = -2;
         return output;
     }
 
@@ -1778,7 +1777,7 @@ fn get_mats(
     }
 
     // static normal shapes
-    if st_noramls_intersected {
+    // if st_noramls_intersected {
         for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
             let shape = normal_shapes[i];
             if sd_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
@@ -1815,10 +1814,10 @@ fn get_mats(
                 return output;
             }
         }
-    }
+    // }
 
     // dynamic normal shapes
-    if dyn_noramls_intersected {
+    // if dyn_noramls_intersected {
         for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
             let shape = dyn_normal_shapes[i];
             if sd_box(p - shape.pos, shape.size) - shape.roundness < MIN_DIST*2.0 {
@@ -1855,14 +1854,14 @@ fn get_mats(
                 return output;
             }
         }
-    }
+    // }
 
     
 
     
     // static stickiness shapes
     var d = MAX_DIST * 2.0;
-    if st_stickiness_intersected {
+    // if st_stickiness_intersected {
         for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
             let shape = stickiness_shapes[i];
             let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
@@ -2015,10 +2014,10 @@ fn get_mats(
                 }
             }
         }
-    }
+    // }
 
     // dynamic stickiness
-    if dyn_stickiness_intersected {
+    // if dyn_stickiness_intersected {
         for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
             let shape = dyn_stickiness_shapes[i];
             let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
@@ -2171,14 +2170,14 @@ fn get_mats(
                 }
             }
         }
-    }
+    // }
 
     // w plane
     if w_plane_intersected {
         if p.w - static_data.w_floor < MIN_DIST*2.0 {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
-            output.materials[0] = -2;
+            output.materials[0] = -3;
             return output;
         }
     }
@@ -2464,7 +2463,7 @@ fn apply_material(
 ) -> vec3<f32> {
     
     // sky
-    if material == -2 {
+    if material == -3 {
 
         let normal = vec4(0.0, 0.0, 0.0, 1.0);
 
@@ -2474,7 +2473,7 @@ fn apply_material(
 
         return color;
     }
-    if material == -1 {
+    if material == -2 {
         var color =  2.9*SKY_COLOR*FOG_COLOR* mix(vec3(.1,0.2,0.55), vec3(0.1,1.2,2.4), sqrt(abs(ray_dir.y)+0.1));
         color = mix(HORIZONT_COLOR*0.12, color, sqrt(clamp(abs(ray_dir.y*2.0)+0.1,0.0,1.0)));
         // var color =  1.5*SKY_COLOR* mix(vec3(.3,0.0,0.05), SUN_COLOR_1*SKY_COLOR, sqrt(max(ray_dir.y, 0.001)));
@@ -2665,7 +2664,10 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         color = mix(color, new_color, mats.material_weights[i]);
     }
 
-    color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
+    if mats.materials[0] != static_data.players_mat1 && mats.materials[0] != static_data.players_mat2 {
+        color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
+    }
+
     color += 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
 
     let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
@@ -2715,6 +2717,11 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         bw_col*(bw_col*1.4),
         clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
     );
+
+
+
+    // color *= 0.0001;
+    // color.r += dist_and_depth.y / f32(MAX_STEPS);
 
     
 

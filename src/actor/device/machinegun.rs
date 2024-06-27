@@ -176,7 +176,7 @@ impl MachineGun {
             )
 
         } else {
-            let position = from + (direction * 700.0);
+            let position = from + (direction * 1500.0);
             let shooted_from = player.transform.get_position() + weapon_offset;
 
             let shot = MachinegunShot::new(

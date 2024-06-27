@@ -28,7 +28,7 @@ use crate::{
             RemoteMessage
         }, physics::{
             colliders_container::PhysicalElement,
-            kinematic_collider::KinematicCollider,
+            kinematic_collider::{KinematicCollider, KinematicColliderMessages},
             PhysicsSystem,
         },
         render::VisualElement,
@@ -49,12 +49,12 @@ use self::{
 
 use core::panic;
 use std::f32::consts::PI;
-use fyrox_core::pool::Handle;
+use fyrox_core::{algebra::ComplexField, pool::Handle};
 use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Mat4, Vec2, Vec4};
 use matchbox_socket::PeerId;
 
-use super::{device::machinegun::MachineGun, players_death_explosion::PlayersDeathExplosion};
+use super::{device::machinegun::MachineGun, players_death_explosion::PlayersDeathExplosion, PhysicsMessages};
 
 
 pub struct PlayerInnerState {
@@ -172,6 +172,9 @@ pub struct Player {
     shifting_along_w_sound_pitch: f64,
     shifting_along_w_sound_gain: f32,
     player_previous_w_position: f32,
+
+    jumped_to_y_on_current_action: bool,
+    jumped_to_w_on_current_action: bool,
 }
 
 pub const PLAYER_MAX_HP: i32 = 100;
@@ -234,6 +237,21 @@ impl Actor for Player {
             }
             MessageType::PhysicsMessages(message) => {
                 match message {
+                    PhysicsMessages::KinematicColliderMessages(message) => {
+                        match message {
+                            KinematicColliderMessages::ColliderIsStuckInsideObject => {
+                                
+                                self.die(
+                                    true,
+                                    engine_handle,
+                                    physic_system,
+                                    audio_system,
+                                    ui_system
+                                );
+                            }
+                            _ => {}
+                        }
+                    }
                     _ => {}
                 }
             },
@@ -347,6 +365,8 @@ impl Actor for Player {
         }
 
         self.id = Some(id);
+
+        self.inner_state.collider.init(id);
     }
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
@@ -451,24 +471,25 @@ impl Actor for Player {
             self.screen_effects.death_screen_effect -= delta*DEATH_EFFECT_COEF_DECREASE_SPEED;
             self.screen_effects.death_screen_effect = self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
-            let mut x = self.view_angle.x;
-            let mut y = self.view_angle.y;
-            let mut xw = self.view_angle.z;
+            let mut xz = self.view_angle.x;
+            let mut yz = self.view_angle.y;
             let mut zw = self.view_angle.w;
 
             let prev_zw = zw;
     
             if input.second_mouse.is_action_pressed() {
-                xw = input.mouse_axis.x + xw;
                 zw = (input.mouse_axis.y + zw).clamp(-PI/2.0, PI/2.0);
                 
             } else {
-                xw *= 1.0 - delta * 3.0;
                 zw *= 1.0 - delta * 3.0;
-    
-                x = input.mouse_axis.x + x;
-                y = (input.mouse_axis.y + y).clamp(-PI/2.0, PI/2.0);
+                if zw.abs() < 0.00001 {
+                    zw = 0.0;
+                }
+                
+                xz = input.mouse_axis.x + xz;
+                yz = (input.mouse_axis.y + yz).clamp(-PI/2.0, PI/2.0);
             }
+
 
             let zw_arrow = ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrow);
 
@@ -481,7 +502,7 @@ impl Actor for Player {
             let zx_arrow = ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrow);
 
             if let UIElement::Image(arrow) = zx_arrow {
-                arrow.set_rotation_around_screen_center(x-PI/2.0);
+                arrow.set_rotation_around_screen_center(xz-PI/2.0);
             } else {
                 panic!("UI Element ZXScannerArrow is not UIImage")
             }
@@ -507,9 +528,9 @@ impl Actor for Player {
             //     0.0,        0.0,                0.0,                1.0
             // ]);
 
-            let zy_rotation = Mat4::from_rotation_x(-y);
+            let zy_rotation = Mat4::from_rotation_x(-yz);
 
-            let zx_rotation = Mat4::from_rotation_y(-x);
+            let zx_rotation = Mat4::from_rotation_y(-xz);
     
             let zw_rotation = Mat4::from_cols_slice(&[
                 1.0,    0.0,    0.0,        0.0,
@@ -538,8 +559,8 @@ impl Actor for Player {
             //     0.0,    -y.sin(),   0.0,    y.cos()
             // ]));
     
-            let xz_player_rotation = Mat4::from_rotation_y(x);
-            self.view_angle = Vec4::new(x, y, xw, zw);
+            let xz_player_rotation = Mat4::from_rotation_y(xz);
+            self.view_angle = Vec4::new(xz, yz, 0.0, zw);
 
             let base_pitch = {
                 0.8.lerp(
@@ -796,13 +817,48 @@ impl Actor for Player {
             }
     
             if input.jump.is_action_just_pressed() {
+
+                self.jumped_to_y_on_current_action = false;
     
-                if self.inner_state.collider.is_on_ground {
+                if self.inner_state.collider.is_on_y_ground {
                     self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-    
+
+                    self.jumped_to_y_on_current_action = true;
                 }
             }
+
+            if input.jump.is_action_pressed() {
+                if !self.jumped_to_y_on_current_action {
+                    if self.inner_state.collider.is_on_y_ground {
+                        self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+
+                        self.jumped_to_y_on_current_action = true;
+                    }
+                }
+            }
+
+            if input.jump_w.is_action_just_pressed() {
+
+                self.jumped_to_w_on_current_action = false;
     
+                if self.inner_state.collider.is_on_w_ground {
+                    self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+
+                    self.jumped_to_w_on_current_action = true;
+                }
+            }
+
+            if input.jump_w.is_action_pressed() {
+                if !self.jumped_to_w_on_current_action {
+                    if self.inner_state.collider.is_on_w_ground {
+                        self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+
+                        self.jumped_to_w_on_current_action = true;
+                    }
+                }
+            }
+
+
             if input.w_up.is_action_pressed() {
                 if self.inner_state.collider.is_enable {
                     self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
@@ -860,17 +916,14 @@ impl Actor for Player {
                 
             }
     
-            if input.jump_w.is_action_just_pressed() {
-                self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-                // self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-            };
+            
     
             if self.inner_state.collider.is_enable {
     
                 if self.is_gravity_y_enabled {
-                    movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+                    movement_vec = self.get_zx_rotation_matrix().inverse() * movement_vec;
     
-                    if self.inner_state.collider.is_on_ground {
+                    if self.inner_state.collider.is_on_y_ground {
                         self.inner_state.collider.set_wish_direction(
                             movement_vec,
                             1.0
@@ -936,6 +989,20 @@ impl Actor for Player {
             };
 
             self.player_previous_w_position = self.get_position().w;
+
+            // ---------------------------------------------------
+            // temp!
+            // y death plane
+            if self.get_position().y < -20.0 {
+                self.die(
+                    true,
+                    engine_handle,
+                    physic_system,
+                    audio_system,
+                    ui_system
+                );
+            }
+            // ---------------------------------------------------
 
         } else {
             //while player is not alive
@@ -1146,6 +1213,9 @@ impl Player {
             shifting_along_w_sound_pitch: 1.0,
             shifting_along_w_sound_gain: 0.0,
             player_previous_w_position: 0.0,
+
+            jumped_to_y_on_current_action: false,
+            jumped_to_w_on_current_action: false,
         }
     }
 
@@ -1205,7 +1275,7 @@ impl Player {
 
         audio_system.spawn_non_spatial_sound(
             Sound::PlayerHited,
-            0.5,
+            0.6.lerp(1.0, (damage as f32/PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
             1.0,
             false,
             true,
@@ -1554,6 +1624,10 @@ impl Player {
             }
         }
 
+        self.restore_scanner_values();
+
+        self.restore_w_shift_and_rotate_values();
+
         if die_immediately {
             self.die_immediately(audio_system, engine_handle);
         } else {
@@ -1574,6 +1648,12 @@ impl Player {
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
+
+        self.view_angle.w = PI/2.0;
+
+        self.restore_scanner_values();
+
+        self.restore_w_shift_and_rotate_values();
 
         audio_system.spawn_non_spatial_sound(
             Sound::PlayerRespawned,
@@ -1598,6 +1678,74 @@ impl Player {
             panic!("Health Bar is not UIProgressBar")
         }
 
+        let my_id = self.get_id().expect("Player have not ActorID");
+
+        match self.active_hands_slot {
+            ActiveHandsSlot::Zero => {
+                self.hands_slot_0.activate(
+                    my_id,
+                    &mut self.inner_state,
+                    physics_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+
+            },
+            ActiveHandsSlot::First => {
+                if let Some(device) = self.hands_slot_1.as_mut() {
+                    device.activate(
+                        my_id,
+                        &mut self.inner_state,
+                        physics_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                }
+
+            },
+            ActiveHandsSlot::Second => {
+                if let Some(device) = self.hands_slot_2.as_mut() {
+                    device.activate(
+                        my_id,
+                        &mut self.inner_state,
+                        physics_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                }
+
+            },
+            ActiveHandsSlot::Third => {
+                if let Some(device) = self.hands_slot_3.as_mut() {
+                    device.activate(
+                        my_id,
+                        &mut self.inner_state,
+                        physics_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                }
+
+            }
+        }
+
+        for device in self.devices.iter_mut() {
+            if let Some(device) = device {
+                device.activate(
+                    my_id,
+                    &mut self.inner_state,
+                    physics_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+            }
+        }
+
         self.screen_effects.w_scanner_ring_intesity = 0.0;
         self.screen_effects.w_scanner_radius = 0.0;
         self.screen_effects.w_scanner_is_active = false;
@@ -1613,7 +1761,7 @@ impl Player {
 
         for hit in hits {
             engine_handle.send_direct_message(
-                hit.hited_actors_id.expect("In respawn func in death on resapwn hit have not ActorID"),
+                hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     message: MessageType::SpecificActorMessage(
@@ -1736,5 +1884,20 @@ impl Player {
             },
             _ => {Some(device)}
         }
+    }
+
+    fn restore_scanner_values(&mut self) {
+        self.w_scanner_enable = false;
+        self.w_scanner_radius = 0.0;
+        self.w_scanner_reloading_time = W_SCANNER_RELOAD_TIME;
+        self.w_scanner_enemies_show_time = W_SCANNER_SHOW_ENEMIES_TIME;
+    }
+
+    fn restore_w_shift_and_rotate_values(&mut self) {
+        self.rotating_around_w_sound_pitch = 1.0;
+        self.rotating_around_w_sound_gain = 0.0;
+        self.shifting_along_w_sound_pitch = 1.0;
+        self.shifting_along_w_sound_gain = 0.0;
+        self.player_previous_w_position = 0.0;
     }
 }
