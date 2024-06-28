@@ -175,6 +175,7 @@ pub struct Player {
 
     jumped_to_y_on_current_action: bool,
     jumped_to_w_on_current_action: bool,
+    jumped_to_wy_on_current_action: bool,
 }
 
 pub const PLAYER_MAX_HP: i32 = 100;
@@ -479,6 +480,8 @@ impl Actor for Player {
     
             if input.second_mouse.is_action_pressed() {
                 zw = (input.mouse_axis.y + zw).clamp(-PI/2.0, PI/2.0);
+
+                // xz = input.mouse_axis.x + xz;
                 
             } else {
                 zw *= 1.0 - delta * 3.0;
@@ -502,7 +505,7 @@ impl Actor for Player {
             let zx_arrow = ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrow);
 
             if let UIElement::Image(arrow) = zx_arrow {
-                arrow.set_rotation_around_screen_center(xz-PI/2.0);
+                arrow.set_rotation_around_screen_center(xz);
             } else {
                 panic!("UI Element ZXScannerArrow is not UIImage")
             }
@@ -511,7 +514,7 @@ impl Actor for Player {
 
             if let UIElement::Image(h_pointer) = h_pointer {
                 let h = {
-                    ((self.get_position().w / 19.0) - 0.7)
+                    ((self.get_position().w / 6.0) - 0.7)
                         .clamp(-0.7, 0.8)
                 };
                 
@@ -833,6 +836,33 @@ impl Actor for Player {
                         self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
 
                         self.jumped_to_y_on_current_action = true;
+                    }
+                }
+            }
+
+            if input.jump_wy.is_action_just_pressed() {
+
+                self.jumped_to_wy_on_current_action = false;
+    
+                if self.inner_state.collider.is_on_w_ground && self.inner_state.collider.is_on_y_ground {
+                    self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed*1.1);
+                    self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed*1.1);
+
+
+                    self.jumped_to_wy_on_current_action = true;
+                }
+            }
+
+            if input.jump_wy.is_action_pressed() {
+                
+                if !self.jumped_to_wy_on_current_action {
+
+                    if self.inner_state.collider.is_on_w_ground  && self.inner_state.collider.is_on_y_ground {
+                        self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed*1.1);
+                        self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed*1.1);
+
+
+                        self.jumped_to_wy_on_current_action = true;
                     }
                 }
             }
@@ -1216,6 +1246,7 @@ impl Player {
 
             jumped_to_y_on_current_action: false,
             jumped_to_w_on_current_action: false,
+            jumped_to_wy_on_current_action: false,
         }
     }
 
@@ -1649,7 +1680,7 @@ impl Player {
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
 
-        self.view_angle.w = PI/2.0;
+        self.view_angle = Vec4::ZERO;
 
         self.restore_scanner_values();
 

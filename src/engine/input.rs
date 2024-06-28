@@ -52,6 +52,7 @@ pub struct ActionsFrameState {
     pub mode_2: Action,
     pub mode_3: Action,
     pub jump: Action,
+    pub jump_wy: Action,
     pub jump_w: Action,
     pub first_mouse: Action,
     pub second_mouse: Action,
@@ -68,6 +69,7 @@ impl ActionsFrameState {
         let mut w_down = Action::new();
         let mut w_up = Action::new();
         let mut jump = Action::new();
+        let mut jump_wy = Action::new();
         let mut jump_w = Action::new();
         let mut first_mouse = Action::new();
         let mut second_mouse = Action::new();
@@ -88,6 +90,7 @@ impl ActionsFrameState {
                 ButtonActions::MoveLeft => move_left = action.clone(),
                 ButtonActions::WScaner => w_scanner = action.clone(),
                 ButtonActions::Jump => jump = action.clone(),
+                ButtonActions::JumpWY => jump_wy = action.clone(),
                 ButtonActions::JumpW => jump_w = action.clone(),
                 ButtonActions::HandSlot0 => activate_hand_slot_0 = action.clone(),
                 ButtonActions::HandSlot1=> activate_hand_slot_1 = action.clone(),
@@ -116,6 +119,7 @@ impl ActionsFrameState {
             w_down,
             w_up,
             jump,
+            jump_wy,
             jump_w,
             first_mouse,
             second_mouse,
@@ -135,6 +139,7 @@ impl ActionsFrameState {
         let w_down = Action::new();
         let w_up = Action::new();
         let jump = Action::new();
+        let jump_wy = Action::new();
         let jump_w = Action::new();
         let first_mouse = Action::new();
         let second_mouse = Action::new();
@@ -160,6 +165,7 @@ impl ActionsFrameState {
             w_down,
             w_up,
             jump,
+            jump_wy,
             jump_w,
             first_mouse,
             second_mouse,
@@ -192,6 +198,7 @@ enum ButtonActions {
     HandSlot2,
     HandSlot3,
     WScaner,
+    JumpWY,
     JumpW,
     Jump,
     WUp,
@@ -243,6 +250,10 @@ impl InputSystem {
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::ShiftLeft),
+            (ButtonActions::JumpWY, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ControlLeft),
             (ButtonActions::JumpW, Action::new())
         );
         actions_table.insert(
@@ -250,12 +261,16 @@ impl InputSystem {
             (ButtonActions::Jump, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyE),
+            SomeButton::KeyCode(KeyCode::KeyF),
             (ButtonActions::WScaner, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyQ),
             (ButtonActions::WDown, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyE),
+            (ButtonActions::WUp, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Digit1),

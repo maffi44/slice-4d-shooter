@@ -66,6 +66,15 @@ fn smin( a: f32, b: f32, k: f32 ) -> f32
     return a.min(b) - kk*0.5*(1.0+h-(1.0-h*(h-2.0)).sqrt());
 }
 
+
+#[inline]
+fn smax( a: f32, b: f32, k: f32 ) -> f32
+{
+    let kk = k * 1.0/(1.0-0.5_f32.sqrt());
+    let h = (kk-(a-b).abs()).max(0.0)/kk;
+    return a.max(b) + kk*0.5*(1.0+h-(1.0-h*(h-2.0)).sqrt());
+}
+
 // pub fn get_id(p: Vec4, static_objects: &PhysicsState) -> Option<ActorID> {
 //     let mut d = MAX_DIST;
 
@@ -375,38 +384,7 @@ pub fn get_dist(
    }
 
 
-    let mut dd = MAX_DIST;
 
-    for collider in static_objects.cubes.iter_neg_stickiness() {
-        dd = smin(
-            dd,
-            sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
-            stickiness
-        );
-    }
-    for collider in static_objects.inf_w_cubes.iter_neg_stickiness() {
-            dd = smin(
-            dd,
-            sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness,
-            stickiness
-        );
-    }
-    for collider in static_objects.spheres.iter_neg_stickiness() {
-            dd = smin(
-            dd,
-            sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness,
-            stickiness
-        );
-    }
-    for collider in static_objects.sph_cubes.iter_neg_stickiness() {
-            dd = smin(
-            dd,
-            sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness,
-            stickiness
-        );
-    }
-
-    d = d.max(-dd);
     
 
     for collider in static_objects.cubes.iter_negative() {
@@ -421,6 +399,42 @@ pub fn get_dist(
     for collider in static_objects.sph_cubes.iter_negative() {
         d = d.max(-(sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness));
     }
+
+
+    // let mut dd = MAX_DIST;
+
+    for collider in static_objects.cubes.iter_neg_stickiness() {
+        d = smax(
+            d,
+            -(sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness),
+            stickiness
+        );
+    }
+    for collider in static_objects.inf_w_cubes.iter_neg_stickiness() {
+            d = smax(
+            d,
+            -(sd_inf_box(p - collider.position.clone(), collider.size.xyz()) - collider.roundness),
+            stickiness
+        );
+    }
+    for collider in static_objects.spheres.iter_neg_stickiness() {
+            d = smax(
+            d,
+            -(sd_sphere(p - collider.position.clone(), collider.size.x) - collider.roundness),
+            stickiness
+        );
+    }
+    for collider in static_objects.sph_cubes.iter_neg_stickiness() {
+            d = smax(
+            d,
+            -(sd_sph_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness),
+            stickiness
+        );
+    }
+
+    // d = d.max(-dd);
+
+
 
     for collider in static_objects.player_forms.iter() {
         d = d.min(sd_sphere(p - collider.position.clone(), collider.radius));
@@ -446,8 +460,8 @@ pub fn get_bounce_and_friction(
 ) -> (f32, f32) {
     let mut d = MAX_DIST;
 
-    let mut bounce_coeficient = 0.0;
-    let mut friction = 0.0;
+    let mut bounce_coeficient: f32 = 0.0;
+    let mut friction: f32 = 0.0;
 
     
     
@@ -455,41 +469,50 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.cubes.iter_normal() {
         let new_d = sd_box(position - collider.position.clone(), collider.size.clone()) - collider.roundness;
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
+        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
 
             d = new_d;
+
+            log::error!("norm cube");
         };
     }
     for collider in static_objects.inf_w_cubes.iter_normal() {
         let new_d = sd_inf_box(position - collider.position.clone(), collider.size.xyz()) - collider.roundness;
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
+        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
 
             d = new_d;
+
+            log::error!("norm w cube");
+
         };
     }
     for collider in static_objects.spheres.iter_normal() {
         let new_d = sd_sphere(position - collider.position.clone(), collider.size.x) - collider.roundness;
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
+        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
 
             d = new_d;
+
+            log::error!("norm sphere");
         };
     }
     for collider in static_objects.sph_cubes.iter_normal() {
         let new_d = sd_sph_box(position - collider.position.clone(), collider.size.clone()) - collider.roundness;
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
+        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
 
             d = new_d;
+
+            log::error!("norm sph cube");
         };
     }
 
@@ -498,11 +521,13 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.cubes.iter_stickiness() {
         let new_d = sd_box(position - collider.position.clone(), collider.size.clone()) - collider.roundness;
         
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
+        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
 
             d = new_d;
+
+            log::error!("stickiness cube");
         };
 
         // let dd = smin(d, new_d, stickiness);
@@ -522,11 +547,13 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.inf_w_cubes.iter_stickiness() {
         let new_d = sd_inf_box(position - collider.position.clone(), collider.size.xyz()) - collider.roundness;
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
+        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
 
             d = new_d;
+
+
         };
 
         // let dd = smin(d, new_d, stickiness);
@@ -547,11 +574,13 @@ pub fn get_bounce_and_friction(
         let new_d = sd_sphere(position - collider.position.clone(), collider.size.x) - collider.roundness;
 
         
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
-            
+        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
+
             d = new_d;
+
+
         };
         
         // let dd = smin(d, new_d, stickiness);
@@ -570,11 +599,13 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.sph_cubes.iter_stickiness() {
         let new_d = sd_sph_box(position - collider.position.clone(), collider.size.clone()) - collider.roundness;
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
+        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
 
             d = new_d;
+
+
         };
 
         // let dd = smin(d, new_d, stickiness);
@@ -592,21 +623,22 @@ pub fn get_bounce_and_friction(
         // d = dd;
     }
 
-    for collider in static_objects.player_forms.iter() {
-        let new_d = sd_sphere(position - collider.position.clone(), collider.radius);
+    // for collider in static_objects.player_forms.iter() {
+    //     let new_d = sd_sphere(position - collider.position.clone(), collider.radius);
 
-        if new_d < d {
-            bounce_coeficient = collider.bounce_rate;
-            friction = collider.friction;
+    //     if new_d < d {
+    //         bounce_coeficient = collider.bounce_rate;
+    //         friction = collider.friction;
 
-            d = new_d;
-        };
-    }
+    //         d = new_d;
+    //     };
+    // }
 
-    if d > collider_radius + super::kinematic_collider::MIN_STEP {
+    if d > collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
         bounce_coeficient = 0.0;
         friction = 0.0;
     }
+
 
     (bounce_coeficient, friction)
 }

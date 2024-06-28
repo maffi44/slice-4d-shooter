@@ -1,5 +1,5 @@
 {
-    "player_sphere_radius": 0.7,
+    "player_sphere_radius": 0.5,
 
     "player_max_speed" : 64.0,
     "player_max_accel" : 64.0,
@@ -7,7 +7,7 @@
     "air_speed_mult" : 0.21,
 
     "player_jump_y_speed" : 14.0,
-    "player_jump_w_speed" : 44.0,
+    "player_jump_w_speed" : 14.0,
 
     "player_jetpak_w_speed" : 0.6,
 

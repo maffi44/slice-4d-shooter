@@ -111,6 +111,10 @@ impl KinematicCollider {
             self.current_velocity += force;
         }
 
+        if let Some(wd) = self.wish_direction.try_normalize() {
+            self.wish_direction = wd;
+        }
+
         if self.is_enable {
 
             if self.wish_direction.length().is_normal() {
@@ -185,7 +189,7 @@ impl KinematicCollider {
         start_position: Vec4,
     ) -> Option<Vec4> {
 
-        self.fix_currnet_velocity();
+        self.fix_current_velocity();
 
         #[cfg(debug_assertions)]
         unsafe {
@@ -271,7 +275,7 @@ impl KinematicCollider {
     
             // get distance from edge of the object to the nearest object
             let mut distance_to_obj = get_dist(position, static_objects) - collider_radius;
-    
+
             // bound if collide
             if distance_to_obj < MIN_STEP {
     
@@ -318,7 +322,7 @@ impl KinematicCollider {
                                 static_objects
                             );
 
-                            log::error!("new friction: {}", new_friction);
+                            // log::error!("new friction: {}", new_friction);
 
                             friction = friction.max(new_friction);
 
@@ -365,7 +369,7 @@ impl KinematicCollider {
                                 static_objects
                             );
 
-                            log::error!("new friction 2: {}", new_friction);
+                            // log::error!("new friction 2: {}", new_friction);
 
                             friction = friction.max(new_friction);
 
@@ -403,7 +407,7 @@ impl KinematicCollider {
                             static_objects
                         );
 
-                        log::error!("new friction 3: {}", new_friction);
+                        // log::error!("new frictio 3: {}", new_friction);
 
 
                         friction = friction.max(new_friction);
@@ -454,7 +458,7 @@ impl KinematicCollider {
                         self.current_velocity *= 1.0 - delta*self.friction_on_air;
                     }
 
-                    self.fix_currnet_velocity();
+                    self.fix_current_velocity();
 
                     return Some(position - start_position);
     
@@ -527,7 +531,7 @@ impl KinematicCollider {
             self.current_velocity *= 1.0 - delta*self.friction_on_air;
         }
 
-        self.fix_currnet_velocity();
+        self.fix_current_velocity();
 
         Some(position - start_position)
     }
@@ -535,7 +539,7 @@ impl KinematicCollider {
 
 
     #[inline]
-    fn fix_currnet_velocity(&mut self) {
+    fn fix_current_velocity(&mut self) {
         if !self.current_velocity.is_finite() {
             if !self.current_velocity.x.is_normal() {
                 self.current_velocity.x = 0.0;  
