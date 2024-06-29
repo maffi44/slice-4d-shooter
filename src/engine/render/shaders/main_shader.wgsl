@@ -297,7 +297,7 @@ struct OtherStaticData {
 const MAX_STEPS: i32 = 120;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.011;
-const MAX_DIST: f32 = 150.0;
+const MAX_DIST: f32 = 50.0;
 
 const STICKINESS_EFFECT_COEF: f32 = 3.1415926535897;
 
@@ -355,22 +355,8 @@ fn rotate(angle: f32) -> mat2x2<f32> {
 }
 
 fn cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec4<f32>) -> vec2<f32> {  // can precompute if traversing a set of aligned boxes
-    var rdd = rd;
 
-    if rdd.x == 0 {
-        rdd.x += 0.000001; 
-    }
-    if rdd.y == 0 {
-        rdd.y += 0.000001; 
-    }
-    if rdd.z == 0 {
-        rdd.z += 0.000001; 
-    }
-    if rdd.w == 0 {
-        rdd.w += 0.000001; 
-    }
-
-    let m = 1.0/rdd;
+    let m = 1.0/rd;
     let n = m*ro;
     let k = abs(m)*size;
     let t1 = -n - k;
@@ -384,22 +370,8 @@ fn cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec4<f32>) -> vec2<f32
 }
 
 fn inf_cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec3<f32>) -> vec2<f32> {  // can precompute if traversing a set of aligned boxes
-    var rdd = rd;
 
-    if rdd.x == 0 {
-        rdd.x += 0.000001; 
-    }
-    if rdd.y == 0 {
-        rdd.y += 0.000001; 
-    }
-    if rdd.z == 0 {
-        rdd.z += 0.000001; 
-    }
-    if rdd.w == 0 {
-        rdd.w += 0.000001; 
-    }
-
-    let m = 1.0/rdd;
+    let m = 1.0/rd;
     let n = m*ro;
     let k = abs(m.xyz)*size;
     let t1 = -n.xyz - k.xyz;
@@ -734,7 +706,22 @@ fn plane_w_intersect( ro: vec4<f32>, rd: vec4<f32>, h: f32 ) -> f32
 }
 
 
-fn find_intersections(ro: vec4<f32>, rd: vec4<f32>) -> f32 {
+fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) -> f32 {
+
+    var rd = rdd;
+
+    if rd.x == 0 {
+        rd.x += 0.000001; 
+    }
+    if rd.y == 0 {
+        rd.y += 0.000001; 
+    }
+    if rd.z == 0 {
+        rd.z += 0.000001; 
+    }
+    if rd.w == 0 {
+        rd.w += 0.000001; 
+    }
     
     var offset: f32 = MAX_DIST * 2.0;
 

@@ -5,14 +5,14 @@
         "is_positive": true,
         "friction": 3.2,
         "bounce_rate": 0.0,
-        "visual_material": "wall",
+        "visual_material": "standart",
         "roundness": 0.07,
         "stickiness": false
     },
 
     "visual_materials" : [
         {
-            "name" : "wall",
+            "name" : "standart",
             "color" : {
                 "red": 0.25,
                 "green": 0.25,
@@ -20,7 +20,7 @@
             }
         },
         {
-            "name" : "floor",
+            "name" : "hole_stairs",
             "color" : {
                 "red": 0.2,
                 "green": 0.2,
@@ -50,7 +50,7 @@
         "outer" : "player_core"
     },
 
-    "w_cups_visual_materials" : "wall",
+    "w_cups_visual_materials" : "standart",
 
     "all_shapes_stickiness_radius": 0.3,
 

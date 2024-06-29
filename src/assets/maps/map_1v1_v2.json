@@ -1,0 +1,847 @@
+{
+    "level_name" : "first_1v1_level",
+
+    "defaults" : {
+        "is_positive": true,
+        "friction": 3.2,
+        "bounce_rate": 0.0,
+        "visual_material": "standart",
+        "roundness": 0.07,
+        "stickiness": false
+    },
+
+    "visual_materials" : [
+        {
+            "name" : "hole_stairs",
+            "color" : {
+                "red": 0.05,
+                "green": 0.20,
+                "blue": 0.45
+            }
+        },
+        {
+            "name" : "standart",
+            "color" : {
+                "red": 0.25,
+                "green": 0.25,
+                "blue": 0.35
+            }
+        },
+        {
+            "name" : "player_inner",
+            "color" : {
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
+            }
+        },
+        {
+            "name" : "player_outer",
+            "color" : {
+                "red": 0.45,
+                "green": 0.46,
+                "blue": 0.04
+            }
+        }
+    ],
+
+    "players_visual_materials" : {
+        "inner" : "player_outer",
+        "outer" : "player_inner"
+    },
+
+    "w_cups_visual_materials" : "standart",
+
+    "all_shapes_stickiness_radius": 0.31,
+
+    "spawn_positions" : [
+        {
+            "transform" : {
+                "position" : {
+                    "x": 0.0,
+                    "y": 2.0,
+                    "z": 4.0,
+                    "w": 1.0
+                }
+            }
+        }
+    ],
+
+    "w_cups" : {
+        "w_floor" : 0.0
+    },
+
+    "actors" : [
+        {
+            "wandering_actor" : {
+                
+                "transform" : {
+                    "position" : {
+                        "x": -7.0,
+                        "y": -1 ,
+                        "z": 4.0,
+                        "w": 1.0
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0 ,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+
+                "target" : {
+                    "transform" : {
+                        "position" : {
+                            "x": -7.0,
+                            "y": 10.0,
+                            "z": 4.0,
+                            "w": 1.0
+                        },
+                        "scale" : {
+                            "x": 1.0,
+                            "y": 1.0 ,
+                            "z": 1.0,
+                            "w": 1.0
+                        }
+                    }
+                },
+
+                "travel_time" : 1.5,
+
+                "movement_type" : "nonlinear",
+
+                "static_objects" : [
+                    {
+                        "cube" : {
+                            "transform" : {
+                                "position" : {
+                                    "x": 1.5,
+                                    "y": 0.0 ,
+                                    "z": 0.0,
+                                    "w": 0.0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 4.0,
+                                "y": 0.1,
+                                "z": 2.5,
+                                "w": 3.0
+                            },
+                            "roundness" : 0.1,
+                            "is_positive" : true,
+                            "stickiness" : false
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "wandering_actor" : {
+                
+                "transform" : {
+                    "position" : {
+                        "x": 24,
+                        "y": 4 ,
+                        "z": 28,
+                        "w": 0
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0 ,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+
+                "target" : {
+                    "transform" : {
+                        "position" : {
+                            "x": 24,
+                            "y": 16 ,
+                            "z": 28,
+                            "w": 18
+                        },
+                        "scale" : {
+                            "x": 1.0,
+                            "y": 1.0 ,
+                            "z": 1.0,
+                            "w": 1.0
+                        }
+                    }
+                },
+
+                "travel_time" : 3.5,
+
+                "movement_type" : "nonlinear",
+
+                "static_objects" : [
+                    {
+                        "sphere" : {
+                            "comment" : "extern capsule",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0 ,
+                                    "z": 0,
+                                    "w": 0.0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 2.1
+                            },
+                            "stickiness" : false,
+                            "bounce_rate" : 0.0,
+                            "is_positive" : true
+                        }
+                    },
+                    {
+                        "cube" : {
+                            "comment" : "hole",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0 ,
+                                    "z": 0,
+                                    "w": 0.0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 4,
+                                "y": 0.01,
+                                "z": 0.01,
+                                "w": 0.01
+                            },
+                            "stickiness" : false,
+                            "bounce_rate" : 0.0,
+                            "is_positive" : false,
+                            "roundness" : 1.15
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    
+    "static_objects": [
+        {
+            "cube_w_inf" : {
+                "comment" : "main platform",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": -0.1 ,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 25,
+                    "y": 0.2,
+                    "z": 25
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "bottom platform",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": -4.1 ,
+                        "z": 0.0,
+                        "w": 16.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 25,
+                    "y": 0.2,
+                    "z": 25,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "friction" : 0.0
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "bottom cube",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": -2 ,
+                        "z": 0.0,
+                        "w": 14.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 25,
+                    "y": 2,
+                    "z": 25,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "friction": 0.0
+            }
+        },
+        
+        {
+            "cube" : {
+                "comment" : "cube 1",
+                "transform" : {
+                    "position" : {
+                        "x": -16,
+                        "y": 4.0 ,
+                        "z": -14,
+                        "w": 1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 2,
+                    "z": 4,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "friction" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cube 1 platform",
+                "transform" : {
+                    "position" : {
+                        "x": -16,
+                        "y": 2.2 ,
+                        "z": -14,
+                        "w": 3
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 0.2,
+                    "z": 4,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cube 2",
+                "transform" : {
+                    "position" : {
+                        "x": -6,
+                        "y": 6.0 ,
+                        "z": -14,
+                        "w": 4
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 2,
+                    "z": 4,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "friction" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cube 2 platform",
+                "transform" : {
+                    "position" : {
+                        "x": -6,
+                        "y": 4.2 ,
+                        "z": -14,
+                        "w": 6
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 0.2,
+                    "z": 4,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cube 3",
+                "transform" : {
+                    "position" : {
+                        "x": 4,
+                        "y": 8.0 ,
+                        "z": -14,
+                        "w": 7
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 2,
+                    "z": 4,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "friction" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cube 3 platform",
+                "transform" : {
+                    "position" : {
+                        "x": 4,
+                        "y": 6.2 ,
+                        "z": -14,
+                        "w": 9
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 0.2,
+                    "z": 4,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cube 4",
+                "transform" : {
+                    "position" : {
+                        "x": 14,
+                        "y": 10.0 ,
+                        "z": -14,
+                        "w": 10
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 2,
+                    "z": 4,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "friction" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cube 4 platform",
+                "transform" : {
+                    "position" : {
+                        "x": 14,
+                        "y": 8.2 ,
+                        "z": -14,
+                        "w": 12
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 0.2,
+                    "z": 4,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "top cube column",
+                "transform" : {
+                    "position" : {
+                        "x": 24,
+                        "y": 5.0 ,
+                        "z": -6,
+                        "w": 8
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.5,
+                    "y": 5,
+                    "z": 10,
+                    "w": 8
+                },
+                "stickiness" : true,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.02,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "top cube column hole",
+                "transform" : {
+                    "position" : {
+                        "x": 24,
+                        "y": 5.0 ,
+                        "z": -6,
+                        "w": 8
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.5,
+                    "y": 2,
+                    "z": 7,
+                    "w": 8
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : false,
+                "roundness" : 1.1,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "top cube",
+                "transform" : {
+                    "position" : {
+                        "x": 24,
+                        "y": 12.0 ,
+                        "z": -6,
+                        "w": 7
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 2,
+                    "z": 12,
+                    "w": 7
+                },
+                "stickiness" : false,
+                "friction" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "top cube platform",
+                "transform" : {
+                    "position" : {
+                        "x": 24,
+                        "y": 10.2 ,
+                        "z": -6,
+                        "w": 15
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 0.2,
+                    "z": 12,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "big cube column",
+                "transform" : {
+                    "position" : {
+                        "x": 24,
+                        "y": 7.3 ,
+                        "z": 18,
+                        "w": 9
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2,
+                    "y": 7.3,
+                    "z": 2,
+                    "w": 9
+                },
+                "stickiness" : true,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.02,
+                "visual_material" : "standart",
+                "friction": 0.0
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "big cube column hole",
+                "transform" : {
+                    "position" : {
+                        "x": 24,
+                        "y": 7.5 ,
+                        "z": 18,
+                        "w": 16
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1,
+                    "y": 9,
+                    "z": 1,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : false,
+                "roundness" : 0.22,
+                "visual_material" : "standart"
+            }
+        },
+        
+        {
+            "cube" : {
+                "comment" : "big cube",
+                "transform" : {
+                    "position" : {
+                        "x": 24,
+                        "y": 14.0 ,
+                        "z": 18,
+                        "w": 15
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 8,
+                    "y": 2,
+                    "z": 8,
+                    "w": 1
+                },
+                "stickiness" : false,
+                "friction" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "big cube platform",
+                "transform" : {
+                    "position" : {
+                        "x": 24,
+                        "y": 13.2 ,
+                        "z": 18,
+                        "w": 16
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 8,
+                    "y": 0.2,
+                    "z": 8,
+                    "w": 2
+                },
+                "stickiness" : false,
+                "bounce_rate" : 0.0,
+                "is_positive" : true,
+                "roundness" : 0.3
+            }
+        }
+
+    ]
+}
