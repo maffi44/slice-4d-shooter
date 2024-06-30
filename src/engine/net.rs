@@ -114,11 +114,12 @@ pub struct NetSystem {
 
 impl NetSystem {
     pub async fn new(
+        room_url: &String,
         #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime
     ) -> Self {
 
-        let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new("ws://localhost:3536/")
+        let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new(room_url.clone())
             .ice_server(RtcIceServerConfig::default())
             .add_reliable_channel()
             .add_unreliable_channel()

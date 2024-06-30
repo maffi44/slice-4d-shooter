@@ -111,8 +111,11 @@ impl Level {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let mut file = File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/map.json")
-                .expect("Can't find map.fson file");
+            let mut file = File::open("./src/assets/maps/map.json")
+                .unwrap_or_else(|_| {
+                    File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/map.json").expect("Can't find map.fson file")
+                });
+                
 
             let mut file_content = String::new();
             match file.read_to_string(&mut file_content) {

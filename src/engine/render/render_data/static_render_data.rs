@@ -1,10 +1,10 @@
 use glam::Vec3Swizzles;
 
-use crate::engine::{
+use crate::{actor::ActorWrapper, engine::{
     physics::physics_system_data::ShapeType, render::render_data::{
         BoundingBox, Shape, ShapesArraysMetadata
     }, world::World
-};
+}};
 
 use super::ShapesArrays;
 
@@ -37,7 +37,7 @@ pub struct OtherStaticData {
     static_shapes_stickiness: f32,
 
     empty_byte1: u32,
-    empty_byte2: u32,
+    shadows_enabled: i32,
     materials: [VisualMaterial; 32],
 
 }
@@ -87,6 +87,14 @@ impl OtherStaticData {
         let (players_mat1, players_mat2) = world.level.players_visual_materials;
         let w_cups_mat = world.level.w_cups_visual_materials;
 
+        let shadows_enabled = {
+            if world.players_settings.shadows_enable {
+                1
+            } else {
+                0
+            }
+        };
+
         OtherStaticData {
             shapes_arrays_metadata,
 
@@ -102,7 +110,7 @@ impl OtherStaticData {
 
             
             empty_byte1: 0u32,
-            empty_byte2: 0u32,
+            shadows_enabled,
             materials,
         }
     }

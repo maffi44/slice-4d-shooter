@@ -151,6 +151,7 @@ impl Engine {
 
         
         let net = NetSystem::new(
+            &world.players_settings.room_url,
             #[cfg(not(target_arch = "wasm32"))]
             &mut runtime
         ).await;

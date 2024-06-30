@@ -3,7 +3,7 @@ use std::{fs::File, io::Read};
 use wasm_bindgen_futures::JsFuture;
 use serde_json::Value;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct PlayerSettings {
 
     pub collider_radius: f32,
@@ -21,9 +21,34 @@ pub struct PlayerSettings {
     pub gravity_y_speed: f32,
     pub gravity_w_speed: f32,
 
-    // pub friction_on_ground: f32,
     pub friction_on_air: f32,
+
+    pub rotation_along_w_standard_method: bool,
+    pub shadows_enable: bool,
+    
+    pub mouse_sensivity: f32,
+    pub w_jump_time_reloading: f32,
+    pub min_respawn_timer: f32,
+    pub max_respawn_timer: f32,
+    pub scanner_show_enemies_time: f32,
+    pub scanner_reloading_time: f32,
+    
+    pub energy_gun_hole_size_mult: f32, 
+    pub energy_gun_add_force_mult: f32, 
+    pub energy_gun_damage_mult: f32, 
+    pub energy_gun_restoring_speed: f32,
+    
+    pub machinegun_damage: f32,
+    pub machinegun_add_force: f32, 
+    pub machinegun_heat_add_on_shot: f32, 
+    pub machinegun_cooling_speed: f32,
+
+    pub room_url: String,
 }
+
+// impl Copy for PlayerSettings {
+    
+// }
 
 impl PlayerSettings {
     pub async fn load_player_settings() -> Self {
@@ -70,8 +95,10 @@ impl PlayerSettings {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let mut file = File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/settings.json")
-                .expect("Can't find seetings.fson file");
+            let mut file = File::open("./src/assets/maps/settings.json")
+                .unwrap_or_else(|_| {
+                    File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/settings.json").expect("Can't find settings.json file")
+                });
     
             let mut file_content = String::new();
             match file.read_to_string(&mut file_content) {
@@ -180,6 +207,140 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
             .expect("friction_on_air is not float value in settings.json")
             as f32
     };
+    let rotation_along_w_standard_method = {
+        object
+            .get("rotation_along_w_standard_method")
+            .expect("Have not rotation_along_w_standard_method in settings.json")
+            .as_bool()
+            .expect("rotation_along_w_standard_method is not bool value in settings.json")
+    };
+    let shadows_enable = {
+        object
+            .get("shadows_enable")
+            .expect("Have not shadows_enable in settings.json")
+            .as_bool()
+            .expect("shadows_enable is not float value in settings.json")
+    };
+    let mouse_sensivity = {
+        object
+        .get("mouse_sensivity")
+        .expect("Have not mouse_sensivity in settings.json")
+        .as_f64()
+        .expect("mouse_sensivity is not float value in settings.json")
+        as f32
+    };
+    let w_jump_time_reloading = {
+        object
+        .get("w_jump_time_reloading")
+        .expect("Have not w_jump_time_reloading in settings.json")
+        .as_f64()
+        .expect("w_jump_time_reloading is not float value in settings.json")
+        as f32
+    };
+    let min_respawn_timer = {
+        object
+        .get("min_respawn_timer")
+        .expect("Have not min_respawn_timer in settings.json")
+        .as_f64()
+        .expect("min_respawn_timer is not float value in settings.json")
+        as f32
+    };
+    let max_respawn_timer = {
+        object
+        .get("max_respawn_timer")
+        .expect("Have not max_respawn_timer in settings.json")
+        .as_f64()
+        .expect("max_respawn_timer is not float value in settings.json")
+        as f32
+    };
+    let scanner_reloading_time = {
+        object
+        .get("scanner_reloading_time")
+        .expect("Have not scanner_reloading_time in settings.json")
+        .as_f64()
+        .expect("scanner_reloading_time is not float value in settings.json")
+        as f32
+    };
+    let scanner_show_enemies_time = {
+        object
+        .get("scanner_show_enemies_time")
+        .expect("Have not scanner_show_enemies_time in settings.json")
+        .as_f64()
+        .expect("scanner_show_enemies_time is not float value in settings.json")
+        as f32
+    };
+    let energy_gun_hole_size_mult = {
+        object
+        .get("energy_gun_hole_size_mult")
+        .expect("Have not energy_gun_hole_size_mult in settings.json")
+        .as_f64()
+        .expect("energy_gun_hole_size_mult is not float value in settings.json")
+        as f32
+    }; 
+    let energy_gun_add_force_mult = {
+        object
+        .get("energy_gun_add_force_mult")
+        .expect("Have not energy_gun_add_force_mult in settings.json")
+        .as_f64()
+        .expect("energy_gun_add_force_mult is not float value in settings.json")
+        as f32
+    }; 
+    let energy_gun_damage_mult = {
+        object
+        .get("energy_gun_damage_mult")
+        .expect("Have not energy_gun_damage_mult in settings.json")
+        .as_f64()
+        .expect("energy_gun_damage_mult is not float value in settings.json")
+        as f32
+    }; 
+    let energy_gun_restoring_speed = {
+        object
+        .get("energy_gun_restoring_speed")
+        .expect("Have not energy_gun_restoring_speed in settings.json")
+        .as_f64()
+        .expect("energy_gun_restoring_speed is not float value in settings.json")
+        as f32
+    };
+    let machinegun_damage = {
+        object
+        .get("machinegun_damage")
+        .expect("Have not machinegun_damage in settings.json")
+        .as_f64()
+        .expect("machinegun_damage is not float value in settings.json")
+        as f32
+    };
+    let machinegun_add_force = {
+        object
+        .get("machinegun_add_force")
+        .expect("Have not machinegun_add_force in settings.json")
+        .as_f64()
+        .expect("machinegun_add_force is not float value in settings.json")
+        as f32
+    }; 
+    let machinegun_heat_add_on_shot = {
+        object
+        .get("machinegun_heat_add_on_shot")
+        .expect("Have not machinegun_heat_add_on_shot in settings.json")
+        .as_f64()
+        .expect("machinegun_heat_add_on_shot is not float value in settings.json")
+        as f32
+    }; 
+    let machinegun_cooling_speed = {
+        object
+        .get("machinegun_cooling_speed")
+        .expect("Have not machinegun_cooling_speed in settings.json")
+        .as_f64()
+        .expect("machinegun_cooling_speed is not float value in settings.json")
+        as f32
+    };
+    let room_url = {
+        object
+        .get("room_url")
+        .expect("Have not room_url in settings.json")
+        .as_str()
+        .expect("room_url is not string value in settings.json")
+        .to_string()
+    };
 
     PlayerSettings {
         collider_radius,
@@ -192,5 +353,22 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
         gravity_y_speed,
         gravity_w_speed,
         friction_on_air,
+        rotation_along_w_standard_method,
+        shadows_enable,
+        mouse_sensivity,
+        w_jump_time_reloading,
+        min_respawn_timer,
+        max_respawn_timer,
+        scanner_show_enemies_time,
+        scanner_reloading_time,
+        energy_gun_hole_size_mult, 
+        energy_gun_add_force_mult, 
+        energy_gun_damage_mult, 
+        energy_gun_restoring_speed,
+        machinegun_damage,
+        machinegun_add_force, 
+        machinegun_heat_add_on_shot, 
+        machinegun_cooling_speed,
+        room_url,
     }
 }

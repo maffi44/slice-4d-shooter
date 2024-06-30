@@ -13,5 +13,30 @@
 
     "gravity_y_speed" : 0.5,
     "gravity_w_speed" : 0.5,
-    "friction_on_air" : 0.2
+    "friction_on_air" : 0.2,
+
+    "rotation_along_w_standard_method" : false,
+    "shadows_enable" : false,
+    
+    "mouse_sensivity" : 1.0,
+    
+    "w_jump_time_reloading" : 1.2,
+    
+    "min_respawn_timer": 1.5,
+    "max_respawn_timer": 5,
+    
+    "scanner_show_enemies_time" : 5.5,
+    "scanner_reloading_time" : 4,
+    
+    "energy_gun_hole_size_mult" : 0.1, 
+    "energy_gun_add_force_mult" : 0.4, 
+    "energy_gun_damage_mult" : 0.4, 
+    "energy_gun_restoring_speed" : 15,
+
+    "machinegun_damage" : 5,
+    "machinegun_add_force" : 0.8, 
+    "machinegun_heat_add_on_shot" : 4.15, 
+    "machinegun_cooling_speed" : 15.5,
+
+    "room_url" : "ws://localhost:3536/"
 }

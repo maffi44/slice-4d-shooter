@@ -47,6 +47,11 @@ pub struct HoleGun {
 
     energy: f32,
     current_shot_charging_energy: f32,
+
+    energy_gun_hole_size_mult: f32, 
+    energy_gun_add_force_mult: f32, 
+    energy_gun_damage_mult: f32, 
+    energy_gun_restoring_speed: f32,
 }
 
 pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
@@ -55,12 +60,18 @@ pub const MAX_CHARGING_TIME: f32 = 3.4;
 
 pub const MAX_ENERGY: f32 = 60.0;
 pub const ENERGY_DECREASING_SPEED: f32 = 20.0;
-pub const ENERGY_INCREASING_SPEED: f32 = 20.0;
+// pub const self.energy_gun_restoring_speed: f32 = 20.0;
 pub const ENERGY_SHOT_COST: f32 = 9.0;
-pub const CHARGING_ENERGY_MULT: f32 = 0.1;
+// pub const self.energy_gun_hole_size_mult: f32 = 0.1;
 
 impl HoleGun {
-    pub fn new() -> Self {
+    pub fn new(
+        energy_gun_hole_size_mult: f32, 
+        energy_gun_add_force_mult: f32, 
+        energy_gun_damage_mult: f32, 
+        energy_gun_restoring_speed: f32,
+
+    ) -> Self {
         let shooted_from_pivot_point_dir = Vec4::new(
             1.0,
             -0.42,
@@ -78,6 +89,11 @@ impl HoleGun {
 
             energy: 100.0,
             current_shot_charging_energy: 0.0,
+
+            energy_gun_hole_size_mult, 
+            energy_gun_add_force_mult, 
+            energy_gun_damage_mult, 
+            energy_gun_restoring_speed,
         }
     }
 
@@ -143,9 +159,11 @@ impl HoleGun {
                     hit.hit_point.distance(position)
                 };
 
-                let damage = (radius * 100.0) / (1.0 + dist_to_hited_point*10.0);
+                let damage = ((radius * 100.0) / (1.0 + dist_to_hited_point*10.0)) * 
+                    self.energy_gun_damage_mult;
 
-                let force = hit.hit_normal * damage / -4.5;
+                let force = (hit.hit_normal * damage / -4.5) *
+                    self.energy_gun_add_force_mult;
 
                 engine_handle.send_direct_message(
                     hit.hited_actors_id.expect("Hited Player have not Actor's ID"),
@@ -296,7 +314,7 @@ impl Device for HoleGun {
 
             if self.energy < ENERGY_SHOT_COST {
 
-                self.energy += delta*ENERGY_INCREASING_SPEED;
+                self.energy += delta*self.energy_gun_restoring_speed;
                 self.energy = self.energy.clamp(0.0, MAX_ENERGY);
 
             } else {
@@ -389,7 +407,7 @@ impl Device for HoleGun {
                         physic_system,
                         audio_system,
                         engine_handle,
-                        self.current_shot_charging_energy*CHARGING_ENERGY_MULT+ENERGY_SHOT_COST*0.04,
+                        self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                         self.color,
                     );
     
@@ -417,7 +435,7 @@ impl Device for HoleGun {
                         physic_system,
                         audio_system,
                         engine_handle,
-                        self.current_shot_charging_energy*CHARGING_ENERGY_MULT+ENERGY_SHOT_COST*0.04,
+                        self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                         self.color,
                     );
     
@@ -440,7 +458,7 @@ impl Device for HoleGun {
                 self.is_charging = false;
             }
 
-            self.energy += delta*ENERGY_INCREASING_SPEED;
+            self.energy += delta*self.energy_gun_restoring_speed;
 
             self.energy = self.energy.clamp(0.0, MAX_ENERGY);
         }
@@ -463,7 +481,7 @@ impl Device for HoleGun {
             engine_handle: &mut EngineHandle,
             delta: f32,
         ) {
-            self.energy += delta*ENERGY_INCREASING_SPEED;
+            self.energy += delta*self.energy_gun_restoring_speed;
 
             self.energy = self.energy.clamp(0.0, MAX_ENERGY);
     }
@@ -489,7 +507,7 @@ impl Device for HoleGun {
                     physic_system,
                     audio_system,
                     engine_handle,
-                    self.current_shot_charging_energy*CHARGING_ENERGY_MULT+ENERGY_SHOT_COST*0.04,
+                    self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                     self.color,
                 );
 

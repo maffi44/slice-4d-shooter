@@ -20,7 +20,7 @@ const SHOOTING_RANGE_INCR_SPEED: f32 = 15.0;
 const SHOOTING_RANGE_DCR_SPEED: f32 = 15.0;
 const TEMPERATURE_SHOT_INCR: f32 = 4.15;
 const MACHINEGUN_COOLING_SPEED: f32 = 15.5;
-const DAMAGE: u32 = 5;
+// const self.machinegun_damage: u32 = 5;
 const FORCE_ON_HIT: f32 = 0.8;
 
 const CROSSHAIR_INCREASE_ON_SHOOT: f32 = 0.2;
@@ -32,10 +32,21 @@ pub struct MachineGun {
     is_overheating: bool,
 
     shooted_from_pivot_point_dir: Vec4,
+
+    machinegun_damage: f32,
+    machinegun_add_force: f32, 
+    machinegun_heat_add_on_shot: f32, 
+    machinegun_cooling_speed: f32
 }
 
 impl MachineGun {
-    pub fn new() -> Self {
+    pub fn new(
+        machinegun_damage: f32,
+        machinegun_add_force: f32, 
+        machinegun_heat_add_on_shot: f32, 
+        machinegun_cooling_speed: f32
+
+    ) -> Self {
         let shooted_from_pivot_point_dir = Vec4::new(
             1.0,
             -0.42,
@@ -49,6 +60,11 @@ impl MachineGun {
             time_from_prev_shot: 0.0,
             is_overheating: false,
             shooted_from_pivot_point_dir,
+
+            machinegun_damage,
+            machinegun_add_force, 
+            machinegun_heat_add_on_shot, 
+            machinegun_cooling_speed
         }
     }
 
@@ -131,7 +147,7 @@ impl MachineGun {
                         message: MessageType::SpecificActorMessage(
                             SpecificActorMessage::PLayerMessages(
                                 PlayerMessages::DealDamageAndAddForce(
-                                    DAMAGE,
+                                    self.machinegun_damage as u32,
                                     force,
                                     position,
                                 )

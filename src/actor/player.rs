@@ -145,7 +145,7 @@ pub struct Player {
     is_gravity_y_enabled: bool,
     is_gravity_w_enabled: bool,
 
-    player_settings: PlayerSettings,
+    pub player_settings: PlayerSettings,
 
     no_collider_veclocity: Vec4,
 
@@ -176,6 +176,11 @@ pub struct Player {
     jumped_to_y_on_current_action: bool,
     jumped_to_w_on_current_action: bool,
     jumped_to_wy_on_current_action: bool,
+
+    w_jump_reloading_time: f32,
+
+    need_to_rotate_w_to_zero: bool,
+    time_from_previos_second_mouse_click: f32,
 }
 
 pub const PLAYER_MAX_HP: i32 = 100;
@@ -183,8 +188,8 @@ pub const PLAYER_MAX_HP: i32 = 100;
 const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
 const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
 
-const W_SCANNER_RELOAD_TIME: f32 = 6.5;
-const W_SCANNER_SHOW_ENEMIES_TIME: f32 = 5.5;
+// const self.player_settings.scanner_reloading_time: f32 = 6.5;
+// const self.player_settings.scanner_show_enemies_time: f32 = 5.5;
 const W_SCANNER_MAX_RADIUS: f32 = 43.0;
 const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
 
@@ -477,21 +482,73 @@ impl Actor for Player {
             let mut zw = self.view_angle.w;
 
             let prev_zw = zw;
-    
-            if input.second_mouse.is_action_pressed() {
-                zw = (input.mouse_axis.y + zw).clamp(-PI/2.0, PI/2.0);
 
-                // xz = input.mouse_axis.x + xz;
-                
-            } else {
-                zw *= 1.0 - delta * 3.0;
-                if zw.abs() < 0.00001 {
-                    zw = 0.0;
+            self.time_from_previos_second_mouse_click += delta;
+
+            if self.player_settings.rotation_along_w_standard_method {
+
+                if input.second_mouse.is_action_pressed() {
+                    zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
+    
+                    // xz = input.mouse_axis.x + xz;
+                    
+                } else {
+                    zw *= 1.0 - delta * 3.0;
+                    if zw.abs() < 0.00001 {
+                        zw = 0.0;
+                    }
+                    
+                    xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                    yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
                 }
-                
-                xz = input.mouse_axis.x + xz;
-                yz = (input.mouse_axis.y + yz).clamp(-PI/2.0, PI/2.0);
+            } else {
+
+                if input.second_mouse.is_action_just_pressed() {
+                    self.need_to_rotate_w_to_zero = false;
+
+                    if self.time_from_previos_second_mouse_click < 0. {
+                        self.need_to_rotate_w_to_zero = true;
+                    }
+
+                    self.time_from_previos_second_mouse_click = 0.0
+                }
+
+                if input.second_mouse.is_action_pressed() {
+                    if !self.need_to_rotate_w_to_zero {
+                        
+                        zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
+                    
+                    } else {
+                        zw *= 1.0 - delta * 3.0;
+                        if zw.abs() < 0.00001 {
+                            zw = 0.0;
+                        }
+
+                        // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                        // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+                    }
+    
+                    // xz = input.mouse_axis.x + xz;
+                    
+                } else {
+                    if !self.need_to_rotate_w_to_zero {
+
+                        xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                        yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+                    
+                    } else {
+                        
+                        zw *= 1.0 - delta * 3.0;
+                        if zw.abs() < 0.00001 {
+                            zw = 0.0;
+                        }
+                        
+                        xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                        yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+                    }
+                }
             }
+    
 
 
             let zw_arrow = ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrow);
@@ -840,16 +897,23 @@ impl Actor for Player {
                 }
             }
 
+            self.w_jump_reloading_time += delta;
+
             if input.jump_wy.is_action_just_pressed() {
 
                 self.jumped_to_wy_on_current_action = false;
     
                 if self.inner_state.collider.is_on_w_ground && self.inner_state.collider.is_on_y_ground {
-                    self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed*1.1);
-                    self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed*1.1);
 
-
-                    self.jumped_to_wy_on_current_action = true;
+                    if self.w_jump_reloading_time >= self.player_settings.w_jump_time_reloading {
+                        
+                        self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed*1.1);
+                        self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed*1.1);
+    
+    
+                        self.jumped_to_wy_on_current_action = true;
+                        self.w_jump_reloading_time = 0.0
+                    }
                 }
             }
 
@@ -857,12 +921,14 @@ impl Actor for Player {
                 
                 if !self.jumped_to_wy_on_current_action {
 
-                    if self.inner_state.collider.is_on_w_ground  && self.inner_state.collider.is_on_y_ground {
+                    if self.w_jump_reloading_time >= self.player_settings.w_jump_time_reloading {
+                        
                         self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed*1.1);
                         self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed*1.1);
-
-
+    
+    
                         self.jumped_to_wy_on_current_action = true;
+                        self.w_jump_reloading_time = 0.0
                     }
                 }
             }
@@ -872,18 +938,26 @@ impl Actor for Player {
                 self.jumped_to_w_on_current_action = false;
     
                 if self.inner_state.collider.is_on_w_ground {
-                    self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-
-                    self.jumped_to_w_on_current_action = true;
+                    if self.w_jump_reloading_time >= self.player_settings.w_jump_time_reloading {
+                        
+                        self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+    
+                        self.jumped_to_w_on_current_action = true;
+                        self.w_jump_reloading_time = 0.0
+                    }
                 }
             }
 
             if input.jump_w.is_action_pressed() {
                 if !self.jumped_to_w_on_current_action {
                     if self.inner_state.collider.is_on_w_ground {
-                        self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-
-                        self.jumped_to_w_on_current_action = true;
+                        if self.w_jump_reloading_time >= self.player_settings.w_jump_time_reloading {
+                        
+                            self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+        
+                            self.jumped_to_w_on_current_action = true;
+                            self.w_jump_reloading_time = 0.0
+                        }
                     }
                 }
             }
@@ -907,7 +981,7 @@ impl Actor for Player {
     
             if input.w_scanner.is_action_just_pressed() {
                 if !self.w_scanner_enable {
-                    if self.w_scanner_reloading_time >= W_SCANNER_RELOAD_TIME {
+                    if self.w_scanner_reloading_time >= self.player_settings.scanner_reloading_time {
                         self.w_scanner_enable = true;
 
                         audio_system.spawn_non_spatial_sound(
@@ -939,7 +1013,7 @@ impl Actor for Player {
     
             if !self.w_scanner_enable {
     
-                if self.w_scanner_reloading_time < W_SCANNER_RELOAD_TIME {
+                if self.w_scanner_reloading_time < self.player_settings.scanner_reloading_time {
                     self.w_scanner_reloading_time += delta;
                 }
 
@@ -1013,7 +1087,7 @@ impl Actor for Player {
                 intensity.clamp(0.0, 1.0)
             };
             self.screen_effects.w_scanner_enemies_intesity = {
-                let mut intensity = W_SCANNER_SHOW_ENEMIES_TIME - self.w_scanner_enemies_show_time;
+                let mut intensity = self.player_settings.scanner_show_enemies_time - self.w_scanner_enemies_show_time;
     
                 intensity.clamp(0.0, 1.0)
             };
@@ -1090,7 +1164,7 @@ impl Actor for Player {
                 self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
             }
 
-            if self.after_death_timer >= MAX_TIME_BEFORE_RESPAWN {
+            if self.after_death_timer >= self.player_settings.max_respawn_timer {
                 engine_handle.send_command(
                     Command {
                         sender: self.get_id().expect("Player have not ActorID"),
@@ -1103,7 +1177,7 @@ impl Actor for Player {
             }
 
             if input.first_mouse.is_action_just_pressed() {
-                if self.after_death_timer >= MIN_TIME_BEFORE_RESPAWN {
+                if self.after_death_timer >= self.player_settings.min_respawn_timer {
                     engine_handle.send_command(
                         Command {
                             sender: self.get_id().expect("Player have not ActorID"),
@@ -1197,6 +1271,10 @@ impl Player {
             false,
             fyrox_sound::source::Status::Playing
         );
+
+        let w_scanner_reloading_time =  player_settings.scanner_reloading_time;
+        let w_scanner_enemies_show_time =  player_settings.scanner_show_enemies_time;
+        let after_death_timer =  player_settings.min_respawn_timer;
         
         Player {
             id: None,
@@ -1204,8 +1282,18 @@ impl Player {
             inner_state: PlayerInnerState::new(Transform::new(), &player_settings, false, false),
             active_hands_slot: ActiveHandsSlot::Zero,
 
-            hands_slot_0: Box::new(HoleGun::new()),
-            hands_slot_1: Some(Box::new(MachineGun::new())),
+            hands_slot_0: Box::new(HoleGun::new(
+                player_settings.energy_gun_hole_size_mult, 
+                player_settings.energy_gun_add_force_mult, 
+                player_settings.energy_gun_damage_mult, 
+                player_settings.energy_gun_restoring_speed,
+            )),
+            hands_slot_1: Some(Box::new(MachineGun::new(
+                player_settings.machinegun_damage,
+                player_settings.machinegun_add_force, 
+                player_settings.machinegun_heat_add_on_shot, 
+                player_settings.machinegun_cooling_speed
+            ))),
             hands_slot_2: None,
             hands_slot_3: None,
 
@@ -1229,10 +1317,10 @@ impl Player {
 
             w_scanner_enable: false,
             w_scanner_radius: 0.0,
-            w_scanner_reloading_time: W_SCANNER_RELOAD_TIME,
-            w_scanner_enemies_show_time: W_SCANNER_SHOW_ENEMIES_TIME,
+            w_scanner_reloading_time,
+            w_scanner_enemies_show_time,
 
-            after_death_timer: MIN_TIME_BEFORE_RESPAWN,
+            after_death_timer,
             need_to_die_slowly: false,
 
             rotating_around_w_sound_handle,
@@ -1247,6 +1335,11 @@ impl Player {
             jumped_to_y_on_current_action: false,
             jumped_to_w_on_current_action: false,
             jumped_to_wy_on_current_action: false,
+
+            w_jump_reloading_time: 0.0,
+
+            need_to_rotate_w_to_zero: true,
+            time_from_previos_second_mouse_click: 0.0,
         }
     }
 
@@ -1780,7 +1873,7 @@ impl Player {
         self.screen_effects.w_scanner_ring_intesity = 0.0;
         self.screen_effects.w_scanner_radius = 0.0;
         self.screen_effects.w_scanner_is_active = false;
-        self.w_scanner_reloading_time = W_SCANNER_RELOAD_TIME;
+        self.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
 
         self.inner_state.collider.reset_forces_and_velocity();
 
@@ -1920,8 +2013,8 @@ impl Player {
     fn restore_scanner_values(&mut self) {
         self.w_scanner_enable = false;
         self.w_scanner_radius = 0.0;
-        self.w_scanner_reloading_time = W_SCANNER_RELOAD_TIME;
-        self.w_scanner_enemies_show_time = W_SCANNER_SHOW_ENEMIES_TIME;
+        self.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
+        self.w_scanner_enemies_show_time = self.player_settings.scanner_show_enemies_time;
     }
 
     fn restore_w_shift_and_rotate_values(&mut self) {

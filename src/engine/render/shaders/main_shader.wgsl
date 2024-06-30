@@ -271,7 +271,7 @@ struct OtherStaticData {
     stickiness: f32,
 
     empty_byte1: u32,
-    empty_byte2: u32,
+    shadows_enabled: i32,
     materials: array<Material, 32>,
 }
 
@@ -296,7 +296,7 @@ struct OtherStaticData {
 
 const MAX_STEPS: i32 = 120;
 const PI: f32 = 3.1415926535897;
-const MIN_DIST: f32 = 0.011;
+const MIN_DIST: f32 = 0.012;
 const MAX_DIST: f32 = 50.0;
 
 const STICKINESS_EFFECT_COEF: f32 = 3.1415926535897;
@@ -2629,7 +2629,11 @@ fn apply_material(
     let sun_dif_1 = clamp(dot(normal, sun_dir_1),0.0,1.0);
     let sun_hal_1 = normalize(sun_dir_1-ray_dir);
     let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),20.0);
-    let sun_shadow_1 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_1);
+    
+    var sun_shadow_1 = 1.0;
+    if static_data.shadows_enabled == 1 {
+        sun_shadow_1 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_1);
+    }
 
     // sun light 2
     // let sun_dir_2 = normalize(SUN_DIR_2);
@@ -2820,7 +2824,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
 
     // color = clamp(color, vec3(0.0), vec3(1.0));
-    // color *= 0.5001;
+    // color *= 0.3001;
     // color.r += dist_and_depth.y / f32(MAX_STEPS);
 
     

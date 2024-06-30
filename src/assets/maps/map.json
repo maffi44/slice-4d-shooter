@@ -76,6 +76,16 @@
                 "position" : {
                     "x": 0.0,
                     "y": 1.0,
+                    "z": -14.0,
+                    "w": 4
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 0.0,
+                    "y": 1.0,
                     "z": -3.0,
                     "w": 1.5
                 }
@@ -250,7 +260,7 @@
                                     "x": 0,
                                     "y": -3,
                                     "z": 0,
-                                    "w": 13.4
+                                    "w": 13.1
                                 },
                                 "rotation" : {
                                     "yz": 0.0,
@@ -542,7 +552,7 @@
                         "x": 16.0,
                         "y": -5.2 ,
                         "z": 8.0,
-                        "w": 1.5
+                        "w": 0.5
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -557,7 +567,7 @@
                     "x": 18,
                     "y": 0.2,
                     "z": 8,
-                    "w": 1.5
+                    "w": 0.5
                 },
                 "roundness" : 0.1,
                 "friction" : 0.0,
@@ -572,7 +582,7 @@
                         "x": 34.0,
                         "y": -3 ,
                         "z": 8.0,
-                        "w": 1.5
+                        "w": 0.5
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -587,7 +597,7 @@
                     "x": 0.2,
                     "y": 2,
                     "z": 4,
-                    "w": 1.5
+                    "w": 0.5
                 },
                 "roundness" : 0.1,
                 "friction" : 0.0,
@@ -604,7 +614,7 @@
                         "x": 34.5,
                         "y": 10 ,
                         "z": 8.0,
-                        "w": 1.5
+                        "w": 0.5
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -619,7 +629,7 @@
                     "x": 0.2,
                     "y": 2,
                     "z": 4,
-                    "w": 1.5
+                    "w": 0.5
                 },
                 "roundness" : 0.1,
                 "friction" : 0.0,
@@ -635,7 +645,7 @@
                         "x": 33,
                         "y": 12 ,
                         "z": 8.0,
-                        "w": 1.5
+                        "w": 0.5
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -650,7 +660,7 @@
                     "x": 2,
                     "y": 0.2,
                     "z": 4,
-                    "w": 1.5
+                    "w": 0.5
                 },
                 "roundness" : 0.1,
                 "friction" : 0.0,
@@ -664,7 +674,7 @@
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": 0.3 ,
+                        "y": 0 ,
                         "z": -10.5,
                         "w": 1.5
                     },
@@ -679,11 +689,11 @@
                 },
                 "size" : {
                     "x": 3,
-                    "y": 0.3,
+                    "y": 0.05,
                     "z": 3,
                     "w": 10.5
                 },
-                "roundness" : 0.00,
+                "roundness" : 0.4,
                 "stickiness" : false,
                 "visual_material" : "portal"
             }
@@ -696,7 +706,7 @@
                         "x": 10,
                         "y": 15 ,
                         "z": -15,
-                        "w": 3.2
+                        "w": 3.05
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -711,7 +721,7 @@
                     "x": 40,
                     "y": 40,
                     "z": 40,
-                    "w": 0.2
+                    "w": 0.05
                 },
                 "roundness" : 0.1,
                 "friction" : 0.0,
@@ -727,7 +737,7 @@
                         "x": 0.0,
                         "y": 2.6,
                         "z": -10.5,
-                        "w": 3.2
+                        "w": 3.05
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -740,7 +750,7 @@
                 },
                 "size" : {
                     "x": 3,
-                    "y": 2,
+                    "y": 1.8,
                     "z": 3,
                     "w": 2
                 },
@@ -756,7 +766,7 @@
                         "x": 0.0,
                         "y": -0.2 ,
                         "z": -10.5,
-                        "w": 13.4
+                        "w": 13.1
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -768,9 +778,9 @@
                     }
                 },
                 "size" : {
-                    "x": 25,
+                    "x": 18,
                     "y": 0.2,
-                    "z": 25,
+                    "z": 21.5,
                     "w": 10
                 },
                 "roundness" : 0.00,
@@ -785,7 +795,7 @@
                         "x": 15,
                         "y": 0.1,
                         "z": 8.0,
-                        "w": 13.4
+                        "w": 13.1
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -814,9 +824,9 @@
                 "transform" : {
                     "position" : {
                         "x": 17,
-                        "y": 6,
+                        "y": 5.75,
                         "z": 8.0,
-                        "w": 13.4
+                        "w": 13.1
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -829,7 +839,7 @@
                 },
                 "size" : {
                     "x": 0.001,
-                    "y": 6,
+                    "y": 5.75,
                     "z": 2,
                     "w": 10
                 },
@@ -841,13 +851,43 @@
         },
         {
             "cube" : {
+                "comment" : "w2 trumplin wall 1 hole",
+                "transform" : {
+                    "position" : {
+                        "x": 17,
+                        "y": 10.5,
+                        "z": 8.0,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.001,
+                    "y": 1.9,
+                    "z": 0.8,
+                    "w": 10
+                },
+                "roundness" : 0.82,
+                "stickiness" : false,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
                 "comment" : "w2 trumplin wall 2",
                 "transform" : {
                     "position" : {
                         "x": 15,
-                        "y": 6,
+                        "y": 5.75,
                         "z": 10,
-                        "w": 13.4
+                        "w": 13.1
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -860,7 +900,7 @@
                 },
                 "size" : {
                     "x": 2,
-                    "y": 6,
+                    "y": 5.75,
                     "z": 0.001,
                     "w": 10
                 },
@@ -872,13 +912,43 @@
         },
         {
             "cube" : {
+                "comment" : "w2 trumplin wall 2 hole",
+                "transform" : {
+                    "position" : {
+                        "x": 15,
+                        "y": 10.5,
+                        "z": 10.0,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.8,
+                    "y": 1.9,
+                    "z": 0.001,
+                    "w": 10
+                },
+                "roundness" : 0.82,
+                "stickiness" : false,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
                 "comment" : "w2 trumplin wall small 1",
                 "transform" : {
                     "position" : {
                         "x": 13,
                         "y": 0.2,
                         "z": 8.0,
-                        "w": 13.4
+                        "w": 13.1
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -909,7 +979,7 @@
                         "x": 15,
                         "y": 0.2,
                         "z": 6,
-                        "w": 13.4
+                        "w": 13.1
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -931,8 +1001,538 @@
                 "stickiness" : false,
                 "visual_material" : "slick"
             }
-        }
-        
+        },
 
+        {
+            "cube" : {
+                "comment" : "w2 x-z first volume 1",
+                "transform" : {
+                    "position" : {
+                        "x": 14.8,
+                        "y": 2.5 ,
+                        "z": -23,
+                        "w": 4.6
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.2,
+                    "y": 1.7,
+                    "z": 8,
+                    "w": 1.5
+                },
+                "roundness" : 0.20,
+                "friction" : 0.0,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 x-z first volume 2",
+                "transform" : {
+                    "position" : {
+                        "x": 10,
+                        "y": 2.5 ,
+                        "z": -28.8,
+                        "w": 4.6
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 8,
+                    "y": 1.7,
+                    "z": 3.2,
+                    "w": 1.5
+                },
+                "roundness" : 0.20,
+                "friction" : 0.0,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 x-z first volume 1 platform",
+                "transform" : {
+                    "position" : {
+                        "x": 14.8,
+                        "y": 0.9 ,
+                        "z": -23,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.2,
+                    "y": 0.1,
+                    "z": 8,
+                    "w": 10
+                },
+                "roundness" : 0.20,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 x-z first volume 2 platform",
+                "transform" : {
+                    "position" : {
+                        "x": 10,
+                        "y": 0.9 ,
+                        "z": -28.8,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 8,
+                    "y": 0.1,
+                    "z": 3.2,
+                    "w": 10
+                },
+                "roundness" : 0.20,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 x-z second volume",
+                "transform" : {
+                    "position" : {
+                        "x": 12,
+                        "y": 4.2 ,
+                        "z": -26,
+                        "w": 6.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6,
+                    "y": 1.7,
+                    "z": 6,
+                    "w": 3
+                },
+                "roundness" : 0.20,
+                "friction" : 0.0,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 x-z second volume platform",
+                "transform" : {
+                    "position" : {
+                        "x": 12,
+                        "y": 2.6 ,
+                        "z": -26,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6,
+                    "y": 0.1,
+                    "z": 6,
+                    "w": 10
+                },
+                "roundness" : 0.20,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -xz first volume 1",
+                "transform" : {
+                    "position" : {
+                        "x": -14.8,
+                        "y": 2.5 ,
+                        "z": 3,
+                        "w": 4.6
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.2,
+                    "y": 1.7,
+                    "z": 8,
+                    "w": 1.5
+                },
+                "roundness" : 0.20,
+                "friction" : 0.0,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -xz first volume 2",
+                "transform" : {
+                    "position" : {
+                        "x": -10,
+                        "y": 2.5 ,
+                        "z": 8,
+                        "w": 4.6
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 8,
+                    "y": 1.7,
+                    "z": 3.2,
+                    "w": 1.5
+                },
+                "roundness" : 0.20,
+                "friction" : 0.0,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -xz first volume 1 platform",
+                "transform" : {
+                    "position" : {
+                        "x": -14.8,
+                        "y": 0.9 ,
+                        "z": 3,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.2,
+                    "y": 0.1,
+                    "z": 8,
+                    "w": 10
+                },
+                "roundness" : 0.20,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -xz first volume 2 platform",
+                "transform" : {
+                    "position" : {
+                        "x": -10,
+                        "y": 0.9 ,
+                        "z": 8,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 8,
+                    "y": 0.1,
+                    "z": 3.2,
+                    "w": 10
+                },
+                "roundness" : 0.20,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -xz second volume",
+                "transform" : {
+                    "position" : {
+                        "x": -12,
+                        "y": 4.2 ,
+                        "z": 5,
+                        "w": 6.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6,
+                    "y": 1.7,
+                    "z": 6,
+                    "w": 3
+                },
+                "roundness" : 0.20,
+                "friction" : 0.0,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -xz second volume platform",
+                "transform" : {
+                    "position" : {
+                        "x": -12,
+                        "y": 2.6 ,
+                        "z": 5,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6,
+                    "y": 0.1,
+                    "z": 6,
+                    "w": 10
+                },
+                "roundness" : 0.20,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -x-z first volume 1",
+                "transform" : {
+                    "position" : {
+                        "x": -14.8,
+                        "y": 2.5 ,
+                        "z": -23,
+                        "w": 4.6
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.2,
+                    "y": 1.7,
+                    "z": 8,
+                    "w": 1.5
+                },
+                "roundness" : 0.20,
+                "friction" : 0.0,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -x-z first volume 2",
+                "transform" : {
+                    "position" : {
+                        "x": -10,
+                        "y": 2.5 ,
+                        "z": -28.8,
+                        "w": 4.6
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 8,
+                    "y": 1.7,
+                    "z": 3.2,
+                    "w": 1.5
+                },
+                "roundness" : 0.20,
+                "friction" : 0.0,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -x-z first volume 1 platform",
+                "transform" : {
+                    "position" : {
+                        "x": -14.8,
+                        "y": 0.9 ,
+                        "z": -23,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.2,
+                    "y": 0.1,
+                    "z": 8,
+                    "w": 10
+                },
+                "roundness" : 0.20,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -x-z first volume 2 platform",
+                "transform" : {
+                    "position" : {
+                        "x": -10,
+                        "y": 0.9 ,
+                        "z": -28.8,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 8,
+                    "y": 0.1,
+                    "z": 3.2,
+                    "w": 10
+                },
+                "roundness" : 0.20,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -x-z second volume",
+                "transform" : {
+                    "position" : {
+                        "x": -12,
+                        "y": 4.2 ,
+                        "z": -26,
+                        "w": 6.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6,
+                    "y": 1.7,
+                    "z": 6,
+                    "w": 3
+                },
+                "roundness" : 0.20,
+                "friction" : 0.0,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "w2 -x-z second volume platform",
+                "transform" : {
+                    "position" : {
+                        "x": -12,
+                        "y": 2.6 ,
+                        "z": -26,
+                        "w": 13.1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6,
+                    "y": 0.1,
+                    "z": 6,
+                    "w": 10
+                },
+                "roundness" : 0.20,
+                "visual_material" : "standart"
+            }
+        }
     ]
 }
