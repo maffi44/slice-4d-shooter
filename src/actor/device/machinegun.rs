@@ -18,10 +18,10 @@ const MAX_TEMPERTURE: f32 = 60.0;
 const MAX_SHOOTING_RANGE: f32 = 0.009;
 const SHOOTING_RANGE_INCR_SPEED: f32 = 15.0;
 const SHOOTING_RANGE_DCR_SPEED: f32 = 15.0;
-const TEMPERATURE_SHOT_INCR: f32 = 4.15;
-const MACHINEGUN_COOLING_SPEED: f32 = 15.5;
+// const self.machinegun_heat_add_on_shot: f32 = 4.15;
+// const self.machinegun_cooling_speed: f32 = 15.5;
 // const self.machinegun_damage: u32 = 5;
-const FORCE_ON_HIT: f32 = 0.8;
+// const self.machinegun_add_force: f32 = 0.8;
 
 const CROSSHAIR_INCREASE_ON_SHOOT: f32 = 0.2;
 
@@ -69,8 +69,8 @@ impl MachineGun {
     }
 
     fn cool_machinegun(&mut self, delta: f32) {
-        if self.temperature > delta * MACHINEGUN_COOLING_SPEED {
-            self.temperature -= delta * MACHINEGUN_COOLING_SPEED;
+        if self.temperature > delta * self.machinegun_cooling_speed {
+            self.temperature -= delta * self.machinegun_cooling_speed;
         } else {
             self.temperature = 0.0;
         }
@@ -138,7 +138,7 @@ impl MachineGun {
 
             if let Some(hited_id) = hit.hited_actors_id {
                 
-                let force = hit.hit_normal * -FORCE_ON_HIT;
+                let force = hit.hit_normal * -self.machinegun_add_force;
     
                 engine_handle.send_direct_message(
                     hited_id,
@@ -264,7 +264,7 @@ impl Device for MachineGun {
 
                 player.crosshair_target_size += CROSSHAIR_INCREASE_ON_SHOOT;
 
-                self.temperature += TEMPERATURE_SHOT_INCR;
+                self.temperature += self.machinegun_heat_add_on_shot;
                 if self.shooting_range < MAX_SHOOTING_RANGE {
                     self.shooting_range += MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_INCR_SPEED * 1.0/FIRE_RATE;
                 }

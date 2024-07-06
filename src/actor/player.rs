@@ -562,7 +562,7 @@ impl Actor for Player {
             let zx_arrow = ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrow);
 
             if let UIElement::Image(arrow) = zx_arrow {
-                arrow.set_rotation_around_screen_center(xz);
+                arrow.set_rotation_around_screen_center(xz-PI/2.0);
             } else {
                 panic!("UI Element ZXScannerArrow is not UIImage")
             }

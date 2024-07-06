@@ -20,8 +20,8 @@ pub enum KinematicColliderMessages {
 }
 
 pub const MIN_STEP: f32 = 0.009;
-const MAX_COLLIDING_ITERATIONS: u32 = 50;
-const MAX_SMALL_STEPS_COLLIDING_ITERATIONS: u32 = 150;
+const MAX_COLLIDING_ITERATIONS: u32 = 100;
+const MAX_SMALL_STEPS_COLLIDING_ITERATIONS: u32 = 250;
 
 pub struct KinematicCollider {
     pub is_enable: bool,
