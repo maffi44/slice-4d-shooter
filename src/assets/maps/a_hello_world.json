@@ -1,0 +1,989 @@
+{
+    "level_name": "test_level",
+    "defaults": {
+        "is_positive": true,
+        "friction": 0.35,
+        "bounce_rate": 0.0,
+        "visual_material": "wall",
+        "roundness": 0.05,
+        "stickiness": false
+    },
+    "visual_materials": [
+        {
+            "name": "wall",
+            "color": {
+                "red": 0.25,
+                "green": 0.25,
+                "blue": 0.35
+            }
+        },
+        {
+            "name": "floor",
+            "color": {
+                "red": 0.2,
+                "green": 0.2,
+                "blue": 0.3
+            }
+        },
+        {
+            "name": "metallic",
+            "color": {
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
+            }
+        },
+        {
+            "name": "metallic_red",
+            "color": {
+                "red": 0.45,
+                "green": 0.46,
+                "blue": 0.04
+            }
+        }
+    ],
+    "players_visual_materials": {
+        "inner": "metallic_red",
+        "outer": "metallic"
+    },
+    "w_cups_visual_materials": "metallic",
+    "all_shapes_stickiness_radius": 0.3,
+    "spawn_positions": [
+        {
+            "transform": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            }
+        }
+    ],
+    "w_cups": {
+        "w_floor": -0.5
+    },
+    "actors": [],
+    "static_objects": [
+        {
+            "cube_w_inf": {
+                "_comment": "ceiling_lift",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 2.0,
+                        "z": -15.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5.0,
+                    "y": 0.1,
+                    "z": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "floor_lift",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -5.0,
+                        "z": -15.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5.0,
+                    "y": 0.1,
+                    "z": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube": {
+                "_comment": "first wall_lift",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -1.5,
+                        "z": -10.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 4.9,
+                    "y": 3.4,
+                    "z": 2.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "second wall_lift",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -1.5,
+                        "z": -20.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5.0,
+                    "y": 3.5,
+                    "z": 0.1
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "third wall_lift",
+                "transform": {
+                    "position": {
+                        "x": 5.0,
+                        "y": -1.5,
+                        "z": -15.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.1,
+                    "y": 3.5,
+                    "z": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "fourth wall_lift",
+                "transform": {
+                    "position": {
+                        "x": -5.0,
+                        "y": -1.5,
+                        "z": -15.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.1,
+                    "y": 3.5,
+                    "z": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "ceiling",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 9.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 0.1,
+                    "z": 10.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "floor",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -5.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 0.1,
+                    "z": 10.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "first wall",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 2.0,
+                        "z": 10.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 7.0,
+                    "z": 0.1
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "second wall",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 2.0,
+                        "z": -10.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 7.0,
+                    "z": 0.1
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "third wall",
+                "transform": {
+                    "position": {
+                        "x": 10.0,
+                        "y": 2.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.1,
+                    "y": 7.0,
+                    "z": 10.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "fourth wall",
+                "transform": {
+                    "position": {
+                        "x": -10.0,
+                        "y": 2.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.1,
+                    "y": 7.0,
+                    "z": 10.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "pedestal1",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -4.5,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 3.0,
+                    "y": 0.5,
+                    "z": 3.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "pedestal2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -3.5,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 2.0,
+                    "y": 0.5,
+                    "z": 2.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "pedestal3",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -2.5,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 0.5,
+                    "z": 1.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "sphere": {
+                "_comment": "crystal",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -1.5,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.5
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "ceiling_lift2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 2.0,
+                        "z": 15.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5.0,
+                    "y": 0.1,
+                    "z": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "floor_lift2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -5.0,
+                        "z": 15.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5.0,
+                    "y": 0.1,
+                    "z": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube": {
+                "_comment": "first wall_lift2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -1.5,
+                        "z": 20.0,
+                        "w": 6.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 4.9,
+                    "y": 3.4,
+                    "z": 2.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "second wall_lift2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -1.5,
+                        "z": 10.0,
+                        "w": 10.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 4.9,
+                    "y": 3.4,
+                    "z": 2.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "third wall_lift2",
+                "transform": {
+                    "position": {
+                        "x": 5.0,
+                        "y": -1.5,
+                        "z": 15.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.1,
+                    "y": 3.5,
+                    "z": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "fourth wall_lift2",
+                "transform": {
+                    "position": {
+                        "x": -5.0,
+                        "y": -1.5,
+                        "z": 15.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.1,
+                    "y": 3.5,
+                    "z": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "ceiling2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 9.0,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 0.1,
+                    "z": 10.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "floor2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -5.0,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 0.1,
+                    "z": 10.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "first wall2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 2.0,
+                        "z": 40.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 7.0,
+                    "z": 0.1
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "second wall2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 2.0,
+                        "z": 20.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 7.0,
+                    "z": 0.1
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "third wall2",
+                "transform": {
+                    "position": {
+                        "x": 10.0,
+                        "y": 2.0,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.1,
+                    "y": 7.0,
+                    "z": 10.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "fourth wall2",
+                "transform": {
+                    "position": {
+                        "x": -10.0,
+                        "y": 2.0,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.1,
+                    "y": 7.0,
+                    "z": 10.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube": {
+                "_comment": "pedestal2_1",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -4.5,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 3.0,
+                    "y": 0.5,
+                    "z": 3.0,
+                    "w": 1.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube": {
+                "_comment": "pedestal2_2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -3.5,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 2.0,
+                    "y": 0.5,
+                    "z": 2.0,
+                    "w": 1.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube": {
+                "_comment": "pedestal2_3",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -2.5,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 0.5,
+                    "z": 1.0,
+                    "w": 1.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "sphere": {
+                "_comment": "crystal",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -1.5,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 0.5
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube": {
+                "transform": {
+                    "position": {
+                        "x": -5.0,
+                        "y": 5.0,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 2.0,
+                    "y": 1.0,
+                    "z": 1.0,
+                    "w": 1.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "sph_cube": {
+                "transform": {
+                    "position": {
+                        "x": 5.0,
+                        "y": 5.0,
+                        "z": 30.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 3.0,
+                    "y": 3.0,
+                    "z": 3.0,
+                    "w": 6.0
+                },
+                "is_positive": true
+            }
+        }
+    ]
+}

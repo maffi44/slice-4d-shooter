@@ -1,0 +1,207 @@
+{
+    "level_name": "test_level",
+    "defaults": {
+        "is_positive": true,
+        "friction": 0.35,
+        "bounce_rate": 0.0,
+        "visual_material": "wall",
+        "roundness": 0.05,
+        "stickiness": false
+    },
+    "visual_materials": [
+        {
+            "name": "wall",
+            "color": {
+                "red": 0.25,
+                "green": 0.25,
+                "blue": 0.35
+            }
+        },
+        {
+            "name": "floor",
+            "color": {
+                "red": 0.2,
+                "green": 0.2,
+                "blue": 0.3
+            }
+        },
+        {
+            "name": "metallic",
+            "color": {
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
+            }
+        },
+        {
+            "name": "metallic_red",
+            "color": {
+                "red": 0.45,
+                "green": 0.46,
+                "blue": 0.04
+            }
+        }
+    ],
+    "players_visual_materials": {
+        "inner": "metallic_red",
+        "outer": "metallic"
+    },
+    "w_cups_visual_materials": "metallic",
+    "all_shapes_stickiness_radius": 0.3,
+    "spawn_positions": [
+        {
+            "transform": {
+                "position": {
+                    "x": 0.0,
+                    "y": 2.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "rotation": {
+                    "yz": 0.0,
+                    "xz": 0.0,
+                    "xy": 0.0,
+                    "wx": 0.0,
+                    "wy": 0.0,
+                    "wz": 0.0
+                }
+            }
+        }
+    ],
+    "w_cups": {
+        "w_floor": -0.5
+    },
+    "actors": [],
+    "static_objects": [
+        {
+            "cube_w_inf": {
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 0.1,
+                    "z": 6.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "transform": {
+                    "position": {
+                        "x": 20.0,
+                        "y": -2.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 0.1,
+                    "z": 6.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "transform": {
+                    "position": {
+                        "x": 40.0,
+                        "y": -4.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 0.1,
+                    "z": 6.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "transform": {
+                    "position": {
+                        "x": 60.0,
+                        "y": -6.0,
+                        "z": 5.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 0.1,
+                    "z": 6.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "cube_w_inf": {
+                "transform": {
+                    "position": {
+                        "x": 80.0,
+                        "y": -8.0,
+                        "z": 10.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 10.0,
+                    "y": 0.1,
+                    "z": 6.0
+                },
+                "is_positive": true
+            }
+        }
+    ]
+}

@@ -1,0 +1,748 @@
+{
+    "level_name": "test_level",
+    "defaults": {
+        "is_positive": true,
+        "friction": 0.35,
+        "bounce_rate": 0.0,
+        "visual_material": "wall",
+        "roundness": 0.05,
+        "stickiness": false
+    },
+    "visual_materials": [
+        {
+            "name": "wall",
+            "color": {
+                "red": 0.25,
+                "green": 0.25,
+                "blue": 0.35
+            }
+        },
+        {
+            "name": "floor",
+            "color": {
+                "red": 0.2,
+                "green": 0.2,
+                "blue": 0.3
+            }
+        },
+        {
+            "name": "metallic",
+            "color": {
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
+            }
+        },
+        {
+            "name": "metallic_red",
+            "color": {
+                "red": 0.45,
+                "green": 0.46,
+                "blue": 0.04
+            }
+        }
+    ],
+    "players_visual_materials": {
+        "inner": "metallic_red",
+        "outer": "metallic"
+    },
+    "w_cups_visual_materials": "metallic",
+    "all_shapes_stickiness_radius": 0.3,
+    "spawn_positions": [
+        {
+            "transform": {
+                "position": {
+                    "x": 0.0,
+                    "y": 2.0,
+                    "z": 0.0,
+                    "w": 0.0
+                },
+                "rotation": {
+                    "yz": 0.0,
+                    "xz": 0.0,
+                    "xy": 0.0,
+                    "wx": 0.0,
+                    "wy": 0.0,
+                    "wz": 0.0
+                }
+            }
+        }
+    ],
+    "w_cups": {
+        "w_floor": -0.5
+    },
+    "actors": [],
+    "static_objects": [
+        {
+            "cube_w_inf": {
+                "_comment": "large platform",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 10.0,
+                    "z": 10.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "cylinder 1",
+                "transform": {
+                    "position": {
+                        "x": 47.0,
+                        "y": 15.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "cylinder 2",
+                "transform": {
+                    "position": {
+                        "x": 47.0,
+                        "y": 15.0,
+                        "z": 10.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 5.0,
+                    "z": 50.0,
+                    "w": 5.0
+                },
+                "is_positive": true
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 1",
+                "transform": {
+                    "position": {
+                        "x": 47.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 2",
+                "transform": {
+                    "position": {
+                        "x": 42.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 3",
+                "transform": {
+                    "position": {
+                        "x": 37.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 4",
+                "transform": {
+                    "position": {
+                        "x": 32.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 5",
+                "transform": {
+                    "position": {
+                        "x": 27.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 6",
+                "transform": {
+                    "position": {
+                        "x": 22.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 7",
+                "transform": {
+                    "position": {
+                        "x": 17.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 8",
+                "transform": {
+                    "position": {
+                        "x": 12.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 9",
+                "transform": {
+                    "position": {
+                        "x": 7.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 10",
+                "transform": {
+                    "position": {
+                        "x": 2.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 11",
+                "transform": {
+                    "position": {
+                        "x": -3.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 12",
+                "transform": {
+                    "position": {
+                        "x": -8.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 13",
+                "transform": {
+                    "position": {
+                        "x": -13.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 14",
+                "transform": {
+                    "position": {
+                        "x": -18.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 14",
+                "transform": {
+                    "position": {
+                        "x": -23.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 15",
+                "transform": {
+                    "position": {
+                        "x": -28.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 16",
+                "transform": {
+                    "position": {
+                        "x": -33.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 17",
+                "transform": {
+                    "position": {
+                        "x": -38.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 18",
+                "transform": {
+                    "position": {
+                        "x": -43.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 19",
+                "transform": {
+                    "position": {
+                        "x": -48.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "sph_cube": {
+                "_comment": "hole 20",
+                "transform": {
+                    "position": {
+                        "x": -53.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 50.0,
+                    "y": 50.0,
+                    "z": 5.0,
+                    "w": 5.0
+                },
+                "is_positive": false
+            }
+        }
+    ]
+}

@@ -1,0 +1,569 @@
+{
+    "level_name": "test_level",
+    "defaults": {
+        "is_positive": true,
+        "friction": 0.35,
+        "bounce_rate": 0.0,
+        "visual_material": "wall",
+        "roundness": 0.05,
+        "stickiness": false
+    },
+    "visual_materials": [
+        {
+            "name": "wall",
+            "color": {
+                "red": 0.25,
+                "green": 0.25,
+                "blue": 0.35
+            }
+        },
+        {
+            "name": "floor",
+            "color": {
+                "red": 0.2,
+                "green": 0.2,
+                "blue": 0.3
+            }
+        },
+        {
+            "name": "metallic",
+            "color": {
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
+            }
+        },
+        {
+            "name": "metallic_red",
+            "color": {
+                "red": 0.45,
+                "green": 0.46,
+                "blue": 0.04
+            }
+        }
+    ],
+    "players_visual_materials": {
+        "inner": "metallic_red",
+        "outer": "metallic"
+    },
+    "w_cups_visual_materials": "metallic",
+    "all_shapes_stickiness_radius": 0.3,
+    "spawn_positions": [
+        {
+            "transform": {
+                "position": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            }
+        }
+    ],
+    "w_cups": {
+        "w_floor": -0.5
+    },
+    "actors": [],
+    "static_objects": [
+        {
+            "sphere": {
+                "_comment": "sphere",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path z",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 9.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 5.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path zy",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 5.0,
+                        "z": 13.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path zy2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -5.0,
+                        "z": 13.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path zx",
+                "transform": {
+                    "position": {
+                        "x": 5.0,
+                        "y": 0.0,
+                        "z": 13.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5.0,
+                    "y": 1.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path -zx",
+                "transform": {
+                    "position": {
+                        "x": -5.0,
+                        "y": 0.0,
+                        "z": 13.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5.0,
+                    "y": 1.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path -z",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": -9.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 1.0,
+                    "z": 5.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path -zy",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 5.0,
+                        "z": -13.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path -zy2",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -5.0,
+                        "z": -13.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path x",
+                "transform": {
+                    "position": {
+                        "x": 9.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5.0,
+                    "y": 1.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path xy",
+                "transform": {
+                    "position": {
+                        "x": 13.0,
+                        "y": 5.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path xy2",
+                "transform": {
+                    "position": {
+                        "x": 13.0,
+                        "y": -5.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path -x",
+                "transform": {
+                    "position": {
+                        "x": -9.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 5.0,
+                    "y": 1.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path -xy",
+                "transform": {
+                    "position": {
+                        "x": -13.0,
+                        "y": 5.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path -xy2",
+                "transform": {
+                    "position": {
+                        "x": -13.0,
+                        "y": -5.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path y",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 9.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube": {
+                "_comment": "path -y",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": -9.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 1.0,
+                    "y": 5.0,
+                    "z": 1.0,
+                    "w": 10.0
+                },
+                "is_positive": false
+            }
+        },
+        {
+            "cube_w_inf": {
+                "_comment": "basement",
+                "transform": {
+                    "position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation": {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size": {
+                    "x": 20.0,
+                    "y": 20.0,
+                    "z": 20.0
+                },
+                "is_positive": true
+            }
+        }
+    ]
+}
