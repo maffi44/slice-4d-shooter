@@ -1168,12 +1168,13 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) -> f32 {
 
     w_plane_intersected = false;
 
-
-    let w_offset = plane_w_intersect(ro, rd, static_data.w_floor);
-    
-    if w_offset < MAX_DIST*0.3333 && w_offset > 0.0 {
-        w_plane_intersected = true;
-        offset = min(offset, w_offset);
+    if static_data.is_w_floor_exist > 0 {
+        let w_offset = plane_w_intersect(ro, rd, static_data.w_floor);
+        
+        if w_offset < MAX_DIST*0.3333 && w_offset > 0.0 {
+            w_plane_intersected = true;
+            offset = min(offset, w_offset);
+        }
     }
 
     offset = clamp(offset, 0.0, MAX_DIST * 4.0);

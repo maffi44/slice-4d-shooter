@@ -1,8 +1,6 @@
 {
     "level_name" : "test_level",
 
-    "w_movement_type" : "physic_based",
-
     "defaults" : {
         "is_positive": true,
         "friction": 0.1,
@@ -101,7 +99,6 @@
     ],
 
     "w_cups" : {
-        "w_floor" : -0.5
     },
 
     "actors" : [

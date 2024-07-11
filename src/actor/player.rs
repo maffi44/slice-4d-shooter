@@ -1022,7 +1022,7 @@ impl Actor for Player {
                         self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
 
                     self.inner_state.collider.current_velocity.w *=
-                        w_dif
+                        (w_dif * 5.0_f32)
                         .abs()
                         .clamp(0.0, 1.0);
                 }
