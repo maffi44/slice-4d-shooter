@@ -10,8 +10,7 @@ use crate::{
         ActorWrapper,
     },
     engine::{
-        input::ActionsFrameState,
-        Engine
+        input::ActionsFrameState, world, Engine
     },
 };
 
@@ -285,10 +284,11 @@ fn init(systems: &mut Engine) {
             LocalMaster::new(ActionsFrameState::empty())
         ),
         systems.world.players_settings.clone(),
-        &mut systems.audio
+        &mut systems.audio,
+        systems.world.level.w_levels.clone()
     );
 
-    main_player.get_mut_transform().set_position(systems.world.level.get_random_spawn_position());
+    main_player.get_mut_transform().set_position(systems.world.level.get_random_spawn_position().spawn_position);
 
     let main_player_id = systems.world.add_actor_to_world(
         ActorWrapper::Player(main_player),

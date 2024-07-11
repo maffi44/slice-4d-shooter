@@ -37,7 +37,7 @@ use crate::{
             UIElement,
             UIElementType,
             UISystem,
-        }
+        }, world::level::Spawn
     },
     transform::Transform
 };
@@ -181,6 +181,9 @@ pub struct Player {
 
     need_to_rotate_w_to_zero: bool,
     time_from_previos_second_mouse_click: f32,
+
+    w_levels_of_map: Vec<f32>,
+    current_w_level: usize,
 }
 
 pub const PLAYER_MAX_HP: i32 = 100;
@@ -901,63 +904,21 @@ impl Actor for Player {
 
             if input.jump_wy.is_action_just_pressed() {
 
-                self.jumped_to_wy_on_current_action = false;
-    
-                if self.inner_state.collider.is_on_w_ground && self.inner_state.collider.is_on_y_ground {
+                let next_w_level = self.current_w_level + 1;
 
-                    if self.w_jump_reloading_time >= self.player_settings.w_jump_time_reloading {
-                        
-                        self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed*1.1);
-                        self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed*1.1);
-    
-    
-                        self.jumped_to_wy_on_current_action = true;
-                        self.w_jump_reloading_time = 0.0
-                    }
-                }
-            }
-
-            if input.jump_wy.is_action_pressed() {
-                
-                if !self.jumped_to_wy_on_current_action {
-
-                    if self.w_jump_reloading_time >= self.player_settings.w_jump_time_reloading {
-                        
-                        self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed*1.1);
-                        self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed*1.1);
-    
-    
-                        self.jumped_to_wy_on_current_action = true;
-                        self.w_jump_reloading_time = 0.0
-                    }
+                if next_w_level < self.w_levels_of_map.len() {
+                    self.current_w_level = next_w_level;
                 }
             }
 
             if input.jump_w.is_action_just_pressed() {
 
-                self.jumped_to_w_on_current_action = false;
-    
-                if self.inner_state.collider.is_on_w_ground {
-                    if self.w_jump_reloading_time >= self.player_settings.w_jump_time_reloading {
-                        
-                        self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-    
-                        self.jumped_to_w_on_current_action = true;
-                        self.w_jump_reloading_time = 0.0
-                    }
-                }
-            }
+                if self.current_w_level > 0 {
 
-            if input.jump_w.is_action_pressed() {
-                if !self.jumped_to_w_on_current_action {
-                    if self.inner_state.collider.is_on_w_ground {
-                        if self.w_jump_reloading_time >= self.player_settings.w_jump_time_reloading {
-                        
-                            self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-        
-                            self.jumped_to_w_on_current_action = true;
-                            self.w_jump_reloading_time = 0.0
-                        }
+                    let next_w_level = self.current_w_level - 1;
+    
+                    if next_w_level < self.w_levels_of_map.len() {
+                        self.current_w_level = next_w_level;
                     }
                 }
             }
@@ -1049,7 +1010,21 @@ impl Actor for Player {
                 }
     
                 if self.is_gravity_w_enabled {
-                    self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.gravity_w_speed);
+
+                    let target_w_pos = self.w_levels_of_map
+                        .get(self.current_w_level)
+                        .expect("Player's carrent_w_level is not exist in w_levels_of_map")
+                        .clone();
+
+                    let w_dif = target_w_pos - self.get_position().w;
+
+                    self.inner_state.collider.current_velocity.w +=
+                        self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
+
+                    self.inner_state.collider.current_velocity.w *=
+                        w_dif
+                        .abs()
+                        .clamp(0.0, 1.0);
                 }
     
             } else {
@@ -1243,7 +1218,12 @@ impl Actor for Player {
 
 impl Player {
 
-    pub fn new(master: InputMaster, player_settings: PlayerSettings, audio_system: &mut AudioSystem) -> Self {
+    pub fn new(
+        master: InputMaster,
+        player_settings: PlayerSettings,
+        audio_system: &mut AudioSystem,
+        w_levels_of_map: Vec<f32>,
+    ) -> Self {
         
         let screen_effects = PlayerScreenEffects {
             w_scanner_is_active: false,
@@ -1340,6 +1320,9 @@ impl Player {
 
             need_to_rotate_w_to_zero: true,
             time_from_previos_second_mouse_click: 0.0,
+
+            w_levels_of_map,
+            current_w_level: 0,
         }
     }
 
@@ -1763,7 +1746,7 @@ impl Player {
 
     pub fn respawn(
         &mut self,
-        spawn_position: Vec4,
+        spawn: Spawn,
         physics_system: &PhysicsSystem,
         ui_system: &mut UISystem,
         audio_system: &mut AudioSystem,
@@ -1877,11 +1860,13 @@ impl Player {
 
         self.inner_state.collider.reset_forces_and_velocity();
 
-        self.inner_state.transform = Transform::from_position(spawn_position);
+        self.inner_state.transform = Transform::from_position(spawn.spawn_position);
 
-        self.player_previous_w_position = spawn_position.w;
+        self.current_w_level = spawn.w_level;
 
-        let hits = physics_system.sphere_cast_on_dynamic_colliders(spawn_position, self.get_collider_radius());
+        self.player_previous_w_position = spawn.spawn_position.w;
+
+        let hits = physics_system.sphere_cast_on_dynamic_colliders(spawn.spawn_position, self.get_collider_radius());
 
         for hit in hits {
             engine_handle.send_direct_message(
@@ -1904,7 +1889,7 @@ impl Player {
                     NetCommand::SendBoardcastNetMessageReliable(
                         NetMessage::RemoteDirectMessage(
                             self.get_id().expect("Player have not ActorID"),
-                            RemoteMessage::PlayerRespawn(spawn_position.to_array())
+                            RemoteMessage::PlayerRespawn(spawn.spawn_position.to_array())
                         )
                     )
                 )

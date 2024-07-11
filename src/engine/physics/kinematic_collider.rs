@@ -32,7 +32,7 @@ pub struct KinematicCollider {
     // friction_on_ground: f32,
     wish_direction: Vec4,
     movment_mult: f32,
-    current_velocity: Vec4,
+    pub current_velocity: Vec4,
     forces: Vec<Vec4>,
     pub is_on_y_ground: bool,
     pub is_on_w_ground: bool,
@@ -322,8 +322,6 @@ impl KinematicCollider {
                                 static_objects
                             );
 
-                            // log::error!("new friction: {}", new_friction);
-
                             friction = friction.max(new_friction);
 
                             let current_velocity = self.current_velocity;
@@ -369,8 +367,6 @@ impl KinematicCollider {
                                 static_objects
                             );
 
-                            // log::error!("new friction 2: {}", new_friction);
-
                             friction = friction.max(new_friction);
 
                             let current_velocity = self.current_velocity;
@@ -406,8 +402,6 @@ impl KinematicCollider {
                             collider_radius,
                             static_objects
                         );
-
-                        // log::error!("new frictio 3: {}", new_friction);
 
 
                         friction = friction.max(new_friction);

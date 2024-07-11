@@ -2359,7 +2359,7 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32) 
         //     return vec2<f32>(MAX_DIST*2.0, f32(i));
         // }
     }
-    return vec2<f32>(MAX_DIST*2.0, f32(i));
+    return vec2<f32>(total_distance, f32(i));
 }
 
 // fn is_outside_of_bouding_box(p: vec4<f32>) -> bool {

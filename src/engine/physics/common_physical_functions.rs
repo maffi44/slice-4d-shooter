@@ -474,8 +474,6 @@ pub fn get_bounce_and_friction(
             friction = friction.max(collider.friction);
 
             d = new_d;
-
-            log::error!("norm cube");
         };
     }
     for collider in static_objects.inf_w_cubes.iter_normal() {
@@ -486,9 +484,6 @@ pub fn get_bounce_and_friction(
             friction = friction.max(collider.friction);
 
             d = new_d;
-
-            log::error!("norm w cube");
-
         };
     }
     for collider in static_objects.spheres.iter_normal() {
@@ -499,8 +494,6 @@ pub fn get_bounce_and_friction(
             friction = friction.max(collider.friction);
 
             d = new_d;
-
-            log::error!("norm sphere");
         };
     }
     for collider in static_objects.sph_cubes.iter_normal() {
@@ -511,8 +504,6 @@ pub fn get_bounce_and_friction(
             friction = friction.max(collider.friction);
 
             d = new_d;
-
-            log::error!("norm sph cube");
         };
     }
 
@@ -526,8 +517,6 @@ pub fn get_bounce_and_friction(
             friction = friction.max(collider.friction);
 
             d = new_d;
-
-            log::error!("stickiness cube");
         };
 
         // let dd = smin(d, new_d, stickiness);

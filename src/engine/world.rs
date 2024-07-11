@@ -114,14 +114,14 @@ impl World {
             }
             CommandType::RespawnPlayer(id) => {
             
-                let spawn_position = self.level.get_random_spawn_position();
+                let spawn = self.level.get_random_spawn_position();
 
                 if let Some(player) = self.actors.get_mut(&id) {
                     
                     if let ActorWrapper::Player(player) = player {
                         
                         player.respawn(
-                            spawn_position,
+                            spawn,
                             physics_system,
                             ui_system,
                             audio_system,
@@ -144,7 +144,7 @@ impl World {
                     if let ActorWrapper::Player(player) = player {
                         
                         player.respawn(
-                            spawn_position,
+                            spawn,
                             physics_system,
                             ui_system,
                             audio_system,

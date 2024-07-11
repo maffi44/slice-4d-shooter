@@ -39,31 +39,39 @@ pub struct DefaultStaticObjectSettings {
     is_positive: bool,
 }
 
+#[derive(Clone, Copy)]
+pub struct Spawn {
+    pub spawn_position: Vec4,
+    pub w_level: usize,
+}
+
 
 pub struct Level {
     pub level_name: String,
     pub static_objects: Vec<StaticObject>,
-    pub spawn_positions: Vec<Vec4>,
+    pub spawns: Vec<Spawn>,
     pub all_shapes_stickiness_radius: f32,
     pub w_floor: Option<WFloor>,
     pub w_roof: Option<WRoof>,
     pub visual_materials: Vec<ObjectMaterial>,
     pub players_visual_materials: (i32, i32),
     pub w_cups_visual_materials: i32,
+
+    pub w_levels: Vec<f32>,
 }
 
 
 impl Level {
     
-    pub fn get_random_spawn_position(&self) -> Vec4 {
+    pub fn get_random_spawn_position(&self) -> Spawn {
         let random_index = {
             let mut usize_bytes = 0usize.to_be_bytes();
             getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
             
-            usize::from_le_bytes(usize_bytes) % self.spawn_positions.len()
+            usize::from_le_bytes(usize_bytes) % self.spawns.len()
         };
 
-        self.spawn_positions[random_index].clone()
+        self.spawns[random_index].clone()
     }
 
 
@@ -164,21 +172,39 @@ fn parse_json_level(
     };
 
     let spawn_positions = {
-        let spawn_postitions_array = json_level
-            .get("spawn_positions")
-            .expect("Wrong JSON map format. JSON level must have static_objects property")
+        let spawns_array = json_level
+            .get("spawns")
+            .expect("Wrong JSON map format. JSON level must have spawns property")
             .as_array()
-            .expect("spawn_positions is not an array");
+            .expect("spawns is not an array");
 
-        let mut spawn_positions = Vec::new();
+        let mut spawns = Vec::new();
 
-        for value in spawn_postitions_array {
+        for value in spawns_array {
             let transform = parse_json_into_transform(value, "spawn_position");
-        
-            spawn_positions.push(transform.get_position());
+            let w_level = {
+                
+                let obj = value
+                    .as_object()
+                    .expect("Wrong JSON map format, type of spawn is not an object");
+            
+                obj
+                    .get("w_level")
+                    .expect("Wrong JSON map format, spawn have not w_level property")
+                    .as_u64()
+                    .expect("Wrong JSON map format, w_level of spawn is not number")
+                    as usize
+            };
+
+            let spawn = Spawn {
+                spawn_position: transform.get_position(),
+                w_level,
+            };
+
+            spawns.push(spawn);
         }
 
-        spawn_positions  
+        spawns  
     };
 
 
@@ -238,18 +264,40 @@ fn parse_json_level(
         parse_json_actors(json_actors, &default_settings, &materials_table)
     };
 
+    let w_levels = {
+        let mut w_levels = Vec::new();
+
+        let array = json_level
+            .get("w_levels")
+            .expect("Wrong JSON map format. JSON level must have w_levels property")
+            .as_array()
+            .expect("Wrong JSON map format. JSON's w_levels property must be an array");
+
+        for value in array {
+            let w_level = value
+                .as_f64()
+                .expect("Wrong JSON map format. JSON's w_levels array's value is not a number")
+                as f32;
+            
+            w_levels.push(w_level);
+        }
+
+        w_levels
+    };
+
 
 
     let level = Level {
         level_name,
         static_objects,
-        spawn_positions,
+        spawns: spawn_positions,
         all_shapes_stickiness_radius,
         w_floor,
         w_roof,
         visual_materials,
         players_visual_materials,
         w_cups_visual_materials,
+        w_levels,
     };
 
     (level, actors)

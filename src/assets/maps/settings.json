@@ -12,7 +12,7 @@
     "player_jetpak_w_speed" : 0.6,
 
     "gravity_y_speed" : 0.5,
-    "gravity_w_speed" : 0.5,
+    "gravity_w_speed" : 0.1,
     "friction_on_air" : 0.2,
 
     "rotation_along_w_standard_method" : true,

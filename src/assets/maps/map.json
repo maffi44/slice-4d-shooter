@@ -1,6 +1,8 @@
 {
     "level_name" : "test_level",
 
+    "w_movement_type" : "physic_based",
+
     "defaults" : {
         "is_positive": true,
         "friction": 0.1,
@@ -54,7 +56,15 @@
 
     "all_shapes_stickiness_radius": 0.3,
 
-    "spawn_positions" : [
+
+    "w_levels" : [
+        1.0,
+        4.0,
+        7.0
+    ],
+
+
+    "spawns" : [
         {
             "transform" : {
                 "position" : {
@@ -63,7 +73,8 @@
                     "z": 0.0,
                     "w": 1.0
                 }
-            }
+            },
+            "w_level" : 0
         },
         {
             "transform" : {
@@ -73,7 +84,8 @@
                     "z": 4.0,
                     "w": 1.0
                 }
-            }
+            },
+            "w_level" : 1
         },
         {
             "transform" : {
@@ -83,7 +95,8 @@
                     "z": 14.0,
                     "w": 1.0
                 }
-            }
+            },
+            "w_level" : 2
         }
     ],
 
