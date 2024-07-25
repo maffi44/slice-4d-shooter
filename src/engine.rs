@@ -103,6 +103,7 @@ impl Engine {
     
             let window_builder = WindowBuilder::new();
             window = window_builder
+            
                 .with_canvas(Some(canvas))
                 .with_active(true)
                 // .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))

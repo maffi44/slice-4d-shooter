@@ -44,6 +44,8 @@ pub struct PlayerSettings {
     pub machinegun_cooling_speed: f32,
 
     pub room_url: String,
+
+    pub screen_resolution_scale: f32,
 }
 
 // impl Copy for PlayerSettings {
@@ -342,6 +344,15 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
         .to_string()
     };
 
+    let screen_resolution_scale = {
+        object
+        .get("screen_resolution_scale")
+        .expect("Have not screen_resolution_scale in settings.json")
+        .as_f64()
+        .expect("screen_resolution_scale is not number value in settings.json")
+        as f32
+    };
+
     PlayerSettings {
         collider_radius,
         max_speed,
@@ -370,5 +381,6 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
         machinegun_heat_add_on_shot, 
         machinegun_cooling_speed,
         room_url,
+        screen_resolution_scale,
     }
 }

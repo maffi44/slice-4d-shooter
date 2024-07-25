@@ -15,7 +15,7 @@ use wgpu::{
     BufferUsages,
     Color,
     InstanceFlags,
-    MaintainResult,
+    MaintainResult, TextureViewDescriptor,
     // PipelineCompilationOptions,
 };
 
@@ -60,7 +60,19 @@ pub struct Renderer {
 
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
-    render_pipeline: wgpu::RenderPipeline,
+
+    raymarch_render_pipeline: wgpu::RenderPipeline,
+    raymarch_target_texture: wgpu::Texture,
+    raymarch_target_texture_view: wgpu::TextureView,
+
+    upscale_render_pipeline: wgpu::RenderPipeline,
+    upscale_render_bind_group_layout: wgpu::BindGroupLayout,
+    upscale_render_bind_group: wgpu::BindGroup,
+    upscale_sampler: wgpu::Sampler,
+
+    raymarch_target_texture_scale_factor: f32,
+    surface_format: wgpu::TextureFormat,
+    
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
@@ -95,6 +107,24 @@ impl Renderer {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+
+            let (
+                raymarch_target_texture,
+                raymarch_target_texture_view,
+                upscale_render_bind_group,
+                upscale_sampler
+            ) = Renderer::create_scaled_texture(
+                self.raymarch_target_texture_scale_factor,
+                &self.config,
+                &self.device,
+                self.surface_format,
+                &self.upscale_render_bind_group_layout,
+            );
+
+            self.raymarch_target_texture = raymarch_target_texture;
+            self.raymarch_target_texture_view = raymarch_target_texture_view;
+            self.upscale_render_bind_group = upscale_render_bind_group;
+            self.upscale_sampler = upscale_sampler;
         }
     }
  
@@ -102,7 +132,8 @@ impl Renderer {
         window: &Window,
         render_data: &RenderData,
         ui_system: &mut UISystem,
-        target_frame_duration: f64
+        target_frame_duration: f64,
+        raymarch_target_texture_scale_factor: f32,
     ) -> Renderer {
         let size = window.inner_size();
 
@@ -163,11 +194,11 @@ impl Renderer {
         log::info!("renderer: gpu surface_caps init");
 
         let surface_format = surface_caps
-        .formats
-        .iter()
-        .copied()
-        .find(|f| f.is_srgb())
-        .unwrap_or(surface_caps.formats[0]);
+            .formats
+            .iter()
+            .copied()
+            .find(|f| f.is_srgb())
+            .unwrap_or(surface_caps.formats[0]);
         log::info!("renderer: wgpu surface_format init");
 
         let config = wgpu::SurfaceConfiguration {
@@ -186,9 +217,14 @@ impl Renderer {
         log::info!("renderer: wgpu surface configurated");
 
         // for WGSL shaders
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let raymarch_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Vertex Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/main_shader.wgsl").into())
+            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/raymarch_shader.wgsl").into())
+        });
+
+        let upscale_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Vertex Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/upscale_shader.wgsl").into())
         });
 
         
@@ -521,20 +557,20 @@ impl Renderer {
 
         log::info!("renderer: wgpu uniform_bind_group_0 init");
 
-        let render_pipeline_layout =
+        let raymarch_render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("main shader render pipeline layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout_0, &uniform_bind_group_layout_1],
-            push_constant_ranges: &[],
+                label: Some("main shader render pipeline layout"),
+                bind_group_layouts: &[&uniform_bind_group_layout_0, &uniform_bind_group_layout_1],
+                push_constant_ranges: &[],
         });
 
         log::info!("renderer: wgpu render_pipeline_layout init");
 
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let raymarch_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("main shader render pipeline"),
-            layout: Some(&render_pipeline_layout),
+            layout: Some(&raymarch_render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &shader,
+                module: &raymarch_shader,
                 entry_point: "vs_main", // 1.
                 buffers: &[
                     Vertex::desc(),
@@ -542,7 +578,7 @@ impl Renderer {
                 // compilation_options: PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState { // 3.
-                module: &shader,
+                module: &raymarch_shader,
                 // compilation_options: PipelineCompilationOptions::default(),
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { // 4.
@@ -571,6 +607,85 @@ impl Renderer {
             },
             multiview: None, // 5.
         });
+
+        let upscale_render_bind_group_layout = device.create_bind_group_layout(
+            &wgpu::BindGroupLayoutDescriptor {
+                label: Some("progress_bar_bind_group_layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float {
+                                filterable: true
+                            },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ]
+            }
+        );
+
+        let upscale_render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("upscale render pipeline layout"),
+            bind_group_layouts: &[&upscale_render_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+        log::info!("renderer: wgpu render_pipeline_layout init");
+
+        let upscale_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("upscale shader render pipeline"),
+            layout: Some(&upscale_render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &upscale_shader,
+                entry_point: "vs_main", // 1.
+                buffers: &[
+                    Vertex::desc(),
+                ], // 2.
+                // compilation_options: PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState { // 3.
+                module: &upscale_shader,
+                // compilation_options: PipelineCompilationOptions::default(),
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState { // 4.
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw, // 2.
+                cull_mode: None,
+                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                polygon_mode: wgpu::PolygonMode::Fill,
+                // Requires Features::DEPTH_CLIP_CONTROL
+                unclipped_depth: false,
+                // Requires Features::CONSERVATIVE_RASTERIZATION
+                conservative: false,
+            },
+            depth_stencil: None, // 1.
+            multisample: wgpu::MultisampleState {
+                count: 1, // 2.
+                mask: !0, // 3.
+                alpha_to_coverage_enabled: false, // 4.
+            },
+            multiview: None, // 5.
+        });
+
+
 
         log::info!("renderer: wgpu render_pipeline init");
         
@@ -607,13 +722,37 @@ impl Renderer {
             &player_forms_data_buffer,
         );
 
+        let (
+            raymarch_target_texture,
+            raymarch_target_texture_view,
+            upscale_render_bind_group,
+            upscale_sampler
+        ) = Renderer::create_scaled_texture(
+                raymarch_target_texture_scale_factor,
+                &config,
+                &device,
+                surface_format,
+                &upscale_render_bind_group_layout,
+            );
+
         Renderer {
             surface,
             device,
             queue,
             config, 
             size,
-            render_pipeline,
+
+            raymarch_render_pipeline,
+            upscale_render_pipeline,
+            upscale_render_bind_group_layout,
+            upscale_render_bind_group,
+            upscale_sampler,
+            raymarch_target_texture,
+            raymarch_target_texture_view,
+
+            raymarch_target_texture_scale_factor,
+            surface_format,
+
             num_indices,
             vertex_buffer,
             index_buffer,
@@ -638,6 +777,78 @@ impl Renderer {
             // prev_surface_texture: None,
             // prev_frame_rendered: Arc::new(Mutex::new(true)),
         }
+    }
+
+
+    fn create_scaled_texture(
+        scale_factor: f32,
+        config: &wgpu::SurfaceConfiguration,
+        device: &wgpu::Device,
+        surface_format: wgpu::TextureFormat,
+        upscale_bind_group_layout: &wgpu::BindGroupLayout,
+
+    ) -> (
+        wgpu::Texture,
+        wgpu::TextureView,
+        wgpu::BindGroup,
+        wgpu::Sampler,
+    ) {
+        let scaled_width = (config.width as f32 * scale_factor) as u32;
+        let scaled_height = (config.height as f32 * scale_factor) as u32;
+
+        let scaled_texture = device.create_texture(
+            &wgpu::TextureDescriptor {
+                label: Some("scaled texture"),
+                size: wgpu::Extent3d {
+                    width: scaled_width,
+                    height: scaled_height,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: surface_format,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                view_formats: &[]
+            }
+        );
+
+        let scaled_texture_view = scaled_texture.create_view(
+            &wgpu::TextureViewDescriptor::default()
+        );
+
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        let bind_group = device.create_bind_group(
+            &wgpu::BindGroupDescriptor {
+                label: Some("upscale render bind group"),
+                layout: upscale_bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(
+                            &scaled_texture_view
+                        )
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(
+                            &sampler
+                        )
+                    }
+                ]
+            }
+        );
+
+        (scaled_texture, scaled_texture_view, bind_group, sampler)
     }
 
 
@@ -678,7 +889,34 @@ impl Renderer {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("main shader render encoder"),
             });
+            
         {
+            // raymarch render pass
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("main shader render pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &self.raymarch_target_texture_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            render_pass.set_pipeline(&self.raymarch_render_pipeline);
+            render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
+            render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+        }
+
+        {
+            // upscale raymarch target texture render pass
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("main shader render pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -701,9 +939,8 @@ impl Renderer {
                 occlusion_query_set: None,
             });
 
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
-            render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
+            render_pass.set_pipeline(&self.upscale_render_pipeline);
+            render_pass.set_bind_group(0, &self.upscale_render_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1);

@@ -66,6 +66,8 @@ pub struct UIRenderer {
     rect_vertex_buffer: wgpu::Buffer,
     rect_index_buffer: wgpu::Buffer,
     rect_num_indices: u32,
+
+    ui_sampler: wgpu::Sampler,
 }
 
 impl UIRenderer {
@@ -653,12 +655,6 @@ impl UIRenderer {
                     );
 
 
-        // @group(0) @binding(0) var<uniform> rect_transform: RectTransformUniform;
-        // @group(0) @binding(1) var<uniform> dynamic_data: OtherDynamicData;
-        // @group(0) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
-        // @group(0) @binding(3) var<uniform> scanner_data: ScannerData;
-
-
                     let scanner_bind_group = device.create_bind_group(
                         &wgpu::BindGroupDescriptor {
                             layout: &scanner_bind_group_layout ,
@@ -713,6 +709,8 @@ impl UIRenderer {
             rect_num_indices,
             rect_vertex_buffer,
             rect_index_buffer,
+
+            ui_sampler,
         }
     }
 

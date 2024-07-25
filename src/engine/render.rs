@@ -68,7 +68,8 @@ impl RenderSystem {
                     &window,
                     &render_data,
                     ui,
-                    time.target_frame_duration.as_secs_f64()
+                    time.target_frame_duration.as_secs_f64(),
+                    world.players_settings.screen_resolution_scale
                 ).await
             )
         );
