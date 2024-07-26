@@ -23,7 +23,7 @@ fn vs_main(
 }
 
 // size of bloom effect in screen space
-const BLOOM_RADIUS: f32 = 0.015;
+const BLOOM_RADIUS: f32 = 0.01;
 
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
@@ -67,5 +67,5 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     bloom /= j+1.0;
 
-    return vec4(col.rgb + bloom*2.1, 1.0);
+    return vec4(col.rgb + bloom*vec3(1.0,1.4,1.4), 1.0);
 }

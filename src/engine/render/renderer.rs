@@ -1,5 +1,6 @@
 use crate::engine::{render::{render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
+use fyrox_core::io::load_file;
 use winit::window::Window;
 use wgpu::{
     rwh::{
@@ -227,6 +228,24 @@ impl Renderer {
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/upscale_shader.wgsl").into())
         });
 
+        // // temp
+        // let raymarch_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        //     label: Some("Vertex Shader"),
+        //     source: wgpu::ShaderSource::Wgsl(
+        //         std::str::from_utf8(
+        //             &load_file("/home/maffi/Dream/web-engine4d/src/engine/render/shaders/raymarch_shader.wgsl").await.unwrap()
+        //         ).unwrap().into()
+        //     )
+        // });
+        // // temp
+        // let upscale_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        //     label: Some("Vertex Shader"),
+        //     source: wgpu::ShaderSource::Wgsl(
+        //         std::str::from_utf8(
+        //             &load_file("/home/maffi/Dream/web-engine4d/src/engine/render/shaders/upscale_shader.wgsl").await.unwrap()
+        //         ).unwrap().into()
+        //     )
+        // });
         
         // for GLSL shaders
         // let vert_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
