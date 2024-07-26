@@ -627,7 +627,7 @@ impl Renderer {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
                         count: None,
                     },
                 ]
@@ -793,8 +793,8 @@ impl Renderer {
         wgpu::BindGroup,
         wgpu::Sampler,
     ) {
-        let scaled_width = (config.width as f32 * scale_factor) as u32;
-        let scaled_height = (config.height as f32 * scale_factor) as u32;
+        let scaled_width = ((config.width as f32 * scale_factor) as u32).min(config.width);
+        let scaled_height = ((config.height as f32 * scale_factor) as u32).min(config.height);
 
         let scaled_texture = device.create_texture(
             &wgpu::TextureDescriptor {
@@ -893,12 +893,19 @@ impl Renderer {
         {
             // raymarch render pass
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("main shader render pass"),
+                label: Some("raymarch shader render pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &self.raymarch_target_texture_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
+                        load: wgpu::LoadOp::Clear(
+                            Color {
+                                r: 1.0,
+                                g: 1.0,
+                                b: 1.0,
+                                a: 1.0
+                            }
+                        ),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -918,16 +925,16 @@ impl Renderer {
         {
             // upscale raymarch target texture render pass
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("main shader render pass"),
+                label: Some("upscale shader render pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(
                             Color {
-                                r: 0.0,
+                                r: 1.0,
                                 g: 1.0,
-                                b: 0.0,
+                                b: 1.0,
                                 a: 1.0
                             }
                         ),

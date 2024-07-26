@@ -40,5 +40,5 @@
 
     "room_url" : "ws://localhost:3536/",
     
-    "screen_resolution_scale" : 0.7
+    "screen_resolution_scale" : 1.0
 }

@@ -22,12 +22,50 @@ fn vs_main(
     return out;
 }
 
+// size of bloom effect in screen space
+const BLOOM_RADIUS: f32 = 0.015;
+
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     var uv: vec2<f32> = (inn.position.xy * vec2(0.5, -0.5)) + 0.5;
 
+    let pixel_step = vec2(1.0) / vec2<f32>(textureDimensions(raymarched_view));
+
     let col = textureSample(raymarched_view, view_sampler, uv);
 
-    return col;
+    var bloom = col.rgb * col.a;
+
+    var j = 0.0;
+    for (var i = 0.0; i <= BLOOM_RADIUS; i += pixel_step.x) {
+        let offset = vec2<f32>(i, 0.0);
+        let color = textureSample(raymarched_view, view_sampler, uv + offset);
+        bloom += (color.rgb * color.a) * (1.0 - i/BLOOM_RADIUS);
+        j += 1.0;
+    }
+
+    for (var i = 0.0; i >= -BLOOM_RADIUS; i -= pixel_step.x) {
+        let offset = vec2<f32>(i, 0.0);
+        let color = textureSample(raymarched_view, view_sampler, uv + offset);
+        bloom += (color.rgb * color.a) * (1.0 - -i/BLOOM_RADIUS);
+        j += 1.0;
+    }
+
+    for (var i = 0.0; i <= BLOOM_RADIUS; i += pixel_step.y) {
+        let offset = vec2<f32>(0.0, i);
+        let color = textureSample(raymarched_view, view_sampler, uv + offset);
+        bloom += (color.rgb * color.a) * (1.0 - i/BLOOM_RADIUS);
+        j += 1.0;
+    }
+
+    for (var i = 0.0; i >= -BLOOM_RADIUS; i -= pixel_step.y) {
+        let offset = vec2<f32>(0.0, i);
+        let color = textureSample(raymarched_view, view_sampler, uv + offset);
+        bloom += (color.rgb * color.a) * (1.0 - -i/BLOOM_RADIUS);
+        j += 1.0;
+    }
+
+    bloom /= j+1.0;
+
+    return vec4(col.rgb + bloom*2.1, 1.0);
 }

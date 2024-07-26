@@ -2560,7 +2560,8 @@ fn apply_material(
     ray_dir: vec4<f32>,
     dist: f32,
     material: i32,
-) -> vec3<f32> {
+) -> vec4<f32> {
+    var lightness = 0.0;
     
     // sky
     if material == -3 {
@@ -2571,7 +2572,7 @@ fn apply_material(
 
         var color = W_PLANE_COLOR*frenel;
 
-        return color;
+        return vec4(color, lightness);
     }
     if material == -2 {
         var color =  2.9*SKY_COLOR*FOG_COLOR* mix(vec3(.1,0.2,0.55), vec3(0.1,1.2,2.4), sqrt(abs(ray_dir.y)+0.1));
@@ -2614,7 +2615,7 @@ fn apply_material(
 
         color = clamp(color, vec3(0.0), vec3(1.0));
 
-        return color;
+        return vec4(color, lightness);
     }
 
     let hited_pos = pos + ray_dir * dist;
@@ -2690,7 +2691,9 @@ fn apply_material(
     light += SUN_COLOR_1  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 2.0;// * aocc;
     light += SKY_COLOR    * sky_dif   * 4.8 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
     light += FRENEL_COLOR * frenel    * 0.8 * (0.6+0.4*sun_dif_1);// * aocc;
-    light += LINES_COLOR_1* wireframe_dif*20.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * wireframe_fog; 
+    light += LINES_COLOR_1* wireframe_dif*20.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * wireframe_fog;
+
+    lightness = wireframe_dif*20.0;
     
     // light += mix(LINES_COLOR_1, LINES_COLOR_2, clamp(hited_pos.w/10.0,0.0,1.0)) * 2.8*pow(lines_dif, 5.8);
 
@@ -2706,7 +2709,7 @@ fn apply_material(
     let air_perspective = clamp(1.0-exp(-0.00002*dist*dist*dist),0.2,1.0);
 
     color = mix(color, SKY_COLOR, air_perspective);
-    return color;
+    return vec4(color, lightness);
 }
 
 
@@ -2761,12 +2764,15 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
 
     var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
-    var color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[0]);
+    var color_and_light = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[0]);
 
     for (var i = 1u; i < mats.materials_count; i++) {
         let new_color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
-        color = mix(color, new_color, mats.material_weights[i]);
+        color_and_light = mix(color_and_light, new_color, mats.material_weights[i]);
     }
+
+    var color = color_and_light.rgb;
+    var lightness = color_and_light.a;
 
     if mats.materials[0] != static_data.players_mat1 && mats.materials[0] != static_data.players_mat2 {
         color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
@@ -2830,5 +2836,5 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     
 
-    return vec4<f32>(color, 1.0);
+    return vec4<f32>(color, lightness);
 }

@@ -711,6 +711,7 @@ impl UIRenderer {
             rect_index_buffer,
 
             ui_sampler,
+            
         }
     }
 
