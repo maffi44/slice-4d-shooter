@@ -294,6 +294,9 @@ struct OtherStaticData {
 @group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 64>;
 @group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
 
+@group(1) @binding(3) var sky_box_sampler: sampler;
+@group(1) @binding(4) var sky_box: texture_cube<f32>;
+
 const MAX_STEPS: i32 = 120;
 const PI: f32 = 3.1415926535897;
 const MIN_DIST: f32 = 0.012;
@@ -2533,11 +2536,11 @@ fn get_shadow(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>) -> f32 {
 
 //     return vec3<f32>(h);
 // }
-fn hash( n: f32 ) -> f32
-{
-    // return fract(sin(n)*43758.5453123);
-    return fract(sin(n)*8.5453123);
-}
+// fn hash( n: f32 ) -> f32
+// {
+//     // return fract(sin(n)*43758.5453123);
+//     return fract(sin(n)*8.5453123);
+// }
 
 fn noise( x: vec2<f32> ) -> f32
 {
@@ -2549,7 +2552,7 @@ fn noise( x: vec2<f32> ) -> f32
     let n = p.x + p.y*57.0;
 
     let res = mix(mix( hash(n+  0.0), hash(n+  1.0),f.x),
-                    mix( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y);
+              mix( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y);
 
     return res;
 }
@@ -2571,18 +2574,49 @@ fn noise( x: vec2<f32> ) -> f32
 //     }
 // }
 
+fn hash( n: f32 ) -> f32
+{
+    // return fract(sin(n)*43758.5453123);
+    return fract(sin(n)*8818.5453123);
+}
+
+fn hash2d( n: vec2<f32> ) -> f32
+{
+    // return fract(sin(n)*43758.5453123);
+    return fract(sin(
+        dot(n, vec2(1441.958, 385.414))
+    )*8818.5453123);
+}
+
+fn noise2( x: vec4<f32> ) -> f32
+{
+    let p = floor(x);
+    var f = fract(x);
+
+    f = f*f*(3.0 - 2.0*f);
+
+    let res = mix(
+        mix(
+            hash2d(p.xy),
+            hash2d(p.xy + vec2(1.0,0.0)),
+            f.x
+        ),
+        mix(
+            hash2d(p.xy + vec2(0.0,1.0)),
+            hash2d(p.xy + vec2(1.0,1.0)),
+            f.x
+        ),
+        f.y
+    );
+
+    return res;
+}
+
 fn get_star_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
-    var s = noise(ray_dir.xz*7.2)*noise(ray_dir.xy*7.2)*noise(ray_dir.yz*7.2);
-    s *= noise(ray_dir.xz*15.2)*noise(ray_dir.xy*15.2)*noise(ray_dir.yz*15.2);
-    s *= noise(ray_dir.xz*89.2)*noise(ray_dir.xy*89.2)*noise(ray_dir.yz*89.2);
 
-    s *= 88.0;
+    let color = textureSample(sky_box, sky_box_sampler, normalize(ray_dir.xyz));
 
-    s = min(s, 1.0);
-
-    s = pow(s, 15.4);
-
-    return vec3(s);
+    return color.xyz;
 }
 
 const HORIZONT_COLOR: vec3<f32> = vec3(0.4, 0.8, 2.1);
@@ -2630,7 +2664,7 @@ fn apply_material(
 
         let sun = pow(clamp(dot(normalize(SUN_DIR_1),ray_dir), 0.0, 1.0), 5.0);
     	// color += 0.1*SUN_COLOR_1*sun;
-        color += SUN_COLOR_1*pow(sun, 20.0);
+        color = SUN_COLOR_1*pow(sun, 20.0);
 
         // let v = 1.0/( 2. * ( 1. + ray_dir.z ) );
         // let xy = vec2(ray_dir.y * v, ray_dir.x * v);
@@ -2644,7 +2678,7 @@ fn apply_material(
         //     let backStars = vec3((1.0-sin(xy.x*20.0+13.0*ray_dir.x+xy.y*30.0))*.5*s,s, s); 
         //     color += get_star_sky_color(ray_dir);
         // }
-        color += get_star_sky_color(ray_dir);
+        color += pow(get_star_sky_color(ray_dir),vec3(2.1));
 
         // color *= vec3
         //     (cos(ray_dir.y * 7.0 + dynamic_data.time) +

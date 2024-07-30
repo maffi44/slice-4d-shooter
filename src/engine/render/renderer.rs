@@ -1,22 +1,16 @@
 use crate::engine::{render::{render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
 use fyrox_core::io::load_file;
+use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
 use wgpu::{
     rwh::{
         HasDisplayHandle,
         HasWindowHandle
-    },
-    util::{
+    }, util::{
         BufferInitDescriptor,
         DeviceExt,
-    },
-    BindGroup,
-    Buffer,
-    BufferUsages,
-    Color,
-    InstanceFlags,
-    MaintainResult, TextureViewDescriptor,
+    }, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MaintainResult, Sampler, Texture, TextureView, TextureViewDescriptor
     // PipelineCompilationOptions,
 };
 
@@ -95,6 +89,10 @@ pub struct Renderer {
     target_frame_duration: f64,
     // prev_surface_texture: Option<SurfaceTexture>,
     // prev_frame_rendered: Arc<Mutex<bool>>,
+
+    sky_box_texture: Texture,
+    sky_box_texture_view: TextureView,
+    sky_box_sampler: Sampler,
 
     ui_renderer: UIRenderer,
 
@@ -499,12 +497,39 @@ impl Renderer {
                             min_binding_size: None,
                         },
                         count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::Cube,
+                            multisampled: false,
+                        },
+                        count: None,
                     }
                 ],
                 label: Some("uniform_bind_group_layout_1"),
             }
         );
         log::info!("renderer: wgpu uniform_bind_group_layout_0 init");
+
+        let (sky_box_texture, sky_box_texture_view) = load_cube_texture(&device, &queue);
+        let sky_box_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
 
         let uniform_bind_group_0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout_0,
@@ -568,6 +593,14 @@ impl Renderer {
                 wgpu::BindGroupEntry {
                     binding: 2,
                     resource: player_forms_data_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&sky_box_sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&sky_box_texture_view),
                 },
             ],
             
@@ -792,6 +825,10 @@ impl Renderer {
             prev_time_instant: None,
             target_frame_duration,
 
+            sky_box_texture,
+            sky_box_texture_view,
+            sky_box_sampler,
+
             ui_renderer,
             // prev_surface_texture: None,
             // prev_frame_rendered: Arc::new(Mutex::new(true)),
@@ -989,4 +1026,94 @@ impl Renderer {
         Ok(())
     }
 
+}
+
+
+fn load_texture(device: &wgpu::Device, queue: &wgpu::Queue, source: &[u8]) -> (ImageBuffer<Rgba<u8>, Vec<u8>>, (u32,u32)) {
+    let img = image::load_from_memory(source).unwrap();
+    let rgba = img.to_rgba8();
+    let (width, height) = img.dimensions();
+
+    (rgba, (width, height))
+}
+
+fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> (wgpu::Texture, wgpu::TextureView) {
+    // let faces = [
+    //     "path_to_positive_x.png",
+    //     "path_to_negative_x.png",
+    //     "path_to_positive_y.png",
+    //     "path_to_negative_y.png",
+    //     "path_to_positive_z.png",
+    //     "path_to_negative_z.png",
+    // ];
+
+    let faces = [
+        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_right1.png").as_slice(),
+        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_left2.png").as_slice(),
+        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_top3.png").as_slice(),
+        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_bottom4.png").as_slice(),
+        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_front5.png").as_slice(),
+        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_back6.png").as_slice(),
+    ];
+
+    let mut textures_data = Vec::new();
+
+    let mut dimensions = (0_u32, 0_u32);
+    for face in &faces {
+        let (texture_rgba, dims) = load_texture(device, queue, face);
+        textures_data.push(texture_rgba);
+        dimensions = dims;
+    }
+
+    // Создание массива текстур для куба
+    let cube_texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("Cube Texture"),
+        view_formats: &[],
+        size: wgpu::Extent3d {
+            width: dimensions.0,
+            height: dimensions.1,
+            depth_or_array_layers: 6,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+    });
+
+    let texture_size = Extent3d {
+        width: dimensions.0,
+        height: dimensions.1,
+        depth_or_array_layers: 1,
+    };
+
+    for (i, data) in textures_data.iter().enumerate() {
+        
+        queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &cube_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d {
+                    x: 0,
+                    y: 0,
+                    z: i as u32,
+                },
+                aspect: wgpu::TextureAspect::All,
+            },
+            &data,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * dimensions.0),
+                rows_per_image: Some(dimensions.1),
+            },
+            texture_size,
+        );
+    }
+
+    let cube_view = cube_texture.create_view(&wgpu::TextureViewDescriptor {
+        dimension: Some(wgpu::TextureViewDimension::Cube),
+        ..Default::default()
+    });
+
+    (cube_texture, cube_view)
 }
