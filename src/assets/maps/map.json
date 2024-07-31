@@ -14,16 +14,16 @@
         {
             "name" : "wall",
             "color" : {
-                "red": 0.2,
-                "green": 0.2,
-                "blue": 0.2
+                "red": 0.18,
+                "green": 0.225,
+                "blue": 0.3
             }
         },
         {
             "name" : "floor",
             "color" : {
-                "red": 0.2,
-                "green": 0.2,
+                "red": 0.6,
+                "green": 0.3,
                 "blue": 0.2
             }
         },
@@ -316,7 +316,6 @@
                 },
                 "is_positive" : true,
                 "friction": 0.1,
-                "visual_material" : "floor" ,
                 "stickiness" : true
             }
         },
@@ -338,7 +337,6 @@
                 "is_positive" : true,
                 "friction": 0.0,
                 "bounce_rate" : 0.5,
-                "visual_material": "floor",
                 "stickiness" : false
             }
         },
@@ -362,8 +360,7 @@
                 },
                 "size" : {
                     "x": 1.4
-                },
-                "visual_material" : "floor"
+                }
 
             }
         },
