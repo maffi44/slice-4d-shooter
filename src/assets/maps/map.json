@@ -45,20 +45,20 @@
         {
             "name" : "common",
             "color" : {
-                "red": 0.18,
+                "red": 0.15,
                 "green": 0.225,
-                "blue": 0.33
+                "blue": 0.3
             },
             "roughness" : 0.9
         },
         {
             "name" : "slick",
             "color" : {
-                "red":1.0,
-                "green": 0.9,
-                "blue": 0.5
+                "red":1.1,
+                "green": 0.97,
+                "blue": 0.3
             },
-            "roughness": 0.1
+            "roughness": 0.04
         },
         {
             "name" : "metallic",
