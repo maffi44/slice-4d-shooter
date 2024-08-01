@@ -133,6 +133,7 @@ impl Renderer {
         ui_system: &mut UISystem,
         target_frame_duration: f64,
         raymarch_target_texture_scale_factor: f32,
+        sky_box_name: &str,
     ) -> Renderer {
         let size = window.inner_size();
 
@@ -520,7 +521,12 @@ impl Renderer {
         );
         log::info!("renderer: wgpu uniform_bind_group_layout_0 init");
 
-        let (sky_box_texture, sky_box_texture_view) = load_cube_texture(&device, &queue);
+        let (sky_box_texture, sky_box_texture_view) = load_cube_texture(
+            &device,
+            &queue,
+            sky_box_name,
+        );
+
         let sky_box_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -1029,32 +1035,42 @@ impl Renderer {
 }
 
 
-fn load_texture(device: &wgpu::Device, queue: &wgpu::Queue, source: &[u8]) -> (ImageBuffer<Rgba<u8>, Vec<u8>>, (u32,u32)) {
-    let img = image::load_from_memory(source).unwrap();
+fn load_texture(device: &wgpu::Device, queue: &wgpu::Queue, texture_buffer: &[u8]) -> (ImageBuffer<Rgba<u8>, Vec<u8>>, (u32,u32)) {
+    let img = image::load_from_memory(texture_buffer).unwrap();
     let rgba = img.to_rgba8();
     let (width, height) = img.dimensions();
 
     (rgba, (width, height))
 }
 
-fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> (wgpu::Texture, wgpu::TextureView) {
-    // let faces = [
-    //     "path_to_positive_x.png",
-    //     "path_to_negative_x.png",
-    //     "path_to_positive_y.png",
-    //     "path_to_negative_y.png",
-    //     "path_to_positive_z.png",
-    //     "path_to_negative_z.png",
-    // ];
+fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue, sky_box_name: &str) -> (wgpu::Texture, wgpu::TextureView) {
+    let path = "src/assets/sky_boxes/".to_string();
 
-    let faces = [
-        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_right1.png").as_slice(),
-        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_left2.png").as_slice(),
-        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_top3.png").as_slice(),
-        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_bottom4.png").as_slice(),
-        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_front5.png").as_slice(),
-        include_bytes!("/home/maffi/Dream/cube_textures/test_cube_texture_back6.png").as_slice(),
-    ];
+    let faces = {
+        match sky_box_name {
+            "star_sky" => {
+                [
+                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_right1.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_left2.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_top3.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_bottom4.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_front5.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_back6.png").as_slice(),
+                ]
+            }
+            "blue_stars" => {
+                [
+                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_right1.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_left2.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_top3.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_bottom4.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_front5.png").as_slice(),
+                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_back6.png").as_slice(),
+                ]
+            }
+            _ => panic!("sky box with this name is not exist")
+        }
+    };
 
     let mut textures_data = Vec::new();
 

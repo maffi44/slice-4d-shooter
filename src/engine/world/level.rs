@@ -587,8 +587,17 @@ fn parse_material(
         };
     
         let color = Vec3::new(red, green, blue);
+
+        let roughness = {
+            obj
+                .get("roughness")
+                .expect("Wrong JSON map format. material must have roughness property")
+                .as_f64()
+                .expect("Wrong JSON map format. roughness value must be number")
+                as f32
+        };
     
-        let material = ObjectMaterial::new(color);
+        let material = ObjectMaterial::new(color, roughness);
 
         (material, name)
 }

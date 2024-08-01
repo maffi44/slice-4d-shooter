@@ -2709,6 +2709,8 @@ fn apply_material(
         return vec4(color, lightness);
     }
 
+    let roughness = static_data.materials[material].color.w;
+
     let hited_pos = pos + ray_dir * dist;
     let normal = get_normal(hited_pos);
     let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*5.8);
@@ -2721,7 +2723,7 @@ fn apply_material(
     let sun_dir_1 = normalize(static_data.sun_direction);
     let sun_dif_1 = clamp(dot(normal, sun_dir_1),0.0,1.0);
     let sun_hal_1 = normalize(sun_dir_1-ray_dir);
-    let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),42.0);
+    let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),45.0+(1.0-roughness)*40.0);
     
     var sun_shadow_1 = 1.0;
     if static_data.shadows_enabled == 1 {
@@ -2746,7 +2748,7 @@ fn apply_material(
             hash(ref_dir.y) - 0.5,
             hash(ref_dir.z) - 0.5,
             hash(ref_dir.w) - 0.5,
-        ) * 0.1
+        ) * max((roughness*0.08)-0.15,0.0)
     ); 
     let frenel = smoothstep(0.0, 2.0,clamp(1.0 + dot(normal, ray_dir), 0.0, 1.0));
 
@@ -2806,7 +2808,7 @@ fn apply_material(
     
     let ref_col = get_sky_color(ref_dir);
 
-    var color = diffuse * mix(light, ref_col, 0.1);
+    var color = diffuse * mix(ref_col, light, clamp(roughness, 0.0, 1.0));
 
     color = clamp(color, vec3(0.0), vec3(1.0));
 

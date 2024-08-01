@@ -3,13 +3,15 @@ use glam::{Vec3, Vec4};
 
 #[derive(Debug, Clone, Copy)]
 pub struct ObjectMaterial {
-    pub color: Vec3
+    pub color: Vec3,
+    pub roughness: f32,
 }
 
 impl ObjectMaterial {
-    pub fn new(color: Vec3) -> Self {
+    pub fn new(color: Vec3, roughness: f32) -> Self {
         ObjectMaterial {
-            color
+            color,
+            roughness
         }
     }
 }

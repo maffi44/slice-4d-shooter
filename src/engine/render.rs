@@ -69,7 +69,8 @@ impl RenderSystem {
                     &render_data,
                     ui,
                     time.target_frame_duration.as_secs_f64(),
-                    world.players_settings.screen_resolution_scale
+                    world.players_settings.screen_resolution_scale,
+                    &world.level.visual_settings_of_environment.sky_box_name
                 ).await
             )
         );

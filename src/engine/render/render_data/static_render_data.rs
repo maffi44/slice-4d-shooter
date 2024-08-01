@@ -84,7 +84,12 @@ impl OtherStaticData {
         let mut index = 0usize;
         for obj_material in &world.level.visual_materials {
             let material = VisualMaterial {
-                color: obj_material.color.xyzx().to_array(),
+                color: [
+                    obj_material.color.x,
+                    obj_material.color.y,
+                    obj_material.color.z,
+                    obj_material.roughness,
+                ],
             };
 
             materials[index] = material;

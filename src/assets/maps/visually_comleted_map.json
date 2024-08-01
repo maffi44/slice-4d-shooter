@@ -43,22 +43,20 @@
 
     "visual_materials" : [
         {
-            "name" : "common",
+            "name" : "wall",
             "color" : {
                 "red": 0.18,
                 "green": 0.225,
-                "blue": 0.33
-            },
-            "roughness" : 0.9
+                "blue": 0.3
+            }
         },
         {
-            "name" : "slick",
+            "name" : "floor",
             "color" : {
-                "red":1.0,
-                "green": 0.9,
-                "blue": 0.5
-            },
-            "roughness": 0.1
+                "red": 0.6,
+                "green": 0.3,
+                "blue": 0.2
+            }
         },
         {
             "name" : "metallic",
@@ -66,9 +64,7 @@
                 "red": 0.001,
                 "green": 0.013,
                 "blue": 0.016
-            },
-            "roughness" : 0.95
-
+            }
         },
         {
             "name" : "metallic_red",
@@ -76,9 +72,7 @@
                 "red": 0.45,
                 "green": 0.46,
                 "blue": 0.04
-            },
-            "roughness" : 0.9
-
+            }
         }
     ],
 
@@ -140,7 +134,7 @@
         "is_positive": true,
         "friction": 0.1,
         "bounce_rate": 0.0,
-        "visual_material": "common",
+        "visual_material": "wall",
         "roundness": 0.05,
         "stickiness": false
     },
@@ -286,7 +280,6 @@
                 "bounce_rate" : 0.0,
                 "is_positive" : true,
                 "friction" : 0.0
-                
             }
         },
         {
@@ -382,8 +375,7 @@
                 "is_positive" : true,
                 "friction": 0.0,
                 "bounce_rate" : 0.5,
-                "stickiness" : false,
-                "visual_material" : "slick"
+                "stickiness" : false
             }
         },
         {
@@ -437,6 +429,32 @@
             "sph_cube" : {
                 "transform" : {
                     "position" : {
+                        "x": 0.0,
+                        "y": 2.0,
+                        "z": 5.0,
+                        "w": -1.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.0,
+                    "y": 2.0,
+                    "z": 2.0,
+                    "w": 2.0
+                }
+            }
+        },
+        {
+            "sph_cube" : {
+                "transform" : {
+                    "position" : {
                         "x": 4.0,
                         "y": 2.0,
                         "z": 5.0,
@@ -456,8 +474,7 @@
                     "y": 2.0,
                     "z": 2.0,
                     "w": 2.0
-                },
-                "visual_material" : "slick"
+                }
             }
         },
         {
