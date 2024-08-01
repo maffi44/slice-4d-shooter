@@ -11,7 +11,7 @@ use std::f32::consts::PI;
 
 use super::{Actor, ActorID, CommonActorsMessages, Component, Message, MessageType};
 
-pub enum WonderingActorMovementType {
+pub enum WanderingActorMovementType {
     Linear,
     NonLinear,
 }
@@ -21,7 +21,7 @@ pub struct WanderingActor {
     id: Option<ActorID>,
     static_objects: Vec<StaticObject>,
 
-    movement_type: WonderingActorMovementType,
+    movement_type: WanderingActorMovementType,
     targets: [Transform; 2],
     travel_time: f32,
     current_target_index: usize,
@@ -34,7 +34,7 @@ impl WanderingActor {
         static_objects: Vec<StaticObject>,
         second_target: Transform,
         travel_time: f32,
-        movement_type: WonderingActorMovementType,
+        movement_type: WanderingActorMovementType,
     ) -> Self {
         let first_target = transform.clone();
 
@@ -139,7 +139,7 @@ impl Actor for WanderingActor {
         ];
         
         match self.movement_type {
-            WonderingActorMovementType::Linear => {
+            WanderingActorMovementType::Linear => {
                 
                 let mut movement_speed = current_target.get_position() - previous_target.get_position();
         
@@ -153,7 +153,7 @@ impl Actor for WanderingActor {
                 self.transform.increment_scale(scaling_speed * delta);
 
             },
-            WonderingActorMovementType::NonLinear => {
+            WanderingActorMovementType::NonLinear => {
                 let coefficient = {
                     f32::sin((self.current_travel_time / self.travel_time) * (PI/2.0))
                 };

@@ -37,8 +37,16 @@ pub struct OtherStaticData {
     static_shapes_stickiness: f32,
 
     empty_byte1: u32,
+    // empty_byte2: u32,
     shadows_enabled: i32,
     materials: [VisualMaterial; 32],
+
+    sky_color: [f32;4],
+    sun_color: [f32;4],
+    fog_color: [f32;4],
+    frenel_color: [f32;4],
+    neon_wireframe_color: [f32;4],
+    sun_direction: [f32;4],
 
 }
 
@@ -110,8 +118,16 @@ impl OtherStaticData {
 
             
             empty_byte1: 0u32,
+            // empty_byte2: 0u32,
             shadows_enabled,
             materials,
+
+            sky_color: world.level.visual_settings_of_environment.sky_color.to_array(),
+            sun_color: world.level.visual_settings_of_environment.sun_color.to_array(),
+            fog_color: world.level.visual_settings_of_environment.fog_color.to_array(),
+            frenel_color: world.level.visual_settings_of_environment.frenel_color.to_array(),
+            neon_wireframe_color: world.level.visual_settings_of_environment.neon_wireframe_color.to_array(),
+            sun_direction: world.level.visual_settings_of_environment.sun_direction.to_array(),
         }
     }
 }

@@ -16,7 +16,7 @@ use crate::{
         ActorWrapper,
         wandering_actor::{
             WanderingActor,
-            WonderingActorMovementType,
+            WanderingActorMovementType,
         },
     },
 };
@@ -45,6 +45,15 @@ pub struct Spawn {
     pub w_level: usize,
 }
 
+pub struct EnvirnomentVisualSettings {
+    pub sky_box_name: String,
+    pub sky_color: Vec4,
+    pub fog_color: Vec4,
+    pub frenel_color: Vec4,
+    pub neon_wireframe_color: Vec4,
+    pub sun_color: Vec4,
+    pub sun_direction: Vec4,
+}
 
 pub struct Level {
     pub level_name: String,
@@ -56,6 +65,7 @@ pub struct Level {
     pub visual_materials: Vec<ObjectMaterial>,
     pub players_visual_materials: (i32, i32),
     pub w_cups_visual_materials: i32,
+    pub visual_settings_of_environment: EnvirnomentVisualSettings,
 
     pub w_levels: Vec<f32>,
 }
@@ -285,6 +295,13 @@ fn parse_json_level(
         w_levels
     };
 
+    let visual_settings_of_environment = {
+        let json_visual_settings_of_environment = json_level
+            .get("visual_settings_of_environment")
+            .expect("Wrong JSON map format. JSON level must have visual_settings_of_environment property");
+
+        parse_json_visual_settings_of_environment(json_visual_settings_of_environment)
+    };
 
 
     let level = Level {
@@ -298,9 +315,148 @@ fn parse_json_level(
         players_visual_materials,
         w_cups_visual_materials,
         w_levels,
+        visual_settings_of_environment,
     };
 
     (level, actors)
+}
+
+fn parse_json_visual_settings_of_environment(
+    json: &Value,
+) -> EnvirnomentVisualSettings {
+    let obj = json
+        .as_object()
+        .expect("Wrong JSON map format. Root of visual_settings_of_environment property must be an object");
+
+    let sky_box_name = {
+        obj.get("sky_box")
+            .expect("Wrong JSON map format. visual_settings_of_environment have not an sky_box property")
+            .as_str()
+            .expect("Wrong JSON map format. visual_settings_of_environment's sky_box property is not a string")
+            .to_string()
+    };
+
+    let sky_color = {
+        let json_value = obj.get("sky_color")
+            .expect("Wrong JSON map format. visual_settings_of_environment have not an sky_color property");
+
+        parse_json_color_and_multiplier(json_value)
+    };
+
+    let fog_color = {
+        let json_value = obj.get("fog_color")
+            .expect("Wrong JSON map format. visual_settings_of_environment have not an fog_color property");
+
+        parse_json_color_and_multiplier(json_value)
+    };
+
+    let frenel_color = {
+        let json_value = obj.get("frenel_color")
+            .expect("Wrong JSON map format. visual_settings_of_environment have not an frenel_color property");
+
+        parse_json_color_and_multiplier(json_value)
+    };
+
+    let neon_wireframe_color = {
+        let json_value = obj.get("neon_wireframe_color")
+            .expect("Wrong JSON map format. visual_settings_of_environment have not an neon_wireframe_color property");
+
+        parse_json_color_and_multiplier(json_value)
+    };
+
+    let sun_color = {
+        let json_value = obj.get("sun_color")
+            .expect("Wrong JSON map format. visual_settings_of_environment have not an sun_color property");
+
+        parse_json_color_and_multiplier(json_value)
+    };
+
+    let sun_direction = {
+        let json_value = obj.get("sun_direction")
+            .expect("Wrong JSON map format. visual_settings_of_environment have not an sun_direction property");
+
+        let x = json_value
+            .get("x")
+            .expect("Wrong JSON map format, x property is not exist in sun_direction")
+            .as_f64()
+            .expect("Wrong JSON map format, value of x property of sun_direction is not float number");
+    
+        let y = json_value
+            .get("y")
+            .expect("Wrong JSON map format, y property is not exist in sun_direction")
+            .as_f64()
+            .expect("Wrong JSON map format, value of y property of sun_direction is not float number");
+    
+        let z = json_value
+            .get("z")
+            .expect("Wrong JSON map format, z property is not exist in sun_direction")
+            .as_f64()
+            .expect("Wrong JSON map format, value of z property of sun_direction is not float number");
+    
+        let w = json_value
+            .get("w")
+            .expect("Wrong JSON map format, w property is not exist in sun_direction")
+            .as_f64()
+            .expect("Wrong JSON map format, value of w property of sun_direction is not float number");
+        
+        Vec4::new(x as f32, y as f32, z as f32, w as f32)
+    };
+
+    EnvirnomentVisualSettings {
+        sky_box_name,
+        sky_color,
+        sun_color,
+        sun_direction,
+        fog_color,
+        frenel_color,
+        neon_wireframe_color,
+    }
+}
+
+fn parse_json_color_and_multiplier(
+    json: &Value,
+) -> Vec4 {
+    let obj = json
+        .as_object()
+        .expect("Wrong JSON map format. Root of some of visual_settings_of_environment propertys must be an object");
+
+    let red = {
+        obj
+            .get("red")
+            .expect("Wrong JSON map format. color must have red property")
+            .as_f64()
+            .expect("Wrong JSON map format. red value must be float number")
+            as f32
+    };
+
+    let green = {
+        obj
+            .get("green")
+            .expect("Wrong JSON map format. color must have green property")
+            .as_f64()
+            .expect("Wrong JSON map format. green value must be float number")
+            as f32
+    };
+
+    let blue = {
+        obj
+            .get("blue")
+            .expect("Wrong JSON map format. color must have blue property")
+            .as_f64()
+            .expect("Wrong JSON map format. blue value must be float number")
+            as f32
+    };
+
+    let mult = {
+        obj
+            .get("multiplier")
+            .expect("Wrong JSON map format. color must have multiplier property")
+            .as_f64()
+            .expect("Wrong JSON map format. multiplier value must be float number")
+            as f32
+    };
+
+    Vec4::new(red, green, blue, 0.0) * mult
 }
 
 
@@ -1285,10 +1441,10 @@ fn parse_wandering_actor(
     let movement_type = {
         match movement_type {
             "linear" => {
-                WonderingActorMovementType::Linear
+                WanderingActorMovementType::Linear
             },
             "nonlinear" => {
-                WonderingActorMovementType::NonLinear
+                WanderingActorMovementType::NonLinear
             },
             _ => {
                 panic!("Wrong JSON map format, {} it is not allowed movement_type in wandering actor", movement_type);

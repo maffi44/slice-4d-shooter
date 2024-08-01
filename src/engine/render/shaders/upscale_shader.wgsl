@@ -23,7 +23,7 @@ fn vs_main(
 }
 
 // size of bloom effect in screen space
-const BLOOM_RADIUS: f32 = 0.01;
+const BLOOM_RADIUS: f32 = 0.014;
 
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
@@ -37,28 +37,28 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     var bloom = col.rgb * col.a;
 
     var j = 0.0;
-    for (var i = 0.0; i <= BLOOM_RADIUS; i += pixel_step.x) {
-        let offset = vec2<f32>(i, 0.0);
-        let color = textureSample(raymarched_view, view_sampler, uv + offset);
-        bloom += (color.rgb * color.a) * (1.0 - i/BLOOM_RADIUS);
-        j += 1.0;
-    }
-
-    for (var i = 0.0; i >= -BLOOM_RADIUS; i -= pixel_step.x) {
-        let offset = vec2<f32>(i, 0.0);
-        let color = textureSample(raymarched_view, view_sampler, uv + offset);
-        bloom += (color.rgb * color.a) * (1.0 - -i/BLOOM_RADIUS);
-        j += 1.0;
-    }
-
     for (var i = 0.0; i <= BLOOM_RADIUS; i += pixel_step.y) {
-        let offset = vec2<f32>(0.0, i);
+        let offset = vec2<f32>(i, 0.0);
         let color = textureSample(raymarched_view, view_sampler, uv + offset);
         bloom += (color.rgb * color.a) * (1.0 - i/BLOOM_RADIUS);
         j += 1.0;
     }
 
     for (var i = 0.0; i >= -BLOOM_RADIUS; i -= pixel_step.y) {
+        let offset = vec2<f32>(i, 0.0);
+        let color = textureSample(raymarched_view, view_sampler, uv + offset);
+        bloom += (color.rgb * color.a) * (1.0 - -i/BLOOM_RADIUS);
+        j += 1.0;
+    }
+
+    for (var i = 0.0; i <= BLOOM_RADIUS; i += pixel_step.x) {
+        let offset = vec2<f32>(0.0, i);
+        let color = textureSample(raymarched_view, view_sampler, uv + offset);
+        bloom += (color.rgb * color.a) * (1.0 - i/BLOOM_RADIUS);
+        j += 1.0;
+    }
+
+    for (var i = 0.0; i >= -BLOOM_RADIUS; i -= pixel_step.x) {
         let offset = vec2<f32>(0.0, i);
         let color = textureSample(raymarched_view, view_sampler, uv + offset);
         bloom += (color.rgb * color.a) * (1.0 - -i/BLOOM_RADIUS);
@@ -67,5 +67,5 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     bloom /= j+1.0;
 
-    return vec4(col.rgb + bloom*vec3(1.0,1.4,1.4), 1.0);
+    return vec4(col.rgb + bloom*vec3(1.4), 1.0);
 }

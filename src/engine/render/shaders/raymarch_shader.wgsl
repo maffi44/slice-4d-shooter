@@ -271,8 +271,16 @@ struct OtherStaticData {
     stickiness: f32,
 
     empty_byte1: u32,
+    // empty_byte2: u32,
     shadows_enabled: i32,
     materials: array<Material, 32>,
+
+    sky_color: vec3<f32>,
+    sun_color: vec3<f32>,
+    fog_color: vec3<f32>,
+    frenel_color: vec3<f32>,
+    neon_wireframe_color: vec3<f32>,
+    sun_direction: vec4<f32>,
 }
 
 
@@ -2614,32 +2622,32 @@ fn noise2( x: vec4<f32> ) -> f32
 
 fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
 
-    let sun = pow(clamp(dot(normalize(SUN_DIR_1),ray_dir), 0.0, 1.0), 10.0);
+    let sun = pow(clamp(dot(normalize(static_data.sun_direction),ray_dir), 0.0, 1.0), 10.0);
 
-    var color = SUN_COLOR_1*pow(sun, 40.0);
+    var color = static_data.sun_color*pow(sun, 40.0);
 
     color += pow(textureSample(sky_box, sky_box_sampler, normalize(ray_dir.xyz)).xyz, vec3(2.1));
 
     return color;
 }
 
-const HORIZONT_COLOR: vec3<f32> = vec3(0.4, 0.8, 2.1);
-// const HORIZONT_COLOR: vec3<f32> = vec3(2.1, 0.5, 0.1);
-// const SKY_COLOR: vec3<f32> = vec3(0.17, 0.14, 0.42)*0.2;
-const SKY_COLOR: vec3<f32> = vec3(0.1, 0.3, 0.5)*0.02;
-const FOG_COLOR: vec3<f32> = vec3(0.001, 0.01, 0.022);
-const LINES_COLOR_1: vec3<f32> = vec3(0.2, 1.0, 3.5)*2.0;
-const LINES_COLOR_2: vec3<f32> = vec3(2.5, 0.2, 1.0);
-const FRENEL_COLOR: vec3<f32> = vec3(0.3,0.5,0.4)*0.17;
-const BOUND_COLOR: vec3<f32> = vec3(0.2,0.8,0.2);
-const W_PLANE_COLOR: vec3<f32> = vec3(0.2, 0.4, 1.1);
+// const HORIZONT_COLOR: vec3<f32> = vec3(0.4, 0.8, 2.1);
+// // const HORIZONT_COLOR: vec3<f32> = vec3(2.1, 0.5, 0.1);
+// // const static_data.sky_color: vec3<f32> = vec3(0.17, 0.14, 0.42)*0.2;
+// const SKY_COLOR = vec3(0.1, 0.3, 0.5)*0.02;
+// const FOG_COLOR = vec3(0.001, 0.01, 0.022);
+// const LINES_COLOR_1 = vec3(0.08, 0.7, 3.5)*3.0;
+// const LINES_COLOR_2: vec3<f32> = vec3(2.5, 0.2, 1.0);
+// const FRENEL_COLOR = vec3(0.3,0.5,0.4)*0.17;
+// const BOUND_COLOR: vec3<f32> = vec3(0.2,0.8,0.2);
+// const W_PLANE_COLOR: vec3<f32> = vec3(0.2, 0.4, 1.1);
 
-// const SUN_COLOR_1: vec3<f32> = vec3(5.6, 1.8, 1.8)*0.5;
-const SUN_COLOR_1: vec3<f32> = vec3(1.6,1.2,0.8)*1.5;
-const SUN_DIR_1: vec4<f32> = vec4(1.0, 1.4, -2.3, 0.0);
+// // const static_data.sun_color: vec3<f32> = vec3(5.6, 1.8, 1.8)*0.5;
+// const SUN_COLOR_1 = vec3(1.6,1.2,0.8)*1.5;
+// const SUN_DIR_1 = vec4(1.0, 1.4, -2.3, 0.0);
 
-const SUN_COLOR_2: vec3<f32> = vec3(1.2, 1.8, 2.6);
-const SUN_DIR_2: vec4<f32> = vec4(0.5, 1.0, 0.4, 0.5);
+// const SUN_COLOR_2: vec3<f32> = vec3(1.2, 1.8, 2.6);
+// const SUN_DIR_2: vec4<f32> = vec4(0.5, 1.0, 0.4, 0.5);
 
 
 fn apply_material(
@@ -2651,24 +2659,24 @@ fn apply_material(
     var lightness = 0.0;
     
     // sky
-    if material == -3 {
+    // if material == -3 {
 
-        let normal = vec4(0.0, 0.0, 0.0, 1.0);
+    //     let normal = vec4(0.0, 0.0, 0.0, 1.0);
 
-        let frenel = clamp(pow(1.0 + dot(normal, ray_dir), 5.0), 0.0, 1.0);
+    //     let frenel = clamp(pow(1.0 + dot(normal, ray_dir), 5.0), 0.0, 1.0);
 
-        var color = W_PLANE_COLOR*frenel;
+    //     var color = W_PLANE_COLOR*frenel;
 
-        return vec4(color, lightness);
-    }
+    //     return vec4(color, lightness);
+    // }
     if material == -2 {
-        // var color =  2.9*SKY_COLOR*FOG_COLOR* mix(vec3(.1,0.2,0.55), vec3(0.1,1.2,2.4), sqrt(abs(ray_dir.y)+0.1));
+        // var color =  2.9*static_data.sky_color*static_data.fog_color* mix(vec3(.1,0.2,0.55), vec3(0.1,1.2,2.4), sqrt(abs(ray_dir.y)+0.1));
         // color = mix(HORIZONT_COLOR*0.12, color, sqrt(clamp(abs(ray_dir.y*2.0)+0.1,0.0,1.0)))*0.1;
-        // var color =  1.5*SKY_COLOR* mix(vec3(.3,0.0,0.05), SUN_COLOR_1*SKY_COLOR, sqrt(max(ray_dir.y, 0.001)));
+        // var color =  1.5*static_data.sky_color* mix(vec3(.3,0.0,0.05), static_data.sun_color*static_data.sky_color, sqrt(max(ray_dir.y, 0.001)));
 
-        // let sun = pow(clamp(dot(normalize(SUN_DIR_1),ray_dir), 0.0, 1.0), 5.0);
-    	// // color += 0.1*SUN_COLOR_1*sun;
-        // color = SUN_COLOR_1*pow(sun, 20.0);
+        // let sun = pow(clamp(dot(normalize(static_data.sun_direction),ray_dir), 0.0, 1.0), 5.0);
+    	// // color += 0.1*static_data.sun_color*sun;
+        // color = static_data.sun_color*pow(sun, 20.0);
 
         // let v = 1.0/( 2. * ( 1. + ray_dir.z ) );
         // let xy = vec2(ray_dir.y * v, ray_dir.x * v);
@@ -2696,21 +2704,21 @@ fn apply_material(
         
         color = clamp(color, vec3(0.0), vec3(1.0));
 
-        // color = mix(color, FOG_COLOR, 1.0-ray_dir.y);
+        // color = mix(color, static_data.fog_color, 1.0-ray_dir.y);
 
         return vec4(color, lightness);
     }
 
     let hited_pos = pos + ray_dir * dist;
     let normal = get_normal(hited_pos);
-    let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*4.8);
+    let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*5.8);
     // let aocc = calc_ambient_occlusion(hited_pos, normal);
 
     let wireframe_fog = exp(-0.007*dist*dist);
     let wireframe_dif = pow(clamp(1.0-abs(dot(normal, next_normal)),0.0,1.0),1.3);
 
     // sun light 1
-    let sun_dir_1 = normalize(SUN_DIR_1);
+    let sun_dir_1 = normalize(static_data.sun_direction);
     let sun_dif_1 = clamp(dot(normal, sun_dir_1),0.0,1.0);
     let sun_hal_1 = normalize(sun_dir_1-ray_dir);
     let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),42.0);
@@ -2780,21 +2788,21 @@ fn apply_material(
     var light = vec3(0.0);
 
 
-    light += SUN_COLOR_1  * sun_dif_1 * sun_shadow_1 * 0.13;// * aocc;
-    light += SUN_COLOR_1  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 3.0;// * aocc;
-    light += SKY_COLOR    * sky_dif   * 0.3 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
-    light += FRENEL_COLOR * frenel    * 0.3 * (0.6+0.4*sun_dif_1);// * aocc;
-    light += LINES_COLOR_1* wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
+    light += static_data.sun_color  * sun_dif_1 * sun_shadow_1 * 0.13;// * aocc;
+    light += static_data.sun_color  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 3.0;// * aocc;
+    light += static_data.sky_color    * sky_dif   * 0.3 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
+    light += static_data.frenel_color * frenel    * 0.3 * (0.6+0.4*sun_dif_1);// * aocc;
+    light += static_data.neon_wireframe_color* wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
 
     lightness = wireframe_dif*30.0;
     
-    // light += mix(LINES_COLOR_1, LINES_COLOR_2, clamp(hited_pos.w/10.0,0.0,1.0)) * 2.8*pow(lines_dif, 5.8);
+    // light += mix(static_data.neon_wireframe_color, LINES_COLOR_2, clamp(hited_pos.w/10.0,0.0,1.0)) * 2.8*pow(lines_dif, 5.8);
 
     // light += SUN_COLOR_2 * sun_dif_2 * sun_shadow_2 * 0.6;// * aocc;
     // light += SUN_COLOR_2 * sun_dif_2 * sun_spe_2 * sun_shadow_2 * 4.0;// * aocc;
     
     // let diffuse = clamp(static_data.materials[material].color.xyz+vec3(10.0)*pow(lines_dif,25.0),vec3(0.0),vec3(1.0));
-    let diffuse = static_data.materials[material].color.xyz + LINES_COLOR_1 * pow(wireframe_dif,2.5)*10.0*(0.1+0.9*wireframe_fog);
+    let diffuse = static_data.materials[material].color.xyz + static_data.neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
     let ref_col = get_sky_color(ref_dir);
 
@@ -2804,7 +2812,7 @@ fn apply_material(
 
     let air_perspective = clamp(1.0-exp(-0.00002*dist*dist*dist),0.2,1.0);
 
-    color = mix(color, SKY_COLOR, air_perspective);
+    color = mix(color, static_data.sky_color, air_perspective);
     return vec4(color, lightness);
 }
 
