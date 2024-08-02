@@ -81,7 +81,13 @@ impl RenderData {
         window: &Window,
         static_bounding_box: &BoundingBox,
     ) {
-        self.dynamic_data.update(world, time, window, static_bounding_box);
+        self.dynamic_data.update(
+            world,
+            time,
+            window,
+            static_bounding_box,
+            &self.static_data
+        );
     }
 }
 

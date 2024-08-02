@@ -1,6 +1,16 @@
 {
     "level_name" : "test_level",
 
+
+    "defaults" : {
+        "is_positive": true,
+        "friction": 3.5,
+        "bounce_rate": 0.0,
+        "visual_material": "common",
+        "roundness": 0.05,
+        "stickiness": false
+    },
+
     "visual_settings_of_environment" : {
         "sky_box" : "star_sky",
         "sky_color" : {
@@ -136,14 +146,6 @@
     "w_cups" : {
     },
 
-    "defaults" : {
-        "is_positive": true,
-        "friction": 0.1,
-        "bounce_rate": 0.0,
-        "visual_material": "common",
-        "roundness": 0.05,
-        "stickiness": false
-    },
 
     "actors" : [
         {
@@ -284,8 +286,7 @@
                 "roundness" : 0.3,
                 "stickiness" : true,
                 "bounce_rate" : 0.0,
-                "is_positive" : true,
-                "friction" : 0.0
+                "is_positive" : true
                 
             }
         },
@@ -313,7 +314,8 @@
                     "z": 3.0,
                     "w": 3.0
                 },
-                "bounce_rate" : 1.0
+                "visual_material" : "slick",
+                "friction": 0.0
             }
         },
         {
@@ -345,7 +347,7 @@
             }
         },
         {
-            "cube_w_inf" : {
+            "cube" : {
                 "transform" : {
                     "position" : {
                         "x": 0.0,
@@ -357,15 +359,15 @@
                 "size" : {
                     "x": 15.0,
                     "y": 0.2,
-                    "z": 30.0
+                    "z": 30.0,
+                    "w": 30.0
                 },
                 "is_positive" : true,
-                "friction": 0.1,
                 "stickiness" : true
             }
         },
         {
-            "cube_w_inf" : {
+            "cube" : {
                 "transform" : {
                     "position" : {
                         "x": 30.0,
@@ -377,13 +379,13 @@
                 "size" : {
                     "x": 15.0,
                     "y": 0.2,
-                    "z": 30.0
+                    "z": 30.0,
+                    "w": 30.0
                 },
                 "is_positive" : true,
-                "friction": 0.0,
-                "bounce_rate" : 0.5,
                 "stickiness" : false,
-                "visual_material" : "slick"
+                "visual_material" : "slick",
+                "friction": 0.0
             }
         },
         {
@@ -455,9 +457,10 @@
                     "x": 2.0,
                     "y": 2.0,
                     "z": 2.0,
-                    "w": 2.0
+                    "w": 4.0
                 },
-                "visual_material" : "slick"
+                "visual_material" : "slick",
+                "friction": 0.0
             }
         },
         {
@@ -665,8 +668,7 @@
                     "z": 10.2,
                     "w": 10.2
                 },
-                "stickiness" : true,
-                "friction" : 0.0
+                "stickiness" : true
             }
         },
         {

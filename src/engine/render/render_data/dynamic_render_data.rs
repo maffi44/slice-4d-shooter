@@ -13,7 +13,7 @@ use crate::{
 use glam::{Mat4, Vec4};
 use winit::window::Window;
 
-use super::{BeamArea, BoundingBox, PlayerForm};
+use super::{static_render_data::StaticRenderData, BeamArea, BoundingBox, PlayerForm};
 
 
 
@@ -234,7 +234,11 @@ impl DynamicRenderData {
         self.frame_player_forms_buffer.clear();
     }
 
-    pub fn update_dynamic_shapes_buffers_and_get_metadata(&mut self) -> ShapesArraysMetadata {
+    pub fn update_dynamic_shapes_buffers_and_get_metadata(
+        &mut self,
+        sd: &StaticRenderData,
+    ) -> ShapesArraysMetadata
+    {
         let mut cubes_start = 0u32;
         let mut cubes_amount = 0u32;
 
@@ -292,6 +296,11 @@ impl DynamicRenderData {
         let mut index = 0;
         cubes_start = 0u32;
 
+        for shape in &sd.cubes {
+            self.dynamic_shapes_data.normal[index] = shape.clone();
+            index += 1;
+        }
+
         while let Some(shape) = self.frame_cubes_buffer.normal.pop() {
             self.dynamic_shapes_data.normal[index] = shape;
             index += 1;
@@ -302,7 +311,12 @@ impl DynamicRenderData {
 
         spheres_start = index as u32;
 
-       while let Some(shape) = self.frame_spheres_buffer.normal.pop() {
+        for shape in &sd.spheres {
+            self.dynamic_shapes_data.normal[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_spheres_buffer.normal.pop() {
             self.dynamic_shapes_data.normal[index] = shape;
             index += 1;
         }
@@ -310,19 +324,14 @@ impl DynamicRenderData {
         spheres_amount = index as u32 - spheres_start;
 
 
-        inf_cubes_start = index as u32;
+        sph_cubes_start = index as u32;
 
-       while let Some(shape) = self.frame_inf_w_cubes_buffer.normal.pop() {
-            self.dynamic_shapes_data.normal[index] = shape;
+        for shape in &sd.sph_cubes {
+            self.dynamic_shapes_data.normal[index] = shape.clone();
             index += 1;
         }
 
-        inf_cubes_amount = index as u32 - inf_cubes_start;
-
-
-        sph_cubes_start = index as u32;
-
-       while let Some(shape) = self.frame_sph_cubes_buffer.normal.pop() {
+        while let Some(shape) = self.frame_sph_cubes_buffer.normal.pop() {
             self.dynamic_shapes_data.normal[index] = shape;
             index += 1;
         }
@@ -330,11 +339,31 @@ impl DynamicRenderData {
         sph_cubes_amount = index as u32 - sph_cubes_start;
 
 
+        inf_cubes_start = index as u32;
+
+        for shape in &sd.inf_w_cubes {
+            self.dynamic_shapes_data.normal[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_inf_w_cubes_buffer.normal.pop() {
+            self.dynamic_shapes_data.normal[index] = shape;
+            index += 1;
+        }
+
+        inf_cubes_amount = index as u32 - inf_cubes_start;
+
+
         // packing stickiness shapes
         let mut index = 0;
         s_cubes_start = 0u32;
 
-       while let Some(shape) = self.frame_cubes_buffer.stickiness.pop() {
+        for shape in &sd.s_cubes {
+            self.dynamic_shapes_data.stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_cubes_buffer.stickiness.pop() {
             self.dynamic_shapes_data.stickiness[index] = shape;
             index += 1;
         }
@@ -344,7 +373,12 @@ impl DynamicRenderData {
 
         s_spheres_start = index as u32;
 
-       while let Some(shape) = self.frame_spheres_buffer.stickiness.pop() {
+        for shape in &sd.s_spheres {
+            self.dynamic_shapes_data.stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_spheres_buffer.stickiness.pop() {
             self.dynamic_shapes_data.stickiness[index] = shape;
             index += 1;
         }
@@ -352,19 +386,14 @@ impl DynamicRenderData {
         s_spheres_amount = index as u32 - s_spheres_start;
 
 
-        s_inf_cubes_start = index as u32;
+        s_sph_cubes_start = index as u32;
 
-       while let Some(shape) = self.frame_inf_w_cubes_buffer.stickiness.pop() {
-            self.dynamic_shapes_data.stickiness[index] = shape;
+        for shape in &sd.s_sph_cubes {
+            self.dynamic_shapes_data.stickiness[index] = shape.clone();
             index += 1;
         }
 
-        s_inf_cubes_amount = index as u32 - s_inf_cubes_start;
-
-
-        s_sph_cubes_start = index as u32;
-
-       while let Some(shape) = self.frame_sph_cubes_buffer.stickiness.pop() {
+        while let Some(shape) = self.frame_sph_cubes_buffer.stickiness.pop() {
             self.dynamic_shapes_data.stickiness[index] = shape;
             index += 1;
         }
@@ -373,11 +402,32 @@ impl DynamicRenderData {
 
 
 
+        s_inf_cubes_start = index as u32;
+
+        for shape in &sd.s_inf_w_cubes {
+            self.dynamic_shapes_data.stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_inf_w_cubes_buffer.stickiness.pop() {
+            self.dynamic_shapes_data.stickiness[index] = shape;
+            index += 1;
+        }
+
+        s_inf_cubes_amount = index as u32 - s_inf_cubes_start;
+
+
+
         // packing negative shapes
         let mut index = 0;
         neg_cubes_start = 0u32;
 
-       while let Some(shape) = self.frame_cubes_buffer.negative.pop() {
+        for shape in &sd.neg_cubes {
+            self.dynamic_shapes_data.negative[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_cubes_buffer.negative.pop() {
             self.dynamic_shapes_data.negative[index] = shape;
             index += 1;
         }
@@ -387,7 +437,12 @@ impl DynamicRenderData {
 
         neg_spheres_start = index as u32;
 
-       while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
+        for shape in &sd.neg_spheres {
+            self.dynamic_shapes_data.negative[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
             self.dynamic_shapes_data.negative[index] = shape;
             index += 1;
         }
@@ -395,19 +450,14 @@ impl DynamicRenderData {
         neg_spheres_amount = index as u32 - neg_spheres_start;
 
 
-        neg_inf_cubes_start = index as u32;
+        neg_sph_cubes_start = index as u32;
 
-       while let Some(shape) = self.frame_inf_w_cubes_buffer.negative.pop() {
-            self.dynamic_shapes_data.negative[index] = shape;
+        for shape in &sd.neg_sph_cubes {
+            self.dynamic_shapes_data.negative[index] = shape.clone();
             index += 1;
         }
 
-        neg_inf_cubes_amount = index as u32 - neg_inf_cubes_start;
-
-
-        neg_sph_cubes_start = index as u32;
-
-       while let Some(shape) = self.frame_sph_cubes_buffer.negative.pop() {
+        while let Some(shape) = self.frame_sph_cubes_buffer.negative.pop() {
             self.dynamic_shapes_data.negative[index] = shape;
             index += 1;
         }
@@ -416,11 +466,32 @@ impl DynamicRenderData {
 
 
 
+        neg_inf_cubes_start = index as u32;
+
+        for shape in &sd.neg_inf_w_cubes {
+            self.dynamic_shapes_data.negative[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_inf_w_cubes_buffer.negative.pop() {
+            self.dynamic_shapes_data.negative[index] = shape;
+            index += 1;
+        }
+
+        neg_inf_cubes_amount = index as u32 - neg_inf_cubes_start;
+
+
+
         // packing negative and stickiness shapes
         let mut index = 0;
         s_neg_cubes_start = 0u32;
 
-       while let Some(shape) = self.frame_cubes_buffer.neg_stickiness.pop() {
+        for shape in &sd.s_neg_cubes {
+            self.dynamic_shapes_data.neg_stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_cubes_buffer.neg_stickiness.pop() {
             self.dynamic_shapes_data.neg_stickiness[index] = shape;
             index += 1;
         }
@@ -430,7 +501,12 @@ impl DynamicRenderData {
 
         s_neg_spheres_start = index as u32;
 
-       while let Some(shape) = self.frame_spheres_buffer.neg_stickiness.pop() {
+        for shape in &sd.s_neg_spheres {
+            self.dynamic_shapes_data.neg_stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_spheres_buffer.neg_stickiness.pop() {
             self.dynamic_shapes_data.neg_stickiness[index] = shape;
             index += 1;
         }
@@ -438,24 +514,35 @@ impl DynamicRenderData {
         s_neg_spheres_amount = index as u32 - s_neg_spheres_start;
 
 
-        s_neg_inf_cubes_start = index as u32;
+        s_neg_sph_cubes_start = index as u32;
 
-       while let Some(shape) = self.frame_inf_w_cubes_buffer.neg_stickiness.pop() {
-            self.dynamic_shapes_data.neg_stickiness[index] = shape;
+        for shape in &sd.s_neg_sph_cubes {
+            self.dynamic_shapes_data.neg_stickiness[index] = shape.clone();
             index += 1;
         }
 
-        s_neg_inf_cubes_amount = index as u32 - s_neg_inf_cubes_start;
-
-
-        s_neg_sph_cubes_start = index as u32;
-
-       while let Some(shape) = self.frame_sph_cubes_buffer.neg_stickiness.pop() {
+        while let Some(shape) = self.frame_sph_cubes_buffer.neg_stickiness.pop() {
             self.dynamic_shapes_data.neg_stickiness[index] = shape;
             index += 1;
         }
 
         s_neg_sph_cubes_amount = index as u32 - s_neg_sph_cubes_start;
+
+
+
+        s_neg_inf_cubes_start = index as u32;
+
+        for shape in &sd.s_neg_inf_w_cubes {
+            self.dynamic_shapes_data.neg_stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        while let Some(shape) = self.frame_inf_w_cubes_buffer.neg_stickiness.pop() {
+            self.dynamic_shapes_data.neg_stickiness[index] = shape;
+            index += 1;
+        }
+
+        s_neg_inf_cubes_amount = index as u32 - s_neg_inf_cubes_start;
 
 
         ShapesArraysMetadata {
@@ -564,12 +651,13 @@ impl DynamicRenderData {
         time: &TimeSystem,
         window: &Window,
         static_bounding_box: &BoundingBox,
+        static_data: &StaticRenderData,
     ) {
         self.clear_all_frame_buffers();
 
         let dyn_bb = self.get_data_from_actors_visual_elements(world, static_bounding_box);
 
-        let shapes_arrays_metadata = self.update_dynamic_shapes_buffers_and_get_metadata();
+        let shapes_arrays_metadata = self.update_dynamic_shapes_buffers_and_get_metadata(static_data);
 
         let spherical_areas_meatadata = self.update_spherical_areas_and_get_meatadata();
 

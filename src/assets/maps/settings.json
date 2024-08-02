@@ -30,7 +30,7 @@
     
     "energy_gun_hole_size_mult" : 0.27,
     "energy_gun_add_force_mult" : 0.4, 
-    "energy_gun_damage_mult" : 0.4, 
+    "energy_gun_damage_mult" : 0.4,
     "energy_gun_restoring_speed" : 15,
 
     "machinegun_damage" : 5,

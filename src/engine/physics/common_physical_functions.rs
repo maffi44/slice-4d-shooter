@@ -469,9 +469,9 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.cubes.iter_normal() {
         let new_d = sd_box(position - collider.position.clone(), collider.size.clone()) - collider.roundness;
 
-        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
-            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
-            friction = friction.max(collider.friction);
+        if new_d < d{//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
         };
@@ -479,9 +479,9 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.inf_w_cubes.iter_normal() {
         let new_d = sd_inf_box(position - collider.position.clone(), collider.size.xyz()) - collider.roundness;
 
-        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
-            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
-            friction = friction.max(collider.friction);
+        if new_d < d{//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
         };
@@ -489,9 +489,9 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.spheres.iter_normal() {
         let new_d = sd_sphere(position - collider.position.clone(), collider.size.x) - collider.roundness;
 
-        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
-            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
-            friction = friction.max(collider.friction);
+        if new_d < d{//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
         };
@@ -499,9 +499,9 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.sph_cubes.iter_normal() {
         let new_d = sd_sph_box(position - collider.position.clone(), collider.size.clone()) - collider.roundness;
 
-        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
-            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
-            friction = friction.max(collider.friction);
+        if new_d < d{//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
         };
@@ -512,9 +512,9 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.cubes.iter_stickiness() {
         let new_d = sd_box(position - collider.position.clone(), collider.size.clone()) - collider.roundness;
         
-        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
-            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
-            friction = friction.max(collider.friction);
+        if new_d < d{//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
         };
@@ -536,9 +536,9 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.inf_w_cubes.iter_stickiness() {
         let new_d = sd_inf_box(position - collider.position.clone(), collider.size.xyz()) - collider.roundness;
 
-        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
-            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
-            friction = friction.max(collider.friction);
+        if new_d < d{//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
 
@@ -563,9 +563,9 @@ pub fn get_bounce_and_friction(
         let new_d = sd_sphere(position - collider.position.clone(), collider.size.x) - collider.roundness;
 
         
-        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
-            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
-            friction = friction.max(collider.friction);
+        if new_d < d{//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
 
@@ -588,9 +588,9 @@ pub fn get_bounce_and_friction(
     for collider in static_objects.sph_cubes.iter_stickiness() {
         let new_d = sd_sph_box(position - collider.position.clone(), collider.size.clone()) - collider.roundness;
 
-        if new_d < collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
-            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
-            friction = friction.max(collider.friction);
+        if new_d < d{//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
 
             d = new_d;
 
@@ -623,10 +623,10 @@ pub fn get_bounce_and_friction(
     //     };
     // }
 
-    if d > collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
-        bounce_coeficient = 0.0;
-        friction = 0.0;
-    }
+    // if d > collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+    //     bounce_coeficient = 0.0;
+    //     friction = 0.0;
+    // }
 
 
     (bounce_coeficient, friction)

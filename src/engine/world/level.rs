@@ -765,7 +765,8 @@ fn parse_json_specific_shape(
                 ShapeType::Cube
             },
             "cube_w_inf" => {
-                ShapeType::CubeInfW
+                panic!("cube_w_inf shapes are temporarily not supported")
+                // ShapeType::CubeInfW
             },
             "sphere" => {
                 ShapeType::Sphere

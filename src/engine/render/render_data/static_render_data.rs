@@ -12,6 +12,24 @@ pub struct StaticRenderData {
     pub static_shapes_data: ShapesArrays,
     pub other_static_data: OtherStaticData,
     pub static_bounding_box: BoundingBox,
+
+    pub cubes: Vec<Shape>,
+    pub s_cubes: Vec<Shape>,
+    pub neg_cubes: Vec<Shape>,
+    pub s_neg_cubes: Vec<Shape>,
+    pub spheres: Vec<Shape>,
+    pub s_spheres: Vec<Shape>,
+    pub neg_spheres: Vec<Shape>,
+    pub s_neg_spheres: Vec<Shape>,
+    pub sph_cubes: Vec<Shape>,
+    pub s_sph_cubes: Vec<Shape>,
+    pub neg_sph_cubes: Vec<Shape>,
+    pub s_neg_sph_cubes: Vec<Shape>,
+    pub inf_w_cubes: Vec<Shape>,
+    pub s_inf_w_cubes: Vec<Shape>,
+    pub neg_inf_w_cubes: Vec<Shape>,
+    pub s_neg_inf_w_cubes: Vec<Shape>,
+    pub metadata: ShapesArraysMetadata,
 }
 
 
@@ -24,7 +42,7 @@ pub struct VisualMaterial {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct OtherStaticData {
-    shapes_arrays_metadata: ShapesArraysMetadata,
+    // shapes_arrays_metadata: ShapesArraysMetadata,
 
     is_w_floor_exist: i32,
     w_floor: f32,
@@ -53,7 +71,7 @@ pub struct OtherStaticData {
 impl OtherStaticData {
     pub fn new(
         world: &World,
-        shapes_arrays_metadata: ShapesArraysMetadata,
+        // shapes_arrays_metadata: ShapesArraysMetadata,
         stickiness: f32
     ) -> Self {
         
@@ -109,7 +127,7 @@ impl OtherStaticData {
         };
 
         OtherStaticData {
-            shapes_arrays_metadata,
+            // shapes_arrays_metadata,
 
             w_floor,
             is_w_floor_exist,
@@ -437,8 +455,8 @@ impl StaticRenderData {
         let mut index = 0;
         cubes_start = 0u32;
 
-        for shape in cubes {
-            shapes.normal[index] = shape;
+        for shape in &cubes {
+            shapes.normal[index] = shape.clone();
             index += 1;
         }
 
@@ -447,8 +465,8 @@ impl StaticRenderData {
 
         spheres_start = index as u32;
 
-        for shape in spheres {
-            shapes.normal[index] = shape;
+        for shape in &spheres {
+            shapes.normal[index] = shape.clone();
             index += 1;
         }
 
@@ -457,8 +475,8 @@ impl StaticRenderData {
 
         inf_cubes_start = index as u32;
 
-        for shape in inf_w_cubes {
-            shapes.normal[index] = shape;
+        for shape in &inf_w_cubes {
+            shapes.normal[index] = shape.clone();
             index += 1;
         }
 
@@ -467,8 +485,8 @@ impl StaticRenderData {
 
         sph_cubes_start = index as u32;
 
-        for shape in sph_cubes {
-            shapes.normal[index] = shape;
+        for shape in &sph_cubes {
+            shapes.normal[index] = shape.clone();
             index += 1;
         }
 
@@ -479,8 +497,8 @@ impl StaticRenderData {
         let mut index = 0;
         s_cubes_start = 0u32;
 
-        for shape in s_cubes {
-            shapes.stickiness[index] = shape;
+        for shape in &s_cubes {
+            shapes.stickiness[index] = shape.clone();
             index += 1;
         }
 
@@ -489,8 +507,8 @@ impl StaticRenderData {
 
         s_spheres_start = index as u32;
 
-        for shape in s_spheres {
-            shapes.stickiness[index] = shape;
+        for shape in &s_spheres {
+            shapes.stickiness[index] = shape.clone();
             index += 1;
         }
 
@@ -499,8 +517,8 @@ impl StaticRenderData {
 
         s_inf_cubes_start = index as u32;
 
-        for shape in s_inf_w_cubes {
-            shapes.stickiness[index] = shape;
+        for shape in &s_inf_w_cubes {
+            shapes.stickiness[index] = shape.clone();
             index += 1;
         }
 
@@ -509,8 +527,8 @@ impl StaticRenderData {
 
         s_sph_cubes_start = index as u32;
 
-        for shape in s_sph_cubes {
-            shapes.stickiness[index] = shape;
+        for shape in &s_sph_cubes {
+            shapes.stickiness[index] = shape.clone();
             index += 1;
         }
 
@@ -522,8 +540,8 @@ impl StaticRenderData {
         let mut index = 0;
         neg_cubes_start = 0u32;
 
-        for shape in neg_cubes {
-            shapes.negative[index] = shape;
+        for shape in &neg_cubes {
+            shapes.negative[index] = shape.clone();
             index += 1;
         }
 
@@ -532,8 +550,8 @@ impl StaticRenderData {
 
         neg_spheres_start = index as u32;
 
-        for shape in neg_spheres {
-            shapes.negative[index] = shape;
+        for shape in &neg_spheres {
+            shapes.negative[index] = shape.clone();
             index += 1;
         }
 
@@ -542,8 +560,8 @@ impl StaticRenderData {
 
         neg_inf_cubes_start = index as u32;
 
-        for shape in neg_inf_w_cubes {
-            shapes.negative[index] = shape;
+        for shape in &neg_inf_w_cubes {
+            shapes.negative[index] = shape.clone();
             index += 1;
         }
 
@@ -552,8 +570,8 @@ impl StaticRenderData {
 
         neg_sph_cubes_start = index as u32;
 
-        for shape in neg_sph_cubes {
-            shapes.negative[index] = shape;
+        for shape in &neg_sph_cubes {
+            shapes.negative[index] = shape.clone();
             index += 1;
         }
 
@@ -565,8 +583,8 @@ impl StaticRenderData {
         let mut index = 0;
         s_neg_cubes_start = 0u32;
 
-        for shape in s_neg_cubes {
-            shapes.neg_stickiness[index] = shape;
+        for shape in &s_neg_cubes {
+            shapes.neg_stickiness[index] = shape.clone();
             index += 1;
         }
 
@@ -575,8 +593,8 @@ impl StaticRenderData {
 
         s_neg_spheres_start = index as u32;
 
-        for shape in s_neg_spheres {
-            shapes.neg_stickiness[index] = shape;
+        for shape in &s_neg_spheres {
+            shapes.neg_stickiness[index] = shape.clone();
             index += 1;
         }
 
@@ -585,8 +603,8 @@ impl StaticRenderData {
 
         s_neg_inf_cubes_start = index as u32;
 
-        for shape in s_neg_inf_w_cubes {
-            shapes.neg_stickiness[index] = shape;
+        for shape in &s_neg_inf_w_cubes {
+            shapes.neg_stickiness[index] = shape.clone();
             index += 1;
         }
 
@@ -595,8 +613,8 @@ impl StaticRenderData {
 
         s_neg_sph_cubes_start = index as u32;
 
-        for shape in s_neg_sph_cubes {
-            shapes.neg_stickiness[index] = shape;
+        for shape in &s_neg_sph_cubes {
+            shapes.neg_stickiness[index] = shape.clone();
             index += 1;
         }
 
@@ -646,7 +664,7 @@ impl StaticRenderData {
         
         let other_static_data = OtherStaticData::new(
             world,
-            metadata,
+            // metadata,
             world.level.all_shapes_stickiness_radius
         );
 
@@ -654,6 +672,24 @@ impl StaticRenderData {
             static_shapes_data: shapes,
             other_static_data,
             static_bounding_box,
+
+            cubes,
+            s_cubes,
+            neg_cubes,
+            s_neg_cubes,
+            spheres,
+            s_spheres,
+            neg_spheres,
+            s_neg_spheres,
+            sph_cubes,
+            s_sph_cubes,
+            neg_sph_cubes,
+            s_neg_sph_cubes,
+            inf_w_cubes,
+            s_inf_w_cubes,
+            neg_inf_w_cubes,
+            s_neg_inf_w_cubes,
+            metadata,
         }
     }
 }

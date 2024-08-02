@@ -361,6 +361,46 @@ impl Renderer {
         let uniform_bind_group_layout_0 =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
+                    // wgpu::BindGroupLayoutEntry {
+                    //     binding: 0,
+                    //     visibility: wgpu::ShaderStages::FRAGMENT,
+                    //     ty: wgpu::BindingType::Buffer {
+                    //         ty: wgpu::BufferBindingType::Uniform,
+                    //         has_dynamic_offset: false,
+                    //         min_binding_size: None,
+                    //     },
+                    //     count: None,
+                    // },
+                    // wgpu::BindGroupLayoutEntry {
+                    //     binding: 1,
+                    //     visibility: wgpu::ShaderStages::FRAGMENT,
+                    //     ty: wgpu::BindingType::Buffer {
+                    //         ty: wgpu::BufferBindingType::Uniform,
+                    //         has_dynamic_offset: false,
+                    //         min_binding_size: None,
+                    //     },
+                    //     count: None,
+                    // },
+                    // wgpu::BindGroupLayoutEntry {
+                    //     binding: 2,
+                    //     visibility: wgpu::ShaderStages::FRAGMENT,
+                    //     ty: wgpu::BindingType::Buffer {
+                    //         ty: wgpu::BufferBindingType::Uniform,
+                    //         has_dynamic_offset: false,
+                    //         min_binding_size: None,
+                    //     },
+                    //     count: None,
+                    // },
+                    // wgpu::BindGroupLayoutEntry {
+                    //     binding: 3,
+                    //     visibility: wgpu::ShaderStages::FRAGMENT,
+                    //     ty: wgpu::BindingType::Buffer {
+                    //         ty: wgpu::BufferBindingType::Uniform,
+                    //         has_dynamic_offset: false,
+                    //         min_binding_size: None,
+                    //     },
+                    //     count: None,
+                    // },
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
                         visibility: wgpu::ShaderStages::FRAGMENT,
@@ -413,46 +453,6 @@ impl Renderer {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 5,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 6,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 7,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 8,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 9,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -540,44 +540,44 @@ impl Renderer {
         let uniform_bind_group_0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout_0,
             entries: &[
+                // wgpu::BindGroupEntry {
+                //     binding: 0,
+                //     resource: static_normal_shapes_buffer.as_entire_binding(),
+                // },
+                // wgpu::BindGroupEntry {
+                //     binding: 1,
+                //     resource: static_negative_shapes_buffer.as_entire_binding(),
+                // },
+                // wgpu::BindGroupEntry {
+                //     binding: 2,
+                //     resource: static_stickiness_shapes_buffer.as_entire_binding(),
+                // },
+                // wgpu::BindGroupEntry {
+                //     binding: 3,
+                //     resource: static_neg_stickiness_shapes_buffer.as_entire_binding(),
+                // },
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: static_normal_shapes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: static_negative_shapes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: static_stickiness_shapes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: static_neg_stickiness_shapes_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 4,
                     resource: other_static_data.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 5,
+                    binding: 1,
                     resource: dynamic_normal_shapes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 6,
+                    binding: 2,
                     resource: dynamic_negative_shapes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 7,
+                    binding: 3,
                     resource: dynamic_stickiness_shapes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 8,
+                    binding: 4,
                     resource: dynamic_neg_stickiness_shapes_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 9,
+                    binding: 5,
                     resource: other_dynamic_data_buffer.as_entire_binding(),
                 }
             ],
