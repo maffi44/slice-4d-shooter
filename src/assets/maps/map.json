@@ -73,11 +73,11 @@
         {
             "name" : "metallic_red",
             "color" : {
-                "red": 0.45,
-                "green": 0.46,
-                "blue": 0.04
+                "red": 1.2,
+                "green": 0.7,
+                "blue": 0.0
             },
-            "roughness" : 0.9
+            "roughness" : 0.7
 
         }
     ],

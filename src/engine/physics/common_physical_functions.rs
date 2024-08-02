@@ -27,9 +27,9 @@ pub fn sd_sphere(p: Vec4, r: f32) -> f32 {
 
 #[inline]
 pub fn sd_sph_box(p: Vec4, b: Vec4) -> f32 {
-    let d1: f32 = p.xy().length() - b.x;
+    let d1: f32 = p.xy().length() - b.z;
     let d2: f32 = p.xz().length() - b.y;
-    let d3: f32 = p.yz().length() - b.z;
+    let d3: f32 = p.yz().length() - b.x;
     let d4: f32 = p.wx().length() - b.w;
     let d5: f32 = p.wy().length() - b.w;
     let d6: f32 = p.wz().length() - b.w;

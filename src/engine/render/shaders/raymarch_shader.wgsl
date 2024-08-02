@@ -432,9 +432,9 @@ fn sd_sph_inf_box(p: vec4<f32>, b: vec4<f32>) -> f32 {
 }
 
 fn sd_sph_box(p: vec4<f32>, b: vec4<f32>) -> f32 {
-    var d1: f32 = length(p.xy) - b.x;
+    var d1: f32 = length(p.xy) - b.z;
     var d2: f32 = length(p.xz) - b.y;
-    var d3: f32 = length(p.yz) - b.z;
+    var d3: f32 = length(p.yz) - b.x;
     var d4: f32 = length(p.wx) - b.w;
     var d5: f32 = length(p.wy) - b.w;
     var d6: f32 = length(p.wz) - b.w;
@@ -599,7 +599,7 @@ fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32
 
             let color_coef = abs(dot(sphere_normal, direction));
 
-            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.05);
+            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.01);
 
             break;
         }
@@ -764,10 +764,19 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) -> f32 {
     }
 
     for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+        let s = stickiness_shapes[i].size;
+
+        let size = vec4(
+            min(min(s.y, s.z),s.w),    
+            min(min(s.x, s.z),s.w),    
+            min(min(s.y, s.x),s.w),
+            s.w
+        );
+        
         let intr = cube_intersection(
             ro - stickiness_shapes[i].pos,
             rd,
-            stickiness_shapes[i].size + stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+            size + stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -819,10 +828,19 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) -> f32 {
     }
 
     for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+        let s = dyn_stickiness_shapes[i].size;
+
+        let size = vec4(
+            min(min(s.y, s.z),s.w),    
+            min(min(s.x, s.z),s.w),    
+            min(min(s.y, s.x),s.w),
+            s.w
+        );
+        
         let intr = cube_intersection(
             ro - dyn_stickiness_shapes[i].pos,
             rd,
-            dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+            size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
         );
         
         if intr.y > 0.0 {
@@ -873,10 +891,19 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) -> f32 {
     }
 
     for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+        let s = normal_shapes[i].size;
+
+        let size = vec4(
+            min(min(s.y, s.z),s.w),    
+            min(min(s.x, s.z),s.w),    
+            min(min(s.y, s.x),s.w),
+            s.w
+        );
+        
         let intr = cube_intersection(
             ro - normal_shapes[i].pos,
             rd,
-            normal_shapes[i].size + normal_shapes[i].roundness
+            size + normal_shapes[i].roundness
         );
         
         if intr.y > 0.0 {
@@ -926,10 +953,19 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) -> f32 {
     }
 
     for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+        let s = dyn_normal_shapes[i].size;
+
+        let size = vec4(
+            min(min(s.y, s.z),s.w),    
+            min(min(s.x, s.z),s.w),    
+            min(min(s.y, s.x),s.w),
+            s.w
+        );
+        
         let intr = cube_intersection(
             ro - dyn_normal_shapes[i].pos,
             rd,
-            dyn_normal_shapes[i].size + dyn_normal_shapes[i].roundness
+            size + dyn_normal_shapes[i].roundness
         );
         
         if intr.y > 0.0 {
@@ -1737,6 +1773,11 @@ fn get_mats(
                 p - shape.pos,
                 shape.radius * 0.6
             );
+
+        let dd = sd_sphere(
+                rotated_p - vec4(0.0, 0.0, -shape.radius/2.0, 0.0)*0.6,
+                shape.radius * 0.24
+            );
         
         d = max(
             d,
@@ -1747,6 +1788,14 @@ fn get_mats(
         );
 
         if d < MIN_DIST {
+            if dd < 0.0 {
+                output.materials_count = 2u;
+                output.material_weights[0] = 0.26;
+                output.materials[0] = -1;
+                output.material_weights[1] = 0.74;
+                output.materials[1] = static_data.players_mat2;
+                return output;
+            }
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
             output.materials[0] = static_data.players_mat2;
@@ -1818,14 +1867,14 @@ fn get_mats(
         }
     }
 
-    if w_plane_intersected {
-        if p.w - static_data.w_floor < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = -3;
-            return output;
-        }
-    }
+    // if w_plane_intersected {
+    //     if p.w - static_data.w_floor < MIN_DIST*2.0 {
+    //         output.materials_count = 1u;
+    //         output.material_weights[0] = 1.0;
+    //         output.materials[0] = -3;
+    //         return output;
+    //     }
+    // }
 
     var d = MAX_DIST * 2.0;
     output.materials_count = 1u;
@@ -2621,7 +2670,9 @@ fn noise2( x: vec4<f32> ) -> f32
 }
 
 fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
-
+    // var color =  2.9*static_data.sky_color*static_data.fog_color* mix(vec3(.1,0.2,0.55), vec3(0.1,1.2,2.4), sqrt(abs(ray_dir.y)+0.1));
+    // color = mix(HORIZONT_COLOR*0.12, color, sqrt(clamp(abs(ray_dir.y*2.0)+0.1,0.0,1.0)))*0.1;
+    
     let sun = pow(clamp(dot(normalize(static_data.sun_direction),ray_dir), 0.0, 1.0), 10.0);
 
     var color = static_data.sun_color*pow(sun, 40.0);
@@ -2631,25 +2682,6 @@ fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
     return color;
 }
 
-// const HORIZONT_COLOR: vec3<f32> = vec3(0.4, 0.8, 2.1);
-// // const HORIZONT_COLOR: vec3<f32> = vec3(2.1, 0.5, 0.1);
-// // const static_data.sky_color: vec3<f32> = vec3(0.17, 0.14, 0.42)*0.2;
-// const SKY_COLOR = vec3(0.1, 0.3, 0.5)*0.02;
-// const FOG_COLOR = vec3(0.001, 0.01, 0.022);
-// const LINES_COLOR_1 = vec3(0.08, 0.7, 3.5)*3.0;
-// const LINES_COLOR_2: vec3<f32> = vec3(2.5, 0.2, 1.0);
-// const FRENEL_COLOR = vec3(0.3,0.5,0.4)*0.17;
-// const BOUND_COLOR: vec3<f32> = vec3(0.2,0.8,0.2);
-// const W_PLANE_COLOR: vec3<f32> = vec3(0.2, 0.4, 1.1);
-
-// // const static_data.sun_color: vec3<f32> = vec3(5.6, 1.8, 1.8)*0.5;
-// const SUN_COLOR_1 = vec3(1.6,1.2,0.8)*1.5;
-// const SUN_DIR_1 = vec4(1.0, 1.4, -2.3, 0.0);
-
-// const SUN_COLOR_2: vec3<f32> = vec3(1.2, 1.8, 2.6);
-// const SUN_DIR_2: vec4<f32> = vec4(0.5, 1.0, 0.4, 0.5);
-
-
 fn apply_material(
     pos: vec4<f32>,
     ray_dir: vec4<f32>,
@@ -2658,62 +2690,38 @@ fn apply_material(
 ) -> vec4<f32> {
     var lightness = 0.0;
     
-    // sky
-    // if material == -3 {
-
-    //     let normal = vec4(0.0, 0.0, 0.0, 1.0);
-
-    //     let frenel = clamp(pow(1.0 + dot(normal, ray_dir), 5.0), 0.0, 1.0);
-
-    //     var color = W_PLANE_COLOR*frenel;
-
-    //     return vec4(color, lightness);
-    // }
     if material == -2 {
-        // var color =  2.9*static_data.sky_color*static_data.fog_color* mix(vec3(.1,0.2,0.55), vec3(0.1,1.2,2.4), sqrt(abs(ray_dir.y)+0.1));
-        // color = mix(HORIZONT_COLOR*0.12, color, sqrt(clamp(abs(ray_dir.y*2.0)+0.1,0.0,1.0)))*0.1;
-        // var color =  1.5*static_data.sky_color* mix(vec3(.3,0.0,0.05), static_data.sun_color*static_data.sky_color, sqrt(max(ray_dir.y, 0.001)));
-
-        // let sun = pow(clamp(dot(normalize(static_data.sun_direction),ray_dir), 0.0, 1.0), 5.0);
-    	// // color += 0.1*static_data.sun_color*sun;
-        // color = static_data.sun_color*pow(sun, 20.0);
-
-        // let v = 1.0/( 2. * ( 1. + ray_dir.z ) );
-        // let xy = vec2(ray_dir.y * v, ray_dir.x * v);
-        // // ray_dir.z += time*.002;
-        // var s = noise(ray_dir.xz*134.0);
-        // s += noise(ray_dir.xz*270.);
-        // s += noise(ray_dir.xz*170.);
-        // // s = pow(s,19.0) * 0.00000005 * abs(ray_dir.y);
-        // if (s > 0.0)
-        // {
-        //     let backStars = vec3((1.0-sin(xy.x*20.0+13.0*ray_dir.x+xy.y*30.0))*.5*s,s, s); 
-        //     color += get_sky_color(ray_dir);
-        // }
         var color = get_sky_color(ray_dir);
-
-        // color *= vec3
-        //     (cos(ray_dir.y * 7.0 + dynamic_data.time) +
-        //      sin(ray_dir.x * 7.0 + dynamic_data.time) +
-        //      sin(ray_dir.z * 7.0 + dynamic_data.time),
-        //      sin(ray_dir.y * 2.0 + dynamic_data.time) +
-        //      cos(ray_dir.x * 2.0 + dynamic_data.time) +
-        //      sin(ray_dir.z * 2.0 + dynamic_data.time),
-        //      0.0,
-        //      );
         
         color = clamp(color, vec3(0.0), vec3(1.0));
 
-        // color = mix(color, static_data.fog_color, 1.0-ray_dir.y);
-
         return vec4(color, lightness);
+    }
+
+    if material == -1 {
+        var color = static_data.materials[static_data.players_mat1].color.xyz*2.0;
+        
+        let hited_pos = pos + ray_dir * dist;
+        let normal = get_normal(hited_pos);
+        let c = pow(abs(dot(normal, ray_dir)),9.0);
+
+        color = mix(vec3(0.5),color, c);
+
+        return vec4(color, 20.0);
     }
 
     let roughness = static_data.materials[material].color.w;
 
     let hited_pos = pos + ray_dir * dist;
     let normal = get_normal(hited_pos);
-    let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*5.8);
+    
+    var lines_size = 5.8;
+
+    if material == static_data.players_mat1 || material == static_data.players_mat2 {
+        lines_size = 2.1;
+    }
+
+    let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*lines_size);
     // let aocc = calc_ambient_occlusion(hited_pos, normal);
 
     let wireframe_fog = exp(-0.007*dist*dist);
@@ -2757,39 +2765,7 @@ fn apply_material(
     let sky_hal = normalize(vec4(0.0,1.0,0.0,0.0)-ray_dir);
     let sky_spe = pow(clamp(dot(normal,sky_hal),0.0,1.0),5.0);
 
-    // let lines_dif = abs(0.5-fract((hited_pos.z+hited_pos.y+hited_pos.w)*0.1)) +
-    //     abs(0.5-fract((hited_pos.z-hited_pos.y+hited_pos.w)*0.1)) +
-    //     abs(0.5-fract((hited_pos.x+hited_pos.y+hited_pos.w)*0.1));
-    // let lines_dif = 
-    //     // (1.0-
-    //     // clamp(
-    //     //     // abs(
-    //     //         0.5 + 0.5*0.33333*(
-    //     //             sin(hited_pos.x*5.0) + 
-    //     //             sin(hited_pos.z*5.0) +
-    //     //             sin(hited_pos.y*5.0)
-    //     //             // sin(hited_pos.w*50.0)
-    //     //         ),
-    //     //     // ),
-    //     //     0.0,1.0
-    //     // ));// +
-    //     (1.0-
-    //     clamp(
-    //         abs(
-    //             3.5*(
-    //                 sin(hited_pos.x*2.0+4.0) +
-    //                 sin(hited_pos.z*2.0+3.0) +
-    //                 sin(hited_pos.y*2.0+2.0) +
-    //                 sin(hited_pos.w*2.0+1.0)
-    //             )
-    //         ),
-    //         0.0,1.0
-    //     ));
-
-
     var light = vec3(0.0);
-
-
     light += static_data.sun_color  * sun_dif_1 * sun_shadow_1 * 0.13;// * aocc;
     light += static_data.sun_color  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 3.0;// * aocc;
     light += static_data.sky_color    * sky_dif   * 0.3 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
@@ -2798,12 +2774,6 @@ fn apply_material(
 
     lightness = wireframe_dif*30.0;
     
-    // light += mix(static_data.neon_wireframe_color, LINES_COLOR_2, clamp(hited_pos.w/10.0,0.0,1.0)) * 2.8*pow(lines_dif, 5.8);
-
-    // light += SUN_COLOR_2 * sun_dif_2 * sun_shadow_2 * 0.6;// * aocc;
-    // light += SUN_COLOR_2 * sun_dif_2 * sun_spe_2 * sun_shadow_2 * 4.0;// * aocc;
-    
-    // let diffuse = clamp(static_data.materials[material].color.xyz+vec3(10.0)*pow(lines_dif,25.0),vec3(0.0),vec3(1.0));
     let diffuse = static_data.materials[material].color.xyz + static_data.neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
     let ref_col = get_sky_color(ref_dir);
@@ -2888,8 +2858,8 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
     let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
-    color = mix(color, sc_r_c.rgb, sc_r_c.a);
-    color = mix(color, sc_e_c.rgb, sc_e_c.a*0.75);
+    color = mix(color, sc_r_c.rgb, sc_r_c.a*0.3);
+    color = mix(color, sc_e_c.rgb, sc_e_c.a*0.55);
 
     // color correction
     color = pow(color, vec3(0.4545));
@@ -2933,14 +2903,6 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         bw_col*(bw_col*1.4),
         clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
     );
-
-
-
-    // color = clamp(color, vec3(0.0), vec3(1.0));
-    // color *= 0.3001;
-    // color.r += dist_and_depth.y / f32(MAX_STEPS);
-
-    
 
     return vec4<f32>(color, lightness);
 }
