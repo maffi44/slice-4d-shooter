@@ -44,13 +44,13 @@ pub struct PlayerSettings {
     pub machinegun_cooling_speed: f32,
 
     pub room_url: String,
+    pub bash_and_turn_servers: Vec<String>,
+    pub turn_server_username: String,
+    pub turn_server_credential: String,
 
     pub screen_resolution_scale: f32,
 }
 
-// impl Copy for PlayerSettings {
-    
-// }
 
 impl PlayerSettings {
     pub async fn load_player_settings() -> Self {
@@ -344,6 +344,35 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
         .to_string()
     };
 
+    let bash_and_turn_servers = {
+        object
+        .get("bash_and_turn_servers")
+        .expect("Have not bash_and_turn_servers in settings.json")
+        .as_array()
+        .expect("bash_and_turn_servers is not array value in settings.json")
+        .into_iter()
+        .map(|e| e.as_str().expect("bash_and_turn_servers array element is not a string").to_string())
+        .collect()
+    };
+
+    let turn_server_username = {
+        object
+        .get("turn_server_username")
+        .expect("Have not turn_server_username in settings.json")
+        .as_str()
+        .expect("turn_server_username is not string value in settings.json")
+        .to_string()
+    };
+
+    let turn_server_credential = {
+        object
+        .get("turn_server_credential")
+        .expect("Have not turn_server_credential in settings.json")
+        .as_str()
+        .expect("turn_server_credential is not string value in settings.json")
+        .to_string()
+    };
+
     let screen_resolution_scale = {
         object
         .get("screen_resolution_scale")
@@ -381,6 +410,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
         machinegun_heat_add_on_shot, 
         machinegun_cooling_speed,
         room_url,
+        bash_and_turn_servers,
+        turn_server_username,
+        turn_server_credential,
         screen_resolution_scale,
     }
 }

@@ -10,6 +10,46 @@
         "stickiness": false
     },
 
+    "visual_settings_of_environment" : {
+        "sky_box" : "star_sky",
+        "sky_color" : {
+            "red": 0.1,
+            "green": 0.3,
+            "blue": 0.5,
+            "multiplier": 0.02
+        },
+        "fog_color" : {
+            "red": 0.001,
+            "green": 0.01,
+            "blue": 0.022,
+            "multiplier": 1.0
+        },
+        "frenel_color" : {
+            "red": 0.3,
+            "green": 0.5,
+            "blue": 0.4,
+            "multiplier": 0.17
+        },
+        "neon_wireframe_color" : {
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
+        },
+        "sun_color" : {
+            "red": 1.6,
+            "green": 1.2,
+            "blue": 0.8,
+            "multiplier": 1.5
+        },
+        "sun_direction" : {
+            "x" : 1.0,
+            "y" : 1.4,
+            "z" : -2.3,
+            "w" : 0.0
+        }
+    },
+
     "visual_materials" : [
         {
             "name" : "hole_stairs",
@@ -17,7 +57,8 @@
                 "red": 0.05,
                 "green": 0.20,
                 "blue": 0.45
-            }
+            },
+            "roughness" : 0.8
         },
         {
             "name" : "standart",
@@ -25,36 +66,46 @@
                 "red": 0.25,
                 "green": 0.25,
                 "blue": 0.35
-            }
+            },
+            "roughness" : 0.8
         },
         {
-            "name" : "player_inner",
+            "name" : "metallic",
             "color" : {
                 "red": 0.001,
                 "green": 0.013,
                 "blue": 0.016
-            }
+            },
+            "roughness" : 0.95
+
         },
         {
-            "name" : "player_outer",
+            "name" : "metallic_red",
             "color" : {
-                "red": 0.45,
-                "green": 0.46,
-                "blue": 0.04
-            }
+                "red": 1.2,
+                "green": 0.7,
+                "blue": 0.0
+            },
+            "roughness" : 0.7
         }
     ],
 
     "players_visual_materials" : {
-        "inner" : "player_outer",
-        "outer" : "player_inner"
+        "inner" : "metallic_red",
+        "outer" : "metallic"
     },
 
     "w_cups_visual_materials" : "standart",
 
     "all_shapes_stickiness_radius": 0.31,
 
-    "spawn_positions" : [
+    "w_levels" : [
+        0.0,
+        4.0,
+        8.0
+    ],
+
+    "spawns" : [
         {
             "transform" : {
                 "position" : {
@@ -63,7 +114,8 @@
                     "z": 4.0,
                     "w": 1.0
                 }
-            }
+            },
+            "w_level" : 0
         }
     ],
 
@@ -249,7 +301,7 @@
     
     "static_objects": [
         {
-            "cube_w_inf" : {
+            "cube" : {
                 "comment" : "main platform",
                 "transform" : {
                     "position" : {
@@ -270,7 +322,8 @@
                 "size" : {
                     "x": 25,
                     "y": 0.2,
-                    "z": 25
+                    "z": 25,
+                    "w": 60
                 },
                 "stickiness" : false,
                 "bounce_rate" : 0.0,

@@ -10,7 +10,7 @@ use matchbox_socket::{
 
 use crate::{
     actor::{
-        player::PlayerMessages,
+        player::{player_settings::PlayerSettings, PlayerMessages},
         players_death_explosion::PlayersDeathExplosion,
         players_doll::{
             PlayersDoll,
@@ -114,13 +114,17 @@ pub struct NetSystem {
 
 impl NetSystem {
     pub async fn new(
-        room_url: &String,
+        settings: &PlayerSettings,
         #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime
     ) -> Self {
 
-        let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new(room_url.clone())
-            .ice_server(RtcIceServerConfig::default())
+        let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new(settings.room_url.clone())
+            .ice_server(RtcIceServerConfig {
+                urls: settings.bash_and_turn_servers.clone(),
+                username: Some(settings.turn_server_username.clone()),
+                credential: Some(settings.turn_server_credential.clone()),
+            })
             .add_reliable_channel()
             .add_unreliable_channel()
             .build();

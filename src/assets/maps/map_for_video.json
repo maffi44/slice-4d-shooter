@@ -1,0 +1,569 @@
+{
+    "level_name" : "test_level",
+
+    "defaults" : {
+        "is_positive": true,
+        "friction": 3.5,
+        "bounce_rate": 0.0,
+        "visual_material": "standart",
+        "roundness": 0.05,
+        "stickiness": false
+    },
+
+    "visual_settings_of_environment" : {
+        "sky_box" : "star_sky",
+        "sky_color" : {
+            "red": 0.1,
+            "green": 0.3,
+            "blue": 0.5,
+            "multiplier": 0.02
+        },
+        "fog_color" : {
+            "red": 0.001,
+            "green": 0.01,
+            "blue": 0.022,
+            "multiplier": 1.0
+        },
+        "frenel_color" : {
+            "red": 0.3,
+            "green": 0.5,
+            "blue": 0.4,
+            "multiplier": 0.17
+        },
+        "neon_wireframe_color" : {
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
+        },
+        "sun_color" : {
+            "red": 1.6,
+            "green": 1.2,
+            "blue": 0.8,
+            "multiplier": 1.5
+        },
+        "sun_direction" : {
+            "x" : 1.0,
+            "y" : 1.4,
+            "z" : -2.3,
+            "w" : 0.0
+        }
+    },
+
+    "visual_materials" : [
+        {
+            "name" : "standart",
+            "color" : {
+                "red": 0.15,
+                "green": 0.225,
+                "blue": 0.3
+            },
+            "roughness" : 0.8
+        },
+        {
+            "name" : "slick",
+            "color" : {
+                "red":1.1,
+                "green": 0.82,
+                "blue": 0.23
+            },
+            "roughness": 0.09
+        },
+        {
+            "name" : "red_slick",
+            "color" : {
+                "red":1.1,
+                "green": 0.1,
+                "blue": 0.33
+            },
+            "roughness": 0.14
+        },
+        {
+            "name" : "metallic",
+            "color" : {
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
+            },
+            "roughness" : 0.95
+
+        },
+        {
+            "name" : "metallic_red",
+            "color" : {
+                "red": 1.2,
+                "green": 0.7,
+                "blue": 0.0
+            },
+            "roughness" : 0.7
+        }
+    ],
+
+    "players_visual_materials" : {
+        "inner" : "metallic_red",
+        "outer" : "metallic"
+    },
+
+    "w_cups_visual_materials" : "metallic",
+
+    "all_shapes_stickiness_radius": 0.3,
+
+    "w_levels" : [
+        0.0,
+        4.0,
+        8.0
+    ],
+
+    "spawns" : [
+        {
+            "transform" : {
+                "position" : {
+                    "x": 1.0,
+                    "y": 2.0,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            },
+            "w_level" : 0
+        }
+    ],
+
+    "w_cups" : {
+    },
+
+    "actors" : [
+    ],
+    
+    "static_objects": [
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -5.0,
+                        "y": 0.25,
+                        "z": -8.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5.2,
+                    "y": 0.5,
+                    "z": 3.0,
+                    "w": 3.0
+                },
+                "visual_material" : "slick",
+                "friction": 0.0,
+                "stickiness":true
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": -9.6,
+                        "y": 5.0,
+                        "z": -8.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.5,
+                    "y": 5.0,
+                    "z": 3.0,
+                    "w": 3.0
+                },
+                "visual_material" : "slick",
+                "friction": 0.0,
+                "stickiness":true
+            }
+        },
+        {
+            "cube" : {
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 0.0 ,
+                        "z": 15.0,
+                        "w": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 15.0,
+                    "y": 0.2,
+                    "z": 30.0,
+                    "w": 30.0
+                },
+                "is_positive" : true,
+                "stickiness" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "big cube",
+                "transform" : {
+                    "position" : {
+                        "x": -20.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 10.1,
+                    "y": 10.2,
+                    "z": 10.2,
+                    "w": 10.2
+                },
+                "stickiness" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment": "main corridor",
+                "transform" : {
+                    "position" : {
+                        "x": -15.0,
+                        "y": 6,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6,
+                    "y": 1.5,
+                    "z": 1.5,
+                    "w": 3.0
+                },
+                "is_positive" : false,
+                "stickiness" : true
+            }
+        },
+        {
+            "sph_cube" : {
+                "comment" : "room inside main cube",
+                "transform" : {
+                    "position" : {
+                        "x": -18.0,
+                        "y": 6,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 4,
+                    "y": 4,
+                    "z": 4,
+                    "w": 4
+                },
+                "is_positive" : false
+            }
+        },
+        {
+            "sph_cube" : {
+                "comment": "central_cube",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 6.0,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 4,
+                    "y": 4,
+                    "z": 4,
+                    "w": 4
+                },
+                "is_positive" : true,
+                "visual_material" : "red_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment": "left column",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 2.0,
+                        "z": 14.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1,
+                    "y": 2,
+                    "z": 1,
+                    "w": 8
+                },
+                "stickiness" : true,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment": "left second floor",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 4.2,
+                        "z": 14.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6,
+                    "y": 0.3,
+                    "z": 6,
+                    "w": 8
+                },
+                "stickiness" : false,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment": "central_cube appendix 1",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 6.0,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 1.4,
+                    "z": 1.4,
+                    "w": 1
+                },
+                "is_positive" : true,
+                "stickiness" : true,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment": "central_cube appendix 2",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 6.0,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.4,
+                    "y": 1.4,
+                    "z": 5,
+                    "w": 1
+                },
+                "is_positive" : true,
+                "stickiness" : true,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment": "central_cube appendix corridor 1",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 6.0,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6,
+                    "y": 1.1,
+                    "z": 1.1,
+                    "w": 1
+                },
+                "is_positive" : false,
+                "stickiness" : false,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment": "central_cube appendix corridor 2",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 6.0,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.1,
+                    "y": 1.1,
+                    "z": 6,
+                    "w": 1
+                },
+                "is_positive" : false,
+                "stickiness" : false,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment": "stair 1",
+                "transform" : {
+                    "position" : {
+                        "x": 7,
+                        "y": 3,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.2,
+                    "y": 0.3,
+                    "z": 1.2,
+                    "w": 2
+                },
+                "is_positive" : true,
+                "stickiness" : true,
+                "visual_material" : "standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment": "stair 2",
+                "transform" : {
+                    "position" : {
+                        "x": 9,
+                        "y": 1.5,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.2,
+                    "y": 0.3,
+                    "z": 1.2,
+                    "w": 3
+                },
+                "is_positive" : true,
+                "stickiness" : true,
+                "visual_material" : "standart"
+            }
+        }
+    ]
+}

@@ -10,14 +10,55 @@
         "stickiness": false
     },
 
+    "visual_settings_of_environment" : {
+        "sky_box" : "star_sky",
+        "sky_color" : {
+            "red": 0.1,
+            "green": 0.3,
+            "blue": 0.5,
+            "multiplier": 0.02
+        },
+        "fog_color" : {
+            "red": 0.001,
+            "green": 0.01,
+            "blue": 0.022,
+            "multiplier": 1.0
+        },
+        "frenel_color" : {
+            "red": 0.3,
+            "green": 0.5,
+            "blue": 0.4,
+            "multiplier": 0.17
+        },
+        "neon_wireframe_color" : {
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
+        },
+        "sun_color" : {
+            "red": 1.6,
+            "green": 1.2,
+            "blue": 0.8,
+            "multiplier": 1.5
+        },
+        "sun_direction" : {
+            "x" : 1.0,
+            "y" : 1.4,
+            "z" : -2.3,
+            "w" : 0.0
+        }
+    },
+
     "visual_materials" : [
         {
             "name" : "slick",
             "color" : {
-                "red": 0.7,
-                "green": 0.7,
-                "blue": 0.7
-            }
+                "red":1.1,
+                "green": 0.82,
+                "blue": 0.23
+            },
+            "roughness": 0.09
         },
         {
             "name" : "portal",
@@ -25,7 +66,8 @@
                 "red": 0.03,
                 "green": 0.18    ,
                 "blue": 0.35
-            }
+            },
+            "roughness" : 0.3
         },
         {
             "name" : "trumplin",
@@ -33,37 +75,42 @@
                 "red": 0.15,
                 "green": 0.01    ,
                 "blue": 0.01
-            }
+            },
+            "roughness" : 0.8
         },
         {
             "name" : "standart",
             "color" : {
-                "red": 0.25,
-                "green": 0.25,
-                "blue": 0.35
-            }
+                "red": 0.15,
+                "green": 0.225,
+                "blue": 0.3
+            },
+            "roughness" : 0.8
         },
         {
-            "name" : "player_inner",
+            "name" : "metallic",
             "color" : {
                 "red": 0.001,
                 "green": 0.013,
                 "blue": 0.016
-            }
+            },
+            "roughness" : 0.95
+
         },
         {
-            "name" : "player_outer",
+            "name" : "metallic_red",
             "color" : {
-                "red": 0.45,
-                "green": 0.06,
-                "blue": 0.04
-            }
+                "red": 1.2,
+                "green": 0.7,
+                "blue": 0.0
+            },
+            "roughness" : 0.7
         }
     ],
 
     "players_visual_materials" : {
-        "inner" : "player_outer",
-        "outer" : "player_inner"
+        "inner" : "metallic_red",
+        "outer" : "metallic"
     },
 
     "w_cups_visual_materials" : "standart",
@@ -71,12 +118,12 @@
     "all_shapes_stickiness_radius": 0.28,
 
     "w_levels" : [
-        0.0,
-        3.0,
-        6.0
+        0,
+        4.0,
+        7.0
     ],
 
-    "spawn_positions" : [
+    "spawns" : [
         {
             "transform" : {
                 "position" : {
@@ -85,7 +132,8 @@
                     "z": -14.0,
                     "w": 4
                 }
-            }
+            },
+            "w_level" : 1
         },
         {
             "transform" : {
@@ -95,12 +143,12 @@
                     "z": -3.0,
                     "w": 1.5
                 }
-            }
+            },
+            "w_level" : 0
         }
     ],
 
     "w_cups" : {
-        "w_floor" : 0.0
     },
 
     "actors" : [
@@ -145,7 +193,7 @@
 
                 "static_objects" : [
                     {
-                        "cube_w_inf" : {
+                        "cube" : {
                             "comment" : "w1 w-floor second hole cube",
                             "transform" : {
                                 "position" : {
@@ -166,14 +214,15 @@
                             "size" : {
                                 "x": 3.0,
                                 "y": 3.0,
-                                "z": 3.0
+                                "z": 3.0,
+                                "w": 44
                             },
                             "roundness" : 0.00,
                             "visual_material" : "portal"
                         }
                     },
                     {
-                        "cube_w_inf" : {
+                        "cube" : {
                             "comment" : "w1 w-floor second hole cube hole 1",
                             "transform" : {
                                 "position" : {
@@ -194,7 +243,8 @@
                             "size" : {
                                 "x": 1.5,
                                 "y": 1.5,
-                                "z": 3.8
+                                "z": 3.8,
+                                "w": 44
                             },
                             "roundness" : 1,
                             "is_positive" : false
@@ -202,7 +252,7 @@
                     },
                     
                     {
-                        "cube_w_inf" : {
+                        "cube" : {
                             "comment" : "w1 w-floor second hole cube hole 2",
                             "transform" : {
                                 "position" : {
@@ -223,7 +273,8 @@
                             "size" : {
                                 "x": 3.8,
                                 "y": 1.5,
-                                "z": 1.5
+                                "z": 1.5,
+                                "w": 44
                             },
                             "roundness" : 1,
                             "is_positive" : false
@@ -702,37 +753,6 @@
                 "roundness" : 0.4,
                 "stickiness" : false,
                 "visual_material" : "portal"
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "w2 w-floor",
-                "transform" : {
-                    "position" : {
-                        "x": 10,
-                        "y": 15 ,
-                        "z": -15,
-                        "w": 3.05
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 40,
-                    "y": 40,
-                    "z": 40,
-                    "w": 0.05
-                },
-                "roundness" : 0.1,
-                "friction" : 0.0,
-                "visual_material" : "standart",
-                "stickiness" : false
             }
         },
         {
