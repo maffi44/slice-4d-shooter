@@ -48,4 +48,16 @@ rustc-hash = "1.1.0"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name="client"
+path="src/client-main.rs"
+
+[[bin]]
+name="server"
+path="src/server-main.rs"
+
+[[bin]]
+name="matchmaking-server"
+path="src/matchmaking-server-main.rs"
+
 
