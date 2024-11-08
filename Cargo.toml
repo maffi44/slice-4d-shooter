@@ -1,7 +1,7 @@
 [package]
 name = "web-4d-shooter"
 author = "maffi44"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 wasm-opt = false
 
@@ -16,6 +16,7 @@ wgpu = { version = "*", default-features = false, features = ["webgl", "glsl", "
 bytemuck = { version = "*", features = [ "derive" ] }
 pollster = "*"
 tokio = "*"
+tokio-tungstenite = "*"
 web-time = "0.2.4"
 glam = "*"
 
