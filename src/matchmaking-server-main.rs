@@ -1,15 +1,15 @@
+use core::panic;
 use std::{
     fs::File,
     io::Read,
     net::Ipv4Addr,
     str::FromStr,
-    sync::Arc
+    sync::Arc, time::Duration
 };
 use tokio::{
-    sync::Mutex,
-    net::TcpListener,
-    process::Command
+    io::{AsyncBufReadExt, AsyncReadExt, BufReader}, net::TcpListener, process::Command, sync::Mutex
 };
+
 use fyrox_core::futures::{SinkExt, StreamExt};
 use serde_json::Value;
 use tokio_tungstenite::accept_async;
@@ -18,7 +18,7 @@ use alkahest::{alkahest, Serialize};
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
-enum MatchmakingServerMessages
+enum MatchmakingServerMessage
 {
     GameServerAddress(([u8;4],u16)),
     NoFreeServers,
@@ -27,7 +27,7 @@ enum MatchmakingServerMessages
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
-enum ClientMessages
+enum ClientMessage
 {
     RequestToConnectToGameServer((u32,u32,u32))
 }
@@ -36,9 +36,26 @@ enum ClientMessages
 #[alkahest(Formula, Serialize, Deserialize)]
 enum ClientMatchmakingServerProtocol
 {
-    ServerMessages(MatchmakingServerMessages),
-    ClientMessages(ClientMessages)
+    ServerMessage(MatchmakingServerMessage),
+    ClientMessage(ClientMessage)
 }
+
+#[repr(C)]
+#[alkahest(Formula, Serialize, Deserialize)]
+enum GameServerMatchmakingServerProtocol
+{
+    GameServerMessage(GameServerMessage),
+}
+
+#[repr(C)]
+#[alkahest(Formula, Serialize, Deserialize)]
+enum GameServerMessage
+{
+    GameServerHasShutDown(u16),
+    PlayerConnected(u16),
+    PlayerDisconnected(u16),
+}
+
 
 impl Into<Vec<u8>> for ClientMatchmakingServerProtocol
 {
@@ -80,10 +97,11 @@ struct Config
 
 #[derive(Clone)]
 struct GameServerInfo {
-    players_amount: u32,
+    players_amount_by_matchmaking_server: u32,
+    players_amount_by_game_server: u32,
     
-    siganling_server_ip_address: Ipv4Addr,
-    signaling_server_port: u16,
+    game_server_ip_address: Ipv4Addr,
+    game_server_port: u16,
     
     server_index: u16,
 }
@@ -208,17 +226,17 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
 
             match message
             {
-                ClientMatchmakingServerProtocol::ClientMessages(client_message) =>
+                ClientMatchmakingServerProtocol::ClientMessage(client_message) =>
                 {
                     match client_message {
-                        ClientMessages::RequestToConnectToGameServer(clients_game_version) => {
+                        ClientMessage::RequestToConnectToGameServer(clients_game_version) => {
 
                             let clients_game_version = GameVersion::from(clients_game_version);
 
                             if clients_game_version != config.current_game_version
                             {
-                                let message = ClientMatchmakingServerProtocol::ServerMessages(
-                                    MatchmakingServerMessages::WrongGameVersionCorrectIs(config.current_game_version.clone().into())
+                                let message = ClientMatchmakingServerProtocol::ServerMessage(
+                                    MatchmakingServerMessage::WrongGameVersionCorrectIs(config.current_game_version.clone().into())
                                 );
 
                                 let message: Vec<u8> = message.into();
@@ -231,19 +249,22 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
                                 return ;
                             }
                             
-                            let finded_server = locked_state.values().find(
+                            let finded_server = locked_state.values_mut().find(
                                 |server_info| {
-                                    server_info.players_amount < config.max_players_per_game_session
+                                    server_info.players_amount_by_matchmaking_server < config.max_players_per_game_session
                                 }
                             );
 
                             match finded_server {
+
                                 Some(server_info) => {
 
-                                    let message = ClientMatchmakingServerProtocol::ServerMessages(
-                                        MatchmakingServerMessages::GameServerAddress((
-                                            server_info.siganling_server_ip_address.octets(),
-                                            server_info.signaling_server_port
+                                    server_info.players_amount_by_matchmaking_server += 1;
+
+                                    let message = ClientMatchmakingServerProtocol::ServerMessage(
+                                        MatchmakingServerMessage::GameServerAddress((
+                                            server_info.game_server_ip_address.octets(),
+                                            server_info.game_server_port
                                         ))
                                     );
 
@@ -261,18 +282,33 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
 
                                     let new_port = config.game_severs_min_port + locked_state.len() as u16;
 
+                                    if new_port > config.game_severs_max_port || locked_state.len() as u32 >= config.max_game_sessions {
+
+                                        let message = ClientMatchmakingServerProtocol::ServerMessage(
+                                            MatchmakingServerMessage::NoFreeServers
+                                        );
+    
+                                        let message: Vec<u8> = message.into();
+    
+                                        ws_sender
+                                            .send(tokio_tungstenite::tungstenite::Message::binary( message))
+                                            .await
+                                            .unwrap();
+    
+                                        return ;
+                                    }
+
                                     let server_info = spawn_game_server(
-                                        config.matchmaking_server_ip.clone(),
                                         new_port,
                                         &config
                                     ).await.unwrap();
 
                                     locked_state.insert(server_info.server_index, server_info.clone());
 
-                                    let message = ClientMatchmakingServerProtocol::ServerMessages(
-                                        MatchmakingServerMessages::GameServerAddress((
-                                            server_info.siganling_server_ip_address.octets(),
-                                            server_info.signaling_server_port
+                                    let message = ClientMatchmakingServerProtocol::ServerMessage(
+                                        MatchmakingServerMessage::GameServerAddress((
+                                            server_info.game_server_ip_address.octets(),
+                                            server_info.game_server_port
                                         ))
                                     );
 
@@ -298,36 +334,116 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
 }
 
 async fn spawn_game_server(
-    matchmaking_server_ip: Ipv4Addr,
     port: u16,
     config: &Config
 ) -> Result<GameServerInfo, Box<dyn std::error::Error>>
 {
-    // Command::new("path/to/game_server_binary")
-    //     .arg(port.to_string())
-    //     .spawn()?
-    //     .wait()
-    //     .await?;
+    let mut server_proccess = Command::new("./server")
+        .arg(port.to_string())
+        .arg("127.0.0.1")
+        .arg(config.matchmaking_server_port_for_servers.to_string())
+        .spawn()?;
 
-    Ok(GameServerInfo {
-        siganling_server_ip_address: config.matchmaking_server_ip,
-        players_amount: 0_u32,
-        signaling_server_port: port,
-        server_index: port,
-    })
+    let server_stdout = server_proccess.stdout.take().unwrap();
+
+    let mut reader = BufReader::new(server_stdout).lines();
+
+    if let Some(line) = reader.next_line().await? {
+        if line.trim() == "ready" {
+
+            println!("spawn new game sever on {} port", port);
+
+            return Ok(GameServerInfo {
+                game_server_ip_address: config.game_severs_public_ip,
+                players_amount_by_matchmaking_server: 1_u32,
+                players_amount_by_game_server: 0_u32,
+                game_server_port: port,
+                server_index: port,
+            });
+        } else {
+
+            panic!("server spawned, but not ready")
+
+        }
+    }
+    unreachable!()
 }
 
 async fn handle_server_message(
-    raw_stream: tokio::net::TcpStream,
+    stream: tokio::net::TcpStream,
     state: GameServersState,
-    config: Config
+    _config: Config
 ) {
 
+    let mut locked_state = state.lock().await;
+
+    let ws_stream = accept_async(stream).await.unwrap();
+    let (_, mut ws_receiver) = ws_stream.split();
+
+    if let Some(Ok(msg)) = ws_receiver.next().await {
+        let message =
+            alkahest::deserialize::<GameServerMatchmakingServerProtocol, GameServerMatchmakingServerProtocol>(&msg.into_data());
+
+        if message.is_ok()
+        {
+            match message.unwrap() {
+                GameServerMatchmakingServerProtocol::GameServerMessage(message) => {
+                    match message {
+                        GameServerMessage::PlayerConnected(game_server_index) => {
+                            match locked_state.get_mut(&game_server_index) {
+                                Some(server_info) => {
+                                    server_info.players_amount_by_game_server += 1;
+                                },
+                                None => {
+                                    println!(
+                                        "WARNING: get message from game server that is not exist in matchmaking server's game servers state"
+                                    );
+                                }
+                            }
+                        },
+                        GameServerMessage::PlayerDisconnected(game_server_index) => {
+                            match locked_state.get_mut(&game_server_index) {
+                                Some(server_info) => {
+                                    server_info.players_amount_by_game_server -= 1;
+                                },
+                                None => {
+                                    println!(
+                                        "WARNING: get message from game server that is not exist in matchmaking server's game servers state"
+                                    );
+                                }
+                            }
+                        },
+                        GameServerMessage::GameServerHasShutDown(game_server_index) => {
+                            match locked_state.remove(&game_server_index) {
+                                Some(_) => {
+                                    return ;
+                                },
+                                None => {
+                                    println!(
+                                        "WARNING: get message from game server that is not exist in matchmaking server's game servers state"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => {return ;}
+            }
+        }
+    }
 }
 
+fn main() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .worker_threads(1)
+        .build()
+        .unwrap();
 
-#[tokio::main]
-async fn main() {
+    runtime.block_on(async_main());
+}
+
+async fn async_main() {
     let config = load_config();
 
     let state = Arc::new(Mutex::new(HashMap::new()));
@@ -340,7 +456,7 @@ async fn main() {
         &("127.0.0.1:".to_string() + &config.matchmaking_server_port_for_servers.to_string())
     ).await.unwrap();
 
-    let state2 = state.clone();
+    let cloned_state = state.clone();
     let config2 = config.clone();
     tokio::spawn(async move {
         loop
@@ -348,12 +464,28 @@ async fn main() {
             match servers_listener.accept().await
             {
                 Ok((stream, _)) => {
-                    tokio::spawn(handle_server_message(stream, state2.clone(), config2.clone()));
+                    tokio::spawn(handle_server_message(stream, cloned_state.clone(), config2.clone()));
                 }
                 Err(e) => {
                     panic!("ERROR: game servers listener error, err: {}", e)
                 }
             }  
+        }
+    });
+
+    let another_cloned_state = state.clone();
+    tokio::spawn(async move {
+        loop
+        {
+            another_cloned_state
+                .lock()
+                .await
+                .values_mut()
+                .for_each(|server_info|{
+                    server_info.players_amount_by_matchmaking_server = server_info.players_amount_by_game_server;
+                });
+            
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     });
 
