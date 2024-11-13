@@ -49,7 +49,7 @@ use self::{
 
 use core::panic;
 use std::f32::consts::PI;
-use fyrox_core::{algebra::ComplexField, pool::Handle};
+use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Mat4, Vec2, Vec4};
 use matchbox_socket::PeerId;
@@ -1062,7 +1062,7 @@ impl Actor for Player {
                 intensity.clamp(0.0, 1.0)
             };
             self.screen_effects.w_scanner_enemies_intesity = {
-                let mut intensity = self.player_settings.scanner_show_enemies_time - self.w_scanner_enemies_show_time;
+                let intensity = self.player_settings.scanner_show_enemies_time - self.w_scanner_enemies_show_time;
     
                 intensity.clamp(0.0, 1.0)
             };

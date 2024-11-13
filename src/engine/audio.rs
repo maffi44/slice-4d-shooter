@@ -25,16 +25,6 @@ use fyrox_sound::{
 };
 
 use glam::Vec4;
-use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::JsFuture;
-use web_sys::{
-    js_sys::{
-        ArrayBuffer,
-        Uint8Array
-    },
-    Response
-};
-use winit::dpi::Position;
 
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]

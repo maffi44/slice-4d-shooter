@@ -10,7 +10,7 @@ use crate::{
         ActorWrapper,
     },
     engine::{
-        input::ActionsFrameState, world, Engine
+        input::ActionsFrameState, Engine
     },
 };
 

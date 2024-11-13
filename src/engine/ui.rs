@@ -1,4 +1,13 @@
-use std::{collections::{hash_map::IterMut, HashMap}, sync::{Arc, Mutex}, thread::panicking};
+use std::{
+    collections::{
+        hash_map::IterMut,
+        HashMap
+    },
+    sync::{
+        Arc,
+        Mutex
+    }
+};
 
 use glam::Vec2;
 use wgpu::{Buffer, Queue};

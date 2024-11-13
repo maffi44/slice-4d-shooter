@@ -1,10 +1,12 @@
-use glam::Vec3Swizzles;
-
-use crate::{actor::ActorWrapper, engine::{
-    physics::physics_system_data::ShapeType, render::render_data::{
-        BoundingBox, Shape, ShapesArraysMetadata
-    }, world::World
-}};
+use crate::engine::{
+    physics::physics_system_data::ShapeType,
+    render::render_data::{
+        BoundingBox,
+        Shape,
+        ShapesArraysMetadata
+    },
+    world::World
+};
 
 use super::ShapesArrays;
 
@@ -86,16 +88,16 @@ impl OtherStaticData {
             }
         };
     
-        let mut w_roof = 0.0;
-        let is_w_roof_exist = {
-            if let Some(val) = &world.level.w_roof {
-                w_roof = val.w_pos;
+        // let mut w_roof = 0.0;
+        // let is_w_roof_exist = {
+        //     if let Some(val) = &world.level.w_roof {
+        //         w_roof = val.w_pos;
 
-                1_i32
-            } else {
-                0_i32
-            }
-        };
+        //         1_i32
+        //     } else {
+        //         0_i32
+        //     }
+        // };
 
         let mut materials = [VisualMaterial::default(); 32];
 

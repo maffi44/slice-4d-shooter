@@ -1,6 +1,5 @@
 use crate::engine::{render::{render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
-use fyrox_core::io::load_file;
 use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
 use wgpu::{
@@ -11,7 +10,6 @@ use wgpu::{
         BufferInitDescriptor,
         DeviceExt,
     }, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MaintainResult, Sampler, Texture, TextureView, TextureViewDescriptor
-    // PipelineCompilationOptions,
 };
 
 

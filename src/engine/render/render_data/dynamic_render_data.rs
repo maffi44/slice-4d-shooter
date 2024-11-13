@@ -1,12 +1,23 @@
-use std::thread::panicking;
-
 use crate::{
     actor::{
-        player::PlayerScreenEffects, Actor, ActorWrapper
-    }, engine::{
-        physics::physics_system_data::ShapeType, render::render_data::{
-            Shape, ShapesArrays, ShapesArraysMetadata, SphericalArea, SphericalAreasMetadata
-        }, time::TimeSystem, world::{static_object::{ColoringArea, SphericalVolumeArea, VolumeArea}, World}
+        player::PlayerScreenEffects,
+        Actor,
+        ActorWrapper
+    },
+    engine::{
+        physics::physics_system_data::ShapeType,
+        render::render_data::{
+            Shape,
+            ShapesArrays,
+            ShapesArraysMetadata,
+            SphericalArea,
+            SphericalAreasMetadata
+        },
+        time::TimeSystem,
+        world::{
+            static_object::VolumeArea,
+            World
+        }
     }
 };
 

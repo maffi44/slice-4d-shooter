@@ -44,21 +44,22 @@ web-sys = { version = "*", features = [
     "Response"
 ]}
 matchbox_socket = "*"
+matchbox_signaling = "*"
 rustc-hash = "1.1.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name="client"
-path="src/client-main.rs"
+name="game-client"
+path="src/game_client_main.rs"
 
 [[bin]]
-name="server"
-path="src/server-main.rs"
+name="game-server"
+path="src/game_server_main.rs"
 
 [[bin]]
 name="matchmaking-server"
-path="src/matchmaking-server-main.rs"
+path="src/matchmaking_server_main.rs"
 
 
