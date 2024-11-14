@@ -1,3 +1,13 @@
+mod matchmaking_server_protocol;
+
+use matchmaking_server_protocol::{
+    GameServerMatchmakingServerProtocol,
+    ClientMatchmakingServerProtocol,
+    MatchmakingServerMessage,
+    GameServerMessage,
+    ClientMessage,
+};
+
 use core::panic;
 use std::{
     fs::File,
@@ -21,88 +31,6 @@ use serde_json::Value;
 use tokio_tungstenite::accept_async;
 use std::collections::HashMap;
 use alkahest::{alkahest, Serialize};
-
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-pub enum MatchmakingServerMessage
-{
-    GameServerAddress(([u8;4],u16)),
-    NoFreeServers,
-    WrongGameVersionCorrectIs((u32,u32,u32))
-}
-
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-pub enum ClientMessage
-{
-    RequestToConnectToGameServer((u32,u32,u32))
-}
-
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-pub enum ClientMatchmakingServerProtocol
-{
-    ServerMessage(MatchmakingServerMessage),
-    ClientMessage(ClientMessage)
-}
-
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-pub enum GameServerMatchmakingServerProtocol
-{
-    GameServerMessage(GameServerMessage),
-}
-
-impl GameServerMatchmakingServerProtocol
-{
-    pub fn to_packet(self) -> Vec<u8> {
-
-        let size = <
-            GameServerMatchmakingServerProtocol as
-            Serialize<GameServerMatchmakingServerProtocol>
-        >::size_hint(&self).unwrap();
-        
-        let mut packet: Vec<u8> = Vec::with_capacity(size.heap);
-
-        alkahest::serialize_to_vec::<
-            GameServerMatchmakingServerProtocol,
-            GameServerMatchmakingServerProtocol
-        >(self, &mut packet);
-
-        packet
-    }
-}
-
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-pub enum GameServerMessage
-{
-    GameServerHasShutDown(u16),
-    ServerHasStarted(u16),
-    PlayerConnected(u16),
-    PlayerDisconnected(u16),
-}
-
-
-impl ClientMatchmakingServerProtocol
-{
-    fn to_packet(self) -> Vec<u8> {
-
-        let size = <
-            ClientMatchmakingServerProtocol as
-            Serialize<ClientMatchmakingServerProtocol>
-        >::size_hint(&self).unwrap();
-        
-        let mut packet: Vec<u8> = Vec::with_capacity(size.heap);
-
-        alkahest::serialize_to_vec::<
-            ClientMatchmakingServerProtocol,
-            ClientMatchmakingServerProtocol
-        >(self, &mut packet);
-
-        packet
-    }
-}
 
 #[derive(Clone)]
 struct Config
@@ -266,7 +194,7 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
                             {
                                 println!("WARNING: Client's game version is not correct");
 
-                                let message = ClientMatchmakingServerProtocol::ServerMessage(
+                                let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
                                     MatchmakingServerMessage::WrongGameVersionCorrectIs(config.current_game_version.clone().into())
                                 );
 
@@ -295,7 +223,7 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
 
                                     server_info.players_amount_by_matchmaking_server += 1;
 
-                                    let message = ClientMatchmakingServerProtocol::ServerMessage(
+                                    let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
                                         MatchmakingServerMessage::GameServerAddress((
                                             server_info.game_server_ip_address.octets(),
                                             server_info.game_server_port
@@ -322,7 +250,7 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
 
                                         println!("WARNING: Can not create new game server because is out of the limit");
 
-                                        let message = ClientMatchmakingServerProtocol::ServerMessage(
+                                        let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
                                             MatchmakingServerMessage::NoFreeServers
                                         );
     
@@ -345,7 +273,7 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
 
                                     locked_state.insert(server_info.server_index, server_info.clone());
 
-                                    let message = ClientMatchmakingServerProtocol::ServerMessage(
+                                    let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
                                         MatchmakingServerMessage::GameServerAddress((
                                             server_info.game_server_ip_address.octets(),
                                             server_info.game_server_port

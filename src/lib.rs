@@ -2,6 +2,7 @@ mod engine;
 mod actor;
 mod main_loop;
 mod transform;
+mod matchmaking_server_protocol;
 
 use engine::Engine;
 use main_loop::MainLoop;

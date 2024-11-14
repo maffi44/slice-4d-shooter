@@ -209,7 +209,7 @@ const DEATH_EFFECT_COEF_DECREASE_SPEED: f32 = 3.0;
 
 pub enum PlayerMessages {
     DealDamageAndAddForce(u32, Vec4, Vec4),
-    NewPeerConnected(PeerId),
+    NewPeerConnected(u128),
     Telefrag,
     DieImmediately,
     DieSlowly,

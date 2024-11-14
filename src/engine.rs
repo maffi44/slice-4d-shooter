@@ -10,10 +10,19 @@ pub mod audio;
 pub mod ui;
 
 #[cfg(target_arch = "wasm32")]
-use std::{future::Future, pin::Pin, rc::Rc, task::{Context, Poll}};
+use std::{
+    future::Future,
+    pin::Pin,
+    rc::Rc,
+    task::{
+        Context,
+        Poll
+    }
+};
 
 use crate::{
-    actor::player::player_settings::PlayerSettings, engine::audio::AudioSystem, main_loop::MainLoop
+    actor::player::player_settings::PlayerSettings,
+    main_loop::MainLoop
 };
 
 use self::{
@@ -24,9 +33,10 @@ use self::{
     world::World,
     engine_handle::EngineHandle,
     net::NetSystem,
+    audio::AudioSystem,
+    ui::UISystem
 };
 
-use ui::UISystem;
 use winit::window::WindowBuilder;
 
 #[cfg(target_arch = "wasm32")]

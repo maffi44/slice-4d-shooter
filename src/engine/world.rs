@@ -194,7 +194,7 @@ impl World {
                     },
 
                     NetCommand::PeerDisconnected(id) => {
-                        self.remove_actor_from_world(id.0.as_u128());
+                        self.remove_actor_from_world(id);
                     }
                 }
             }

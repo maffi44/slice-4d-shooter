@@ -50,7 +50,7 @@ const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
 pub struct PlayersDoll {
     id: Option<ActorID>,
     transform: Transform,
-    masters_peer_id: PeerId,
+    // masters_peer_id: PeerId,
     weapon_shooting_point: Vec4,
     is_alive: bool,
 
@@ -81,7 +81,6 @@ const VISUAL_FIRE_SHPERE_MULT: f32 = 2.4;
 
 impl PlayersDoll {
     pub fn new(
-        masters_peer_id: PeerId,
         id: ActorID,
         player_sphere_radius: f32,
         transform: Transform,
@@ -127,7 +126,7 @@ impl PlayersDoll {
         let weapon_shooting_point = weapon_offset + Vec4::NEG_Z * (player_sphere_radius * 0.49);
 
         PlayersDoll {
-            masters_peer_id,
+            // masters_peer_id,
             weapon_shooting_point,
             id: Some(id),
             transform,
@@ -313,7 +312,7 @@ impl Actor for PlayersDoll {
                                                     self.id.expect("Player's Doll have not Actor's ID"),
                                                     RemoteMessage::DieImmediately
                                                 ),
-                                                self.masters_peer_id
+                                                self.id.unwrap()
                                             )
                                         )
                                     }
@@ -339,7 +338,7 @@ impl Actor for PlayersDoll {
                                                         impact_pos.to_array(),
                                                     )
                                                 ),
-                                                self.masters_peer_id
+                                                self.id.unwrap()
                                             )
                                         )
                                     }

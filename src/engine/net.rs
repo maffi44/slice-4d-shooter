@@ -1,8 +1,14 @@
+pub mod net_protocols;
+
+use fyrox_core::futures::{SinkExt, StreamExt};
 use glam::{Vec3, Vec4};
+use net_protocols::{ClientMessage, ServerMessage};
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsValue;
+
+use tokio_tungstenite::{connect_async, tungstenite};
 
 use matchbox_socket::{
     MultipleChannels, PeerId, PeerState, RtcIceServerConfig, WebRtcSocket
@@ -21,8 +27,7 @@ use crate::{
         Message,
         MessageType,
         SpecificActorMessage
-    },
-    transform::{
+    }, matchmaking_server_protocol::{ClientMatchmakingServerProtocol, MatchmakingServerMessage}, transform::{
         SerializableTransform,
         Transform
     }
@@ -43,6 +48,7 @@ type Packet = Box<[u8]>;
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
+#[derive(Clone)]
 pub enum NetMessage {
     RemoteCommand(RemoteCommand),
     RemoteDirectMessage(ActorID, RemoteMessage),
@@ -51,6 +57,7 @@ pub enum NetMessage {
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
+#[derive(Clone)]
 pub enum RemoteCommand {
     // transform, radius, is_alive status
     SpawnPlayersDollActor(SerializableTransform, f32, bool),
@@ -60,6 +67,7 @@ pub enum RemoteCommand {
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
+#[derive(Clone)]
 pub enum RemoteMessage {
     DealDamageAndAddForce(u32, [f32;4], [f32;4]),
     DieImmediately,
@@ -97,11 +105,11 @@ impl NetMessage {
 
 pub enum NetCommand {
     NetSystemIsConnectedAndGetNewPeerID(u128),
-    PeerConnected(PeerId),
-    PeerDisconnected(PeerId),
+    PeerConnected(u128),
+    PeerDisconnected(u128),
 
-    SendDirectNetMessageReliable(NetMessage, PeerId),
-    SendDirectNetMessageUnreliable(NetMessage, PeerId),
+    SendDirectNetMessageReliable(NetMessage, u128),
+    SendDirectNetMessageUnreliable(NetMessage, u128),
     SendBoardcastNetMessageReliable(NetMessage),
     SendBoardcastNetMessageUnreliable(NetMessage),
 }
@@ -109,7 +117,8 @@ pub enum NetCommand {
 pub struct NetSystem {
     socket: WebRtcSocket<MultipleChannels>,
     connected: bool,
-    peers: Vec<PeerId>,
+    other_players_ids: Vec<u128>,
+    game_server_peer_id: Option<PeerId>,
 }
 
 impl NetSystem {
@@ -147,8 +156,56 @@ impl NetSystem {
         NetSystem {
             socket,
             connected: false,
-            peers: Vec::new(),
+            other_players_ids: Vec::new(),
+            game_server_peer_id: None,
         }
+    }
+
+    async fn get_game_server_url(matchmaking_server_url: String) -> String {
+        
+        let (mut ws_stream, _) =
+            connect_async(matchmaking_server_url)
+            .await
+            .expect("Failed to connect to matchmaking server");
+
+        let message = ClientMatchmakingServerProtocol::ClientMessage(
+            crate::matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
+                (0,0,0)
+            )
+        ).to_packet();
+
+        while let Err(_) = ws_stream
+            .send(tokio_tungstenite::tungstenite::Message::binary(message.clone()))
+            .await
+        {}
+
+        if let Some(Ok(message)) = ws_stream.next().await {
+            if let Ok(message) =
+                alkahest::deserialize::<ClientMatchmakingServerProtocol, ClientMatchmakingServerProtocol>(&message.into_data())
+            {
+                match message {
+                    ClientMatchmakingServerProtocol::MatchmakingServerMessage(
+                        message
+                    ) => {
+                        match message {
+                            MatchmakingServerMessage::GameServerAddress(url) => {
+
+                            }
+                            MatchmakingServerMessage::NoFreeServers => {
+
+                            }
+                            MatchmakingServerMessage::WrongGameVersionCorrectIs(correct_game_version) => {
+                                
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+
+        String::new()
     }
 
     pub fn tick(
@@ -169,37 +226,67 @@ impl NetSystem {
             return;
         }
 
-        if !self.connected {
-            if let Some(id) = self.socket.id() {
-                self.connected = true;
-
-                engine_handle.send_command(Command {
-                    sender: 0_u128,
-                    command_type: CommandType::NetCommand(
-                        NetCommand::NetSystemIsConnectedAndGetNewPeerID(id.0.as_u128())
-                    ),
-                });
-            }
-        }
-
         if let Ok(vec) = self.socket.try_update_peers() {
-            for (peer, state) in vec {
-                match state {
+            for (peer_id, peer_state) in vec {
+                match peer_state {
                     PeerState::Connected => {
+                        self.connected = true;
+                        self.game_server_peer_id = Some(peer_id);
+
                         engine_handle.send_command(Command {
                             sender: 0_u128,
                             command_type: CommandType::NetCommand(
-                                NetCommand::PeerConnected(peer)
+                                NetCommand::NetSystemIsConnectedAndGetNewPeerID(
+                                    self
+                                        .socket
+                                        .id()
+                                        .expect("ERROR: A registrated peer (game server) connection, but the game client still does not have id in the p2p network")
+                                        .0
+                                        .as_u128()
+                                )
                             ),
                         });
-                        self.peers.push(peer);
+                    }
+                    PeerState::Disconnected => {
+                        self.connected = false;
+                        self.game_server_peer_id = None;
+
+                        for player_id in self.other_players_ids.iter() {
+                            engine_handle.send_command(Command {
+                                sender: 0_u128,
+                                command_type: CommandType::NetCommand(
+                                    NetCommand::PeerDisconnected(*player_id)
+                                ),
+                            });
+                        }
+                        self.other_players_ids.clear();
+                    }
+                }   
+            }
+        }
+
+        
+
+        for (_, packet) in self.socket.channel_mut(0).receive() {
+
+            if let Some(message) = ServerMessage::from_packet(packet) {
+                match message {
+
+                    ServerMessage::PlayerConnected(player_id) => {
+                        engine_handle.send_command(Command {
+                            sender: 0_u128,
+                            command_type: CommandType::NetCommand(
+                                NetCommand::PeerConnected(player_id)
+                            ),
+                        });
+                        self.other_players_ids.push(player_id);
                     }
 
-                    PeerState::Disconnected => {
+                    ServerMessage::PlayerDisconnected(player_id) => {
                         let mut index = 0usize;
                         let mut finded = false;
-                        for stored_peer in self.peers.iter() {
-                            if stored_peer.0.as_u128() == peer.0.as_u128() {
+                        for stored_peer in self.other_players_ids.iter() {
+                            if *stored_peer == player_id {
                                 finded = true;
                                 break;
                             }
@@ -207,31 +294,66 @@ impl NetSystem {
                         }
 
                         if finded {
-                            self.peers.remove(index);
+                            self.other_players_ids.remove(index);
 
                             engine_handle.send_command(Command {
                                 sender: 0_u128,
                                 command_type: CommandType::NetCommand(
-                                    NetCommand::PeerDisconnected(peer)
+                                    NetCommand::PeerDisconnected(player_id)
                                 ),
                             });
                         }
+                    }
+                    
+                    ServerMessage::NetMessage(from_player, message) => {
+                        process_message(from_player, message, engine_handle, audio_system);
                     }
                 }
             }
         }
 
-        for (peer, packet) in self.socket.channel_mut(0).receive() {
+        for (_, packet) in self.socket.channel_mut(1).receive() {
             
-            if let Some(message) = NetMessage::from_packet(packet) {
-                process_message(peer, message, engine_handle, audio_system);
-            }
-        }
+            if let Some(message) = ServerMessage::from_packet(packet) {
+                match message {
 
-        for (peer, packet) in self.socket.channel_mut(1).receive() {
-            
-            if let Some(message) = NetMessage::from_packet(packet) {
-                process_message(peer, message, engine_handle, audio_system);
+                    ServerMessage::PlayerConnected(player_id) => {
+                        engine_handle.send_command(Command {
+                            sender: 0_u128,
+                            command_type: CommandType::NetCommand(
+                                NetCommand::PeerConnected(player_id)
+                            ),
+                        });
+                        self.other_players_ids.push(player_id);
+                    }
+
+                    ServerMessage::PlayerDisconnected(player_id) => {
+                        let mut index = 0usize;
+                        let mut finded = false;
+                        for stored_peer in self.other_players_ids.iter() {
+                            if *stored_peer == player_id {
+                                finded = true;
+                                break;
+                            }
+                            index += 1;
+                        }
+
+                        if finded {
+                            self.other_players_ids.remove(index);
+
+                            engine_handle.send_command(Command {
+                                sender: 0_u128,
+                                command_type: CommandType::NetCommand(
+                                    NetCommand::PeerDisconnected(player_id)
+                                ),
+                            });
+                        }
+                    }
+                    
+                    ServerMessage::NetMessage(from_player, message) => {
+                        process_message(from_player, message, engine_handle, audio_system);
+                    }
+                }
             }
         }
     }
@@ -267,35 +389,76 @@ impl NetSystem {
     }
 
     pub fn send_boardcast_message_reliable(&mut self, message: NetMessage) {
-        let packet = message.to_packet();
 
-        for peer in self.peers.iter() {
-            self.socket.channel_mut(0).send(packet.clone(), *peer);
+        if let Some(game_server_id) = self.game_server_peer_id {
+
+            let packet = ClientMessage::BoardcastMessage(message).to_packet();
+    
+            for peer in self.other_players_ids.iter() {
+                self.socket
+                    .channel_mut(0)
+                    .send(
+                        packet.clone(),
+                        game_server_id
+                    );
+            }
         }
+
     }
 
     pub fn send_boardcast_message_unreliable(&mut self, message: NetMessage) {
-        let packet = message.to_packet();
 
-        for peer in self.peers.iter() {
-            self.socket.channel_mut(1).send(packet.clone(), *peer);
+        if let Some(game_server_id) = self.game_server_peer_id {
+
+            let packet = ClientMessage::BoardcastMessage(message).to_packet();
+    
+            for peer in self.other_players_ids.iter() {
+                self.socket
+                    .channel_mut(1)
+                    .send(
+                        packet.clone(),
+                        game_server_id
+                    );
+            }
         }
     }
     
-    pub fn send_direct_message_reliable(&mut self, message: NetMessage, peer: PeerId) {
-        let packet = message.to_packet();
+    pub fn send_direct_message_reliable(&mut self, message: NetMessage, peer: u128) {
 
-        self.socket.channel_mut(0).send(packet, peer);
+        if let Some(game_server_id) = self.game_server_peer_id {
+
+            let packet = ClientMessage::DirectMessage(peer, message).to_packet();
+    
+            for peer in self.other_players_ids.iter() {
+                self.socket
+                    .channel_mut(0)
+                    .send(
+                        packet.clone(),
+                        game_server_id
+                    );
+            }
+        }
     }
 
-    pub fn send_direct_message_unreliable(&mut self, message: NetMessage, peer: PeerId) {
-        let packet = message.to_packet();
+    pub fn send_direct_message_unreliable(&mut self, message: NetMessage, peer: u128) {
+        
+        if let Some(game_server_id) = self.game_server_peer_id {
 
-        self.socket.channel_mut(1).send(packet, peer);
+            let packet = ClientMessage::DirectMessage(peer, message).to_packet();
+    
+            for peer in self.other_players_ids.iter() {
+                self.socket
+                    .channel_mut(1)
+                    .send(
+                        packet.clone(),
+                        game_server_id
+                    );
+            }
+        }
     }
 }
 
-fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
+fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
     match message {
         NetMessage::RemoteCommand(command) => {
             match command {
@@ -323,7 +486,6 @@ fn process_message(peer_id: PeerId, message: NetMessage, engine_handle: &mut Eng
 
                     let players_doll = PlayersDoll::new(
                         peer_id,
-                        peer_id.0.as_u128(),
                         player_sphere_radius,
                         transform,
                         is_alive,

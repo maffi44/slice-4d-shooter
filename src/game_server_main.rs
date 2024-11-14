@@ -2,27 +2,22 @@ mod actor;
 mod main_loop;
 mod transform;
 mod engine;
-mod matchmaking_server_main;
 
-use alkahest::{alkahest, Serialize};
+mod matchmaking_server_protocol;
+
 use std::{
-    env,
-    net::{
+    collections::HashMap, env, net::{
         Ipv4Addr, SocketAddr, SocketAddrV4
-    },
-    process::exit,
-    str::FromStr,
-    sync::{
+    }, process::exit, str::FromStr, sync::{
         Arc,
         Mutex
-    },
-    time::{Duration, Instant}
+    }, time::{Duration, Instant}
 };
-use matchmaking_server_main::{
+use matchmaking_server_protocol::{
     GameServerMatchmakingServerProtocol,
     GameServerMessage
 };
-use engine::net::NetMessage;
+use engine::net::net_protocols::{ServerMessage, ClientMessage};
 
 use fyrox_core::futures::SinkExt;
 use matchbox_signaling::SignalingServer;
@@ -37,36 +32,6 @@ use tokio::{
 
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
-
-type Packet = Box<[u8]>;
-
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-enum ClientMessage {
-    DirectMessage(u128, NetMessage),
-    BoardcastMessage(NetMessage),
-}
-
-impl ClientMessage {
-    pub fn to_packet(self) -> Packet {
-        
-        let size = <ClientMessage as Serialize<ClientMessage>>::size_hint(&self).unwrap();
-        
-        let mut packet: Vec<u8> = Vec::with_capacity(size.heap);
-
-        alkahest::serialize_to_vec::<ClientMessage, ClientMessage>(self, &mut packet);
-
-        packet.into_boxed_slice()
-    }
-
-    pub fn from_packet(packet: Packet) -> Option<Self> {
-        if let Ok(message) = alkahest::deserialize::<ClientMessage, ClientMessage>(&packet) {
-            Some(message)
-        } else {
-            None
-        }
-    }
-}
 
 
 #[derive(Clone)]
@@ -145,7 +110,7 @@ async fn async_main(
     let (sender_to_matchmaking_server, reciever) =
         channel::<GameServerMatchmakingServerProtocol>(10);
 
-    let handle_to_matchmaking_server_connect =
+    let matchmaking_server_connect_handle =
         runtime.spawn(connect_to_matchmaking_server(
             config.matchmaking_server_ip.to_string(),
             config.matchmaking_server_port,
@@ -192,19 +157,19 @@ async fn async_main(
         webrtc_socket,
         sender_to_matchmaking_server,
         config,
-        handle_to_matchmaking_server_connect,
+        matchmaking_server_connect_handle,
     ).await;
 }
 
 async fn game_server_main_loop(
     mut webrtc_socket: WebRtcSocket<MultipleChannels>,
-    sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>,
+    mut sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>,
     config: GameServerConfig,
     handle_to_matchmaking_server_connect: JoinHandle<()>,
 ) {
     let mut idle_timer: Option<Instant> = None;
 
-    let mut players_state: Vec<PeerId> = Vec::with_capacity(config.max_players as usize);
+    let mut players_state: HashMap<u128, PeerId> = HashMap::with_capacity(config.max_players as usize);
 
     let mut relaible_channel = webrtc_socket
         .take_channel(0)
@@ -240,12 +205,18 @@ async fn game_server_main_loop(
             match player_state {
                 Connected => {
                     handle_player_connection(
+                        &mut sender_to_matchmaking_server,
+                        &config,
+                        &mut relaible_channel,
                         &mut players_state,
                         player_id
                     )
                 }
                 Disconnected => {
                     handle_player_disconnection(
+                        &mut sender_to_matchmaking_server,
+                        &config,
+                        &mut relaible_channel,
                         &mut players_state,
                         player_id
                     )
@@ -257,7 +228,7 @@ async fn game_server_main_loop(
 
         for (from_player, packet) in recieved_messages {
             
-            proccess_unrelaible_message(
+            proccess_player_message(
                 &mut unrelaible_channel,
                 &players_state,
                 from_player,
@@ -269,7 +240,7 @@ async fn game_server_main_loop(
         
         for (from_player, packet) in recieved_messages {
             
-            proccess_relaible_message(
+            proccess_player_message(
                 &mut relaible_channel,
                 &players_state,
                 from_player,
@@ -283,47 +254,100 @@ async fn game_server_main_loop(
 
 
 fn handle_player_connection(
-    players_state: &mut Vec<PeerId>,
-    player_id: PeerId,
+    sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
+    config: &GameServerConfig,
+    channel: &mut WebRtcChannel,
+    players_state: &mut HashMap<u128, PeerId>,
+    connected_player_id: PeerId,
 ) {
+    for (_ , player_id) in players_state.iter() {
+        channel.send(
+            ServerMessage::PlayerConnected(
+                connected_player_id.0.as_u128()
+            ).to_packet(),
+            *player_id
+        );
+    }
 
+    sender_to_matchmaking_server.blocking_send(
+        GameServerMatchmakingServerProtocol::GameServerMessage(
+            GameServerMessage::PlayerConnected(config.game_server_index)
+        )
+    ).unwrap();
+
+    players_state.insert(connected_player_id.0.as_u128(), connected_player_id);
 }
 
 
 fn handle_player_disconnection(
-    players_state: &mut Vec<PeerId>,
-    player_id: PeerId
+    sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
+    config: &GameServerConfig,
+    channel: &mut WebRtcChannel,
+    players_state: &mut HashMap<u128, PeerId>,
+    disconnected_player_id: PeerId
 ) {
-    
+    players_state.remove(&disconnected_player_id.0.as_u128());
+
+    for (_ , player_id) in players_state.iter() {
+        channel.send(
+            ServerMessage::PlayerDisconnected(
+                disconnected_player_id.0.as_u128()
+            ).to_packet(),
+            *player_id
+        );
+    }
+
+    sender_to_matchmaking_server.blocking_send(
+        GameServerMatchmakingServerProtocol::GameServerMessage(
+            GameServerMessage::PlayerDisconnected(config.game_server_index)
+        )
+    ).unwrap();
 }
 
 
-fn proccess_relaible_message(
+fn proccess_player_message(
     channel: &mut WebRtcChannel,
-    players_state: &Vec<PeerId>,
+    players_state: &HashMap<u128, PeerId>,
     from_player: PeerId,
     packet: Box<[u8]>,
 ) {
     if let Some(message) = ClientMessage::from_packet(packet) {
         match message {
-            ClientMessage::DirectMessage(player_id, message) => {
+            ClientMessage::DirectMessage(to_player, message) => {
+                let peer_id = players_state.get(&to_player);
 
+                if peer_id.is_some() {
+                    channel.send(
+                        ServerMessage::NetMessage(
+                            from_player.0.as_u128(),
+                            message
+                        ).to_packet(),
+                        *peer_id.unwrap()
+                    );
+                } else {
+                    channel.send(
+                        ServerMessage::PlayerDisconnected(
+                            to_player
+                        ).to_packet(),
+                        from_player
+                    );
+                }
             }
             ClientMessage::BoardcastMessage(message) => {
-                
+                for (index, peer_id) in players_state.iter() {
+                    if *index != from_player.0.as_u128() {
+                        channel.send(
+                            ServerMessage::NetMessage(
+                                from_player.0.as_u128(),
+                                message.clone()
+                            ).to_packet(),
+                            *peer_id
+                        );
+                    }
+                }
             }
         }
     }
-}
-
-
-fn proccess_unrelaible_message(
-    channel: &mut WebRtcChannel,
-    players_state: &Vec<PeerId>,
-    from_player: PeerId,
-    packet: Box<[u8]>,
-) {
-    
 }
 
 
@@ -386,21 +410,21 @@ async fn run_singnaling_server(
         .on_client_connected(move |_id| {
             *players_amount_1.lock().unwrap() += 1;
 
-            sender_to_matchmaking_server_1.blocking_send(
-                GameServerMatchmakingServerProtocol::GameServerMessage(
-                    GameServerMessage::PlayerConnected(config.game_server_index)
-                )
-            ).unwrap();
+            // sender_to_matchmaking_server_1.blocking_send(
+            //     GameServerMatchmakingServerProtocol::GameServerMessage(
+            //         GameServerMessage::PlayerConnected(config.game_server_index)
+            //     )
+            // ).unwrap();
         })
 
         .on_client_disconnected(move |_id| {
             *players_amount_2.lock().unwrap() -= 1;
 
-            sender_to_matchmaking_server_2.blocking_send(
-                GameServerMatchmakingServerProtocol::GameServerMessage(
-                    GameServerMessage::PlayerDisconnected(config.game_server_index)
-                )
-            ).unwrap();
+            // sender_to_matchmaking_server_2.blocking_send(
+            //     GameServerMatchmakingServerProtocol::GameServerMessage(
+            //         GameServerMessage::PlayerDisconnected(config.game_server_index)
+            //     )
+            // ).unwrap();
         })
 
         // .on_id_assignment(|(_socket, _id)| {})

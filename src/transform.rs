@@ -13,6 +13,7 @@ pub struct Transform {
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct SerializableTransform {
     p: [f32; 4],
     r: [f32; 16],
