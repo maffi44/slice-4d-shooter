@@ -1,17 +1,27 @@
 pub mod net_protocols;
 
+use std::time::Duration;
 use fyrox_core::futures::{SinkExt, StreamExt};
 use glam::{Vec3, Vec4};
 use net_protocols::{ClientMessage, ServerMessage};
+
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
+use tokio::task::JoinHandle;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsValue;
 
-use tokio_tungstenite::{connect_async, tungstenite};
+use tokio_tungstenite::{
+    connect_async,
+    tungstenite::error::Error
+};
 
 use matchbox_socket::{
-    MultipleChannels, PeerId, PeerState, RtcIceServerConfig, WebRtcSocket
+    MultipleChannels,
+    PeerId,
+    PeerState,
+    RtcIceServerConfig,
+    WebRtcSocket
 };
 
 use crate::{
@@ -27,7 +37,11 @@ use crate::{
         Message,
         MessageType,
         SpecificActorMessage
-    }, matchmaking_server_protocol::{ClientMatchmakingServerProtocol, MatchmakingServerMessage}, transform::{
+    }, matchmaking_server_protocol::{
+        ClientMatchmakingServerProtocol,
+        MatchmakingServerMessage,
+        GameVersion
+    }, transform::{
         SerializableTransform,
         Transform
     }
@@ -113,12 +127,23 @@ pub enum NetCommand {
     SendBoardcastNetMessageReliable(NetMessage),
     SendBoardcastNetMessageUnreliable(NetMessage),
 }
+
+enum ConnectionError {
+    WrongVersion(GameVersion),
+    NoFreeServers,
+    MatchmakingServerClientProtocolError,
+    ConnectionLost(Error),
+    ConnectionClosedByServer,
+}
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
     
 pub struct NetSystem {
     socket: WebRtcSocket<MultipleChannels>,
     connected: bool,
     other_players_ids: Vec<u128>,
     game_server_peer_id: Option<PeerId>,
+    game_server_url_promise: JoinHandle<Result<String, ConnectionError>>,
 }
 
 impl NetSystem {
@@ -127,6 +152,11 @@ impl NetSystem {
         #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime
     ) -> Self {
+
+        let game_server_url_promise =
+            async_runtime.spawn(
+                get_game_server_url(settings.room_url.clone())
+            );
 
         let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new(settings.room_url.clone())
             .ice_server(RtcIceServerConfig {
@@ -158,55 +188,10 @@ impl NetSystem {
             connected: false,
             other_players_ids: Vec::new(),
             game_server_peer_id: None,
+            game_server_url_promise,
         }
     }
 
-    async fn get_game_server_url(matchmaking_server_url: String) -> String {
-        
-        let (mut ws_stream, _) =
-            connect_async(matchmaking_server_url)
-            .await
-            .expect("Failed to connect to matchmaking server");
-
-        let message = ClientMatchmakingServerProtocol::ClientMessage(
-            crate::matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
-                (0,0,0)
-            )
-        ).to_packet();
-
-        while let Err(_) = ws_stream
-            .send(tokio_tungstenite::tungstenite::Message::binary(message.clone()))
-            .await
-        {}
-
-        if let Some(Ok(message)) = ws_stream.next().await {
-            if let Ok(message) =
-                alkahest::deserialize::<ClientMatchmakingServerProtocol, ClientMatchmakingServerProtocol>(&message.into_data())
-            {
-                match message {
-                    ClientMatchmakingServerProtocol::MatchmakingServerMessage(
-                        message
-                    ) => {
-                        match message {
-                            MatchmakingServerMessage::GameServerAddress(url) => {
-
-                            }
-                            MatchmakingServerMessage::NoFreeServers => {
-
-                            }
-                            MatchmakingServerMessage::WrongGameVersionCorrectIs(correct_game_version) => {
-                                
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-
-        String::new()
-    }
 
     pub fn tick(
         &mut self,
@@ -215,6 +200,10 @@ impl NetSystem {
         async_runtime: &mut Runtime,
         audio_system: &mut AudioSystem
     ) {
+
+        if self.game_server_url_promise.is_finished() {
+            self.game_server_url_promise;
+        }
 
         if self.socket.any_closed() {
 
@@ -819,6 +808,106 @@ fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut Engin
                     )
                 },
             }
+        }
+    }
+}
+
+async fn get_game_server_url(matchmaking_server_url: String) -> Result<String, ConnectionError> {
+        
+    let connection_result =
+        connect_async(matchmaking_server_url)
+        .await;
+
+    match connection_result
+    {
+        Ok((mut ws_stream, _)) =>
+        {
+            let version = GameVersion::from(VERSION);
+
+            let message = ClientMatchmakingServerProtocol::ClientMessage(
+                crate::matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
+                    version.into()
+                )
+            ).to_packet();
+
+            let sending_result = ws_stream
+                .send(tokio_tungstenite::tungstenite::Message::binary(message.clone()))
+                .await;
+            
+            match sending_result
+            {
+                Ok(_) =>
+                {
+                    let recieving_result = ws_stream.next().await;
+
+                    if recieving_result.is_none()
+                    {
+                        return Err(ConnectionError::ConnectionClosedByServer);
+                    }
+
+                    match recieving_result.unwrap()
+                    {
+                        Ok(message) =>
+                        {
+                            let deserializeing_result =
+                                alkahest::deserialize::<ClientMatchmakingServerProtocol, ClientMatchmakingServerProtocol>(&message.into_data());
+                            
+                            match deserializeing_result
+                            {
+                                Ok(message) =>
+                                {
+                                    match message
+                                    {
+                                        ClientMatchmakingServerProtocol::MatchmakingServerMessage(message) =>
+                                        {
+                                            match message
+                                            {
+                                                MatchmakingServerMessage::GameServerAddress((ip, port)) =>
+                                                {
+                                                    let url = format!(
+                                                        "ws://{}.{}.{}.{}:{}/",
+                                                        ip[0], ip[1], ip[2], ip[3], port
+                                                    );
+            
+                                                    return Ok(url);
+                                                }
+                                                MatchmakingServerMessage::NoFreeServers =>
+                                                {
+                                                    return Err(ConnectionError::NoFreeServers);
+                                                }
+                                                MatchmakingServerMessage::WrongGameVersionCorrectIs(correct_game_version) =>
+                                                {
+                                                    return Err(ConnectionError::WrongVersion(correct_game_version.into()));
+                                                }
+                                            }
+                                        }
+                                        _ =>
+                                        {
+                                            return Err(ConnectionError::MatchmakingServerClientProtocolError)
+                                        }
+                                    }
+                                }
+                                Err(_) =>
+                                {
+                                    return Err(ConnectionError::MatchmakingServerClientProtocolError);
+                                }
+                            }
+                        }
+                        Err(e) =>
+                        {
+                            return Err(ConnectionError::ConnectionLost(e));
+                        }
+                    }
+                }
+                Err(e) =>
+                {
+                    return Err(ConnectionError::ConnectionLost(e));
+                }
+            }
+        }
+        Err(e) =>
+        {
+            return Err(ConnectionError::ConnectionLost(e));
         }
     }
 }
