@@ -1,0 +1,11 @@
+{
+    "matchmaking_server_ip" : "127.0.0.1",
+    "matchmaking_server_port_for_clients" : 45123,
+    "matchmaking_server_port_for_servers" : 45124,
+    "current_game_version" : "0.1.1",
+    "game_severs_public_ip" : "127.0.0.1",
+    "game_severs_min_port" : 45125,
+    "game_severs_max_port" : 45129,
+    "max_game_sessions" : 2,
+    "max_players_per_game_session" : 2
+}

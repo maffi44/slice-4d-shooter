@@ -46,7 +46,7 @@ struct GameServerConfig {
 
 impl GameServerConfig {
     fn new(args: Vec<String>) -> Result<Self, &'static str> {
-        if args.len() != 4 {
+        if args.len() != 5 {
             return Err(
                 "Usage: game_server <signaling_port> <matchmaking_server_ip> <matchmaking_server_port>"
             );
@@ -90,6 +90,8 @@ fn main() {
         }
     };
 
+    println!("succesfully load config");
+
     let runtime = Arc::new(
         Builder::new_current_thread()
             .enable_all()
@@ -98,7 +100,7 @@ fn main() {
             .unwrap()
     );
 
-    runtime.spawn(async_main(runtime.clone(), config));
+    runtime.block_on(async_main(runtime.clone(), config));
 }
 
 
@@ -121,7 +123,7 @@ async fn async_main(
         config.signaling_port,
         config.max_players,
         config.clone(),
-        sender_to_matchmaking_server.clone()
+        // sender_to_matchmaking_server.clone()
     ));
 
     let (mut webrtc_socket, socket_future) =
@@ -135,9 +137,11 @@ async fn async_main(
 
     runtime.spawn(socket_future);
 
+    println!("created webRTC socket, waiting for connection to signaling server");
+
     let instant = std::time::Instant::now();
     while webrtc_socket.id().is_none() {
-        std::thread::sleep(Duration::from_millis(10));
+        tokio::time::sleep(Duration::from_millis(30)).await;
 
         if instant.elapsed().as_millis() > 3000 {
 
@@ -381,15 +385,15 @@ async fn run_singnaling_server(
     port: u16,
     max_players: u32,
     config: GameServerConfig,
-    sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>
+    // sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>
 ) {
     let players_amount = Arc::new(Mutex::new(0u32));
 
     let players_amount_1 = players_amount.clone();
     let players_amount_2 = players_amount.clone();
 
-    let sender_to_matchmaking_server_1 = sender_to_matchmaking_server.clone();
-    let sender_to_matchmaking_server_2 = sender_to_matchmaking_server.clone();
+    // let sender_to_matchmaking_server_1 = sender_to_matchmaking_server.clone();
+    // let sender_to_matchmaking_server_2 = sender_to_matchmaking_server.clone();
 
     let server = 
         SignalingServer::client_server_builder(
@@ -434,6 +438,8 @@ async fn run_singnaling_server(
         // .trace()
 
         .build();
+    
+    println!("start signaling server");
 
     server.serve().await.unwrap()
 }
@@ -446,11 +452,15 @@ async fn connect_to_matchmaking_server(
 ) {
     
     let server_url = format!("ws://{}:{}/", matchmaking_server_ip, matchmaking_server_port);
+
+    println!("game server is connecting to matchaking server on {} addres", server_url);
     
     let (mut ws_stream, _) =
         connect_async(server_url)
         .await
         .expect("Failed to connect to matchmaking server");
+
+    println!("game server is sucessfully connected to the matchmaking server");
 
     while let Some(message) = reciever.recv().await {
 

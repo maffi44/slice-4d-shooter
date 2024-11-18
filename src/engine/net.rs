@@ -1,5 +1,7 @@
 pub mod net_protocols;
 
+use std::time::Duration;
+
 use fyrox_core::futures::{SinkExt, StreamExt};
 use glam::{Vec3, Vec4};
 use net_protocols::{ClientMessage, ServerMessage};
@@ -167,15 +169,24 @@ impl NetSystem {
     ) -> Self {
 
         let connection_data = ConnectionData {
-            matchmaking_server_url: settings.room_url.clone(),
+            matchmaking_server_url: settings.matchmaking_server_url.clone(),
             bash_and_turn_servers: settings.bash_and_turn_servers.clone(),
             game_server_url: None,
             turn_server_username: Some(settings.turn_server_username.clone()),
             turn_server_credential: Some(settings.turn_server_credential.clone()),
         };
 
+        let game_server_url_promise = Some(
+            async_runtime.spawn(
+                get_game_server_url(
+                    connection_data.matchmaking_server_url.clone(),
+                    0_u64
+                )
+            )
+        );
+
         NetSystem {
-            connection_state: Some(ConnectionState::ConnectingToMatchmakingServer(None)),
+            connection_state: Some(ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise)),
             connection_data,
         }
     }
@@ -270,7 +281,8 @@ impl NetSystem {
                 let game_server_url_promise =
                     Some(async_runtime.spawn(
                         get_game_server_url(
-                            self.connection_data.matchmaking_server_url.clone()
+                            self.connection_data.matchmaking_server_url.clone(),
+                            1_u64
                         )
                     ));
                 
@@ -957,8 +969,16 @@ fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut Engin
     }
 }
 
-async fn get_game_server_url(matchmaking_server_url: String) -> Result<String, ConnectionError> {
-        
+async fn get_game_server_url(
+    matchmaking_server_url: String,
+    wait_time_in_secs: u64,
+) -> Result<String, ConnectionError>
+{
+    if wait_time_in_secs > 0_u64
+    {
+        tokio::time::sleep(Duration::from_secs(wait_time_in_secs)).await
+    }
+
     let connection_result =
         connect_async(matchmaking_server_url)
         .await;

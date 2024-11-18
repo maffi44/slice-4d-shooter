@@ -11,20 +11,12 @@ use matchmaking_server_protocol::{
 
 use core::panic;
 use std::{
-    fs::File,
-    io::Read,
-    net::Ipv4Addr,
-    str::FromStr,
-    sync::Arc, time::Duration
+    fs::File, io::Read, net::Ipv4Addr, process::Stdio, str::FromStr, sync::Arc, time::Duration
 };
 use tokio::{
     io::{
-        AsyncBufReadExt,
-        BufReader
-    },
-    net::TcpListener,
-    process::Command,
-    sync::Mutex
+        AsyncBufReadExt, AsyncReadExt, BufReader
+    }, net::TcpListener, process::Command, runtime::Runtime, sync::Mutex
 };
 
 use fyrox_core::futures::{SinkExt, StreamExt};
@@ -66,8 +58,6 @@ type GameServersState = Arc<Mutex<HashMap<u16,GameServerInfo>>>;
 
 async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServersState, config: Config) {
 
-    let mut locked_state = state.lock().await;
-
     let ws_stream = accept_async(stream).await.unwrap();
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
@@ -108,6 +98,8 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
                                 return ;
                             }
                             println!("INFO: Client's game version is correct");
+
+                            let mut locked_state = state.lock().await;
                             
                             let finded_server = locked_state.values_mut().find(
                                 |server_info| {
@@ -191,7 +183,6 @@ async fn handle_client_connection(stream: tokio::net::TcpStream, state: GameServ
 
                                 }
                             }
-
                         }
                     }
                 },
@@ -214,16 +205,19 @@ async fn spawn_game_server(
         .arg("127.0.0.1") //here will be config.matchmaking_server_ip.to_string() 
         .arg(config.matchmaking_server_port_for_servers.to_string())
         .arg(config.max_players_per_game_session.to_string())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()?;
 
     let server_stdout = server_proccess.stdout.take().unwrap();
+    let mut server_stderr = server_proccess.stderr.take().unwrap();
 
     let mut reader = BufReader::new(server_stdout).lines();
 
-    if let Some(line) = reader.next_line().await? {
+    while let Some(line) = reader.next_line().await? {
         if line.trim() == "ready" {
 
-            println!("spawn new game sever on {} port", port);
+            println!("spawn new game server on {} port", port);
 
             return Ok(GameServerInfo {
                 game_server_ip_address: config.game_severs_public_ip,
@@ -234,11 +228,16 @@ async fn spawn_game_server(
             });
         } else {
 
-            panic!("server spawned, but not ready")
-
+            println!("spawning server's stdout line: {}", line);
+            continue ;
         }
     }
-    unreachable!()
+
+    let mut errors = String::new();
+
+    server_stderr.read_to_string(&mut errors).await.unwrap();
+
+    panic!("server spawned, but not ready, the server's Stderr is: {}", errors)
 }
 
 async fn handle_server_message(
@@ -246,10 +245,10 @@ async fn handle_server_message(
     state: GameServersState,
     _config: Config
 ) {
-
-    let mut locked_state = state.lock().await;
-
     let ws_stream = accept_async(stream).await.unwrap();
+
+    println!("websocket connection with game server is opened");
+
     let (_, mut ws_receiver) = ws_stream.split();
 
     while let Some(Ok(msg)) = ws_receiver.next().await {
@@ -262,7 +261,7 @@ async fn handle_server_message(
                 GameServerMatchmakingServerProtocol::GameServerMessage(message) => {
                     match message {
                         GameServerMessage::PlayerConnected(game_server_index) => {
-                            match locked_state.get_mut(&game_server_index) {
+                            match state.lock().await.get_mut(&game_server_index) {
                                 
                                 Some(server_info) => {
                                     
@@ -280,7 +279,7 @@ async fn handle_server_message(
                             }
                         },
                         GameServerMessage::PlayerDisconnected(game_server_index) => {
-                            match locked_state.get_mut(&game_server_index) {
+                            match state.lock().await.get_mut(&game_server_index) {
                                 Some(server_info) => {
 
                                     println!("INFO: player is disconnected from the {} server", &game_server_index);
@@ -297,7 +296,7 @@ async fn handle_server_message(
                             }
                         },
                         GameServerMessage::GameServerHasShutDown(game_server_index) => {
-                            match locked_state.remove(&game_server_index) {
+                            match state.lock().await.remove(&game_server_index) {
                                 Some(_) => {
 
                                     println!("{} server is shouted down", &game_server_index);
@@ -326,19 +325,25 @@ async fn handle_server_message(
             }
         }
     }
+
+    println!("websocket connection with game server is closed");
 }
 
 fn main() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .worker_threads(1)
-        .build()
-        .unwrap();
+    let runtime = Arc::new(
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .worker_threads(1)
+            .build()
+            .unwrap()
+    );
 
-    runtime.block_on(async_main());
+    runtime.block_on(async_main(runtime.clone()));
 }
 
-async fn async_main() {
+async fn async_main(
+    runtime: Arc<Runtime>
+) {
     let config = load_config();
 
     let state = Arc::new(Mutex::new(HashMap::new()));
@@ -353,13 +358,15 @@ async fn async_main() {
 
     let cloned_state = state.clone();
     let config2 = config.clone();
-    tokio::spawn(async move {
+    
+    let runtime_2 = runtime.clone();
+    runtime.spawn(async move {
         loop
         {
             match servers_listener.accept().await
             {
                 Ok((stream, _)) => {
-                    tokio::spawn(handle_server_message(stream, cloned_state.clone(), config2.clone()));
+                    runtime_2.spawn(handle_server_message(stream, cloned_state.clone(), config2.clone()));
                 }
                 Err(e) => {
                     panic!("ERROR: game servers listener error, err: {}", e)
@@ -369,7 +376,7 @@ async fn async_main() {
     });
 
     let another_cloned_state = state.clone();
-    tokio::spawn(async move {
+    runtime.spawn(async move {
         loop
         {
             another_cloned_state
@@ -389,7 +396,7 @@ async fn async_main() {
         match clients_listener.accept().await
         {
             Ok((stream, _)) => {
-                tokio::spawn(handle_client_connection(stream, state.clone(), config.clone()));
+                runtime.spawn(handle_client_connection(stream, state.clone(), config.clone()));
             }
             Err(e) => {
                 panic!("ERROR: clients listener error, err: {}", e)
@@ -430,7 +437,7 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
 
     let matchmaking_server_port_for_clients = {
         object
-            .get("ERROR: matchmaking_server_port_for_clients")
+            .get("matchmaking_server_port_for_clients")
             .expect("ERROR: Have not matchmaking_server_port_for_clients in matchmaking-server-config.json")
             .as_i64()
             .expect("ERROR: matchmaking_server_port_for_clients is not number value in matchmaking-server-config.json")
@@ -439,7 +446,7 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
 
     let matchmaking_server_port_for_servers = {
         object
-            .get("ERROR: matchmaking_server_port_for_servers")
+            .get("matchmaking_server_port_for_servers")
             .expect("ERROR: Have not matchmaking_server_port_for_servers in matchmaking-server-config.json")
             .as_i64()
             .expect("ERROR: matchmaking_server_port_for_servers is not number value in matchmaking-server-config.json")
@@ -448,7 +455,7 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
 
     let game_severs_public_ip = {
         object
-            .get("ERROR: game_severs_public_ip")
+            .get("game_severs_public_ip")
             .expect("ERROR: Have not game_severs_public_ip in matchmaking-server-config.json")
             .as_str()
             .expect("ERROR: game_severs_public_ip is not string value in matchmaking-server-config.json")
@@ -460,7 +467,7 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
 
     let matchmaking_server_ip = {
         object
-            .get("ERROR: matchmaking_server_ip")
+            .get("matchmaking_server_ip")
             .expect("ERROR: Have not matchmaking_server_ip in matchmaking-server-config.json")
             .as_str()
             .expect("ERROR: matchmaking_server_ip is not string value in matchmaking-server-config.json")
@@ -472,7 +479,7 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
 
     let game_severs_min_port = {
         object
-            .get("ERROR: game_severs_min_port")
+            .get("game_severs_min_port")
             .expect("ERROR: Have not game_severs_min_port in matchmaking-server-config.json")
             .as_i64()
             .expect("ERROR: game_severs_min_port is not number value in matchmaking-server-config.json")
@@ -481,7 +488,7 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
 
     let game_severs_max_port = {
         object
-            .get("ERROR: game_severs_max_port")
+            .get("game_severs_max_port")
             .expect("ERROR: Have not game_severs_max_port in matchmaking-server-config.json")
             .as_i64()
             .expect("ERROR: game_severs_max_port is not number value in matchmaking-server-config.json")
@@ -490,7 +497,7 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
 
     let max_game_sessions = {
         object
-            .get("ERROR: max_game_sessions")
+            .get("max_game_sessions")
             .expect("ERROR: Have not max_game_sessions in matchmaking-server-config.json")
             .as_i64()
             .expect("ERROR: max_game_sessions is not number value in matchmaking-server-config.json")
@@ -499,49 +506,22 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
 
     let max_players_per_game_session = {
         object
-            .get("ERROR: max_players_per_game_session")
+            .get("max_players_per_game_session")
             .expect("ERROR: Have not max_players_per_game_session in matchmaking-server-config.json")
             .as_i64()
             .expect("ERROR: max_players_per_game_session is not number value in matchmaking-server-config.json")
             as u32
     };
 
-    let current_game_major_version = {
+    let current_game_version = {
         object
-            .get("ERROR: current_game_major_version")
-            .expect("ERROR: Have not current_game_major_version in matchmaking-server-config.json")
-            .as_i64()
-            .expect("ERROR: current_game_major_version is not number value in matchmaking-server-config.json")
-            as u32
+            .get("current_game_version")
+            .expect("ERROR: Have not current_game_version in matchmaking-server-config.json")
+            .as_str()
+            .expect("ERROR: current_game_version is not string value in matchmaking-server-config.json")
     };
 
-    let current_game_minor_version = {
-        object
-            .get("ERROR: current_game_minor_version")
-            .expect("ERROR: Have not current_game_minor_version in matchmaking-server-config.json")
-            .as_i64()
-            .expect("ERROR: current_game_minor_version is not number value in matchmaking-server-config.json")
-            as u32
-    };
-
-    let current_game_maintenance_version = {
-        object
-            .get("ERROR: current_game_maintenance_version")
-            .expect("ERROR: Have not current_game_maintenance_version in matchmaking-server-config.json")
-            .as_i64()
-            .expect("ERROR: current_game_maintenance_version is not number value in matchmaking-server-config.json")
-            as u32
-    };
-
-    
-
-    let current_game_version = GameVersion::from((
-        current_game_major_version,
-        current_game_minor_version,
-        current_game_maintenance_version
-    ));
-
-    
+    let current_game_version = GameVersion::from(current_game_version);
 
     Config {
         matchmaking_server_ip,

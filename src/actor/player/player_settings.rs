@@ -43,7 +43,7 @@ pub struct PlayerSettings {
     pub machinegun_heat_add_on_shot: f32, 
     pub machinegun_cooling_speed: f32,
 
-    pub room_url: String,
+    pub matchmaking_server_url: String,
     pub bash_and_turn_servers: Vec<String>,
     pub turn_server_username: String,
     pub turn_server_credential: String,
@@ -335,12 +335,12 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
         .expect("machinegun_cooling_speed is not float value in settings.json")
         as f32
     };
-    let room_url = {
+    let matchmaking_server_url = {
         object
-        .get("room_url")
-        .expect("Have not room_url in settings.json")
+        .get("matchmaking_server_url")
+        .expect("Have not matchmaking_server_url in settings.json")
         .as_str()
-        .expect("room_url is not string value in settings.json")
+        .expect("matchmaking_server_url is not string value in settings.json")
         .to_string()
     };
 
@@ -409,7 +409,7 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
         machinegun_add_force, 
         machinegun_heat_add_on_shot, 
         machinegun_cooling_speed,
-        room_url,
+        matchmaking_server_url,
         bash_and_turn_servers,
         turn_server_username,
         turn_server_credential,
