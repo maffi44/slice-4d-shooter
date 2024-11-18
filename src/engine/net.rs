@@ -1,6 +1,5 @@
 pub mod net_protocols;
 
-use std::time::Duration;
 use fyrox_core::futures::{SinkExt, StreamExt};
 use glam::{Vec3, Vec4};
 use net_protocols::{ClientMessage, ServerMessage};
@@ -128,6 +127,8 @@ pub enum NetCommand {
     SendBoardcastNetMessageUnreliable(NetMessage),
 }
 
+
+#[derive(Debug)]
 enum ConnectionError {
     WrongVersion(GameVersion),
     NoFreeServers,
@@ -136,14 +137,26 @@ enum ConnectionError {
     ConnectionClosedByServer,
 }
 
+enum ConnectionState {
+    ConnectingToMatchmakingServer(Option<JoinHandle<Result<String, ConnectionError>>>),
+    ConnectingToGameServer(Option<WebRtcSocket<MultipleChannels>>),
+    ConnectedToGameServer(WebRtcSocket<MultipleChannels>, PeerId, Vec<u128>),
+}
+
+struct ConnectionData {
+    matchmaking_server_url: String,
+    game_server_url: Option<String>,
+    bash_and_turn_servers: Vec<String>,
+    turn_server_username: Option<String>,
+    turn_server_credential: Option<String>,
+
+}
+
 const VERSION: &str = env!("CARGO_PKG_VERSION");
     
 pub struct NetSystem {
-    socket: WebRtcSocket<MultipleChannels>,
-    connected: bool,
-    other_players_ids: Vec<u128>,
-    game_server_peer_id: Option<PeerId>,
-    game_server_url_promise: JoinHandle<Result<String, ConnectionError>>,
+    connection_data: ConnectionData,
+    connection_state: Option<ConnectionState>,
 }
 
 impl NetSystem {
@@ -153,42 +166,17 @@ impl NetSystem {
         async_runtime: &mut Runtime
     ) -> Self {
 
-        let game_server_url_promise =
-            async_runtime.spawn(
-                get_game_server_url(settings.room_url.clone())
-            );
-
-        let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new(settings.room_url.clone())
-            .ice_server(RtcIceServerConfig {
-                urls: settings.bash_and_turn_servers.clone(),
-                username: Some(settings.turn_server_username.clone()),
-                credential: Some(settings.turn_server_credential.clone()),
-            })
-            .add_reliable_channel()
-            .add_unreliable_channel()
-            .build();
-
-        #[cfg(target_arch = "wasm32")]
-        {
-            let promise = wasm_bindgen_futures::future_to_promise(async {
-                let _ = socket_future.await;
-    
-                Result::Ok(JsValue::null())
-            });
-
-            let _ = wasm_bindgen_futures::JsFuture::from(promise);
-        }
-        #[cfg(not(target_arch = "wasm32"))]
-        async_runtime.spawn(socket_future);
-
-
+        let connection_data = ConnectionData {
+            matchmaking_server_url: settings.room_url.clone(),
+            bash_and_turn_servers: settings.bash_and_turn_servers.clone(),
+            game_server_url: None,
+            turn_server_username: Some(settings.turn_server_username.clone()),
+            turn_server_credential: Some(settings.turn_server_credential.clone()),
+        };
 
         NetSystem {
-            socket,
-            connected: false,
-            other_players_ids: Vec::new(),
-            game_server_peer_id: None,
-            game_server_url_promise,
+            connection_state: Some(ConnectionState::ConnectingToMatchmakingServer(None)),
+            connection_data,
         }
     }
 
@@ -201,46 +189,208 @@ impl NetSystem {
         audio_system: &mut AudioSystem
     ) {
 
-        if self.game_server_url_promise.is_finished() {
-            self.game_server_url_promise;
+        match self.connection_state.take().expect("ERROR: connection state in Net system is None")
+        {
+            ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise) =>
+            {
+                self.connection_state = Some(
+                    self.handle_connecting_to_matchmaking_server_state(
+                        game_server_url_promise,
+                        async_runtime,
+                    )
+                );
+            }
+            ConnectionState::ConnectingToGameServer(webrtc_socket) =>
+            {
+                self.connection_state = Some(
+                    self.handle_connecting_to_game_server_state(
+                        webrtc_socket,
+                        async_runtime,
+                        engine_handle,
+                    )
+                );
+            }
+            ConnectionState::ConnectedToGameServer(webrtc_socket, server_id, players_id) =>
+            {
+                self.connection_state = Some(
+                    self.handle_connected_to_game_server_state(
+                        webrtc_socket,
+                        server_id,
+                        players_id,
+                        engine_handle,
+                        audio_system,
+                    )
+                );
+            }
+        }
+    }
+
+    fn handle_connecting_to_matchmaking_server_state(
+        &mut self,
+        game_server_url_promise:  Option<JoinHandle<Result<String, ConnectionError>>>,
+        async_runtime: &mut Runtime,
+    ) -> ConnectionState
+    {
+        match game_server_url_promise {
+            Some(promise) =>
+            {
+                if promise.is_finished() {
+                    let connection_to_matchmaking_result =
+                        async_runtime.block_on(promise);
+
+                    match connection_to_matchmaking_result {
+                        Ok(connection_result) =>
+                        {
+                            match connection_result {
+                                Ok(game_server_url) =>
+                                {
+                                    println!("got the url of game server: {}", game_server_url);
+                                    self.connection_data.game_server_url = Some(game_server_url);
+                                    return ConnectionState::ConnectingToGameServer(None);
+                                }
+                                Err(e) =>
+                                {
+                                    println!("WARNING: Can't connect to game server: {:?}, trying to reconnect", e);
+                                    return ConnectionState::ConnectingToMatchmakingServer(None);
+                                }
+                            }
+                        }
+                        Err(e) =>
+                        {
+                            panic!("ERROR: connection to matchmaking server async task error: {}", e)
+                        }
+                    }
+
+                } else {
+                    return ConnectionState::ConnectingToMatchmakingServer(Some(promise));
+                }
+            }
+            None =>
+            {
+                let game_server_url_promise =
+                    Some(async_runtime.spawn(
+                        get_game_server_url(
+                            self.connection_data.matchmaking_server_url.clone()
+                        )
+                    ));
+                
+                return ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise);
+            }
+        }
+    }
+
+
+    fn handle_connecting_to_game_server_state(
+        &mut self,
+        webrtc_socket: Option<WebRtcSocket<MultipleChannels>>,
+        async_runtime: &mut Runtime,
+        engine_handle: &mut EngineHandle,
+    ) -> ConnectionState
+    {
+        match webrtc_socket {
+            Some(mut webrtc_socket) =>
+            {
+                if webrtc_socket.any_closed() {
+
+                    println!("WARNING: WebRTC connection is closed, trying to reconnect");
+                    return ConnectionState::ConnectingToGameServer(None);
+                }
+        
+                if let Ok(vec) = webrtc_socket.try_update_peers() {
+                    for (peer_id, peer_state) in vec {
+                        match peer_state {
+                            PeerState::Connected => {
+        
+                                engine_handle.send_command(Command {
+                                    sender: 0_u128,
+                                    command_type: CommandType::NetCommand(
+                                        NetCommand::NetSystemIsConnectedAndGetNewPeerID(
+                                            webrtc_socket
+                                                .id()
+                                                .expect("ERROR: A registrated peer (game server) connection, but the game client still does not have id in the p2p network")
+                                                .0
+                                                .as_u128()
+                                        )
+                                    ),
+                                });
+
+                                let server_id = peer_id;
+                                let players_id = Vec::new();
+
+                                println!("INFO: Connected to the game server");
+                                return ConnectionState::ConnectedToGameServer(webrtc_socket, server_id, players_id);
+                            }
+                            PeerState::Disconnected => {
+
+                                println!("WARNING: connection to game server is lost, trying to reconnect");
+                                return ConnectionState::ConnectingToGameServer(None);
+                            }
+                        }   
+                    }
+                }
+
+                return ConnectionState::ConnectingToGameServer(Some(webrtc_socket));
+            }
+            None =>
+            {
+                let (webrtc_socket, socket_future) =
+                    matchbox_socket::WebRtcSocketBuilder::new(
+                        self
+                            .connection_data.game_server_url
+                            .as_ref()
+                            .expect("ERROR: Have not game server url during connecting to game server state")
+                            .clone()
+                    )
+                    .ice_server(RtcIceServerConfig {
+                        urls: self.connection_data.bash_and_turn_servers.clone(),
+                        username: self.connection_data.turn_server_username.clone(),
+                        credential: self.connection_data.turn_server_credential.clone(),
+                    })
+                    .add_reliable_channel()
+                    .add_unreliable_channel()
+                    .build();
+
+                #[cfg(target_arch = "wasm32")]
+                {
+                    let promise = wasm_bindgen_futures::future_to_promise(async {
+                        let _ = socket_future.await;
+
+                        Result::Ok(JsValue::null())
+                    });
+
+                    let _ = wasm_bindgen_futures::JsFuture::from(promise);
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                async_runtime.spawn(socket_future);
+
+                return ConnectionState::ConnectingToGameServer(Some(webrtc_socket));
+            }
+        }
+    }
+
+    fn handle_connected_to_game_server_state(
+        &mut self,
+        mut webrtc_socket: WebRtcSocket<MultipleChannels>,
+        server_id: PeerId,
+        mut players_id: Vec<u128>,
+        engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
+    ) -> ConnectionState
+    {
+        if webrtc_socket.any_closed() {
+
+            println!("WARNING: WebRTC connection is closed, trying to reconnect");
+            return ConnectionState::ConnectingToGameServer(None);
         }
 
-        if self.socket.any_closed() {
-
-            log::warn!("Net system: connection to signaling server is lost");
-            #[cfg(not(target_arch = "wasm32"))]
-            self.reconnect(async_runtime);
-            #[cfg(target_arch = "wasm32")]
-            self.reconnect();
-            return;
-        }
-
-        if let Ok(vec) = self.socket.try_update_peers() {
+        if let Ok(vec) = webrtc_socket.try_update_peers() {
             for (peer_id, peer_state) in vec {
                 match peer_state {
                     PeerState::Connected => {
-                        self.connected = true;
-                        self.game_server_peer_id = Some(peer_id);
-
-                        engine_handle.send_command(Command {
-                            sender: 0_u128,
-                            command_type: CommandType::NetCommand(
-                                NetCommand::NetSystemIsConnectedAndGetNewPeerID(
-                                    self
-                                        .socket
-                                        .id()
-                                        .expect("ERROR: A registrated peer (game server) connection, but the game client still does not have id in the p2p network")
-                                        .0
-                                        .as_u128()
-                                )
-                            ),
-                        });
+                        panic!("BUG: Catched host connsection during connected to game server state. This can't be happening in client-server net arch");
                     }
                     PeerState::Disconnected => {
-                        self.connected = false;
-                        self.game_server_peer_id = None;
-
-                        for player_id in self.other_players_ids.iter() {
+                        for player_id in players_id.iter() {
                             engine_handle.send_command(Command {
                                 sender: 0_u128,
                                 command_type: CommandType::NetCommand(
@@ -248,15 +398,14 @@ impl NetSystem {
                                 ),
                             });
                         }
-                        self.other_players_ids.clear();
+                        println!("WARNING: connection to game server is lost, trying to reconnect");
+                        return ConnectionState::ConnectingToGameServer(None);
                     }
                 }   
             }
         }
 
-        
-
-        for (_, packet) in self.socket.channel_mut(0).receive() {
+        for (_, packet) in webrtc_socket.channel_mut(0).receive() {
 
             if let Some(message) = ServerMessage::from_packet(packet) {
                 match message {
@@ -268,13 +417,13 @@ impl NetSystem {
                                 NetCommand::PeerConnected(player_id)
                             ),
                         });
-                        self.other_players_ids.push(player_id);
+                        players_id.push(player_id);
                     }
 
                     ServerMessage::PlayerDisconnected(player_id) => {
                         let mut index = 0usize;
                         let mut finded = false;
-                        for stored_peer in self.other_players_ids.iter() {
+                        for stored_peer in players_id.iter() {
                             if *stored_peer == player_id {
                                 finded = true;
                                 break;
@@ -283,7 +432,7 @@ impl NetSystem {
                         }
 
                         if finded {
-                            self.other_players_ids.remove(index);
+                            players_id.remove(index);
 
                             engine_handle.send_command(Command {
                                 sender: 0_u128,
@@ -301,7 +450,7 @@ impl NetSystem {
             }
         }
 
-        for (_, packet) in self.socket.channel_mut(1).receive() {
+        for (_, packet) in webrtc_socket.channel_mut(1).receive() {
             
             if let Some(message) = ServerMessage::from_packet(packet) {
                 match message {
@@ -313,13 +462,13 @@ impl NetSystem {
                                 NetCommand::PeerConnected(player_id)
                             ),
                         });
-                        self.other_players_ids.push(player_id);
+                        players_id.push(player_id);
                     }
 
                     ServerMessage::PlayerDisconnected(player_id) => {
                         let mut index = 0usize;
                         let mut finded = false;
-                        for stored_peer in self.other_players_ids.iter() {
+                        for stored_peer in players_id.iter() {
                             if *stored_peer == player_id {
                                 finded = true;
                                 break;
@@ -328,7 +477,7 @@ impl NetSystem {
                         }
 
                         if finded {
-                            self.other_players_ids.remove(index);
+                            players_id.remove(index);
 
                             engine_handle.send_command(Command {
                                 sender: 0_u128,
@@ -345,104 +494,100 @@ impl NetSystem {
                 }
             }
         }
+
+        return ConnectionState::ConnectedToGameServer(webrtc_socket, server_id, players_id);
     }
 
-    fn reconnect(
-        &mut self,
-        #[cfg(not(target_arch = "wasm32"))]
-        async_runtime: &mut Runtime,
-    ) {
-        
-        log::info!("trying to reconnect");
-
-        let (socket, socket_future) = matchbox_socket::WebRtcSocketBuilder::new("ws://localhost:3536/")
-            .add_reliable_channel()
-            .add_unreliable_channel()
-            .build();
-
-        #[cfg(target_arch = "wasm32")]
-        {
-            let promise = wasm_bindgen_futures::future_to_promise(async {
-                let _ = socket_future.await;
-    
-                Result::Ok(JsValue::null())
-            });
-
-            let _ = wasm_bindgen_futures::JsFuture::from(promise);
-        }
-        #[cfg(not(target_arch = "wasm32"))]
-        async_runtime.spawn(socket_future);
-
-        self.socket = socket;
-        self.connected = false;
-    }
 
     pub fn send_boardcast_message_reliable(&mut self, message: NetMessage) {
 
-        if let Some(game_server_id) = self.game_server_peer_id {
-
-            let packet = ClientMessage::BoardcastMessage(message).to_packet();
-    
-            for peer in self.other_players_ids.iter() {
-                self.socket
-                    .channel_mut(0)
-                    .send(
-                        packet.clone(),
-                        game_server_id
-                    );
+        match &mut self.connection_state
+            .as_mut()
+            .expect("ERROR: connection state in Net system is None")
+        {
+            ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
+            {
+                let packet = ClientMessage::BoardcastMessage(message).to_packet();
+        
+                for peer in players_id.iter() {
+                    webrtc_socket
+                        .channel_mut(0)
+                        .send(
+                            packet.clone(),
+                            *server_id
+                        );
+                }
             }
+            _ => {}
         }
-
     }
 
     pub fn send_boardcast_message_unreliable(&mut self, message: NetMessage) {
 
-        if let Some(game_server_id) = self.game_server_peer_id {
-
-            let packet = ClientMessage::BoardcastMessage(message).to_packet();
-    
-            for peer in self.other_players_ids.iter() {
-                self.socket
-                    .channel_mut(1)
-                    .send(
-                        packet.clone(),
-                        game_server_id
-                    );
+        match &mut self.connection_state
+            .as_mut()
+            .expect("ERROR: connection state in Net system is None")
+        {
+            ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
+            {
+                let packet = ClientMessage::BoardcastMessage(message).to_packet();
+        
+                for peer in players_id.iter() {
+                    webrtc_socket
+                        .channel_mut(1)
+                        .send(
+                            packet.clone(),
+                            *server_id
+                        );
+                }
             }
+            _ => {}
         }
     }
     
     pub fn send_direct_message_reliable(&mut self, message: NetMessage, peer: u128) {
 
-        if let Some(game_server_id) = self.game_server_peer_id {
-
-            let packet = ClientMessage::DirectMessage(peer, message).to_packet();
-    
-            for peer in self.other_players_ids.iter() {
-                self.socket
-                    .channel_mut(0)
-                    .send(
-                        packet.clone(),
-                        game_server_id
-                    );
+        match &mut self.connection_state
+            .as_mut()
+            .expect("ERROR: connection state in Net system is None")
+        {
+            ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
+            {
+                let packet = ClientMessage::DirectMessage(peer, message).to_packet();
+        
+                for peer in players_id.iter() {
+                    webrtc_socket
+                        .channel_mut(0)
+                        .send(
+                            packet.clone(),
+                            *server_id
+                        );
+                }
             }
+            _ => {}
         }
     }
 
     pub fn send_direct_message_unreliable(&mut self, message: NetMessage, peer: u128) {
         
-        if let Some(game_server_id) = self.game_server_peer_id {
-
-            let packet = ClientMessage::DirectMessage(peer, message).to_packet();
-    
-            for peer in self.other_players_ids.iter() {
-                self.socket
-                    .channel_mut(1)
-                    .send(
-                        packet.clone(),
-                        game_server_id
-                    );
+        match &mut self.connection_state
+            .as_mut()
+            .expect("ERROR: connection state in Net system is None")
+        {
+            ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
+            {
+                let packet = ClientMessage::DirectMessage(peer, message).to_packet();
+        
+                for peer in players_id.iter() {
+                    webrtc_socket
+                        .channel_mut(1)
+                        .send(
+                            packet.clone(),
+                            *server_id
+                        );
+                }
             }
+            _ => {}
         }
     }
 }

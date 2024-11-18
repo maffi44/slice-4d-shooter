@@ -6,6 +6,7 @@ use matchmaking_server_protocol::{
     MatchmakingServerMessage,
     GameServerMessage,
     ClientMessage,
+    GameVersion
 };
 
 use core::panic;
