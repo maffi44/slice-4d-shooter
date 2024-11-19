@@ -175,8 +175,8 @@ impl GameServerMatchmakingServerProtocol
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum GameServerMessage
 {
-    GameServerHasShutDown(u16),
-    ServerHasStarted(u16),
+    GameServerShutedDown(u16),
+    ServerStarted(u16),
     PlayerConnected(u16),
     PlayerDisconnected(u16),
 }

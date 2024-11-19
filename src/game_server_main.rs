@@ -151,11 +151,11 @@ async fn async_main(
 
     println!("ready");
 
-    sender_to_matchmaking_server.blocking_send(
+    sender_to_matchmaking_server.send(
         GameServerMatchmakingServerProtocol::GameServerMessage(
-            GameServerMessage::ServerHasStarted(config.game_server_index)
+            GameServerMessage::ServerStarted(config.game_server_index)
         )
-    ).unwrap();
+    ).await.unwrap();
 
     game_server_main_loop(
         webrtc_socket,
@@ -214,7 +214,7 @@ async fn game_server_main_loop(
                         &mut relaible_channel,
                         &mut players_state,
                         player_id
-                    )
+                    ).await
                 }
                 Disconnected => {
                     handle_player_disconnection(
@@ -223,7 +223,7 @@ async fn game_server_main_loop(
                         &mut relaible_channel,
                         &mut players_state,
                         player_id
-                    )
+                    ).await
                 }
             }
         }
@@ -257,7 +257,7 @@ async fn game_server_main_loop(
 }
 
 
-fn handle_player_connection(
+async fn handle_player_connection(
     sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
     channel: &mut WebRtcChannel,
@@ -271,19 +271,26 @@ fn handle_player_connection(
             ).to_packet(),
             *player_id
         );
+
+        channel.send(
+            ServerMessage::PlayerConnected(
+                player_id.0.as_u128()
+            ).to_packet(),
+            connected_player_id
+        );
     }
 
-    sender_to_matchmaking_server.blocking_send(
+    sender_to_matchmaking_server.send(
         GameServerMatchmakingServerProtocol::GameServerMessage(
             GameServerMessage::PlayerConnected(config.game_server_index)
         )
-    ).unwrap();
+    ).await.unwrap();
 
     players_state.insert(connected_player_id.0.as_u128(), connected_player_id);
 }
 
 
-fn handle_player_disconnection(
+async fn handle_player_disconnection(
     sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
     channel: &mut WebRtcChannel,
@@ -301,11 +308,11 @@ fn handle_player_disconnection(
         );
     }
 
-    sender_to_matchmaking_server.blocking_send(
+    sender_to_matchmaking_server.send(
         GameServerMatchmakingServerProtocol::GameServerMessage(
             GameServerMessage::PlayerDisconnected(config.game_server_index)
         )
-    ).unwrap();
+    ).await.unwrap();
 }
 
 
@@ -361,13 +368,13 @@ async fn shutdown_game_server(
     handle_to_matchmaking_server_connect: JoinHandle<()>,
 ) -> ! 
 {
-    sender_to_matchmaking_server.blocking_send(
+    sender_to_matchmaking_server.send(
         GameServerMatchmakingServerProtocol::GameServerMessage(
-            GameServerMessage::GameServerHasShutDown(
+            GameServerMessage::GameServerShutedDown(
                 config.game_server_index
             )
         )
-    ).unwrap();
+    ).await.unwrap();
 
     let timer = Instant::now();
 
@@ -413,22 +420,10 @@ async fn run_singnaling_server(
 
         .on_client_connected(move |_id| {
             *players_amount_1.lock().unwrap() += 1;
-
-            // sender_to_matchmaking_server_1.blocking_send(
-            //     GameServerMatchmakingServerProtocol::GameServerMessage(
-            //         GameServerMessage::PlayerConnected(config.game_server_index)
-            //     )
-            // ).unwrap();
         })
 
         .on_client_disconnected(move |_id| {
             *players_amount_2.lock().unwrap() -= 1;
-
-            // sender_to_matchmaking_server_2.blocking_send(
-            //     GameServerMatchmakingServerProtocol::GameServerMessage(
-            //         GameServerMessage::PlayerDisconnected(config.game_server_index)
-            //     )
-            // ).unwrap();
         })
 
         // .on_id_assignment(|(_socket, _id)| {})
@@ -471,7 +466,7 @@ async fn connect_to_matchmaking_server(
                 message
             ) => {
                 match message {
-                    GameServerMessage::GameServerHasShutDown(index) => {
+                    GameServerMessage::GameServerShutedDown(index) => {
                         shutdown = true;
                     },
                     _ => {
@@ -488,5 +483,7 @@ async fn connect_to_matchmaking_server(
         if shutdown {
             return ;
         }
+        
+        continue ;
     }
 }
