@@ -2,7 +2,6 @@ use glam::{
     Vec4,
     Mat4
 };
-use alkahest::alkahest;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Transform {
@@ -11,33 +10,14 @@ pub struct Transform {
     scale: Vec4,
 }
 
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-#[derive(Clone)]
-pub struct SerializableTransform {
-    p: [f32; 4],
-    r: [f32; 16],
-    s: [f32; 4],
-}
-
-impl SerializableTransform {
-    pub fn from_transform(transform: &Transform) -> Self {
-        let p = transform.position.to_array();
-        let r = transform.rotation.to_cols_array();
-        let s = transform.scale.to_array();
-
-        SerializableTransform {
-            p, r, s
-        }
-    }
-}
+type SerializableTransform = ([f32; 4], [f32; 16], [f32; 4]);
 
 impl Transform {
     pub fn from_serializable_transform(tr: SerializableTransform) -> Self {
         Transform {
-            position: Vec4::from_array(tr.p),
-            rotation: Mat4::from_cols_array(&tr.r),
-            scale: Vec4::from_array(tr.s),
+            position: Vec4::from_array(tr.0),
+            rotation: Mat4::from_cols_array(&tr.1),
+            scale: Vec4::from_array(tr.2),
         }
     }
 
@@ -46,9 +26,7 @@ impl Transform {
         let r = self.rotation.to_cols_array();
         let s = self.scale.to_array();
 
-        SerializableTransform {
-            p, r, s
-        }
+        (p, r, s)
     }
     
     #[inline]

@@ -28,7 +28,14 @@ use crate::{
 use core::panic;
 use std::collections::HashMap;
 
-use super::{audio::AudioSystem, engine_handle::Command, net::{NetCommand, NetSystem}, ui::UISystem};
+use super::{
+    audio::AudioSystem,
+    engine_handle::Command,
+    net::NetSystem,
+    ui::UISystem
+};
+
+use client_server_protocol::NetCommand;
 
 pub struct World {
     pub level: Level,

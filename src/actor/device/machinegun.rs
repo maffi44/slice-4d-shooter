@@ -2,12 +2,40 @@ use glam::Vec4;
 
 use crate::{
     actor::{
-        machinegun_shot::MachinegunShot, player::{PlayerInnerState, PlayerMessages}, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage
+        machinegun_shot::MachinegunShot,
+        player::{
+            PlayerInnerState,
+            PlayerMessages
+        },
+        ActorID,
+        ActorWrapper,
+        Message,
+        MessageType,
+        SpecificActorMessage
     },
     engine::{
-        audio::AudioSystem, engine_handle::{Command, CommandType, EngineHandle}, input::ActionsFrameState, net::{NetCommand, NetMessage, RemoteMessage}, physics::PhysicsSystem, render::VisualElement, ui::{UIElement, UIElementType, UISystem}
+        audio::AudioSystem,
+        engine_handle::{
+            Command,
+            CommandType,
+            EngineHandle
+        },
+        input::ActionsFrameState,
+        physics::PhysicsSystem,
+        render::VisualElement,
+        ui::{
+            UIElement,
+            UIElementType,
+            UISystem
+        }
     },
     transform::Transform
+};
+
+use client_server_protocol::{
+    RemoteMessage,
+    NetCommand,
+    NetMessage,
 };
 
 use super::{Device, DeviceType};

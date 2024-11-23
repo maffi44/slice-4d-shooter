@@ -1,4 +1,4 @@
-mod matchmaking_server_protocol;
+pub mod matchmaking_server_protocol;
 
 use matchmaking_server_protocol::{
     GameServerMatchmakingServerProtocol,
@@ -15,8 +15,23 @@ use std::{
 };
 use tokio::{
     io::{
-        AsyncBufReadExt, AsyncReadExt, BufReader, Lines
-    }, net::TcpListener, process::{Child, ChildStderr, ChildStdout, Command}, runtime::Runtime, sync::{Mutex, MutexGuard}
+        AsyncBufReadExt,
+        AsyncReadExt,
+        BufReader,
+        Lines
+    },
+    process::{
+        Child,
+        ChildStderr,
+        ChildStdout,
+        Command
+    },
+    sync::{
+        Mutex,
+        MutexGuard
+    },
+    net::TcpListener,
+    runtime::Runtime,
 };
 
 use fyrox_core::futures::{SinkExt, StreamExt};
@@ -107,6 +122,12 @@ async fn handle_client_connection(
                             
                             let finded_server = locked_state.values_mut().find(
                                 |server_info| {
+                                    println!(
+                                        "[{}] server has {} players by matchmaking server, max players per server is {}",
+                                        server_info.server_index,
+                                        server_info.players_amount_by_matchmaking_server,
+                                        config.max_players_per_game_session
+                                    );
                                     server_info.players_amount_by_matchmaking_server < config.max_players_per_game_session
                                 }
                             );
@@ -235,7 +256,7 @@ async fn spawn_game_server(
     async_rutime: Arc<Runtime>,
 ) -> Result<GameServerInfo, Box<dyn std::error::Error>>
 {
-    let mut server_proccess = Command::new("./game-server")
+    let mut server_proccess = Command::new("./game_server")
         .arg(port.to_string())
         .arg("127.0.0.1") //here will be config.matchmaking_server_ip.to_string() 
         .arg(config.matchmaking_server_port_for_servers.to_string())
@@ -342,7 +363,9 @@ async fn handle_server_message(
 
                                     println!("INFO: player is disconnected from the {} server", &game_server_index);
 
-                                    server_info.players_amount_by_game_server -= 1;
+                                    if server_info.players_amount_by_game_server > 0 {
+                                        server_info.players_amount_by_game_server -= 1;
+                                    }
                                 },
                                 None => {
                                     println!(
@@ -407,11 +430,11 @@ async fn async_main(
     let state = Arc::new(Mutex::new(HashMap::new()));
     
     let clients_listener = TcpListener::bind(
-        &("127.0.0.1:".to_string() + &config.matchmaking_server_port_for_clients.to_string())
+        &("0.0.0.0:".to_string() + &config.matchmaking_server_port_for_clients.to_string())
     ).await.unwrap();
 
     let servers_listener = TcpListener::bind(
-        &("127.0.0.1:".to_string() + &config.matchmaking_server_port_for_servers.to_string())
+        &("0.0.0.0:".to_string() + &config.matchmaking_server_port_for_servers.to_string())
     ).await.unwrap();
 
     let cloned_state = state.clone();

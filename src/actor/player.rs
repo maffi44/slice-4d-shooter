@@ -1,6 +1,13 @@
 pub mod player_input_master;
 pub mod player_settings;
 
+use client_server_protocol::{
+    RemoteCommand,
+    RemoteMessage,
+    NetCommand,
+    NetMessage,
+};
+
 use crate::{
     actor::{
         device::{
@@ -22,11 +29,8 @@ use crate::{
             Command,
             CommandType,
             EngineHandle
-        }, net::{
-            NetCommand,
-            NetMessage,
-            RemoteMessage
-        }, physics::{
+        },
+        physics::{
             colliders_container::PhysicalElement,
             kinematic_collider::{KinematicCollider, KinematicColliderMessages},
             PhysicsSystem,
@@ -317,7 +321,7 @@ impl Actor for Player {
                                         command_type: CommandType::NetCommand(
                                             NetCommand::SendDirectNetMessageReliable(
                                                 NetMessage::RemoteCommand(
-                                                    crate::engine::net::RemoteCommand::SpawnPlayersDollActor(
+                                                    RemoteCommand::SpawnPlayersDollActor(
                                                         self.get_transform().to_serializable_transform(),
                                                         self.inner_state.collider.get_collider_radius(),
                                                         self.inner_state.is_alive

@@ -1,0 +1,21 @@
+[package]
+name = "game_server"
+author = "maffi44"
+version = "0.1.2"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "*", features = [ "process", "sync", "time", "rt" ] }
+tokio-tungstenite = "*"
+fyrox-core = "*"
+alkahest = { version = "*", features = [ "derive" ] }
+serde_json = "*"
+matchmaking_server = { path = "../matchmaking_server" }
+matchbox_signaling = "*"
+matchbox_socket = "*"
+
+[lib]
+name = "client_server_protocol"
+path = "src/client_server_protocol.rs"
+doc = false
+crate-type = ["lib"]

@@ -9,7 +9,7 @@ use wgpu::{
     }, util::{
         BufferInitDescriptor,
         DeviceExt,
-    }, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MaintainResult, Sampler, Texture, TextureView, TextureViewDescriptor
+    }, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MaintainResult, PipelineCompilationOptions, Sampler, Texture, TextureView, TextureViewDescriptor
 };
 
 
@@ -627,15 +627,15 @@ impl Renderer {
             layout: Some(&raymarch_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &raymarch_shader,
-                entry_point: "vs_main", // 1.
+                entry_point: "vs_main",
+                compilation_options: PipelineCompilationOptions::default(), 
                 buffers: &[
                     Vertex::desc(),
                 ], // 2.
-                // compilation_options: PipelineCompilationOptions::default(),
             },
-            fragment: Some(wgpu::FragmentState { // 3.
+            fragment: Some(wgpu::FragmentState {
                 module: &raymarch_shader,
-                // compilation_options: PipelineCompilationOptions::default(),
+                compilation_options: PipelineCompilationOptions::default(),
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
@@ -708,11 +708,11 @@ impl Renderer {
                 buffers: &[
                     Vertex::desc(),
                 ], // 2.
-                // compilation_options: PipelineCompilationOptions::default(),
+                compilation_options: PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState { // 3.
                 module: &upscale_shader,
-                // compilation_options: PipelineCompilationOptions::default(),
+                compilation_options: PipelineCompilationOptions::default(),
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,

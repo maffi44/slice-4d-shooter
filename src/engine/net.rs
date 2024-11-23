@@ -1,10 +1,8 @@
-pub mod net_protocols;
-
 use std::time::Duration;
 
 use fyrox_core::futures::{SinkExt, StreamExt};
 use glam::{Vec3, Vec4};
-use net_protocols::{ClientMessage, ServerMessage};
+use client_server_protocol::{ClientMessage, ServerMessage};
 
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
@@ -25,6 +23,19 @@ use matchbox_socket::{
     WebRtcSocket
 };
 
+use matchmaking_server_protocol::{
+    ClientMatchmakingServerProtocol,
+    MatchmakingServerMessage,
+    GameVersion
+};
+
+use client_server_protocol::{
+    RemoteCommand,
+    RemoteMessage,
+    NetCommand,
+    NetMessage,
+};
+
 use crate::{
     actor::{
         player::{player_settings::PlayerSettings, PlayerMessages},
@@ -32,20 +43,13 @@ use crate::{
         players_doll::{
             PlayersDoll,
             PlayersDollMessages},
-        ActorID,
         ActorWrapper,
         CommonActorsMessages,
         Message,
         MessageType,
         SpecificActorMessage
-    }, matchmaking_server_protocol::{
-        ClientMatchmakingServerProtocol,
-        MatchmakingServerMessage,
-        GameVersion
-    }, transform::{
-        SerializableTransform,
-        Transform
-    }
+    },
+    transform::Transform
 };
 
 use super::{
@@ -61,74 +65,6 @@ use alkahest::{alkahest, Serialize};
 
 type Packet = Box<[u8]>;
 
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-#[derive(Clone)]
-pub enum NetMessage {
-    RemoteCommand(RemoteCommand),
-    RemoteDirectMessage(ActorID, RemoteMessage),
-    RemoteBoardCastMessage(RemoteMessage),
-}
-
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-#[derive(Clone)]
-pub enum RemoteCommand {
-    // transform, radius, is_alive status
-    SpawnPlayersDollActor(SerializableTransform, f32, bool),
-    SpawnPlayerDeathExplode([f32;4]),
-    RemoveActor(ActorID),
-}
-
-#[repr(C)]
-#[alkahest(Formula, Serialize, Deserialize)]
-#[derive(Clone)]
-pub enum RemoteMessage {
-    DealDamageAndAddForce(u32, [f32;4], [f32;4]),
-    DieImmediately,
-    DieSlowly,
-    PlayerRespawn([f32;4]),
-    Enable(bool),
-    SetTransform(SerializableTransform),
-    SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
-    SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
-    HoleGunStartCharging,
-    SpawnMachineGunShot([f32;4], bool)
-}
-
-impl NetMessage {
-    pub fn to_packet(self) -> Packet {
-        
-        let size = <NetMessage as Serialize<NetMessage>>::size_hint(&self).unwrap();
-        
-        let mut packet: Vec<u8> = Vec::with_capacity(size.heap);
-
-        alkahest::serialize_to_vec::<NetMessage, NetMessage>(self, &mut packet);
-
-        packet.into_boxed_slice()
-    }
-
-    pub fn from_packet(packet: Packet) -> Option<Self> {
-        if let Ok(message) = alkahest::deserialize::<NetMessage, NetMessage>(&packet) {
-            Some(message)
-        } else {
-            None
-        }
-    }
-}
-
-
-pub enum NetCommand {
-    NetSystemIsConnectedAndGetNewPeerID(u128),
-    PeerConnected(u128),
-    PeerDisconnected(u128),
-
-    SendDirectNetMessageReliable(NetMessage, u128),
-    SendDirectNetMessageUnreliable(NetMessage, u128),
-    SendBoardcastNetMessageReliable(NetMessage),
-    SendBoardcastNetMessageUnreliable(NetMessage),
-}
-
 
 #[derive(Debug)]
 enum ConnectionError {
@@ -141,7 +77,7 @@ enum ConnectionError {
 
 enum ConnectionState {
     ConnectingToMatchmakingServer(Option<JoinHandle<Result<String, ConnectionError>>>),
-    ConnectingToGameServer(Option<WebRtcSocket<MultipleChannels>>),
+    ConnectingToGameServer(u64, Option<WebRtcSocket<MultipleChannels>>),
     ConnectedToGameServer(WebRtcSocket<MultipleChannels>, PeerId, Vec<u128>),
 }
 
@@ -211,10 +147,11 @@ impl NetSystem {
                     )
                 );
             }
-            ConnectionState::ConnectingToGameServer(webrtc_socket) =>
+            ConnectionState::ConnectingToGameServer(delay_counter, webrtc_socket) =>
             {
                 self.connection_state = Some(
                     self.handle_connecting_to_game_server_state(
+                        delay_counter,
                         webrtc_socket,
                         async_runtime,
                         engine_handle,
@@ -257,7 +194,7 @@ impl NetSystem {
                                 {
                                     println!("got the url of game server: {}", game_server_url);
                                     self.connection_data.game_server_url = Some(game_server_url);
-                                    return ConnectionState::ConnectingToGameServer(None);
+                                    return ConnectionState::ConnectingToGameServer(0, None);
                                 }
                                 Err(e) =>
                                 {
@@ -294,18 +231,26 @@ impl NetSystem {
 
     fn handle_connecting_to_game_server_state(
         &mut self,
+        mut delay_counter: u64,
         webrtc_socket: Option<WebRtcSocket<MultipleChannels>>,
         async_runtime: &mut Runtime,
         engine_handle: &mut EngineHandle,
     ) -> ConnectionState
     {
+        if delay_counter > 0
+        {
+            delay_counter -= 1;
+
+            return  ConnectionState::ConnectingToGameServer(delay_counter, webrtc_socket);
+        }
+
         match webrtc_socket {
             Some(mut webrtc_socket) =>
             {
                 if webrtc_socket.any_closed() {
 
                     println!("WARNING: WebRTC connection is closed, trying to reconnect");
-                    return ConnectionState::ConnectingToGameServer(None);
+                    return ConnectionState::ConnectingToGameServer(90, None);
                 }
         
                 if let Ok(vec) = webrtc_socket.try_update_peers() {
@@ -319,7 +264,7 @@ impl NetSystem {
                                         NetCommand::NetSystemIsConnectedAndGetNewPeerID(
                                             webrtc_socket
                                                 .id()
-                                                .expect("ERROR: A registrated peer (game server) connection, but the game client still does not have id in the p2p network")
+                                                .expect("ERROR: registrated peer (game server) connection, but the game client still does not have id in the p2p network")
                                                 .0
                                                 .as_u128()
                                         )
@@ -335,13 +280,13 @@ impl NetSystem {
                             PeerState::Disconnected => {
 
                                 println!("WARNING: connection to game server is lost, trying to reconnect");
-                                return ConnectionState::ConnectingToGameServer(None);
+                                return ConnectionState::ConnectingToGameServer(90, None);
                             }
                         }   
                     }
                 }
 
-                return ConnectionState::ConnectingToGameServer(Some(webrtc_socket));
+                return ConnectionState::ConnectingToGameServer(0, Some(webrtc_socket));
             }
             None =>
             {
@@ -353,11 +298,14 @@ impl NetSystem {
                             .expect("ERROR: Have not game server url during connecting to game server state")
                             .clone()
                     )
+                    .reconnect_attempts(Some(3))
+                    .signaling_keep_alive_interval(Some(Duration::from_secs(10)))
                     .ice_server(RtcIceServerConfig {
                         urls: self.connection_data.bash_and_turn_servers.clone(),
                         username: self.connection_data.turn_server_username.clone(),
                         credential: self.connection_data.turn_server_credential.clone(),
                     })
+                    // .ice_server(RtcIceServerConfig::default())
                     .add_reliable_channel()
                     .add_unreliable_channel()
                     .build();
@@ -374,8 +322,10 @@ impl NetSystem {
                 }
                 #[cfg(not(target_arch = "wasm32"))]
                 async_runtime.spawn(socket_future);
+                
+                println!("INFO: Connecting to the game server");
 
-                return ConnectionState::ConnectingToGameServer(Some(webrtc_socket));
+                return ConnectionState::ConnectingToGameServer(0, Some(webrtc_socket));
             }
         }
     }
@@ -392,7 +342,7 @@ impl NetSystem {
         if webrtc_socket.any_closed() {
 
             println!("WARNING: WebRTC connection is closed, trying to reconnect");
-            return ConnectionState::ConnectingToGameServer(None);
+            return ConnectionState::ConnectingToGameServer(90, None);
         }
 
         if let Ok(vec) = webrtc_socket.try_update_peers() {
@@ -411,7 +361,7 @@ impl NetSystem {
                             });
                         }
                         println!("WARNING: connection to game server is lost, trying to reconnect");
-                        return ConnectionState::ConnectingToGameServer(None);
+                        return ConnectionState::ConnectingToGameServer(90, None);
                     }
                 }   
             }
@@ -990,7 +940,7 @@ async fn get_game_server_url(
             let version = GameVersion::from(VERSION);
 
             let message = ClientMatchmakingServerProtocol::ClientMessage(
-                crate::matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
+                matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
                     version.into()
                 )
             ).to_packet();

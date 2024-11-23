@@ -21,20 +21,35 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        audio::{AudioSystem, Sound}, engine_handle::{
+        audio::{
+            AudioSystem,
+            Sound
+        },
+        engine_handle::{
             Command,
             CommandType,
             EngineHandle,
-        }, input::ActionsFrameState, net::{
-            NetCommand,
-            NetMessage,
-            RemoteMessage
-        }, physics::PhysicsSystem, render::VisualElement, ui::{UIElement, UIElementType, UISystem}, world::static_object::{
+        },
+        input::ActionsFrameState,
+        physics::PhysicsSystem,
+        render::VisualElement,
+        ui::{
+            UIElement,
+            UIElementType,
+            UISystem
+        },
+        world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
     },
     transform::Transform
+};
+
+use client_server_protocol::{
+    RemoteMessage,
+    NetCommand,
+    NetMessage,
 };
 
 pub struct HoleGun {

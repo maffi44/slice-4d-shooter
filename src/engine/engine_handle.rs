@@ -2,13 +2,10 @@ use crate::{
     actor::{
         ActorID, ActorWrapper, Message
     },
-    engine::{
-        effects::EffectType,
-        net::NetCommand,
-    }
+    engine::effects::EffectType,
 };
 
-
+use client_server_protocol::NetCommand;
 
 pub struct Command {
     pub sender: ActorID,

@@ -3,17 +3,21 @@ use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Vec3, Vec4};
 use matchbox_socket::PeerId;
 
+use client_server_protocol::{
+    RemoteCommand,
+    RemoteMessage,
+    NetCommand,
+    NetMessage,
+};
+
 use crate::{
     engine::{
         audio::{AudioSystem, Sound}, engine_handle::{
             Command,
             CommandType,
             EngineHandle
-        }, net::{
-            NetCommand,
-            NetMessage,
-            RemoteMessage
-        }, physics::{
+        },
+        physics::{
             colliders_container::PhysicalElement,
             dynamic_collider::PlayersDollCollider,
             PhysicsSystem

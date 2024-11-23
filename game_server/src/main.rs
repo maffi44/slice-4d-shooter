@@ -1,21 +1,17 @@
-mod actor;
-mod main_loop;
-mod transform;
-mod engine;
+mod client_server_protocol;
 
 use std::{
     collections::HashMap, env, net::{
-        Ipv4Addr, SocketAddr, SocketAddrV4
+        IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4
     }, process::exit, str::FromStr, sync::{
-        Arc,
-        Mutex
+        mpsc::SendError, Arc, Mutex
     }, time::{Duration, Instant}
 };
 use matchmaking_server_protocol::{
     GameServerMatchmakingServerProtocol,
     GameServerMessage
 };
-use engine::net::net_protocols::{ServerMessage, ClientMessage};
+use client_server_protocol::{ServerMessage, ClientMessage};
 
 use fyrox_core::futures::SinkExt;
 use matchbox_signaling::SignalingServer;
@@ -117,18 +113,34 @@ async fn async_main(
             reciever
         ));
 
+    let (player_connected_event_sender, player_connected_event_reciever) =
+        std::sync::mpsc::channel::<PeerId>();
+    
+    let (player_disconnected_event_sender, player_disconnected_event_reciever) =
+        std::sync::mpsc::channel::<PeerId>();
+
     runtime.spawn(run_singnaling_server(
         config.signaling_port,
         config.max_players,
-        config.clone(),
-        // sender_to_matchmaking_server.clone()
+        player_connected_event_sender,
+        player_disconnected_event_sender,
     ));
 
     let (mut webrtc_socket, socket_future) =
         matchbox_socket::WebRtcSocketBuilder::new(
             format!("ws://localhost:{}/", config.signaling_port)
         )
-        .ice_server(RtcIceServerConfig::default())
+        .ice_server(RtcIceServerConfig {
+            urls: vec![
+                "stun:stun.l.google.com:19302".to_string(),
+                "stun:stun1.l.google.com:19302".to_string(),
+                "turn:127.0.0.1:49160".to_string()
+            ],
+            username: Some("homeo".to_string()),
+            credential: Some("homeo".to_string()),
+        })
+        .reconnect_attempts(Some(3))
+        .signaling_keep_alive_interval(Some(Duration::from_secs(3)))
         .add_reliable_channel()
         .add_unreliable_channel()
         .build();
@@ -160,6 +172,8 @@ async fn async_main(
         sender_to_matchmaking_server,
         config,
         matchmaking_server_connect_handle,
+        player_connected_event_reciever,
+        player_disconnected_event_reciever,
     ).await;
 }
 
@@ -168,6 +182,8 @@ async fn game_server_main_loop(
     mut sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>,
     config: GameServerConfig,
     handle_to_matchmaking_server_connect: JoinHandle<()>,
+    player_connected_event_reciever: std::sync::mpsc::Receiver<PeerId>,
+    player_disconnected_event_reciever: std::sync::mpsc::Receiver<PeerId>,
 ) {
     let mut idle_timer: Option<Instant> = None;
 
@@ -183,6 +199,16 @@ async fn game_server_main_loop(
 
     loop {
 
+        if webrtc_socket.any_closed() {
+            println!("ERROR: game server's WebRTC connection unexpectedly closed, server will shut down immediately");
+            shutdown_game_server(
+                sender_to_matchmaking_server,
+                config,
+                handle_to_matchmaking_server_connect,
+                1
+            ).await;
+        }
+
         // shutdown the game server if no players on the server for more than 3 minutes
         if webrtc_socket.connected_peers().count() == 0 {
             if idle_timer.is_some() {
@@ -192,6 +218,7 @@ async fn game_server_main_loop(
                         sender_to_matchmaking_server,
                         config,
                         handle_to_matchmaking_server_connect,
+                        0
                     ).await;
                 }
             } else {
@@ -201,26 +228,50 @@ async fn game_server_main_loop(
             idle_timer = None;
         }
 
-        let updated_players = webrtc_socket.update_peers();
+        // while let Ok(id) = player_connected_event_reciever.try_recv() {
+        //     handle_player_connection(
+        //         &mut sender_to_matchmaking_server,
+        //         &config,
+        //         &mut relaible_channel,
+        //         &mut players_state,
+        //         id
+        //     ).await
+        // }
 
-        for (player_id, player_state) in updated_players {
-            match player_state {
-                Connected => {
+        // while let Ok(id) = player_disconnected_event_reciever.try_recv() {
+        //     handle_player_disconnection(
+        //         &mut sender_to_matchmaking_server,
+        //         &config,
+        //         &mut relaible_channel,
+        //         &mut players_state,
+        //         id
+        //     ).await
+        // }
+
+        let peers_state = webrtc_socket.update_peers();
+
+        for (id, state) in peers_state {
+            match state {
+                Connected =>
+                {
+                    println!("player {} is connected to p2p network", id.0.as_u128());
                     handle_player_connection(
                         &mut sender_to_matchmaking_server,
                         &config,
                         &mut relaible_channel,
                         &mut players_state,
-                        player_id
+                        id
                     ).await
                 }
-                Disconnected => {
+                Disconnected =>
+                {
+                    println!("player {} is disconnected to p2p network", id.0.as_u128());
                     handle_player_disconnection(
                         &mut sender_to_matchmaking_server,
                         &config,
                         &mut relaible_channel,
                         &mut players_state,
-                        player_id
+                        id
                     ).await
                 }
             }
@@ -364,6 +415,7 @@ async fn shutdown_game_server(
     sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>,
     config: GameServerConfig,
     handle_to_matchmaking_server_connect: JoinHandle<()>,
+    exit_code: i32,
 ) -> ! 
 {
     sender_to_matchmaking_server.send(
@@ -382,53 +434,96 @@ async fn shutdown_game_server(
         }
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
-    exit(0)
+    exit(exit_code)
+}
+
+enum PlayerAmountChangedEvent
+{
+    PlayerConnected(PeerId),
+    PlayerDisconnected(PeerId),
 }
 
 
 async fn run_singnaling_server(
     port: u16,
     max_players: u32,
-    config: GameServerConfig,
-    // sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>
+    player_connected_event_sender: std::sync::mpsc::Sender<PeerId>,
+    player_disconnected_event_sender: std::sync::mpsc::Sender<PeerId>,
 ) {
-    let players_amount = Arc::new(Mutex::new(0u32));
 
-    let players_amount_1 = players_amount.clone();
-    let players_amount_2 = players_amount.clone();
+    // let active_connections = Arc::new(Mutex::new(HashMap::new()));
+    // let players_amount = Arc::new(Mutex::new(0u32));
 
-    // let sender_to_matchmaking_server_1 = sender_to_matchmaking_server.clone();
-    // let sender_to_matchmaking_server_2 = sender_to_matchmaking_server.clone();
+    // let players_amount_1 = players_amount.clone();
+    // let players_amount_2 = players_amount.clone();
 
     let server = 
         SignalingServer::client_server_builder(
             SocketAddr::V4(
-                SocketAddrV4::new(Ipv4Addr::LOCALHOST, port)
+                SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)
             )
         )
 
-        .on_connection_request(move |_connection| {
+        .on_connection_request(move |connection| {
+            println!("request connection: {:?}", connection);
 
-            if *players_amount.lock().unwrap() >= max_players {
-                Ok(false)
-            } else {
-                Ok(true)
-            }
+            // let ip = connection.origin.ip();
+            // let port = connection.origin.port();
+
+            // if ip == IpAddr::V4(Ipv4Addr::LOCALHOST) {
+            //     return Ok(true);
+            // }
+
+            // if active_connections.lock().unwrap().contains_key(&(ip, port)) {
+            //     return Ok(true);
+            // } else {
+            //     active_connections.lock().unwrap().insert((ip,port), ());
+            //     return Ok(false);
+            // }
+            Ok(true)
+
+            // if *players_amount.lock().unwrap() >= max_players {
+            //     Ok(false)
+            // } else {
+            //     Ok(true)
+            // }
         })
 
-        .on_client_connected(move |_id| {
-            *players_amount_1.lock().unwrap() += 1;
+        .on_host_connected(
+            |_| println!("host connected")
+        )
+
+        .on_client_connected(move |id| {
+            println!("player connected, id: {}", id.0.as_u128());
+            // *players_amount_1.lock().unwrap() += 1;
+            // match player_connected_event_sender.send(id) {
+            //     Ok(_) => {}
+            //     Err(_) =>
+            //     {
+            //         println!("ERROR: player connection event channel error");
+            //         exit(1);
+            //     }
+            // }
         })
 
-        .on_client_disconnected(move |_id| {
-            *players_amount_2.lock().unwrap() -= 1;
+        .on_client_disconnected(move |id| {
+            println!("player disconnected, id: {}", id.0.as_u128());
+            // *players_amount_2.lock().unwrap() -= 1;
+            // match player_disconnected_event_sender.send(id) {
+            //     Ok(_) => {}
+            //     Err(_) =>
+            //     {
+            //         println!("ERROR: player connection event channel error");
+            //         exit(1);
+            //     }
+            // }
         })
 
         // .on_id_assignment(|(_socket, _id)| {})
         // .on_host_connected(|_id| {})
         // .on_host_disconnected(|_id| {})
-        // .cors()
-        // .trace()
+        .cors()
+        .trace()
 
         .build();
     
