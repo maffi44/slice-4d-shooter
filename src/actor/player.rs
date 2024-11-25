@@ -315,6 +315,8 @@ impl Actor for Player {
 
                             PlayerMessages::NewPeerConnected(peer_id) => {
 
+                                // println!("new peer {} connected, replicate my body", peer_id);
+                                
                                 engine_handle.send_command(
                                     Command {
                                         sender: self.id.unwrap(),

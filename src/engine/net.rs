@@ -340,7 +340,6 @@ impl NetSystem {
     ) -> ConnectionState
     {
         if webrtc_socket.any_closed() {
-
             println!("WARNING: WebRTC connection is closed, trying to reconnect");
             return ConnectionState::ConnectingToGameServer(90, None);
         }
@@ -352,14 +351,6 @@ impl NetSystem {
                         panic!("BUG: Catched host connsection during connected to game server state. This can't be happening in client-server net arch");
                     }
                     PeerState::Disconnected => {
-                        for player_id in players_id.iter() {
-                            engine_handle.send_command(Command {
-                                sender: 0_u128,
-                                command_type: CommandType::NetCommand(
-                                    NetCommand::PeerDisconnected(*player_id)
-                                ),
-                            });
-                        }
                         println!("WARNING: connection to game server is lost, trying to reconnect");
                         return ConnectionState::ConnectingToGameServer(90, None);
                     }
@@ -471,14 +462,12 @@ impl NetSystem {
             {
                 let packet = ClientMessage::BoardcastMessage(message).to_packet();
         
-                for peer in players_id.iter() {
-                    webrtc_socket
-                        .channel_mut(0)
-                        .send(
-                            packet.clone(),
-                            *server_id
-                        );
-                }
+                webrtc_socket
+                    .channel_mut(0)
+                    .send(
+                        packet.clone(),
+                        *server_id
+                    );
             }
             _ => {}
         }
@@ -493,15 +482,13 @@ impl NetSystem {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
                 let packet = ClientMessage::BoardcastMessage(message).to_packet();
-        
-                for peer in players_id.iter() {
-                    webrtc_socket
-                        .channel_mut(1)
-                        .send(
-                            packet.clone(),
-                            *server_id
-                        );
-                }
+
+                webrtc_socket
+                    .channel_mut(1)
+                    .send(
+                        packet.clone(),
+                        *server_id
+                    );
             }
             _ => {}
         }
@@ -517,14 +504,12 @@ impl NetSystem {
             {
                 let packet = ClientMessage::DirectMessage(peer, message).to_packet();
         
-                for peer in players_id.iter() {
-                    webrtc_socket
-                        .channel_mut(0)
-                        .send(
-                            packet.clone(),
-                            *server_id
-                        );
-                }
+                webrtc_socket
+                    .channel_mut(0)
+                    .send(
+                        packet.clone(),
+                        *server_id
+                    );
             }
             _ => {}
         }
@@ -540,14 +525,12 @@ impl NetSystem {
             {
                 let packet = ClientMessage::DirectMessage(peer, message).to_packet();
         
-                for peer in players_id.iter() {
-                    webrtc_socket
-                        .channel_mut(1)
-                        .send(
-                            packet.clone(),
-                            *server_id
-                        );
-                }
+                webrtc_socket
+                    .channel_mut(1)
+                    .send(
+                        packet.clone(),
+                        *server_id
+                    );
             }
             _ => {}
         }
