@@ -35,14 +35,17 @@ struct GameServerConfig {
     matchmaking_server_port: u16,
     max_players: u32,
     game_server_index: u16,
+    ice_urls: Vec<String>,
+    username: Option<String>,
+    credential: Option<String>
 }
 
 
 impl GameServerConfig {
     fn new(args: Vec<String>) -> Result<Self, &'static str> {
-        if args.len() != 5 {
+        if args.len() < 5 {
             return Err(
-                "Usage: game_server <signaling_port> <matchmaking_server_ip> <matchmaking_server_port>"
+                "Usage: game_server <signaling_port> <matchmaking_server_ip> <matchmaking_server_port> <ice_servers_urls> <turn_server_username> <turn_server_credential>"
             );
         }
 
@@ -61,12 +64,60 @@ impl GameServerConfig {
             .parse()
             .map_err(|_| "Invalid matchmaking server port")?;
 
+        let ice_urls: Vec<String> = if args.len() > 5
+        {
+            args[5]
+                .split("|")
+                .into_iter()
+                .map(|s|s.to_string())
+                .collect()
+        }
+        else
+        {
+            Vec::with_capacity(0)
+        };
+
+        let username = if args.len() > 6
+        {
+            if args[6] == ""
+            {
+                None
+            }
+            else
+            {
+                Some(args[6].clone())
+            }
+        }
+        else
+        {
+            None
+        };
+
+        let credential = if args.len() > 7
+        {
+            if args[7] == ""
+            {
+                None
+            }
+            else
+            {
+                Some(args[7].clone())
+            }
+        }
+        else
+        {
+            None
+        };
+
         Ok(GameServerConfig {
             signaling_port,
             matchmaking_server_ip,
             matchmaking_server_port,
             max_players,
-            game_server_index: signaling_port
+            game_server_index: signaling_port,
+            ice_urls,
+            username,
+            credential
         })
     }
 }
@@ -131,13 +182,9 @@ async fn async_main(
             format!("ws://localhost:{}/", config.signaling_port)
         )
         .ice_server(RtcIceServerConfig {
-            urls: vec![
-                "stun:stun.l.google.com:19302".to_string(),
-                "stun:stun1.l.google.com:19302".to_string(),
-                "turn:127.0.0.1:49160".to_string()
-            ],
-            username: Some("homeo".to_string()),
-            credential: Some("homeo".to_string()),
+            urls: config.ice_urls.clone(),
+            username: config.username.clone(),
+            credential: config.credential.clone(),
         })
         .reconnect_attempts(Some(3))
         .signaling_keep_alive_interval(Some(Duration::from_secs(3)))

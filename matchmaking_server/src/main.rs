@@ -11,7 +11,13 @@ use matchmaking_server_protocol::{
 
 use core::panic;
 use std::{
-    fs::File, io::Read, net::Ipv4Addr, process::Stdio, str::FromStr, sync::Arc, time::Duration
+    fs::File,
+    io::Read,
+    net::Ipv4Addr,
+    process::Stdio,
+    str::FromStr,
+    sync::Arc,
+    time::Duration
 };
 use tokio::{
     io::{
@@ -35,7 +41,10 @@ use tokio::{
 };
 
 use fyrox_core::futures::{SinkExt, StreamExt};
-use serde_json::Value;
+use serde_json::{
+    Value,
+    Map,
+};
 use tokio_tungstenite::accept_async;
 use std::collections::HashMap;
 
@@ -51,11 +60,87 @@ struct Config
     pub game_severs_public_ip: Ipv4Addr,
     pub game_severs_min_port: u16,
     pub game_severs_max_port: u16,
+    pub game_servers_ice_config: GameServersIceConfig,
 
     pub max_game_sessions: u32,
 
     pub max_players_per_game_session: u32,
 }
+
+trait ToOption<T> {
+    fn none_if_zero(self) -> Option<T>;
+}
+
+impl ToOption<String> for String {
+    fn none_if_zero(self) -> Option<String>
+    {
+        if self == "" {return None;}
+
+        Some(self)
+    }
+}
+
+#[derive(Clone)]
+struct GameServersIceConfig {
+    urls: String,
+    username: String,
+    credential: String,
+}
+
+impl GameServersIceConfig {
+    pub fn parse_json(
+        object: &Map<String, Value>
+    ) -> Self
+    {
+        let urls = {
+            object
+                .get("urls")
+                .expect("ERROR: Have not urls in game_severs_ice_config in matchmaking-server-config.json")
+                .as_array()
+                .expect("ERROR: urls is not array value in game_severs_ice_config in matchmaking-server-config.json")
+                .into_iter()
+                .map(|s| {
+                    s
+                        .as_str()
+                        .expect("ERROR: urls members is not string value in game_severs_ice_config in matchmaking-server-config.json")
+                        .to_string() + "|"
+                })
+                .collect::<String>()
+                // .none_if_zero()
+        };
+
+        let username = {
+            object
+                .get("username")
+                .expect("ERROR: Have not username in game_severs_ice_config in matchmaking-server-config.json")
+                .as_str()
+                .expect("ERROR: username is not string value in game_severs_ice_config in matchmaking-server-config.json")
+                .to_string()
+                // .none_if_zero()
+        };
+        
+        let credential = {
+            object
+                .get("credential")
+                .expect("ERROR: Have not credential in game_severs_ice_config in matchmaking-server-config.json")
+                .as_str()
+                .expect("ERROR: credential is not string value in game_severs_ice_config in matchmaking-server-config.json")
+                .to_string()
+                // .none_if_zero()
+        };
+
+        GameServersIceConfig {
+            urls,
+            username,
+            credential,
+        }        
+    }
+}
+
+
+
+
+
 
 #[derive(Clone)]
 struct GameServerInfo {
@@ -261,6 +346,9 @@ async fn spawn_game_server(
         .arg("127.0.0.1") //here will be config.matchmaking_server_ip.to_string() 
         .arg(config.matchmaking_server_port_for_servers.to_string())
         .arg(config.max_players_per_game_session.to_string())
+        .arg(config.game_servers_ice_config.urls.clone())
+        .arg(config.game_servers_ice_config.username.clone())
+        .arg(config.game_servers_ice_config.credential.clone())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;
@@ -617,6 +705,8 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
 
     let current_game_version = GameVersion::from(current_game_version);
 
+    let game_servers_ice_config = GameServersIceConfig::parse_json(object);
+
     Config {
         matchmaking_server_ip,
         current_game_version,
@@ -625,6 +715,7 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         game_severs_public_ip,
         game_severs_min_port,
         game_severs_max_port,
+        game_servers_ice_config,
         max_game_sessions,
         max_players_per_game_session,  
     }
