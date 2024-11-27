@@ -28,7 +28,7 @@ use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct GameServerConfig {
     signaling_port: u16,
     matchmaking_server_ip: Ipv4Addr,
@@ -69,7 +69,7 @@ impl GameServerConfig {
             args[5]
                 .split("|")
                 .into_iter()
-                .map(|s|s.to_string())
+                .filter_map(|s|if s != "" {Some(s.to_string())} else {None})
                 .collect()
         }
         else
@@ -109,7 +109,7 @@ impl GameServerConfig {
             None
         };
 
-        Ok(GameServerConfig {
+        let config = GameServerConfig {
             signaling_port,
             matchmaking_server_ip,
             matchmaking_server_port,
@@ -118,7 +118,11 @@ impl GameServerConfig {
             ice_urls,
             username,
             credential
-        })
+        };
+
+        println!("Game server config is: {:?}", config);
+
+        Ok(config)
     }
 }
 

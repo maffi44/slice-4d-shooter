@@ -30,7 +30,7 @@ pub struct PlayersDollCollider {
 // }
 
 impl Component for PlayersDollCollider {
-    fn init(&mut self, id: ActorID) {
+    fn set_id(&mut self, id: ActorID) {
         self.actors_id = Some(id);
     }
 

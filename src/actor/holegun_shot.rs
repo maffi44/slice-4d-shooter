@@ -141,7 +141,7 @@ impl Actor for HoleGunShot {
         self.id
     }
 
-    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
         if let Some(prev_id) = self.id {
             engine_handle.send_boardcast_message(Message {
                 from: prev_id,
@@ -164,11 +164,11 @@ impl Actor for HoleGunShot {
         &mut self.transform
     }
 
-    fn init(&mut self, id: ActorID) {
+    fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
 
         for static_object in self.static_objects.iter_mut() {
-            static_object.collider.init(id);
+            static_object.collider.set_id(id);
         }
     }
 

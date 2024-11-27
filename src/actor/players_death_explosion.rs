@@ -75,7 +75,7 @@ impl Actor for PlayersDeathExplosion {
         self.id
     }
 
-    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
         self.id = Some(id);
     }
 
@@ -87,7 +87,7 @@ impl Actor for PlayersDeathExplosion {
         &mut self.transform
     }
     
-    fn init(&mut self, id: ActorID) {
+    fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
     }
 

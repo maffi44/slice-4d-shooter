@@ -57,9 +57,9 @@ pub trait Actor {
 
     fn get_id(&self) -> Option<ActorID>;
 
-    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle);
+    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle);
     
-    fn init(&mut self, id: ActorID);
+    fn set_id(&mut self, id: ActorID);
 }
 
 pub enum ActorWrapper {
@@ -308,62 +308,62 @@ impl Actor for ActorWrapper {
         }
     }
 
-    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
         match self {
             ActorWrapper::Player(actor) => {
-                actor.set_id(id, engine_handle);
+                actor.change_id(id, engine_handle);
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.set_id(id, engine_handle);
+                actor.change_id(id, engine_handle);
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.set_id(id, engine_handle);
+                actor.change_id(id, engine_handle);
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.set_id(id, engine_handle);
+                actor.change_id(id, engine_handle);
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.set_id(id, engine_handle);
+                actor.change_id(id, engine_handle);
             },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.set_id(id, engine_handle);
+                actor.change_id(id, engine_handle);
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.set_id(id, engine_handle);
+                actor.change_id(id, engine_handle);
             },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.set_id(id, engine_handle);
+                actor.change_id(id, engine_handle);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
 
-    fn init(&mut self, id: ActorID) {
+    fn set_id(&mut self, id: ActorID) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.init(id);
+                actor.set_id(id);
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.init(id);
+                actor.set_id(id);
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.init(id);
+                actor.set_id(id);
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.init(id);
+                actor.set_id(id);
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.init(id);
+                actor.set_id(id);
             },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.init(id);
+                actor.set_id(id);
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.init(id);
+                actor.set_id(id);
             },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.init(id);
+                actor.set_id(id);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -373,7 +373,7 @@ impl Actor for ActorWrapper {
 
 
 pub trait Component {
-    fn init(&mut self, id: ActorID);
+    fn set_id(&mut self, id: ActorID);
 
     fn get_id(&self) -> Option<ActorID>;
 }

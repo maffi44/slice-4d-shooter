@@ -18,15 +18,13 @@ use crate::{
             EngineHandle
         },
         physics::{
-            colliders_container::PhysicalElement,
-            dynamic_collider::PlayersDollCollider,
-            PhysicsSystem
+            colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, PhysicsSystem
         }, render::VisualElement, ui::UISystem, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
     },
-    transform::Transform
+    transform::{self, Transform}
 };
 
 use super::{
@@ -35,7 +33,7 @@ use super::{
     holegun_shot::HoleGunShot,
     machinegun_shot::MachinegunShot,
     player::{
-        PlayerMessages, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
+        player_settings::PlayerSettings, PlayerMessages, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
     },
     players_death_explosion::PlayersDeathExplosion,
     shooting_impact::ShootingImpact,
@@ -49,11 +47,52 @@ use super::{
     SpecificActorMessage
 };
 
+#[derive(Clone)]
+pub struct PlayerDollInputState
+{
+    pub move_forward: bool,
+    pub move_backward: bool,
+    pub move_right: bool,
+    pub move_left: bool,
+    pub will_jump: bool,
+    pub current_w_level: u32,
+}
+
+
+impl PlayerDollInputState {
+    pub fn serialize(self) -> (bool,bool,bool,bool,bool,u32)
+    {
+        (
+            self.move_forward,
+            self.move_backward,
+            self.move_right,
+            self.move_left,
+            self.will_jump,
+            self.current_w_level
+        )
+    }
+
+    pub fn deserialize(input: (bool,bool,bool,bool,bool,u32)) -> Self
+    {
+        PlayerDollInputState
+        {
+            move_forward: input.0,
+            move_backward: input.1,
+            move_right: input.2,
+            move_left: input.3,
+            will_jump: input.4,
+            current_w_level: input.5,
+        }
+    }
+}
+
 
 const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
 pub struct PlayersDoll {
     id: Option<ActorID>,
     transform: Transform,
+    target_transform: Transform,
+    input_state: PlayerDollInputState,
     // masters_peer_id: PeerId,
     weapon_shooting_point: Vec4,
     is_alive: bool,
@@ -61,24 +100,29 @@ pub struct PlayersDoll {
     volume_area: Vec<VolumeArea>,
     charging_time: f32,
 
-    dynamic_colliders: Vec<PlayersDollCollider>,
+    interpolating_model: Vec<PlayersDollCollider>,
+    interpolating_model_target: KinematicCollider,
     is_enable: bool,
 
     need_to_die_slowly: bool,
     die_slowly_timer: f32,
 
-    holegun_charge_sound: Option<Handle<SoundSource>>
+    holegun_charge_sound: Option<Handle<SoundSource>>,
 
-    // test_sound: Handle<SoundSource>
+    player_settings: PlayerSettings,
+    w_levels_of_map: Vec<f32>,
 }
 
 pub enum PlayersDollMessages{
+    SetInterploatedModelTargetState(Transform, PlayerDollInputState, Vec4),
     SpawnHoleGunShotActor(Vec4, f32, Vec3, f32),
     SpawHoleGunMissActor(Vec4, f32, Vec3, f32),
     SpawnMachineGunShot(Vec4, bool),
     HoleGunStartCharging,
-    Respawn(Vec4),
+    Respawn(Transform, PlayerDollInputState, Vec4),
 }
+
+
 
 const VISUAL_BEAM_MULT: f32 = 2.0;
 const VISUAL_FIRE_SHPERE_MULT: f32 = 2.4;
@@ -90,20 +134,9 @@ impl PlayersDoll {
         transform: Transform,
         is_alive: bool,
         audio_system: &mut AudioSystem,
+        player_settings: PlayerSettings,
+        w_levels_of_map: Vec<f32>,
     ) -> Self {
-
-        // let test_sound = audio_system.spawn_spatial_sound(
-        //     Sound::RotatingAroundW,
-        //     0.6,
-        //     1.0,
-        //     true,
-        //     false,
-        //     fyrox_sound::source::Status::Playing,
-        //     transform.get_position(),
-        //     2.0,
-        //     4.0,
-        //     50.0
-        // );
 
         let weapon_offset = {
             Vec4::new(
@@ -114,35 +147,57 @@ impl PlayersDoll {
             ).normalize() * (player_sphere_radius * 1.35)
         };
 
-        let dynamic_collider = PlayersDollCollider {
-            position: Vec4::ZERO,
-            radius: player_sphere_radius,
-            friction: 0.0,
-            bounce_rate: 0.0,
-            actors_id: Some(id),
-            weapon_offset,
+        let interpolated_model = {
+            let mut vec = Vec::with_capacity(1);
+
+            vec.push(PlayersDollCollider {
+                position: Vec4::ZERO,
+                radius: player_sphere_radius,
+                friction: 0.0,
+                bounce_rate: 0.0,
+                actors_id: Some(id),
+                weapon_offset,
+            });
+            vec
         };
 
-        let mut dynamic_colliders = Vec::with_capacity(1);
+        let mut interpolated_model_target = KinematicCollider::new(
+            player_settings.max_speed,
+            player_settings.max_accel,
+            player_sphere_radius,
+            player_settings.friction_on_air
+        );
 
-        dynamic_colliders.push(dynamic_collider);
+        interpolated_model_target.set_id(id);
 
         let weapon_shooting_point = weapon_offset + Vec4::NEG_Z * (player_sphere_radius * 0.49);
 
+        let input_state = PlayerDollInputState {
+            move_forward: false,
+            move_backward: false,
+            move_right: false,
+            move_left: false,
+            will_jump: false,
+            current_w_level: 0u32,
+        };
+
         PlayersDoll {
-            // masters_peer_id,
+            input_state,
             weapon_shooting_point,
             id: Some(id),
+            target_transform: transform.clone(),
             transform,
             charging_time: 0.0,
             volume_area: Vec::with_capacity(1),
             is_alive,
             is_enable: is_alive,
-            dynamic_colliders,
+            interpolating_model: interpolated_model,
+            interpolating_model_target: interpolated_model_target,
             need_to_die_slowly: false,
             die_slowly_timer: 0.0,
-            holegun_charge_sound: None
-            // test_sound,
+            holegun_charge_sound: None,
+            player_settings,
+            w_levels_of_map,
         }
     }
 
@@ -222,27 +277,29 @@ impl PlayersDoll {
 
     fn respawn(
         &mut self,
-        spawn_position: Vec4,
+        transform: Transform,
+        input_state: PlayerDollInputState,
+        velocity: Vec4,
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
-        // audio_system.spawn_spatial_sound(
-        //     Sound::PlayerRespawned,
-        //     1.0,
-        //     1.0,
-        //     false,
-        //     true,
-        //     fyrox_sound::source::Status::Playing,
-        //     spawn_position,
-        //     1.5,
-        //     1.0,
-        //     50.0
-        // );
+        audio_system.spawn_spatial_sound(
+            Sound::PlayerRespawned,
+            1.0,
+            1.0,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing,
+            transform.get_position(),
+            1.5,
+            1.0,
+            50.0
+        );
 
-        let collider_radius = self.dynamic_colliders[0].radius;
+        let collider_radius = self.interpolating_model[0].radius;
 
-        let hits = physics_system.sphere_cast_on_dynamic_colliders(spawn_position, collider_radius);
+        let hits = physics_system.sphere_cast_on_dynamic_colliders(transform.get_position(), collider_radius);
 
         for hit in hits {
             engine_handle.send_direct_message(
@@ -260,7 +317,87 @@ impl PlayersDoll {
 
         self.is_alive = true;
         self.is_enable = true;
-        self.transform = Transform::from_position(spawn_position);
+        self.transform = transform.clone();
+        self.target_transform = transform;
+        self.input_state = input_state;
+        self.interpolating_model_target.current_velocity = velocity;
+    }
+
+
+    fn extrapolate_interpolatating_model_target(&mut self)
+    {
+        let mut movement_vec = Vec4::ZERO;
+        
+        if self.input_state.move_forward { 
+            movement_vec += Vec4::NEG_Z;
+        }
+
+        if self.input_state.move_backward {
+            movement_vec += Vec4::Z;
+        }
+
+        if self.input_state.move_right {
+            movement_vec += Vec4::X;
+        }
+
+        if self.input_state.move_left {
+            movement_vec += Vec4::NEG_X;
+        }
+
+        if self.input_state.will_jump {
+
+            if self.interpolating_model_target.is_on_y_ground {
+                self.interpolating_model_target.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+
+                self.input_state.will_jump = false;
+            }
+        }
+
+        movement_vec = self.target_transform.get_rotation().inverse() * movement_vec;
+
+        movement_vec.y = 0_f32;
+        movement_vec.w = 0_f32;
+
+        if let Some(vec) = movement_vec.try_normalize() {
+            movement_vec = vec;
+        }
+
+        if self.interpolating_model_target.is_on_y_ground {
+            self.interpolating_model_target.set_wish_direction(
+                movement_vec,
+                1.0
+            );
+        } else {
+            self.interpolating_model_target.set_wish_direction(
+                movement_vec,
+                self.player_settings.air_speed_mult
+            );
+        }
+
+        self.interpolating_model_target.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
+
+        let target_w_pos = self.w_levels_of_map
+            .get(self.input_state.current_w_level as usize)
+            .expect("PlayerDoll's carrent_w_level is not exist in w_levels_of_map")
+            .clone();
+
+        let w_dif = target_w_pos - self.target_transform.get_position().w;
+
+        self.interpolating_model_target.current_velocity.w +=
+            self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
+
+        self.interpolating_model_target.current_velocity.w *=
+            (w_dif * 5.0_f32)
+            .abs()
+                .clamp(0.0, 1.0);
+    }
+
+
+    fn interpolate_model(&mut self, delta: f32)
+    {
+        let dist = self.target_transform.get_position() - self.transform.get_position();
+
+        self.transform.set_position(self.transform.get_position() + dist * (10_f32*delta));
     }
 }
 
@@ -282,7 +419,7 @@ impl Actor for PlayersDoll {
         match message {
             MessageType::CommonActorsMessages(message) => {
                 match message {
-                    &CommonActorsMessages::SetTransform(transform) => {
+                    CommonActorsMessages::SetTransform(transform) => {
                         self.transform = transform.clone();
                     },
                     CommonActorsMessages::Enable(switch) => {
@@ -371,6 +508,19 @@ impl Actor for PlayersDoll {
                     },
                     SpecificActorMessage::PlayersDollMessages(message) => {
                         match message {
+                            PlayersDollMessages::SetInterploatedModelTargetState(
+                                transform,
+                                input,
+                                velocity
+                            ) => {
+
+                                self.transform.set_rotation(transform.get_rotation());
+                                self.target_transform = transform.clone();
+                                self.input_state = input.clone();
+                                self.interpolating_model_target.current_velocity = *velocity;
+                                self.interpolating_model_target.forces.clear();
+
+                            }
                             PlayersDollMessages::HoleGunStartCharging => {
 
                                 if self.volume_area.is_empty() {
@@ -400,9 +550,15 @@ impl Actor for PlayersDoll {
 
                                 }
                             }
-                            PlayersDollMessages::Respawn(spawn_position) => {
+                            PlayersDollMessages::Respawn(
+                                transform,
+                                input_state,
+                                velocity
+                            ) => {
                                 self.respawn(
-                                    *spawn_position,
+                                    transform.clone(),
+                                    input_state.clone(),
+                                    velocity.clone(),
                                     physics_system,
                                     audio_system,
                                     engine_handle
@@ -566,12 +722,12 @@ impl Actor for PlayersDoll {
     }
 
 
-    fn init(&mut self, id: ActorID) {
+    fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
 
-        for collider in self.dynamic_colliders.iter_mut() {
-            collider.init(id);
-        }
+        self.interpolating_model[0].set_id(id);
+        self.interpolating_model_target.set_id(id);
+
     }
 
 
@@ -579,7 +735,7 @@ impl Actor for PlayersDoll {
         self.id
     }
 
-    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
         
         if let Some(prev_id) = self.id {
             engine_handle.send_boardcast_message(Message {
@@ -592,7 +748,7 @@ impl Actor for PlayersDoll {
             });
         }
 
-        self.id = Some(id);
+        self.set_id(id);
     }
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
@@ -600,9 +756,9 @@ impl Actor for PlayersDoll {
             Some(
                 PhysicalElement {
                     transform: &mut self.transform,
-                    kinematic_collider: None,
+                    kinematic_collider: Some((&mut self.interpolating_model_target, Some(&mut self.target_transform))),
                     static_colliders: None,
-                    dynamic_colliders: Some(&mut self.dynamic_colliders),
+                    dynamic_colliders: Some(&mut self.interpolating_model),
                     static_objects: None,
                     area: None,
                 }
@@ -620,7 +776,7 @@ impl Actor for PlayersDoll {
                     static_objects: None,
                     coloring_areas: None,
                     volume_areas: Some(&self.volume_area),
-                    player: Some(&self.dynamic_colliders[0])
+                    player: Some(&self.interpolating_model[0])
                 }
             )
         } else {
@@ -658,10 +814,15 @@ impl Actor for PlayersDoll {
                         area.translation = self.transform.get_rotation().inverse() * self.weapon_shooting_point;
                     }
                     _ => {
-                        panic!("charging volume area in PLayersDoll is not SphericalVolumeArea")
+                        panic!("charging volume area in PlayersDoll is not SphericalVolumeArea")
                     }
                 }
-            } 
+            }
+
+            self.extrapolate_interpolatating_model_target();
+
+            self.interpolate_model(delta);
+
         } else {
             if self.need_to_die_slowly {
                 self.die_slowly_timer += delta;
@@ -674,9 +835,7 @@ impl Actor for PlayersDoll {
             }
         }
 
-        // audio_system.sound_set_position(
-        //     self.test_sound,
-        //     self.transform.get_position()
-        // );
     }
 }
+
+

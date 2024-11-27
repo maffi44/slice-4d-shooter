@@ -12,14 +12,7 @@ use crate::{
     actor::{
         device::{
             holegun::HoleGun, Device, DeviceType
-        },
-        Actor,
-        ActorID,
-        CommonActorsMessages,
-        Component,
-        Message,
-        MessageType,
-        SpecificActorMessage
+        }, players_doll::PlayerDollInputState, Actor, ActorID, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage
     }, engine::{
         audio::{
             AudioSystem,
@@ -31,9 +24,7 @@ use crate::{
             EngineHandle
         },
         physics::{
-            colliders_container::PhysicalElement,
-            kinematic_collider::{KinematicCollider, KinematicColliderMessages},
-            PhysicsSystem,
+            colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::{KinematicCollider, KinematicColliderMessages}, PhysicsSystem
         },
         render::VisualElement,
         ui::{
@@ -63,6 +54,7 @@ use super::{device::machinegun::MachineGun, players_death_explosion::PlayersDeat
 
 pub struct PlayerInnerState {
     pub collider: KinematicCollider,
+    pub collider_for_others: Vec<PlayersDollCollider>,
     pub transform: Transform,
     pub hp: i32,
     pub is_alive: bool,
@@ -80,6 +72,20 @@ pub struct PlayerInnerState {
 impl PlayerInnerState {
     pub fn new(transform: Transform, settings: &PlayerSettings, is_alive: bool, is_enable: bool) -> Self {
 
+        let collider_for_others = {
+            let mut vec = Vec::with_capacity(1);
+            
+            vec.push(PlayersDollCollider {
+                position: Vec4::ZERO,
+                radius: settings.collider_radius,
+                friction: 0_f32,
+                bounce_rate: 0_f32,
+                actors_id: None,
+                weapon_offset: Vec4::ZERO,
+            });
+            vec
+        };
+
         PlayerInnerState {
             collider: KinematicCollider::new(
                 settings.max_speed,
@@ -88,6 +94,7 @@ impl PlayerInnerState {
                 settings.friction_on_air,
                 // settings.friction_on_ground,
             ),
+            collider_for_others,
             transform,
             hp: 0,
             is_alive,
@@ -355,10 +362,11 @@ impl Actor for Player {
     }
 
 
-    fn init(&mut self, id: ActorID) {
+    fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
 
-        self.inner_state.collider.init(id);
+        self.inner_state.collider.set_id(id);
+        self.inner_state.collider_for_others[0].set_id(id);
     }
 
 
@@ -366,7 +374,7 @@ impl Actor for Player {
         self.id
     }
 
-    fn set_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
         
         if let Some(prev_id) = self.id {
             engine_handle.send_boardcast_message(Message {
@@ -379,18 +387,16 @@ impl Actor for Player {
             });
         }
 
-        self.id = Some(id);
-
-        self.inner_state.collider.init(id);
+        self.set_id(id);
     }
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
         if self.inner_state.is_enable {
             let collider_container = PhysicalElement {
                 transform: &mut self.inner_state.transform,
-                kinematic_collider: Some(&mut self.inner_state.collider),
+                kinematic_collider: Some((&mut self.inner_state.collider, None)),
                 static_colliders: None,
-                dynamic_colliders: None,
+                dynamic_colliders: Some(&mut self.inner_state.collider_for_others),
                 static_objects: None,
                 area: None,
             };
@@ -480,6 +486,17 @@ impl Actor for Player {
         self.screen_effects.getting_damage_screen_effect = self.screen_effects.getting_damage_screen_effect.clamp(0.0, 1.0);
 
         self.make_hud_transparency_as_death_screen_effect(ui_system);
+
+        
+        let mut player_doll_input_state = PlayerDollInputState {
+            move_forward: false,
+            move_backward: false,
+            move_right: false,
+            move_left: false,
+            will_jump: false,
+            current_w_level: self.current_w_level as u32,
+        };
+
 
         if self.inner_state.is_alive {
 
@@ -867,18 +884,26 @@ impl Actor for Player {
     
             if input.move_forward.is_action_pressed() {
                 movement_vec += Vec4::NEG_Z;
+
+                player_doll_input_state.move_forward = true;
             }
     
             if input.move_backward.is_action_pressed() {
                 movement_vec += Vec4::Z;
+
+                player_doll_input_state.move_backward = true;
             }
     
             if input.move_right.is_action_pressed() {
                 movement_vec += Vec4::X;
+
+                player_doll_input_state.move_right = true;
             }
     
             if input.move_left.is_action_pressed() {
                 movement_vec += Vec4::NEG_X;
+                
+                player_doll_input_state.move_left = true;
             }
     
             if let Some(vec) = movement_vec.try_normalize() {
@@ -887,12 +912,16 @@ impl Actor for Player {
     
             if input.jump.is_action_just_pressed() {
 
+                player_doll_input_state.will_jump = true;
+
                 self.jumped_to_y_on_current_action = false;
     
                 if self.inner_state.collider.is_on_y_ground {
                     self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
 
                     self.jumped_to_y_on_current_action = true;
+                    
+                    player_doll_input_state.will_jump = false;
                 }
             }
 
@@ -902,8 +931,12 @@ impl Actor for Player {
                         self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
 
                         self.jumped_to_y_on_current_action = true;
+                        
+                        player_doll_input_state.will_jump = false;
                     }
                 }
+            } else {
+                player_doll_input_state.will_jump = false;
             }
 
             self.w_jump_reloading_time += delta;
@@ -914,6 +947,8 @@ impl Actor for Player {
 
                 if next_w_level < self.w_levels_of_map.len() {
                     self.current_w_level = next_w_level;
+
+                    player_doll_input_state.current_w_level = next_w_level as u32;
                 }
             }
 
@@ -925,6 +960,8 @@ impl Actor for Player {
     
                     if next_w_level < self.w_levels_of_map.len() {
                         self.current_w_level = next_w_level;
+
+                        player_doll_input_state.current_w_level = next_w_level as u32;
                     }
                 }
             }
@@ -1203,20 +1240,31 @@ impl Actor for Player {
             self.get_transform().get_direction_for_audio_system()
         );
 
+        let remote_velocity = {
+            let mut v = self.inner_state.collider.current_velocity;
+
+            for force in self.inner_state.collider.forces.iter() {
+                v += *force;
+            }
+
+            v.to_array()
+        };
+
         engine_handle.send_command(Command{
             sender: my_id,
             command_type: CommandType::NetCommand(
                 NetCommand::SendBoardcastNetMessageUnreliable(
                     NetMessage::RemoteDirectMessage(
                         my_id,
-                        RemoteMessage::SetTransform(
-                            self.inner_state.transform.to_serializable_transform()
+                        RemoteMessage::SetPlayerDollTarget(
+                            self.inner_state.transform.to_serializable_transform(),
+                            player_doll_input_state.serialize(),
+                            remote_velocity
                         )
                     )
                 )
             )
         });
-
     }
 }
 
@@ -1888,6 +1936,15 @@ impl Player {
             )
         }
 
+        let player_doll_input_state = PlayerDollInputState {
+            move_forward: false,
+            move_backward: false,
+            move_right: false,
+            move_left: false,
+            will_jump: false,
+            current_w_level: self.current_w_level as u32,
+        };
+
         engine_handle.send_command(
             Command {
                 sender: self.get_id().expect("Player have not ActorID"),
@@ -1895,7 +1952,11 @@ impl Player {
                     NetCommand::SendBoardcastNetMessageReliable(
                         NetMessage::RemoteDirectMessage(
                             self.get_id().expect("Player have not ActorID"),
-                            RemoteMessage::PlayerRespawn(spawn.spawn_position.to_array())
+                            RemoteMessage::PlayerRespawn(
+                                self.inner_state.transform.to_serializable_transform(),
+                                player_doll_input_state.serialize(),
+                                Vec4::ZERO.to_array()
+                            )
                         )
                     )
                 )

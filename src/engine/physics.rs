@@ -7,7 +7,7 @@ pub mod area;
 pub mod common_physical_functions;
 
 use crate::{
-    actor::{Actor, Component}, engine::{
+    actor::{Actor, ActorID, Component}, engine::{
         engine_handle::EngineHandle,
         world::World,
     }, transform::Transform
@@ -135,8 +135,13 @@ impl PhysicsSystem {
                     }
                 }
         
-                if let Some(kinematic_collider) = physical_element.kinematic_collider {
-                    kinematic_colliders.push((transform, kinematic_collider));
+                if let Some((kinematic_collider, specific_transform)) = physical_element.kinematic_collider {
+
+                    if specific_transform.is_some() {
+                        kinematic_colliders.push((specific_transform.unwrap(), kinematic_collider));
+                    } else {
+                        kinematic_colliders.push((transform, kinematic_collider));
+                    }
                 }
 
             }
@@ -170,7 +175,7 @@ impl PhysicsSystem {
 
 
     
-    pub fn ray_cast(&self, from: Vec4, direction: Vec4, distance: f32) -> Option<Hit> {
+    pub fn ray_cast(&self, from: Vec4, direction: Vec4, distance: f32, excluded_id: Option<ActorID>) -> Option<Hit> {
         
         let mut i = 0_usize;
 
@@ -188,7 +193,7 @@ impl PhysicsSystem {
                 break;
             }
 
-            let dist = get_dist(pos, &self.physics_state);
+            let dist = get_dist(pos, &self.physics_state, excluded_id);
 
             if dist < THRESHOLD {
 
@@ -197,7 +202,7 @@ impl PhysicsSystem {
                 return Some(
                         Hit {
                         hit_point: pos,
-                        hit_normal: get_normal(pos, &self.physics_state),
+                        hit_normal: get_normal(pos, &self.physics_state, excluded_id),
                         hited_actors_id,
                     }
                 );

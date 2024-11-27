@@ -239,13 +239,13 @@ impl World {
 
     fn change_actor_id(&mut self, old_id: ActorID, new_id: ActorID, engine_handle: &mut EngineHandle) {
         if let Some(mut actor) = self.remove_actor_from_world(old_id) {
-            actor.set_id(new_id, engine_handle);
+            actor.change_id(new_id, engine_handle);
 
             if let Some(mut swaped_actor) = self.actors.insert(new_id, actor) {
                 
                 let new_id_for_swaped_actor = self.get_new_random_uniq_id();
 
-                swaped_actor.set_id(new_id_for_swaped_actor, engine_handle);
+                swaped_actor.change_id(new_id_for_swaped_actor, engine_handle);
 
                 self.actors.insert(new_id_for_swaped_actor, swaped_actor);
             }
@@ -259,7 +259,7 @@ impl World {
             None => {
                 let new_id = self.get_new_random_uniq_id();
 
-                actor.init(new_id);
+                actor.set_id(new_id);
 
                 new_id
             },
@@ -269,7 +269,7 @@ impl World {
                 
             let new_id_for_swaped_actor = self.get_new_random_uniq_id();
 
-            swaped_actor.set_id(new_id_for_swaped_actor, engine_handle);
+            swaped_actor.change_id(new_id_for_swaped_actor, engine_handle);
 
             self.actors.insert(new_id_for_swaped_actor, swaped_actor);
         }
@@ -324,7 +324,7 @@ fn get_random_non_zero_id() -> ActorID {
     let mut id: u128 = u128::from_be_bytes(bytes);
 
     // 0 it is reserved ID for the Engine itself
-    if id == 0u128 {
+    while id == 0u128 {
         id = get_random_non_zero_id();
     }
 

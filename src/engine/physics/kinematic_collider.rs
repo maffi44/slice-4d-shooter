@@ -33,14 +33,14 @@ pub struct KinematicCollider {
     wish_direction: Vec4,
     movment_mult: f32,
     pub current_velocity: Vec4,
-    forces: Vec<Vec4>,
+    pub forces: Vec<Vec4>,
     pub is_on_y_ground: bool,
     pub is_on_w_ground: bool,
     actors_id: Option<ActorID>,
 }
 
 impl Component for KinematicCollider {
-    fn init(&mut self, id: ActorID) {
+    fn set_id(&mut self, id: ActorID) {
         self.actors_id = Some(id);
     }
 
@@ -164,11 +164,21 @@ impl KinematicCollider {
             let y_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * Vec4::Y);
             let w_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * Vec4::W);
 
-            if get_dist(y_bottom_position, static_objects) < self.collider_radius * 0.95 {
+            if get_dist(
+                y_bottom_position,
+                static_objects,
+                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+            ) < self.collider_radius * 0.95 {
                 self.is_on_y_ground = true;
+                
             }
 
-            if get_dist(w_bottom_position, static_objects) < self.collider_radius * 0.95 {
+            if get_dist(
+                w_bottom_position,
+                static_objects,
+                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+
+            ) < self.collider_radius * 0.95 {
                 self.is_on_w_ground = true;
             }
 
@@ -220,7 +230,8 @@ impl KinematicCollider {
         let res = move_collider_outside(
             position,
             collider_radius,
-            static_objects
+            static_objects,
+            Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
         );
 
         let (new_pos, is_pushed) = match res {
@@ -258,7 +269,12 @@ impl KinematicCollider {
             }
     
             // if collider stuck inside object let's push it out
-            let res = move_collider_outside(position, collider_radius, static_objects);
+            let res = move_collider_outside(
+                position,
+                collider_radius,
+                static_objects,
+                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+            );
 
             let (new_pos, is_pushed) = match res {
                 Some(res) => {
@@ -274,7 +290,11 @@ impl KinematicCollider {
             position = new_pos;
     
             // get distance from edge of the object to the nearest object
-            let mut distance_to_obj = get_dist(position, static_objects) - collider_radius;
+            let mut distance_to_obj = get_dist(
+                position,
+                static_objects,
+                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+            ) - collider_radius;
 
             // bound if collide
             if distance_to_obj < MIN_STEP {
@@ -283,7 +303,11 @@ impl KinematicCollider {
     
                 is_collide = true;
 
-                let normal = get_normal(position, static_objects);
+                let normal = get_normal(
+                    position,
+                    static_objects,
+                    Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                );
                 
                 // log::info!("normal is {}", normal);
     
@@ -297,7 +321,8 @@ impl KinematicCollider {
     
                     let next_normal = get_normal(
                         position + probable_transltaion_dir * MIN_STEP,
-                        static_objects
+                        static_objects,
+                        Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
                     );
     
                     // log::info!("next normal is {}", normal);
@@ -310,7 +335,8 @@ impl KinematicCollider {
     
                         let prev_normal = get_normal(
                             position - probable_transltaion_dir * MIN_STEP,
-                            static_objects
+                            static_objects,
+                            Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
                         );
     
                         // log::info!("prev normal is {}", prev_normal);
@@ -403,7 +429,6 @@ impl KinematicCollider {
                             static_objects
                         );
 
-
                         friction = friction.max(new_friction);
 
                         let current_velocity = self.current_velocity;
@@ -437,7 +462,8 @@ impl KinematicCollider {
     
             let dist_on_try_move = get_dist(
                 position + translation.clamp_length_max(collider_radius - MIN_STEP),
-                static_objects
+                static_objects,
+                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
             );
     
             if dist_on_try_move - collider_radius > 0.0 {
@@ -493,7 +519,11 @@ impl KinematicCollider {
     
                 translation_length -= current_translation_len;
     
-                distance_to_obj = get_dist(position, static_objects) - collider_radius;
+                distance_to_obj = get_dist(
+                    position,
+                    static_objects,
+                    Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                ) - collider_radius;
     
                 translation = translation_dir * translation_length;
                 
@@ -558,13 +588,14 @@ fn move_collider_outside(
     position: Vec4,
     collider_radius: f32,
     static_objects: &PhysicsState,
+    actor_id: Option<ActorID>
 ) -> Option<(Vec4, bool)> {
 
     let mut pos = position;
 
     let mut is_collided = false;
     
-    let mut distance_from_center = get_dist(pos, static_objects);
+    let mut distance_from_center = get_dist(pos, static_objects, actor_id);
 
     let mut counter = 0u32;
 
@@ -576,10 +607,10 @@ fn move_collider_outside(
         }
         is_collided = true;
 
-        let normal = get_normal(pos, static_objects);
+        let normal = get_normal(pos, static_objects, actor_id);
         pos -= normal * (distance_from_center - MIN_STEP);
         
-        distance_from_center = get_dist(pos, static_objects);
+        distance_from_center = get_dist(pos, static_objects, actor_id);
 
         #[cfg(debug_assertions)]
         unsafe {
@@ -609,11 +640,11 @@ fn move_collider_outside(
                     // panic!("'move_collider_outside' More the max colliding iterations when overlapping (pushing) the object");
                 }
             
-                let normal = get_big_normal(pos, collider_radius, static_objects);
+                let normal = get_big_normal(pos, collider_radius, static_objects, actor_id);
 
                 pos += normal * distance_from_edge.abs().max(MIN_STEP * 0.25);
 
-                distance_from_edge = get_dist(pos, static_objects) - collider_radius;
+                distance_from_edge = get_dist(pos, static_objects, actor_id) - collider_radius;
                 
                 pushing_counter += 1;
             }
@@ -622,11 +653,11 @@ fn move_collider_outside(
         }
         is_collided = true;
 
-        let normal = get_normal(pos, static_objects);
+        let normal = get_normal(pos, static_objects, actor_id);
 
         pos += normal * distance_from_edge.abs().max(MIN_STEP * 0.25);
 
-        distance_from_edge = get_dist(pos, static_objects) - collider_radius;
+        distance_from_edge = get_dist(pos, static_objects, actor_id) - collider_radius;
         
         // log::info!("'move_collider_outside' disatnce from th edge is {}", distance_from_edge);
 

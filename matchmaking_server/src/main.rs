@@ -92,6 +92,14 @@ impl GameServersIceConfig {
         object: &Map<String, Value>
     ) -> Self
     {
+        let object = {
+            object
+                .get("game_severs_ice_config")
+                .expect("ERROR: Have not game_severs_ice_config in matchmaking-server-config.json")
+                .as_object()
+                .expect("ERROR: game_severs_ice_config is not object value in matchmaking-server-config.json")
+        };
+
         let urls = {
             object
                 .get("urls")

@@ -156,7 +156,7 @@ impl MachineGun {
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
 
-        let hit = physic_system.ray_cast(from, direction, 700.0);
+        let hit = physic_system.ray_cast(from, direction, 700.0, Some(player_id));
 
         if let Some(hit) = hit {
 

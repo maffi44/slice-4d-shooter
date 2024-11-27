@@ -41,15 +41,14 @@ use crate::{
         player::{player_settings::PlayerSettings, PlayerMessages},
         players_death_explosion::PlayersDeathExplosion,
         players_doll::{
-            PlayersDoll,
-            PlayersDollMessages},
+            PlayerDollInputState, PlayersDoll, PlayersDollMessages},
         ActorWrapper,
         CommonActorsMessages,
         Message,
         MessageType,
         SpecificActorMessage
     },
-    transform::Transform
+    transform::{self, Transform}
 };
 
 use super::{
@@ -95,11 +94,15 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub struct NetSystem {
     connection_data: ConnectionData,
     connection_state: Option<ConnectionState>,
+
+    player_settings: PlayerSettings,
+    w_levels: Vec<f32>,
 }
 
 impl NetSystem {
     pub async fn new(
         settings: &PlayerSettings,
+        w_levels: &Vec<f32>,
         #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime
     ) -> Self {
@@ -124,6 +127,9 @@ impl NetSystem {
         NetSystem {
             connection_state: Some(ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise)),
             connection_data,
+
+            player_settings: settings.clone(),
+            w_levels: w_levels.clone(),
         }
     }
 
@@ -397,7 +403,7 @@ impl NetSystem {
                     }
                     
                     ServerMessage::NetMessage(from_player, message) => {
-                        process_message(from_player, message, engine_handle, audio_system);
+                        process_message(from_player, message, engine_handle, audio_system, &self.player_settings, &self.w_levels);
                     }
                 }
             }
@@ -442,7 +448,7 @@ impl NetSystem {
                     }
                     
                     ServerMessage::NetMessage(from_player, message) => {
-                        process_message(from_player, message, engine_handle, audio_system);
+                        process_message(from_player, message, engine_handle, audio_system, &self.player_settings, &self.w_levels);
                     }
                 }
             }
@@ -460,6 +466,8 @@ impl NetSystem {
         {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
+                if webrtc_socket.any_closed() {return;}
+                
                 let packet = ClientMessage::BoardcastMessage(message).to_packet();
         
                 webrtc_socket
@@ -481,6 +489,8 @@ impl NetSystem {
         {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
+                if webrtc_socket.any_closed() {return;}
+
                 let packet = ClientMessage::BoardcastMessage(message).to_packet();
 
                 webrtc_socket
@@ -502,6 +512,8 @@ impl NetSystem {
         {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
+                if webrtc_socket.any_closed() {return;}
+                
                 let packet = ClientMessage::DirectMessage(peer, message).to_packet();
         
                 webrtc_socket
@@ -523,6 +535,8 @@ impl NetSystem {
         {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
+                if webrtc_socket.any_closed() {return;}
+
                 let packet = ClientMessage::DirectMessage(peer, message).to_packet();
         
                 webrtc_socket
@@ -537,7 +551,14 @@ impl NetSystem {
     }
 }
 
-fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
+fn process_message(
+    peer_id: u128,
+    message: NetMessage,
+    engine_handle: &mut EngineHandle,
+    audio_system: &mut AudioSystem,
+    player_settings: &PlayerSettings,
+    w_levels: &Vec<f32>,
+) {
     match message {
         NetMessage::RemoteCommand(command) => {
             match command {
@@ -568,7 +589,9 @@ fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut Engin
                         player_sphere_radius,
                         transform,
                         is_alive,
-                        audio_system
+                        audio_system,
+                        player_settings.clone(),
+                        w_levels.clone(),
                     );
 
                     let actor = ActorWrapper::PlayersDoll(players_doll);
@@ -584,6 +607,27 @@ fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut Engin
 
         NetMessage::RemoteDirectMessage(actor_id, message) => {
             match message {
+                RemoteMessage::SetPlayerDollTarget(tr, input, velocity) => {
+                    let transform = Transform::from_serializable_transform(tr);
+                    let input_state = PlayerDollInputState::deserialize(input);
+                    let velocity = Vec4::from_array(velocity);
+
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::SetInterploatedModelTargetState(
+                                        transform,
+                                        input_state,
+                                        velocity,
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
                 RemoteMessage::SpawnMachineGunShot(pos, is_miss) => {
                     engine_handle.send_direct_message(
                         actor_id,
@@ -600,7 +644,11 @@ fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut Engin
                         }
                     );
                 }
-                RemoteMessage::PlayerRespawn(position) => {
+                RemoteMessage::PlayerRespawn(tr, input, velocity) => {
+                    let transform = Transform::from_serializable_transform(tr);
+                    let input_state = PlayerDollInputState::deserialize(input);
+                    let velocity = Vec4::from_array(velocity);
+                    
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
@@ -608,7 +656,9 @@ fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut Engin
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessages(
                                     PlayersDollMessages::Respawn(
-                                        Vec4::from_array(position)
+                                        transform,
+                                        input_state,
+                                        velocity,
                                     )
                                 )
                             )
@@ -748,6 +798,26 @@ fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut Engin
 
         NetMessage::RemoteBoardCastMessage(message) => {
             match message {
+                RemoteMessage::SetPlayerDollTarget(transform, input_state, velocity) => {
+                    let transform = Transform::from_serializable_transform(transform);
+                    let input_state = PlayerDollInputState::deserialize(input_state);
+                    let velocity = Vec4::from_array(velocity);
+
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessages(
+                                    PlayersDollMessages::SetInterploatedModelTargetState(
+                                        transform,
+                                        input_state,
+                                        velocity
+                                    )
+                                )
+                            )
+                        }
+                    )
+                }
                 RemoteMessage::SpawnMachineGunShot(pos, is_miss) => {
                     engine_handle.send_boardcast_message(
                         Message {
@@ -763,14 +833,20 @@ fn process_message(peer_id: u128, message: NetMessage, engine_handle: &mut Engin
                         }
                     );
                 }
-                RemoteMessage::PlayerRespawn(position) => {
+                RemoteMessage::PlayerRespawn(tr, input, velocity) => {
+                    let transform = Transform::from_serializable_transform(tr);
+                    let input_state = PlayerDollInputState::deserialize(input);
+                    let velocity = Vec4::from_array(velocity);
+                    
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessages(
                                     PlayersDollMessages::Respawn(
-                                        Vec4::from_array(position)
+                                        transform,
+                                        input_state,
+                                        velocity,
                                     )
                                 )
                             )

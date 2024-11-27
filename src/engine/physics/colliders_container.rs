@@ -10,7 +10,7 @@ use super::dynamic_collider::PlayersDollCollider;
 
 pub struct PhysicalElement<'a> {
     pub transform: &'a mut Transform,
-    pub kinematic_collider: Option<&'a mut KinematicCollider>,
+    pub kinematic_collider: Option<(&'a mut KinematicCollider, Option<&'a mut Transform>)>,
     pub dynamic_colliders: Option<&'a mut Vec<PlayersDollCollider>>,
     pub static_colliders: Option<&'a mut Vec<StaticCollider>>,
     pub static_objects: Option<&'a mut Vec<StaticObject>>,

@@ -156,7 +156,7 @@ impl HoleGun {
             _ => {panic!("Charging volume area in holegun is not SphericalVolumeArea")}
         };
 
-        let hit = physic_system.ray_cast(from, direction, 700.0);
+        let hit = physic_system.ray_cast(from, direction, 700.0, Some(player_id));
 
         if let Some(hit) = hit {
 

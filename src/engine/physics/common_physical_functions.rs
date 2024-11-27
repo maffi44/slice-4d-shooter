@@ -335,6 +335,7 @@ pub fn get_id(p: Vec4, static_objects: &PhysicsState) -> Option<ActorID> {
 pub fn get_dist(
     p: Vec4,
     static_objects: &PhysicsState,
+    excluding_ids: Option<ActorID>
 ) -> f32 {
     let mut d = MAX_DIST;
 
@@ -433,11 +434,25 @@ pub fn get_dist(
 
     // d = d.max(-dd);
 
-
-
-    for collider in static_objects.player_forms.iter() {
-        d = d.min(sd_sphere(p - collider.position.clone(), collider.radius));
+    match excluding_ids {
+        Some(id) =>
+        {
+            for collider in static_objects.player_forms.iter() {
+                if id != collider.actors_id.expect("Some PlayerDollCollider have not actor_id during physics tick")
+                {
+                    d = d.min(sd_sphere(p - collider.position.clone(), collider.radius));
+                }
+            }
+        }
+        None =>
+        {
+            for collider in static_objects.player_forms.iter() {
+                d = d.min(sd_sphere(p - collider.position.clone(), collider.radius));
+            }
+        }
     }
+
+    
 
     if let Some(w_floor) = &static_objects.w_floor {
         d = d.min(p.w - w_floor.w_pos);
@@ -637,6 +652,7 @@ pub fn get_bounce_and_friction(
 pub fn get_normal(
     p: Vec4,
     static_objects: &PhysicsState,
+    excluding_ids: Option<ActorID>,
 ) -> Vec4 {
     let a = p + Vec4::new(THRESHOLD, 0.000, 0.000, 0.000);
     let b = p + Vec4::new(-THRESHOLD, 0.000, 0.000,0.000);
@@ -647,14 +663,14 @@ pub fn get_normal(
     let g = p + Vec4::new(0.000, 0.000, 0.000, THRESHOLD);
     let h = p + Vec4::new(0.000, 0.000, 0.000, -THRESHOLD);
 
-    let fa = get_dist(a, static_objects);
-    let fb = get_dist(b, static_objects);
-    let fc = get_dist(c, static_objects);
-    let fd = get_dist(d, static_objects);
-    let fe = get_dist(e, static_objects);
-    let ff = get_dist(f, static_objects);
-    let fg = get_dist(g, static_objects);
-    let fh = get_dist(h, static_objects);
+    let fa = get_dist(a, static_objects, excluding_ids);
+    let fb = get_dist(b, static_objects, excluding_ids);
+    let fc = get_dist(c, static_objects, excluding_ids);
+    let fd = get_dist(d, static_objects, excluding_ids);
+    let fe = get_dist(e, static_objects, excluding_ids);
+    let ff = get_dist(f, static_objects, excluding_ids);
+    let fg = get_dist(g, static_objects, excluding_ids);
+    let fh = get_dist(h, static_objects, excluding_ids);
 
     let normal = 
         Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
@@ -683,6 +699,7 @@ pub fn get_big_normal(
     p: Vec4,
     size: f32,
     static_objects: &PhysicsState,
+    excluding_ids: Option<ActorID>,
 ) -> Vec4 {
     let a = p + Vec4::new(size, 0.000, 0.000, 0.000);
     let b = p + Vec4::new(-size, 0.000, 0.000,0.000);
@@ -693,14 +710,14 @@ pub fn get_big_normal(
     let g = p + Vec4::new(0.000, 0.000, 0.000, size);
     let h = p + Vec4::new(0.000, 0.000, 0.000, -size);
 
-    let fa = get_dist(a, static_objects);
-    let fb = get_dist(b, static_objects);
-    let fc = get_dist(c, static_objects);
-    let fd = get_dist(d, static_objects);
-    let fe = get_dist(e, static_objects);
-    let ff = get_dist(f, static_objects);
-    let fg = get_dist(g, static_objects);
-    let fh = get_dist(h, static_objects);
+    let fa = get_dist(a, static_objects, excluding_ids);
+    let fb = get_dist(b, static_objects, excluding_ids);
+    let fc = get_dist(c, static_objects, excluding_ids);
+    let fd = get_dist(d, static_objects, excluding_ids);
+    let fe = get_dist(e, static_objects, excluding_ids);
+    let ff = get_dist(f, static_objects, excluding_ids);
+    let fg = get_dist(g, static_objects, excluding_ids);
+    let fh = get_dist(h, static_objects, excluding_ids);
 
     let normal = 
         Vec4::new(1.000, 0.000, 0.000, 0.000) * fa +
