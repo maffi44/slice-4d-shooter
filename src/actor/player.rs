@@ -17,17 +17,13 @@ use crate::{
         audio::{
             AudioSystem,
             Sound
-        },
-        engine_handle::{
+        }, engine_handle::{
             Command,
             CommandType,
             EngineHandle
-        },
-        physics::{
+        }, physics::{
             colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::{KinematicCollider, KinematicColliderMessages}, PhysicsSystem
-        },
-        render::VisualElement,
-        ui::{
+        }, render::VisualElement, time::TimeSystem, ui::{
             RectSize,
             UIElement,
             UIElementType,
@@ -444,6 +440,7 @@ impl Actor for Player {
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
         delta: f32
     ) {
         let my_id = self.id.expect("Player does not have id");
@@ -1256,10 +1253,11 @@ impl Actor for Player {
                 NetCommand::SendBoardcastNetMessageUnreliable(
                     NetMessage::RemoteDirectMessage(
                         my_id,
-                        RemoteMessage::SetPlayerDollTarget(
+                        RemoteMessage::SetPlayerDollState(
                             self.inner_state.transform.to_serializable_transform(),
                             player_doll_input_state.serialize(),
-                            remote_velocity
+                            remote_velocity,
+                            time_system.get_server_time()
                         )
                     )
                 )
@@ -1955,7 +1953,8 @@ impl Player {
                             RemoteMessage::PlayerRespawn(
                                 self.inner_state.transform.to_serializable_transform(),
                                 player_doll_input_state.serialize(),
-                                Vec4::ZERO.to_array()
+                                Vec4::ZERO.to_array(),
+                                
                             )
                         )
                     )

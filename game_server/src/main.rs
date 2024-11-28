@@ -248,6 +248,8 @@ async fn game_server_main_loop(
         .take_channel(1)
         .unwrap();
 
+    let main_loop_start_time = std::time::Instant::now();
+
     loop {
 
         if webrtc_socket.any_closed() {
@@ -311,7 +313,8 @@ async fn game_server_main_loop(
                         &config,
                         &mut relaible_channel,
                         &mut players_state,
-                        id
+                        id,
+                        &main_loop_start_time,
                     ).await
                 }
                 Disconnected =>
@@ -363,7 +366,15 @@ async fn handle_player_connection(
     channel: &mut WebRtcChannel,
     players_state: &mut HashMap<u128, PeerId>,
     connected_player_id: PeerId,
+    main_loop_start_time: &Instant,
 ) {
+    channel.send(
+        ServerMessage::ClientConnectedToGameServer(
+            main_loop_start_time.elapsed().as_millis()
+        ).to_packet(),
+        connected_player_id
+    );
+    
     for (_ , player_id) in players_state.iter() {
         channel.send(
             ServerMessage::PlayerConnected(

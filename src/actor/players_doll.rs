@@ -16,10 +16,9 @@ use crate::{
             Command,
             CommandType,
             EngineHandle
-        },
-        physics::{
+        }, physics::{
             colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, PhysicsSystem
-        }, render::VisualElement, ui::UISystem, world::static_object::{
+        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
@@ -102,6 +101,7 @@ pub struct PlayersDoll {
 
     interpolating_model: Vec<PlayersDollCollider>,
     interpolating_model_target: KinematicCollider,
+    prev_interpolating_model_set_target_time: u128,
     is_enable: bool,
 
     need_to_die_slowly: bool,
@@ -114,7 +114,7 @@ pub struct PlayersDoll {
 }
 
 pub enum PlayersDollMessages{
-    SetInterploatedModelTargetState(Transform, PlayerDollInputState, Vec4),
+    SetInterploatedModelTargetState(Transform, PlayerDollInputState, Vec4, u128),
     SpawnHoleGunShotActor(Vec4, f32, Vec3, f32),
     SpawHoleGunMissActor(Vec4, f32, Vec3, f32),
     SpawnMachineGunShot(Vec4, bool),
@@ -193,6 +193,7 @@ impl PlayersDoll {
             is_enable: is_alive,
             interpolating_model: interpolated_model,
             interpolating_model_target: interpolated_model_target,
+            prev_interpolating_model_set_target_time: 0u128,
             need_to_die_slowly: false,
             die_slowly_timer: 0.0,
             holegun_charge_sound: None,
@@ -397,7 +398,8 @@ impl PlayersDoll {
     {
         let dist = self.target_transform.get_position() - self.transform.get_position();
 
-        self.transform.set_position(self.transform.get_position() + dist * (10_f32*delta));
+        self.transform.set_position(self.transform.get_position() + dist * (13_f32*delta));
+        // self.transform.set_position(self.target_transform.get_position());
     }
 }
 
@@ -511,14 +513,20 @@ impl Actor for PlayersDoll {
                             PlayersDollMessages::SetInterploatedModelTargetState(
                                 transform,
                                 input,
-                                velocity
+                                velocity,
+                                time,
                             ) => {
 
-                                self.transform.set_rotation(transform.get_rotation());
-                                self.target_transform = transform.clone();
-                                self.input_state = input.clone();
-                                self.interpolating_model_target.current_velocity = *velocity;
-                                self.interpolating_model_target.forces.clear();
+                                if self.prev_interpolating_model_set_target_time < *time
+                                {
+                                    self.prev_interpolating_model_set_target_time = *time;
+                                    self.transform.set_rotation(transform.get_rotation());
+                                    self.target_transform = transform.clone();
+                                    self.input_state = input.clone();
+                                    self.interpolating_model_target.current_velocity = *velocity;
+                                    self.interpolating_model_target.forces.clear();
+                                }
+
 
                             }
                             PlayersDollMessages::HoleGunStartCharging => {
@@ -790,6 +798,7 @@ impl Actor for PlayersDoll {
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
         delta: f32
     ) {
         if self.is_alive {

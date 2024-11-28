@@ -6,7 +6,7 @@ use crate::{
             Command,
             CommandType,
             EngineHandle
-        }, physics::PhysicsSystem, render::VisualElement, ui::UISystem, world::static_object::{
+        }, physics::PhysicsSystem, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
@@ -94,6 +94,7 @@ impl Actor for ShootingImpact {
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
         delta: f32
     ) {
         if let VolumeArea::SphericalVolumeArea(area) = &mut self.volume_areas[0] {

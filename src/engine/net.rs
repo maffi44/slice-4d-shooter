@@ -369,6 +369,15 @@ impl NetSystem {
             if let Some(message) = ServerMessage::from_packet(packet) {
                 match message {
 
+                    ServerMessage::ClientConnectedToGameServer(millis_from_server_start) => {
+                        engine_handle.send_command(Command {
+                            sender: 0_u128,
+                            command_type: CommandType::NetCommand(
+                                NetCommand::ConnectedToGameServer(millis_from_server_start)   
+                            )
+                        });
+                    }
+
                     ServerMessage::PlayerConnected(player_id) => {
                         engine_handle.send_command(Command {
                             sender: 0_u128,
@@ -414,37 +423,16 @@ impl NetSystem {
             if let Some(message) = ServerMessage::from_packet(packet) {
                 match message {
 
+                    ServerMessage::ClientConnectedToGameServer(millis_from_server_start) => {
+                        panic!("ERROR: recieved ClientConnectedToGameServer message from ureliable channel")
+                    }
+
                     ServerMessage::PlayerConnected(player_id) => {
-                        engine_handle.send_command(Command {
-                            sender: 0_u128,
-                            command_type: CommandType::NetCommand(
-                                NetCommand::PeerConnected(player_id)
-                            ),
-                        });
-                        players_id.push(player_id);
+                        panic!("ERROR: recieved PlayerConnected message from ureliable channel")
                     }
 
                     ServerMessage::PlayerDisconnected(player_id) => {
-                        let mut index = 0usize;
-                        let mut finded = false;
-                        for stored_peer in players_id.iter() {
-                            if *stored_peer == player_id {
-                                finded = true;
-                                break;
-                            }
-                            index += 1;
-                        }
-
-                        if finded {
-                            players_id.remove(index);
-
-                            engine_handle.send_command(Command {
-                                sender: 0_u128,
-                                command_type: CommandType::NetCommand(
-                                    NetCommand::PeerDisconnected(player_id)
-                                ),
-                            });
-                        }
+                        panic!("ERROR: recieved PlayerDisconnected message from ureliable channel")
                     }
                     
                     ServerMessage::NetMessage(from_player, message) => {
@@ -607,7 +595,7 @@ fn process_message(
 
         NetMessage::RemoteDirectMessage(actor_id, message) => {
             match message {
-                RemoteMessage::SetPlayerDollTarget(tr, input, velocity) => {
+                RemoteMessage::SetPlayerDollState(tr, input, velocity, time) => {
                     let transform = Transform::from_serializable_transform(tr);
                     let input_state = PlayerDollInputState::deserialize(input);
                     let velocity = Vec4::from_array(velocity);
@@ -622,6 +610,7 @@ fn process_message(
                                         transform,
                                         input_state,
                                         velocity,
+                                        time,
                                     )
                                 )
                             )
@@ -798,7 +787,7 @@ fn process_message(
 
         NetMessage::RemoteBoardCastMessage(message) => {
             match message {
-                RemoteMessage::SetPlayerDollTarget(transform, input_state, velocity) => {
+                RemoteMessage::SetPlayerDollState(transform, input_state, velocity, time) => {
                     let transform = Transform::from_serializable_transform(transform);
                     let input_state = PlayerDollInputState::deserialize(input_state);
                     let velocity = Vec4::from_array(velocity);
@@ -811,7 +800,8 @@ fn process_message(
                                     PlayersDollMessages::SetInterploatedModelTargetState(
                                         transform,
                                         input_state,
-                                        velocity
+                                        velocity,
+                                        time,
                                     )
                                 )
                             )

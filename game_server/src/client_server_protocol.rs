@@ -36,6 +36,7 @@ impl ClientMessage {
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum ServerMessage {
+    ClientConnectedToGameServer(u128),
     PlayerConnected(u128),
     PlayerDisconnected(u128),
     NetMessage(u128, NetMessage),
@@ -91,7 +92,7 @@ pub enum RemoteMessage {
     PlayerRespawn(SerializableTransform, (bool,bool,bool,bool,bool,u32), [f32;4]),
     Enable(bool),
     SetTransform(SerializableTransform),
-    SetPlayerDollTarget(SerializableTransform, (bool,bool,bool,bool,bool,u32), [f32;4]),
+    SetPlayerDollState(SerializableTransform, (bool,bool,bool,bool,bool,u32), [f32;4], u128),
     SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
     SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
     HoleGunStartCharging,
@@ -124,6 +125,7 @@ pub enum NetCommand {
     NetSystemIsConnectedAndGetNewPeerID(u128),
     PeerConnected(u128),
     PeerDisconnected(u128),
+    ConnectedToGameServer(u128),
 
     SendDirectNetMessageReliable(NetMessage, u128),
     SendDirectNetMessageUnreliable(NetMessage, u128),

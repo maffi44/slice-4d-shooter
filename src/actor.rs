@@ -13,7 +13,7 @@ use crate::{
     engine::{
         audio::AudioSystem, engine_handle::EngineHandle, physics::{
             area::AreaMessages, colliders_container::PhysicalElement, dynamic_collider::DynamicColliderMessages, kinematic_collider::KinematicColliderMessages, static_collider::StaticColliderMessages, PhysicsSystem
-        }, render::VisualElement, ui::UISystem
+        }, render::VisualElement, time::TimeSystem, ui::UISystem
     },
     transform::Transform,
 };
@@ -48,6 +48,7 @@ pub trait Actor {
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
         delta: f32
     ) {}
 
@@ -183,32 +184,33 @@ impl Actor for ActorWrapper {
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
         delta: f32
     ) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
             },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
             },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
             },
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},

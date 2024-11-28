@@ -2,7 +2,7 @@ use crate::{
     engine::{
         audio::AudioSystem, engine_handle::EngineHandle, physics::{
             colliders_container::PhysicalElement, PhysicsSystem
-        }, render::VisualElement, ui::UISystem, world::static_object::StaticObject
+        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::StaticObject
     },
     transform::Transform
 };
@@ -127,6 +127,7 @@ impl Actor for WanderingActor {
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
         delta: f32
     ) {    
         let current_target = self.targets[self.current_target_index];

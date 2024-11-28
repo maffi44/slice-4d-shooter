@@ -29,10 +29,7 @@ use core::panic;
 use std::collections::HashMap;
 
 use super::{
-    audio::AudioSystem,
-    engine_handle::Command,
-    net::NetSystem,
-    ui::UISystem
+    audio::AudioSystem, engine_handle::Command, net::NetSystem, time::TimeSystem, ui::UISystem
 };
 
 use client_server_protocol::NetCommand;
@@ -75,7 +72,8 @@ impl World {
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle
+        engine_handle: &mut EngineHandle,
+        time_system: &mut TimeSystem,
     ) {
         
         loop {
@@ -88,7 +86,7 @@ impl World {
                 }
 
                 while let Some(command) = engine_handle.command_buffer.pop() {
-                    self.execute_command(command, net_system, physics_system, engine_handle, audio_system, ui_system);
+                    self.execute_command(command, net_system, physics_system, engine_handle, audio_system, ui_system, time_system);
                 }
 
                 if engine_handle.direct_message_buffer.is_empty() &&
@@ -108,6 +106,7 @@ impl World {
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
     ) {
         let from = command.sender;
 
@@ -166,6 +165,9 @@ impl World {
             }
             CommandType::NetCommand(command) => {
                 match command {
+                    NetCommand::ConnectedToGameServer(time_from_server_start) => {
+                        time_system.set_game_server_start_time(time_from_server_start);
+                    },
                     NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {
                         self.change_actor_id(self.main_player_id, new_id, engine_handle);
 
@@ -288,14 +290,17 @@ impl World {
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        delta: f32
+        time_system: &mut TimeSystem,
     ) {
+        let delta = time_system.prev_frame_duration;
+
         for (_, actor) in self.actors.iter_mut() {
             actor.tick(
                 physic_system,
                 engine_handle,
                 audio_system,
                 ui_system,
+                time_system,
                 delta
             )
         }
