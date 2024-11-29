@@ -7,7 +7,7 @@ use client_server_protocol::{
     RemoteCommand,
     RemoteMessage,
     NetCommand,
-    NetMessage,
+    NetMessageToPlayer,
 };
 
 use crate::{
@@ -451,7 +451,7 @@ impl Actor for PlayersDoll {
                                         sender: self.id.expect("Player's Doll have not Actor's ID"),
                                         command_type: CommandType::NetCommand(
                                             NetCommand::SendDirectNetMessageReliable(
-                                                NetMessage::RemoteDirectMessage(
+                                                NetMessageToPlayer::RemoteDirectMessage(
                                                     self.id.expect("Player's Doll have not Actor's ID"),
                                                     RemoteMessage::DieImmediately
                                                 ),
@@ -473,7 +473,7 @@ impl Actor for PlayersDoll {
                                         sender: self.id.expect("Player's Doll have not Actor's ID"),
                                         command_type: CommandType::NetCommand(
                                             NetCommand::SendDirectNetMessageReliable(
-                                                NetMessage::RemoteDirectMessage(
+                                                NetMessageToPlayer::RemoteDirectMessage(
                                                     self.id.expect("Player's Doll have not Actor's ID"),
                                                     RemoteMessage::DealDamageAndAddForce(
                                                         *damage,

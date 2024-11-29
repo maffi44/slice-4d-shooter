@@ -35,7 +35,7 @@ use crate::{
 use client_server_protocol::{
     RemoteMessage,
     NetCommand,
-    NetMessage,
+    NetMessageToPlayer,
 };
 
 use super::{Device, DeviceType};
@@ -207,7 +207,7 @@ impl MachineGun {
                     sender: player_id,
                     command_type: CommandType::NetCommand(
                         NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessage::RemoteDirectMessage(
+                            NetMessageToPlayer::RemoteDirectMessage(
                                 player_id,
                                 RemoteMessage::SpawnMachineGunShot(
                                     position.to_array(),
@@ -245,7 +245,7 @@ impl MachineGun {
                     sender: player_id,
                     command_type: CommandType::NetCommand(
                         NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessage::RemoteDirectMessage(
+                            NetMessageToPlayer::RemoteDirectMessage(
                                 player_id,
                                 RemoteMessage::SpawnMachineGunShot(
                                     position.to_array(),

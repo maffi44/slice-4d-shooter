@@ -33,7 +33,7 @@ use client_server_protocol::{
     RemoteCommand,
     RemoteMessage,
     NetCommand,
-    NetMessage,
+    NetMessageToPlayer,
 };
 
 use crate::{
@@ -369,7 +369,7 @@ impl NetSystem {
             if let Some(message) = ServerMessage::from_packet(packet) {
                 match message {
 
-                    ServerMessage::ClientConnectedToGameServer(millis_from_server_start) => {
+                    ServerMessage::JoinTheMatch(millis_from_server_start) => {
                         engine_handle.send_command(Command {
                             sender: 0_u128,
                             command_type: CommandType::NetCommand(
@@ -411,7 +411,7 @@ impl NetSystem {
                         }
                     }
                     
-                    ServerMessage::NetMessage(from_player, message) => {
+                    ServerMessage::NetMessageToPlayer(from_player, message) => {
                         process_message(from_player, message, engine_handle, audio_system, &self.player_settings, &self.w_levels);
                     }
                 }
@@ -423,7 +423,7 @@ impl NetSystem {
             if let Some(message) = ServerMessage::from_packet(packet) {
                 match message {
 
-                    ServerMessage::ClientConnectedToGameServer(millis_from_server_start) => {
+                    ServerMessage::JoinTheMatch(millis_from_server_start) => {
                         panic!("ERROR: recieved ClientConnectedToGameServer message from ureliable channel")
                     }
 
@@ -435,7 +435,7 @@ impl NetSystem {
                         panic!("ERROR: recieved PlayerDisconnected message from ureliable channel")
                     }
                     
-                    ServerMessage::NetMessage(from_player, message) => {
+                    ServerMessage::NetMessageToPlayer(from_player, message) => {
                         process_message(from_player, message, engine_handle, audio_system, &self.player_settings, &self.w_levels);
                     }
                 }
@@ -446,7 +446,7 @@ impl NetSystem {
     }
 
 
-    pub fn send_boardcast_message_reliable(&mut self, message: NetMessage) {
+    pub fn send_boardcast_message_reliable(&mut self, message: NetMessageToPlayer) {
 
         match &mut self.connection_state
             .as_mut()
@@ -469,7 +469,7 @@ impl NetSystem {
         }
     }
 
-    pub fn send_boardcast_message_unreliable(&mut self, message: NetMessage) {
+    pub fn send_boardcast_message_unreliable(&mut self, message: NetMessageToPlayer) {
 
         match &mut self.connection_state
             .as_mut()
@@ -492,7 +492,7 @@ impl NetSystem {
         }
     }
     
-    pub fn send_direct_message_reliable(&mut self, message: NetMessage, peer: u128) {
+    pub fn send_direct_message_reliable(&mut self, message: NetMessageToPlayer, peer: u128) {
 
         match &mut self.connection_state
             .as_mut()
@@ -515,7 +515,7 @@ impl NetSystem {
         }
     }
 
-    pub fn send_direct_message_unreliable(&mut self, message: NetMessage, peer: u128) {
+    pub fn send_direct_message_unreliable(&mut self, message: NetMessageToPlayer, peer: u128) {
         
         match &mut self.connection_state
             .as_mut()
@@ -541,14 +541,14 @@ impl NetSystem {
 
 fn process_message(
     peer_id: u128,
-    message: NetMessage,
+    message: NetMessageToPlayer,
     engine_handle: &mut EngineHandle,
     audio_system: &mut AudioSystem,
     player_settings: &PlayerSettings,
     w_levels: &Vec<f32>,
 ) {
     match message {
-        NetMessage::RemoteCommand(command) => {
+        NetMessageToPlayer::RemoteCommand(command) => {
             match command {
                 RemoteCommand::RemoveActor(actor_id) => {
                     engine_handle.send_command(Command {
@@ -593,7 +593,7 @@ fn process_message(
 
         },
 
-        NetMessage::RemoteDirectMessage(actor_id, message) => {
+        NetMessageToPlayer::RemoteDirectMessage(actor_id, message) => {
             match message {
                 RemoteMessage::SetPlayerDollState(tr, input, velocity, time) => {
                     let transform = Transform::from_serializable_transform(tr);
@@ -785,7 +785,7 @@ fn process_message(
             }
         },
 
-        NetMessage::RemoteBoardCastMessage(message) => {
+        NetMessageToPlayer::RemoteBoardCastMessage(message) => {
             match message {
                 RemoteMessage::SetPlayerDollState(transform, input_state, velocity, time) => {
                     let transform = Transform::from_serializable_transform(transform);

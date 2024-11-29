@@ -49,7 +49,7 @@ use crate::{
 use client_server_protocol::{
     RemoteMessage,
     NetCommand,
-    NetMessage,
+    NetMessageToPlayer,
 };
 
 pub struct HoleGun {
@@ -220,7 +220,7 @@ impl HoleGun {
                     sender: player_id,
                     command_type: CommandType::NetCommand(
                         NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessage::RemoteDirectMessage(
+                            NetMessageToPlayer::RemoteDirectMessage(
                                 player_id,
                                 RemoteMessage::SpawnHoleGunShotActor(
                                     position.to_array(),
@@ -263,7 +263,7 @@ impl HoleGun {
                     sender: player_id,
                     command_type: CommandType::NetCommand(
                         NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessage::RemoteDirectMessage(
+                            NetMessageToPlayer::RemoteDirectMessage(
                                 player_id,
                                 RemoteMessage::SpawHoleGunMissActor(
                                     position.to_array(),
@@ -370,7 +370,7 @@ impl Device for HoleGun {
                             sender: player_id,
                             command_type: CommandType::NetCommand(
                                 NetCommand::SendBoardcastNetMessageReliable(
-                                    NetMessage::RemoteDirectMessage(
+                                    NetMessageToPlayer::RemoteDirectMessage(
                                         player_id,
                                         RemoteMessage::HoleGunStartCharging
                                     )

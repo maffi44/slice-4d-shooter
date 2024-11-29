@@ -8,8 +8,8 @@ type SerializableTransform = ([f32; 4], [f32; 16], [f32; 4]);
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum ClientMessage {
-    DirectMessage(u128, NetMessage),
-    BoardcastMessage(NetMessage),
+    DirectMessage(u128, NetMessageToPlayer),
+    BoardcastMessage(NetMessageToPlayer),
 }
 
 impl ClientMessage {
@@ -36,10 +36,31 @@ impl ClientMessage {
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum ServerMessage {
-    ClientConnectedToGameServer(u128),
+    // u128 - time_in_millis_from_game_session_init
+    // Team - Which team has this player added to
+    // FlagStatus - status of the Red Flag
+    // FlagStatus - status of the Blue Flag
+    // BonusSpotStatus - status of the Move W Bonus
+    // u32 - score of Red team
+    // u32 - score of Blue team
+    JoinTheMatch(u128, Team, FlagStatus, FlagStatus, BonusSpotStatus, u32, u32),
+
+    // u128 - time_in_millis_from_game_session_init
+    // Team - Which team has this player added to
+    NewSessionStarted(u128, Team),
+    
+    // u128 - id of connected player
     PlayerConnected(u128),
+    
+    // u128 - id of disconnected player
     PlayerDisconnected(u128),
-    NetMessage(u128, NetMessage),
+    
+    // u128 - id of message sender
+    // NetMessageToPlayer - message
+    NetMessageToPlayer(u128, NetMessageToPlayer),
+    
+    // NetMessageToPlayer - message
+    NetMessageToServer(NetMessageToPlayer),
 }
 
 impl ServerMessage {
@@ -66,7 +87,14 @@ impl ServerMessage {
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
 #[derive(Clone)]
-pub enum NetMessage {
+pub enum NetMessageToServer {
+    None
+}
+
+#[repr(C)]
+#[alkahest(Formula, Serialize, Deserialize)]
+#[derive(Clone)]
+pub enum NetMessageToPlayer {
     RemoteCommand(RemoteCommand),
     RemoteDirectMessage(ActorID, RemoteMessage),
     RemoteBoardCastMessage(RemoteMessage),
@@ -96,23 +124,35 @@ pub enum RemoteMessage {
     SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
     SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
     HoleGunStartCharging,
-    SpawnMachineGunShot([f32;4], bool)
+    SpawnMachineGunShot([f32;4], bool),
+
+    // Team - Which team's flag status has changed
+    // FlagStatus - status of the flag
+    SetFlagStatus(Team, FlagStatus),
+    
+    // u32 - index of concrete move W bonus spot
+    // BonusSpotStatus - bonus status
+    SetMoveWBonusStatus(u32, BonusSpotStatus),
+
+    // u32 - score of Red team
+    // u32 - score of Blue team
+    UpdateTeamsScore(u32, u32)
 }
 
-impl NetMessage {
+impl NetMessageToPlayer {
     pub fn to_packet(self) -> Packet {
         
-        let size = <NetMessage as Serialize<NetMessage>>::size_hint(&self).unwrap();
+        let size = <NetMessageToPlayer as Serialize<NetMessageToPlayer>>::size_hint(&self).unwrap();
         
         let mut packet: Vec<u8> = Vec::with_capacity(size.heap);
 
-        alkahest::serialize_to_vec::<NetMessage, NetMessage>(self, &mut packet);
+        alkahest::serialize_to_vec::<NetMessageToPlayer, NetMessageToPlayer>(self, &mut packet);
 
         packet.into_boxed_slice()
     }
 
     pub fn from_packet(packet: Packet) -> Option<Self> {
-        if let Ok(message) = alkahest::deserialize::<NetMessage, NetMessage>(&packet) {
+        if let Ok(message) = alkahest::deserialize::<NetMessageToPlayer, NetMessageToPlayer>(&packet) {
             Some(message)
         } else {
             None
@@ -120,6 +160,33 @@ impl NetMessage {
     }
 }
 
+#[repr(C)]
+#[alkahest(Formula, Serialize, Deserialize)]
+#[derive(Clone)]
+pub enum FlagStatus
+{
+    OnTheBase,
+    Captured(u128),
+    Missed([f32;4]),
+}
+
+#[repr(C)]
+#[alkahest(Formula, Serialize, Deserialize)]
+#[derive(Clone)]
+pub enum BonusSpotStatus
+{
+    BonusOnTheSpot,
+    BonusCollected,
+}
+
+#[repr(C)]
+#[alkahest(Formula, Serialize, Deserialize)]
+#[derive(Clone, Copy)]
+pub enum Team
+{
+    Red,
+    Blue,
+}
 
 pub enum NetCommand {
     NetSystemIsConnectedAndGetNewPeerID(u128),
@@ -127,8 +194,8 @@ pub enum NetCommand {
     PeerDisconnected(u128),
     ConnectedToGameServer(u128),
 
-    SendDirectNetMessageReliable(NetMessage, u128),
-    SendDirectNetMessageUnreliable(NetMessage, u128),
-    SendBoardcastNetMessageReliable(NetMessage),
-    SendBoardcastNetMessageUnreliable(NetMessage),
+    SendDirectNetMessageReliable(NetMessageToPlayer, u128),
+    SendDirectNetMessageUnreliable(NetMessageToPlayer, u128),
+    SendBoardcastNetMessageReliable(NetMessageToPlayer),
+    SendBoardcastNetMessageUnreliable(NetMessageToPlayer),
 }

@@ -5,7 +5,7 @@ use client_server_protocol::{
     RemoteCommand,
     RemoteMessage,
     NetCommand,
-    NetMessage,
+    NetMessageToPlayer,
 };
 
 use crate::{
@@ -325,7 +325,7 @@ impl Actor for Player {
                                         sender: self.id.unwrap(),
                                         command_type: CommandType::NetCommand(
                                             NetCommand::SendDirectNetMessageReliable(
-                                                NetMessage::RemoteCommand(
+                                                NetMessageToPlayer::RemoteCommand(
                                                     RemoteCommand::SpawnPlayersDollActor(
                                                         self.get_transform().to_serializable_transform(),
                                                         self.inner_state.collider.get_collider_radius(),
@@ -1251,7 +1251,7 @@ impl Actor for Player {
             sender: my_id,
             command_type: CommandType::NetCommand(
                 NetCommand::SendBoardcastNetMessageUnreliable(
-                    NetMessage::RemoteDirectMessage(
+                    NetMessageToPlayer::RemoteDirectMessage(
                         my_id,
                         RemoteMessage::SetPlayerDollState(
                             self.inner_state.transform.to_serializable_transform(),
@@ -1577,7 +1577,7 @@ impl Player {
                     sender: self.get_id().expect("Player have not ActorID"),
                     command_type: CommandType::NetCommand(
                         NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessage::RemoteDirectMessage(
+                            NetMessageToPlayer::RemoteDirectMessage(
                                 self.get_id().expect("Player have not ActorID"),
                                 RemoteMessage::DieImmediately
                             )
@@ -1695,7 +1695,7 @@ impl Player {
                     sender: self.get_id().expect("Player have not ActorID"),
                     command_type: CommandType::NetCommand(
                         NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessage::RemoteDirectMessage(
+                            NetMessageToPlayer::RemoteDirectMessage(
                                 self.get_id().expect("Player have not ActorID"),
                                 RemoteMessage::DieSlowly
                             )
@@ -1948,7 +1948,7 @@ impl Player {
                 sender: self.get_id().expect("Player have not ActorID"),
                 command_type: CommandType::NetCommand(
                     NetCommand::SendBoardcastNetMessageReliable(
-                        NetMessage::RemoteDirectMessage(
+                        NetMessageToPlayer::RemoteDirectMessage(
                             self.get_id().expect("Player have not ActorID"),
                             RemoteMessage::PlayerRespawn(
                                 self.inner_state.transform.to_serializable_transform(),

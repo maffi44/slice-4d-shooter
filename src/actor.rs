@@ -8,6 +8,7 @@ pub mod players_doll;
 pub mod players_death_explosion;
 pub mod machinegun_shot;
 pub mod shooting_impact;
+pub mod flag;
 
 use crate::{
     engine::{

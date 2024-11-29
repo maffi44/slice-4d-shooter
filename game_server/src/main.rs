@@ -2,26 +2,44 @@ mod client_server_protocol;
 
 use std::{
     collections::HashMap, env, net::{
-        IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4
-    }, process::exit, str::FromStr, sync::{
-        mpsc::SendError, Arc, Mutex
-    }, time::{Duration, Instant}
+        Ipv4Addr,
+        SocketAddr,
+        SocketAddrV4
+    },
+    process::exit,
+    str::FromStr, sync::Arc,
+    time::{
+        Duration,
+        Instant
+    }
 };
 use matchmaking_server_protocol::{
     GameServerMatchmakingServerProtocol,
     GameServerMessage
 };
-use client_server_protocol::{ServerMessage, ClientMessage};
+use client_server_protocol::{BonusSpotStatus, ClientMessage, FlagStatus, NetMessageToPlayer, ServerMessage, Team};
 
-use fyrox_core::futures::SinkExt;
+use fyrox_core::{futures::SinkExt, rand::seq::SliceRandom};
 use matchbox_signaling::SignalingServer;
 use matchbox_socket::{
-    MultipleChannels, PeerId, PeerState::{Connected, Disconnected}, RtcIceServerConfig, WebRtcChannel, WebRtcSocket
+    MultipleChannels,
+    PeerId,
+    PeerState::{Connected, Disconnected},
+    RtcIceServerConfig,
+    WebRtcChannel,
+    WebRtcSocket
 };
 use tokio::{
-    runtime::{Builder, Runtime}, sync::mpsc::{
-        channel, Receiver, Sender
-    }, task::JoinHandle
+    runtime::{
+        Builder,
+        Runtime
+    },
+    sync::mpsc::{
+        channel,
+        Receiver,
+        Sender
+    },
+    task::JoinHandle
 };
 
 use tokio_tungstenite::connect_async;
@@ -236,9 +254,7 @@ async fn game_server_main_loop(
     player_connected_event_reciever: std::sync::mpsc::Receiver<PeerId>,
     player_disconnected_event_reciever: std::sync::mpsc::Receiver<PeerId>,
 ) {
-    let mut idle_timer: Option<Instant> = None;
-
-    let mut players_state: HashMap<u128, PeerId> = HashMap::with_capacity(config.max_players as usize);
+    let mut players_state = GameSessionState::new(&config); 
 
     let mut relaible_channel = webrtc_socket
         .take_channel(0)
@@ -248,31 +264,155 @@ async fn game_server_main_loop(
         .take_channel(1)
         .unwrap();
 
-    let main_loop_start_time = std::time::Instant::now();
+    loop {
+        let command = start_new_game_session(
+            &mut webrtc_socket,
+            &mut sender_to_matchmaking_server,
+            &config,
+            &mut relaible_channel,
+            &mut unrelaible_channel,
+            &mut players_state
+        ).await;
+
+        match command
+        {
+            Command::StartNewGameSession =>
+            {
+                continue;
+            }
+            Command::ShutDownServer(exit_code) =>
+            {
+                shutdown_game_server(
+                    sender_to_matchmaking_server,
+                    config,
+                    handle_to_matchmaking_server_connect,
+                    exit_code
+                ).await;
+            }
+        }
+    }
+
+    
+}
+
+pub enum Command
+{
+    StartNewGameSession,
+    ShutDownServer(i32),
+}
+
+pub struct GameSessionState
+{
+    players: HashMap<u128, PlayerInfo>,
+    red_team: Vec<u128>,
+    blue_team: Vec<u128>,
+    move_w_bonus: MoveWBonusSpot,
+    red_flag: Flag,
+    blue_flag: Flag,
+    red_team_score: u32,
+    blue_team_score: u32,
+}
+
+struct PlayerInfo
+{
+    peer_id: PeerId,
+    team: Team,
+}
+
+impl GameSessionState {
+    pub fn new(config: &GameServerConfig) -> Self
+    {
+        let players = HashMap::with_capacity(config.max_players as usize);
+        let red_team = Vec::with_capacity(config.max_players as usize);
+        let blue_team = Vec::with_capacity(config.max_players as usize);
+        
+        let red_flag = Flag {
+            get_previouse_status_time: 0u128,
+            status: FlagStatus::OnTheBase,
+            team: Team::Red
+        };
+        let blue_flag = Flag {
+            get_previouse_status_time: 0u128,
+            status: FlagStatus::OnTheBase,
+            team: Team::Blue
+        };
+        let move_w_bonus = MoveWBonusSpot {
+            get_previouse_status_time: 0u128,
+            status: BonusSpotStatus::BonusOnTheSpot
+        };
+
+        GameSessionState {
+            players,
+            red_team,
+            blue_team,
+            red_flag,
+            blue_flag,
+            move_w_bonus,
+            red_team_score: 0u32,
+            blue_team_score: 0u32,
+        }
+    }
+
+    pub fn update_game_session(
+        &mut self,
+        relaible_channel: &mut WebRtcChannel,
+        game_session_start_time: &Instant,
+    ) {
+        
+    }
+}
+
+struct Flag
+{
+    get_previouse_status_time: u128,
+    status: FlagStatus,
+    team: Team,
+}
+
+struct MoveWBonusSpot
+{
+    get_previouse_status_time: u128,
+    status: BonusSpotStatus,
+}
+
+async fn start_new_game_session(
+    webrtc_socket: &mut WebRtcSocket<MultipleChannels>,
+    sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
+    config: &GameServerConfig,
+    relaible_channel: &mut WebRtcChannel,
+    unrelaible_channel: &mut WebRtcChannel,
+    game_session_state: &mut GameSessionState
+) -> Command
+{
+    let mut idle_timer: Option<Instant> = None;
+    let game_session_start_time = std::time::Instant::now();
+
+    if webrtc_socket.any_closed() {
+        println!("ERROR: game server's WebRTC connection unexpectedly closed, server will shut down immediately");
+        return Command::ShutDownServer(1);
+    }
+
+    init_game_session(
+        game_session_state,
+        relaible_channel,
+        &game_session_start_time
+    );
 
     loop {
 
         if webrtc_socket.any_closed() {
             println!("ERROR: game server's WebRTC connection unexpectedly closed, server will shut down immediately");
-            shutdown_game_server(
-                sender_to_matchmaking_server,
-                config,
-                handle_to_matchmaking_server_connect,
-                1
-            ).await;
+            return Command::ShutDownServer(1);
         }
 
         // shutdown the game server if no players on the server for more than 3 minutes
         if webrtc_socket.connected_peers().count() == 0 {
             if idle_timer.is_some() {
                 if idle_timer.unwrap().elapsed().as_secs() > 180 {
+
+                println!("INFO: no players on the game server, server is shuting down");
+                return Command::ShutDownServer(0);
                     
-                    shutdown_game_server(
-                        sender_to_matchmaking_server,
-                        config,
-                        handle_to_matchmaking_server_connect,
-                        0
-                    ).await;
                 }
             } else {
                 idle_timer = Some(Instant::now());
@@ -280,26 +420,6 @@ async fn game_server_main_loop(
         } else {
             idle_timer = None;
         }
-
-        // while let Ok(id) = player_connected_event_reciever.try_recv() {
-        //     handle_player_connection(
-        //         &mut sender_to_matchmaking_server,
-        //         &config,
-        //         &mut relaible_channel,
-        //         &mut players_state,
-        //         id
-        //     ).await
-        // }
-
-        // while let Ok(id) = player_disconnected_event_reciever.try_recv() {
-        //     handle_player_disconnection(
-        //         &mut sender_to_matchmaking_server,
-        //         &config,
-        //         &mut relaible_channel,
-        //         &mut players_state,
-        //         id
-        //     ).await
-        // }
 
         let peers_state = webrtc_socket.update_peers();
 
@@ -309,22 +429,22 @@ async fn game_server_main_loop(
                 {
                     println!("player {} is connected to p2p network", id.0.as_u128());
                     handle_player_connection(
-                        &mut sender_to_matchmaking_server,
-                        &config,
-                        &mut relaible_channel,
-                        &mut players_state,
+                        sender_to_matchmaking_server,
+                        config,
+                        relaible_channel,
+                        game_session_state,
                         id,
-                        &main_loop_start_time,
+                        &game_session_start_time,
                     ).await
                 }
                 Disconnected =>
                 {
                     println!("player {} is disconnected to p2p network", id.0.as_u128());
                     handle_player_disconnection(
-                        &mut sender_to_matchmaking_server,
-                        &config,
-                        &mut relaible_channel,
-                        &mut players_state,
+                        sender_to_matchmaking_server,
+                        config,
+                        relaible_channel,
+                        game_session_state,
                         id
                     ).await
                 }
@@ -336,8 +456,8 @@ async fn game_server_main_loop(
         for (from_player, packet) in recieved_messages {
             
             proccess_player_message(
-                &mut unrelaible_channel,
-                &players_state,
+                unrelaible_channel,
+                game_session_state,
                 from_player,
                 packet
             );
@@ -348,15 +468,98 @@ async fn game_server_main_loop(
         for (from_player, packet) in recieved_messages {
             
             proccess_player_message(
-                &mut relaible_channel,
-                &players_state,
+                relaible_channel,
+                game_session_state,
                 from_player,
                 packet
             );
         }
 
-        tokio::time::sleep(Duration::from_millis(1)).await;
+        tokio::time::sleep(Duration::from_millis(2)).await;
     }
+}
+
+
+fn init_game_session(
+    game_session_state: &mut GameSessionState,
+    relaible_channel:&mut WebRtcChannel,
+    game_session_start_time: &Instant,
+)
+{
+    shuffle_teams(game_session_state);
+
+    game_session_state.blue_flag.status = FlagStatus::OnTheBase;
+    game_session_state.red_flag.status = FlagStatus::OnTheBase;
+    game_session_state.move_w_bonus.status = BonusSpotStatus::BonusOnTheSpot;
+    game_session_state.red_team_score = 0u32;
+    game_session_state.blue_team_score = 0u32;
+
+    update_states_for_players(
+        game_session_state,
+        relaible_channel,
+        game_session_start_time
+    );
+}
+
+fn update_states_for_players(
+    game_session_state: &GameSessionState,
+    relaible_channel: &mut WebRtcChannel,
+    game_session_start_time: &Instant,
+)
+{
+    for (_, player_info) in &game_session_state.players
+    {
+        relaible_channel.send(
+            ServerMessage::NewSessionStarted(
+                game_session_start_time.elapsed().as_millis(),
+                player_info.team
+            ).to_packet(),
+            player_info.peer_id
+        );
+    }
+}
+
+use rand::thread_rng;
+
+fn shuffle_teams(players_state: &mut GameSessionState)
+{
+    players_state.red_team.clear();    
+    players_state.blue_team.clear();
+
+    let mut keys = Vec::with_capacity(players_state.players.len());
+
+    for key in players_state.players.keys()
+    {
+        keys.push(*key);
+    }
+
+    let mut rng = thread_rng();
+    keys.shuffle(&mut rng);
+
+    let mut team = Team::Red;
+    for key in keys
+    {
+        let player_info = players_state.players
+            .get_mut(&key)
+            .unwrap();
+
+        player_info.team = team;
+
+        match team {
+            Team::Red =>
+            {
+                players_state.red_team.push(key);
+                team = Team::Blue;
+            }
+            Team::Blue =>
+            {
+                players_state.blue_team.push(key);
+                team = Team::Red;
+            }
+        }
+    }
+
+
 }
 
 
@@ -364,13 +567,13 @@ async fn handle_player_connection(
     sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
     channel: &mut WebRtcChannel,
-    players_state: &mut HashMap<u128, PeerId>,
+    players_state: &mut GameSessionState,
     connected_player_id: PeerId,
-    main_loop_start_time: &Instant,
+    game_session_start_time: &Instant,
 ) {
     channel.send(
-        ServerMessage::ClientConnectedToGameServer(
-            main_loop_start_time.elapsed().as_millis()
+        ServerMessage::JoinTheMatch(
+            game_session_start_time.elapsed().as_millis()
         ).to_packet(),
         connected_player_id
     );
@@ -405,7 +608,7 @@ async fn handle_player_disconnection(
     sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
     channel: &mut WebRtcChannel,
-    players_state: &mut HashMap<u128, PeerId>,
+    players_state: &mut GameSessionState,
     disconnected_player_id: PeerId
 ) {
     players_state.remove(&disconnected_player_id.0.as_u128());
@@ -429,7 +632,7 @@ async fn handle_player_disconnection(
 
 fn proccess_player_message(
     channel: &mut WebRtcChannel,
-    players_state: &HashMap<u128, PeerId>,
+    players_state: &GameSessionState,
     from_player: PeerId,
     packet: Box<[u8]>,
 ) {
