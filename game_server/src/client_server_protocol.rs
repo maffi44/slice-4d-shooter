@@ -36,14 +36,22 @@ impl ClientMessage {
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum ServerMessage {
-    // u128 - time_in_millis_from_game_session_init
-    // Team - Which team has this player added to
-    // FlagStatus - status of the Red Flag
-    // FlagStatus - status of the Blue Flag
-    // BonusSpotStatus - status of the Move W Bonus
-    // u32 - score of Red team
-    // u32 - score of Blue team
-    JoinTheMatch(u128, Team, FlagStatus, FlagStatus, BonusSpotStatus, u32, u32),
+    JoinTheMatch(
+        // time_in_millis_from_game_session_init
+        u128,
+        // which team has this player added to
+        Team,
+        // status of the Red Flag
+        FlagStatus,
+        // status of the Blue Flag
+        FlagStatus,
+        // status of the Move W Bonus
+        BonusSpotStatus,
+        // score of Red team
+        u32,
+        // score of Blue team
+        u32
+    ),
 
     // u128 - time_in_millis_from_game_session_init
     // Team - Which team has this player added to
@@ -162,7 +170,7 @@ impl NetMessageToPlayer {
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum FlagStatus
 {
     OnTheBase,
@@ -172,7 +180,7 @@ pub enum FlagStatus
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum BonusSpotStatus
 {
     BonusOnTheSpot,

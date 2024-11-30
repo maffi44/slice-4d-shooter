@@ -1,7 +1,7 @@
 mod client_server_protocol;
 
 use std::{
-    collections::HashMap, env, net::{
+    collections::{btree_set::Difference, HashMap}, env, net::{
         Ipv4Addr,
         SocketAddr,
         SocketAddrV4
@@ -19,7 +19,7 @@ use matchmaking_server_protocol::{
 };
 use client_server_protocol::{BonusSpotStatus, ClientMessage, FlagStatus, NetMessageToPlayer, ServerMessage, Team};
 
-use fyrox_core::{futures::SinkExt, rand::seq::SliceRandom};
+use fyrox_core::{futures::{sink::drain, stream::Next, SinkExt}, rand::seq::SliceRandom};
 use matchbox_signaling::SignalingServer;
 use matchbox_socket::{
     MultipleChannels,
@@ -304,8 +304,8 @@ pub enum Command
 pub struct GameSessionState
 {
     players: HashMap<u128, PlayerInfo>,
-    red_team: Vec<u128>,
-    blue_team: Vec<u128>,
+    red_team: HashMap<u128,()>,
+    blue_team: HashMap<u128,()>,
     move_w_bonus: MoveWBonusSpot,
     red_flag: Flag,
     blue_flag: Flag,
@@ -317,14 +317,18 @@ struct PlayerInfo
 {
     peer_id: PeerId,
     team: Team,
+    captured_flag: bool,
 }
+
+pub const MOVE_W_BONUS_RESPAWN_TIME: u128 = 20_000;
+pub const FLAG_RESPAWN_TIME: u128 = 10_000;
 
 impl GameSessionState {
     pub fn new(config: &GameServerConfig) -> Self
     {
         let players = HashMap::with_capacity(config.max_players as usize);
-        let red_team = Vec::with_capacity(config.max_players as usize);
-        let blue_team = Vec::with_capacity(config.max_players as usize);
+        let red_team = HashMap::with_capacity(config.max_players as usize);
+        let blue_team = HashMap::with_capacity(config.max_players as usize);
         
         let red_flag = Flag {
             get_previouse_status_time: 0u128,
@@ -353,12 +357,167 @@ impl GameSessionState {
         }
     }
 
-    pub fn update_game_session(
+    pub fn check_if_player_has_flag(&self, id: u128) -> bool
+    {
+        match self.players.get(&id)
+        {
+            Some(player_info) =>
+            {
+                player_info.captured_flag
+            }
+            None =>
+            {
+                println!(
+                    "ERROR: checking the flag on a non-existent player"
+                );
+
+                false
+            }
+        }
+    }
+
+    pub fn update_items(
         &mut self,
-        relaible_channel: &mut WebRtcChannel,
         game_session_start_time: &Instant,
+        relaible_channel: &mut WebRtcChannel,
     ) {
+        let current_time = game_session_start_time.elapsed().as_millis();
+
+        // update move w bonus
+        match self.move_w_bonus.status
+        {
+            BonusSpotStatus::BonusCollected =>
+            {
+                if current_time - self.move_w_bonus.get_previouse_status_time
+                    >=
+                    MOVE_W_BONUS_RESPAWN_TIME
+                {
+                    self.set_new_bonus_status_and_send_update_to_players(
+                        game_session_start_time,
+                        0,
+                        BonusSpotStatus::BonusOnTheSpot,
+                        relaible_channel
+                    );
+                }
+            }
+            BonusSpotStatus::BonusOnTheSpot => {}
+        }
+
+        // update red flag
+        match self.red_flag.status
+        {
+            FlagStatus::Missed(_) =>
+            {
+                if current_time - self.red_flag.get_previouse_status_time
+                    >=
+                    FLAG_RESPAWN_TIME
+                {
+                    self.set_new_flag_status_and_send_update_to_players(
+                        game_session_start_time,
+                        Team::Red,
+                        FlagStatus::OnTheBase,
+                        relaible_channel
+                    );
+                }
+            }
+            FlagStatus::Captured(_) => {}
+            FlagStatus::OnTheBase   => {}
+        }
+
+        // update blue flag
+        match self.blue_flag.status
+        {
+            FlagStatus::Missed(_) =>
+            {
+                if current_time - self.blue_flag.get_previouse_status_time
+                    >=
+                    FLAG_RESPAWN_TIME
+                {
+                    self.set_new_flag_status_and_send_update_to_players(
+                        game_session_start_time,
+                        Team::Blue,
+                        FlagStatus::OnTheBase,
+                        relaible_channel
+                    );
+                }
+            }
+            FlagStatus::Captured(_) => {}
+            FlagStatus::OnTheBase   => {}
+        }
+    }
+
+    pub fn set_new_bonus_status_and_send_update_to_players(
+        &mut self,
+        game_session_start_time: &Instant,
+        index: usize,
+        new_status: BonusSpotStatus,
+        relaible_channel: &mut WebRtcChannel,
+    ) {
+        self.move_w_bonus
+            .get_previouse_status_time =
+            game_session_start_time.elapsed().as_millis();
         
+        self.move_w_bonus.status = new_status;
+
+        for (_, player_info) in &self.players
+        {
+            relaible_channel.send(
+                ServerMessage::NetMessageToPlayer(
+                    0u128,
+                    NetMessageToPlayer::RemoteBoardCastMessage(
+                        client_server_protocol::RemoteMessage::SetMoveWBonusStatus(
+                            index as u32,
+                            new_status,
+                        )
+                    )
+                ).to_packet(),
+                player_info.peer_id
+            );
+        }
+    }
+
+    pub fn set_new_flag_status_and_send_update_to_players(
+        &mut self,
+        game_session_start_time: &Instant,
+        flag_team: Team,
+        new_status: FlagStatus,
+        relaible_channel: &mut WebRtcChannel,
+    ) {
+        match flag_team
+        {
+            Team::Red =>
+            {
+                self.red_flag
+                    .get_previouse_status_time =
+                    game_session_start_time.elapsed().as_millis();
+                
+                self.red_flag.status = new_status;
+            }
+            Team::Blue =>
+            {
+                self.blue_flag
+                    .get_previouse_status_time =
+                    game_session_start_time.elapsed().as_millis();
+                
+                self.blue_flag.status = new_status;
+            }
+        }
+
+        for (_, player_info) in &self.players
+        {
+            relaible_channel.send(
+                ServerMessage::NetMessageToPlayer(
+                    0u128,
+                    NetMessageToPlayer::RemoteBoardCastMessage(
+                        client_server_protocol::RemoteMessage::SetFlagStatus(
+                            flag_team,
+                            new_status
+                        )
+                    )
+                ).to_packet(),
+                player_info.peer_id
+            );
+        }
     }
 }
 
@@ -431,10 +590,10 @@ async fn start_new_game_session(
                     handle_player_connection(
                         sender_to_matchmaking_server,
                         config,
+                        &game_session_start_time,
                         relaible_channel,
                         game_session_state,
                         id,
-                        &game_session_start_time,
                     ).await
                 }
                 Disconnected =>
@@ -443,6 +602,7 @@ async fn start_new_game_session(
                     handle_player_disconnection(
                         sender_to_matchmaking_server,
                         config,
+                        &game_session_start_time,
                         relaible_channel,
                         game_session_state,
                         id
@@ -519,7 +679,7 @@ fn update_states_for_players(
     }
 }
 
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 
 fn shuffle_teams(players_state: &mut GameSessionState)
 {
@@ -534,6 +694,7 @@ fn shuffle_teams(players_state: &mut GameSessionState)
     }
 
     let mut rng = thread_rng();
+
     keys.shuffle(&mut rng);
 
     let mut team = Team::Red;
@@ -548,47 +709,80 @@ fn shuffle_teams(players_state: &mut GameSessionState)
         match team {
             Team::Red =>
             {
-                players_state.red_team.push(key);
+                players_state.red_team.insert(key, ());
                 team = Team::Blue;
             }
             Team::Blue =>
             {
-                players_state.blue_team.push(key);
+                players_state.blue_team.insert(key, ());
                 team = Team::Red;
             }
         }
     }
-
-
 }
+
+fn choose_team_for_new_player(
+    game_session_state: &GameSessionState
+) -> Team
+{
+    if game_session_state.blue_team.len() >
+        game_session_state.red_team.len()
+    {
+        return Team::Red;
+    }
+    if game_session_state.blue_team.len() <
+        game_session_state.red_team.len()
+    {
+        return Team::Blue;
+    }
+    let mut rng = thread_rng();
+
+    if rng.gen_bool(0.5)
+    {
+        return Team::Red;
+    }
+    else
+    {
+        return Team::Blue;    
+    }
+}
+
 
 
 async fn handle_player_connection(
     sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
-    channel: &mut WebRtcChannel,
-    players_state: &mut GameSessionState,
-    connected_player_id: PeerId,
     game_session_start_time: &Instant,
+    channel: &mut WebRtcChannel,
+    game_session_state: &mut GameSessionState,
+    connected_player_id: PeerId,
 ) {
+    let new_player_team = choose_team_for_new_player(game_session_state);
+
     channel.send(
         ServerMessage::JoinTheMatch(
-            game_session_start_time.elapsed().as_millis()
+            game_session_start_time.elapsed().as_millis(),
+            new_player_team,
+            game_session_state.red_flag.status,
+            game_session_state.blue_flag.status,
+            game_session_state.move_w_bonus.status,
+            game_session_state.red_team_score,
+            game_session_state.blue_team_score,
         ).to_packet(),
         connected_player_id
     );
     
-    for (_ , player_id) in players_state.iter() {
+    for (_ , player_id) in game_session_state.players.iter() {
         channel.send(
             ServerMessage::PlayerConnected(
                 connected_player_id.0.as_u128()
             ).to_packet(),
-            *player_id
+            player_id.peer_id
         );
 
         channel.send(
             ServerMessage::PlayerConnected(
-                player_id.0.as_u128()
+                player_id.peer_id.0.as_u128()
             ).to_packet(),
             connected_player_id
         );
@@ -600,25 +794,166 @@ async fn handle_player_connection(
         )
     ).await.unwrap();
 
-    players_state.insert(connected_player_id.0.as_u128(), connected_player_id);
+    game_session_state.players.insert(
+        connected_player_id.0.as_u128(),
+        PlayerInfo {
+            peer_id: connected_player_id,
+            team: new_player_team,
+            captured_flag: false,
+        }
+    );
 }
 
+
+fn make_teams_equal(
+    game_session_state: &mut GameSessionState
+)
+{
+    let difference =
+        game_session_state.red_team.len() as i32 -
+        game_session_state.blue_team.len() as i32;
+    
+    if difference.abs() > 2
+    {
+        if difference < 0
+        {
+            let mut keys = game_session_state
+                .blue_team
+                .keys();
+
+            let mut key = keys
+                .next()
+                .unwrap()
+                .clone();
+
+            if game_session_state.check_if_player_has_flag(key)
+            {
+                key = keys
+                    .next()
+                    .unwrap()
+                    .clone();
+            }
+
+            game_session_state
+                .blue_team
+                .remove(&key)
+                .unwrap();
+
+            game_session_state
+                .red_team
+                .insert(key, ());
+
+            game_session_state
+                .players
+                .get_mut(&key)
+                .unwrap()
+                .team =
+                Team::Red;
+        }
+        else
+        {
+            let mut keys = game_session_state
+                .red_team
+                .keys();
+
+            let mut key = keys
+                .next()
+                .unwrap()
+                .clone();
+
+            if game_session_state.check_if_player_has_flag(key)
+            {
+                key = keys
+                    .next()
+                    .unwrap()
+                    .clone();
+            }
+
+            game_session_state
+                .red_team
+                .remove(&key)
+                .unwrap();
+
+            game_session_state
+                .blue_team
+                .insert(key, ());
+
+            game_session_state
+                .players
+                .get_mut(&key)
+                .unwrap()
+                .team =
+                Team::Blue;
+        }
+    }
+}
 
 async fn handle_player_disconnection(
     sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
-    channel: &mut WebRtcChannel,
-    players_state: &mut GameSessionState,
+    game_session_start_time: &Instant,
+    relaible_channel: &mut WebRtcChannel,
+    game_session_state: &mut GameSessionState,
     disconnected_player_id: PeerId
 ) {
-    players_state.remove(&disconnected_player_id.0.as_u128());
+    let disconnected_player =
+        game_session_state.players.remove(&disconnected_player_id.0.as_u128());
+    
+    if disconnected_player.is_some()
+    {
+        let disconnected_player = disconnected_player.unwrap();
 
-    for (_ , player_id) in players_state.iter() {
-        channel.send(
+        match disconnected_player.team {
+            Team::Red =>
+            {
+                game_session_state.red_team.remove(&disconnected_player_id.0.as_u128());
+            }
+            Team::Blue =>
+            {
+                game_session_state.blue_team.remove(&disconnected_player_id.0.as_u128());
+
+            }
+        }
+
+        if game_session_state.check_if_player_has_flag(
+            disconnected_player_id.0.as_u128()
+        ) {
+            match disconnected_player.team {
+                Team::Red =>
+                {
+                    game_session_state.set_new_flag_status_and_send_update_to_players(
+                        game_session_start_time,
+                        Team::Blue,
+                        FlagStatus::OnTheBase,
+                        relaible_channel
+                    );
+                }
+                Team::Blue =>
+                {
+                    game_session_state.set_new_flag_status_and_send_update_to_players(
+                        game_session_start_time,
+                        Team::Red,
+                        FlagStatus::OnTheBase,
+                        relaible_channel
+                    );
+
+                }
+            }
+        }
+    }
+    else
+    {
+        println!("ERROR: disconected player is not exist in game_session_state!");
+    }
+
+    make_teams_equal(game_session_state);
+
+    for (_ , player_id) in game_session_state.players.iter() {
+        relaible_channel.send(
             ServerMessage::PlayerDisconnected(
                 disconnected_player_id.0.as_u128()
             ).to_packet(),
-            *player_id
+            player_id.peer_id
         );
     }
 
