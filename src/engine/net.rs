@@ -456,7 +456,7 @@ impl NetSystem {
             {
                 if webrtc_socket.any_closed() {return;}
                 
-                let packet = ClientMessage::BoardcastMessage(message).to_packet();
+                let packet = ClientMessage::BoardcastMessageToPlayers(message).to_packet();
         
                 webrtc_socket
                     .channel_mut(0)
@@ -479,7 +479,7 @@ impl NetSystem {
             {
                 if webrtc_socket.any_closed() {return;}
 
-                let packet = ClientMessage::BoardcastMessage(message).to_packet();
+                let packet = ClientMessage::BoardcastMessageToPlayers(message).to_packet();
 
                 webrtc_socket
                     .channel_mut(1)
@@ -502,7 +502,7 @@ impl NetSystem {
             {
                 if webrtc_socket.any_closed() {return;}
                 
-                let packet = ClientMessage::DirectMessage(peer, message).to_packet();
+                let packet = ClientMessage::DirectMessageToPlayer(peer, message).to_packet();
         
                 webrtc_socket
                     .channel_mut(0)
@@ -525,7 +525,7 @@ impl NetSystem {
             {
                 if webrtc_socket.any_closed() {return;}
 
-                let packet = ClientMessage::DirectMessage(peer, message).to_packet();
+                let packet = ClientMessage::DirectMessageToPlayer(peer, message).to_packet();
         
                 webrtc_socket
                     .channel_mut(1)

@@ -14,6 +14,7 @@ matchmaking_server = { path = "../matchmaking_server" }
 matchbox_signaling = "*"
 matchbox_socket = "*"
 rand = "*"
+glam = "*"
 
 [lib]
 name = "client_server_protocol"

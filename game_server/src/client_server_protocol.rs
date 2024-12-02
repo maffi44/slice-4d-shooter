@@ -8,8 +8,9 @@ type SerializableTransform = ([f32; 4], [f32; 16], [f32; 4]);
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum ClientMessage {
-    DirectMessage(u128, NetMessageToPlayer),
-    BoardcastMessage(NetMessageToPlayer),
+    DirectMessageToPlayer(u128, NetMessageToPlayer),
+    BoardcastMessageToPlayers(NetMessageToPlayer),
+    MessageToServer(NetMessageToServer)
 }
 
 impl ClientMessage {
@@ -66,9 +67,6 @@ pub enum ServerMessage {
     // u128 - id of message sender
     // NetMessageToPlayer - message
     NetMessageToPlayer(u128, NetMessageToPlayer),
-    
-    // NetMessageToPlayer - message
-    NetMessageToServer(NetMessageToPlayer),
 }
 
 impl ServerMessage {
@@ -96,7 +94,29 @@ impl ServerMessage {
 #[alkahest(Formula, Serialize, Deserialize)]
 #[derive(Clone)]
 pub enum NetMessageToServer {
-    None
+    TryToGetFlag(
+        // time of attempt
+        u128,
+        // what flag trying to get
+        Team,
+    ),
+    TryToGetMoveWBonus(
+        // time of attempt
+        u128,
+        // index of bonus spot
+        u32,
+    ),
+    DropedFlag(
+        // droped flag's team
+        Team,
+        // position of flag
+        [f32;4],
+        // droped in space
+        bool
+    ),
+    MovedOpponentsFlagToMyBase(
+        Team,
+    )
 }
 
 #[repr(C)]
@@ -116,6 +136,16 @@ pub enum RemoteCommand {
     SpawnPlayersDollActor(SerializableTransform, f32, bool),
     SpawnPlayerDeathExplode([f32;4]),
     RemoveActor(ActorID),
+    SpawnHole(
+        // position
+        [f32;4],
+        //radius
+        f32,
+        // color
+        [f32;3],
+        // target size is reached
+        bool,
+    ),
 }
 
 #[repr(C)]
@@ -134,17 +164,35 @@ pub enum RemoteMessage {
     HoleGunStartCharging,
     SpawnMachineGunShot([f32;4], bool),
 
-    // Team - Which team's flag status has changed
-    // FlagStatus - status of the flag
-    SetFlagStatus(Team, FlagStatus),
+    SetFlagStatus(
+        // Which team's flag status has changed
+        Team,
+        // status of the flag
+        FlagStatus
+    ),
     
-    // u32 - index of concrete move W bonus spot
-    // BonusSpotStatus - bonus status
-    SetMoveWBonusStatus(u32, BonusSpotStatus),
+    SetMoveWBonusStatus(
+        // index of concrete move W bonus spot        
+        u32,
+        // bonus status
+        BonusSpotStatus
+    ),
 
-    // u32 - score of Red team
-    // u32 - score of Blue team
-    UpdateTeamsScore(u32, u32)
+    UpdateTeamsScore(
+        // Red team score
+        u32,
+        // Blue team score
+        u32
+    ),
+
+    SetNewTeam(
+        Team
+    ),
+
+    TeamWin
+    (
+        Team
+    ),
 }
 
 impl NetMessageToPlayer {
@@ -175,7 +223,7 @@ pub enum FlagStatus
 {
     OnTheBase,
     Captured(u128),
-    Missed([f32;4]),
+    Droped([f32;4]),
 }
 
 #[repr(C)]
@@ -184,7 +232,10 @@ pub enum FlagStatus
 pub enum BonusSpotStatus
 {
     BonusOnTheSpot,
-    BonusCollected,
+    BonusCollected(
+        // player's id who collected the bonus
+        u128
+    ),
 }
 
 #[repr(C)]
