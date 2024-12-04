@@ -5,7 +5,7 @@ use crate::{
         machinegun_shot::MachinegunShot,
         player::{
             PlayerInnerState,
-            PlayerMessages
+            PlayerMessage
         },
         ActorID,
         ActorWrapper,
@@ -29,7 +29,7 @@ use crate::{
             UISystem
         }
     },
-    transform::Transform
+    transform::Vec4
 };
 
 use client_server_protocol::{
@@ -173,8 +173,8 @@ impl MachineGun {
                     Message {
                         from: player_id,
                         message: MessageType::SpecificActorMessage(
-                            SpecificActorMessage::PLayerMessages(
-                                PlayerMessages::DealDamageAndAddForce(
+                            SpecificActorMessage::PLayerMessage(
+                                PlayerMessage::DealDamageAndAddForce(
                                     self.machinegun_damage as u32,
                                     force,
                                     position,
@@ -265,7 +265,7 @@ impl Device for MachineGun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
+    fn get_visual_element<'a>(&'a self, transform: &'a Vec4) -> Option<VisualElement<'a>> {
         None
     }
 

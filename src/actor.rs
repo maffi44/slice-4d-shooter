@@ -9,6 +9,7 @@ pub mod players_death_explosion;
 pub mod machinegun_shot;
 pub mod shooting_impact;
 pub mod flag;
+pub mod session_controller;
 
 use crate::{
     engine::{
@@ -20,9 +21,22 @@ use crate::{
 };
 
 use self::{
-    holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, player::{
-        Player, PlayerMessages
-    }, players_death_explosion::PlayersDeathExplosion, players_doll::{PlayersDoll, PlayersDollMessages}, shooting_impact::ShootingImpact, wandering_actor::WanderingActor
+    holegun_miss::HoleGunMiss,
+    holegun_shot::HoleGunShot,
+    machinegun_shot::MachinegunShot,
+    player::{
+        Player,
+        PlayerMessage
+    },
+    players_death_explosion::PlayersDeathExplosion,
+    players_doll::{
+        PlayersDoll,
+        PlayersDollMessage
+    },
+    flag::FlagMessage,
+    session_controller::SessionControllerMessage,
+    shooting_impact::ShootingImpact,
+    wandering_actor::WanderingActor
 };
 
 
@@ -32,7 +46,7 @@ pub trait Actor {
 
     fn recieve_message(
         &mut self,
-        message: &Message,
+        message: Message,
         engine_handle: &mut EngineHandle,
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
@@ -58,10 +72,34 @@ pub trait Actor {
     fn get_visual_element(&self) -> Option<VisualElement> {None}
 
     fn get_id(&self) -> Option<ActorID>;
-
-    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle);
-    
+        
     fn set_id(&mut self, id: ActorID);
+
+    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+        let prev_id = match self.get_id() {
+            Some(id) =>
+            {
+                id
+            }
+            None =>
+            {
+                self.set_id(id);
+                return;
+            }
+        };
+
+        engine_handle.send_boardcast_message(
+            Message {
+                from: prev_id,
+                message: MessageType::CommonActorsMessages(
+                    CommonActorsMessages::IWasChangedMyId(id)
+                )
+            }
+        );
+
+        self.set_id(id);
+    }
+
 }
 
 pub enum ActorWrapper {
@@ -143,7 +181,7 @@ impl Actor for ActorWrapper {
 
     fn recieve_message(
         &mut self,
-        message: &Message,
+        message: Message,
         engine_handle: &mut EngineHandle,
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
@@ -381,10 +419,13 @@ pub trait Component {
     fn get_id(&self) -> Option<ActorID>;
 }
 
+#[derive(Clone)]
 pub struct Message {
     pub from: ActorID,
     pub message: MessageType,
 }
+
+#[derive(Clone)]
 pub enum MessageType {
     CommonActorsMessages(CommonActorsMessages),
     SpecificActorMessage(SpecificActorMessage),
@@ -392,6 +433,8 @@ pub enum MessageType {
 }
 
 use glam::Vec4;
+
+#[derive(Clone)]
 pub enum CommonActorsMessages {
     SetTransform(Transform),
     Enable(bool),
@@ -399,15 +442,19 @@ pub enum CommonActorsMessages {
     IWasChangedMyId(ActorID),
 }
 
+#[derive(Clone)]
 pub enum SpecificActorMessage {
-    PLayerMessages(PlayerMessages),
-    PlayersDollMessages(PlayersDollMessages),
+    SessionControllerMessage(SessionControllerMessage),
+    PlayersDollMessage(PlayersDollMessage),
+    PLayerMessage(PlayerMessage),
+    FlagMessage(FlagMessage),
 }
 
+#[derive(Clone)]
 pub enum PhysicsMessages {
-    KinematicColliderMessages(KinematicColliderMessages),
-    StaticColliderMessages(StaticColliderMessages),
-    DynamicColliderMessages(DynamicColliderMessages),
-    AreaMessages(AreaMessages),
+    KinematicColliderMessage(KinematicColliderMessages),
+    StaticColliderMessage(StaticColliderMessages),
+    DynamicColliderMessage(DynamicColliderMessages),
+    AreaMessage(AreaMessages),
 }
 

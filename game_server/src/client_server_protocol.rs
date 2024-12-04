@@ -247,6 +247,40 @@ pub enum Team
     Blue,
 }
 
+impl PartialEq for Team
+{
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Team::Red =>
+            {
+                match other {
+                    Team::Red =>
+                    {
+                        true
+                    }
+                    Team::Blue =>
+                    {
+                        false
+                    }
+                }
+            }
+            Team::Blue =>
+            {
+                match other {
+                    Team::Red =>
+                    {
+                        false
+                    }
+                    Team::Blue =>
+                    {
+                        true
+                    }
+                }
+            }
+        }
+    }
+}
+
 pub enum NetCommand {
     NetSystemIsConnectedAndGetNewPeerID(u128),
     PeerConnected(u128),

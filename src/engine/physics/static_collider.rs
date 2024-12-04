@@ -9,7 +9,7 @@ use crate::{
 use glam::Vec4;
 
 
-
+#[derive(Clone)]
 pub enum StaticColliderMessages {
     
 }

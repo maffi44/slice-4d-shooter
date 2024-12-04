@@ -72,21 +72,6 @@ impl Actor for WanderingActor {
         self.id
     }
 
-    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
-        if let Some(prev_id) = self.id {
-            engine_handle.send_boardcast_message(Message {
-                from: prev_id,
-                message: MessageType::CommonActorsMessages(
-                    CommonActorsMessages::IWasChangedMyId(
-                        id
-                    )
-                )
-            });
-        }
-
-        self.id = Some(id);
-    }
-
     fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
 

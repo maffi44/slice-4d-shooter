@@ -2,10 +2,7 @@ pub mod player_input_master;
 pub mod player_settings;
 
 use client_server_protocol::{
-    RemoteCommand,
-    RemoteMessage,
-    NetCommand,
-    NetMessageToPlayer,
+    NetCommand, NetMessageToPlayer, RemoteCommand, RemoteMessage, Team
 };
 
 use crate::{
@@ -22,7 +19,13 @@ use crate::{
             CommandType,
             EngineHandle
         }, physics::{
-            colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::{KinematicCollider, KinematicColliderMessages}, PhysicsSystem
+            colliders_container::PhysicalElement,
+            dynamic_collider::PlayersDollCollider,
+            kinematic_collider::{
+                KinematicCollider,
+                KinematicColliderMessages
+            },
+            PhysicsSystem
         }, render::VisualElement, time::TimeSystem, ui::{
             RectSize,
             UIElement,
@@ -43,12 +46,14 @@ use std::f32::consts::PI;
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Mat4, Vec2, Vec4};
-use matchbox_socket::PeerId;
 
-use super::{device::machinegun::MachineGun, players_death_explosion::PlayersDeathExplosion, PhysicsMessages};
+use super::{
+    device::machinegun::MachineGun, players_death_explosion::PlayersDeathExplosion, session_controller::DEFAULT_TEAM, PhysicsMessages
+};
 
 
 pub struct PlayerInnerState {
+    pub team: Team,
     pub collider: KinematicCollider,
     pub collider_for_others: Vec<PlayersDollCollider>,
     pub transform: Transform,
@@ -83,6 +88,7 @@ impl PlayerInnerState {
         };
 
         PlayerInnerState {
+            team: DEFAULT_TEAM,
             collider: KinematicCollider::new(
                 settings.max_speed,
                 settings.max_accel,
@@ -214,7 +220,8 @@ const GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED: f32 = 5.0;
 const DEATH_EFFECT_COEF_INCREASE_SPEED: f32 = 10.0;
 const DEATH_EFFECT_COEF_DECREASE_SPEED: f32 = 3.0;
 
-pub enum PlayerMessages {
+#[derive(Clone)]
+pub enum PlayerMessage {
     DealDamageAndAddForce(u32, Vec4, Vec4),
     NewPeerConnected(u128),
     Telefrag,
@@ -226,7 +233,7 @@ pub enum PlayerMessages {
 impl Actor for Player {
     fn recieve_message(
         &mut self,
-        message: &Message,
+        message: Message,
         engine_handle: &mut EngineHandle,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
@@ -253,7 +260,7 @@ impl Actor for Player {
             }
             MessageType::PhysicsMessages(message) => {
                 match message {
-                    PhysicsMessages::KinematicColliderMessages(message) => {
+                    PhysicsMessages::KinematicColliderMessage(message) => {
                         match message {
                             KinematicColliderMessages::ColliderIsStuckInsideObject => {
                                 
@@ -273,9 +280,9 @@ impl Actor for Player {
             },
             MessageType::SpecificActorMessage(message) => {
                 match message {
-                    SpecificActorMessage::PLayerMessages(message) => {
+                    SpecificActorMessage::PLayerMessage(message) => {
                         match message {
-                            PlayerMessages::Telefrag => {
+                            PlayerMessage::Telefrag => {
                                 self.die(
                                     true,
                                     engine_handle,
@@ -285,7 +292,7 @@ impl Actor for Player {
                                 );
                             }
 
-                            PlayerMessages::DieImmediately => {
+                            PlayerMessage::DieImmediately => {
                                 self.die(
                                     true,
                                     engine_handle,
@@ -295,7 +302,7 @@ impl Actor for Player {
                                 );
                             }
 
-                            PlayerMessages::DieSlowly => {
+                            PlayerMessage::DieSlowly => {
                                 self.die(
                                     true,
                                     engine_handle,
@@ -305,7 +312,7 @@ impl Actor for Player {
                                 );
                             }
 
-                            PlayerMessages::DealDamageAndAddForce(damage, force, _) => {
+                            PlayerMessage::DealDamageAndAddForce(damage, force, _) => {
                                 self.get_damage_and_add_force(
                                     *damage as i32,
                                     *force,
@@ -316,7 +323,7 @@ impl Actor for Player {
                                 );
                             }
 
-                            PlayerMessages::NewPeerConnected(peer_id) => {
+                            PlayerMessage::NewPeerConnected(peer_id) => {
 
                                 // println!("new peer {} connected, replicate my body", peer_id);
                                 
@@ -368,22 +375,6 @@ impl Actor for Player {
 
     fn get_id(&self) -> Option<ActorID> {
         self.id
-    }
-
-    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
-        
-        if let Some(prev_id) = self.id {
-            engine_handle.send_boardcast_message(Message {
-                from: prev_id,
-                message: MessageType::CommonActorsMessages(
-                    CommonActorsMessages::IWasChangedMyId(
-                        id
-                    )
-                )
-            });
-        }
-
-        self.set_id(id);
     }
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
@@ -1926,8 +1917,8 @@ impl Player {
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     message: MessageType::SpecificActorMessage(
-                        SpecificActorMessage::PLayerMessages(
-                            PlayerMessages::Telefrag
+                        SpecificActorMessage::PLayerMessage(
+                            PlayerMessage::Telefrag
                         )
                     )
                 }

@@ -60,6 +60,10 @@ pub enum UIElementType {
     HUDBottomLine,
     LeftScannerDsiplay,
     RightScannerDsiplay,
+    RedFlagStatus,
+    BlueFlagStatus,
+    ScoreBar,
+    //Scores...
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]

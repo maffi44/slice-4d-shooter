@@ -840,24 +840,24 @@ async fn start_new_game_session(
         match game_session_state.game_state
         {
             GameState::Playing => {}
-            GameState::BlueWin(time_since_win) =>
+            GameState::BlueWin(win_time) =>
             {
                 let time_since_win =
                     game_session_start_time.elapsed().as_millis()
                     -
-                    time_since_win;
+                    win_time;
                 
                 if time_since_win > TIME_IN_SESSION_AFTER_WIN
                 {
                     return Command::StartNewGameSession;
                 }
             }
-            GameState::RedWin(time_since_win) =>
+            GameState::RedWin(win_time) =>
             {
                 let time_since_win =
                     game_session_start_time.elapsed().as_millis()
                     -
-                    time_since_win;
+                    win_time;
                 
                 if time_since_win > TIME_IN_SESSION_AFTER_WIN
                 {

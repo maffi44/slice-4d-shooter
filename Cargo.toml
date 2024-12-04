@@ -22,6 +22,7 @@ tokio = "*"
 tokio-tungstenite = "*"
 web-time = "0.2.4"
 glam = "*"
+rand = "*"
 
 fyrox-sound = "*"
 fyrox-resource = "*"

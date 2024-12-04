@@ -38,10 +38,10 @@ use client_server_protocol::{
 
 use crate::{
     actor::{
-        player::{player_settings::PlayerSettings, PlayerMessages},
+        player::{player_settings::PlayerSettings, PlayerMessage},
         players_death_explosion::PlayersDeathExplosion,
         players_doll::{
-            PlayerDollInputState, PlayersDoll, PlayersDollMessages},
+            PlayerDollInputState, PlayersDoll, PlayersDollMessage},
         ActorWrapper,
         CommonActorsMessages,
         Message,
@@ -605,8 +605,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::SetInterploatedModelTargetState(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SetInterploatedModelTargetState(
                                         transform,
                                         input_state,
                                         velocity,
@@ -623,8 +623,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::SpawnMachineGunShot(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawnMachineGunShot(
                                         Vec4::from_array(pos),
                                         is_miss
                                     )
@@ -643,8 +643,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::Respawn(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::Respawn(
                                         transform,
                                         input_state,
                                         velocity,
@@ -660,8 +660,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::HoleGunStartCharging
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::HoleGunStartCharging
                                 )
                             )
                         }
@@ -673,8 +673,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessages(
-                                    PlayerMessages::DieImmediately
+                                SpecificActorMessage::PLayerMessage(
+                                    PlayerMessage::DieImmediately
                                 )
                             )
                         }
@@ -686,8 +686,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessages(
-                                    PlayerMessages::DieSlowly
+                                SpecificActorMessage::PLayerMessage(
+                                    PlayerMessage::DieSlowly
                                 )
                             )
                         }
@@ -705,8 +705,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::SpawHoleGunMissActor(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawHoleGunMissActor(
                                         Vec4::from_array(position),
                                         radius,
                                         Vec3::from_array(color),
@@ -729,8 +729,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::SpawnHoleGunShotActor(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawnHoleGunShotActor(
                                         Vec4::from_array(position),
                                         radius,
                                         Vec3::from_array(color),
@@ -760,8 +760,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessages(
-                                    PlayerMessages::DealDamageAndAddForce(
+                                SpecificActorMessage::PLayerMessage(
+                                    PlayerMessage::DealDamageAndAddForce(
                                         damage,
                                         Vec4::from_array(force),
                                         Vec4::from_array(impact_pos),
@@ -796,8 +796,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::SetInterploatedModelTargetState(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SetInterploatedModelTargetState(
                                         transform,
                                         input_state,
                                         velocity,
@@ -813,8 +813,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::SpawnMachineGunShot(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawnMachineGunShot(
                                         Vec4::from_array(pos),
                                         is_miss
                                     )
@@ -832,8 +832,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::Respawn(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::Respawn(
                                         transform,
                                         input_state,
                                         velocity,
@@ -848,8 +848,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessages(
-                                    PlayerMessages::DieImmediately
+                                SpecificActorMessage::PLayerMessage(
+                                    PlayerMessage::DieImmediately
                                 )
                             )
                         }
@@ -860,8 +860,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessages(
-                                    PlayerMessages::DieSlowly
+                                SpecificActorMessage::PLayerMessage(
+                                    PlayerMessage::DieSlowly
                                 )
                             )
                         }
@@ -872,8 +872,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::HoleGunStartCharging
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::HoleGunStartCharging
                                 )
                             )
                         }
@@ -890,8 +890,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::SpawHoleGunMissActor(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawHoleGunMissActor(
                                         Vec4::from_array(position),
                                         radius,
                                         Vec3::from_array(color),
@@ -913,8 +913,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayersDollMessages(
-                                    PlayersDollMessages::SpawnHoleGunShotActor(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawnHoleGunShotActor(
                                         Vec4::from_array(position),
                                         radius,
                                         Vec3::from_array(color),
@@ -942,8 +942,8 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessages(
-                                    PlayerMessages::DealDamageAndAddForce(
+                                SpecificActorMessage::PLayerMessage(
+                                    PlayerMessage::DealDamageAndAddForce(
                                         damage,
                                         Vec4::from_array(force),
                                         Vec4::from_array(impact_pos),

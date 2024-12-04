@@ -12,7 +12,7 @@ use crate::{
         holegun_shot::HoleGunShot,
         player::{
             PlayerInnerState,
-            PlayerMessages
+            PlayerMessage
         },
         ActorID,
         ActorWrapper,
@@ -43,7 +43,7 @@ use crate::{
             VolumeArea
         }
     },
-    transform::Transform
+    transform::Vec4
 };
 
 use client_server_protocol::{
@@ -185,8 +185,8 @@ impl HoleGun {
                     Message {
                         from: player_id,
                         message: MessageType::SpecificActorMessage(
-                            SpecificActorMessage::PLayerMessages(
-                                PlayerMessages::DealDamageAndAddForce(
+                            SpecificActorMessage::PLayerMessage(
+                                PlayerMessage::DealDamageAndAddForce(
                                     damage as u32,
                                     force,
                                     hit.hit_point,
@@ -287,7 +287,7 @@ impl Device for HoleGun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
+    fn get_visual_element<'a>(&'a self, transform: &'a Vec4) -> Option<VisualElement<'a>> {
         Some(
             VisualElement {
                 transform,

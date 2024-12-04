@@ -75,10 +75,6 @@ impl Actor for PlayersDeathExplosion {
         self.id
     }
 
-    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
-        self.id = Some(id);
-    }
-
     fn get_transform(&self) -> &Transform {
         &self.transform
     }

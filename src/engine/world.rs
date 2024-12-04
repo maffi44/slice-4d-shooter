@@ -7,7 +7,7 @@ use crate::{
     actor::{
         player::{
             player_settings::PlayerSettings,
-            PlayerMessages
+            PlayerMessage
         },
         Actor,
         ActorID,
@@ -194,8 +194,8 @@ impl World {
                             Message {
                                 from: 0u128,
                                 message: MessageType::SpecificActorMessage(
-                                    SpecificActorMessage::PLayerMessages(
-                                        PlayerMessages::NewPeerConnected(peer_id)
+                                    SpecificActorMessage::PLayerMessage(
+                                        PlayerMessage::NewPeerConnected(peer_id)
                                     )
                                 )
                             }
@@ -220,7 +220,7 @@ impl World {
         ui_system: &mut UISystem,
     ) {
         if let Some(actor) = self.actors.get_mut(&to) {
-            actor.recieve_message(&message, engine_handle, physics_system, audio_system, ui_system);
+            actor.recieve_message(message, engine_handle, physics_system, audio_system, ui_system);
         }
     }
 
@@ -234,7 +234,7 @@ impl World {
     ) {
         for (_, actor) in self.actors.iter_mut() {
             if actor.get_id().expect("actor does not have id") != message.from {
-                actor.recieve_message(&message, engine_handle, physics_system, audio_system, ui_system);
+                actor.recieve_message(message.clone(), engine_handle, physics_system, audio_system, ui_system);
             } 
         }
     }

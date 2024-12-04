@@ -5,6 +5,7 @@ use crate::actor::{
     ActorID,
 };
 
+#[derive(Clone)]
 pub enum DynamicColliderMessages {
     
 }

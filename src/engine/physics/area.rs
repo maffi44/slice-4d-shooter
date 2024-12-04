@@ -22,7 +22,7 @@ use glam::{Vec4, Vec4Swizzles};
 
 
    
-
+#[derive(Clone)]
 pub enum AreaMessages {
     ActorIsContainedInsideArea(ActorID),
     ActorEscapeArea(ActorID),
@@ -86,7 +86,7 @@ impl Area {
                     // Kinematic collider escaped the area
 
                     let message_content = MessageType::PhysicsMessages(
-                        PhysicsMessages::AreaMessages(
+                        PhysicsMessages::AreaMessage(
                             AreaMessages::ActorEscapeArea(collider_id)
                         )
                     );
@@ -108,7 +108,7 @@ impl Area {
                     // Kinematic collider entered the area
 
                     let message_content = MessageType::PhysicsMessages(
-                        PhysicsMessages::AreaMessages(
+                        PhysicsMessages::AreaMessage(
                             AreaMessages::ActorEnterArea(collider_id)
                         )
                     );
@@ -131,7 +131,7 @@ impl Area {
         for intersected_actor_id in self.intersected_actor_ids.iter() {
             
             let message_content = MessageType::PhysicsMessages(
-                PhysicsMessages::AreaMessages(
+                PhysicsMessages::AreaMessage(
                     AreaMessages::ActorIsContainedInsideArea(*intersected_actor_id)
                 )
             );

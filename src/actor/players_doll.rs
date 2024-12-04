@@ -1,13 +1,12 @@
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Vec3, Vec4};
-use matchbox_socket::PeerId;
 
 use client_server_protocol::{
-    RemoteCommand,
-    RemoteMessage,
     NetCommand,
     NetMessageToPlayer,
+    RemoteMessage,
+    Team
 };
 
 use crate::{
@@ -17,24 +16,36 @@ use crate::{
             CommandType,
             EngineHandle
         }, physics::{
-            colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, PhysicsSystem
-        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
+            colliders_container::PhysicalElement,
+            dynamic_collider::PlayersDollCollider,
+            kinematic_collider::KinematicCollider,
+            PhysicsSystem
+        },
+        render::VisualElement,
+        time::TimeSystem,
+        ui::UISystem,
+        world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
     },
-    transform::{self, Transform}
+    transform::Transform,
 };
 
 use super::{
     device::holegun::HOLE_GUN_COLOR,
+    flag::FlagMessage,
     holegun_miss::HoleGunMiss,
     holegun_shot::HoleGunShot,
     machinegun_shot::MachinegunShot,
     player::{
-        player_settings::PlayerSettings, PlayerMessages, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
+        player_settings::PlayerSettings,
+        PlayerMessage,
+        PLAYER_MAX_HP,
+        TIME_TO_DIE_SLOWLY
     },
     players_death_explosion::PlayersDeathExplosion,
+    session_controller::SessionControllerMessage,
     shooting_impact::ShootingImpact,
     Actor,
     ActorID,
@@ -88,6 +99,7 @@ impl PlayerDollInputState {
 
 const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
 pub struct PlayersDoll {
+    team: Team,
     id: Option<ActorID>,
     transform: Transform,
     target_transform: Transform,
@@ -113,7 +125,8 @@ pub struct PlayersDoll {
     w_levels_of_map: Vec<f32>,
 }
 
-pub enum PlayersDollMessages{
+#[derive(Clone)]
+pub enum PlayersDollMessage{
     SetInterploatedModelTargetState(Transform, PlayerDollInputState, Vec4, u128),
     SpawnHoleGunShotActor(Vec4, f32, Vec3, f32),
     SpawHoleGunMissActor(Vec4, f32, Vec3, f32),
@@ -308,8 +321,8 @@ impl PlayersDoll {
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     message: MessageType::SpecificActorMessage(
-                        SpecificActorMessage::PLayerMessages(
-                            PlayerMessages::Telefrag
+                        SpecificActorMessage::PLayerMessage(
+                            PlayerMessage::Telefrag
                         )
                     )
                 }
@@ -408,7 +421,7 @@ impl PlayersDoll {
 impl Actor for PlayersDoll {
     fn recieve_message(
         &mut self,
-        message: &Message,
+        message: Message,
         engine_handle: &mut EngineHandle,
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
@@ -441,9 +454,9 @@ impl Actor for PlayersDoll {
             },
             MessageType::SpecificActorMessage(message) => {
                 match message {
-                    SpecificActorMessage::PLayerMessages(message) => {
+                    SpecificActorMessage::PLayerMessage(message) => {
                         match message {
-                            PlayerMessages::Telefrag => {
+                            PlayerMessage::Telefrag => {
                                 self.die_immediately(engine_handle, audio_system);
 
                                 engine_handle.send_command(
@@ -461,13 +474,13 @@ impl Actor for PlayersDoll {
                                     }
                                 )
                             }
-                            PlayerMessages::DieImmediately => {
+                            PlayerMessage::DieImmediately => {
                                 self.die_immediately(engine_handle, audio_system);
                             }
-                            PlayerMessages::DieSlowly => {
+                            PlayerMessage::DieSlowly => {
                                 self.die_slowly(engine_handle);
                             }
-                            PlayerMessages::DealDamageAndAddForce(damage, force, impact_pos) => {
+                            PlayerMessage::DealDamageAndAddForce(damage, force, impact_pos) => {
                                 engine_handle.send_command(
                                     Command {
                                         sender: self.id.expect("Player's Doll have not Actor's ID"),
@@ -505,12 +518,12 @@ impl Actor for PlayersDoll {
                                     fyrox_sound::source::Status::Playing
                                 );                          
                             }
-                            PlayerMessages::NewPeerConnected(_) => {}
+                            PlayerMessage::NewPeerConnected(_) => {}
                         }
                     },
-                    SpecificActorMessage::PlayersDollMessages(message) => {
+                    SpecificActorMessage::PlayersDollMessage(message) => {
                         match message {
-                            PlayersDollMessages::SetInterploatedModelTargetState(
+                            PlayersDollMessage::SetInterploatedModelTargetState(
                                 transform,
                                 input,
                                 velocity,
@@ -529,7 +542,7 @@ impl Actor for PlayersDoll {
 
 
                             }
-                            PlayersDollMessages::HoleGunStartCharging => {
+                            PlayersDollMessage::HoleGunStartCharging => {
 
                                 if self.volume_area.is_empty() {
 
@@ -558,7 +571,7 @@ impl Actor for PlayersDoll {
 
                                 }
                             }
-                            PlayersDollMessages::Respawn(
+                            PlayersDollMessage::Respawn(
                                 transform,
                                 input_state,
                                 velocity
@@ -572,7 +585,7 @@ impl Actor for PlayersDoll {
                                     engine_handle
                                 );
                             }
-                            PlayersDollMessages::SpawnHoleGunShotActor(
+                            PlayersDollMessage::SpawnHoleGunShotActor(
                                 position,
                                 radius,
                                 color,
@@ -626,7 +639,7 @@ impl Actor for PlayersDoll {
                             },
 
 
-                            PlayersDollMessages::SpawHoleGunMissActor(
+                            PlayersDollMessage::SpawHoleGunMissActor(
                                 position,
                                 radius,
                                 color,
@@ -680,7 +693,7 @@ impl Actor for PlayersDoll {
                                 })
                             },
 
-                            PlayersDollMessages::SpawnMachineGunShot(position, it_is_miss) => {
+                            PlayersDollMessage::SpawnMachineGunShot(position, it_is_miss) => {
                                 let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
 
                                 audio_system.spawn_spatial_sound(
@@ -713,6 +726,50 @@ impl Actor for PlayersDoll {
                             }
                         }
                     }
+                    SpecificActorMessage::FlagMessage(message) =>
+                    {
+                        match message
+                        {
+                            FlagMessage::GiveMeTargetPosition =>
+                            {
+                                engine_handle.send_direct_message(
+                                    from,
+                                    Message {
+                                        from: self.id.expect("PlayerDoll have not ActorID"),
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::FlagMessage(
+                                                FlagMessage::SetTargetPosition(
+                                                    self.transform.get_position()
+                                                )
+                                            )
+                                        )
+                                    }
+                                );
+                            }
+                            _ => {}
+                        }
+                    }
+                    SpecificActorMessage::SessionControllerMessage(message) =>
+                    {
+                        match message
+                        {
+                            SessionControllerMessage::TeamWin(team) =>
+                            {
+                                match team
+                                {
+                                    Team::Red =>
+                                    {
+                                        todo!("play red effect")
+                                    }
+                                    Team::Blue =>
+                                    {
+                                        todo!("play blue effect")
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
                 }
 
             }  
@@ -741,22 +798,6 @@ impl Actor for PlayersDoll {
 
     fn get_id(&self) -> Option<ActorID> {
         self.id
-    }
-
-    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
-        
-        if let Some(prev_id) = self.id {
-            engine_handle.send_boardcast_message(Message {
-                from: prev_id,
-                message: MessageType::CommonActorsMessages(
-                    CommonActorsMessages::IWasChangedMyId(
-                        id
-                    )
-                )
-            });
-        }
-
-        self.set_id(id);
     }
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
