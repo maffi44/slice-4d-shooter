@@ -21,6 +21,7 @@ use crate::{
     },
 };
 
+use client_server_protocol::Team;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::JsFuture;
 use glam::{Vec4, Vec3};
@@ -73,13 +74,15 @@ pub struct Level {
 
 impl Level {
     
-    pub fn get_random_spawn_position(&self) -> Spawn {
+    pub fn get_random_spawn_position(&self, team: Team) -> Spawn {
         let random_index = {
             let mut usize_bytes = 0usize.to_be_bytes();
             getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
             
             usize::from_le_bytes(usize_bytes) % self.spawns.len()
         };
+
+        todo!("make spawns for red and blue teams");
 
         self.spawns[random_index].clone()
     }

@@ -2,23 +2,40 @@ pub mod player_input_master;
 pub mod player_settings;
 
 use client_server_protocol::{
-    NetCommand, NetMessageToPlayer, RemoteCommand, RemoteMessage, Team
+    NetCommand,
+    NetMessageToPlayer,
+    RemoteCommand,
+    RemoteMessage,
+    Team
 };
 
 use crate::{
     actor::{
         device::{
-            holegun::HoleGun, Device, DeviceType
-        }, players_doll::PlayerDollInputState, Actor, ActorID, CommonActorsMessages, Component, Message, MessageType, SpecificActorMessage
-    }, engine::{
+            holegun::HoleGun,
+            Device,
+            DeviceType
+        },
+        players_doll::PlayerDollInputState,
+        Actor,
+        ActorID,
+        CommonActorsMessages,
+        Component,
+        Message,
+        MessageType,
+        SpecificActorMessage
+    },
+    engine::{
         audio::{
             AudioSystem,
             Sound
-        }, engine_handle::{
+        },
+        engine_handle::{
             Command,
             CommandType,
             EngineHandle
-        }, physics::{
+        },
+        physics::{
             colliders_container::PhysicalElement,
             dynamic_collider::PlayersDollCollider,
             kinematic_collider::{
@@ -26,14 +43,18 @@ use crate::{
                 KinematicColliderMessages
             },
             PhysicsSystem
-        }, render::VisualElement, time::TimeSystem, ui::{
+        },
+        render::VisualElement,
+        time::TimeSystem,
+        ui::{
             RectSize,
             UIElement,
             UIElementType,
             UISystem,
-        }, world::level::Spawn
+        },
+        world::level::Spawn
     },
-    transform::Transform
+    transform::Transform,
 };
 
 use self::{
@@ -45,10 +66,18 @@ use core::panic;
 use std::f32::consts::PI;
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
-use glam::{FloatExt, Mat4, Vec2, Vec4};
+use glam::{
+    FloatExt,
+    Mat4,
+    Vec2,
+    Vec4
+};
 
 use super::{
-    device::machinegun::MachineGun, players_death_explosion::PlayersDeathExplosion, session_controller::DEFAULT_TEAM, PhysicsMessages
+    device::machinegun::MachineGun,
+    players_death_explosion::PlayersDeathExplosion,
+    session_controller::{SessionControllerMessage, DEFAULT_TEAM},
+    PhysicsMessages
 };
 
 
@@ -222,11 +251,24 @@ const DEATH_EFFECT_COEF_DECREASE_SPEED: f32 = 3.0;
 
 #[derive(Clone)]
 pub enum PlayerMessage {
-    DealDamageAndAddForce(u32, Vec4, Vec4),
+    DealDamageAndAddForce(
+        // damage
+        u32,
+        //force
+        Vec4,
+        // pos of impact (for spawn get damage effect)
+        Vec4,
+        // team damage from
+        Team,
+    ),
     NewPeerConnected(u128),
     Telefrag,
     DieImmediately,
     DieSlowly,
+    SetNewTeam(
+        // new team you have joined
+        Team, 
+    )
 }
 
 
@@ -241,29 +283,39 @@ impl Actor for Player {
     ) {
         let from = message.from;
 
-        let message = &message.message;
+        let message = message.message;
         
-        match message {
-            MessageType::CommonActorsMessages(message) => {
-                match message {
-                    CommonActorsMessages::SetTransform(transform) => {
-                        self.inner_state.transform = transform.clone();
+        match message
+        {
+            MessageType::CommonActorsMessages(message) =>
+            {
+                match message
+                {
+                    CommonActorsMessages::SetTransform(transform) =>
+                    {
+                        self.inner_state.transform = transform;
                     },
-                    CommonActorsMessages::Enable(switch) => {
-                        self.inner_state.is_enable = *switch;
+
+                    CommonActorsMessages::Enable(switch) =>
+                    {
+                        self.inner_state.is_enable = switch;
                     },
-                    CommonActorsMessages::IncrementPosition(increment) => {
-                        self.inner_state.transform.increment_position(increment.clone());
+
+                    CommonActorsMessages::IncrementPosition(increment) =>
+                    {
+                        self.inner_state.transform.increment_position(increment);
                     },
                     CommonActorsMessages::IWasChangedMyId(new_id) => {}
                 }
             }
-            MessageType::PhysicsMessages(message) => {
+
+            MessageType::PhysicsMessages(message) =>
+            {
                 match message {
                     PhysicsMessages::KinematicColliderMessage(message) => {
                         match message {
-                            KinematicColliderMessages::ColliderIsStuckInsideObject => {
-                                
+                            KinematicColliderMessages::ColliderIsStuckInsideObject =>
+                            {    
                                 self.die(
                                     true,
                                     engine_handle,
@@ -278,11 +330,16 @@ impl Actor for Player {
                     _ => {}
                 }
             },
-            MessageType::SpecificActorMessage(message) => {
-                match message {
-                    SpecificActorMessage::PLayerMessage(message) => {
+
+            MessageType::SpecificActorMessage(message) =>
+            {
+                match message
+                {
+                    SpecificActorMessage::PLayerMessage(message) =>
+                    {
                         match message {
-                            PlayerMessage::Telefrag => {
+                            PlayerMessage::Telefrag =>
+                            {
                                 self.die(
                                     true,
                                     engine_handle,
@@ -292,7 +349,8 @@ impl Actor for Player {
                                 );
                             }
 
-                            PlayerMessage::DieImmediately => {
+                            PlayerMessage::DieImmediately =>
+                            {
                                 self.die(
                                     true,
                                     engine_handle,
@@ -302,7 +360,8 @@ impl Actor for Player {
                                 );
                             }
 
-                            PlayerMessage::DieSlowly => {
+                            PlayerMessage::DieSlowly =>
+                            {
                                 self.die(
                                     true,
                                     engine_handle,
@@ -312,21 +371,28 @@ impl Actor for Player {
                                 );
                             }
 
-                            PlayerMessage::DealDamageAndAddForce(damage, force, _) => {
-                                self.get_damage_and_add_force(
-                                    *damage as i32,
-                                    *force,
-                                    physic_system,
-                                    audio_system,
-                                    ui_system,
-                                    engine_handle,
-                                );
+                            PlayerMessage::DealDamageAndAddForce(
+                                damage,
+                                force,
+                                _,
+                                team
+                            ) =>
+                            {
+                                if team != self.inner_state.team
+                                {
+                                    self.get_damage_and_add_force(
+                                        damage as i32,
+                                        force,
+                                        physic_system,
+                                        audio_system,
+                                        ui_system,
+                                        engine_handle,
+                                    );
+                                }
                             }
 
-                            PlayerMessage::NewPeerConnected(peer_id) => {
-
-                                // println!("new peer {} connected, replicate my body", peer_id);
-                                
+                            PlayerMessage::NewPeerConnected(peer_id) =>
+                            {
                                 engine_handle.send_command(
                                     Command {
                                         sender: self.id.unwrap(),
@@ -336,17 +402,73 @@ impl Actor for Player {
                                                     RemoteCommand::SpawnPlayersDollActor(
                                                         self.get_transform().to_serializable_transform(),
                                                         self.inner_state.collider.get_collider_radius(),
-                                                        self.inner_state.is_alive
+                                                        self.inner_state.is_alive,
+                                                        self.inner_state.team
                                                     )
                                                 ),
-                                                peer_id.clone(),
+                                                peer_id,
                                             )
                                         )
                                     }
                                 )
                             }
+
+                            PlayerMessage::SetNewTeam(team) =>
+                            {
+                                if team != self.inner_state.team
+                                {
+                                    self.inner_state.team = team;
+
+                                    engine_handle.send_command(
+                                        Command {
+                                            sender: self.get_id().expect("Player have not ActorID"),
+                                            command_type: CommandType::RespawnPlayer(
+                                                self.get_id().expect("Player have not ActorID")
+                                            )
+                                        }
+                                    );
+                                }
+                            }
                         }
                     },
+                    SpecificActorMessage::SessionControllerMessage(message) =>
+                    {
+                        match message
+                        {
+                            SessionControllerMessage::NewSessionStarted(team) =>
+                            {
+                                self.inner_state.team = team;
+
+                                engine_handle.send_command(
+                                    Command {
+                                        sender: self.get_id().expect("Player have not ActorID"),
+                                        command_type: CommandType::RespawnPlayer(
+                                            self.get_id().expect("Player have not ActorID")
+                                        )
+                                    }
+                                );
+
+                            }
+
+                            SessionControllerMessage::JoinedToSession(
+                                your_team, _, _, _, _, _,
+                            ) =>
+                            {
+                                self.inner_state.team = your_team;
+
+                                engine_handle.send_command(
+                                    Command {
+                                        sender: self.get_id().expect("Player have not ActorID"),
+                                        command_type: CommandType::RespawnPlayer(
+                                            self.get_id().expect("Player have not ActorID")
+                                        )
+                                    }
+                                );
+                            }
+
+                            _ => {}
+                        }
+                    }
                     _ => {},
                 }
 
@@ -1369,6 +1491,11 @@ impl Player {
         }
     }
 
+    pub fn get_team(&self) -> Team
+    {
+        self.inner_state.team
+    }
+
     pub fn get_explore_w_position(&self) -> f32 {
         self.explore_w_position
     }
@@ -1909,7 +2036,10 @@ impl Player {
 
         self.player_previous_w_position = spawn.spawn_position.w;
 
-        let hits = physics_system.sphere_cast_on_dynamic_colliders(spawn.spawn_position, self.get_collider_radius());
+        let hits = physics_system.sphere_cast_on_dynamic_colliders(
+            spawn.spawn_position,
+            self.get_collider_radius()
+        );
 
         for hit in hits {
             engine_handle.send_direct_message(
@@ -1945,7 +2075,7 @@ impl Player {
                                 self.inner_state.transform.to_serializable_transform(),
                                 player_doll_input_state.serialize(),
                                 Vec4::ZERO.to_array(),
-                                
+                                self.inner_state.team
                             )
                         )
                     )

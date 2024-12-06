@@ -120,11 +120,13 @@ impl World {
             }
             CommandType::RespawnPlayer(id) => {
             
-                let spawn = self.level.get_random_spawn_position();
-
                 if let Some(player) = self.actors.get_mut(&id) {
                     
                     if let ActorWrapper::Player(player) = player {
+                        
+                        let spawn = self.level.get_random_spawn_position(
+                            player.get_team()
+                        );
                         
                         player.respawn(
                             spawn,
@@ -146,8 +148,12 @@ impl World {
                     // and old ids) for one frame and change old id for new in this case)
 
                     let player = self.actors.get_mut(&self.main_player_id).expect("World have not actor with main_player_id");
-                    
+
                     if let ActorWrapper::Player(player) = player {
+                        
+                        let spawn = self.level.get_random_spawn_position(
+                            player.get_team()
+                        );
                         
                         player.respawn(
                             spawn,

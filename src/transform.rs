@@ -10,7 +10,7 @@ pub struct Transform {
     scale: Vec4,
 }
 
-type SerializableTransform = ([f32; 4], [f32; 16], [f32; 4]);
+pub type SerializableTransform = ([f32; 4], [f32; 16], [f32; 4]);
 
 impl Transform {
     pub fn from_serializable_transform(tr: SerializableTransform) -> Self {

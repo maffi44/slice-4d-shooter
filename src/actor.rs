@@ -10,6 +10,7 @@ pub mod machinegun_shot;
 pub mod shooting_impact;
 pub mod flag;
 pub mod session_controller;
+pub mod move_w_bonus;
 
 use crate::{
     engine::{

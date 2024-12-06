@@ -127,12 +127,55 @@ pub struct PlayersDoll {
 
 #[derive(Clone)]
 pub enum PlayersDollMessage{
-    SetInterploatedModelTargetState(Transform, PlayerDollInputState, Vec4, u128),
-    SpawnHoleGunShotActor(Vec4, f32, Vec3, f32),
-    SpawHoleGunMissActor(Vec4, f32, Vec3, f32),
-    SpawnMachineGunShot(Vec4, bool),
+    SetInterploatedModelTargetState(
+        // postition
+        Transform,
+        // player's input state for extrapolation reason
+        PlayerDollInputState,
+        // force for extrapolation
+        Vec4,
+        // timestamp in millis
+        u128
+    ),
+    SpawnHoleGunShotActor(
+        Vec4,
+        f32,
+        Vec3,
+        f32
+    ),
+    SpawHoleGunMissActor(
+        Vec4,
+        f32,
+        Vec3,
+        f32
+    ),
+    SpawnMachineGunShot(
+        Vec4,
+        bool
+    ),
     HoleGunStartCharging,
-    Respawn(Transform, PlayerDollInputState, Vec4),
+    Respawn(
+        // postition
+        Transform,
+        // player's input state for extrapolation reason
+        PlayerDollInputState,
+        // force for extrapolation
+        Vec4
+    ),
+    SetNewTeamAndPosition(
+        // team player joined to
+        Team,
+        //is_alive
+        bool,
+        // postition
+        Transform,
+        // player's input state for extrapolation reason
+        PlayerDollInputState,
+        // force for extrapolation
+        Vec4,
+        // timestamp in millis
+        u128,
+    )
 }
 
 
@@ -149,6 +192,7 @@ impl PlayersDoll {
         audio_system: &mut AudioSystem,
         player_settings: PlayerSettings,
         w_levels_of_map: Vec<f32>,
+        team: Team,
     ) -> Self {
 
         let weapon_offset = {
@@ -212,6 +256,7 @@ impl PlayersDoll {
             holegun_charge_sound: None,
             player_settings,
             w_levels_of_map,
+            team,
         }
     }
 
@@ -429,7 +474,7 @@ impl Actor for PlayersDoll {
     ) {
         let from = message.from;
 
-        let message = &message.message;
+        let message = message.message;
         
         match message {
             MessageType::CommonActorsMessages(message) => {
@@ -438,11 +483,11 @@ impl Actor for PlayersDoll {
                         self.transform = transform.clone();
                     },
                     CommonActorsMessages::Enable(switch) => {
-                        self.is_enable = *switch;
+                        self.is_enable = switch;
                     },
 
                     CommonActorsMessages::IncrementPosition(increment) => {
-                        self.transform.increment_position(*increment);
+                        self.transform.increment_position(increment);
                     },
                     CommonActorsMessages::IWasChangedMyId(new_id) => {}
                 }
@@ -453,10 +498,14 @@ impl Actor for PlayersDoll {
                 }
             },
             MessageType::SpecificActorMessage(message) => {
-                match message {
-                    SpecificActorMessage::PLayerMessage(message) => {
-                        match message {
-                            PlayerMessage::Telefrag => {
+                match message
+                {
+                    SpecificActorMessage::PLayerMessage(message) => 
+                    {
+                        match message
+                        {
+                            PlayerMessage::Telefrag =>
+                            {
                                 self.die_immediately(engine_handle, audio_system);
 
                                 engine_handle.send_command(
@@ -474,76 +523,92 @@ impl Actor for PlayersDoll {
                                     }
                                 )
                             }
-                            PlayerMessage::DieImmediately => {
+
+                            PlayerMessage::DieImmediately =>
+                            {
                                 self.die_immediately(engine_handle, audio_system);
                             }
-                            PlayerMessage::DieSlowly => {
+
+                            PlayerMessage::DieSlowly =>
+                            {
                                 self.die_slowly(engine_handle);
                             }
-                            PlayerMessage::DealDamageAndAddForce(damage, force, impact_pos) => {
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.id.expect("Player's Doll have not Actor's ID"),
-                                        command_type: CommandType::NetCommand(
-                                            NetCommand::SendDirectNetMessageReliable(
-                                                NetMessageToPlayer::RemoteDirectMessage(
-                                                    self.id.expect("Player's Doll have not Actor's ID"),
-                                                    RemoteMessage::DealDamageAndAddForce(
-                                                        *damage,
-                                                        force.to_array(),
-                                                        impact_pos.to_array(),
-                                                    )
-                                                ),
-                                                self.id.unwrap()
+
+                            PlayerMessage::DealDamageAndAddForce(damage, force, impact_pos, team) =>
+                            {
+                                if team != self.team
+                                {
+                                    engine_handle.send_command(
+                                        Command {
+                                            sender: self.id.expect("Player's Doll have not Actor's ID"),
+                                            command_type: CommandType::NetCommand(
+                                                NetCommand::SendDirectNetMessageReliable(
+                                                    NetMessageToPlayer::RemoteDirectMessage(
+                                                        self.id.expect("Player's Doll have not Actor's ID"),
+                                                        RemoteMessage::DealDamageAndAddForce(
+                                                            damage,
+                                                            force.to_array(),
+                                                            impact_pos.to_array(),
+                                                        )
+                                                    ),
+                                                    self.id.unwrap()
+                                                )
+                                            )
+                                        }
+                                    );
+    
+                                    engine_handle.send_command(Command {
+                                        sender: 0u128,
+                                        command_type: CommandType::SpawnActor(
+                                            ActorWrapper::ShootingImpact(
+                                                ShootingImpact::new(impact_pos, damage)
                                             )
                                         )
-                                    }
-                                );
-
-                                engine_handle.send_command(Command {
-                                    sender: 0u128,
-                                    command_type: CommandType::SpawnActor(
-                                        ActorWrapper::ShootingImpact(
-                                            ShootingImpact::new(*impact_pos, *damage)
-                                        )
-                                    )
-                                });
-
-                                audio_system.spawn_non_spatial_sound(
-                                    Sound::PlayerHitSignal,
-                                    0.14.lerp(0.22, (*damage as f32 / PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
-                                    1.0,
-                                    false,
-                                    true,
-                                    fyrox_sound::source::Status::Playing
-                                );                          
+                                    });
+    
+                                    audio_system.spawn_non_spatial_sound(
+                                        Sound::PlayerHitSignal,
+                                        0.14.lerp(0.22, (damage as f32 / PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
+                                        1.0,
+                                        false,
+                                        true,
+                                        fyrox_sound::source::Status::Playing
+                                    );                          
+                                }
                             }
+
+                            PlayerMessage::SetNewTeam(team) =>
+                            {
+                                self.team = team;
+                            }
+
                             PlayerMessage::NewPeerConnected(_) => {}
                         }
                     },
-                    SpecificActorMessage::PlayersDollMessage(message) => {
+
+                    SpecificActorMessage::PlayersDollMessage(message) =>
+                    {
                         match message {
                             PlayersDollMessage::SetInterploatedModelTargetState(
                                 transform,
                                 input,
                                 velocity,
                                 time,
-                            ) => {
-
-                                if self.prev_interpolating_model_set_target_time < *time
+                            ) =>
+                            {
+                                if self.prev_interpolating_model_set_target_time < time
                                 {
-                                    self.prev_interpolating_model_set_target_time = *time;
+                                    self.prev_interpolating_model_set_target_time = time;
                                     self.transform.set_rotation(transform.get_rotation());
                                     self.target_transform = transform.clone();
                                     self.input_state = input.clone();
-                                    self.interpolating_model_target.current_velocity = *velocity;
+                                    self.interpolating_model_target.current_velocity = velocity;
                                     self.interpolating_model_target.forces.clear();
                                 }
-
-
                             }
-                            PlayersDollMessage::HoleGunStartCharging => {
 
+                            PlayersDollMessage::HoleGunStartCharging =>
+                            {
                                 if self.volume_area.is_empty() {
 
                                     let volume_area = VolumeArea::SphericalVolumeArea(
@@ -571,26 +636,30 @@ impl Actor for PlayersDoll {
 
                                 }
                             }
+
                             PlayersDollMessage::Respawn(
                                 transform,
                                 input_state,
                                 velocity
-                            ) => {
+                            ) =>
+                            {
                                 self.respawn(
-                                    transform.clone(),
-                                    input_state.clone(),
-                                    velocity.clone(),
+                                    transform,
+                                    input_state,
+                                    velocity,
                                     physics_system,
                                     audio_system,
                                     engine_handle
                                 );
                             }
+
                             PlayersDollMessage::SpawnHoleGunShotActor(
                                 position,
                                 radius,
                                 color,
                                 charging_volume_area
-                            ) => {
+                            ) =>
+                            {
                                 self.volume_area.clear();
                                 self.charging_time = 0.0;
 
@@ -616,16 +685,16 @@ impl Actor for PlayersDoll {
                                 let charging_volume_area = VolumeArea::SphericalVolumeArea(
                                     SphericalVolumeArea {
                                         translation: shooted_from,
-                                        radius: (*charging_volume_area + 0.05) *VISUAL_FIRE_SHPERE_MULT,
-                                        color: *color,
+                                        radius: (charging_volume_area + 0.05) *VISUAL_FIRE_SHPERE_MULT,
+                                        color: color,
                                     }
                                 );
     
                                 let holegun_shot = HoleGunShot::new(
-                                    *position,
+                                    position,
                                     shooted_from,
-                                    *radius,
-                                    *color,
+                                    radius,
+                                    color,
                                     charging_volume_area,
                                     VISUAL_BEAM_MULT,
                                 );
@@ -638,14 +707,13 @@ impl Actor for PlayersDoll {
                                 })
                             },
 
-
                             PlayersDollMessage::SpawHoleGunMissActor(
                                 position,
                                 radius,
                                 color,
                                 charging_volume_area
-                            ) => {
-
+                            ) =>
+                            {
                                 self.volume_area.clear();
                                 self.charging_time = 0.0;
 
@@ -671,16 +739,16 @@ impl Actor for PlayersDoll {
                                 let charging_volume_area = VolumeArea::SphericalVolumeArea(
                                     SphericalVolumeArea {
                                         translation: shooted_from,
-                                        radius: (*charging_volume_area + 0.05) *VISUAL_FIRE_SHPERE_MULT,
-                                        color: *color,
+                                        radius: (charging_volume_area + 0.05) *VISUAL_FIRE_SHPERE_MULT,
+                                        color: color,
                                     }
                                 );
 
                                 let holegun_miss = HoleGunMiss::new(
-                                    *position,
+                                    position,
                                     shooted_from,
-                                    *radius,
-                                    *color,
+                                    radius,
+                                    color,
                                     charging_volume_area,
                                     VISUAL_BEAM_MULT,
                                 );
@@ -710,11 +778,11 @@ impl Actor for PlayersDoll {
                                 );
 
                                 let machinegun_shot = MachinegunShot::new(
-                                    *position,
+                                    position,
                                     shooted_from,
                                     2.0,
                                     2.0,
-                                    *it_is_miss,
+                                    it_is_miss,
                                 );
 
                                 let actor = ActorWrapper::MachinegunShot(machinegun_shot);
@@ -724,8 +792,29 @@ impl Actor for PlayersDoll {
                                     command_type: CommandType::SpawnActor(actor)
                                 })
                             }
+
+                            PlayersDollMessage::SetNewTeamAndPosition(
+                                team,
+                                is_alive,
+                                transform,
+                                input,
+                                velocity,
+                                time,
+                            ) =>
+                            {
+                                self.is_enable = is_alive;
+                                self.is_alive = is_alive;
+                                self.team = team;
+                                self.prev_interpolating_model_set_target_time = time;
+                                self.transform = transform;
+                                self.target_transform = transform;
+                                self.input_state = input;
+                                self.interpolating_model_target.current_velocity = velocity;
+                                self.interpolating_model_target.forces.clear();
+                            }
                         }
                     }
+
                     SpecificActorMessage::FlagMessage(message) =>
                     {
                         match message
@@ -749,6 +838,7 @@ impl Actor for PlayersDoll {
                             _ => {}
                         }
                     }
+                    
                     SpecificActorMessage::SessionControllerMessage(message) =>
                     {
                         match message

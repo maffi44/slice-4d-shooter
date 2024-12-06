@@ -6,9 +6,7 @@ use crate::{
 };
 
 use super::{
-    Actor,
-    ActorID,
-    Message, MessageType, SpecificActorMessage
+    flag::FlagStatus, move_w_bonus::BonusSpotStatus, Actor, ActorID, Message, MessageType, SpecificActorMessage
 };
 
 pub const DEFAULT_TEAM: Team = Team::Red;
@@ -16,8 +14,27 @@ pub const DEFAULT_TEAM: Team = Team::Red;
 #[derive(Clone)]
 pub enum SessionControllerMessage
 {
+    JoinedToSession(
+        // your team
+        Team,
+        // red flag status
+        FlagStatus,
+        // blue flag status
+        FlagStatus,
+        // bonus spot status
+        BonusSpotStatus,
+        // red team score
+        u32,
+        // blue team score
+        u32,
+    ),
     NewSessionStarted(Team),
-    SetScore(u32,u32),
+    SetScore(
+        // red team score
+        u32,
+        // blue team score
+        u32
+    ),
     TeamWin(Team)
 }
 
@@ -77,7 +94,8 @@ impl Actor for SessionController
         match message.message {
             MessageType::SpecificActorMessage(message) =>
             {
-                match message {
+                match message
+                {
                     SpecificActorMessage::SessionControllerMessage(message) =>
                     {
                         match message {
@@ -89,6 +107,7 @@ impl Actor for SessionController
 
                                 todo!("set new ui score")
                             }
+
                             SessionControllerMessage::SetScore(new_red_team_score, new_blue_team_score) =>
                             {
                                 if new_red_team_score > self.red_team_score
@@ -122,6 +141,7 @@ impl Actor for SessionController
 
                                 todo!("set new ui score")
                             }
+
                             SessionControllerMessage::TeamWin(win_team) =>
                             {
                                 match win_team
@@ -155,6 +175,22 @@ impl Actor for SessionController
                                         todo!("Show blue win ui")
                                     }
                                 }
+                            }
+
+                            SessionControllerMessage::JoinedToSession(
+                                your_team,
+                                red_flag_status,
+                                blue_flag_status,
+                                bonus_spot_status,
+                                red_team_score,
+                                blue_team_score,
+                            ) =>
+                            {
+                                self.your_team = your_team;
+                                self.red_team_score = red_team_score;
+                                self.blue_team_score = blue_team_score;
+
+                                todo!("set ui score");
                             }
                         }
                     }

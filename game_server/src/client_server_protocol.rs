@@ -132,8 +132,16 @@ pub enum NetMessageToPlayer {
 #[alkahest(Formula, Serialize, Deserialize)]
 #[derive(Clone)]
 pub enum RemoteCommand {
-    // transform, radius, is_alive status
-    SpawnPlayersDollActor(SerializableTransform, f32, bool),
+    SpawnPlayersDollActor(
+        // position
+        SerializableTransform,
+        // radius
+        f32,
+        // is_alive
+        bool,
+        //team
+        Team
+    ),
     SpawnPlayerDeathExplode([f32;4]),
     RemoveActor(ActorID),
     SpawnHole(
@@ -155,7 +163,16 @@ pub enum RemoteMessage {
     DealDamageAndAddForce(u32, [f32;4], [f32;4]),
     DieImmediately,
     DieSlowly,
-    PlayerRespawn(SerializableTransform, (bool,bool,bool,bool,bool,u32), [f32;4]),
+    PlayerRespawn(
+        // position
+        SerializableTransform,
+        // input state for extrapolation
+        (bool,bool,bool,bool,bool,u32),
+        // force for physic body
+        [f32;4],
+        // player's team
+        Team
+    ),
     Enable(bool),
     SetTransform(SerializableTransform),
     SetPlayerDollState(SerializableTransform, (bool,bool,bool,bool,bool,u32), [f32;4], u128),

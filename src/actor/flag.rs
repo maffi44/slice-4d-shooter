@@ -26,11 +26,32 @@ pub enum FlagMessage
 }
 
 #[derive(Clone, Copy)]
-enum FlagStatus
+pub enum FlagStatus
 {
     Captured(ActorID),
     Missed(Vec4),
     OnTheBase,
+}
+
+impl From<client_server_protocol::FlagStatus> for FlagStatus
+{
+    fn from(value: client_server_protocol::FlagStatus) -> Self {
+        match value
+        {
+            client_server_protocol::FlagStatus::OnTheBase =>
+            {
+                FlagStatus::OnTheBase
+            }
+            client_server_protocol::FlagStatus::Droped(arr) =>
+            {
+                FlagStatus::Missed(Vec4::from_array(arr))
+            }
+            client_server_protocol::FlagStatus::Captured(id) =>
+            {
+                FlagStatus::Captured(id)
+            }
+        }
+    }
 }
 
 const TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION: f32 = 3.0;

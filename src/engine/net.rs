@@ -38,15 +38,8 @@ use client_server_protocol::{
 
 use crate::{
     actor::{
-        player::{player_settings::PlayerSettings, PlayerMessage},
-        players_death_explosion::PlayersDeathExplosion,
-        players_doll::{
-            PlayerDollInputState, PlayersDoll, PlayersDollMessage},
-        ActorWrapper,
-        CommonActorsMessages,
-        Message,
-        MessageType,
-        SpecificActorMessage
+        flag::FlagStatus, move_w_bonus::BonusSpotStatus, player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
+            PlayerDollInputState, PlayersDoll, PlayersDollMessage}, session_controller::SessionControllerMessage, ActorWrapper, CommonActorsMessages, Message, MessageType, SpecificActorMessage
     },
     transform::{self, Transform}
 };
@@ -367,15 +360,40 @@ impl NetSystem {
         for (_, packet) in webrtc_socket.channel_mut(0).receive() {
 
             if let Some(message) = ServerMessage::from_packet(packet) {
-                match message {
-
-                    ServerMessage::JoinTheMatch(millis_from_server_start) => {
+                match message
+                {
+                    ServerMessage::JoinTheMatch(
+                        millis_from_server_start,
+                        your_team,
+                        red_flag_status,
+                        blue_flag_status,
+                        bonus_spot_status,
+                        red_team_score,
+                        blue_team_score,
+                    ) => {
                         engine_handle.send_command(Command {
                             sender: 0_u128,
                             command_type: CommandType::NetCommand(
                                 NetCommand::ConnectedToGameServer(millis_from_server_start)   
                             )
                         });
+                        engine_handle.send_boardcast_message(
+                            Message {
+                                from: 0u128,
+                                message: MessageType::SpecificActorMessage(
+                                    SpecificActorMessage::SessionControllerMessage(
+                                        SessionControllerMessage::JoinedToSession(
+                                            your_team,
+                                            FlagStatus::from(red_flag_status),
+                                            FlagStatus::from(blue_flag_status),
+                                            BonusSpotStatus::from(bonus_spot_status),
+                                            red_team_score,
+                                            blue_team_score,
+                                        )
+                                    )
+                                )
+                            }
+                        );
                     }
 
                     ServerMessage::PlayerConnected(player_id) => {
