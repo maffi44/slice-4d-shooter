@@ -153,6 +153,12 @@ pub enum RemoteCommand {
         [f32;3],
         // target size is reached
         bool,
+        // target radius
+        f32,
+        // explode current time
+        f32,
+        // explode final time
+        f32,
     ),
 }
 

@@ -1040,7 +1040,10 @@ async fn handle_player_connection(
                         hole.position,
                         hole.radius,
                         hole.color,
-                        hole.target_size_reached
+                        hole.target_size_reached,
+                        hole.target_size,
+                        hole.explode_current_time,
+                        hole.explode_final_time,
                     )
                 )
             ).to_packet(),

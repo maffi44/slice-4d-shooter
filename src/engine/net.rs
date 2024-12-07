@@ -38,7 +38,7 @@ use client_server_protocol::{
 
 use crate::{
     actor::{
-        flag::FlagStatus, move_w_bonus::BonusSpotStatus, player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
+        flag::FlagStatus, hole::Hole, move_w_bonus::BonusSpotStatus, player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
             PlayerDollInputState, PlayersDoll, PlayersDollMessage}, session_controller::SessionControllerMessage, ActorWrapper, CommonActorsMessages, Message, MessageType, SpecificActorMessage
     },
     transform::{self, Transform}
@@ -567,14 +567,18 @@ fn process_message(
 ) {
     match message {
         NetMessageToPlayer::RemoteCommand(command) => {
-            match command {
-                RemoteCommand::RemoveActor(actor_id) => {
+            match command
+            {
+                RemoteCommand::RemoveActor(actor_id) =>
+                {
                     engine_handle.send_command(Command {
                         sender: 0u128,
                         command_type: CommandType::RemoveActor(actor_id)
                     })
                 },
-                RemoteCommand::SpawnPlayerDeathExplode(pos) => {
+
+                RemoteCommand::SpawnPlayerDeathExplode(pos) =>
+                {
                     let position = Vec4::from_array(pos);
 
                     let player_death_explode = PlayersDeathExplosion::new(position);
@@ -587,7 +591,12 @@ fn process_message(
                     });
                 },
                 
-                RemoteCommand::SpawnPlayersDollActor(tr, player_sphere_radius, is_alive) => {
+                RemoteCommand::SpawnPlayersDollActor(
+                    tr,
+                    player_sphere_radius,
+                    is_alive
+                ) =>
+                {
                     let transform = Transform::from_serializable_transform(tr);
 
                     let players_doll = PlayersDoll::new(
@@ -601,6 +610,37 @@ fn process_message(
                     );
 
                     let actor = ActorWrapper::PlayersDoll(players_doll);
+
+                    engine_handle.send_command(Command {
+                        sender: 0u128,
+                        command_type: CommandType::SpawnActor(actor)
+                    })
+                }
+
+                RemoteCommand::SpawnHole(
+                    position,
+                    radius,
+                    color,
+                    target_size_reached,
+                    target_radius,
+                    explode_current_time,
+                    explode_final_time,
+                ) =>
+                {
+                    let transform = Transform::from_position(Vec4::from_array(position));
+                    let color = Vec3::from_array(color);
+
+                    let hole = Hole::new(
+                        transform,
+                        radius,
+                        color,
+                        target_size_reached,
+                        target_radius,
+                        explode_current_time,
+                        explode_final_time,
+                    );
+
+                    let actor = ActorWrapper::PlayersDoll(hole);
 
                     engine_handle.send_command(Command {
                         sender: 0u128,

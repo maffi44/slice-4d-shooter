@@ -11,6 +11,7 @@ pub mod shooting_impact;
 pub mod flag;
 pub mod session_controller;
 pub mod move_w_bonus;
+pub mod hole;
 
 use crate::{
     engine::{
