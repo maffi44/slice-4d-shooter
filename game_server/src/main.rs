@@ -870,7 +870,7 @@ async fn start_new_game_session(
 
         for (from_player, packet) in recieved_messages {
             
-            proccess_player_message(
+            process_player_message(
                 &game_session_start_time,
                 unrelaible_channel,
                 game_session_state,
@@ -883,7 +883,7 @@ async fn start_new_game_session(
         
         for (from_player, packet) in recieved_messages {
             
-            proccess_player_message(
+            process_player_message(
                 &game_session_start_time,
                 relaible_channel,
                 game_session_state,
@@ -1067,12 +1067,6 @@ async fn handle_player_connection(
         );
     }
 
-    sender_to_matchmaking_server.send(
-        GameServerMatchmakingServerProtocol::GameServerMessage(
-            GameServerMessage::PlayerConnected(config.game_server_index)
-        )
-    ).await.unwrap();
-
     game_session_state.players.insert(
         connected_player_id.0.as_u128(),
         PlayerInfo {
@@ -1081,11 +1075,18 @@ async fn handle_player_connection(
             captured_flag: false,
         }
     );
+
+    sender_to_matchmaking_server.send(
+        GameServerMatchmakingServerProtocol::GameServerMessage(
+            GameServerMessage::PlayerConnected(config.game_server_index)
+        )
+    ).await.unwrap();
 }
 
 
 fn make_teams_equal(
-    game_session_state: &mut GameSessionState
+    game_session_state: &mut GameSessionState,
+    channel: &mut WebRtcChannel,
 )
 {
     let difference =
@@ -1128,6 +1129,20 @@ fn make_teams_equal(
                 .unwrap()
                 .team =
                 Team::Red;
+            
+            channel.send(
+                ServerMessage::NetMessageToPlayer(
+                    0u128,
+                    NetMessageToPlayer::RemoteBoardCastMessage(
+                        RemoteMessage::SetNewTeam(Team::Red)
+                    )
+                ).to_packet(),
+                game_session_state
+                    .players
+                    .get(&key)
+                    .unwrap()
+                    .peer_id,
+            );
         }
         else
         {
@@ -1163,6 +1178,20 @@ fn make_teams_equal(
                 .unwrap()
                 .team =
                 Team::Blue;
+            
+            channel.send(
+                ServerMessage::NetMessageToPlayer(
+                    0u128,
+                    NetMessageToPlayer::RemoteBoardCastMessage(
+                        RemoteMessage::SetNewTeam(Team::Blue)
+                    )
+                ).to_packet(),
+                game_session_state
+                    .players
+                    .get(&key)
+                    .unwrap()
+                    .peer_id,
+            );
         }
     }
 }
@@ -1196,7 +1225,8 @@ async fn handle_player_disconnection(
 
         if game_session_state.check_if_player_has_flag(
             disconnected_player_id.0.as_u128()
-        ) {
+        )
+        {
             match disconnected_player.team {
                 Team::Red =>
                 {
@@ -1219,32 +1249,32 @@ async fn handle_player_disconnection(
                 }
             }
         }
+
+        make_teams_equal(game_session_state, relaible_channel);
+
+        for (_ , player_id) in game_session_state.players.iter() {
+            relaible_channel.send(
+                ServerMessage::PlayerDisconnected(
+                    disconnected_player_id.0.as_u128()
+                ).to_packet(),
+                player_id.peer_id
+            );
+        }
+
+        sender_to_matchmaking_server.send(
+            GameServerMatchmakingServerProtocol::GameServerMessage(
+                GameServerMessage::PlayerDisconnected(config.game_server_index)
+            )
+        ).await.unwrap();
     }
     else
     {
         println!("ERROR: disconected player is not exist in game_session_state!");
-    }
-
-    make_teams_equal(game_session_state);
-
-    for (_ , player_id) in game_session_state.players.iter() {
-        relaible_channel.send(
-            ServerMessage::PlayerDisconnected(
-                disconnected_player_id.0.as_u128()
-            ).to_packet(),
-            player_id.peer_id
-        );
-    }
-
-    sender_to_matchmaking_server.send(
-        GameServerMatchmakingServerProtocol::GameServerMessage(
-            GameServerMessage::PlayerDisconnected(config.game_server_index)
-        )
-    ).await.unwrap();
+    }    
 }
 
 
-fn proccess_player_message(
+fn process_player_message(
     game_session_start_time: &Instant,
     channel: &mut WebRtcChannel,
     game_session_state: &mut GameSessionState,
@@ -1252,7 +1282,8 @@ fn proccess_player_message(
     packet: Box<[u8]>,
 ) {
     if let Some(message) = ClientMessage::from_packet(packet) {
-        match message {
+        match message
+        {
             ClientMessage::DirectMessageToPlayer(to_player, message) => {
                 let player_info = game_session_state.players.get(&to_player);
 
@@ -1297,6 +1328,7 @@ fn proccess_player_message(
                     );
                 }
             }
+
             ClientMessage::BoardcastMessageToPlayers(message) => {
                 for (index, player_info) in game_session_state.players.iter() {
                     if *index != from_player.0.as_u128() {
@@ -1310,12 +1342,13 @@ fn proccess_player_message(
                     }
                 }
             }
+
             ClientMessage::MessageToServer(message) =>
             {
                 match message {
                     NetMessageToServer::TryToGetFlag(
                         time_of_attempt,
-                        flag_team
+                        team_that_owns_flag
                     ) =>
                     {
                         let team_trying_to_captured_flag = {
@@ -1328,8 +1361,9 @@ fn proccess_player_message(
                                 Team::Blue
                             }
                         };
+                        
 
-                        match flag_team {
+                        match team_that_owns_flag {
                             Team::Red =>
                             {
                                 match game_session_state.red_flag.status
@@ -1443,6 +1477,7 @@ fn proccess_player_message(
                             }
                         }
                     }
+
                     NetMessageToServer::TryToGetMoveWBonus(
                         time_of_attempt,
                         bonus_spot_index,
@@ -1465,6 +1500,7 @@ fn proccess_player_message(
                             BonusSpotStatus::BonusCollected(_) => {}
                         }
                     }
+
                     NetMessageToServer::DropedFlag(
                         team,
                         position,
@@ -1490,6 +1526,7 @@ fn proccess_player_message(
                             );
                         }
                     }
+
                     NetMessageToServer::MovedOpponentsFlagToMyBase(team) =>
                     {
                         match team

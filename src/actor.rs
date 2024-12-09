@@ -53,6 +53,7 @@ pub trait Actor {
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &TimeSystem,
     ) {}
 
     fn get_mut_transform(&mut self) -> &mut Transform;
@@ -113,6 +114,10 @@ pub enum ActorWrapper {
     PlayersDeathExplosion(PlayersDeathExplosion),
     MachinegunShot(MachinegunShot),
     ShootingImpact(ShootingImpact),
+    Flag(Flag),
+    Hole(Hole),
+    MoveWBonusSpot(MoveWBonusSpot),
+    SessionController(SessionController),
     Diamond,
     Exit,
 }
@@ -143,6 +148,18 @@ impl Actor for ActorWrapper {
                 actor.get_transform()
             }
             ActorWrapper::ShootingImpact(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::SessionController(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
                 actor.get_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -176,6 +193,18 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShootingImpact(actor) => {
                 actor.get_mut_transform()
             },
+            ActorWrapper::SessionController(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.get_mut_transform()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -188,32 +217,45 @@ impl Actor for ActorWrapper {
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &TimeSystem,
     ) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
             },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
             },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system);
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
             },
+            ActorWrapper::SessionController(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -230,29 +272,41 @@ impl Actor for ActorWrapper {
     ) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
             },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
             },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta);
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
             },
+            ActorWrapper::SessionController(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -284,6 +338,18 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShootingImpact(actor) => {
                 actor.get_physical_element()
             },
+            ActorWrapper::SessionController(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.get_physical_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -315,6 +381,18 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShootingImpact(actor) => {
                 actor.get_visual_element()
             },
+            ActorWrapper::SessionController(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -346,6 +424,18 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShootingImpact(actor) => {
                 actor.get_id()
             },
+            ActorWrapper::SessionController(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.get_id()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -354,29 +444,41 @@ impl Actor for ActorWrapper {
     fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
         match self {
             ActorWrapper::Player(actor) => {
-                actor.change_id(id, engine_handle);
+                actor.change_id(id, engine_handle)
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.change_id(id, engine_handle);
+                actor.change_id(id, engine_handle)
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.change_id(id, engine_handle);
+                actor.change_id(id, engine_handle)
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.change_id(id, engine_handle);
+                actor.change_id(id, engine_handle)
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.change_id(id, engine_handle);
+                actor.change_id(id, engine_handle)
             },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.change_id(id, engine_handle);
+                actor.change_id(id, engine_handle)
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.change_id(id, engine_handle);
+                actor.change_id(id, engine_handle)
             },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.change_id(id, engine_handle);
+                actor.change_id(id, engine_handle)
             },
+            ActorWrapper::SessionController(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -385,29 +487,41 @@ impl Actor for ActorWrapper {
     fn set_id(&mut self, id: ActorID) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.set_id(id);
+                actor.set_id(id)
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.set_id(id);
+                actor.set_id(id)
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.set_id(id);
+                actor.set_id(id)
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.set_id(id);
+                actor.set_id(id)
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.set_id(id);
+                actor.set_id(id)
             },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.set_id(id);
+                actor.set_id(id)
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.set_id(id);
+                actor.set_id(id)
             },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.set_id(id);
+                actor.set_id(id)
             },
+            ActorWrapper::SessionController(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.set_id(id)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -434,7 +548,11 @@ pub enum MessageType {
     PhysicsMessages(PhysicsMessages),
 }
 
+use flag::Flag;
 use glam::Vec4;
+use hole::Hole;
+use move_w_bonus::{MoveWBonusSpot, MoveWBonusSpotMessage};
+use session_controller::SessionController;
 
 #[derive(Clone)]
 pub enum CommonActorsMessages {
@@ -447,6 +565,7 @@ pub enum CommonActorsMessages {
 #[derive(Clone)]
 pub enum SpecificActorMessage {
     SessionControllerMessage(SessionControllerMessage),
+    MoveWBonusSpotMessage(MoveWBonusSpotMessage),
     PlayersDollMessage(PlayersDollMessage),
     PLayerMessage(PlayerMessage),
     FlagMessage(FlagMessage),

@@ -290,7 +290,16 @@ fn init(systems: &mut Engine) {
         systems.world.level.w_levels.clone()
     );
 
-    main_player.get_mut_transform().set_position(systems.world.level.get_random_spawn_position().spawn_position);
+    let spawn = systems
+        .world
+        .level
+        .get_random_spawn_position(main_player.get_team());
+
+    main_player.get_mut_transform().set_position(
+        spawn.spawn_position
+    );
+
+    main_player.set_current_w_level(spawn.w_level);
 
     let main_player_id = systems.world.add_actor_to_world(
         ActorWrapper::Player(main_player),

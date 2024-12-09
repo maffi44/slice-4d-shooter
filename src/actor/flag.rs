@@ -5,9 +5,7 @@ use web_sys::console::assert;
 
 use crate::{
     engine::{
-        engine_handle::EngineHandle,
-        physics::{area::AreaMessages, colliders_container::PhysicalElement},
-        render::VisualElement
+        audio::AudioSystem, engine_handle::EngineHandle, physics::{area::AreaMessages, colliders_container::PhysicalElement, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem
     },
     transform::Transform
 };
@@ -112,7 +110,7 @@ impl Flag
         self.transform = self.transfrom_of_the_base;
         self.target_position = self.transfrom_of_the_base.get_position();
         todo!("play effect on base");
-        todo!("play status on base");
+        todo!("play sound on base");
         self.status = FlagStatus::OnTheBase;
     }
 
@@ -237,9 +235,10 @@ impl Actor for Flag
             &mut self,
             message: Message,
             engine_handle: &mut EngineHandle,
-            physics_system: &crate::engine::physics::PhysicsSystem,
-            audio_system: &mut crate::engine::audio::AudioSystem,
-            ui_system: &mut crate::engine::ui::UISystem,
+            physics_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
+            time_system: &TimeSystem,
         ) {
         
         match message.message
@@ -298,6 +297,60 @@ impl Actor for Flag
                                         todo!("play blue win effect")
                                     }
                                 }
+                            }
+                            SessionControllerMessage::JoinedToSession(
+                                _,
+                                red_flag_status,
+                                blue_flag_status,
+                                _,
+                                _,
+                                _
+                            ) =>
+                            {
+                                match self.owned_by_team
+                                {
+                                    Team::Red =>
+                                    {
+                                        match red_flag_status
+                                        {
+                                            FlagStatus::OnTheBase =>
+                                            {
+                                                self.set_flag_on_base_status();
+                                            }
+
+                                            FlagStatus::Missed(pos) =>
+                                            {
+                                                self.set_flag_missed_status(pos);
+                                            }
+
+                                            FlagStatus::Captured(id) =>
+                                            {
+                                                self.set_flag_captured_status(id, engine_handle);
+                                            }
+                                        }
+                                    }
+                                    Team::Blue =>
+                                    {
+                                        match blue_flag_status
+                                        {
+                                            FlagStatus::OnTheBase =>
+                                            {
+                                                self.set_flag_on_base_status();
+                                            }
+
+                                            FlagStatus::Missed(pos) =>
+                                            {
+                                                self.set_flag_missed_status(pos);
+                                            }
+
+                                            FlagStatus::Captured(id) =>
+                                            {
+                                                self.set_flag_captured_status(id, engine_handle);
+                                            }
+                                        }
+                                    }
+                                }
+
                             }
                             _ => {}
                         }

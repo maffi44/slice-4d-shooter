@@ -43,7 +43,7 @@ use crate::{
             VolumeArea
         }
     },
-    transform::Vec4
+    transform::Transform
 };
 
 use client_server_protocol::{
@@ -190,6 +190,7 @@ impl HoleGun {
                                     damage as u32,
                                     force,
                                     hit.hit_point,
+                                    player.team
                                 )
                             )
                         )
@@ -287,7 +288,7 @@ impl Device for HoleGun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Vec4) -> Option<VisualElement<'a>> {
+    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
         Some(
             VisualElement {
                 transform,

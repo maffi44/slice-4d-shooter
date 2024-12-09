@@ -78,11 +78,11 @@ impl World {
         
         loop {
                 while let Some(message) = engine_handle.boardcast_message_buffer.pop() {
-                    self.send_boardcast_messages(message, engine_handle, physics_system, audio_system, ui_system)                
+                    self.send_boardcast_messages(message, engine_handle, physics_system, audio_system, ui_system, time_system)                
                 }
 
                 while let Some((to, message)) = engine_handle.direct_message_buffer.pop() {
-                    self.send_direct_messages(to, message, engine_handle, physics_system, audio_system, ui_system)                
+                    self.send_direct_messages(to, message, engine_handle, physics_system, audio_system, ui_system, time_system)                
                 }
 
                 while let Some(command) = engine_handle.command_buffer.pop() {
@@ -111,14 +111,67 @@ impl World {
         let from = command.sender;
 
         match command.command_type {
+            CommandType::RemoveAllHolesAndEffects =>
+            {
+                let mut keys_for_remove = Vec::new();
+
+                for (key, actor) in self.actors.iter()
+                {
+                    match actor {
+                        ActorWrapper::Hole(_) =>
+                        {
+                            keys_for_remove.push(*key);
+                        }
+
+                        ActorWrapper::HoleGunMiss(_) =>
+                        {
+                            keys_for_remove.push(*key);
+                        }
+
+                        ActorWrapper::MachinegunShot(_) =>
+                        {
+                            keys_for_remove.push(*key);
+                        }
+
+                        ActorWrapper::PlayersDeathExplosion(_) =>
+                        {
+                            keys_for_remove.push(*key);
+                        }
+
+                        ActorWrapper::HoleGunShot(_) =>
+                        {
+                            keys_for_remove.push(*key);
+                        }
+
+                        ActorWrapper::ShootingImpact(_) =>
+                        {
+                            keys_for_remove.push(*key);
+                        }
+
+                        _ => {}
+                    }
+                }
+
+                for key in keys_for_remove
+                {
+                    self.actors.remove(&key);
+                }
+            }
+
             CommandType::SpawnEffect(_) => {}
-            CommandType::SpawnActor(actor) => {
+
+            CommandType::SpawnActor(actor) =>
+            {
                 self.add_actor_to_world(actor, engine_handle);
             }
-            CommandType::RemoveActor(id) => {
+
+            CommandType::RemoveActor(id) =>
+            {
                 self.remove_actor_from_world(id);
             }
-            CommandType::RespawnPlayer(id) => {
+
+            CommandType::RespawnPlayer(id) =>
+            {
             
                 if let Some(player) = self.actors.get_mut(&id) {
                     
@@ -169,10 +222,12 @@ impl World {
                 }
 
             }
-            CommandType::NetCommand(command) => {
+
+            CommandType::NetCommand(command) =>
+            {
                 match command {
-                    NetCommand::ConnectedToGameServer(time_from_server_start) => {
-                        time_system.set_game_server_start_time(time_from_server_start);
+                    NetCommand::SetServerTime(server_time) => {
+                        time_system.set_server_time(server_time);
                     },
                     NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {
                         self.change_actor_id(self.main_player_id, new_id, engine_handle);
@@ -208,6 +263,11 @@ impl World {
                         )
                     },
 
+                    NetCommand::SendMessageToServer(message) =>
+                    {
+                        net_system.send_message_to_game_server(message);
+                    }
+
                     NetCommand::PeerDisconnected(id) => {
                         self.remove_actor_from_world(id);
                     }
@@ -224,9 +284,10 @@ impl World {
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &TimeSystem,
     ) {
         if let Some(actor) = self.actors.get_mut(&to) {
-            actor.recieve_message(message, engine_handle, physics_system, audio_system, ui_system);
+            actor.recieve_message(message, engine_handle, physics_system, audio_system, ui_system, time_system);
         }
     }
 
@@ -237,10 +298,11 @@ impl World {
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &TimeSystem,
     ) {
         for (_, actor) in self.actors.iter_mut() {
             if actor.get_id().expect("actor does not have id") != message.from {
-                actor.recieve_message(message.clone(), engine_handle, physics_system, audio_system, ui_system);
+                actor.recieve_message(message.clone(), engine_handle, physics_system, audio_system, ui_system, time_system);
             } 
         }
     }

@@ -160,7 +160,9 @@ pub enum PlayersDollMessage{
         // player's input state for extrapolation reason
         PlayerDollInputState,
         // force for extrapolation
-        Vec4
+        Vec4,
+        // team of respawned player
+        Team,
     ),
     SetNewTeamAndPosition(
         // team player joined to
@@ -339,6 +341,7 @@ impl PlayersDoll {
         transform: Transform,
         input_state: PlayerDollInputState,
         velocity: Vec4,
+        team: Team,
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
@@ -355,6 +358,8 @@ impl PlayersDoll {
             1.0,
             50.0
         );
+        
+        self.team = team;
 
         let collider_radius = self.interpolating_model[0].radius;
 
@@ -471,6 +476,7 @@ impl Actor for PlayersDoll {
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &TimeSystem,
     ) {
         let from = message.from;
 
@@ -549,6 +555,7 @@ impl Actor for PlayersDoll {
                                                             damage,
                                                             force.to_array(),
                                                             impact_pos.to_array(),
+                                                            team
                                                         )
                                                     ),
                                                     self.id.unwrap()
@@ -640,13 +647,15 @@ impl Actor for PlayersDoll {
                             PlayersDollMessage::Respawn(
                                 transform,
                                 input_state,
-                                velocity
+                                velocity,
+                                team,
                             ) =>
                             {
                                 self.respawn(
                                     transform,
                                     input_state,
                                     velocity,
+                                    team,
                                     physics_system,
                                     audio_system,
                                     engine_handle
@@ -860,6 +869,8 @@ impl Actor for PlayersDoll {
                             _ => {}
                         }
                     }
+
+                    SpecificActorMessage::MoveWBonusSpotMessage(_) => {}
                 }
 
             }  

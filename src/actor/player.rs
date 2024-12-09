@@ -4,6 +4,7 @@ pub mod player_settings;
 use client_server_protocol::{
     NetCommand,
     NetMessageToPlayer,
+    NetMessageToServer,
     RemoteCommand,
     RemoteMessage,
     Team
@@ -74,15 +75,13 @@ use glam::{
 };
 
 use super::{
-    device::machinegun::MachineGun,
-    players_death_explosion::PlayersDeathExplosion,
-    session_controller::{SessionControllerMessage, DEFAULT_TEAM},
-    PhysicsMessages
+    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, players_death_explosion::PlayersDeathExplosion, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, PhysicsMessages
 };
 
-
+pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 pub struct PlayerInnerState {
     pub team: Team,
+    pub has_flag: bool,
     pub collider: KinematicCollider,
     pub collider_for_others: Vec<PlayersDollCollider>,
     pub transform: Transform,
@@ -118,6 +117,7 @@ impl PlayerInnerState {
 
         PlayerInnerState {
             team: DEFAULT_TEAM,
+            has_flag: false,
             collider: KinematicCollider::new(
                 settings.max_speed,
                 settings.max_accel,
@@ -280,6 +280,7 @@ impl Actor for Player {
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
+        time_system: &TimeSystem,
     ) {
         let from = message.from;
 
@@ -438,6 +439,7 @@ impl Actor for Player {
                             SessionControllerMessage::NewSessionStarted(team) =>
                             {
                                 self.inner_state.team = team;
+                                self.inner_state.has_flag = false;
 
                                 engine_handle.send_command(
                                     Command {
@@ -467,6 +469,151 @@ impl Actor for Player {
                             }
 
                             _ => {}
+                        }
+                    }
+
+                    SpecificActorMessage::FlagMessage(message) =>
+                    {
+                        match message
+                        {
+                            FlagMessage::SetFlagStatus(
+                                team,
+                                flag_status
+                            ) =>
+                            {
+                                match flag_status
+                                {
+                                    FlagStatus::Captured(id) =>
+                                    {
+                                        if id == self.get_id().expect("Player have not ActorID")
+                                        {
+                                            self.inner_state.has_flag = true;
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+
+                            FlagMessage::GiveMeTargetPosition =>
+                            {
+
+                                engine_handle.send_direct_message(
+                                    from,
+                                    Message {
+                                        from: self.get_id().expect("Player have not ActorID"),
+                                        message:                                     MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::FlagMessage(
+                                                FlagMessage::SetTargetPosition(
+                                                    todo!("flag target position")
+                                                )
+                                            )
+                                        )
+                                    }
+                                );
+                            }
+
+                            FlagMessage::YouTryingToGetFlag(
+                                team_that_owns_flag,
+                                flag_status,
+                            ) =>
+                            {
+                                if team_that_owns_flag == self.inner_state.team
+                                {
+                                    match flag_status {
+                                        FlagStatus::Missed(_) =>
+                                        {
+                                            engine_handle.send_command(
+                                                Command {
+                                                    sender: self.get_id().expect("Player have not ActorID"),
+                                                    command_type: CommandType::NetCommand(
+                                                        NetCommand::SendMessageToServer(
+                                                            NetMessageToServer::TryToGetFlag(
+                                                                time_system.get_server_time(),
+                                                                team_that_owns_flag
+                                                            )
+                                                        )
+                                                    )
+                                                }
+                                            );   
+                                        }
+
+                                        FlagStatus::OnTheBase =>
+                                        {
+                                            if self.inner_state.has_flag
+                                            {
+                                                engine_handle.send_command(
+                                                    Command {
+                                                        sender: self.get_id().expect("Player have not ActorID"),
+                                                        command_type: CommandType::NetCommand(
+                                                            NetCommand::SendMessageToServer(
+                                                                NetMessageToServer::MovedOpponentsFlagToMyBase(
+                                                                    self.get_team()
+                                                                )
+                                                            )
+                                                        )
+                                                    }
+                                                ); 
+                                            }
+                                        }
+
+                                        FlagStatus::Captured(_) => {}
+                                    }
+                                }
+                                else
+                                {
+                                    engine_handle.send_command(
+                                        Command {
+                                            sender: self.get_id().expect("Player have not ActorID"),
+                                            command_type: CommandType::NetCommand(
+                                                NetCommand::SendMessageToServer(
+                                                    NetMessageToServer::TryToGetFlag(
+                                                        time_system.get_server_time(),
+                                                        team_that_owns_flag
+                                                    )
+                                                )
+                                            )
+                                        }
+                                    );
+                                }
+                            }
+
+                            FlagMessage::SetTargetPosition(_) => {}
+                        }
+                    }
+
+                    SpecificActorMessage::MoveWBonusSpotMessage(message) =>
+                    {
+                        match message {
+                            MoveWBonusSpotMessage::SetBonusStatus(_, status) =>
+                            {
+                                match status {
+                                    BonusSpotStatus::BonusCollected(collected_by) =>
+                                    {
+                                        if collected_by == self.get_id().expect("Player have not ActorID")
+                                        {
+                                            todo!("set move w bonus")                                            
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+
+                            MoveWBonusSpotMessage::YouTryingToGetMoveWBonus(index) =>
+                            {
+                                engine_handle.send_command(
+                                    Command {
+                                        sender: self.get_id().expect("Player have not ActorID"),
+                                        command_type: CommandType::NetCommand(
+                                            NetCommand::SendMessageToServer(
+                                                NetMessageToServer::TryToGetMoveWBonus(
+                                                    time_system.get_server_time(),
+                                                    index
+                                                )
+                                            )
+                                        )
+                                    }
+                                );
+                            }
                         }
                     }
                     _ => {},
@@ -1225,7 +1372,7 @@ impl Actor for Player {
             // ---------------------------------------------------
             // temp!
             // y death plane
-            if self.get_position().y < -20.0 {
+            if self.get_position().y < Y_DEATH_PLANE_LEVEL {
                 self.die(
                     true,
                     engine_handle,
@@ -1888,6 +2035,15 @@ impl Player {
             }
         }
 
+        let in_space = {
+            self.get_transform().get_position().y < Y_DEATH_PLANE_LEVEL 
+        };
+
+        self.drop_flag(
+            in_space,
+            engine_handle
+        );
+
         for device in self.devices.iter_mut() {
             if let Some(device) = device {
                 device.deactivate(
@@ -1912,7 +2068,60 @@ impl Player {
         }
     }
 
+    pub fn set_current_w_level(&mut self, w_level: usize)
+    {
+        self.current_w_level = w_level;
+    }
 
+    pub fn get_current_w_level(&self) -> usize
+    {
+        self.current_w_level
+    }
+
+    pub fn drop_flag(&mut self, in_space: bool, engine_handle: &mut EngineHandle)
+    {
+        if self.inner_state.has_flag
+        {
+            self.inner_state.has_flag = false;
+
+            match self.inner_state.team {
+                Team::Red =>
+                {
+                    engine_handle.send_command(
+                        Command {
+                            sender: self.get_id().expect("Player have not ActorID"),
+                            command_type: CommandType::NetCommand(
+                                NetCommand::SendMessageToServer(
+                                    NetMessageToServer::DropedFlag(
+                                        Team::Blue,
+                                        self.get_transform().get_position().to_array(),
+                                        in_space,
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+                Team::Blue =>
+                {
+                    engine_handle.send_command(
+                        Command {
+                            sender: self.get_id().expect("Player have not ActorID"),
+                            command_type: CommandType::NetCommand(
+                                NetCommand::SendMessageToServer(
+                                    NetMessageToServer::DropedFlag(
+                                        Team::Red,
+                                        self.get_transform().get_position().to_array(),
+                                        in_space,
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+            }
+        }
+    } 
 
     pub fn respawn(
         &mut self,
@@ -1925,6 +2134,8 @@ impl Player {
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
+
+        self.drop_flag(true, engine_handle);
 
         self.view_angle = Vec4::ZERO;
 

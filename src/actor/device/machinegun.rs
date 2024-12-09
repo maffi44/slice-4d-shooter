@@ -29,7 +29,7 @@ use crate::{
             UISystem
         }
     },
-    transform::Vec4
+    transform::Transform
 };
 
 use client_server_protocol::{
@@ -178,6 +178,7 @@ impl MachineGun {
                                     self.machinegun_damage as u32,
                                     force,
                                     position,
+                                    player.team
                                 )
                             )
                         )
@@ -265,7 +266,7 @@ impl Device for MachineGun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Vec4) -> Option<VisualElement<'a>> {
+    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
         None
     }
 

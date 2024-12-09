@@ -1,7 +1,7 @@
 use client_server_protocol::Team;
 
 use crate::{
-    engine::engine_handle::EngineHandle,
+    engine::{engine_handle::EngineHandle, time::TimeSystem},
     transform::Transform
 };
 
@@ -89,6 +89,7 @@ impl Actor for SessionController
             physics_system: &crate::engine::physics::PhysicsSystem,
             audio_system: &mut crate::engine::audio::AudioSystem,
             ui_system: &mut crate::engine::ui::UISystem,
+            time_system: &TimeSystem,
         ) {
         
         match message.message {
@@ -190,6 +191,7 @@ impl Actor for SessionController
                                 self.red_team_score = red_team_score;
                                 self.blue_team_score = blue_team_score;
 
+                                todo!("set ui joined to team red or blue");
                                 todo!("set ui score");
                             }
                         }

@@ -19,6 +19,7 @@ pub enum CommandType {
     RemoveActor(ActorID),
     NetCommand(NetCommand),
     RespawnPlayer(ActorID),
+    RemoveAllHolesAndEffects,
 }
 
 pub struct EngineHandle {

@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use fyrox_core::futures::{SinkExt, StreamExt};
 use glam::{Vec3, Vec4};
-use client_server_protocol::{ClientMessage, ServerMessage};
+use client_server_protocol::{ClientMessage, NetMessageToServer, ServerMessage};
 
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
@@ -38,7 +38,7 @@ use client_server_protocol::{
 
 use crate::{
     actor::{
-        flag::FlagStatus, hole::Hole, move_w_bonus::BonusSpotStatus, player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
+        flag::{FlagMessage, FlagStatus}, hole::Hole, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
             PlayerDollInputState, PlayersDoll, PlayersDollMessage}, session_controller::SessionControllerMessage, ActorWrapper, CommonActorsMessages, Message, MessageType, SpecificActorMessage
     },
     transform::{self, Transform}
@@ -374,8 +374,12 @@ impl NetSystem {
                         engine_handle.send_command(Command {
                             sender: 0_u128,
                             command_type: CommandType::NetCommand(
-                                NetCommand::ConnectedToGameServer(millis_from_server_start)   
+                                NetCommand::SetServerTime(millis_from_server_start)   
                             )
+                        });
+                        engine_handle.send_command(Command {
+                            sender: 0_u128,
+                            command_type: CommandType::RemoveAllHolesAndEffects
                         });
                         engine_handle.send_boardcast_message(
                             Message {
@@ -432,6 +436,33 @@ impl NetSystem {
                     ServerMessage::NetMessageToPlayer(from_player, message) => {
                         process_message(from_player, message, engine_handle, audio_system, &self.player_settings, &self.w_levels);
                     }
+
+                    ServerMessage::NewSessionStarted(
+                        server_time,
+                        your_team,
+                    ) =>
+                    {
+                        engine_handle.send_command(Command {
+                            sender: 0_u128,
+                            command_type: CommandType::NetCommand(
+                                NetCommand::SetServerTime(server_time)   
+                            )
+                        });
+                        engine_handle.send_command(Command {
+                            sender: 0_u128,
+                            command_type: CommandType::RemoveAllHolesAndEffects
+                        });
+                        engine_handle.send_boardcast_message(
+                            Message {
+                                from: 0u128,
+                                message: MessageType::SpecificActorMessage(
+                                    SpecificActorMessage::SessionControllerMessage(
+                                        SessionControllerMessage::NewSessionStarted(your_team)
+                                    )
+                                )
+                            }
+                        );
+                    }
                 }
             }
         }
@@ -441,15 +472,23 @@ impl NetSystem {
             if let Some(message) = ServerMessage::from_packet(packet) {
                 match message {
 
-                    ServerMessage::JoinTheMatch(millis_from_server_start) => {
-                        panic!("ERROR: recieved ClientConnectedToGameServer message from ureliable channel")
+                    ServerMessage::NewSessionStarted(_,_) =>
+                    {
+                        panic!("ERROR: recieved NewSessionStarted message from ureliable channel")
                     }
 
-                    ServerMessage::PlayerConnected(player_id) => {
+                    ServerMessage::JoinTheMatch(_,_,_,_,_,_,_) =>
+                    {
+                        panic!("ERROR: recieved JoinTheMatch message from ureliable channel")
+                    }
+
+                    ServerMessage::PlayerConnected(player_id) =>
+                    {
                         panic!("ERROR: recieved PlayerConnected message from ureliable channel")
                     }
 
-                    ServerMessage::PlayerDisconnected(player_id) => {
+                    ServerMessage::PlayerDisconnected(player_id) =>
+                    {
                         panic!("ERROR: recieved PlayerDisconnected message from ureliable channel")
                     }
                     
@@ -461,6 +500,29 @@ impl NetSystem {
         }
 
         return ConnectionState::ConnectedToGameServer(webrtc_socket, server_id, players_id);
+    }
+
+
+    pub fn send_message_to_game_server(&mut self, message: NetMessageToServer) {
+        match &mut self.connection_state
+            .as_mut()
+            .expect("ERROR: connection state in Net system is None")
+        {
+            ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
+            {
+                if webrtc_socket.any_closed() {return;}
+                
+                let packet = ClientMessage::MessageToServer(message).to_packet();
+        
+                webrtc_socket
+                    .channel_mut(0)
+                    .send(
+                        packet.clone(),
+                        *server_id
+                    );
+            }
+            _ => {}
+        }
     }
 
 
@@ -487,6 +549,7 @@ impl NetSystem {
         }
     }
 
+
     pub fn send_boardcast_message_unreliable(&mut self, message: NetMessageToPlayer) {
 
         match &mut self.connection_state
@@ -509,7 +572,8 @@ impl NetSystem {
             _ => {}
         }
     }
-    
+
+
     pub fn send_direct_message_reliable(&mut self, message: NetMessageToPlayer, peer: u128) {
 
         match &mut self.connection_state
@@ -532,6 +596,7 @@ impl NetSystem {
             _ => {}
         }
     }
+
 
     pub fn send_direct_message_unreliable(&mut self, message: NetMessageToPlayer, peer: u128) {
         
@@ -565,8 +630,10 @@ fn process_message(
     player_settings: &PlayerSettings,
     w_levels: &Vec<f32>,
 ) {
-    match message {
-        NetMessageToPlayer::RemoteCommand(command) => {
+    match message
+    {
+        NetMessageToPlayer::RemoteCommand(command) =>
+        {
             match command
             {
                 RemoteCommand::RemoveActor(actor_id) =>
@@ -594,7 +661,8 @@ fn process_message(
                 RemoteCommand::SpawnPlayersDollActor(
                     tr,
                     player_sphere_radius,
-                    is_alive
+                    is_alive,
+                    team
                 ) =>
                 {
                     let transform = Transform::from_serializable_transform(tr);
@@ -607,6 +675,7 @@ fn process_message(
                         audio_system,
                         player_settings.clone(),
                         w_levels.clone(),
+                        team,
                     );
 
                     let actor = ActorWrapper::PlayersDoll(players_doll);
@@ -640,7 +709,7 @@ fn process_message(
                         explode_final_time,
                     );
 
-                    let actor = ActorWrapper::PlayersDoll(hole);
+                    let actor = ActorWrapper::Hole(hole);
 
                     engine_handle.send_command(Command {
                         sender: 0u128,
@@ -652,8 +721,101 @@ fn process_message(
         },
 
         NetMessageToPlayer::RemoteDirectMessage(actor_id, message) => {
-            match message {
-                RemoteMessage::SetPlayerDollState(tr, input, velocity, time) => {
+            match message
+            {
+                RemoteMessage::TeamWin(team) =>
+                {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::SessionControllerMessage(
+                                    SessionControllerMessage::TeamWin(
+                                        team
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::UpdateTeamsScore(red_team_score, blue_team_score) =>
+                {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::SessionControllerMessage(
+                                    SessionControllerMessage::SetScore(
+                                        red_team_score,
+                                        blue_team_score
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::SetFlagStatus(team, status) =>
+                {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::FlagMessage(
+                                    FlagMessage::SetFlagStatus(
+                                        team,
+                                        FlagStatus::from(status)
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::SetMoveWBonusStatus(index, status) =>
+                {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::MoveWBonusSpotMessage(
+                                    MoveWBonusSpotMessage::SetBonusStatus(
+                                        index,
+                                        BonusSpotStatus::from(status)
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::SetNewTeam(team) =>
+                {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PLayerMessage(
+                                    PlayerMessage::SetNewTeam(team)
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::SetPlayerDollState(
+                    tr,
+                    input,
+                    velocity,
+                    time
+                ) =>
+                {
                     let transform = Transform::from_serializable_transform(tr);
                     let input_state = PlayerDollInputState::deserialize(input);
                     let velocity = Vec4::from_array(velocity);
@@ -675,7 +837,9 @@ fn process_message(
                         }
                     );
                 }
-                RemoteMessage::SpawnMachineGunShot(pos, is_miss) => {
+
+                RemoteMessage::SpawnMachineGunShot(pos, is_miss) =>
+                {
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
@@ -691,7 +855,14 @@ fn process_message(
                         }
                     );
                 }
-                RemoteMessage::PlayerRespawn(tr, input, velocity) => {
+
+                RemoteMessage::PlayerRespawn(
+                    tr,
+                    input,
+                    velocity,
+                    team,
+                ) =>
+                {
                     let transform = Transform::from_serializable_transform(tr);
                     let input_state = PlayerDollInputState::deserialize(input);
                     let velocity = Vec4::from_array(velocity);
@@ -706,13 +877,16 @@ fn process_message(
                                         transform,
                                         input_state,
                                         velocity,
+                                        team,
                                     )
                                 )
                             )
                         }
                     )
                 }
-                RemoteMessage::HoleGunStartCharging => {
+
+                RemoteMessage::HoleGunStartCharging =>
+                {
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
@@ -725,7 +899,9 @@ fn process_message(
                         }
                     )
                 }
-                RemoteMessage::DieImmediately => {
+
+                RemoteMessage::DieImmediately =>
+                {
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
@@ -738,7 +914,9 @@ fn process_message(
                         }
                     )
                 },
-                RemoteMessage::DieSlowly => {
+
+                RemoteMessage::DieSlowly =>
+                {
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
@@ -751,13 +929,15 @@ fn process_message(
                         }
                     )
                 }
+
                 RemoteMessage::SpawHoleGunMissActor(
                     position,
                     shoooted_from,
                     radius,
                     color,
                     charging_volume_area
-                ) => {
+                ) => 
+                {
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
@@ -775,13 +955,15 @@ fn process_message(
                         }
                     )
                 },
+
                 RemoteMessage::SpawnHoleGunShotActor(
                     position,
                     shoooted_from,
                     radius,
                     color,
                     charging_volume_area
-                ) => {
+                ) =>
+                {
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
@@ -799,7 +981,9 @@ fn process_message(
                         }
                     )
                 },
-                RemoteMessage::SetTransform(tr) => {
+
+                RemoteMessage::SetTransform(tr) =>
+                {
                     let transform = Transform::from_serializable_transform(tr);
 
                     engine_handle.send_direct_message(
@@ -812,7 +996,14 @@ fn process_message(
                         }
                     )
                 },
-                RemoteMessage::DealDamageAndAddForce(damage, force, impact_pos) => {
+
+                RemoteMessage::DealDamageAndAddForce(
+                    damage,
+                    force,
+                    impact_pos,
+                    damage_by_team
+                ) =>
+                {
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
@@ -823,6 +1014,7 @@ fn process_message(
                                         damage,
                                         Vec4::from_array(force),
                                         Vec4::from_array(impact_pos),
+                                        damage_by_team
                                     )
                                 )
                             )
@@ -844,8 +1036,96 @@ fn process_message(
         },
 
         NetMessageToPlayer::RemoteBoardCastMessage(message) => {
-            match message {
-                RemoteMessage::SetPlayerDollState(transform, input_state, velocity, time) => {
+            match message
+            {
+                RemoteMessage::TeamWin(team) =>
+                {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::SessionControllerMessage(
+                                    SessionControllerMessage::TeamWin(
+                                        team
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::UpdateTeamsScore(red_team_score, blue_team_score) =>
+                {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::SessionControllerMessage(
+                                    SessionControllerMessage::SetScore(
+                                        red_team_score,
+                                        blue_team_score
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::SetFlagStatus(team, status) =>
+                {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::FlagMessage(
+                                    FlagMessage::SetFlagStatus(
+                                        team,
+                                        FlagStatus::from(status)
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::SetMoveWBonusStatus(index, status) =>
+                {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::MoveWBonusSpotMessage(
+                                    MoveWBonusSpotMessage::SetBonusStatus(
+                                        index,
+                                        BonusSpotStatus::from(status)
+                                    )
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::SetNewTeam(team) =>
+                {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PLayerMessage(
+                                    PlayerMessage::SetNewTeam(team)
+                                )
+                            )
+                        }
+                    );
+                }
+
+                RemoteMessage::SetPlayerDollState(
+                    transform,
+                    input_state,
+                    velocity,
+                    time,
+                ) =>
+                {
                     let transform = Transform::from_serializable_transform(transform);
                     let input_state = PlayerDollInputState::deserialize(input_state);
                     let velocity = Vec4::from_array(velocity);
@@ -866,7 +1146,9 @@ fn process_message(
                         }
                     )
                 }
-                RemoteMessage::SpawnMachineGunShot(pos, is_miss) => {
+
+                RemoteMessage::SpawnMachineGunShot(pos, is_miss) =>
+                {
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,
@@ -881,7 +1163,13 @@ fn process_message(
                         }
                     );
                 }
-                RemoteMessage::PlayerRespawn(tr, input, velocity) => {
+                RemoteMessage::PlayerRespawn(
+                    tr,
+                    input,
+                    velocity,
+                    team
+                ) =>
+                {
                     let transform = Transform::from_serializable_transform(tr);
                     let input_state = PlayerDollInputState::deserialize(input);
                     let velocity = Vec4::from_array(velocity);
@@ -895,13 +1183,16 @@ fn process_message(
                                         transform,
                                         input_state,
                                         velocity,
+                                        team,
                                     )
                                 )
                             )
                         }
                     )
                 }
-                RemoteMessage::DieImmediately => {
+                
+                RemoteMessage::DieImmediately =>
+                {
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,
@@ -913,7 +1204,9 @@ fn process_message(
                         }
                     )
                 },
-                RemoteMessage::DieSlowly => {
+
+                RemoteMessage::DieSlowly =>
+                {
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,
@@ -925,7 +1218,9 @@ fn process_message(
                         }
                     )
                 }
-                RemoteMessage::HoleGunStartCharging => {
+
+                RemoteMessage::HoleGunStartCharging =>
+                {
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,
@@ -937,13 +1232,15 @@ fn process_message(
                         }
                     )
                 }
+
                 RemoteMessage::SpawHoleGunMissActor(
                     position,
                     shoooted_from,
                     radius,
                     color,
                     charging_volume_area
-                ) => {
+                ) =>
+                {
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,
@@ -960,13 +1257,15 @@ fn process_message(
                         }
                     )
                 },
+
                 RemoteMessage::SpawnHoleGunShotActor(
                     position,
                     shoooted_from,
                     radius,
                     color,
                     charging_volume_area
-                ) => {
+                ) =>
+                {
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,
@@ -983,7 +1282,9 @@ fn process_message(
                         }
                     )
                 },
-                RemoteMessage::SetTransform(tr) => {
+
+                RemoteMessage::SetTransform(tr) =>
+                {
                     let transform = Transform::from_serializable_transform(tr);
 
                     engine_handle.send_boardcast_message(
@@ -995,7 +1296,14 @@ fn process_message(
                         }
                     )
                 },
-                RemoteMessage::DealDamageAndAddForce(damage, force, impact_pos) => {
+
+                RemoteMessage::DealDamageAndAddForce(
+                    damage,
+                    force,
+                    impact_pos,
+                    damaged_by_team
+                ) =>
+                {
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,
@@ -1005,13 +1313,16 @@ fn process_message(
                                         damage,
                                         Vec4::from_array(force),
                                         Vec4::from_array(impact_pos),
+                                        damaged_by_team
                                     )
                                 )
                             )
                         }
                     )
                 },
-                RemoteMessage::Enable(enable_state) => {
+
+                RemoteMessage::Enable(enable_state) =>
+                {
                     engine_handle.send_boardcast_message(
                         Message {
                             from: 0u128,

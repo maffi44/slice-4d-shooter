@@ -10,8 +10,8 @@ pub struct TimeSystem {
     timestamp_of_start_of_current_frame: web_time::Instant,
     pub timestamp_of_main_loop_start: web_time::Instant,
 
-    server_start_time_in_millis: Option<u128>,
-    connected_to_server_time: Option<Instant>,
+    server_time_in_millis: Option<u128>,
+    joined_to_session_timestamp: Option<Instant>,
 }
 
 impl TimeSystem {
@@ -25,8 +25,8 @@ impl TimeSystem {
             frame_counter: 0_u64,
             timestamp_of_start_of_current_frame: Instant::now(),
             timestamp_of_main_loop_start: Instant::now(),
-            server_start_time_in_millis: None,
-            connected_to_server_time: None
+            server_time_in_millis: None,
+            joined_to_session_timestamp: None
         }
     }
 
@@ -38,14 +38,14 @@ impl TimeSystem {
 
     pub fn get_server_time(&self) -> u128
     {
-        if self.server_start_time_in_millis.is_some()
+        if self.server_time_in_millis.is_some()
         {
-            self.connected_to_server_time
+            self.joined_to_session_timestamp
                 .expect("ERROR: have not connected_to_server_time timestamp but have server_start_time_in_millis")
                 .elapsed()
                 .as_millis()
                 +
-                self.server_start_time_in_millis.unwrap()
+                self.server_time_in_millis.unwrap()
         }
         else
         {
@@ -53,10 +53,10 @@ impl TimeSystem {
         }
     }
 
-    pub fn set_game_server_start_time(&mut self, start_time: u128)
+    pub fn set_server_time(&mut self, start_time: u128)
     {
-        self.connected_to_server_time = Some(Instant::now());
-        self.server_start_time_in_millis = Some(start_time);
+        self.joined_to_session_timestamp = Some(Instant::now());
+        self.server_time_in_millis = Some(start_time);
     }
 
     #[inline]

@@ -107,7 +107,7 @@ pub enum NetMessageToServer {
         u32,
     ),
     DropedFlag(
-        // droped flag's team
+        // which team owns the dropped flag
         Team,
         // position of flag
         [f32;4],
@@ -115,6 +115,7 @@ pub enum NetMessageToServer {
         bool
     ),
     MovedOpponentsFlagToMyBase(
+        // which team moved oppnent's flag
         Team,
     )
 }
@@ -166,7 +167,7 @@ pub enum RemoteCommand {
 #[alkahest(Formula, Serialize, Deserialize)]
 #[derive(Clone)]
 pub enum RemoteMessage {
-    DealDamageAndAddForce(u32, [f32;4], [f32;4]),
+    DealDamageAndAddForce(u32, [f32;4], [f32;4], Team),
     DieImmediately,
     DieSlowly,
     PlayerRespawn(
@@ -308,7 +309,9 @@ pub enum NetCommand {
     NetSystemIsConnectedAndGetNewPeerID(u128),
     PeerConnected(u128),
     PeerDisconnected(u128),
-    ConnectedToGameServer(u128),
+    SetServerTime(u128),
+
+    SendMessageToServer(NetMessageToServer),
 
     SendDirectNetMessageReliable(NetMessageToPlayer, u128),
     SendDirectNetMessageUnreliable(NetMessageToPlayer, u128),
