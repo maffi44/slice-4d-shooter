@@ -187,6 +187,8 @@ impl Actor for SessionController
                                 blue_team_score,
                             ) =>
                             {
+                                println!("Joined to session");
+                                
                                 self.your_team = your_team;
                                 self.red_team_score = red_team_score;
                                 self.blue_team_score = blue_team_score;

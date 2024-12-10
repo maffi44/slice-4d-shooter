@@ -1,19 +1,18 @@
 use crate::{
     actor::{
-        player::{
+        flag::Flag, move_w_bonus::{self, MoveWBonusSpot}, player::{
             player_input_master::{
                 InputMaster,
                 LocalMaster
             }, Player
-        },
-        Actor,
-        ActorWrapper,
+        }, session_controller::SessionController, Actor, ActorWrapper
     },
     engine::{
-        input::ActionsFrameState, Engine
+        input::ActionsFrameState, world, Engine
     },
 };
 
+use client_server_protocol::Team;
 use web_time::Instant;
 use glam::Vec2;
 
@@ -305,6 +304,44 @@ fn init(systems: &mut Engine) {
         ActorWrapper::Player(main_player),
         &mut systems.engine_handle,
     );
+
+    let red_flag = Flag::new(
+        Team::Red,
+        systems.world.level.red_flag_base
+    );
+
+    systems.world.add_actor_to_world(
+        ActorWrapper::Flag(red_flag),
+        &mut systems.engine_handle,
+    );
+
+    let blue_flag = Flag::new(
+        Team::Blue,
+        systems.world.level.blue_flag_base
+    );
+
+    systems.world.add_actor_to_world(
+        ActorWrapper::Flag(blue_flag),
+        &mut systems.engine_handle,
+    );
+
+    let session_controller = SessionController::new();
+    
+    systems.world.add_actor_to_world(
+        ActorWrapper::SessionController(session_controller),
+        &mut systems.engine_handle,
+    );
+
+    let move_w_bonus = MoveWBonusSpot::new(
+        systems.world.level.move_w_bonus_spot,
+        0
+    );
+
+    systems.world.add_actor_to_world(
+        ActorWrapper::MoveWBonusSpot(move_w_bonus),
+        &mut systems.engine_handle,
+    );
+
 
     systems.world.main_player_id = main_player_id;
 }

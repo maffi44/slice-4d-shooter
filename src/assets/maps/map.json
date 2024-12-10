@@ -43,6 +43,20 @@
             "blue": 0.8,
             "multiplier": 1.5
         },
+        "red_map_color" :
+        {
+            "red": 1.2,
+            "green": 0.0,
+            "blue": 0.0,
+            "multiplier": 1.5
+        },
+        "blue_map_color" :
+        {
+            "red": 1.2,
+            "green": 0.0,
+            "blue": 0.0,
+            "multiplier": 1.5
+        },
         "sun_direction" : {
             "x" : 1.0,
             "y" : 1.4,
@@ -110,13 +124,88 @@
 
     "all_shapes_stickiness_radius": 0.3,
 
+    "blue_map_color_level" : 0.0,
+    "red_map_color_level" : 8.0,
+
+    "red_flag_base" :
+    {
+        "transform" : {
+            "position" : {
+                "x": -5.0,
+                "y": 3.0,
+                "z": 5.0,
+                "w": 0.0
+            }
+        }
+    },
+
+    "blue_flag_base" :
+    {
+        "transform" : {
+            "position" : {
+                "x": -5.0,
+                "y": 3.0,
+                "z": 5.0,
+                "w": 8.0
+            }
+        }
+    },
+
+    "move_w_bonus_spot" :
+    {
+        "transform" : {
+            "position" : {
+                "x": -5.0,
+                "y": 3.0,
+                "z": 5.0,
+                "w": 4.0
+            }
+        }
+    }, 
+
     "w_levels" : [
         0.0,
         4.0,
         8.0
     ],
 
-    "spawns" : [
+    "red_spawns" : [
+        {
+            "transform" : {
+                "position" : {
+                    "x": 1.0,
+                    "y": 2.0,
+                    "z": 0.0,
+                    "w": 1.0
+                }
+            },
+            "w_level" : 0
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 14.0,
+                    "y": 2.0,
+                    "z": 4.0,
+                    "w": 1.0
+                }
+            },
+            "w_level" : 1
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 4.0,
+                    "y": 2.0,
+                    "z": 14.0,
+                    "w": 1.0
+                }
+            },
+            "w_level" : 2
+        }
+    ],
+
+    "blue_spawns" : [
         {
             "transform" : {
                 "position" : {

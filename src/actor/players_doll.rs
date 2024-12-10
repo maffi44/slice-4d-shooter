@@ -854,15 +854,18 @@ impl Actor for PlayersDoll {
                         {
                             SessionControllerMessage::TeamWin(team) =>
                             {
-                                match team
+                                if self.team == team
                                 {
-                                    Team::Red =>
+                                    match team
                                     {
-                                        todo!("play red effect")
-                                    }
-                                    Team::Blue =>
-                                    {
-                                        todo!("play blue effect")
+                                        Team::Red =>
+                                        {
+                                            todo!("play red effect")
+                                        }
+                                        Team::Blue =>
+                                        {
+                                            todo!("play blue effect")
+                                        }
                                     }
                                 }
                             }
@@ -905,6 +908,7 @@ impl Actor for PlayersDoll {
         if self.is_enable {
             Some(
                 PhysicalElement {
+                    id: self.get_id().expect("Actor have not ActorID"),
                     transform: &mut self.transform,
                     kinematic_collider: Some((&mut self.interpolating_model_target, Some(&mut self.target_transform))),
                     static_colliders: None,

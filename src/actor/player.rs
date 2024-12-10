@@ -30,13 +30,11 @@ use crate::{
         audio::{
             AudioSystem,
             Sound
-        },
-        engine_handle::{
+        }, engine_handle::{
             Command,
             CommandType,
             EngineHandle
-        },
-        physics::{
+        }, input::ActionsFrameState, physics::{
             colliders_container::PhysicalElement,
             dynamic_collider::PlayersDollCollider,
             kinematic_collider::{
@@ -44,16 +42,12 @@ use crate::{
                 KinematicColliderMessages
             },
             PhysicsSystem
-        },
-        render::VisualElement,
-        time::TimeSystem,
-        ui::{
+        }, render::VisualElement, time::TimeSystem, ui::{
             RectSize,
             UIElement,
             UIElementType,
             UISystem,
-        },
-        world::level::Spawn
+        }, world::level::Spawn
     },
     transform::Transform,
 };
@@ -94,6 +88,8 @@ pub struct PlayerInnerState {
     pub zw_rotation: Mat4,
     pub zy_rotation: Mat4,
     pub zx_rotation: Mat4,
+
+    pub is_time_after_some_team_win: bool,
     // pub weapon_offset: Vec4,
 }
 
@@ -136,6 +132,8 @@ impl PlayerInnerState {
             zw_rotation: Mat4::IDENTITY,
             zy_rotation: Mat4::IDENTITY,
             zx_rotation: Mat4::IDENTITY,
+
+            is_time_after_some_team_win: false,
         }
     }
 }
@@ -440,6 +438,7 @@ impl Actor for Player {
                             {
                                 self.inner_state.team = team;
                                 self.inner_state.has_flag = false;
+                                self.inner_state.is_time_after_some_team_win = false;
 
                                 engine_handle.send_command(
                                     Command {
@@ -456,7 +455,10 @@ impl Actor for Player {
                                 your_team, _, _, _, _, _,
                             ) =>
                             {
+                                println!("Joined to game session");
+                                
                                 self.inner_state.team = your_team;
+                                self.inner_state.is_time_after_some_team_win = false;
 
                                 engine_handle.send_command(
                                     Command {
@@ -466,6 +468,11 @@ impl Actor for Player {
                                         )
                                     }
                                 );
+                            }
+
+                            SessionControllerMessage::TeamWin(team) =>
+                            {
+                                self.inner_state.is_time_after_some_team_win = true;
                             }
 
                             _ => {}
@@ -583,10 +590,12 @@ impl Actor for Player {
 
                     SpecificActorMessage::MoveWBonusSpotMessage(message) =>
                     {
-                        match message {
+                        match message
+                        {
                             MoveWBonusSpotMessage::SetBonusStatus(_, status) =>
                             {
-                                match status {
+                                match status
+                                {
                                     BonusSpotStatus::BonusCollected(collected_by) =>
                                     {
                                         if collected_by == self.get_id().expect("Player have not ActorID")
@@ -647,8 +656,10 @@ impl Actor for Player {
     }
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
-        if self.inner_state.is_enable {
+        if self.inner_state.is_enable
+        {
             let collider_container = PhysicalElement {
+                id: self.get_id().expect("Actor have not ActorID"),
                 transform: &mut self.inner_state.transform,
                 kinematic_collider: Some((&mut self.inner_state.collider, None)),
                 static_colliders: None,
@@ -705,7 +716,7 @@ impl Actor for Player {
     ) {
         let my_id = self.id.expect("Player does not have id");
 
-        let input = match &self.master {
+        let mut input = match &self.master {
             InputMaster::LocalMaster(master) => {
                 master.current_input.clone()
             }
@@ -756,6 +767,11 @@ impl Actor for Player {
 
 
         if self.inner_state.is_alive {
+
+            if self.inner_state.is_time_after_some_team_win
+            {
+                input = ActionsFrameState::empty();
+            }
 
             self.screen_effects.death_screen_effect -= delta*DEATH_EFFECT_COEF_DECREASE_SPEED;
             self.screen_effects.death_screen_effect = self.screen_effects.death_screen_effect.clamp(0.0, 1.0);

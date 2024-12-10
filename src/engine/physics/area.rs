@@ -41,13 +41,18 @@ pub struct Area {
 }
 
 impl Area {
-    
+
+    pub fn clear_containing_colliders_list(&mut self)
+    {
+        self.intersected_actor_ids.clear();
+    } 
+
     pub fn set_frame_position(&mut self, frame_position: Vec4) {
         self.frame_position = frame_position;
     }
 
-    pub fn set_frame_size(&mut self, frame_position: Vec4) {
-        self.frame_position = frame_position;
+    pub fn set_frame_size(&mut self, frame_size: Vec4) {
+        self.frame_size = frame_size;
     }
 
     pub fn new(translation: Vec4, shape_type: ShapeType, size: Vec4) -> Self {
@@ -68,14 +73,14 @@ impl Area {
         kinematic_colliders: &Vec<(&mut Transform, &mut KinematicCollider)>,
         engine_handle: &mut EngineHandle,
     ) {
-        for (transform, kinematic_collider) in kinematic_colliders.iter() {
+        for (kinematic_collider_transform, kinematic_collider) in kinematic_colliders {
 
             let collider_id = kinematic_collider.get_id().expect(
                 "Kinematic collider have not actor's id"
             );
 
             let is_intersect = self
-                .kinematic_collider_is_intersect_with_area(&transform, &kinematic_collider);
+                .kinematic_collider_is_intersect_with_area(&kinematic_collider_transform, &kinematic_collider);
             
             let was_intersected = self
                 .kinematic_collider_was_intersected_with_area(collider_id);
@@ -150,10 +155,10 @@ impl Area {
 
     fn kinematic_collider_is_intersect_with_area(
         &self,
-        transform: &Transform,
+        kinematic_collider_transform: &Transform,
         kinematic_collider: &KinematicCollider
     ) -> bool {
-        let kinematic_collider_position = transform.get_position();
+        let kinematic_collider_position = kinematic_collider_transform.get_position();
 
         let distnance_from_collider_center = match self.shape_type {
             ShapeType::Cube => {

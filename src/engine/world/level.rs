@@ -54,12 +54,15 @@ pub struct EnvirnomentVisualSettings {
     pub neon_wireframe_color: Vec4,
     pub sun_color: Vec4,
     pub sun_direction: Vec4,
+    pub red_map_color: Vec4,
+    pub blue_map_color: Vec4,
 }
 
 pub struct Level {
     pub level_name: String,
     pub static_objects: Vec<StaticObject>,
-    pub spawns: Vec<Spawn>,
+    pub red_spawns: Vec<Spawn>,
+    pub blue_spawns: Vec<Spawn>,
     pub all_shapes_stickiness_radius: f32,
     pub w_floor: Option<WFloor>,
     pub w_roof: Option<WRoof>,
@@ -69,22 +72,42 @@ pub struct Level {
     pub visual_settings_of_environment: EnvirnomentVisualSettings,
 
     pub w_levels: Vec<f32>,
-}
 
+    pub blue_map_color_level: f32,
+    pub red_map_color_level: f32,
+    pub red_flag_base: Transform,
+    pub blue_flag_base: Transform,
+    pub move_w_bonus_spot: Transform,
+}
 
 impl Level {
     
     pub fn get_random_spawn_position(&self, team: Team) -> Spawn {
-        let random_index = {
-            let mut usize_bytes = 0usize.to_be_bytes();
-            getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
-            
-            usize::from_le_bytes(usize_bytes) % self.spawns.len()
-        };
+        match team {
+            Team::Red =>
+            {
+                let random_index = {
+                    let mut usize_bytes = 0usize.to_be_bytes();
+                    getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
+                    
+                    usize::from_le_bytes(usize_bytes) % self.red_spawns.len()
+                };
+        
+                self.red_spawns[random_index].clone()
+            }
 
-        todo!("make spawns for red and blue teams");
-
-        self.spawns[random_index].clone()
+            Team::Blue =>
+            {
+                let random_index = {
+                    let mut usize_bytes = 0usize.to_be_bytes();
+                    getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
+                    
+                    usize::from_le_bytes(usize_bytes) % self.blue_spawns.len()
+                };
+        
+                self.blue_spawns[random_index].clone()
+            }
+        }
     }
 
 
@@ -184,12 +207,48 @@ fn parse_json_level(
             as f32
     };
 
-    let spawn_positions = {
+    let red_spawns = {
         let spawns_array = json_level
-            .get("spawns")
-            .expect("Wrong JSON map format. JSON level must have spawns property")
+            .get("red_spawns")
+            .expect("Wrong JSON map format. JSON level must have red_spawns property")
             .as_array()
-            .expect("spawns is not an array");
+            .expect("red_spawns is not an array");
+
+        let mut spawns = Vec::new();
+
+        for value in spawns_array {
+            let transform = parse_json_into_transform(value, "spawn_position");
+            let w_level = {
+                
+                let obj = value
+                    .as_object()
+                    .expect("Wrong JSON map format, type of spawn is not an object");
+            
+                obj
+                    .get("w_level")
+                    .expect("Wrong JSON map format, spawn have not w_level property")
+                    .as_u64()
+                    .expect("Wrong JSON map format, w_level of spawn is not number")
+                    as usize
+            };
+
+            let spawn = Spawn {
+                spawn_position: transform.get_position(),
+                w_level,
+            };
+
+            spawns.push(spawn);
+        }
+
+        spawns  
+    };
+
+    let blue_spawns = {
+        let spawns_array = json_level
+            .get("blue_spawns")
+            .expect("Wrong JSON map format. JSON level must have blue_spawns property")
+            .as_array()
+            .expect("blue_spawns is not an array");
 
         let mut spawns = Vec::new();
 
@@ -306,11 +365,55 @@ fn parse_json_level(
         parse_json_visual_settings_of_environment(json_visual_settings_of_environment)
     };
 
+    let blue_map_color_level = {
+        json_level
+            .get("blue_map_color_level")
+            .expect("Wrong JSON map format. JSON level must have blue_map_color_level property")
+            .as_f64()
+            .expect("Wrong JSON map format. JSON's blue_map_color_level property must be an number")
+            as f32
+    };
+    
+    let red_map_color_level = {
+        json_level
+            .get("red_map_color_level")
+            .expect("Wrong JSON map format. JSON level must have red_map_color_level property")
+            .as_f64()
+            .expect("Wrong JSON map format. JSON's red_map_color_level property must be an number")
+            as f32
+    };
+    
+    let red_flag_base = {
+        let red_flag_base_json = json_level
+            .get("red_flag_base")
+            .expect("Wrong JSON map format. JSON level must have red_flag_base property");
+
+        parse_json_into_transform(red_flag_base_json, "red_flag_base")
+    };
+    
+    let blue_flag_base = {
+        let blue_flag_base_json = json_level
+            .get("blue_flag_base")
+            .expect("Wrong JSON map format. JSON level must have blue_flag_base property");
+
+        parse_json_into_transform(blue_flag_base_json, "blue_flag_base")
+    };
+    
+    let move_w_bonus_spot = {
+        let move_w_bonus_spot_json = json_level
+            .get("move_w_bonus_spot")
+            .expect("Wrong JSON map format. JSON level must have move_w_bonus_spot property");
+
+        parse_json_into_transform(move_w_bonus_spot_json, "move_w_bonus_spot")
+    };
+    
+
 
     let level = Level {
         level_name,
         static_objects,
-        spawns: spawn_positions,
+        red_spawns,
+        blue_spawns,
         all_shapes_stickiness_radius,
         w_floor,
         w_roof,
@@ -319,6 +422,11 @@ fn parse_json_level(
         w_cups_visual_materials,
         w_levels,
         visual_settings_of_environment,
+        red_flag_base,
+        blue_flag_base,
+        red_map_color_level,
+        blue_map_color_level,
+        move_w_bonus_spot,
     };
 
     (level, actors)
@@ -405,6 +513,20 @@ fn parse_json_visual_settings_of_environment(
         Vec4::new(x as f32, y as f32, z as f32, w as f32)
     };
 
+    let red_map_color = {
+        let json_value = obj.get("red_map_color")
+            .expect("Wrong JSON map format. visual_settings_of_environment have not an red_map_color property");
+
+        parse_json_color_and_multiplier(json_value)
+    };
+
+    let blue_map_color = {
+        let json_value = obj.get("blue_map_color")
+            .expect("Wrong JSON map format. visual_settings_of_environment have not an blue_map_color property");
+
+        parse_json_color_and_multiplier(json_value)
+    };
+
     EnvirnomentVisualSettings {
         sky_box_name,
         sky_color,
@@ -413,6 +535,8 @@ fn parse_json_visual_settings_of_environment(
         fog_color,
         frenel_color,
         neon_wireframe_color,
+        red_map_color,
+        blue_map_color,
     }
 }
 

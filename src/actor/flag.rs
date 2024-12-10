@@ -1,11 +1,11 @@
 use client_server_protocol::Team;
-use glam::Vec4;
+use glam::{Vec3, Vec4};
 use rand::Rng;
 use web_sys::console::assert;
 
 use crate::{
     engine::{
-        audio::AudioSystem, engine_handle::EngineHandle, physics::{area::AreaMessages, colliders_container::PhysicalElement, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem
+        audio::AudioSystem, engine_handle::EngineHandle, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{SphericalVolumeArea, VolumeArea}
     },
     transform::Transform
 };
@@ -68,6 +68,8 @@ fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
     return Vec4::new(x, y, z, w);
 }
 
+pub const FLAG_AREA_RADIUS: f32 = 1.0;
+
 pub struct Flag
 {
     transform: Transform,
@@ -79,6 +81,8 @@ pub struct Flag
     id: Option<ActorID>,
     status: FlagStatus,
     owned_by_team: Team,
+    area: Area,
+    visual_areas: Vec<VolumeArea>,
 }
 
 impl Flag
@@ -90,6 +94,40 @@ impl Flag
             FLAG_SWING_RANGE
         );
 
+        let area: Area = Area::new(
+            Vec4::ZERO,
+            ShapeType::Sphere,
+            Vec4::new(
+                FLAG_AREA_RADIUS,
+                0.0, 0.0, 0.0
+            )
+        );
+
+        let mut visual_areas = Vec::with_capacity(1);
+
+        let color = match team
+        {
+            Team::Red =>
+            {
+                Vec3::new(1.0, 0.0, 0.0)
+            }
+            
+            Team::Blue =>
+            {
+                Vec3::new(0.0, 0.0, 1.0)
+            }
+        };
+
+        let test_visual_area =  VolumeArea::SphericalVolumeArea(
+            SphericalVolumeArea {
+                radius: FLAG_AREA_RADIUS,
+                translation: Vec4::ZERO,
+                color,
+            }
+        );
+
+        visual_areas.push(test_visual_area);
+
         Flag {
             transform: transfrom_of_the_base,
             target_flag_swing_position,
@@ -100,6 +138,8 @@ impl Flag
             status:FlagStatus::OnTheBase,
             owned_by_team: team,
             next_target_swing_position_in_secs: TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION,
+            area,
+            visual_areas,
         }
     }
 
@@ -131,6 +171,8 @@ impl Flag
         engine_handle: &mut EngineHandle
     )
     {
+        self.area.clear_containing_colliders_list();
+        
         engine_handle.send_direct_message(
             captured_by,
             Message {
@@ -193,30 +235,47 @@ impl Actor for Flag
         &mut self.transform
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
-        match self.status {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement>
+    {
+        match self.status
+        {
             FlagStatus::Captured(_) =>
             {
                 None
             }
+
             _ =>
             {
-                todo!()
+                Some(
+                    PhysicalElement
+                    {
+                        id: self.get_id().expect("Actor have not ActorID"),
+                        transform: &mut self.transform,
+                        kinematic_collider: None,
+                        dynamic_colliders: None,
+                        static_colliders: None,
+                        static_objects: None,
+                        area: Some(&mut self.area)
+                    }
+                )
             }
         }
+
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
-        match self.status {
-            FlagStatus::Captured(_) =>
+
+    fn get_visual_element(&self) -> Option<VisualElement>
+    {
+        Some(
+            VisualElement
             {
-                None
+                transform: &self.transform,
+                static_objects: None,
+                coloring_areas: None,
+                volume_areas: Some(&self.visual_areas),
+                player: None,
             }
-            _ =>
-            {
-                todo!()
-            }
-        }
+        )
     }
 
     fn get_transform(&self) -> &Transform {
@@ -254,6 +313,8 @@ impl Actor for Flag
                             {
                                 if self.owned_by_team == team
                                 {
+                                    self.area.clear_containing_colliders_list();
+                                    
                                     match status {
                                         FlagStatus::OnTheBase =>
                                         {
@@ -394,7 +455,7 @@ impl Actor for Flag
                             }
                             AreaMessages::ActorIsContainedInsideArea(id) =>
                             {
-                                todo!("write logic of resending message after some time inside")
+
                             }
                             _ => {}
                         }

@@ -82,6 +82,7 @@ impl Actor for WanderingActor {
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
         let physical_element = PhysicalElement {
+            id: self.get_id().expect("Actor have not ActorID"),
             transform: &mut self.transform,
             kinematic_collider: None,
             dynamic_colliders: None,

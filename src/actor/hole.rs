@@ -164,7 +164,9 @@ impl Actor for Hole
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
         Some(
-            PhysicalElement {
+            PhysicalElement
+            {
+                id: self.get_id().expect("Actor have not ActorID"),
                 transform: &mut self.transform,
                 static_objects: Some(&mut self.static_objects),
                 dynamic_colliders: None,

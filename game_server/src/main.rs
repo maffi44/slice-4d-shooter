@@ -769,6 +769,8 @@ async fn start_new_game_session(
     game_session_state: &mut GameSessionState
 ) -> Command
 {
+    println!("New game session started!");
+
     let mut idle_timer: Option<Instant> = None;
     let game_session_start_time = std::time::Instant::now();
 

@@ -7,17 +7,32 @@ pub mod area;
 pub mod common_physical_functions;
 
 use crate::{
-    actor::{Actor, ActorID, Component}, engine::{
+    actor::{
+        Actor,
+        ActorID,
+        Component
+    },
+    engine::{
         engine_handle::EngineHandle,
         world::World,
-    }, transform::Transform
+    },
+    transform::Transform
 };
 
 use self::{
-    area::Area, common_physical_functions::{
-        get_dist, get_id, get_normal, THRESHOLD
-    }, dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, physics_system_data::{
-        FrameCollidersBuffers, Hit, PhysicsState
+    area::Area,
+    common_physical_functions::{
+        get_dist,
+        get_id,
+        get_normal,
+        THRESHOLD
+    },
+    dynamic_collider::PlayersDollCollider,
+    kinematic_collider::KinematicCollider,
+    physics_system_data::{
+        FrameCollidersBuffers,
+        Hit,
+        PhysicsState
     }
 };
 
@@ -85,9 +100,13 @@ impl PhysicsSystem {
 
             if let Some(physical_element) = actor.get_physical_element() {
 
+                let id = physical_element.id;
+
                 let transform = physical_element.transform;
                 
                 if let Some(area) = physical_element.area {
+
+                    area.set_id(id);
 
                     area.set_frame_position(transform.get_position() + area.translation);
                     area.set_frame_size(transform.get_scale() * area.size);
@@ -97,6 +116,8 @@ impl PhysicsSystem {
 
                 if let Some(colliders) = physical_element.static_colliders {
                     for static_collider in colliders {
+
+                        static_collider.set_id(id);
 
                         let mut temporal_static_collider = static_collider.clone();
 
@@ -113,6 +134,8 @@ impl PhysicsSystem {
 
                         let mut temporal_static_collider = static_object.collider.clone();
 
+                        temporal_static_collider.set_id(id);
+
                         temporal_static_collider.position += transform.get_position();
                         
                         temporal_static_collider.size *= transform.get_scale();
@@ -123,6 +146,8 @@ impl PhysicsSystem {
 
                 if let Some(colliders) = physical_element.dynamic_colliders {
                     for dynamic_collider in colliders {
+
+                        dynamic_collider.set_id(id);
                         
                         // temporary solution to immitate kinematic physic
                         let mut temporal_dynamic_collider = dynamic_collider.clone();
@@ -137,6 +162,8 @@ impl PhysicsSystem {
         
                 if let Some((kinematic_collider, specific_transform)) = physical_element.kinematic_collider {
 
+                    kinematic_collider.set_id(id);
+                    
                     if specific_transform.is_some() {
                         kinematic_colliders.push((specific_transform.unwrap(), kinematic_collider));
                     } else {
