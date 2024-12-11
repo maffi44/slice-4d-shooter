@@ -201,7 +201,7 @@ async fn async_main(
     let (player_disconnected_event_sender, player_disconnected_event_reciever) =
         std::sync::mpsc::channel::<PeerId>();
 
-    runtime.spawn(run_singnaling_server(
+    runtime.spawn(run_signaling_server(
         config.signaling_port,
         config.max_players,
         player_connected_event_sender,
@@ -1618,7 +1618,7 @@ enum PlayerAmountChangedEvent
 }
 
 
-async fn run_singnaling_server(
+async fn run_signaling_server(
     port: u16,
     max_players: u32,
     player_connected_event_sender: std::sync::mpsc::Sender<PeerId>,
@@ -1639,7 +1639,6 @@ async fn run_singnaling_server(
         )
 
         .on_connection_request(move |connection| {
-            println!("request connection: {:?}", connection);
 
             // let ip = connection.origin.ip();
             // let port = connection.origin.port();
@@ -1668,7 +1667,6 @@ async fn run_singnaling_server(
         )
 
         .on_client_connected(move |id| {
-            println!("player connected, id: {}", id.0.as_u128());
             // *players_amount_1.lock().unwrap() += 1;
             // match player_connected_event_sender.send(id) {
             //     Ok(_) => {}
@@ -1681,7 +1679,6 @@ async fn run_singnaling_server(
         })
 
         .on_client_disconnected(move |id| {
-            println!("player disconnected, id: {}", id.0.as_u128());
             // *players_amount_2.lock().unwrap() -= 1;
             // match player_disconnected_event_sender.send(id) {
             //     Ok(_) => {}

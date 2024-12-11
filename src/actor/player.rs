@@ -30,7 +30,7 @@ use crate::{
         audio::{
             AudioSystem,
             Sound
-        }, engine_handle::{
+        }, effects::EffectsSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle
@@ -62,10 +62,7 @@ use std::f32::consts::PI;
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{
-    FloatExt,
-    Mat4,
-    Vec2,
-    Vec4
+    FloatExt, Mat4, Vec2, Vec3, Vec4
 };
 
 use super::{
@@ -247,6 +244,9 @@ const GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED: f32 = 5.0;
 const DEATH_EFFECT_COEF_INCREASE_SPEED: f32 = 10.0;
 const DEATH_EFFECT_COEF_DECREASE_SPEED: f32 = 3.0;
 
+pub const RED_TEAM_COLOR: Vec3 = Vec3::new(1.0, 0.0, 0.0);
+pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.0, 0.0, 1.0);
+
 #[derive(Clone)]
 pub enum PlayerMessage {
     DealDamageAndAddForce(
@@ -279,6 +279,7 @@ impl Actor for Player {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &TimeSystem,
+        effects_system: &mut EffectsSystem,
     ) {
         let from = message.from;
 
@@ -712,6 +713,7 @@ impl Actor for Player {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
         delta: f32
     ) {
         let my_id = self.id.expect("Player does not have id");

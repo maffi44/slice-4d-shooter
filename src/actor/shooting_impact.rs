@@ -2,7 +2,7 @@ use glam::{FloatExt, Vec3, Vec4};
 
 use crate::{
     engine::{
-        audio::AudioSystem, engine_handle::{
+        audio::AudioSystem, effects::EffectsSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle
@@ -91,6 +91,7 @@ impl Actor for ShootingImpact {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
         delta: f32
     ) {
         if let VolumeArea::SphericalVolumeArea(area) = &mut self.volume_areas[0] {

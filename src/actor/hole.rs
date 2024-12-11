@@ -1,4 +1,4 @@
-use crate::{engine::{audio::AudioSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, StaticObject}}, transform::Transform};
+use crate::{engine::{audio::AudioSystem, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, StaticObject}}, transform::Transform};
 
 use super::{Actor, ActorID};
 
@@ -101,6 +101,7 @@ impl Actor for Hole
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
         delta: f32
     ) {
         if self.target_size_reached {

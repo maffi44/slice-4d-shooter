@@ -15,7 +15,7 @@ pub mod hole;
 
 use crate::{
     engine::{
-        audio::AudioSystem, engine_handle::EngineHandle, physics::{
+        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{
             area::AreaMessages, colliders_container::PhysicalElement, dynamic_collider::DynamicColliderMessages, kinematic_collider::KinematicColliderMessages, static_collider::StaticColliderMessages, PhysicsSystem
         }, render::VisualElement, time::TimeSystem, ui::UISystem
     },
@@ -54,6 +54,7 @@ pub trait Actor {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &TimeSystem,
+        effects_system: &mut EffectsSystem,
     ) {}
 
     fn get_mut_transform(&mut self) -> &mut Transform;
@@ -67,6 +68,7 @@ pub trait Actor {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
         delta: f32
     ) {}
 
@@ -218,43 +220,44 @@ impl Actor for ActorWrapper {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &TimeSystem,
+        effects_system: &mut EffectsSystem,
     ) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             },
             ActorWrapper::SessionController(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
             ActorWrapper::Flag(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
             ActorWrapper::Hole(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
             ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system)
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -268,44 +271,45 @@ impl Actor for ActorWrapper {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
         delta: f32
     ) {
         match  self {
             ActorWrapper::Player(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             },
             ActorWrapper::SessionController(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
             ActorWrapper::Flag(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
             ActorWrapper::Hole(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
             ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, delta)
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},

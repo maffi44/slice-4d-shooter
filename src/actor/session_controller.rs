@@ -1,7 +1,7 @@
 use client_server_protocol::Team;
 
 use crate::{
-    engine::{engine_handle::EngineHandle, time::TimeSystem},
+    engine::{effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem},
     transform::Transform
 };
 
@@ -90,6 +90,7 @@ impl Actor for SessionController
             audio_system: &mut crate::engine::audio::AudioSystem,
             ui_system: &mut crate::engine::ui::UISystem,
             time_system: &TimeSystem,
+            effects_system: &mut EffectsSystem,
         ) {
         
         match message.message {

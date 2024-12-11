@@ -29,7 +29,7 @@ use core::panic;
 use std::collections::HashMap;
 
 use super::{
-    audio::AudioSystem, engine_handle::Command, net::NetSystem, time::TimeSystem, ui::UISystem
+    audio::AudioSystem, effects::EffectsSystem, engine_handle::Command, net::NetSystem, time::TimeSystem, ui::UISystem
 };
 
 use client_server_protocol::NetCommand;
@@ -74,19 +74,48 @@ impl World {
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
     ) {
         
         loop {
-                while let Some(message) = engine_handle.boardcast_message_buffer.pop() {
-                    self.send_boardcast_messages(message, engine_handle, physics_system, audio_system, ui_system, time_system)                
+                while let Some(message) = engine_handle.boardcast_message_buffer.pop()
+                {
+                    self.send_boardcast_messages(
+                        message,
+                        engine_handle,
+                        physics_system,
+                        audio_system,
+                        ui_system,
+                        time_system,
+                        effects_system,
+                    )                
                 }
 
-                while let Some((to, message)) = engine_handle.direct_message_buffer.pop() {
-                    self.send_direct_messages(to, message, engine_handle, physics_system, audio_system, ui_system, time_system)                
+                while let Some((to, message)) = engine_handle.direct_message_buffer.pop()
+                {
+                    self.send_direct_messages(
+                        to,
+                        message,
+                        engine_handle,
+                        physics_system,
+                        audio_system,
+                        ui_system,
+                        time_system,
+                        effects_system,
+                    )                
                 }
 
-                while let Some(command) = engine_handle.command_buffer.pop() {
-                    self.execute_command(command, net_system, physics_system, engine_handle, audio_system, ui_system, time_system);
+                while let Some(command) = engine_handle.command_buffer.pop()
+                {
+                    self.execute_command(
+                        command,
+                        net_system,
+                        physics_system,
+                        engine_handle,
+                        audio_system,
+                        ui_system,
+                        time_system,
+                    );
                 }
 
                 if engine_handle.direct_message_buffer.is_empty() &&
@@ -285,9 +314,20 @@ impl World {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &TimeSystem,
+        effects_system: &mut EffectsSystem,
+
     ) {
-        if let Some(actor) = self.actors.get_mut(&to) {
-            actor.recieve_message(message, engine_handle, physics_system, audio_system, ui_system, time_system);
+        if let Some(actor) = self.actors.get_mut(&to)
+        {
+            actor.recieve_message(
+                message,
+                engine_handle,
+                physics_system,
+                audio_system,
+                ui_system,
+                time_system,
+                effects_system,
+            );
         }
     }
 
@@ -299,10 +339,21 @@ impl World {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &TimeSystem,
+        effects_system: &mut EffectsSystem,
     ) {
         for (_, actor) in self.actors.iter_mut() {
-            if actor.get_id().expect("actor does not have id") != message.from {
-                actor.recieve_message(message.clone(), engine_handle, physics_system, audio_system, ui_system, time_system);
+            if actor.get_id().expect("actor does not have id") != message.from
+            {
+                actor.recieve_message
+                (
+                    message.clone(),
+                    engine_handle,
+                    physics_system,
+                    audio_system,
+                    ui_system,
+                    time_system,
+                    effects_system
+                );
             } 
         }
     }
@@ -359,16 +410,19 @@ impl World {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
     ) {
         let delta = time_system.prev_frame_duration;
 
-        for (_, actor) in self.actors.iter_mut() {
+        for (_, actor) in self.actors.iter_mut()
+        {
             actor.tick(
                 physic_system,
                 engine_handle,
                 audio_system,
                 ui_system,
                 time_system,
+                effects_system,
                 delta
             )
         }

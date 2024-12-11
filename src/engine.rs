@@ -37,6 +37,7 @@ use self::{
     ui::UISystem
 };
 
+use effects::EffectsSystem;
 use winit::window::WindowBuilder;
 
 #[cfg(target_arch = "wasm32")]
@@ -54,6 +55,7 @@ pub struct Engine {
     pub net: NetSystem,
     pub audio: AudioSystem,
     pub ui: UISystem,
+    pub effects: EffectsSystem,
 
     #[cfg(not(target_arch = "wasm32"))]
     pub runtime: tokio::runtime::Runtime,
@@ -185,6 +187,8 @@ impl Engine {
 
         let audio = AudioSystem::new().await;
 
+        let effects = EffectsSystem::new();
+
 
         Engine {
             physic,
@@ -196,6 +200,7 @@ impl Engine {
             net,
             audio,
             ui: initialized_ui,
+            effects,
             
             #[cfg(not(target_arch = "wasm32"))]
             runtime,

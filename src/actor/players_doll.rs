@@ -11,7 +11,7 @@ use client_server_protocol::{
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound}, engine_handle::{
+        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle
@@ -20,11 +20,7 @@ use crate::{
             dynamic_collider::PlayersDollCollider,
             kinematic_collider::KinematicCollider,
             PhysicsSystem
-        },
-        render::VisualElement,
-        time::TimeSystem,
-        ui::UISystem,
-        world::static_object::{
+        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
@@ -123,6 +119,8 @@ pub struct PlayersDoll {
 
     player_settings: PlayerSettings,
     w_levels_of_map: Vec<f32>,
+    radius: f32,
+    my_color: Vec3,
 }
 
 #[derive(Clone)]
@@ -197,6 +195,18 @@ impl PlayersDoll {
         team: Team,
     ) -> Self {
 
+        let my_color = match team {
+            Team::Red =>
+            {
+                Vec3::new(1.0, 0.0, 0.0)
+            }
+
+            Team::Blue =>
+            {
+                Vec3::new(0.0, 0.0, 1.0)
+            }
+        };
+
         let weapon_offset = {
             Vec4::new(
                 1.0,
@@ -259,6 +269,8 @@ impl PlayersDoll {
             player_settings,
             w_levels_of_map,
             team,
+            radius: player_sphere_radius,
+            my_color,
         }
     }
 
@@ -477,6 +489,7 @@ impl Actor for PlayersDoll {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &TimeSystem,
+        effects_system: &mut EffectsSystem,
     ) {
         let from = message.from;
 
@@ -860,11 +873,43 @@ impl Actor for PlayersDoll {
                                     {
                                         Team::Red =>
                                         {
-                                            todo!("play red effect")
+                                            effects_system.spawn_wave(
+                                                self.transform.get_position(),
+                                                vec![
+                                                    self.radius,
+                                                    self.radius * 3.0,
+                                                    self.radius * 6.0,
+                                                ],
+                                                vec![
+                                                    self.my_color,
+                                                    Vec3::new(1.0, 0.0, 0.0),
+                                                    Vec3::ZERO
+                                                ],
+                                                vec![
+                                                    20.0,
+                                                    20.0,
+                                                ]
+                                            );
                                         }
                                         Team::Blue =>
                                         {
-                                            todo!("play blue effect")
+                                            effects_system.spawn_wave(
+                                                self.transform.get_position(),
+                                                vec![
+                                                    self.radius,
+                                                    self.radius * 3.0,
+                                                    self.radius * 6.0,
+                                                ],
+                                                vec![
+                                                    self.my_color,
+                                                    Vec3::new(0.0, 0.0, 1.0),
+                                                    Vec3::ZERO
+                                                ],
+                                                vec![
+                                                    20.0,
+                                                    20.0,
+                                                ]
+                                            );
                                         }
                                     }
                                 }
@@ -945,6 +990,7 @@ impl Actor for PlayersDoll {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
         delta: f32
     ) {
         if self.is_alive {

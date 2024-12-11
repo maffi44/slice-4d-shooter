@@ -6,7 +6,7 @@ use crate::{
         ActorID,
     },
     engine::{
-        audio::AudioSystem, engine_handle::{
+        audio::AudioSystem, effects::EffectsSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle
@@ -113,6 +113,7 @@ impl Actor for HoleGunMiss {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
         delta: f32
     ) {
         if self.target_size_reached {

@@ -1,6 +1,6 @@
 use glam::{Vec3, Vec4};
 
-use crate::{engine::{audio::AudioSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{physics_system_data::ShapeType, static_collider::StaticCollider}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}}, transform::Transform};
+use crate::{engine::{audio::AudioSystem, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{physics_system_data::ShapeType, static_collider::StaticCollider}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}}, transform::Transform};
 
 use super::{Actor, ActorID};
 
@@ -106,6 +106,7 @@ impl Actor for PlayersDeathExplosion {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
         delta: f32
     ) {
         if self.hole_target_size_reached {

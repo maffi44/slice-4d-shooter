@@ -2,7 +2,7 @@ use glam::{Vec3, Vec4};
 
 use crate::{
     engine::{
-        physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, world::static_object::{SphericalVolumeArea, StaticObject, VolumeArea}
+        effects::EffectsSystem, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, world::static_object::{SphericalVolumeArea, StaticObject, VolumeArea}
     },
     transform::Transform
 };
@@ -195,6 +195,7 @@ impl Actor for MoveWBonusSpot
             audio_system: &mut crate::engine::audio::AudioSystem,
             ui_system: &mut crate::engine::ui::UISystem,
             time_system: &TimeSystem,
+            effects_system: &mut EffectsSystem,
         ) {
         
         let Message {

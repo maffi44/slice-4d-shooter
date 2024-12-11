@@ -5,13 +5,13 @@ use web_sys::console::assert;
 
 use crate::{
     engine::{
-        audio::AudioSystem, engine_handle::EngineHandle, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{SphericalVolumeArea, VolumeArea}
+        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{SphericalVolumeArea, VolumeArea}
     },
     transform::Transform
 };
 
 use super::{
-    session_controller::SessionControllerMessage, Actor, ActorID, CommonActorsMessages, Message, MessageType, PhysicsMessages, SpecificActorMessage
+    player::{BLUE_TEAM_COLOR, RED_TEAM_COLOR}, session_controller::SessionControllerMessage, Actor, ActorID, CommonActorsMessages, Message, MessageType, PhysicsMessages, SpecificActorMessage
 };
 
 #[derive(Clone)]
@@ -54,6 +54,7 @@ impl From<client_server_protocol::FlagStatus> for FlagStatus
 
 const TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION: f32 = 3.0;
 const FLAG_SWING_RANGE: f32 = 0.1;
+const FLAG_UI_TICK_TIME: f32 = 1.0;
 
 fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
 {
@@ -83,6 +84,10 @@ pub struct Flag
     owned_by_team: Team,
     area: Area,
     visual_areas: Vec<VolumeArea>,
+    my_color: Vec3,
+    opponent_color: Vec3,
+    flag_ui_tick_switch: bool,
+    flag_ui_tick_timer: f32,
 }
 
 impl Flag
@@ -105,16 +110,29 @@ impl Flag
 
         let mut visual_areas = Vec::with_capacity(1);
 
-        let color = match team
+        let my_color = match team
         {
             Team::Red =>
             {
-                Vec3::new(1.0, 0.0, 0.0)
+                RED_TEAM_COLOR
             }
             
             Team::Blue =>
             {
-                Vec3::new(0.0, 0.0, 1.0)
+                BLUE_TEAM_COLOR
+            }
+        };
+
+        let opponent_color = match team
+        {
+            Team::Red =>
+            {
+                BLUE_TEAM_COLOR
+            }
+            
+            Team::Blue =>
+            {
+                RED_TEAM_COLOR
             }
         };
 
@@ -122,7 +140,7 @@ impl Flag
             SphericalVolumeArea {
                 radius: FLAG_AREA_RADIUS,
                 translation: Vec4::ZERO,
-                color,
+                color: my_color,
             }
         );
 
@@ -140,16 +158,38 @@ impl Flag
             next_target_swing_position_in_secs: TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION,
             area,
             visual_areas,
+            my_color,
+            opponent_color,
+            flag_ui_tick_switch: true,
+            flag_ui_tick_timer: 0.0,
         }
     }
 
     pub fn set_flag_on_base_status(
-        &mut self
+        &mut self,
+        effects_system: &mut EffectsSystem,
     )
     {
         self.transform = self.transfrom_of_the_base;
         self.target_position = self.transfrom_of_the_base.get_position();
-        todo!("play effect on base");
+        
+        effects_system.spawn_wave(
+            self.transform.get_position(),
+            vec![
+                FLAG_AREA_RADIUS,
+                FLAG_AREA_RADIUS * 5.0,
+                FLAG_AREA_RADIUS,
+            ],
+            vec![
+                self.my_color,
+                self.my_color,
+                self.my_color
+            ],
+            vec![
+                20.0,
+                10.0,
+            ]
+        );
         todo!("play sound on base");
         self.status = FlagStatus::OnTheBase;
     }
@@ -157,18 +197,33 @@ impl Flag
     pub fn set_flag_missed_status(
         &mut self,
         pos: Vec4,
+        effects_system: &mut EffectsSystem,
     )
     {
         self.target_position = pos;
-        todo!("play effect missed");
-        todo!("play status missed");
+        effects_system.spawn_wave(
+            self.transform.get_position(),
+            vec![
+                FLAG_AREA_RADIUS,
+                FLAG_AREA_RADIUS * 6.0,
+            ],
+            vec![
+                self.my_color,
+                Vec3::ZERO
+            ],
+            vec![
+                20.0,
+            ]
+        );
+        todo!("play sound missed");
         self.status = FlagStatus::Missed(pos);
     }
 
     pub fn set_flag_captured_status(
         &mut self,
         captured_by: ActorID,
-        engine_handle: &mut EngineHandle
+        engine_handle: &mut EngineHandle,
+        effects_system: &mut EffectsSystem,
     )
     {
         self.area.clear_containing_colliders_list();
@@ -185,8 +240,24 @@ impl Flag
             }
         );
 
-        todo!("play effect captured");
-        todo!("play status captured");
+        effects_system.spawn_wave(
+            self.transform.get_position(),
+            vec![
+                FLAG_AREA_RADIUS,
+                FLAG_AREA_RADIUS * 3.0,
+                FLAG_AREA_RADIUS * 6.0,
+            ],
+            vec![
+                self.my_color,
+                self.opponent_color,
+                Vec3::ZERO
+            ],
+            vec![
+                20.0,
+                20.0,
+            ]
+        );
+        todo!("play sound captured");
         self.status = FlagStatus::Captured(captured_by);
     }
 }
@@ -200,8 +271,44 @@ impl Actor for Flag
             audio_system: &mut crate::engine::audio::AudioSystem,
             ui_system: &mut crate::engine::ui::UISystem,
             time_system: &mut crate::engine::time::TimeSystem,
+            effects_system: &mut EffectsSystem,
             delta: f32
-        ) {
+        )
+        {
+
+            match self.status
+            {
+                FlagStatus::OnTheBase =>
+                {
+                    self.flag_ui_tick_switch = true;
+                }
+
+                _ =>
+                {
+                    if self.flag_ui_tick_timer >= FLAG_UI_TICK_TIME
+                    {
+                        self.flag_ui_tick_timer = 0.0;
+                        self.flag_ui_tick_switch = !self.flag_ui_tick_switch;
+                    }
+
+                    self.flag_ui_tick_timer += delta;
+                }
+            }
+
+            match self.owned_by_team
+            {
+                Team::Red =>
+                {
+                    todo!("set visibility of red flag ui")
+                }
+
+                Team::Blue =>
+                {
+                    todo!("set visibility of blue flag ui")
+                }
+            }
+
+
             self.next_target_swing_position_in_secs -= delta;
 
             if self.next_target_swing_position_in_secs <= 0.0
@@ -298,6 +405,7 @@ impl Actor for Flag
             audio_system: &mut AudioSystem,
             ui_system: &mut UISystem,
             time_system: &TimeSystem,
+            effects_system: &mut EffectsSystem,
         ) {
         
         match message.message
@@ -318,15 +426,15 @@ impl Actor for Flag
                                     match status {
                                         FlagStatus::OnTheBase =>
                                         {
-                                            self.set_flag_on_base_status();
+                                            self.set_flag_on_base_status(effects_system);
                                         }
                                         FlagStatus::Missed(pos) =>
                                         {
-                                            self.set_flag_missed_status(pos);
+                                            self.set_flag_missed_status(pos, effects_system);
                                         }
                                         FlagStatus::Captured(captured_by) =>
                                         {
-                                            self.set_flag_captured_status(captured_by, engine_handle);
+                                            self.set_flag_captured_status(captured_by, engine_handle, effects_system);
                                         }
                                     }
                                 }
@@ -344,18 +452,50 @@ impl Actor for Flag
                         match message {
                             SessionControllerMessage::NewSessionStarted(_) =>
                             {
-                                self.set_flag_on_base_status();
+                                self.set_flag_on_base_status(effects_system);
                             }
                             SessionControllerMessage::TeamWin(team) =>
                             {
                                 match team {
                                     Team::Red =>
                                     {
-                                        todo!("play red win effect")
+                                        effects_system.spawn_wave(
+                                            self.transform.get_position(),
+                                            vec![
+                                                FLAG_AREA_RADIUS,
+                                                FLAG_AREA_RADIUS * 3.0,
+                                                FLAG_AREA_RADIUS * 6.0,
+                                            ],
+                                            vec![
+                                                self.my_color,
+                                                RED_TEAM_COLOR,
+                                                Vec3::ZERO
+                                            ],
+                                            vec![
+                                                20.0,
+                                                20.0,
+                                            ]
+                                        );
                                     }
                                     Team::Blue =>
                                     {
-                                        todo!("play blue win effect")
+                                        effects_system.spawn_wave(
+                                            self.transform.get_position(),
+                                            vec![
+                                                FLAG_AREA_RADIUS,
+                                                FLAG_AREA_RADIUS * 3.0,
+                                                FLAG_AREA_RADIUS * 6.0,
+                                            ],
+                                            vec![
+                                                self.my_color,
+                                                BLUE_TEAM_COLOR,
+                                                Vec3::ZERO
+                                            ],
+                                            vec![
+                                                20.0,
+                                                20.0,
+                                            ]
+                                        );
                                     }
                                 }
                             }
@@ -376,17 +516,17 @@ impl Actor for Flag
                                         {
                                             FlagStatus::OnTheBase =>
                                             {
-                                                self.set_flag_on_base_status();
+                                                self.set_flag_on_base_status(effects_system);
                                             }
 
                                             FlagStatus::Missed(pos) =>
                                             {
-                                                self.set_flag_missed_status(pos);
+                                                self.set_flag_missed_status(pos, effects_system);
                                             }
 
                                             FlagStatus::Captured(id) =>
                                             {
-                                                self.set_flag_captured_status(id, engine_handle);
+                                                self.set_flag_captured_status(id, engine_handle, effects_system);
                                             }
                                         }
                                     }
@@ -396,17 +536,17 @@ impl Actor for Flag
                                         {
                                             FlagStatus::OnTheBase =>
                                             {
-                                                self.set_flag_on_base_status();
+                                                self.set_flag_on_base_status(effects_system);
                                             }
 
                                             FlagStatus::Missed(pos) =>
                                             {
-                                                self.set_flag_missed_status(pos);
+                                                self.set_flag_missed_status(pos, effects_system);
                                             }
 
                                             FlagStatus::Captured(id) =>
                                             {
-                                                self.set_flag_captured_status(id, engine_handle);
+                                                self.set_flag_captured_status(id, engine_handle, effects_system);
                                             }
                                         }
                                     }

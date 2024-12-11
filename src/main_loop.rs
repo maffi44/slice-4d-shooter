@@ -239,6 +239,7 @@ fn main_loop_tick(
         &mut systems.audio,
         &mut systems.ui,
         &mut systems.time,
+        &mut systems.effects,
     );
 
     systems.world.send_messages_and_process_commands(
@@ -248,6 +249,7 @@ fn main_loop_tick(
         &mut systems.ui,
         &mut systems.engine_handle,
         &mut systems.time,
+        &mut systems.effects,
     );
 
     systems.physic.process_physics(
@@ -262,7 +264,8 @@ fn main_loop_tick(
         &mut systems.audio,
         &mut systems.ui,
         &mut systems.engine_handle,
-        &mut systems.time
+        &mut systems.time,
+        &mut systems.effects,
     );
 
     systems.render.send_data_to_renderer(
