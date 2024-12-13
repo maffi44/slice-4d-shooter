@@ -33,9 +33,7 @@ use crate::{
 };
 
 use client_server_protocol::{
-    RemoteMessage,
-    NetCommand,
-    NetMessageToPlayer,
+    NetCommand, NetMessageToPlayer, RemoteMessage, Team
 };
 
 use super::{Device, DeviceType};
@@ -312,7 +310,10 @@ impl Device for MachineGun {
             }
         }
 
-        let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBar);
+        let bar = match player.team {
+            Team::Red => ui_system.get_mut_ui_element(&UIElementType::MachinegunBarRed),
+            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::MachinegunBarBlue),
+        };
 
         if let UIElement::ProgressBar(bar) = bar {
             let value = {
@@ -352,7 +353,10 @@ impl Device for MachineGun {
             self.cool_machinegun(delta);
             self.time_from_prev_shot += delta;
 
-            let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBar);
+            let bar = match player.team {
+                Team::Red => ui_system.get_mut_ui_element(&UIElementType::MachinegunBarRed),
+                Team::Blue => ui_system.get_mut_ui_element(&UIElementType::MachinegunBarBlue),
+            };
 
             if let UIElement::ProgressBar(bar) = bar {
                 let value = {
@@ -374,10 +378,22 @@ impl Device for MachineGun {
             engine_handle: &mut EngineHandle,
         ) {
 
-            let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBar);
+            let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBarRed);
 
             if let UIElement::ProgressBar(bar) = bar {
                 *bar.ui_data.is_visible.lock().unwrap() = false;
+            }
+    
+            let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBarBlue);
+    
+            if let UIElement::ProgressBar(bar) = bar {
+                *bar.ui_data.is_visible.lock().unwrap() = false;
+            }
+    
+            let img = ui_system.get_mut_ui_element(&UIElementType::MachinegunImage);
+    
+            if let UIElement::Image(img) = img {
+                *img.ui_data.is_visible.lock().unwrap() = false;
             }
     }
 
@@ -390,11 +406,43 @@ impl Device for MachineGun {
             ui_system: &mut UISystem,
             engine_handle: &mut EngineHandle,
         ) {
-            
-            let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBar);
+            let img = ui_system.get_mut_ui_element(&UIElementType::MachinegunImage);
 
-            if let UIElement::ProgressBar(bar) = bar {
-                *bar.ui_data.is_visible.lock().unwrap() = true;
+            if let UIElement::Image(img) = img {
+                *img.ui_data.is_visible.lock().unwrap() = true;
+            }
+    
+            match player.team
+            {
+                Team::Red =>
+                {
+                    let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBarRed);
+    
+                    if let UIElement::ProgressBar(bar) = bar {
+                        *bar.ui_data.is_visible.lock().unwrap() = true;
+                    }
+    
+                    let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBarBlue);
+    
+                    if let UIElement::ProgressBar(bar) = bar {
+                        *bar.ui_data.is_visible.lock().unwrap() = false;
+                    }
+                }
+    
+                Team::Blue =>
+                {
+                    let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBarBlue);
+    
+                    if let UIElement::ProgressBar(bar) = bar {
+                        *bar.ui_data.is_visible.lock().unwrap() = true;
+                    }
+    
+                    let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBarRed);
+    
+                    if let UIElement::ProgressBar(bar) = bar {
+                        *bar.ui_data.is_visible.lock().unwrap() = false;
+                    }
+                }
             }
     }
 }

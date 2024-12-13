@@ -5,7 +5,7 @@ use web_sys::console::assert;
 
 use crate::{
     engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{SphericalVolumeArea, VolumeArea}
+        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VolumeArea}
     },
     transform::Transform
 };
@@ -299,12 +299,16 @@ impl Actor for Flag
             {
                 Team::Red =>
                 {
-                    todo!("set visibility of red flag ui")
+                    let ui_flag = ui_system.get_mut_ui_element(&UIElementType::RedFlagMark);
+    
+                    *ui_flag.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = self.flag_ui_tick_switch;
                 }
 
                 Team::Blue =>
                 {
-                    todo!("set visibility of blue flag ui")
+                    let ui_flag = ui_system.get_mut_ui_element(&UIElementType::BlueFlagMark);
+    
+                    *ui_flag.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = self.flag_ui_tick_switch;
                 }
             }
 

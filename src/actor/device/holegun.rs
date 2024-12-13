@@ -47,9 +47,7 @@ use crate::{
 };
 
 use client_server_protocol::{
-    RemoteMessage,
-    NetCommand,
-    NetMessageToPlayer,
+    NetCommand, NetMessageToPlayer, RemoteMessage, Team
 };
 
 pub struct HoleGun {
@@ -479,7 +477,10 @@ impl Device for HoleGun {
             self.energy = self.energy.clamp(0.0, MAX_ENERGY);
         }
 
-        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
+        let bar = match player.team {
+            Team::Red => ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarRed),
+            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarBlue),
+        };
 
         if let UIElement::ProgressBar(bar) = bar {
             bar.set_bar_value(self.energy / MAX_ENERGY)
@@ -537,10 +538,22 @@ impl Device for HoleGun {
         self.volume_area.clear();
 
 
-        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
+        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarRed);
 
         if let UIElement::ProgressBar(bar) = bar {
             *bar.ui_data.is_visible.lock().unwrap() = false;
+        }
+
+        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarBlue);
+
+        if let UIElement::ProgressBar(bar) = bar {
+            *bar.ui_data.is_visible.lock().unwrap() = false;
+        }
+
+        let img = ui_system.get_mut_ui_element(&UIElementType::EnergyGunImage);
+
+        if let UIElement::Image(img) = img {
+            *img.ui_data.is_visible.lock().unwrap() = false;
         }
     }
 
@@ -553,10 +566,43 @@ impl Device for HoleGun {
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
     ) {
-        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBar);
+        let img = ui_system.get_mut_ui_element(&UIElementType::EnergyGunImage);
 
-        if let UIElement::ProgressBar(bar) = bar {
-            *bar.ui_data.is_visible.lock().unwrap() = true;
+        if let UIElement::Image(img) = img {
+            *img.ui_data.is_visible.lock().unwrap() = true;
+        }
+
+        match player.team
+        {
+            Team::Red =>
+            {
+                let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarRed);
+
+                if let UIElement::ProgressBar(bar) = bar {
+                    *bar.ui_data.is_visible.lock().unwrap() = true;
+                }
+
+                let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarBlue);
+
+                if let UIElement::ProgressBar(bar) = bar {
+                    *bar.ui_data.is_visible.lock().unwrap() = false;
+                }
+            }
+
+            Team::Blue =>
+            {
+                let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarBlue);
+
+                if let UIElement::ProgressBar(bar) = bar {
+                    *bar.ui_data.is_visible.lock().unwrap() = true;
+                }
+
+                let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarRed);
+
+                if let UIElement::ProgressBar(bar) = bar {
+                    *bar.ui_data.is_visible.lock().unwrap() = false;
+                }
+            }
         }
     }
 }

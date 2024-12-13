@@ -47,38 +47,126 @@ pub enum UIElement {
     ScannerDisplay(UIScannerDisplay),
 }
 
+impl UIElement
+{
+    pub fn get_ui_data_mut(&mut self) -> &mut UIData
+    {
+        match self
+        {
+            UIElement::Image(uiimage) =>
+            {
+                &mut uiimage.ui_data
+            }
+
+            UIElement::ProgressBar(uiprogress_bar) =>
+            {
+                &mut uiprogress_bar.ui_data
+            }
+
+            UIElement::ScannerDisplay(uiscanner_display) =>
+            {
+                &mut uiscanner_display.ui_data
+            }
+        }
+    }
+
+    pub fn get_ui_data(&self) -> &UIData
+    {
+        match self
+        {
+            UIElement::Image(uiimage) =>
+            {
+                &uiimage.ui_data
+            }
+
+            UIElement::ProgressBar(uiprogress_bar) =>
+            {
+                &uiprogress_bar.ui_data
+            }
+
+            UIElement::ScannerDisplay(uiscanner_display) =>
+            {
+                &uiscanner_display.ui_data
+            }
+        }   
+    }
+}
+
 #[derive(PartialEq, Eq, Hash)]
 pub enum UIElementType {
-    HeathBar,
-    EnergyGunBar,
-    MachinegunBar,
+    HeathBarBlue,
+    HeathBarRed,
+    EnergyGunBarBlue,
+    EnergyGunBarRed,
+    EnergyGunImage,
+    MachinegunBarBlue,
+    MachinegunBarRed,
+    MachinegunImage,
     Crosshair,
-    Scanner,
-    ScannerHPointer,
-    ZXScannerArrow,
-    ZWScannerArrow,
-    HUDBottomLine,
-    LeftScannerDsiplay,
-    RightScannerDsiplay,
-    RedFlagStatus,
-    BlueFlagStatus,
+    CrosshairHitMark,
+    ScannerBlue,
+    ScannerRed,
+    ScannerHPointerBlue,
+    ScannerHPointerRed,
+    ZXScannerArrowBlue,
+    ZXScannerArrowRed,
+    ZWScannerArrowBlue,
+    ZWScannerArrowRed,
+    LeftScannerDsiplayRed,
+    LeftScannerDsiplayBlue,
+    RightScannerDsiplayRed,
+    RightScannerDsiplayBlue,
+    RedFlagMark,
+    BlueFlagMark,
     ScoreBar,
-    //Scores...
+    FirstScoreMarkBlue,
+    SecondScoreMarkBlue,
+    ThirdScoreMarkBlue,
+    FirstScoreMarkRed,
+    SecondScoreMarkRed,
+    ThirdScoreMarkRed,
+    FinalScoreMarkBlue,
+    FinalScoreMarkRed,
+    RedTeamWinTitle,
+    BlueTeamWinTitle,
+    JoinRedTeamTitle,
+    JoinBlueTeamTitle,
+    BlueTeamBacklight,
+    RedTeamBacklight,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TextureType {
     HeathBarTexture,
-    HeathBarMask,
+    HeathBarMaskBlue,
+    HeathBarMaskRed,
     EnergyGunBarTexture,
-    EnergyGunBarMask,
+    EnergyGunImgTexture,
     MachinegunBarTexture,
-    MachinegunBarMask,
+    MachinegunImgTexture,
+    GunBarMaskBlue,
+    GunBarMaskRed,
     Crosshair,
-    ScannerTexture,
-    ScannerPointer,
-    ScannerArrow,
-    BottomLine
+    CrosshairHitMark,
+    ScannerTextureBlue,
+    ScannerTextureRed,
+    ScannerPointerBlue,
+    ScannerPointerRed,
+    ScannerArrowBlue,
+    ScannerArrowRed,
+    BacklightBlue,
+    BacklightRed,
+    BlueTeamWinTitle,
+    RedTeamWinTitle,
+    JoinBlueTeamTitle,
+    JoinRedTeamTitle,
+    ScoreBar,
+    BlueFlagMark,
+    RedFlagMark,
+    BlueScoreMark,
+    RedScoreMark,
+    BlueFinalMark,
+    RedFinalMark,
 }
 
 
@@ -96,48 +184,124 @@ impl UISystem {
         let mut texture_sources = HashMap::with_capacity(10);
 
         texture_sources.insert(
-            TextureType::Crosshair,
-            include_bytes!("../assets/textures/crosshair_hud.png").as_slice()
-        );
-        texture_sources.insert(
             TextureType::HeathBarTexture,
             include_bytes!("../assets/textures/health_bar_texture_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::HeathBarMask,
-            include_bytes!("../assets/textures/health_bar_mask_hud.png").as_slice()
+            TextureType::HeathBarMaskBlue,
+            include_bytes!("../assets/textures/blue_health_bar_mask_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::HeathBarMaskBlue,
+            include_bytes!("../assets/textures/orange_health_bar_mask_hud.png").as_slice()
         );
         texture_sources.insert(
             TextureType::EnergyGunBarTexture,
             include_bytes!("../assets/textures/energy_gun_bar_texture_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::EnergyGunBarMask,
-            include_bytes!("../assets/textures/energy_gun_bar_mask_hud.png").as_slice()
-        );
-        texture_sources.insert(
-            TextureType::MachinegunBarMask,
-            include_bytes!("../assets/textures/machinegun_bar_mask_hud.png").as_slice()
+            TextureType::EnergyGunImgTexture,
+            include_bytes!("../assets/textures/energy_gun_image.png").as_slice()
         );
         texture_sources.insert(
             TextureType::MachinegunBarTexture,
             include_bytes!("../assets/textures/machinegun_bar_texture_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::ScannerTexture,
-            include_bytes!("../assets/textures/scanner_hud.png").as_slice()
+            TextureType::MachinegunImgTexture,
+            include_bytes!("../assets/textures/machinegun_image.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::ScannerPointer,
-            include_bytes!("../assets/textures/scanner_pointer_hud.png").as_slice()
+            TextureType::GunBarMaskBlue,
+            include_bytes!("../assets/textures/blue_gun_bar_mask_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::ScannerArrow,
-            include_bytes!("../assets/textures/scanner_arrow_hud.png").as_slice()
+            TextureType::GunBarMaskRed,
+            include_bytes!("../assets/textures/orange_gun_bar_mask_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::BottomLine,
-            include_bytes!("../assets/textures/bottom_lines_hud.png").as_slice()
+            TextureType::Crosshair,
+            include_bytes!("../assets/textures/crosshair_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::CrosshairHitMark,
+            include_bytes!("../assets/textures/crosshair_hit_mark.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScannerTextureBlue,
+            include_bytes!("../assets/textures/blue_scanner_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScannerTextureRed,
+            include_bytes!("../assets/textures/orange_scanner_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScannerPointerBlue,
+            include_bytes!("../assets/textures/blue_scanner_pointer_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScannerPointerRed,
+            include_bytes!("../assets/textures/orange_scanner_pointer_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScannerArrowBlue,
+            include_bytes!("../assets/textures/blue_scanner_arrow_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScannerArrowRed,
+            include_bytes!("../assets/textures/orange_scanner_arrow_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::BacklightBlue,
+            include_bytes!("../assets/textures/blue_team_backlight.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::BacklightRed,
+            include_bytes!("../assets/textures/orange_team_backlight.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::BlueTeamWinTitle,
+            include_bytes!("../assets/textures/blue_team_win.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::RedTeamWinTitle,
+            include_bytes!("../assets/textures/orange_team_win.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::JoinBlueTeamTitle,
+            include_bytes!("../assets/textures/join_blue_team.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::JoinRedTeamTitle,
+            include_bytes!("../assets/textures/join_orange_team.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScoreBar,
+            include_bytes!("../assets/textures/score_bar.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::BlueFlagMark,
+            include_bytes!("../assets/textures/blue_flag_mark.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::RedFlagMark,
+            include_bytes!("../assets/textures/orange_flag_mark.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::BlueScoreMark,
+            include_bytes!("../assets/textures/blue_score_mark.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::RedScoreMark,
+            include_bytes!("../assets/textures/orange_score_mark.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::BlueFinalMark,
+            include_bytes!("../assets/textures/blue_last_score_mark.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::RedFinalMark,
+            include_bytes!("../assets/textures/orange_last_score_mark.png").as_slice()
         );
         
 
@@ -168,7 +332,7 @@ impl UISystem {
             )
         );
         ui_elements.insert(
-            UIElementType::Scanner,
+            UIElementType::ScannerRed,
             UIElement::Image(
                 UIImage::new(
                     UIData::new(
@@ -187,36 +351,36 @@ impl UISystem {
                         true,
                         None,
                     ),
-                    TextureType::ScannerTexture
+                    TextureType::ScannerTextureRed
                 )
             )
         );
-        // ui_elements.insert(
-        //     UIElementType::HUDBottomLine,
-        //     UIElement::Image(
-        //         UIImage::new(
-        //             UIData::new(
-        //                 UIRect {
-        //                     anchor: RectAnchor::CenterDown,
-        //                     position: Vec2::new(0.0, -1.0),
-        //                     size: RectSize::LockedWight(
-        //                         0.562
-        //                     ),
-        //                     rotation_around_rect_center: 0.0,
-        //                     rotation_around_screen_center: 0.0,
-        //                     transparency: 1.0,
-        //                     drawing_order: 0,
-        //                     transform_buffer: None,
-        //                 },
-        //                 true,
-        //                 None,
-        //             ),
-        //             TextureType::BottomLine
-        //         )
-        //     )
-        // );
         ui_elements.insert(
-            UIElementType::ScannerHPointer,
+            UIElementType::ScannerBlue,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterDown,
+                            position: Vec2::new(0.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.322
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        true,
+                        None,
+                    ),
+                    TextureType::ScannerTextureBlue
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ScannerHPointerRed,
             UIElement::Image(
                 UIImage::new(
                     UIData::new(
@@ -234,14 +398,39 @@ impl UISystem {
                             transform_buffer: None,
                         },
                         true,
-                        Some(UIElementType::Scanner),
+                        Some(UIElementType::ScannerRed),
                     ),
-                    TextureType::ScannerPointer
+                    TextureType::ScannerPointerRed
                 )
             )
         );
         ui_elements.insert(
-            UIElementType::ZXScannerArrow,
+            UIElementType::ScannerHPointerBlue,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, -0.3),
+                            size: RectSize::LockedBoth(
+                                0.0315,
+                                0.053
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 1,
+                            transform_buffer: None,
+                        },
+                        true,
+                        Some(UIElementType::ScannerBlue),
+                    ),
+                    TextureType::ScannerPointerBlue
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ZXScannerArrowRed,
             UIElement::Image(
                 UIImage::new(
                     UIData::new(
@@ -259,14 +448,39 @@ impl UISystem {
                             transform_buffer: None,
                         },
                         true,
-                        Some(UIElementType::Scanner),
+                        Some(UIElementType::ScannerRed),
                     ),
-                    TextureType::ScannerArrow
+                    TextureType::ScannerArrowRed
                 )
             )
         );
         ui_elements.insert(
-            UIElementType::ZWScannerArrow,
+            UIElementType::ZXScannerArrowBlue,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(-0.305, 0.063),
+                            size: RectSize::LockedBoth(
+                                0.229,
+                                0.81
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 1,
+                            transform_buffer: None,
+                        },
+                        true,
+                        Some(UIElementType::ScannerBlue),
+                    ),
+                    TextureType::ScannerArrowBlue
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ZWScannerArrowRed,
             UIElement::Image(
                 UIImage::new(
                     UIData::new(
@@ -284,14 +498,39 @@ impl UISystem {
                             transform_buffer: None,
                         },
                         true,
-                        Some(UIElementType::Scanner),
+                        Some(UIElementType::ScannerRed),
                     ),
-                    TextureType::ScannerArrow
+                    TextureType::ScannerArrowRed
                 )
             )
         );
         ui_elements.insert(
-            UIElementType::LeftScannerDsiplay,
+            UIElementType::ZWScannerArrowBlue,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.305, 0.063),
+                            size: RectSize::LockedBoth(
+                                0.229,
+                                0.81
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 1,
+                            transform_buffer: None,
+                        },
+                        true,
+                        Some(UIElementType::ScannerBlue),
+                    ),
+                    TextureType::ScannerArrowBlue
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::LeftScannerDsiplayRed,
             UIElement::ScannerDisplay(
                 UIScannerDisplay::new(
                     UIData::new(
@@ -309,14 +548,39 @@ impl UISystem {
                             transform_buffer: None,
                         },
                         true,
-                        Some(UIElementType::Scanner),
+                        Some(UIElementType::ScannerRed),
                     ),
                     ScannerDisplayPlaneOrientation::ZX
                 )
             )
         );
         ui_elements.insert(
-            UIElementType::RightScannerDsiplay,
+            UIElementType::LeftScannerDsiplayBlue,
+            UIElement::ScannerDisplay(
+                UIScannerDisplay::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(-0.305, 0.063),
+                            size: RectSize::LockedBoth(
+                                0.229,
+                                0.81
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 2,
+                            transform_buffer: None,
+                        },
+                        true,
+                        Some(UIElementType::ScannerBlue),
+                    ),
+                    ScannerDisplayPlaneOrientation::ZX
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::RightScannerDsiplayRed,
             UIElement::ScannerDisplay(
                 UIScannerDisplay::new(
                     UIData::new(
@@ -334,14 +598,39 @@ impl UISystem {
                             transform_buffer: None,
                         },
                         true,
-                        Some(UIElementType::Scanner),
+                        Some(UIElementType::ScannerRed),
                     ),
                     ScannerDisplayPlaneOrientation::ZW
                 )
             )
         );
         ui_elements.insert(
-            UIElementType::HeathBar,
+            UIElementType::RightScannerDsiplayBlue,
+            UIElement::ScannerDisplay(
+                UIScannerDisplay::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.305, 0.063),
+                            size: RectSize::LockedBoth(
+                                0.229,
+                                0.81
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 2,
+                            transform_buffer: None,
+                        },
+                        true,
+                        Some(UIElementType::ScannerBlue),
+                    ),
+                    ScannerDisplayPlaneOrientation::ZW
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::HeathBarRed,
             UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
@@ -361,7 +650,7 @@ impl UISystem {
                         None,
                     ),
                     TextureType::HeathBarTexture,
-                    TextureType::HeathBarMask,
+                    TextureType::HeathBarMaskRed,
                     0.17,
                     0.95,
                     ProgressBarDirection::LeftRight,
@@ -369,7 +658,35 @@ impl UISystem {
             )
         );
         ui_elements.insert(
-            UIElementType::EnergyGunBar,
+            UIElementType::HeathBarBlue,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownLeft,
+                            position: Vec2::new(-1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        true,
+                        None,
+                    ),
+                    TextureType::HeathBarTexture,
+                    TextureType::HeathBarMaskBlue,
+                    0.17,
+                    0.95,
+                    ProgressBarDirection::LeftRight,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::EnergyGunBarRed,
             UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
@@ -390,7 +707,7 @@ impl UISystem {
                         
                     ),
                     TextureType::EnergyGunBarTexture,
-                    TextureType::EnergyGunBarMask,
+                    TextureType::GunBarMaskRed,
                     0.95,
                     0.17,
                     ProgressBarDirection::RightLeft,
@@ -398,7 +715,60 @@ impl UISystem {
             )
         );
         ui_elements.insert(
-            UIElementType::MachinegunBar,
+            UIElementType::EnergyGunBarBlue,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        true,
+                        None,
+                        
+                    ),
+                    TextureType::EnergyGunBarTexture,
+                    TextureType::GunBarMaskBlue,
+                    0.95,
+                    0.17,
+                    ProgressBarDirection::RightLeft,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::EnergyGunImage,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        true,
+                        None,
+                    ),
+                    TextureType::EnergyGunImgTexture
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::MachinegunBarRed,
             UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
@@ -419,10 +789,63 @@ impl UISystem {
                         
                     ),
                     TextureType::MachinegunBarTexture,
-                    TextureType::MachinegunBarMask,
+                    TextureType::GunBarMaskRed,
                     0.95,
                     0.17,
                     ProgressBarDirection::RightLeft,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::MachinegunBarBlue,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                        
+                    ),
+                    TextureType::MachinegunBarTexture,
+                    TextureType::GunBarMaskBlue,
+                    0.95,
+                    0.17,
+                    ProgressBarDirection::RightLeft,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::MachinegunImage,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        true,
+                        None,
+                    ),
+                    TextureType::MachinegunImgTexture
                 )
             )
         );
@@ -821,7 +1244,7 @@ impl UIRect {
     
             //         ________________
             //         |              + (1,1)
-            //         | wgpu screeen |
+            //         | wgpu screen  |
             //         |              |
             //         |      +(0,0)  |
             //         |              |
@@ -881,12 +1304,6 @@ impl UIRect {
 
 
 }
-
-// pub struct Texture {
-//     texture_type: TextureType,
-//     source: &'static [u8],
-//     di
-// }
 
 pub struct UIData {
     pub is_visible: Arc<Mutex<bool>>,

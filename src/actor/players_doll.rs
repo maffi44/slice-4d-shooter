@@ -175,7 +175,8 @@ pub enum PlayersDollMessage{
         Vec4,
         // timestamp in millis
         u128,
-    )
+    ),
+    YouHitMe(u32),
 }
 
 
@@ -555,7 +556,7 @@ impl Actor for PlayersDoll {
 
                             PlayerMessage::DealDamageAndAddForce(damage, force, impact_pos, team) =>
                             {
-                                if team != self.team
+                                if team != self.team && damage > 0
                                 {
                                     engine_handle.send_command(
                                         Command {
@@ -586,6 +587,18 @@ impl Actor for PlayersDoll {
                                         )
                                     });
     
+                                    engine_handle.send_direct_message(
+                                        from,
+                                        Message {
+                                            from: self.get_id().expect("Player Doll have not ActorID"),
+                                            message: MessageType::SpecificActorMessage(
+                                                SpecificActorMessage::PlayersDollMessage(
+                                                    PlayersDollMessage::YouHitMe(damage)
+                                                )
+                                            )
+                                        }
+                                    );
+                                    
                                     audio_system.spawn_non_spatial_sound(
                                         Sound::PlayerHitSignal,
                                         0.14.lerp(0.22, (damage as f32 / PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
@@ -593,7 +606,7 @@ impl Actor for PlayersDoll {
                                         false,
                                         true,
                                         fyrox_sound::source::Status::Playing
-                                    );                          
+                                    );                         
                                 }
                             }
 
@@ -608,7 +621,10 @@ impl Actor for PlayersDoll {
 
                     SpecificActorMessage::PlayersDollMessage(message) =>
                     {
-                        match message {
+                        match message
+                        {
+                            PlayersDollMessage::YouHitMe(_) => {}
+
                             PlayersDollMessage::SetInterploatedModelTargetState(
                                 transform,
                                 input,
