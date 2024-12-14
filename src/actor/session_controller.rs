@@ -1,7 +1,7 @@
 use client_server_protocol::Team;
 
 use crate::{
-    engine::{effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem},
+    engine::{effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{self, UIElement, UIElementType, UISystem}},
     transform::Transform
 };
 
@@ -10,6 +10,13 @@ use super::{
 };
 
 pub const DEFAULT_TEAM: Team = Team::Red;
+
+pub const SHOW_TEAM_BACKLIGHT_TIME: f32 = 4.0;
+pub const SHOW_TEAM_JOIN_TITLE_TIME: f32 = 4.0;
+pub const SHOW_TEAM_WIN_TITLE_TIME: f32 = 10.0;
+
+pub const UI_ELEM_FADE_IN_SPEED: f32 = 3.0;
+pub const UI_ELEM_FADE_OUT_SPEED: f32 = 3.0;
 
 #[derive(Clone)]
 pub enum SessionControllerMessage
@@ -46,20 +53,199 @@ pub struct SessionController
     red_team_score: u32,
     blue_team_score: u32,
     your_team: Team,
+    show_red_team_backlight_timer: f32,
+    show_blue_team_backlight_timer: f32,
+    show_red_team_win_title_timer: f32,
+    show_blue_team_win_title_timer: f32,
+    show_join_red_team_title_timer: f32,
+    show_join_blue_team_title_timer: f32,
 }
 
 
 impl SessionController
 {
-    pub fn new() -> Self
+    pub fn new(ui_system: &mut UISystem) -> Self
     {
-        SessionController {
+        let session_controller = SessionController {
             transform: Transform::new(),
             id: None,
             red_team_score: 0u32,
             blue_team_score: 0u32,
             your_team: DEFAULT_TEAM,
-        }
+            show_red_team_backlight_timer: 0.0,
+            show_blue_team_backlight_timer: 0.0,
+            show_red_team_win_title_timer: 0.0,
+            show_blue_team_win_title_timer: 0.0,
+            show_join_red_team_title_timer: 0.0,
+            show_join_blue_team_title_timer: 0.0,
+        };
+
+        session_controller.set_score_ui(ui_system);
+
+        session_controller
+    }
+
+    pub fn set_score_ui(&self, ui: &mut UISystem)
+    {
+        match self.red_team_score
+        {
+            0 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            }
+
+            1 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            }
+
+            2 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            }
+
+            3 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            }
+
+            4 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            }
+
+            _ => {panic!("ERROR: red team score > 4")}
+        };
+
+        match self.blue_team_score
+        {
+            0 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            }
+
+            1 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            }
+
+            2 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            }
+
+            3 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            }
+
+            4 =>
+            {
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
+                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            }
+
+            _ => {panic!("ERROR: blue team score > 4")}
+        };
     }
 }
 
@@ -82,6 +268,61 @@ impl Actor for SessionController
         self.id = Some(id);
     }
 
+    fn tick(
+            &mut self,
+            physic_system: &crate::engine::physics::PhysicsSystem,
+            engine_handle: &mut EngineHandle,
+            audio_system: &mut crate::engine::audio::AudioSystem,
+            ui_system: &mut UISystem,
+            time_system: &mut TimeSystem,
+            effects_system: &mut EffectsSystem,
+            delta: f32
+        ) {
+        
+        process_ui_animation(
+            &mut self.show_red_team_backlight_timer,
+            &UIElementType::RedTeamBacklight,
+            delta,
+            ui_system,
+        );
+
+        process_ui_animation(
+            &mut self.show_blue_team_backlight_timer,
+            &UIElementType::BlueTeamBacklight,
+            delta,
+            ui_system,
+        );
+
+        process_ui_animation(
+            &mut self.show_red_team_win_title_timer,
+            &UIElementType::RedTeamWinTitle,
+            delta,
+            ui_system,
+        );
+
+        process_ui_animation(
+            &mut self.show_blue_team_win_title_timer,
+            &UIElementType::BlueTeamWinTitle,
+            delta,
+            ui_system,
+        );
+
+        process_ui_animation(
+            &mut self.show_join_red_team_title_timer,
+            &UIElementType::JoinRedTeamTitle,
+            delta,
+            ui_system,
+        );
+
+        process_ui_animation(
+            &mut self.show_join_blue_team_title_timer,
+            &UIElementType::JoinBlueTeamTitle,
+            delta,
+            ui_system,
+        );
+        
+    }
+
     fn recieve_message(
             &mut self,
             message: Message,
@@ -101,19 +342,44 @@ impl Actor for SessionController
                     SpecificActorMessage::SessionControllerMessage(message) =>
                     {
                         match message {
-                            SessionControllerMessage::NewSessionStarted(team) =>
+                            SessionControllerMessage::NewSessionStarted(your_team) =>
                             {
                                 self.blue_team_score = 0u32;
                                 self.red_team_score = 0u32;
-                                self.your_team = team;
+                                self.your_team = your_team;
+                                self.show_blue_team_backlight_timer = 0.0;
+                                self.show_red_team_backlight_timer = 0.0;
+                                self.show_join_blue_team_title_timer = 0.0;
+                                self.show_join_red_team_title_timer = 0.0;
+                                self.show_blue_team_win_title_timer = 0.0;
+                                self.show_red_team_win_title_timer = 0.0;
 
-                                todo!("set new ui score")
+                                match your_team
+                                {
+                                    Team::Red =>
+                                    {
+                                        self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+                                        self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+
+                                    }
+
+                                    Team::Blue =>
+                                    {
+                                        self.show_blue_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+                                        self.show_join_blue_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+
+                                    }
+                                }
+
+                                self.set_score_ui(ui_system);
                             }
 
                             SessionControllerMessage::SetScore(new_red_team_score, new_blue_team_score) =>
                             {
                                 if new_red_team_score > self.red_team_score
                                 {
+                                    self.show_red_team_backlight_timer = SHOW_TEAM_BACKLIGHT_TIME;
+
                                     match self.your_team {
                                         Team::Red =>
                                         {
@@ -127,6 +393,8 @@ impl Actor for SessionController
                                 }
                                 if new_blue_team_score > self.blue_team_score
                                 {
+                                    self.show_blue_team_backlight_timer = SHOW_TEAM_BACKLIGHT_TIME;
+
                                     match self.your_team {
                                         Team::Red =>
                                         {
@@ -141,15 +409,25 @@ impl Actor for SessionController
                                 self.red_team_score = new_red_team_score;
                                 self.blue_team_score = new_blue_team_score;
 
-                                todo!("set new ui score")
+                                self.set_score_ui(ui_system);
                             }
 
                             SessionControllerMessage::TeamWin(win_team) =>
                             {
+                                self.show_blue_team_backlight_timer = 0.0;
+                                self.show_red_team_backlight_timer = 0.0;
+                                self.show_join_blue_team_title_timer = 0.0;
+                                self.show_join_red_team_title_timer = 0.0;
+                                self.show_blue_team_win_title_timer = 0.0;
+                                self.show_red_team_win_title_timer = 0.0;
+
                                 match win_team
                                 {
                                     Team::Red =>
                                     {
+                                        self.show_red_team_backlight_timer = SHOW_TEAM_WIN_TITLE_TIME;
+                                        self.show_red_team_win_title_timer = SHOW_TEAM_WIN_TITLE_TIME;
+
                                         match self.your_team {
                                             Team::Red =>
                                             {
@@ -160,10 +438,12 @@ impl Actor for SessionController
                                                 todo!("play sad sound")
                                             }
                                         }
-                                        todo!("Show red win ui")
                                     }
                                     Team::Blue =>
                                     {
+                                        self.show_blue_team_backlight_timer = SHOW_TEAM_WIN_TITLE_TIME;
+                                        self.show_blue_team_win_title_timer = SHOW_TEAM_WIN_TITLE_TIME;
+
                                         match self.your_team {
                                             Team::Red =>
                                             {
@@ -174,7 +454,6 @@ impl Actor for SessionController
                                                 todo!("play good sound")
                                             }
                                         }
-                                        todo!("Show blue win ui")
                                     }
                                 }
                             }
@@ -190,12 +469,34 @@ impl Actor for SessionController
                             {
                                 println!("Joined to session");
                                 
+                                self.show_blue_team_backlight_timer = 0.0;
+                                self.show_red_team_backlight_timer = 0.0;
+                                self.show_join_blue_team_title_timer = 0.0;
+                                self.show_join_red_team_title_timer = 0.0;
+                                self.show_blue_team_win_title_timer = 0.0;
+                                self.show_red_team_win_title_timer = 0.0;
+
                                 self.your_team = your_team;
                                 self.red_team_score = red_team_score;
                                 self.blue_team_score = blue_team_score;
 
-                                todo!("set ui joined to team red or blue");
-                                todo!("set ui score");
+                                match your_team
+                                {
+                                    Team::Red =>
+                                    {
+                                        self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+                                        self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+
+                                    }
+
+                                    Team::Blue =>
+                                    {
+                                        self.show_blue_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+                                        self.show_join_blue_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+
+                                    }
+                                }
+                                self.set_score_ui(ui_system);
                             }
                         }
                     }
@@ -205,4 +506,54 @@ impl Actor for SessionController
             _ => {}
         }
     }
+}
+
+fn process_ui_animation(
+    timer: &mut f32,
+    ui_elem_type: &UIElementType,
+    delta: f32,
+    ui_system: &mut UISystem
+)
+{
+    if *timer > 0.0
+        {
+            *timer -= delta;
+
+            let ui_elem = ui_system.get_mut_ui_element(ui_elem_type);
+            let transparency = ui_elem.get_ui_data().get_transparecy();
+
+            if transparency < 1.0
+            {
+                ui_elem.get_ui_data_mut().set_transparecy(
+                    transparency + (UI_ELEM_FADE_IN_SPEED * delta)
+                );
+            }
+            else
+            {
+                ui_elem.get_ui_data_mut().set_transparecy(
+                    1.0
+                );
+            }
+        }
+        else {
+            *timer = 0.0;
+
+            let ui_elem = ui_system.get_mut_ui_element(ui_elem_type);
+            let transparency = ui_elem.get_ui_data().get_transparecy();
+
+            if transparency > 0.0
+            {
+                ui_elem.get_ui_data_mut().set_transparecy(
+                    transparency - (UI_ELEM_FADE_OUT_SPEED * delta)
+                );
+            }
+            else
+            {
+                ui_elem.get_ui_data_mut().set_transparecy(
+                    0.0
+                );
+
+                *ui_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            }
+        }
 }

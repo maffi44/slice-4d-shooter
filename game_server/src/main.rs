@@ -415,7 +415,7 @@ struct PlayerInfo
 
 pub const MOVE_W_BONUS_RESPAWN_TIME: u128 = 20_000;
 pub const FLAG_RESPAWN_TIME: u128 = 10_000;
-pub const MAX_SCORE: u32 = 5;
+pub const MAX_SCORE: u32 = 4;
 pub const TIME_IN_SESSION_AFTER_WIN: u128 = 15_000;
 
 impl GameSessionState {

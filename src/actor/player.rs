@@ -69,7 +69,6 @@ use super::{
     device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, PhysicsMessages
 };
 
-pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 pub struct PlayerInnerState {
     pub team: Team,
     pub has_flag: bool,
@@ -87,6 +86,7 @@ pub struct PlayerInnerState {
     pub zx_rotation: Mat4,
 
     pub is_time_after_some_team_win: bool,
+    pub amount_of_move_w_bonuses_do_i_have: u32,
     // pub weapon_offset: Vec4,
 }
 
@@ -131,6 +131,7 @@ impl PlayerInnerState {
             zx_rotation: Mat4::IDENTITY,
 
             is_time_after_some_team_win: false,
+            amount_of_move_w_bonuses_do_i_have: 0u32,
         }
     }
 }
@@ -223,7 +224,13 @@ pub struct Player {
     current_w_level: usize,
 
     show_crosshaier_hit_mark_timer: f32,
+
+    fisrt_move_w_bonus_transparency_level: f32,
+    second_move_w_bonus_transparency_level: f32,
+
+    flag_pivot_offset: Vec4,
 }
+pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 
 pub const PLAYER_MAX_HP: i32 = 100;
 
@@ -250,6 +257,10 @@ const SHOW_CROSSHAIER_HIT_MARK_TIME: f32 = 0.7;
 
 pub const RED_TEAM_COLOR: Vec3 = Vec3::new(1.0, 0.0, 0.0);
 pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.0, 0.0, 1.0);
+
+pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 2;
+
+const HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL: f32 = 0.2;
 
 #[derive(Clone)]
 pub enum PlayerMessage {
@@ -420,6 +431,7 @@ impl Actor for Player {
                             PlayerMessage::SetNewTeam(team) =>
                             {
                                 self.inner_state.team = team;
+                                self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
                                 self.set_right_team_hud(ui_system);
 
@@ -443,6 +455,7 @@ impl Actor for Player {
                                 self.inner_state.team = team;
                                 self.inner_state.has_flag = false;
                                 self.inner_state.is_time_after_some_team_win = false;
+                                self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
                                 self.set_right_team_hud(ui_system);
 
@@ -465,6 +478,7 @@ impl Actor for Player {
                                 
                                 self.inner_state.team = your_team;
                                 self.inner_state.is_time_after_some_team_win = false;
+                                self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
                                 self.set_right_team_hud(ui_system);
 
@@ -519,7 +533,7 @@ impl Actor for Player {
                                         message:                                     MessageType::SpecificActorMessage(
                                             SpecificActorMessage::FlagMessage(
                                                 FlagMessage::SetTargetPosition(
-                                                    todo!("flag target position")
+                                                    self.get_transform().get_position() + self.flag_pivot_offset
                                                 )
                                             )
                                         )
@@ -608,7 +622,11 @@ impl Actor for Player {
                                     {
                                         if collected_by == self.get_id().expect("Player have not ActorID")
                                         {
-                                            todo!("set move w bonus")                                            
+                                            if self.inner_state.amount_of_move_w_bonuses_do_i_have <
+                                                MAX_MOVE_W_BONUSES_I_CAN_HAVE
+                                            {
+                                                self.inner_state.amount_of_move_w_bonuses_do_i_have += 1;
+                                            }                                          
                                         }
                                     }
                                     _ => {}
@@ -783,6 +801,29 @@ impl Actor for Player {
             let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
     
             *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+        }
+
+        match self.inner_state.amount_of_move_w_bonuses_do_i_have
+        {
+            0 =>
+            {
+                self.fisrt_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
+                self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
+            }
+
+            1 =>
+            {
+                self.fisrt_move_w_bonus_transparency_level = 1.0;
+                self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
+            }
+
+            2 =>
+            {
+                self.fisrt_move_w_bonus_transparency_level = 1.0;
+                self.second_move_w_bonus_transparency_level = 1.0;
+            }
+
+            _ => panic!("Player have move w bonuses > 2")
         }
 
         self.screen_effects.getting_damage_screen_effect -= delta * GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED;
@@ -1627,6 +1668,8 @@ impl Player {
         let w_scanner_reloading_time =  player_settings.scanner_reloading_time;
         let w_scanner_enemies_show_time =  player_settings.scanner_show_enemies_time;
         let after_death_timer =  player_settings.min_respawn_timer;
+
+        let player_radius = player_settings.collider_radius;
         
         Player {
             id: None,
@@ -1697,6 +1740,11 @@ impl Player {
             current_w_level: 0,
 
             show_crosshaier_hit_mark_timer: 0.0,
+
+            fisrt_move_w_bonus_transparency_level: HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL,
+            second_move_w_bonus_transparency_level: HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL,
+
+            flag_pivot_offset: Vec4::new(0.0, player_radius, 0.0, 0.0),
         }
     }
 
@@ -1921,13 +1969,64 @@ impl Player {
     fn make_hud_transparency_as_death_screen_effect(&mut self, ui: &mut UISystem) {
         let a = 1.0 - self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
+        hud_elem.get_ui_data_mut().rect.transparency =
+            self.fisrt_move_w_bonus_transparency_level * a;
+        
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
+        hud_elem.get_ui_data_mut().rect.transparency =
+            self.second_move_w_bonus_transparency_level * a;
+
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunImage);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::EnergyGunImage);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::CrosshairHitMark);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::RedFlagMark);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::BlueFlagMark);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
+        hud_elem.get_ui_data_mut().rect.transparency = a;
+        
         match self.inner_state.team
         {
             Team::Red =>
             {
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
 
@@ -1954,40 +2053,10 @@ impl Player {
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunImage);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::EnergyGunImage);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::CrosshairHitMark);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::RedFlagMark);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
             }
 
             Team::Blue =>
             {
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
 
@@ -2014,33 +2083,6 @@ impl Player {
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunImage);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::EnergyGunImage);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::CrosshairHitMark);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::BlueFlagMark);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
             }
         }
     }
@@ -2048,24 +2090,16 @@ impl Player {
     fn set_right_team_hud(&self, ui: &mut UISystem)
     {
         let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
-        let binding = hud_elem
-            .get_ui_data_mut()
-            .get_is_visible_cloned_arc();
-        let mut is_visible = binding
-            .lock()
-            .unwrap();
-        *is_visible = true;
-        drop(is_visible);
+        *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
         let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
-        let binding = hud_elem
-            .get_ui_data_mut()
-            .get_is_visible_cloned_arc();
-        let mut is_visible = binding
-            .lock()
-            .unwrap();
-        *is_visible = true;
-        drop(is_visible);
+        *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
+        *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
+        *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
 
         match self.inner_state.team
@@ -2073,289 +2107,93 @@ impl Player {
             Team::Red =>
             {
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
             }
 
             Team::Blue =>
             {
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = true;
-                drop(is_visible);
-
-
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
-                let binding = hud_elem
-                    .get_ui_data_mut()
-                    .get_is_visible_cloned_arc();
-                let mut is_visible = binding
-                    .lock()
-                    .unwrap();
-                *is_visible = false;
-                drop(is_visible);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+
+                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
+                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
             }
         }
     }

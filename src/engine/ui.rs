@@ -195,7 +195,7 @@ impl UISystem {
             include_bytes!("../assets/textures/blue_health_bar_mask_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::HeathBarMaskBlue,
+            TextureType::HeathBarMaskRed,
             include_bytes!("../assets/textures/orange_health_bar_mask_hud.png").as_slice()
         );
         texture_sources.insert(
@@ -887,9 +887,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::DownLeft,
-                            position: Vec2::new(-0.95, 0.0),
+                            position: Vec2::new(-0.965, -1.0),
                             size: RectSize::LockedWight(
-                                0.036
+                                0.035
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -911,9 +911,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::DownLeft,
-                            position: Vec2::new(-0.85, 0.0),
+                            position: Vec2::new(-0.85, -1.0),
                             size: RectSize::LockedWight(
-                                0.036
+                                0.035
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,

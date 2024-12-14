@@ -341,7 +341,7 @@ fn init(systems: &mut Engine) {
         &mut systems.engine_handle,
     );
 
-    let session_controller = SessionController::new();
+    let session_controller = SessionController::new(&mut systems.ui);
     
     systems.world.add_actor_to_world(
         ActorWrapper::SessionController(session_controller),
