@@ -122,11 +122,13 @@ pub enum UIElementType {
     FirstScoreMarkBlue,
     SecondScoreMarkBlue,
     ThirdScoreMarkBlue,
+    FinalScoreMarkBlue,
     FirstScoreMarkRed,
     SecondScoreMarkRed,
     ThirdScoreMarkRed,
-    FinalScoreMarkBlue,
     FinalScoreMarkRed,
+    MoveWBonusMarkFirst,
+    MoveWBonusMarkSecond,
     RedTeamWinTitle,
     BlueTeamWinTitle,
     JoinRedTeamTitle,
@@ -167,6 +169,7 @@ pub enum TextureType {
     RedScoreMark,
     BlueFinalMark,
     RedFinalMark,
+    MoveWBonusImage,
 }
 
 
@@ -303,6 +306,10 @@ impl UISystem {
             TextureType::RedFinalMark,
             include_bytes!("../assets/textures/orange_last_score_mark.png").as_slice()
         );
+        texture_sources.insert(
+            TextureType::MoveWBonusImage,
+            include_bytes!("../assets/textures/move_w_bonus_img.png").as_slice()
+        );
         
 
         let mut ui_elements = HashMap::with_capacity(10);
@@ -324,10 +331,34 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                     ),
                     TextureType::Crosshair
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::CrosshairHitMark,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::ZERO,
+                            size: RectSize::LockedHeight(
+                                0.025
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::CrosshairHitMark
                 )
             )
         );
@@ -348,7 +379,7 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                     ),
                     TextureType::ScannerTextureRed
@@ -372,7 +403,7 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                     ),
                     TextureType::ScannerTextureBlue
@@ -397,7 +428,7 @@ impl UISystem {
                             drawing_order: 1,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerRed),
                     ),
                     TextureType::ScannerPointerRed
@@ -422,7 +453,7 @@ impl UISystem {
                             drawing_order: 1,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerBlue),
                     ),
                     TextureType::ScannerPointerBlue
@@ -447,7 +478,7 @@ impl UISystem {
                             drawing_order: 1,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerRed),
                     ),
                     TextureType::ScannerArrowRed
@@ -472,7 +503,7 @@ impl UISystem {
                             drawing_order: 1,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerBlue),
                     ),
                     TextureType::ScannerArrowBlue
@@ -497,7 +528,7 @@ impl UISystem {
                             drawing_order: 1,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerRed),
                     ),
                     TextureType::ScannerArrowRed
@@ -522,7 +553,7 @@ impl UISystem {
                             drawing_order: 1,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerBlue),
                     ),
                     TextureType::ScannerArrowBlue
@@ -547,7 +578,7 @@ impl UISystem {
                             drawing_order: 2,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerRed),
                     ),
                     ScannerDisplayPlaneOrientation::ZX
@@ -572,7 +603,7 @@ impl UISystem {
                             drawing_order: 2,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerBlue),
                     ),
                     ScannerDisplayPlaneOrientation::ZX
@@ -597,7 +628,7 @@ impl UISystem {
                             drawing_order: 2,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerRed),
                     ),
                     ScannerDisplayPlaneOrientation::ZW
@@ -622,7 +653,7 @@ impl UISystem {
                             drawing_order: 2,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         Some(UIElementType::ScannerBlue),
                     ),
                     ScannerDisplayPlaneOrientation::ZW
@@ -646,7 +677,7 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                     ),
                     TextureType::HeathBarTexture,
@@ -674,7 +705,7 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                     ),
                     TextureType::HeathBarTexture,
@@ -702,7 +733,7 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                         
                     ),
@@ -731,7 +762,7 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                         
                     ),
@@ -760,7 +791,7 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                     ),
                     TextureType::EnergyGunImgTexture
@@ -842,10 +873,468 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                     ),
                     TextureType::MachinegunImgTexture
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::MoveWBonusMarkFirst,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownLeft,
+                            position: Vec2::new(-0.95, 0.0),
+                            size: RectSize::LockedWight(
+                                0.036
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::MoveWBonusImage
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::MoveWBonusMarkSecond,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownLeft,
+                            position: Vec2::new(-0.85, 0.0),
+                            size: RectSize::LockedWight(
+                                0.036
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::MoveWBonusImage
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ScoreBar,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterTop,
+                            position: Vec2::new(0.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.345
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::ScoreBar
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::RedFlagMark,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopLeft,
+                            position: Vec2::new(0.04, 1.0),
+                            size: RectSize::LockedWight(
+                                0.03
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RedFlagMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::BlueFlagMark,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(-0.04, 1.0),
+                            size: RectSize::LockedWight(
+                                0.03
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BlueFlagMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::FirstScoreMarkRed,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopLeft,
+                            position: Vec2::new(-0.1, 1.0),
+                            size: RectSize::LockedWight(
+                                0.015
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RedScoreMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::SecondScoreMarkRed,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopLeft,
+                            position: Vec2::new(-0.18, 1.0),
+                            size: RectSize::LockedWight(
+                                0.015
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RedScoreMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ThirdScoreMarkRed,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopLeft,
+                            position: Vec2::new(-0.26, 1.0),
+                            size: RectSize::LockedWight(
+                                0.015
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RedScoreMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::FinalScoreMarkRed,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopLeft,
+                            position: Vec2::new(-0.3, 1.0),
+                            size: RectSize::LockedWight(
+                                0.025
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RedFinalMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::FirstScoreMarkBlue,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(0.1, 1.0),
+                            size: RectSize::LockedWight(
+                                0.015
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BlueScoreMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::SecondScoreMarkBlue,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(0.18, 1.0),
+                            size: RectSize::LockedWight(
+                                0.015
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BlueScoreMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ThirdScoreMarkBlue,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(0.26, 1.0),
+                            size: RectSize::LockedWight(
+                                0.015
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BlueScoreMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::FinalScoreMarkBlue,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(0.3, 1.0),
+                            size: RectSize::LockedWight(
+                                0.025
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BlueFinalMark
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::RedTeamBacklight,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedBoth(
+                                1.0,
+                                1.0
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BacklightRed
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::BlueTeamBacklight,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedBoth(
+                                1.0,
+                                1.0
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BacklightBlue
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::RedTeamWinTitle,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedWight(
+                                0.3,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RedTeamWinTitle
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::BlueTeamWinTitle,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedWight(
+                                0.3,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BlueTeamWinTitle
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::JoinRedTeamTitle,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedWight(
+                                0.45,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::JoinRedTeamTitle
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::JoinBlueTeamTitle,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedWight(
+                                0.45,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::JoinBlueTeamTitle
                 )
             )
         );
