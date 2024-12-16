@@ -169,7 +169,8 @@ pub enum TextureType {
     RedScoreMark,
     BlueFinalMark,
     RedFinalMark,
-    MoveWBonusImage,
+    MoveWBonusImageFirst,
+    MoveWBonusImageSecond,
 }
 
 
@@ -307,8 +308,12 @@ impl UISystem {
             include_bytes!("../assets/textures/orange_last_score_mark.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::MoveWBonusImage,
-            include_bytes!("../assets/textures/move_w_bonus_img.png").as_slice()
+            TextureType::MoveWBonusImageFirst,
+            include_bytes!("../assets/textures/move_w_bonus_first_img.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::MoveWBonusImageSecond,
+            include_bytes!("../assets/textures/move_w_bonus_second_img.png").as_slice()
         );
         
 
@@ -887,9 +892,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::DownLeft,
-                            position: Vec2::new(-0.965, -1.0),
+                            position: Vec2::new(-1.0, -1.0),
                             size: RectSize::LockedWight(
-                                0.035
+                                0.224
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -900,7 +905,7 @@ impl UISystem {
                         false,
                         None,
                     ),
-                    TextureType::MoveWBonusImage
+                    TextureType::MoveWBonusImageFirst
                 )
             )
         );
@@ -911,9 +916,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::DownLeft,
-                            position: Vec2::new(-0.85, -1.0),
+                            position: Vec2::new(-1.0, -1.0),
                             size: RectSize::LockedWight(
-                                0.035
+                                0.224
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -924,7 +929,7 @@ impl UISystem {
                         false,
                         None,
                     ),
-                    TextureType::MoveWBonusImage
+                    TextureType::MoveWBonusImageSecond
                 )
             )
         );
@@ -959,7 +964,7 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopLeft,
-                            position: Vec2::new(0.04, 1.0),
+                            position: Vec2::new(0.00, 1.0),
                             size: RectSize::LockedWight(
                                 0.03
                             ),
@@ -983,7 +988,7 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopRight,
-                            position: Vec2::new(-0.04, 1.0),
+                            position: Vec2::new(0.00, 1.0),
                             size: RectSize::LockedWight(
                                 0.03
                             ),
@@ -1007,9 +1012,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopLeft,
-                            position: Vec2::new(-0.1, 1.0),
+                            position: Vec2::new(0.1167, 1.0),
                             size: RectSize::LockedWight(
-                                0.015
+                                0.00633
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -1031,9 +1036,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopLeft,
-                            position: Vec2::new(-0.18, 1.0),
+                            position: Vec2::new(0.1691, 1.0),
                             size: RectSize::LockedWight(
-                                0.015
+                                0.00633
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -1055,9 +1060,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopLeft,
-                            position: Vec2::new(-0.26, 1.0),
+                            position: Vec2::new(0.222, 1.0),
                             size: RectSize::LockedWight(
-                                0.015
+                                0.00633
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -1079,9 +1084,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopLeft,
-                            position: Vec2::new(-0.3, 1.0),
+                            position: Vec2::new(0.278, 1.0),
                             size: RectSize::LockedWight(
-                                0.025
+                                0.0267
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -1103,9 +1108,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopRight,
-                            position: Vec2::new(0.1, 1.0),
+                            position: Vec2::new(-0.1167, 1.0),
                             size: RectSize::LockedWight(
-                                0.015
+                                0.00633
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -1127,9 +1132,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopRight,
-                            position: Vec2::new(0.18, 1.0),
+                            position: Vec2::new(-0.1691, 1.0),
                             size: RectSize::LockedWight(
-                                0.015
+                                0.00633
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -1151,9 +1156,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopRight,
-                            position: Vec2::new(0.26, 1.0),
+                            position: Vec2::new(-0.2218, 1.0),
                             size: RectSize::LockedWight(
-                                0.015
+                                0.00633
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
@@ -1175,9 +1180,9 @@ impl UISystem {
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::TopRight,
-                            position: Vec2::new(0.3, 1.0),
+                            position: Vec2::new(-0.278, 1.0),
                             size: RectSize::LockedWight(
-                                0.025
+                                0.0267
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,
