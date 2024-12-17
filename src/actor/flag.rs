@@ -215,7 +215,6 @@ impl Flag
                 20.0,
             ]
         );
-        todo!("play sound missed");
         self.status = FlagStatus::Missed(pos);
     }
 

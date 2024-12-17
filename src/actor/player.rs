@@ -625,6 +625,7 @@ impl Actor for Player {
                                             if self.inner_state.amount_of_move_w_bonuses_do_i_have <
                                                 MAX_MOVE_W_BONUSES_I_CAN_HAVE
                                             {
+                                                todo!("play get bonus sound");
                                                 self.inner_state.amount_of_move_w_bonuses_do_i_have += 1;
                                             }                                          
                                         }
@@ -1299,6 +1300,7 @@ impl Actor for Player {
 
             self.w_jump_reloading_time += delta;
 
+            
             if input.jump_wy.is_action_just_pressed() {
 
                 let next_w_level = self.current_w_level + 1;
@@ -1325,7 +1327,10 @@ impl Actor for Player {
             }
 
 
+
+            todo!("make bonus and w jumpad logic");
             if input.w_up.is_action_pressed() {
+                todo!("play go w sound");
                 if self.inner_state.collider.is_enable {
                     self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
                 } else {
@@ -1333,13 +1338,18 @@ impl Actor for Player {
                 }
             }
     
+
+            todo!("make bonus and w jumpad logic");
             if input.w_down.is_action_pressed() {
+                todo!("play go w sound");
                 if self.inner_state.collider.is_enable {
                     self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
                 } else {
                     self.no_collider_veclocity += Vec4::NEG_W * self.player_settings.jetpak_w_speed;
                 }
             }
+
+            todo!("write check arrive w level logic and play w arrive sound");
     
             if input.w_scanner.is_action_just_pressed() {
                 if !self.w_scanner_enable {

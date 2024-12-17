@@ -41,6 +41,15 @@ pub enum Sound {
     PlayerDied,
     ShiftingAlongW,
     PlayerRespawned,
+    TeamWin,
+    TeamLoose,
+    GetScore,
+    LooseScore,
+    WShiftStart,
+    WShiftEnd,
+    FlagOnTheBase,
+    FlagCuptured,
+    PickUpBonus,
 }
 pub struct AudioSystem {
     pub sound_engine: SoundEngine,
@@ -480,6 +489,60 @@ impl AudioSystem {
             )
         ).expect("can't create sound buffer resourse");
 
+        let team_win = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/team_win.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let team_loose = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/team_lost.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let get_score = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/get_score.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let loose_score = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/lost_score.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let flag_captured = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/flag_captured.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let flag_on_the_base = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/flag_returned.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let w_shift_start = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/move_to_another_w_level.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let w_shift_end = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/arrived_to_another_w_level.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let pick_up_bonus = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/pickup_bonus.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
         sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
         sounds.insert(Sound::HolegunShot, holegun_shot_sound_resource);
         sounds.insert(Sound::HolegunCharging, holegun_charging_sound_resource);
@@ -492,6 +555,15 @@ impl AudioSystem {
         sounds.insert(Sound::PlayerDied, player_died);
         sounds.insert(Sound::ShiftingAlongW, shifting_along_w);
         sounds.insert(Sound::PlayerRespawned, player_respawned);
+        sounds.insert(Sound::TeamWin, team_win);
+        sounds.insert(Sound::TeamLoose, team_loose);
+        sounds.insert(Sound::GetScore, get_score);
+        sounds.insert(Sound::LooseScore, loose_score);
+        sounds.insert(Sound::FlagCuptured, flag_captured);
+        sounds.insert(Sound::FlagOnTheBase, flag_on_the_base);
+        sounds.insert(Sound::WShiftStart, w_shift_start);
+        sounds.insert(Sound::WShiftEnd, w_shift_end);
+        sounds.insert(Sound::PickUpBonus, pick_up_bonus);
 
         AudioSystem {
             sound_engine,
