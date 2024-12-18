@@ -6,6 +6,12 @@ mod transform;
 use engine::Engine;
 use main_loop::MainLoop;
 use pollster;
+use blink_alloc::UnsafeGlobalBlinkAlloc;
+
+#[global_allocator]
+static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
+    UnsafeGlobalBlinkAlloc::new()
+};
 
 fn main() {
     env_logger::init();

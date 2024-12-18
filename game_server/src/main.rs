@@ -1,5 +1,7 @@
 mod client_server_protocol;
 
+use blink_alloc::UnsafeGlobalBlinkAlloc;
+
 use std::{
     collections::HashMap,
     env,
@@ -153,6 +155,11 @@ impl GameServerConfig {
     }
 }
 
+#[global_allocator]
+static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
+    UnsafeGlobalBlinkAlloc::new()
+};
+    
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -171,7 +178,7 @@ fn main() {
     let runtime = Arc::new(
         Builder::new_current_thread()
             .enable_all()
-            .worker_threads(1)
+            .worker_threads(2)
             .build()
             .unwrap()
     );
@@ -406,6 +413,7 @@ enum GameState
     ),
 }
 
+#[derive(Clone, Copy)]
 struct PlayerInfo
 {
     peer_id: PeerId,
@@ -630,6 +638,31 @@ impl GameSessionState {
                 self.blue_flag.status = new_status;
             }
         }
+        
+        match new_status {
+            FlagStatus::Captured(id) =>
+            {
+                self.players.get_mut(&id).unwrap().captured_flag = true;
+            }
+            _ => {
+                match flag_team {
+                    Team::Red =>
+                    {
+                        for (id, _) in &self.blue_team
+                        {
+                            self.players.get_mut(id).unwrap().captured_flag = false;
+                        } 
+                    }
+                    Team::Blue =>
+                    {
+                        for (id, _) in &self.red_team
+                        {
+                            self.players.get_mut(id).unwrap().captured_flag = false;
+                        } 
+                    }
+                }
+            }
+        }
 
         for (_, player_info) in &self.players
         {
@@ -745,6 +778,38 @@ impl GameSessionState {
     {
         self.holes.push(Hole::new(radius, position, color));
     }
+
+    pub fn add_player(
+        &mut self,
+        id: u128,
+        player_info: PlayerInfo,
+    )
+    {
+        self.players.insert(id, player_info);
+
+        match player_info.team
+        {
+            Team::Red =>
+            {
+                self.red_team.insert(id, ());
+            }
+            Team::Blue =>
+            {
+                self.blue_team.insert(id, ());
+            }
+        }
+
+    }
+
+    pub fn remove_player(
+        &mut self,
+        id: u128,
+    )
+    {
+        self.players.remove(&id);
+        self.red_team.remove(&id);
+        self.blue_team.remove(&id);
+    }
 }
 
 struct Flag
@@ -769,6 +834,7 @@ async fn start_new_game_session(
     game_session_state: &mut GameSessionState
 ) -> Command
 {
+    game_session_state.game_state = GameState::Playing;
     println!("New game session started!");
 
     let mut idle_timer: Option<Instant> = None;
@@ -894,7 +960,7 @@ async fn start_new_game_session(
             );
         }
 
-        tokio::time::sleep(Duration::from_millis(2)).await;
+        tokio::time::sleep(Duration::from_millis(16)).await;
     }
 }
 
@@ -1069,7 +1135,7 @@ async fn handle_player_connection(
         );
     }
 
-    game_session_state.players.insert(
+    game_session_state.add_player(
         connected_player_id.0.as_u128(),
         PlayerInfo {
             peer_id: connected_player_id,
@@ -1095,7 +1161,7 @@ fn make_teams_equal(
         game_session_state.red_team.len() as i32 -
         game_session_state.blue_team.len() as i32;
     
-    if difference.abs() > 2
+    if difference.abs() > 1
     {
         if difference < 0
         {
@@ -1206,6 +1272,37 @@ async fn handle_player_disconnection(
     game_session_state: &mut GameSessionState,
     disconnected_player_id: PeerId
 ) {
+    if game_session_state.check_if_player_has_flag(
+        disconnected_player_id.0.as_u128()
+    )
+    {
+        match game_session_state.players
+            .get(&disconnected_player_id.0.as_u128())
+            .unwrap()
+            .team
+        {
+            Team::Red =>
+            {
+                game_session_state.set_new_flag_status_and_send_update_to_players(
+                    game_session_start_time,
+                    Team::Blue,
+                    FlagStatus::OnTheBase,
+                    relaible_channel
+                );
+            }
+            Team::Blue =>
+            {
+                game_session_state.set_new_flag_status_and_send_update_to_players(
+                    game_session_start_time,
+                    Team::Red,
+                    FlagStatus::OnTheBase,
+                    relaible_channel
+                );
+
+            }
+        }
+    }
+
     let disconnected_player =
         game_session_state.players.remove(&disconnected_player_id.0.as_u128());
     
@@ -1213,44 +1310,8 @@ async fn handle_player_disconnection(
     {
         let disconnected_player = disconnected_player.unwrap();
 
-        match disconnected_player.team {
-            Team::Red =>
-            {
-                game_session_state.red_team.remove(&disconnected_player_id.0.as_u128());
-            }
-            Team::Blue =>
-            {
-                game_session_state.blue_team.remove(&disconnected_player_id.0.as_u128());
-
-            }
-        }
-
-        if game_session_state.check_if_player_has_flag(
-            disconnected_player_id.0.as_u128()
-        )
-        {
-            match disconnected_player.team {
-                Team::Red =>
-                {
-                    game_session_state.set_new_flag_status_and_send_update_to_players(
-                        game_session_start_time,
-                        Team::Blue,
-                        FlagStatus::OnTheBase,
-                        relaible_channel
-                    );
-                }
-                Team::Blue =>
-                {
-                    game_session_state.set_new_flag_status_and_send_update_to_players(
-                        game_session_start_time,
-                        Team::Red,
-                        FlagStatus::OnTheBase,
-                        relaible_channel
-                    );
-
-                }
-            }
-        }
+        game_session_state.red_team.remove(&disconnected_player_id.0.as_u128());
+        game_session_state.blue_team.remove(&disconnected_player_id.0.as_u128());
 
         make_teams_equal(game_session_state, relaible_channel);
 

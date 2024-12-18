@@ -70,8 +70,8 @@ impl SessionController
         let session_controller = SessionController {
             transform: Transform::new(),
             id: None,
-            red_team_score: 0u32,
-            blue_team_score: 0u32,
+            red_team_score: 4u32,
+            blue_team_score: 4u32,
             your_team: DEFAULT_TEAM,
             show_red_team_backlight_timer: 0.0,
             show_blue_team_backlight_timer: 0.0,

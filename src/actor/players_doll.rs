@@ -482,7 +482,7 @@ impl PlayersDoll {
         
         let target_w_pos = self.w_levels_of_map
             .get(self.input_state.current_w_level as usize)
-            .expect("PlayerDoll's carrent_w_level is not exist in w_levels_of_map")
+            .expect("PlayerDoll's current_w_level is not exist in w_levels_of_map")
             .clone();
 
         let w_dif = target_w_pos - self.target_transform.get_position().w;
@@ -495,22 +495,25 @@ impl PlayersDoll {
             .abs()
             .clamp(0.0, 1.0);
 
-        if w_dif.abs() < self.interpolating_model_target.get_collider_radius()*0.2
+        if self.on_way_to_next_w_level
         {
-            self.on_way_to_next_w_level = false;
-
-            audio_system.spawn_spatial_sound(
-                Sound::WShiftEnd,
-                1.0,
-                1.0,
-                false,
-                true,
-                Status::Playing,
-                self.transform.get_position(),
-                1.0,
-                1.0,
-                30.0,
-            );
+            if w_dif.abs() < self.interpolating_model_target.get_collider_radius()*0.2
+            {
+                self.on_way_to_next_w_level = false;
+    
+                audio_system.spawn_spatial_sound(
+                    Sound::WShiftEnd,
+                    1.0,
+                    1.0,
+                    false,
+                    true,
+                    Status::Playing,
+                    self.transform.get_position(),
+                    1.0,
+                    1.0,
+                    30.0,
+                );
+            }
         }
     }
 

@@ -15,6 +15,7 @@ matchbox_signaling = "*"
 matchbox_socket = "*"
 rand = "*"
 glam = "*"
+blink-alloc = "*"
 
 [lib]
 name = "client_server_protocol"

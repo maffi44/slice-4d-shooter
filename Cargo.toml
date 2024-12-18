@@ -24,6 +24,8 @@ web-time = "0.2.4"
 glam = "*"
 rand = "*"
 
+blink-alloc = "*"
+
 fyrox-sound = "*"
 fyrox-resource = "*"
 fyrox-core = "*"
