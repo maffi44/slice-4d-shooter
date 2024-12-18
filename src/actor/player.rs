@@ -58,9 +58,9 @@ use self::{
 };
 
 use core::panic;
-use std::f32::consts::PI;
+use std::{collections::btree_set::Difference, f32::consts::PI};
 use fyrox_core::pool::Handle;
-use fyrox_sound::source::SoundSource;
+use fyrox_sound::source::{SoundSource, Status};
 use glam::{
     FloatExt, Mat4, Vec2, Vec3, Vec4
 };
@@ -229,6 +229,8 @@ pub struct Player {
     second_move_w_bonus_transparency_level: f32,
 
     flag_pivot_offset: Vec4,
+
+    on_way_to_next_w_level: bool,
 }
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 
@@ -625,7 +627,15 @@ impl Actor for Player {
                                             if self.inner_state.amount_of_move_w_bonuses_do_i_have <
                                                 MAX_MOVE_W_BONUSES_I_CAN_HAVE
                                             {
-                                                todo!("play get bonus sound");
+                                                audio_system.spawn_non_spatial_sound(
+                                                    Sound::PickUpBonus,
+                                                    1.0,
+                                                    1.0,
+                                                    false,
+                                                    true,
+                                                    Status::Playing,
+                                                );
+
                                                 self.inner_state.amount_of_move_w_bonuses_do_i_have += 1;
                                             }                                          
                                         }
@@ -1302,6 +1312,7 @@ impl Actor for Player {
 
             
             if input.jump_wy.is_action_just_pressed() {
+                // todo!("make bonus and w jumpad logic");
 
                 let next_w_level = self.current_w_level + 1;
 
@@ -1309,10 +1320,22 @@ impl Actor for Player {
                     self.current_w_level = next_w_level;
 
                     player_doll_input_state.current_w_level = next_w_level as u32;
+
+                    self.on_way_to_next_w_level = true;
+
+                    audio_system.spawn_non_spatial_sound(
+                        Sound::WShiftStart,
+                        1.0,
+                        1.0,
+                        false,
+                        true,
+                        fyrox_sound::source::Status::Playing
+                    );
                 }
             }
 
             if input.jump_w.is_action_just_pressed() {
+                // todo!("make bonus and w jumpad logic");
 
                 if self.current_w_level > 0 {
 
@@ -1322,15 +1345,43 @@ impl Actor for Player {
                         self.current_w_level = next_w_level;
 
                         player_doll_input_state.current_w_level = next_w_level as u32;
+
+                        self.on_way_to_next_w_level = true;
+
+                        audio_system.spawn_non_spatial_sound(
+                            Sound::WShiftStart,
+                            1.0,
+                            1.0,
+                            false,
+                            true,
+                            fyrox_sound::source::Status::Playing
+                        );
                     }
                 }
             }
 
+            if self.on_way_to_next_w_level
+            {
+                let target_w_pos = self.w_levels_of_map[self.current_w_level];
+                let dist = (self.get_position().w - target_w_pos).abs();
 
+                if dist < self.get_collider_radius()*0.2
+                {
+                    self.on_way_to_next_w_level = false;
 
-            todo!("make bonus and w jumpad logic");
+                    audio_system.spawn_non_spatial_sound(
+                        Sound::WShiftEnd,
+                        1.0,
+                        1.0,
+                        false,
+                        true,
+                        fyrox_sound::source::Status::Playing
+                    );
+                }
+            }
+
             if input.w_up.is_action_pressed() {
-                todo!("play go w sound");
+
                 if self.inner_state.collider.is_enable {
                     self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
                 } else {
@@ -1339,9 +1390,8 @@ impl Actor for Player {
             }
     
 
-            todo!("make bonus and w jumpad logic");
             if input.w_down.is_action_pressed() {
-                todo!("play go w sound");
+
                 if self.inner_state.collider.is_enable {
                     self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
                 } else {
@@ -1349,21 +1399,13 @@ impl Actor for Player {
                 }
             }
 
-            todo!("write check arrive w level logic and play w arrive sound");
     
             if input.w_scanner.is_action_just_pressed() {
                 if !self.w_scanner_enable {
                     if self.w_scanner_reloading_time >= self.player_settings.scanner_reloading_time {
                         self.w_scanner_enable = true;
 
-                        audio_system.spawn_non_spatial_sound(
-                            Sound::ScannerSound,
-                            1.0,
-                            1.0,
-                            false,
-                            true,
-                            fyrox_sound::source::Status::Playing
-                        );
+
 
                         self.w_scanner_enemies_show_time = 0.0;
     
@@ -1755,6 +1797,8 @@ impl Player {
             second_move_w_bonus_transparency_level: HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL,
 
             flag_pivot_offset: Vec4::new(0.0, player_radius, 0.0, 0.0),
+
+            on_way_to_next_w_level: false,
         }
     }
 

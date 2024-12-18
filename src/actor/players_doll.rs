@@ -1,5 +1,5 @@
 use fyrox_core::pool::Handle;
-use fyrox_sound::source::SoundSource;
+use fyrox_sound::source::{SoundSource, Status};
 use glam::{FloatExt, Vec3, Vec4};
 
 use client_server_protocol::{
@@ -121,6 +121,9 @@ pub struct PlayersDoll {
     w_levels_of_map: Vec<f32>,
     radius: f32,
     my_color: Vec3,
+
+    on_way_to_next_w_level: bool,
+    current_w_level_prev_frame: u32,
 }
 
 #[derive(Clone)]
@@ -253,6 +256,7 @@ impl PlayersDoll {
 
         PlayersDoll {
             input_state,
+            current_w_level_prev_frame: 0u32,
             weapon_shooting_point,
             id: Some(id),
             target_transform: transform.clone(),
@@ -272,6 +276,7 @@ impl PlayersDoll {
             team,
             radius: player_sphere_radius,
             my_color,
+            on_way_to_next_w_level: false,
         }
     }
 
@@ -392,6 +397,8 @@ impl PlayersDoll {
             )
         }
 
+        self.current_w_level_prev_frame = input_state.current_w_level;
+        self.on_way_to_next_w_level = false;
         self.is_alive = true;
         self.is_enable = true;
         self.transform = transform.clone();
@@ -401,7 +408,7 @@ impl PlayersDoll {
     }
 
 
-    fn extrapolate_interpolatating_model_target(&mut self)
+    fn extrapolate_interpolatating_model_target(&mut self, audio_system: &mut AudioSystem)
     {
         let mut movement_vec = Vec4::ZERO;
         
@@ -453,6 +460,26 @@ impl PlayersDoll {
 
         self.interpolating_model_target.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
 
+        if self.input_state.current_w_level != self.current_w_level_prev_frame
+        {
+            audio_system.spawn_spatial_sound(
+                Sound::WShiftStart,
+                1.0,
+                1.0,
+                false,
+                true,
+                Status::Playing,
+                self.transform.get_position(),
+                1.0,
+                1.0,
+                30.0,
+            );
+
+            self.on_way_to_next_w_level = true;
+        }
+
+        self.current_w_level_prev_frame = self.input_state.current_w_level;
+        
         let target_w_pos = self.w_levels_of_map
             .get(self.input_state.current_w_level as usize)
             .expect("PlayerDoll's carrent_w_level is not exist in w_levels_of_map")
@@ -466,7 +493,25 @@ impl PlayersDoll {
         self.interpolating_model_target.current_velocity.w *=
             (w_dif * 5.0_f32)
             .abs()
-                .clamp(0.0, 1.0);
+            .clamp(0.0, 1.0);
+
+        if w_dif.abs() < self.interpolating_model_target.get_collider_radius()*0.2
+        {
+            self.on_way_to_next_w_level = false;
+
+            audio_system.spawn_spatial_sound(
+                Sound::WShiftEnd,
+                1.0,
+                1.0,
+                false,
+                true,
+                Status::Playing,
+                self.transform.get_position(),
+                1.0,
+                1.0,
+                30.0,
+            );
+        }
     }
 
 
@@ -1036,7 +1081,7 @@ impl Actor for PlayersDoll {
                 }
             }
 
-            self.extrapolate_interpolatating_model_target();
+            self.extrapolate_interpolatating_model_target(audio_system);
 
             self.interpolate_model(delta);
 

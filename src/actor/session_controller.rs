@@ -1,12 +1,13 @@
 use client_server_protocol::Team;
+use fyrox_sound::source::Status;
 
 use crate::{
-    engine::{effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{self, UIElement, UIElementType, UISystem}},
+    engine::{audio::Sound, effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{self, UIElement, UIElementType, UISystem}},
     transform::Transform
 };
 
 use super::{
-    flag::FlagStatus, move_w_bonus::BonusSpotStatus, Actor, ActorID, Message, MessageType, SpecificActorMessage
+    flag::{self, FlagStatus}, move_w_bonus::BonusSpotStatus, Actor, ActorID, Message, MessageType, SpecificActorMessage
 };
 
 pub const DEFAULT_TEAM: Team = Team::Red;
@@ -383,11 +384,25 @@ impl Actor for SessionController
                                     match self.your_team {
                                         Team::Red =>
                                         {
-                                            todo!("play good sound")
+                                            audio_system.spawn_non_spatial_sound(
+                                                Sound::GetScore,
+                                                1.0,
+                                                1.0,
+                                                false,
+                                                true,
+                                                Status::Playing
+                                            );  
                                         }
                                         Team::Blue =>
                                         {
-                                            todo!("play sad sound")
+                                            audio_system.spawn_non_spatial_sound(
+                                                Sound::LooseScore,
+                                                1.0,
+                                                1.0,
+                                                false,
+                                                true,
+                                                Status::Playing
+                                            ); 
                                         }
                                     }
                                 }
@@ -398,11 +413,25 @@ impl Actor for SessionController
                                     match self.your_team {
                                         Team::Red =>
                                         {
-                                            todo!("play sad sound")
+                                            audio_system.spawn_non_spatial_sound(
+                                                Sound::LooseScore,
+                                                1.0,
+                                                1.0,
+                                                false,
+                                                true,
+                                                Status::Playing
+                                            ); 
                                         }
                                         Team::Blue =>
                                         {
-                                            todo!("play good sound")
+                                            audio_system.spawn_non_spatial_sound(
+                                                Sound::GetScore,
+                                                1.0,
+                                                1.0,
+                                                false,
+                                                true,
+                                                Status::Playing
+                                            );
                                         }
                                     }
                                 }
@@ -431,11 +460,25 @@ impl Actor for SessionController
                                         match self.your_team {
                                             Team::Red =>
                                             {
-                                                todo!("play good sound")
+                                                audio_system.spawn_non_spatial_sound(
+                                                    Sound::TeamWin,
+                                                    1.0,
+                                                    1.0,
+                                                    false,
+                                                    true,
+                                                    Status::Playing
+                                                );  
                                             }
                                             Team::Blue =>
                                             {
-                                                todo!("play sad sound")
+                                                audio_system.spawn_non_spatial_sound(
+                                                    Sound::TeamLoose,
+                                                    1.0,
+                                                    1.0,
+                                                    false,
+                                                    true,
+                                                    Status::Playing
+                                                );  
                                             }
                                         }
                                     }
@@ -447,11 +490,25 @@ impl Actor for SessionController
                                         match self.your_team {
                                             Team::Red =>
                                             {
-                                                todo!("play sad sound")
+                                                audio_system.spawn_non_spatial_sound(
+                                                    Sound::TeamLoose,
+                                                    1.0,
+                                                    1.0,
+                                                    false,
+                                                    true,
+                                                    Status::Playing
+                                                );  
                                             }
                                             Team::Blue =>
                                             {
-                                                todo!("play good sound")
+                                                audio_system.spawn_non_spatial_sound(
+                                                    Sound::TeamWin,
+                                                    1.0,
+                                                    1.0,
+                                                    false,
+                                                    true,
+                                                    Status::Playing
+                                                );
                                             }
                                         }
                                     }
