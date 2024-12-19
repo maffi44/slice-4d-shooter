@@ -7,13 +7,13 @@ use crate::{
 };
 
 use super::{
-    flag::{self, FlagStatus}, move_w_bonus::BonusSpotStatus, Actor, ActorID, Message, MessageType, SpecificActorMessage
+    flag::{self, FlagStatus}, move_w_bonus::BonusSpotStatus, player::PlayerMessage, Actor, ActorID, Message, MessageType, SpecificActorMessage
 };
 
 pub const DEFAULT_TEAM: Team = Team::Red;
 
 pub const SHOW_TEAM_BACKLIGHT_TIME: f32 = 4.0;
-pub const SHOW_TEAM_JOIN_TITLE_TIME: f32 = 4.0;
+pub const SHOW_TEAM_JOIN_TITLE_TIME: f32 = 5.0;
 pub const SHOW_TEAM_WIN_TITLE_TIME: f32 = 10.0;
 
 pub const UI_ELEM_FADE_IN_SPEED: f32 = 3.0;
@@ -359,6 +359,12 @@ impl Actor for SessionController
                                 {
                                     Team::Red =>
                                     {
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::JoinRedTeamTitle);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
                                         self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
 
@@ -366,6 +372,12 @@ impl Actor for SessionController
 
                                     Team::Blue =>
                                     {
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::JoinBlueTeamTitle);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
                                         self.show_blue_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_blue_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
 
@@ -379,6 +391,9 @@ impl Actor for SessionController
                             {
                                 if new_red_team_score > self.red_team_score
                                 {
+                                    let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
+                                    *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
                                     self.show_red_team_backlight_timer = SHOW_TEAM_BACKLIGHT_TIME;
 
                                     match self.your_team {
@@ -408,6 +423,9 @@ impl Actor for SessionController
                                 }
                                 if new_blue_team_score > self.blue_team_score
                                 {
+                                    let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
+                                    *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
                                     self.show_blue_team_backlight_timer = SHOW_TEAM_BACKLIGHT_TIME;
 
                                     match self.your_team {
@@ -454,6 +472,12 @@ impl Actor for SessionController
                                 {
                                     Team::Red =>
                                     {
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamWinTitle);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
                                         self.show_red_team_backlight_timer = SHOW_TEAM_WIN_TITLE_TIME;
                                         self.show_red_team_win_title_timer = SHOW_TEAM_WIN_TITLE_TIME;
 
@@ -484,6 +508,12 @@ impl Actor for SessionController
                                     }
                                     Team::Blue =>
                                     {
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamWinTitle);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
                                         self.show_blue_team_backlight_timer = SHOW_TEAM_WIN_TITLE_TIME;
                                         self.show_blue_team_win_title_timer = SHOW_TEAM_WIN_TITLE_TIME;
 
@@ -541,6 +571,12 @@ impl Actor for SessionController
                                 {
                                     Team::Red =>
                                     {
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::JoinRedTeamTitle);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        
                                         self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
 
@@ -548,6 +584,12 @@ impl Actor for SessionController
 
                                     Team::Blue =>
                                     {
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::JoinBlueTeamTitle);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
                                         self.show_blue_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_blue_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
 
@@ -555,6 +597,44 @@ impl Actor for SessionController
                                 }
                                 self.set_score_ui(ui_system);
                             }
+                        }
+                    }
+
+                    SpecificActorMessage::PLayerMessage(message) =>
+                    {
+                        match message 
+                        {
+                            PlayerMessage::SetNewTeam(team) =>
+                            {
+                                self.your_team = team;
+
+                                match team {
+                                    Team::Red =>
+                                    {
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::JoinRedTeamTitle);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                                        self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+                                        self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+                                    }
+                                    Team::Blue =>
+                                    {
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        
+                                        let elem = ui_system.get_mut_ui_element(&UIElementType::JoinBlueTeamTitle);
+                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                                        self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+                                        self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
+                                    }
+                                }
+                            }
+
+                            _ => {}
                         }
                     }
                     _ => {}
@@ -577,6 +657,7 @@ fn process_ui_animation(
             *timer -= delta;
 
             let ui_elem = ui_system.get_mut_ui_element(ui_elem_type);
+
             let transparency = ui_elem.get_ui_data().get_transparecy();
 
             if transparency < 1.0

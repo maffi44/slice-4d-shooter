@@ -99,7 +99,7 @@ impl RenderSystem {
                     Err(_) => {}
                 }
 
-                tokio::time::sleep(tokio::time::Duration::from_micros(500)).await;
+                tokio::time::sleep(tokio::time::Duration::from_micros(8000)).await;
             }
         });
 

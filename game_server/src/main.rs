@@ -1409,9 +1409,8 @@ fn process_player_message(
             ClientMessage::MessageToServer(message) =>
             {
                 match message {
-                    NetMessageToServer::TryToGetFlag(
+                    NetMessageToServer::TryToGetOpponentsFlag(
                         time_of_attempt,
-                        team_that_owns_flag
                     ) =>
                     {
                         let team_trying_to_captured_flag = {
@@ -1419,122 +1418,224 @@ fn process_player_message(
                             {
                                 Team::Red
                             }
-                            else
+                            else if game_session_state.blue_team.contains_key(&from_player.0.as_u128())
                             {
                                 Team::Blue
                             }
-                        };
-                        
-
-                        match team_that_owns_flag {
-                            Team::Red =>
+                            else
                             {
-                                match game_session_state.red_flag.status
-                                {
-                                    FlagStatus::Captured(_) => {}
-                                    FlagStatus::Droped(_) =>
-                                    {
-                                        if game_session_state.red_flag.get_previouse_status_time <
-                                            time_of_attempt
-                                        {
-                                            match team_trying_to_captured_flag
-                                            {
-                                                Team::Red =>
-                                                {
-                                                    game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                        game_session_start_time,
-                                                        Team::Red,
-                                                        FlagStatus::OnTheBase,
-                                                        channel
-                                                    );
-                                                }
-                                                Team::Blue =>
-                                                {
-                                                    game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                        game_session_start_time,
-                                                        Team::Red,
-                                                        FlagStatus::Captured(from_player.0.as_u128()),
-                                                        channel
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                    FlagStatus::OnTheBase =>
-                                    {
-                                        if game_session_state.red_flag.get_previouse_status_time <
-                                            time_of_attempt
-                                        {
-                                            match team_trying_to_captured_flag
-                                            {
-                                                Team::Red => {}
-                                                Team::Blue =>
-                                                {
-                                                    game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                        game_session_start_time,
-                                                        Team::Red,
-                                                        FlagStatus::Captured(from_player.0.as_u128()),
-                                                        channel
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                // this case means that the player whose message was recieved
+                                // by the server is already disconnected
+                                return;    
                             }
-                            Team::Blue =>
+                        };
+
+                        match team_trying_to_captured_flag
+                        {
+                            Team::Red =>
                             {
                                 match game_session_state.blue_flag.status
                                 {
                                     FlagStatus::Captured(_) => {}
-                                    FlagStatus::Droped(_) =>
+
+                                    _ =>
                                     {
-                                        
-                                        if game_session_state.blue_flag.get_previouse_status_time <
-                                            time_of_attempt
+                                        if time_of_attempt > game_session_state.blue_flag.get_previouse_status_time
                                         {
-                                            match team_trying_to_captured_flag
-                                            {
-                                                Team::Red =>
-                                                {
-                                                    game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                        game_session_start_time,
-                                                        Team::Blue,
-                                                        FlagStatus::Captured(from_player.0.as_u128()),
-                                                        channel
-                                                    );
-                                                }
-                                                Team::Blue =>
-                                                {
-                                                    game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                        game_session_start_time,
-                                                        Team::Blue,
-                                                        FlagStatus::OnTheBase,
-                                                        channel
-                                                    );
-                                                }
-                                            }
+                                            game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                game_session_start_time,
+                                                Team::Blue,
+                                                FlagStatus::Captured(from_player.0.as_u128()),
+                                                channel
+                                            );
                                         }
                                     }
-                                    FlagStatus::OnTheBase =>
+                                }
+                            }
+
+                            Team::Blue =>
+                            {
+                                match game_session_state.red_flag.status
+                                {
+                                    FlagStatus::Captured(_) => {}
+
+                                    _ =>
                                     {
-                                        if game_session_state.blue_flag.get_previouse_status_time <
-                                            time_of_attempt
+                                        if time_of_attempt > game_session_state.red_flag.get_previouse_status_time
                                         {
-                                            match team_trying_to_captured_flag
-                                            {
-                                                Team::Red =>
-                                                {
-                                                    game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                        game_session_start_time,
-                                                        Team::Blue,
-                                                        FlagStatus::Captured(from_player.0.as_u128()),
-                                                        channel
-                                                    );
-                                                }
-                                                Team::Blue => {}
-                                            }
+                                            game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                game_session_start_time,
+                                                Team::Red,
+                                                FlagStatus::Captured(from_player.0.as_u128()),
+                                                channel
+                                            );
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    NetMessageToServer::TryToReturnMyFlag(
+                        time_of_attempt,
+                    ) =>
+                    {
+                        let team_trying_to_return_flag = {
+                            if game_session_state.red_team.contains_key(&from_player.0.as_u128())
+                            {
+                                Team::Red
+                            }
+                            else if game_session_state.blue_team.contains_key(&from_player.0.as_u128())
+                            {
+                                Team::Blue
+                            }
+                            else
+                            {
+                                // this case means that the player whose message was recieved
+                                // by the server is already disconnected
+                                return;    
+                            }
+                        };
+
+                        match team_trying_to_return_flag
+                        {
+                            Team::Red =>
+                            {
+                                if time_of_attempt > game_session_state.red_flag.get_previouse_status_time
+                                {
+                                    match game_session_state.red_flag.status
+                                    {
+                                        FlagStatus::Droped(_) =>
+                                        {
+                                            game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                game_session_start_time,
+                                                Team::Red,
+                                                FlagStatus::OnTheBase,
+                                                channel,
+                                            );
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+
+                            Team::Blue =>
+                            {
+                                if time_of_attempt > game_session_state.blue_flag.get_previouse_status_time
+                                {
+                                    match game_session_state.blue_flag.status
+                                    {
+                                        FlagStatus::Droped(_) =>
+                                        {
+                                            game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                game_session_start_time,
+                                                Team::Blue,
+                                                FlagStatus::OnTheBase,
+                                                channel,
+                                            );
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    NetMessageToServer::TryToGetScore(
+                        time_of_attempt
+                    ) =>
+                    {
+                        let team_trying_to_get_score = {
+                            if game_session_state.red_team.contains_key(&from_player.0.as_u128())
+                            {
+                                Team::Red
+                            }
+                            else if game_session_state.blue_team.contains_key(&from_player.0.as_u128())
+                            {
+                                Team::Blue
+                            }
+                            else
+                            {
+                                // this case means that the player whose message was recieved
+                                // by the server is already disconnected
+                                return;    
+                            }
+                        };
+
+                        match team_trying_to_get_score
+                        {
+                            Team::Red =>
+                            {
+                                if time_of_attempt > game_session_state.blue_flag.get_previouse_status_time &&
+                                    time_of_attempt > game_session_state.red_flag.get_previouse_status_time
+                                {
+                                    match game_session_state.blue_flag.status
+                                    {
+                                        FlagStatus::Captured(captured_by) =>
+                                        {
+                                            if from_player.0.as_u128() == captured_by
+                                            {
+                                                match game_session_state.red_flag.status {
+                                                    FlagStatus::OnTheBase =>
+                                                    {
+                                                        game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                            game_session_start_time,
+                                                            Team::Blue,
+                                                            FlagStatus::OnTheBase,
+                                                            channel,
+                                                        );
+
+                                                        game_session_state.add_score_for_team_and_send_upadate_for_players(
+                                                            Team::Red,
+                                                            game_session_start_time,
+                                                            channel,
+                                                        );
+                                                    }
+
+                                                    _ => {}
+                                                }
+                                            }
+
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+
+                            Team::Blue =>
+                            {
+                                if time_of_attempt > game_session_state.blue_flag.get_previouse_status_time &&
+                                    time_of_attempt > game_session_state.red_flag.get_previouse_status_time
+                                {
+                                    match game_session_state.red_flag.status
+                                    {
+                                        FlagStatus::Captured(captured_by) =>
+                                        {
+                                            if from_player.0.as_u128() == captured_by
+                                            {
+                                                match game_session_state.blue_flag.status {
+                                                    FlagStatus::OnTheBase =>
+                                                    {
+                                                        game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                            game_session_start_time,
+                                                            Team::Red,
+                                                            FlagStatus::OnTheBase,
+                                                            channel,
+                                                        );
+
+                                                        game_session_state.add_score_for_team_and_send_upadate_for_players(
+                                                            Team::Blue,
+                                                            game_session_start_time,
+                                                            channel,
+                                                        );
+                                                    }
+
+                                                    _ => {}
+                                                }
+                                            }
+
+                                        }
+                                        _ => {}
                                     }
                                 }
                             }
@@ -1570,72 +1671,68 @@ fn process_player_message(
                         droped_in_space,
                     ) =>
                     {
-                        if droped_in_space
-                        {
-                            game_session_state.set_new_flag_status_and_send_update_to_players(
-                                game_session_start_time,
-                                team,
-                                FlagStatus::OnTheBase,
-                                channel
-                            );
-                        }
-                        else
-                        {
-                            game_session_state.set_new_flag_status_and_send_update_to_players(
-                                game_session_start_time,
-                                team,
-                                FlagStatus::Droped(position),
-                                channel
-                            );
-                        }
-                    }
-
-                    NetMessageToServer::MovedOpponentsFlagToMyBase(team) =>
-                    {
                         match team
                         {
                             Team::Red =>
                             {
-                                match game_session_state.blue_flag.status {
-                                    FlagStatus::OnTheBase => {}
-                                    FlagStatus::Droped(_) => {}
-                                    FlagStatus::Captured(_) =>
+                                match game_session_state.red_flag.status
+                                {
+                                    FlagStatus::Captured(id) =>
                                     {
-                                        game_session_state.add_score_for_team_and_send_upadate_for_players(
-                                            Team::Red,
-                                            game_session_start_time,
-                                            channel,
-                                        );
-
-                                        game_session_state.set_new_flag_status_and_send_update_to_players(
-                                            game_session_start_time,
-                                            Team::Blue,
-                                            FlagStatus::OnTheBase,
-                                            channel,
-                                        );
+                                        if id == from_player.0.as_u128()
+                                        {
+                                            if droped_in_space
+                                            {
+                                                game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                    game_session_start_time,
+                                                    team,
+                                                    FlagStatus::OnTheBase,
+                                                    channel
+                                                );
+                                            }
+                                            else
+                                            {
+                                                game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                    game_session_start_time,
+                                                    team,
+                                                    FlagStatus::Droped(position),
+                                                    channel
+                                                );
+                                            }
+                                                            }
                                     }
+                                    _ => {}
                                 }
                             }
                             Team::Blue =>
                             {
-                                match game_session_state.red_flag.status {
-                                    FlagStatus::OnTheBase => {}
-                                    FlagStatus::Droped(_) => {}
-                                    FlagStatus::Captured(_) =>
+                                match game_session_state.blue_flag.status
+                                {
+                                    FlagStatus::Captured(id) =>
                                     {
-                                        game_session_state.add_score_for_team_and_send_upadate_for_players(
-                                            Team::Blue,
-                                            game_session_start_time,
-                                            channel,
-                                        );
-
-                                        game_session_state.set_new_flag_status_and_send_update_to_players(
-                                            game_session_start_time,
-                                            Team::Red,
-                                            FlagStatus::OnTheBase,
-                                            channel,
-                                        );
+                                        if id == from_player.0.as_u128()
+                                        {
+                                            if droped_in_space
+                                            {
+                                                game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                    game_session_start_time,
+                                                    team,
+                                                    FlagStatus::OnTheBase,
+                                                    channel
+                                                );
+                                            }
+                                            else
+                                            {
+                                                game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                    game_session_start_time,
+                                                    team,
+                                                    FlagStatus::Droped(position),
+                                                    channel
+                                                );
+                                            }
+                                                            }
                                     }
+                                    _ => {}
                                 }
                             }
                         }

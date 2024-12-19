@@ -94,11 +94,17 @@ impl ServerMessage {
 #[alkahest(Formula, Serialize, Deserialize)]
 #[derive(Clone)]
 pub enum NetMessageToServer {
-    TryToGetFlag(
+    TryToGetOpponentsFlag(
         // time of attempt
         u128,
-        // what flag trying to get
-        Team,
+    ),
+    TryToGetScore(
+        // time of attempt
+        u128,
+    ),
+    TryToReturnMyFlag(
+        // time of attempt
+        u128,
     ),
     TryToGetMoveWBonus(
         // time of attempt
@@ -114,10 +120,6 @@ pub enum NetMessageToServer {
         // droped in space
         bool
     ),
-    MovedOpponentsFlagToMyBase(
-        // which team moved oppnent's flag
-        Team,
-    )
 }
 
 #[repr(C)]

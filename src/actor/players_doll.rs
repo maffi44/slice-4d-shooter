@@ -914,7 +914,8 @@ impl Actor for PlayersDoll {
                                         message: MessageType::SpecificActorMessage(
                                             SpecificActorMessage::FlagMessage(
                                                 FlagMessage::SetTargetPosition(
-                                                    self.transform.get_position()
+                                                    self.transform.get_position() +
+                                                    Vec4::new(0.0, self.radius * 2.0, 0.0, 0.0)
                                                 )
                                             )
                                         )

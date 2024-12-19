@@ -1,4 +1,4 @@
-use client_server_protocol::Team;
+use client_server_protocol::{NetCommand, NetMessageToServer, Team};
 use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
 use rand::Rng;
@@ -6,7 +6,7 @@ use web_sys::console::assert;
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::EngineHandle, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VolumeArea}
+        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VolumeArea}
     },
     transform::Transform
 };
@@ -19,9 +19,13 @@ use super::{
 pub enum FlagMessage
 {
     SetFlagStatus(Team, FlagStatus),
-    YouTryingToGetFlag(Team, FlagStatus),
+    YouInteractingWithFlag(Team, FlagStatus),
     GiveMeTargetPosition,
     SetTargetPosition(Vec4),
+    PlayerDied(
+        // true if dead outside of map (in space)
+        bool
+    ),
 }
 
 #[derive(Clone, Copy)]
@@ -55,7 +59,7 @@ impl From<client_server_protocol::FlagStatus> for FlagStatus
 
 const TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION: f32 = 3.0;
 const FLAG_SWING_RANGE: f32 = 0.1;
-const FLAG_UI_TICK_TIME: f32 = 1.0;
+const FLAG_UI_TICK_TIME: f32 = 0.5;
 
 fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
 {
@@ -384,6 +388,25 @@ impl Actor for Flag
             current_flag_position += self.current_flag_swing_position;
 
             self.transform.set_position(current_flag_position);
+
+            match self.status
+            {
+                FlagStatus::Captured(id) =>
+                {
+                    engine_handle.send_direct_message(
+                        id,
+                        Message {
+                            from: self.get_id().expect("Flag have not ActorID"),
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::FlagMessage(
+                                    FlagMessage::GiveMeTargetPosition
+                                )
+                            )
+                        }
+                    );
+                }
+                _ => {}
+            }
     }
 
     fn get_mut_transform(&mut self) -> &mut Transform {
@@ -456,6 +479,8 @@ impl Actor for Flag
             effects_system: &mut EffectsSystem,
         ) {
         
+        let from = message.from;
+
         match message.message
         {
             MessageType::SpecificActorMessage(message) =>
@@ -465,6 +490,34 @@ impl Actor for Flag
                     {
                         match message
                         {
+                            FlagMessage::PlayerDied(in_space) =>
+                            {
+                                match self.status
+                                {
+                                    FlagStatus::Captured(id) =>
+                                    {
+                                        if from == id
+                                        {
+                                            engine_handle.send_command(
+                                                Command {
+                                                    sender: self.get_id().expect("Player have not ActorID"),
+                                                    command_type: CommandType::NetCommand(
+                                                        NetCommand::SendMessageToServer(
+                                                            NetMessageToServer::DropedFlag(
+                                                                self.owned_by_team,
+                                                                self.get_transform().get_position().to_array(),
+                                                                in_space,
+                                                            )
+                                                        )
+                                                    )
+                                                }
+                                            );
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+
                             FlagMessage::SetFlagStatus(team, status) =>
                             {
                                 if self.owned_by_team == team
@@ -632,7 +685,7 @@ impl Actor for Flag
                                         from: self.id.expect("Flag have not ActorID"),
                                         message: MessageType::SpecificActorMessage(
                                             SpecificActorMessage::FlagMessage(
-                                                FlagMessage::YouTryingToGetFlag(
+                                                FlagMessage::YouInteractingWithFlag(
                                                     self.owned_by_team,
                                                     self.status
                                                 )

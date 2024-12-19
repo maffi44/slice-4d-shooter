@@ -135,6 +135,8 @@ pub enum UIElementType {
     JoinBlueTeamTitle,
     BlueTeamBacklight,
     RedTeamBacklight,
+    BlueFlagBacklight,
+    RedFlagBacklight,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -1340,6 +1342,56 @@ impl UISystem {
                         None,
                     ),
                     TextureType::JoinBlueTeamTitle
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::RedFlagBacklight,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedBoth(
+                                1.0,
+                                1.0
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BacklightRed
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::BlueFlagBacklight,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedBoth(
+                                1.0,
+                                1.0
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::BacklightBlue
                 )
             )
         );
