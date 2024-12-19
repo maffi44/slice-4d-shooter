@@ -522,7 +522,7 @@ impl PlayersDoll {
     {
         let dist = self.target_transform.get_position() - self.transform.get_position();
 
-        self.transform.set_position(self.transform.get_position() + dist * (13_f32*delta));
+        self.transform.set_position(self.transform.get_position() + dist * (18_f32*delta));
         // self.transform.set_position(self.target_transform.get_position());
     }
 }

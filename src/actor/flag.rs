@@ -2,7 +2,6 @@ use client_server_protocol::{NetCommand, NetMessageToServer, Team};
 use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
 use rand::Rng;
-use web_sys::console::assert;
 
 use crate::{
     engine::{
@@ -57,8 +56,8 @@ impl From<client_server_protocol::FlagStatus> for FlagStatus
     }
 }
 
-const TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION: f32 = 3.0;
-const FLAG_SWING_RANGE: f32 = 0.1;
+const TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION: f32 = 0.8;
+const FLAG_SWING_RANGE: f32 = 0.07;
 const FLAG_UI_TICK_TIME: f32 = 0.5;
 
 fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
@@ -176,8 +175,6 @@ impl Flag
         audio_system: &mut AudioSystem
     )
     {
-
-        
         effects_system.spawn_wave(
             self.transform.get_position(),
             vec![
@@ -375,14 +372,14 @@ impl Actor for Flag
 
             self.current_flag_swing_position = self.current_flag_swing_position.lerp(
                 self.target_flag_swing_position,
-                1.0 - (delta * 15.0)
+                delta * 0.3
             );
 
             let mut current_flag_position = self.transform.get_position();
 
             current_flag_position = current_flag_position.lerp(
                 self.target_position,
-                1.0 - (delta * 8.0)
+                delta * 8.0
             );
 
             current_flag_position += self.current_flag_swing_position;
@@ -542,7 +539,17 @@ impl Actor for Flag
                             }
                             FlagMessage::SetTargetPosition(position) =>
                             {
-                                self.target_position = position;
+                                match self.status
+                                {
+                                    FlagStatus::Captured(id) =>
+                                    {
+                                        if id == from
+                                        {
+                                            self.target_position = position;
+                                        }
+                                    }
+                                    _ => {}
+                                }
                             }
                             
                             _ => {}

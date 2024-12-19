@@ -647,19 +647,22 @@ impl Actor for Player {
 
                             MoveWBonusSpotMessage::YouTryingToGetMoveWBonus(index) =>
                             {
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::NetCommand(
-                                            NetCommand::SendMessageToServer(
-                                                NetMessageToServer::TryToGetMoveWBonus(
-                                                    time_system.get_server_time(),
-                                                    index
+                                if self.inner_state.amount_of_move_w_bonuses_do_i_have < MAX_MOVE_W_BONUSES_I_CAN_HAVE
+                                {
+                                    engine_handle.send_command(
+                                        Command {
+                                            sender: self.get_id().expect("Player have not ActorID"),
+                                            command_type: CommandType::NetCommand(
+                                                NetCommand::SendMessageToServer(
+                                                    NetMessageToServer::TryToGetMoveWBonus(
+                                                        time_system.get_server_time(),
+                                                        index
+                                                    )
                                                 )
                                             )
-                                        )
-                                    }
-                                );
+                                        }
+                                    );
+                                }
                             }
                         }
                     }

@@ -960,6 +960,8 @@ async fn start_new_game_session(
             );
         }
 
+        game_session_state.update_items(&game_session_start_time, relaible_channel);
+
         tokio::time::sleep(Duration::from_millis(16)).await;
     }
 }
