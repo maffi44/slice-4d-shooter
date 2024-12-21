@@ -186,6 +186,7 @@ impl Actor for MachinegunShot {
             
             for area in self.coloring_areas.iter_mut() {
                 area.radius -= delta * SHOT_HOLE_REDUCTION_SPEED;
+                area.radius = area.radius.abs();
             }
             
             for obj in self.static_objects.iter_mut() {
@@ -209,6 +210,7 @@ impl Actor for MachinegunShot {
 
             for area in self.coloring_areas.iter_mut() {
                 area.radius += delta * SHOT_HOLE_GROWING_SPEED;
+                area.radius = area.radius.abs();
             }
             
             for obj in self.static_objects.iter_mut() {
@@ -227,6 +229,7 @@ impl Actor for MachinegunShot {
             match &mut self.volume_areas[0] {
                 VolumeArea::BeamVolumeArea(area) => {
                     area.radius += delta*BEAM_GROWING_SPEED;
+                    area.radius = area.radius.abs();
                 },
                 _ => {}
             }
@@ -247,6 +250,7 @@ impl Actor for MachinegunShot {
                 match &mut self.volume_areas[2] {
                     VolumeArea::SphericalVolumeArea(area) => {
                         area.radius += delta*SHOT_EXPLODE_GROWNIG_SPEED;
+                        area.radius = area.radius.abs();
                     }
                     _ => {}
                 }

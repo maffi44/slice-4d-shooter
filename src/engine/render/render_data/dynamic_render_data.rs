@@ -1,6 +1,6 @@
 use crate::{
     actor::{
-        player::PlayerScreenEffects,
+        player::{Player, PlayerScreenEffects},
         Actor,
         ActorWrapper
     },
@@ -18,7 +18,7 @@ use crate::{
             static_object::VolumeArea,
             World
         }
-    }
+    }, transform::Transform
 };
 
 use glam::{Mat4, Vec4};
@@ -248,6 +248,11 @@ impl DynamicRenderData {
     pub fn update_dynamic_shapes_buffers_and_get_metadata(
         &mut self,
         sd: &StaticRenderData,
+
+        player: &Player,
+        clip_planes: (Vec4, Vec4, Vec4, Vec4),
+        stickiness_value: f32,
+
     ) -> ShapesArraysMetadata
     {
         let mut cubes_start = 0u32;
@@ -307,14 +312,32 @@ impl DynamicRenderData {
         let mut index = 0;
         cubes_start = 0u32;
 
-        for shape in &sd.cubes {
-            self.dynamic_shapes_data.normal[index] = shape.clone();
-            index += 1;
+        for shape in &sd.cubes
+        {
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.normal[index] = *shape;
+                index += 1;
+            }
         }
 
-        while let Some(shape) = self.frame_cubes_buffer.normal.pop() {
-            self.dynamic_shapes_data.normal[index] = shape;
-            index += 1;
+        while let Some(shape) = self.frame_cubes_buffer.normal.pop()
+        {
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.normal[index] = shape;
+                index += 1;
+            }
         }
 
         cubes_amount = index as u32;
@@ -323,13 +346,29 @@ impl DynamicRenderData {
         spheres_start = index as u32;
 
         for shape in &sd.spheres {
-            self.dynamic_shapes_data.normal[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(shape.pos),
+                shape.size[0] + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.normal[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_spheres_buffer.normal.pop() {
-            self.dynamic_shapes_data.normal[index] = shape;
-            index += 1;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(shape.pos),
+                shape.size[0] + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.normal[index] = shape;
+                index += 1;
+            }
         }
 
         spheres_amount = index as u32 - spheres_start;
@@ -338,13 +377,39 @@ impl DynamicRenderData {
         sph_cubes_start = index as u32;
 
         for shape in &sd.sph_cubes {
-            self.dynamic_shapes_data.normal[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::new(
+                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                    shape.size[3]
+                ) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.normal[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_sph_cubes_buffer.normal.pop() {
-            self.dynamic_shapes_data.normal[index] = shape;
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::new(
+                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                    shape.size[3]
+                ) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.normal[index] = shape;
+                index += 1;
+            }
         }
 
         sph_cubes_amount = index as u32 - sph_cubes_start;
@@ -352,15 +417,15 @@ impl DynamicRenderData {
 
         inf_cubes_start = index as u32;
 
-        for shape in &sd.inf_w_cubes {
-            self.dynamic_shapes_data.normal[index] = shape.clone();
-            index += 1;
-        }
+        // for shape in &sd.inf_w_cubes {
+        //     self.dynamic_shapes_data.normal[index] = shape.clone();
+        //     index += 1;
+        // }
 
-        while let Some(shape) = self.frame_inf_w_cubes_buffer.normal.pop() {
-            self.dynamic_shapes_data.normal[index] = shape;
-            index += 1;
-        }
+        // while let Some(shape) = self.frame_inf_w_cubes_buffer.normal.pop() {
+        //     self.dynamic_shapes_data.normal[index] = shape;
+        //     index += 1;
+        // }
 
         inf_cubes_amount = index as u32 - inf_cubes_start;
 
@@ -370,13 +435,29 @@ impl DynamicRenderData {
         s_cubes_start = 0u32;
 
         for shape in &sd.s_cubes {
-            self.dynamic_shapes_data.stickiness[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.stickiness[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_cubes_buffer.stickiness.pop() {
-            self.dynamic_shapes_data.stickiness[index] = shape;
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.stickiness[index] = shape;
+                index += 1;
+            }
         }
 
         s_cubes_amount = index as u32;
@@ -385,13 +466,29 @@ impl DynamicRenderData {
         s_spheres_start = index as u32;
 
         for shape in &sd.s_spheres {
-            self.dynamic_shapes_data.stickiness[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(shape.pos),
+                shape.size[0] + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.stickiness[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_spheres_buffer.stickiness.pop() {
-            self.dynamic_shapes_data.stickiness[index] = shape;
-            index += 1;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(shape.pos),
+                shape.size[0] + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.stickiness[index] = shape;
+                index += 1;
+            }
         }
 
         s_spheres_amount = index as u32 - s_spheres_start;
@@ -400,13 +497,39 @@ impl DynamicRenderData {
         s_sph_cubes_start = index as u32;
 
         for shape in &sd.s_sph_cubes {
-            self.dynamic_shapes_data.stickiness[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::new(
+                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                    shape.size[3]
+                ) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.stickiness[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_sph_cubes_buffer.stickiness.pop() {
-            self.dynamic_shapes_data.stickiness[index] = shape;
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::new(
+                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                    shape.size[3]
+                ) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.stickiness[index] = shape;
+                index += 1;
+            }
         }
 
         s_sph_cubes_amount = index as u32 - s_sph_cubes_start;
@@ -415,15 +538,15 @@ impl DynamicRenderData {
 
         s_inf_cubes_start = index as u32;
 
-        for shape in &sd.s_inf_w_cubes {
-            self.dynamic_shapes_data.stickiness[index] = shape.clone();
-            index += 1;
-        }
+        // for shape in &sd.s_inf_w_cubes {
+        //     self.dynamic_shapes_data.stickiness[index] = shape.clone();
+        //     index += 1;
+        // }
 
-        while let Some(shape) = self.frame_inf_w_cubes_buffer.stickiness.pop() {
-            self.dynamic_shapes_data.stickiness[index] = shape;
-            index += 1;
-        }
+        // while let Some(shape) = self.frame_inf_w_cubes_buffer.stickiness.pop() {
+        //     self.dynamic_shapes_data.stickiness[index] = shape;
+        //     index += 1;
+        // }
 
         s_inf_cubes_amount = index as u32 - s_inf_cubes_start;
 
@@ -434,13 +557,29 @@ impl DynamicRenderData {
         neg_cubes_start = 0u32;
 
         for shape in &sd.neg_cubes {
-            self.dynamic_shapes_data.negative[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.negative[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_cubes_buffer.negative.pop() {
-            self.dynamic_shapes_data.negative[index] = shape;
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.negative[index] = shape;
+                index += 1;
+            }
         }
 
         neg_cubes_amount = index as u32;
@@ -449,13 +588,29 @@ impl DynamicRenderData {
         neg_spheres_start = index as u32;
 
         for shape in &sd.neg_spheres {
-            self.dynamic_shapes_data.negative[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(shape.pos),
+                shape.size[0] + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.negative[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
-            self.dynamic_shapes_data.negative[index] = shape;
-            index += 1;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(shape.pos),
+                shape.size[0] + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.negative[index] = shape;
+                index += 1;
+            }
         }
 
         neg_spheres_amount = index as u32 - neg_spheres_start;
@@ -464,13 +619,39 @@ impl DynamicRenderData {
         neg_sph_cubes_start = index as u32;
 
         for shape in &sd.neg_sph_cubes {
-            self.dynamic_shapes_data.negative[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::new(
+                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                    shape.size[3]
+                ) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.negative[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_sph_cubes_buffer.negative.pop() {
-            self.dynamic_shapes_data.negative[index] = shape;
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::new(
+                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                    shape.size[3]
+                ) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.negative[index] = shape;
+                index += 1;
+            }
         }
 
         neg_sph_cubes_amount = index as u32 - neg_sph_cubes_start;
@@ -479,15 +660,15 @@ impl DynamicRenderData {
 
         neg_inf_cubes_start = index as u32;
 
-        for shape in &sd.neg_inf_w_cubes {
-            self.dynamic_shapes_data.negative[index] = shape.clone();
-            index += 1;
-        }
+        // for shape in &sd.neg_inf_w_cubes {
+        //     self.dynamic_shapes_data.negative[index] = shape.clone();
+        //     index += 1;
+        // }
 
-        while let Some(shape) = self.frame_inf_w_cubes_buffer.negative.pop() {
-            self.dynamic_shapes_data.negative[index] = shape;
-            index += 1;
-        }
+        // while let Some(shape) = self.frame_inf_w_cubes_buffer.negative.pop() {
+        //     self.dynamic_shapes_data.negative[index] = shape;
+        //     index += 1;
+        // }
 
         neg_inf_cubes_amount = index as u32 - neg_inf_cubes_start;
 
@@ -498,13 +679,29 @@ impl DynamicRenderData {
         s_neg_cubes_start = 0u32;
 
         for shape in &sd.s_neg_cubes {
-            self.dynamic_shapes_data.neg_stickiness[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.neg_stickiness[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_cubes_buffer.neg_stickiness.pop() {
-            self.dynamic_shapes_data.neg_stickiness[index] = shape;
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.neg_stickiness[index] = shape;
+                index += 1;
+            }
         }
 
         s_neg_cubes_amount = index as u32;
@@ -513,13 +710,29 @@ impl DynamicRenderData {
         s_neg_spheres_start = index as u32;
 
         for shape in &sd.s_neg_spheres {
-            self.dynamic_shapes_data.neg_stickiness[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(shape.pos),
+                shape.size[0] + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.neg_stickiness[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_spheres_buffer.neg_stickiness.pop() {
-            self.dynamic_shapes_data.neg_stickiness[index] = shape;
-            index += 1;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(shape.pos),
+                shape.size[0] + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.neg_stickiness[index] = shape;
+                index += 1;
+            }
         }
 
         s_neg_spheres_amount = index as u32 - s_neg_spheres_start;
@@ -528,13 +741,39 @@ impl DynamicRenderData {
         s_neg_sph_cubes_start = index as u32;
 
         for shape in &sd.s_neg_sph_cubes {
-            self.dynamic_shapes_data.neg_stickiness[index] = shape.clone();
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::new(
+                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                    shape.size[3]
+                ) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.neg_stickiness[index] = *shape;
+                index += 1;
+            }
         }
 
         while let Some(shape) = self.frame_sph_cubes_buffer.neg_stickiness.pop() {
-            self.dynamic_shapes_data.neg_stickiness[index] = shape;
-            index += 1;
+            if check_if_player_see_cube(
+                player,
+                Vec4::from_array(shape.pos),
+                Vec4::new(
+                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                    shape.size[3]
+                ) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.neg_stickiness[index] = shape;
+                index += 1;
+            }
         }
 
         s_neg_sph_cubes_amount = index as u32 - s_neg_sph_cubes_start;
@@ -543,15 +782,15 @@ impl DynamicRenderData {
 
         s_neg_inf_cubes_start = index as u32;
 
-        for shape in &sd.s_neg_inf_w_cubes {
-            self.dynamic_shapes_data.neg_stickiness[index] = shape.clone();
-            index += 1;
-        }
+        // for shape in &sd.s_neg_inf_w_cubes {
+        //     self.dynamic_shapes_data.neg_stickiness[index] = shape.clone();
+        //     index += 1;
+        // }
 
-        while let Some(shape) = self.frame_inf_w_cubes_buffer.neg_stickiness.pop() {
-            self.dynamic_shapes_data.neg_stickiness[index] = shape;
-            index += 1;
-        }
+        // while let Some(shape) = self.frame_inf_w_cubes_buffer.neg_stickiness.pop() {
+        //     self.dynamic_shapes_data.neg_stickiness[index] = shape;
+        //     index += 1;
+        // }
 
         s_neg_inf_cubes_amount = index as u32 - s_neg_inf_cubes_start;
 
@@ -593,7 +832,13 @@ impl DynamicRenderData {
     }
 
 
-    fn update_spherical_areas_and_get_meatadata(&mut self) -> SphericalAreasMetadata {
+    fn update_spherical_areas_and_get_meatadata(
+        &mut self,
+        player: &Player,
+        clip_planes: (Vec4, Vec4, Vec4, Vec4),
+        stickiness_value: f32,
+    ) -> SphericalAreasMetadata
+    {
         let mut coloring_areas_start = 0u32;
         let mut coloring_areas_amount = 0u32;
 
@@ -604,9 +849,17 @@ impl DynamicRenderData {
         coloring_areas_start = 0u32;
 
         while let Some(area) = self.frame_coloring_areas_buffer.pop() {
-            self.spherical_areas_data[index] = area;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(area.pos),
+                area.radius,
+                clip_planes,
+            )
+            {
+                self.spherical_areas_data[index] = area;
 
-            index += 1;
+                index += 1;
+            }
         }
 
         coloring_areas_amount = index as u32;
@@ -614,9 +867,17 @@ impl DynamicRenderData {
         volume_areas_start = index as u32;
 
         while let Some(area) = self.frame_spherical_volume_areas_buffer.pop() {
-            self.spherical_areas_data[index] = area;
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(area.pos),
+                area.radius,
+                clip_planes,
+            )
+            {
+                self.spherical_areas_data[index] = area;
 
-            index += 1;
+                index += 1;
+            }
         }
  
         volume_areas_amount = index as u32 - volume_areas_start;
@@ -643,10 +904,17 @@ impl DynamicRenderData {
     }
  
 
-    fn update_player_forms_buffers_and_get_amount(&mut self) -> u32 {
+    fn update_player_forms_buffers_and_get_amount(
+        &mut self,
+        player: &Player,
+        clip_planes: (Vec4, Vec4, Vec4, Vec4),
+        stickiness_value: f32,
+    ) -> u32
+    {
         let mut index = 0_usize;
 
-        while let Some(player_form) = self.frame_player_forms_buffer.pop() {
+        while let Some(player_form) = self.frame_player_forms_buffer.pop()
+        {
             self.player_forms_data[index] = player_form;
 
             index += 1;
@@ -666,15 +934,45 @@ impl DynamicRenderData {
     ) {
         self.clear_all_frame_buffers();
 
+        let player = {
+            match world.actors.get(&world.main_player_id).expect("World have wrong main_player id")
+            {
+                ActorWrapper::Player(player) => player,
+                _ => panic!("World's main_player is not a Player")
+            }
+        };
+
+        let screen_aspect = {
+            let size = window.inner_size();
+            size.width as f32 / size.height as f32
+        };
+
+
+        let clip_planes = get_view_clip_planes(player, screen_aspect);
+
         let dyn_bb = self.get_data_from_actors_visual_elements(world, static_bounding_box);
 
-        let shapes_arrays_metadata = self.update_dynamic_shapes_buffers_and_get_metadata(static_data);
+        let shapes_arrays_metadata = self.update_dynamic_shapes_buffers_and_get_metadata(
+            static_data,
 
-        let spherical_areas_meatadata = self.update_spherical_areas_and_get_meatadata();
+            player,
+            clip_planes,
+            world.level.all_shapes_stickiness_radius
+        );
+
+        let spherical_areas_meatadata = self.update_spherical_areas_and_get_meatadata(
+            player,
+            clip_planes,
+            world.level.all_shapes_stickiness_radius
+        );
 
         let beams_areas_amount = self.update_beams_buffers_and_get_amount();
 
-        let player_forms_amount = self.update_player_forms_buffers_and_get_amount();
+        let player_forms_amount = self.update_player_forms_buffers_and_get_amount(
+            player,
+            clip_planes,
+            world.level.all_shapes_stickiness_radius
+        );
 
         let players_screen_effects = get_players_screen_effects(world);
 
@@ -907,4 +1205,191 @@ impl SpecificShapeBuffers {
         self.stickiness.clear();
         self.neg_stickiness.clear();
     }
+}
+
+
+pub fn check_if_player_see_cube(
+    player: &Player,
+    cube_pos: Vec4,
+    cube_size: Vec4,
+    planes: (Vec4, Vec4, Vec4, Vec4),
+
+) -> bool
+{
+    let (
+        up_plane,
+        down_plane,
+        left_plane,
+        right_plane,
+    ) = planes;
+    
+    cube_is_above_or_intersect_the_plane
+    (
+        cube_pos - player.get_position(),
+        cube_size,
+        up_plane
+    )
+    &&
+    cube_is_above_or_intersect_the_plane
+    (
+        cube_pos - player.get_position(),
+        cube_size,
+        down_plane
+    )
+    &&
+    cube_is_above_or_intersect_the_plane
+    (
+        cube_pos - player.get_position(),
+        cube_size,
+        left_plane
+    )
+    &&
+    cube_is_above_or_intersect_the_plane
+    (
+        cube_pos - player.get_position(),
+        cube_size,
+        right_plane
+    )
+}
+
+
+pub fn check_if_player_see_sphere(
+    player: &Player,
+    sphere_pos: Vec4,
+    sphere_radius: f32,
+    planes: (Vec4, Vec4, Vec4, Vec4),
+) -> bool
+{
+    let (
+        up_plane,
+        down_plane,
+        left_plane,
+        right_plane,
+    ) = planes;
+
+    sphere_is_above_or_intersect_the_plane
+    (
+        sphere_pos - player.get_position(),
+        sphere_radius,
+        up_plane
+    )
+    &&
+    sphere_is_above_or_intersect_the_plane
+    (
+        sphere_pos - player.get_position(),
+        sphere_radius,
+        down_plane
+    )
+    &&
+    sphere_is_above_or_intersect_the_plane
+    (
+        sphere_pos - player.get_position(),
+        sphere_radius,
+        left_plane
+    )
+    &&
+    sphere_is_above_or_intersect_the_plane
+    (
+        sphere_pos - player.get_position(),
+        sphere_radius,
+        right_plane
+    )
+}
+
+
+pub fn cube_is_above_or_intersect_the_plane
+(
+    cube_pos: Vec4,
+    cube_size: Vec4,
+    plane: Vec4,
+) -> bool
+{
+    assert!(
+        cube_size.x > 0.0 &&
+        cube_size.y > 0.0 &&
+        cube_size.z > 0.0 &&
+        cube_size.w > 0.0
+    );
+
+    (cube_pos + cube_size*Vec4::new(1.0, 1.0, 1.0, 1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(1.0, 1.0, 1.0, -1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(1.0, 1.0, -1.0, 1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(1.0, 1.0, -1.0, -1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(1.0, -1.0, 1.0, 1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(1.0, -1.0, 1.0, -1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(1.0, -1.0, -1.0, 1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(1.0, -1.0, -1.0, -1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(-1.0, 1.0, 1.0, 1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(-1.0, 1.0, 1.0, -1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(-1.0, 1.0, -1.0, 1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(-1.0, 1.0, -1.0, -1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(-1.0, -1.0, 1.0, 1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(-1.0, -1.0, 1.0, -1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(-1.0, -1.0, -1.0, 1.0)).dot(plane) > 0.0
+    ||
+    (cube_pos + cube_size*Vec4::new(-1.0, -1.0, -1.0, -1.0)).dot(plane) > 0.0
+}
+
+
+pub fn sphere_is_above_or_intersect_the_plane
+(
+    sphere_pos: Vec4,
+    sphere_radius: f32,
+    plane: Vec4,
+) -> bool
+{
+    assert!(
+        sphere_radius > 0.0
+    );
+
+    (sphere_pos + plane*sphere_radius).dot(plane) > 0.0
+}
+
+
+pub fn get_view_clip_planes(
+    player: &Player,
+    screen_aspect: f32,
+) -> (Vec4, Vec4, Vec4, Vec4)
+{
+    let cam_zw_rot = player.get_zw_rotation_matrix();
+    let cam_zy_rot = player.get_zy_rotation_matrix();
+    let cam_zx_rot = player.get_zx_rotation_matrix();
+
+    let rotation = player.get_rotation_matrix().inverse();
+    
+    let up_clip_plane = Vec4::new(0.0, -1.428573, -1.0, 0.0).normalize();
+    let up_clip_plane = rotation * up_clip_plane;
+
+    let down_clip_plane = Vec4::new(0.0, 1.428573, -1.0, 0.0).normalize();
+    let down_clip_plane = rotation * down_clip_plane;
+
+    let (left_clip_plane, right_clip_plane) = {
+        let x = (90.0 - (0.7*screen_aspect).atan().to_degrees()).to_radians().tan();
+
+        (
+            rotation * (Vec4::new(x, 0.0, -1.0, 0.0).normalize()),
+            rotation * (Vec4::new(-x, 0.0, -1.0, 0.0).normalize())
+        )
+    };
+
+    (
+        up_clip_plane,
+        down_clip_plane,
+        left_clip_plane,
+        right_clip_plane
+    )
 }

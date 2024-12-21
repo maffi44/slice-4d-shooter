@@ -98,7 +98,7 @@ impl HoleGunShot {
             BeamVolumeArea {
                 translation_pos_1: Vec4::ZERO,
                 translation_pos_2: shooted_from - position,
-                radius: 0.020 * beam_radius_mult,
+                radius: 0.020 * beam_radius_mult.abs(),
                 color: color, 
             }
         );
@@ -123,10 +123,10 @@ impl HoleGunShot {
             static_objects,
             coloring_areas,
             volume_areas,
-            target_size: radius,
+            target_size: radius.abs(),
             target_size_reached: false,
             explode_current_time: 0.0,
-            explode_final_time: EXPLODE_TIME * (radius*0.3),
+            explode_final_time: EXPLODE_TIME * (radius.abs()*0.3),
         }
     }
 
@@ -171,6 +171,7 @@ impl Actor for HoleGunShot {
             
             for area in self.coloring_areas.iter_mut() {
                 area.radius -= delta * 0.2;
+                area.radius = area.radius.abs();
             }
     
             let mut clear = false;
@@ -184,6 +185,8 @@ impl Actor for HoleGunShot {
                         if area.radius < 0.001 {
                             clear = true;
                         }
+                        area.radius = area.radius.abs();
+
                     },
                     VolumeArea::SphericalVolumeArea(area) => {
                         area.radius *= 1.0 - delta*30.0;
@@ -191,6 +194,8 @@ impl Actor for HoleGunShot {
                         if area.radius < 0.01 {
                             clear = true;
                         }
+                        area.radius = area.radius.abs();
+
                     }
                 }
             }
@@ -224,11 +229,14 @@ impl Actor for HoleGunShot {
                     self.target_size*1.1,
                     explode_coeff.clamp(0.0, 1.0)
                 );
+                area.radius = area.radius.abs();
             }
 
             match &mut self.volume_areas[0] {
                 VolumeArea::BeamVolumeArea(area) => {
                     area.radius += delta*0.2;
+                    area.radius = area.radius.abs();
+
                 },
                 _ => {}
             }
@@ -240,6 +248,8 @@ impl Actor for HoleGunShot {
                         self.target_size,
                         explode_coeff.clamp(0.0, 1.0)
                     );
+                    area.radius = area.radius.abs();
+
                 }
                 _ => {}
             }
@@ -247,6 +257,8 @@ impl Actor for HoleGunShot {
             match &mut self.volume_areas[2] {
                 VolumeArea::SphericalVolumeArea(area) => {
                     area.radius -= delta*0.35;
+                    area.radius = area.radius.abs();
+
                 }
                 _ => {}
             }

@@ -199,7 +199,7 @@ impl HoleGun {
             let hole = HoleGunShot::new(
                 position,
                 shooted_from,
-                radius,
+                radius.abs(),
                 color,
                 volume_area,
                 1.0,
@@ -224,9 +224,9 @@ impl HoleGun {
                                 RemoteMessage::SpawnHoleGunShotActor(
                                     position.to_array(),
                                     shooted_from.to_array(),
-                                    radius,
+                                    radius.abs(),
                                     color.to_array(),
-                                    volume_area_radius,
+                                    volume_area_radius.abs(),
                                 )
                             )
                         )
@@ -242,7 +242,7 @@ impl HoleGun {
             let miss = HoleGunMiss::new(
                 position,
                 shooted_from,
-                radius,
+                radius.abs(),
                 color,
                 volume_area,
                 1.0,
@@ -267,9 +267,9 @@ impl HoleGun {
                                 RemoteMessage::SpawHoleGunMissActor(
                                     position.to_array(),
                                     shooted_from.to_array(),
-                                    radius,
+                                    radius.abs(),
                                     color.to_array(),
-                                    volume_area_radius,
+                                    volume_area_radius.abs(),
                                 )
                             )
                         )
@@ -401,7 +401,7 @@ impl Device for HoleGun {
                             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
                         };
 
-                        area.radius = self.current_shot_charging_energy*0.03 * 0.08;
+                        area.radius = self.current_shot_charging_energy.abs()*0.03 * 0.08;
                         area.translation = shooted_from_offset;
                     }
                     _ => {
