@@ -26,7 +26,7 @@ use crate::{
     transform::Transform,
 };
 
-use super::{CommonActorsMessages, Component, Message, MessageType};
+use super::Component;
 
 const EXPLODE_TIME: f32 = 0.25;
 
@@ -284,6 +284,7 @@ impl Actor for HoleGunShot {
                 static_objects:  Some(&self.static_objects),
                 coloring_areas: Some(&self.coloring_areas),
                 volume_areas: Some(&self.volume_areas),
+                waves: None,
                 player: None,
             }
         )

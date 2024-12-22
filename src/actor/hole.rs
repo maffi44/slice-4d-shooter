@@ -159,6 +159,7 @@ impl Actor for Hole
                 coloring_areas: Some(&self.coloring_areas),
                 volume_areas: None,
                 player: None,
+                waves: None,
             }
         )
     }

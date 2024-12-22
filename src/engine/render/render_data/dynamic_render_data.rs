@@ -15,11 +15,13 @@ use crate::{
         },
         time::TimeSystem,
         world::{
-            static_object::VolumeArea,
+            static_object::{VisualWave, VolumeArea},
             World
         }
     }, transform::Transform
 };
+
+use std::f32::consts::PI;
 
 use glam::{Mat4, Vec4};
 use winit::window::Window;
@@ -43,6 +45,7 @@ pub struct DynamicRenderData {
 
     frame_coloring_areas_buffer: Vec<SphericalArea>,
     frame_spherical_volume_areas_buffer: Vec<SphericalArea>,
+    frame_waves_buffer: Vec<SphericalArea>,
     frame_beam_volume_areas_buffer: Vec<BeamArea>,
     frame_player_forms_buffer: Vec<PlayerForm>,
 }
@@ -65,6 +68,7 @@ impl DynamicRenderData {
             frame_spherical_volume_areas_buffer: Vec::new(),
             frame_beam_volume_areas_buffer: Vec::new(),
             frame_player_forms_buffer: Vec::new(),
+            frame_waves_buffer: Vec::new(),
         }
     }
 
@@ -213,6 +217,20 @@ impl DynamicRenderData {
                     }
                 }
 
+                if let Some(visual_waves) = visual_element.waves
+                {
+                    for wave in visual_waves
+                    {
+                        let area = SphericalArea {
+                            pos: (wave.translation + transform.get_position()).to_array(),
+                            radius: wave.radius,
+                            color: wave.color.to_array(),
+                        };
+
+                        self.frame_waves_buffer.push(area);
+                    }
+                }
+
                 if let Some(player_sphere) = visual_element.player {
                     
                     let player_form = PlayerForm {
@@ -243,6 +261,7 @@ impl DynamicRenderData {
         self.frame_spherical_volume_areas_buffer.clear();
         self.frame_beam_volume_areas_buffer.clear();
         self.frame_player_forms_buffer.clear();
+        self.frame_waves_buffer.clear();
     }
 
     pub fn update_dynamic_shapes_buffers_and_get_metadata(
@@ -349,7 +368,7 @@ impl DynamicRenderData {
             if check_if_player_see_sphere(
                 player,
                 Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value,
+                shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
             )
             {
@@ -362,7 +381,7 @@ impl DynamicRenderData {
             if check_if_player_see_sphere(
                 player,
                 Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value,
+                shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
             )
             {
@@ -469,7 +488,7 @@ impl DynamicRenderData {
             if check_if_player_see_sphere(
                 player,
                 Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value,
+                shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
             )
             {
@@ -482,7 +501,7 @@ impl DynamicRenderData {
             if check_if_player_see_sphere(
                 player,
                 Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value,
+                shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
             )
             {
@@ -591,7 +610,7 @@ impl DynamicRenderData {
             if check_if_player_see_sphere(
                 player,
                 Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value,
+                shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
             )
             {
@@ -604,7 +623,7 @@ impl DynamicRenderData {
             if check_if_player_see_sphere(
                 player,
                 Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value,
+                shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
             )
             {
@@ -713,7 +732,7 @@ impl DynamicRenderData {
             if check_if_player_see_sphere(
                 player,
                 Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value,
+                shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
             )
             {
@@ -726,7 +745,7 @@ impl DynamicRenderData {
             if check_if_player_see_sphere(
                 player,
                 Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value,
+                shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
             )
             {
@@ -837,13 +856,16 @@ impl DynamicRenderData {
         player: &Player,
         clip_planes: (Vec4, Vec4, Vec4, Vec4),
         stickiness_value: f32,
-    ) -> SphericalAreasMetadata
+    ) -> (SphericalAreasMetadata, u32, u32)
     {
         let mut coloring_areas_start = 0u32;
         let mut coloring_areas_amount = 0u32;
 
         let mut volume_areas_start = 0u32;
         let mut volume_areas_amount = 0u32;
+
+        let mut waves_start = 0u32;
+        let mut waves_amount = 0u32;
 
         let mut index = 0;
         coloring_areas_start = 0u32;
@@ -879,15 +901,41 @@ impl DynamicRenderData {
                 index += 1;
             }
         }
- 
+
         volume_areas_amount = index as u32 - volume_areas_start;
 
-        SphericalAreasMetadata {
-            holegun_colorized_areas_start: coloring_areas_start,
-            holegun_colorized_areas_amount: coloring_areas_amount,
-            explode_areas_start: volume_areas_start,
-            explode_areas_amount: volume_areas_amount,
+        waves_start = index as u32;
+
+
+        while let Some(area) = self.frame_waves_buffer.pop() {
+            if check_if_player_see_sphere(
+                player,
+                Vec4::from_array(area.pos),
+                area.radius,
+                clip_planes,
+            )
+            {
+                self.spherical_areas_data[index] = area;
+
+                index += 1;
+            }
         }
+
+        waves_amount = index as u32 - waves_start;
+
+
+        (
+            SphericalAreasMetadata {
+                holegun_colorized_areas_start: coloring_areas_start,
+                holegun_colorized_areas_amount: coloring_areas_amount,
+                explode_areas_start: volume_areas_start,
+                explode_areas_amount: volume_areas_amount,
+                // empty_byte1: 0u32,
+                // empty_byte2: 0u32,
+            },
+            waves_start,
+            waves_amount
+        )
     }
 
 
@@ -960,11 +1008,12 @@ impl DynamicRenderData {
             world.level.all_shapes_stickiness_radius
         );
 
-        let spherical_areas_meatadata = self.update_spherical_areas_and_get_meatadata(
-            player,
-            clip_planes,
-            world.level.all_shapes_stickiness_radius
-        );
+        let (spherical_areas_meatadata, waves_start, waves_amount) =
+            self.update_spherical_areas_and_get_meatadata(
+                player,
+                clip_planes,
+                world.level.all_shapes_stickiness_radius
+            );
 
         let beams_areas_amount = self.update_beams_buffers_and_get_amount();
 
@@ -982,6 +1031,8 @@ impl DynamicRenderData {
             window,
             shapes_arrays_metadata,
             spherical_areas_meatadata,
+            waves_start,
+            waves_amount,
             beams_areas_amount,
             player_forms_amount,
             players_screen_effects,
@@ -1013,8 +1064,8 @@ pub struct OtherDynamicData {
     spherical_areas_metadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
 
-    empty_bytes0: u32,
-    empty_bytes1: u32,
+    waves_start: u32,
+    waves_amount: u32,
 
     beam_areas_amount: u32,
     player_forms_amount: u32,
@@ -1041,6 +1092,8 @@ impl OtherDynamicData {
         window: &Window,
         shapes_arrays_metadata: ShapesArraysMetadata,
         spherical_areas_meatadata: SphericalAreasMetadata,
+        waves_start: u32,
+        waves_amount: u32,
         beams_areas_amount: u32,
         player_forms_amount: u32,
         players_screen_effects: &PlayerScreenEffects,
@@ -1115,6 +1168,9 @@ impl OtherDynamicData {
 
         self.death_screen_effect = players_screen_effects.death_screen_effect;
         self.getting_damage_screen_effect = players_screen_effects.getting_damage_screen_effect;
+
+        self.waves_start = waves_start;
+        self.waves_amount = waves_amount;
     }
 }
 
@@ -1125,8 +1181,8 @@ impl Default for OtherDynamicData {
             dynamic_shapes_arrays_metadata: ShapesArraysMetadata::default(),
             spherical_areas_metadata: SphericalAreasMetadata::default(),
             camera_data: CameraUniform::default(),
-            empty_bytes0: 0u32,
-            empty_bytes1: 0u32,
+            waves_start: 0u32,
+            waves_amount: 0u32,
             beam_areas_amount: 0,
             player_forms_amount: 0,
 

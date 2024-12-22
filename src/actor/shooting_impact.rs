@@ -79,6 +79,7 @@ impl Actor for ShootingImpact {
                 static_objects: None,
                 coloring_areas: None,
                 volume_areas: Some(&self.volume_areas),
+                waves: None,
                 player: None,
             },
         )

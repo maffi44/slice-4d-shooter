@@ -28,7 +28,7 @@ use self::{
 use tokio::runtime::Runtime;
 use winit::window::Window;
 
-use super::{physics::dynamic_collider::PlayersDollCollider, ui::UISystem};
+use super::{physics::dynamic_collider::PlayersDollCollider, ui::UISystem, world::static_object::VisualWave};
 
 
 
@@ -37,6 +37,7 @@ pub struct VisualElement<'a> {
     pub static_objects: Option<&'a Vec<StaticObject>>,
     pub coloring_areas: Option<&'a Vec<ColoringArea>>,
     pub volume_areas: Option<&'a Vec<VolumeArea>>,
+    pub waves: Option<&'a Vec<VisualWave>>,
     pub player: Option<&'a PlayersDollCollider>,
 }
 

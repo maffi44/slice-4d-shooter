@@ -208,6 +208,10 @@ struct SphericalAreasMetadata {
     holegun_colorized_areas_amount: u32,
     explode_areas_start: u32,
     explode_areas_amount: u32,
+    // empty_byte1: u32,
+    // empty_byte2: u32,
+    // waves_start: u32,
+    // waves_amount: u32,
 }
 
 struct SphericalArea {
@@ -234,8 +238,8 @@ struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     spherical_areas_meatadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
-    empty_bytes0: u32,
-    empty_bytes1: u32,
+    waves_start: u32,
+    waves_amount: u32,
     beam_areas_amount: u32,
     player_forms_amount: u32,
 
@@ -566,6 +570,19 @@ fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distan
             max_distance
         );
     }
+    for (
+        var i = dynamic_data.waves_start;
+        i < dynamic_data.waves_amount + dynamic_data.waves_start;
+        i++
+    )
+    {
+        color += ray_march_individual_wave_sphere(
+            dyn_spherical_areas[i],
+            start_pos,
+            direction, 
+            max_distance
+        );
+    }
 
     return color;
 }
@@ -599,7 +616,7 @@ fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32
 
             let color_coef = abs(dot(sphere_normal, direction));
 
-            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.01);
+            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00);
 
             break;
         }
@@ -611,30 +628,87 @@ fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32
     return color;
 }
 
-fn get_sphere_normal(p: vec4<f32>, sphere_pos: vec4<f32>, sphere_radius: f32) -> vec4<f32> {
-    var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
-    
-    var a: vec4<f32> = p + h.yxxz;
-    var b: vec4<f32> = p + h.xyxz;
-    var c: vec4<f32> = p + h.xxyz;
-    var d: vec4<f32> = p + h.yyyz;
-    var e: vec4<f32> = p + h.zzzx;
-    var f: vec4<f32> = p + h.zzzy;
+fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
+    var color = vec3(0.0);
 
-    var fa: f32 = sd_sphere(a - sphere_pos, sphere_radius);
-    var fb: f32 = sd_sphere(b - sphere_pos, sphere_radius);
-    var fc: f32 = sd_sphere(c - sphere_pos, sphere_radius);
-    var fd: f32 = sd_sphere(d - sphere_pos, sphere_radius);
-    var fe: f32 = sd_sphere(e - sphere_pos, sphere_radius);
-    var ff: f32 = sd_sphere(f - sphere_pos, sphere_radius);
+    var total_dist = 0.0;
+
+    var p = start_pos;
+
+    var prev_d = MAX_DIST;
+
+    let intr = sph_intersection(
+        start_pos - sphere.pos,
+        direction,
+        sphere.radius + 0.5
+    );
+        
+    if intr.y > 0.0 {
+
+        let sphere_normal = get_sphere_normal(p, sphere.pos, sphere.radius);
+
+        let dist_to_wave = sd_sphere((start_pos + direction*max_distance) - sphere.pos, sphere.radius);
+        
+        let edge_intensity = clamp(pow(0.5 - abs(dist_to_wave), 5.0), 0.0, 1.0);
+        
+        color += vec3(max(max(sphere.color.r, sphere.color.g), sphere.color.b)*edge_intensity);
+        
+        color = clamp(color, vec3(0.0), vec3(1.0));
+        
+    }
+
+    // for (var i = 0; i < MAX_STEPS; i++) {
+
+    //     if total_dist > max_distance {
+    //         break;
+    //     }
+        
+    //     let d = sd_sphere(p - sphere.pos, sphere.radius);
+
+    //     if d > prev_d {
+    //         break;
+    //     }
+
+    //     prev_d = d;
+
+    //     if d < MIN_DIST {
+
+    //         let sphere_normal = get_sphere_normal(p, sphere.pos, sphere.radius);
+
+    //         var color_coef = clamp(1.0 - abs(dot(sphere_normal, direction) - 0.1), 0.0, 1.0);
+            
+    //         color = mix(vec3(0.0), sphere.color, clamp(pow(color_coef, 5.0)*2.0+0.0, 0.0, 1.0));
+
+    //         break;
+    //     }
+    //     total_dist += d;
+
+    //     p += direction * d;
+    // }
+    
+
+    return color;
+}
+
+fn get_sphere_normal(p: vec4<f32>, sphere_pos: vec4<f32>, sphere_radius: f32) -> vec4<f32> {
+    // var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
+    
+    // var a: vec4<f32> = p + h.yxxz;
+    // var b: vec4<f32> = p + h.xyxz;
+    // var c: vec4<f32> = p + h.xxyz;
+    // var d: vec4<f32> = p + h.yyyz;
+    // var e: vec4<f32> = p + h.zzzx;
+    // var f: vec4<f32> = p + h.zzzy;
+
+    // var fa: f32 = sd_sphere(a - sphere_pos, sphere_radius);
+    // var fb: f32 = sd_sphere(b - sphere_pos, sphere_radius);
+    // var fc: f32 = sd_sphere(c - sphere_pos, sphere_radius);
+    // var fd: f32 = sd_sphere(d - sphere_pos, sphere_radius);
+    // var fe: f32 = sd_sphere(e - sphere_pos, sphere_radius);
+    // var ff: f32 = sd_sphere(f - sphere_pos, sphere_radius);
 
     return normalize(
-        h.yxxz * fa +
-        h.xyxz * fb +
-        h.xxyz * fc +
-        h.yyyz * fd +
-        h.zzzx * fe +
-        h.zzzy * ff
+        p - sphere_pos
     );
 }
 

@@ -1,5 +1,18 @@
 use glam::{Vec3, Vec4};
 
+use crate::{
+    actor::{
+        wave::Wave,
+        ActorWrapper
+    },
+    engine::engine_handle::{
+        Command,
+        CommandType
+    }
+};
+
+use super::engine_handle::EngineHandle;
+
 
 pub enum EffectType {
     DefaultPistolDecal,
@@ -22,21 +35,36 @@ impl EffectsSystem
 
     pub fn spawn_wave(
         &mut self,
-        origin: Vec4,
-        radius: Vec<f32>,
+        engine_handle: &mut EngineHandle,
+        position: Vec4,
+        radii: Vec<f32>,
         colors: Vec<Vec3>,
-        speeds: Vec<f32>,
+        time_segments: Vec<f32>,
     )
     {
         assert!(
-            radius.len() >= 2
+            radii.len() >= 2
         );
 
         assert!(
-            radius.len() == colors.len() &&
-            radius.len() == (speeds.len() + 1)
+            radii.len() == colors.len() &&
+            radii.len() == (time_segments.len() + 1)
         );
 
-        // spawn wave
+        let wave = Wave::new(
+            position,
+            radii,
+            colors,
+            time_segments
+        );
+
+        engine_handle.send_command(
+            Command {
+                sender: 0u128,
+                command_type: CommandType::SpawnActor(
+                    ActorWrapper::Wave(wave)
+                )
+            }
+        );
     }
 }

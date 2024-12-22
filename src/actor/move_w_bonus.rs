@@ -174,6 +174,7 @@ impl Actor for MoveWBonusSpot
                         static_objects: None,
                         coloring_areas: None,
                         volume_areas: Some(&self.visual_areas),
+                        waves: None,
                         player: None,
                     }
                 )

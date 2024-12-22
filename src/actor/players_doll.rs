@@ -939,6 +939,7 @@ impl Actor for PlayersDoll {
                                         Team::Red =>
                                         {
                                             effects_system.spawn_wave(
+                                                engine_handle,
                                                 self.transform.get_position(),
                                                 vec![
                                                     self.radius,
@@ -951,14 +952,15 @@ impl Actor for PlayersDoll {
                                                     Vec3::ZERO
                                                 ],
                                                 vec![
-                                                    20.0,
-                                                    20.0,
+                                                    1.5,
+                                                    1.5,
                                                 ]
                                             );
                                         }
                                         Team::Blue =>
                                         {
                                             effects_system.spawn_wave(
+                                                engine_handle,
                                                 self.transform.get_position(),
                                                 vec![
                                                     self.radius,
@@ -971,8 +973,8 @@ impl Actor for PlayersDoll {
                                                     Vec3::ZERO
                                                 ],
                                                 vec![
-                                                    20.0,
-                                                    20.0,
+                                                    1.5,
+                                                    1.5,
                                                 ]
                                             );
                                         }
@@ -1040,6 +1042,7 @@ impl Actor for PlayersDoll {
                     static_objects: None,
                     coloring_areas: None,
                     volume_areas: Some(&self.volume_area),
+                    waves: None,
                     player: Some(&self.interpolating_model[0])
                 }
             )

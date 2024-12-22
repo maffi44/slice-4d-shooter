@@ -12,12 +12,24 @@ pub mod flag;
 pub mod session_controller;
 pub mod move_w_bonus;
 pub mod hole;
+pub mod wave;
 
 use crate::{
     engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{
-            area::AreaMessages, colliders_container::PhysicalElement, dynamic_collider::DynamicColliderMessages, kinematic_collider::KinematicColliderMessages, static_collider::StaticColliderMessages, PhysicsSystem
-        }, render::VisualElement, time::TimeSystem, ui::UISystem
+        audio::AudioSystem,
+        effects::EffectsSystem,
+        engine_handle::EngineHandle,
+        physics::{
+            area::AreaMessages,
+            colliders_container::PhysicalElement,
+            dynamic_collider::DynamicColliderMessages,
+            kinematic_collider::KinematicColliderMessages,
+            static_collider::StaticColliderMessages,
+            PhysicsSystem
+        },
+        render::VisualElement,
+        time::TimeSystem,
+        ui::UISystem
     },
     transform::Transform,
 };
@@ -120,6 +132,7 @@ pub enum ActorWrapper {
     Hole(Hole),
     MoveWBonusSpot(MoveWBonusSpot),
     SessionController(SessionController),
+    Wave(Wave),
     Diamond,
     Exit,
 }
@@ -164,6 +177,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoveWBonusSpot(actor) => {
                 actor.get_transform()
             }
+            ActorWrapper::Wave(actor) => {
+                actor.get_transform()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -205,6 +221,9 @@ impl Actor for ActorWrapper {
                 actor.get_mut_transform()
             }
             ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::Wave(actor) => {
                 actor.get_mut_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -259,6 +278,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoveWBonusSpot(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
+            ActorWrapper::Wave(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -311,6 +333,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoveWBonusSpot(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
+            ActorWrapper::Wave(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -352,6 +377,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             }
             ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::Wave(actor) => {
                 actor.get_physical_element()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -397,6 +425,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoveWBonusSpot(actor) => {
                 actor.get_visual_element()
             }
+            ActorWrapper::Wave(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -438,6 +469,9 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             }
             ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::Wave(actor) => {
                 actor.get_id()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -483,6 +517,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoveWBonusSpot(actor) => {
                 actor.change_id(id, engine_handle)
             }
+            ActorWrapper::Wave(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -526,6 +563,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoveWBonusSpot(actor) => {
                 actor.set_id(id)
             }
+            ActorWrapper::Wave(actor) => {
+                actor.set_id(id)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -557,6 +597,7 @@ use glam::Vec4;
 use hole::Hole;
 use move_w_bonus::{MoveWBonusSpot, MoveWBonusSpotMessage};
 use session_controller::SessionController;
+use wave::Wave;
 
 #[derive(Clone)]
 pub enum CommonActorsMessages {

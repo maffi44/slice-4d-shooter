@@ -293,6 +293,7 @@ impl Device for HoleGun {
                 static_objects: None,
                 coloring_areas: None,
                 volume_areas: Some(&self.volume_area),
+                waves: None,
                 player: None,
             }
         )

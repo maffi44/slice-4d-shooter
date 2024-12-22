@@ -210,6 +210,10 @@ pub struct SphericalAreasMetadata {
     pub holegun_colorized_areas_amount: u32,
     pub explode_areas_start: u32,
     pub explode_areas_amount: u32,
+    // pub empty_byte1: u32,
+    // pub empty_byte2: u32,
+    // pub waves_start: u32,
+    // pub waves_amount: u32,
 }
 
 impl Default for SphericalAreasMetadata {
@@ -219,6 +223,10 @@ impl Default for SphericalAreasMetadata {
             holegun_colorized_areas_amount: 0,
             explode_areas_start: 0,
             explode_areas_amount: 0,
+            // empty_byte1: 0,
+            // empty_byte2: 0,
+            // waves_start: 0,
+            // waves_amount: 0,
         }
     }
 }

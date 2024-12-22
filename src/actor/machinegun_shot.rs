@@ -268,6 +268,7 @@ impl Actor for MachinegunShot {
                 static_objects:  Some(&self.static_objects),
                 coloring_areas: Some(&self.coloring_areas),
                 volume_areas: Some(&self.volume_areas),
+                waves: None,
                 player: None,
             }
         )

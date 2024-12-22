@@ -100,6 +100,7 @@ impl Actor for WanderingActor {
             static_objects: Some(&self.static_objects),
             coloring_areas: None,
             volume_areas: None,
+            waves: None,
             player: None,
         };
 

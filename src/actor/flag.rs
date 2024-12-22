@@ -172,10 +172,12 @@ impl Flag
     pub fn set_flag_on_base_status(
         &mut self,
         effects_system: &mut EffectsSystem,
-        audio_system: &mut AudioSystem
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle,
     )
     {
         effects_system.spawn_wave(
+            engine_handle,
             self.transform.get_position(),
             vec![
                 FLAG_AREA_RADIUS,
@@ -188,8 +190,8 @@ impl Flag
                 self.my_color
             ],
             vec![
-                20.0,
-                10.0,
+                1.0,
+                3.0,
             ]
         );
 
@@ -197,6 +199,7 @@ impl Flag
         self.target_position = self.transfrom_of_the_base.get_position();
 
         effects_system.spawn_wave(
+            engine_handle,
             self.transform.get_position(),
             vec![
                 FLAG_AREA_RADIUS,
@@ -209,8 +212,8 @@ impl Flag
                 self.my_color
             ],
             vec![
-                20.0,
-                10.0,
+                1.0,
+                3.0,
             ]
         );
 
@@ -230,10 +233,12 @@ impl Flag
         &mut self,
         pos: Vec4,
         effects_system: &mut EffectsSystem,
+        engine_handle: &mut EngineHandle,
     )
     {
         self.target_position = pos;
         effects_system.spawn_wave(
+            engine_handle,
             self.transform.get_position(),
             vec![
                 FLAG_AREA_RADIUS,
@@ -244,7 +249,7 @@ impl Flag
                 Vec3::ZERO
             ],
             vec![
-                20.0,
+                3.0,
             ]
         );
         self.status = FlagStatus::Missed(pos);
@@ -273,6 +278,7 @@ impl Flag
         );
 
         effects_system.spawn_wave(
+            engine_handle,
             self.transform.get_position(),
             vec![
                 FLAG_AREA_RADIUS,
@@ -285,8 +291,8 @@ impl Flag
                 Vec3::ZERO
             ],
             vec![
-                20.0,
-                20.0,
+                1.0,
+                3.0,
             ]
         );
         
@@ -448,6 +454,7 @@ impl Actor for Flag
                 static_objects: None,
                 coloring_areas: None,
                 volume_areas: Some(&self.visual_areas),
+                waves: None,
                 player: None,
             }
         )
@@ -524,11 +531,11 @@ impl Actor for Flag
                                     match status {
                                         FlagStatus::OnTheBase =>
                                         {
-                                            self.set_flag_on_base_status(effects_system, audio_system);
+                                            self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
                                         }
                                         FlagStatus::Missed(pos) =>
                                         {
-                                            self.set_flag_missed_status(pos, effects_system);
+                                            self.set_flag_missed_status(pos, effects_system, engine_handle);
                                         }
                                         FlagStatus::Captured(captured_by) =>
                                         {
@@ -560,7 +567,7 @@ impl Actor for Flag
                         match message {
                             SessionControllerMessage::NewSessionStarted(_) =>
                             {
-                                self.set_flag_on_base_status(effects_system, audio_system);
+                                self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
                             }
                             SessionControllerMessage::TeamWin(team) =>
                             {
@@ -568,6 +575,7 @@ impl Actor for Flag
                                     Team::Red =>
                                     {
                                         effects_system.spawn_wave(
+                                            engine_handle,
                                             self.transform.get_position(),
                                             vec![
                                                 FLAG_AREA_RADIUS,
@@ -580,14 +588,15 @@ impl Actor for Flag
                                                 Vec3::ZERO
                                             ],
                                             vec![
-                                                20.0,
-                                                20.0,
+                                                1.0,
+                                                2.0,
                                             ]
                                         );
                                     }
                                     Team::Blue =>
                                     {
                                         effects_system.spawn_wave(
+                                            engine_handle,
                                             self.transform.get_position(),
                                             vec![
                                                 FLAG_AREA_RADIUS,
@@ -600,8 +609,8 @@ impl Actor for Flag
                                                 Vec3::ZERO
                                             ],
                                             vec![
-                                                20.0,
-                                                20.0,
+                                                1.0,
+                                                2.0,
                                             ]
                                         );
                                     }
@@ -624,12 +633,12 @@ impl Actor for Flag
                                         {
                                             FlagStatus::OnTheBase =>
                                             {
-                                                self.set_flag_on_base_status(effects_system, audio_system);
+                                                self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
                                             }
 
                                             FlagStatus::Missed(pos) =>
                                             {
-                                                self.set_flag_missed_status(pos, effects_system);
+                                                self.set_flag_missed_status(pos, effects_system, engine_handle);
                                             }
 
                                             FlagStatus::Captured(id) =>
@@ -644,12 +653,12 @@ impl Actor for Flag
                                         {
                                             FlagStatus::OnTheBase =>
                                             {
-                                                self.set_flag_on_base_status(effects_system, audio_system);
+                                                self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
                                             }
 
                                             FlagStatus::Missed(pos) =>
                                             {
-                                                self.set_flag_missed_status(pos, effects_system);
+                                                self.set_flag_missed_status(pos, effects_system, engine_handle);
                                             }
 
                                             FlagStatus::Captured(id) =>

@@ -905,6 +905,34 @@ async fn start_new_game_session(
             }
         }
 
+        let recieved_messages = unrelaible_channel.receive();
+
+        for (from_player, packet) in recieved_messages {
+            
+            process_player_message(
+                &game_session_start_time,
+                unrelaible_channel,
+                game_session_state,
+                from_player,
+                packet
+            );
+        }
+
+        let recieved_messages = relaible_channel.receive();
+        
+        for (from_player, packet) in recieved_messages {
+            
+            process_player_message(
+                &game_session_start_time,
+                relaible_channel,
+                game_session_state,
+                from_player,
+                packet
+            );
+        }
+
+        game_session_state.update_items(&game_session_start_time, relaible_channel);
+
         match game_session_state.game_state
         {
             GameState::Playing => {}
@@ -934,34 +962,6 @@ async fn start_new_game_session(
             }
         }
 
-        let recieved_messages = unrelaible_channel.receive();
-
-        for (from_player, packet) in recieved_messages {
-            
-            process_player_message(
-                &game_session_start_time,
-                unrelaible_channel,
-                game_session_state,
-                from_player,
-                packet
-            );
-        }
-
-        let recieved_messages = relaible_channel.receive();
-        
-        for (from_player, packet) in recieved_messages {
-            
-            process_player_message(
-                &game_session_start_time,
-                relaible_channel,
-                game_session_state,
-                from_player,
-                packet
-            );
-        }
-
-        game_session_state.update_items(&game_session_start_time, relaible_channel);
-
         tokio::time::sleep(Duration::from_millis(16)).await;
     }
 }
@@ -973,14 +973,27 @@ fn init_game_session(
     game_session_start_time: &Instant,
 )
 {
-    shuffle_teams(game_session_state);
+    for (_, player) in &mut game_session_state.players
+    {
+        player.captured_flag = false;
+    }
 
     game_session_state.blue_flag.status = FlagStatus::OnTheBase;
+    game_session_state.blue_flag.get_previouse_status_time = 0u128;
+
     game_session_state.red_flag.status = FlagStatus::OnTheBase;
+    game_session_state.red_flag.get_previouse_status_time = 0u128;
+
     game_session_state.move_w_bonus.status = BonusSpotStatus::BonusOnTheSpot;
+    game_session_state.move_w_bonus.get_previouse_status_time = 0u128;
+    
     game_session_state.red_team_score = 0u32;
     game_session_state.blue_team_score = 0u32;
+    
     game_session_state.holes.clear();
+    
+    shuffle_teams(game_session_state);
+
 
     update_states_for_players(
         game_session_state,

@@ -21,8 +21,6 @@ use crate::{
     transform::Transform,
 };
 
-use super::{CommonActorsMessages, Message, MessageType};
-
 const EXPLODE_TIME: f32 = 0.25;
 
 pub struct HoleGunMiss {
@@ -173,6 +171,7 @@ impl Actor for HoleGunMiss {
                 static_objects:  None,
                 coloring_areas: None,
                 volume_areas: Some(&self.volume_areas),
+                waves: None,
                 player: None,
             }
         )

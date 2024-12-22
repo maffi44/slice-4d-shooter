@@ -62,3 +62,11 @@ pub struct  BeamVolumeArea {
     pub radius: f32,
     pub color: Vec3,
 }
+
+#[derive(Clone)]
+pub struct VisualWave
+{
+    pub translation: Vec4,
+    pub radius: f32,
+    pub color: Vec3,
+}
