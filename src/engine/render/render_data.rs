@@ -105,7 +105,7 @@ pub struct Shape {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
 pub struct PlayerForm {
     pos: [f32;4],
-    empty_bytes: [u32; 4],
+    is_red: [u32; 4],
     color: [f32;3],
     radius: f32,
     rotation: [f32; 16],

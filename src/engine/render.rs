@@ -24,6 +24,7 @@ use self::{
     render_data::RenderData,
 };
 
+use client_server_protocol::Team;
 #[cfg(not(target_arch="wasm32"))]
 use tokio::runtime::Runtime;
 use winit::window::Window;
@@ -38,7 +39,7 @@ pub struct VisualElement<'a> {
     pub coloring_areas: Option<&'a Vec<ColoringArea>>,
     pub volume_areas: Option<&'a Vec<VolumeArea>>,
     pub waves: Option<&'a Vec<VisualWave>>,
-    pub player: Option<&'a PlayersDollCollider>,
+    pub player: Option<(&'a PlayersDollCollider, Team)>,
 }
 
 

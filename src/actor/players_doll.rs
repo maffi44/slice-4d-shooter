@@ -1043,7 +1043,7 @@ impl Actor for PlayersDoll {
                     coloring_areas: None,
                     volume_areas: Some(&self.volume_area),
                     waves: None,
-                    player: Some(&self.interpolating_model[0])
+                    player: Some((&self.interpolating_model[0], self.team))
                 }
             )
         } else {

@@ -23,6 +23,7 @@ use crate::{
 
 use std::f32::consts::PI;
 
+use client_server_protocol::Team;
 use glam::{Mat4, Vec4};
 use winit::window::Window;
 
@@ -231,16 +232,33 @@ impl DynamicRenderData {
                     }
                 }
 
-                if let Some(player_sphere) = visual_element.player {
-                    
-                    let player_form = PlayerForm {
-                        pos: (player_sphere.position + transform.get_position()).to_array(),
-                        empty_bytes: [0;4],
-                        color: [1.0, 0.0, 0.0],
-                        radius: player_sphere.radius,
-                        rotation: actor.get_transform().get_rotation().to_cols_array(),
-                        weapon_offset: player_sphere.weapon_offset.to_array()
+                if let Some((player_sphere, team)) = visual_element.player {
+
+                    let player_form = match team {
+                        Team::Red =>
+                        {
+                            PlayerForm {
+                                pos: (player_sphere.position + transform.get_position()).to_array(),
+                                is_red: [1;4],
+                                color: [1.0, 0.0, 0.0],
+                                radius: player_sphere.radius,
+                                rotation: actor.get_transform().get_rotation().to_cols_array(),
+                                weapon_offset: player_sphere.weapon_offset.to_array()
+                            }
+                        }
+                        Team::Blue =>
+                        {
+                            PlayerForm {
+                                pos: (player_sphere.position + transform.get_position()).to_array(),
+                                is_red: [0;4],
+                                color: [1.0, 0.0, 0.0],
+                                radius: player_sphere.radius,
+                                rotation: actor.get_transform().get_rotation().to_cols_array(),
+                                weapon_offset: player_sphere.weapon_offset.to_array()
+                            }
+                        }
                     };
+                    
                     frame_bounding_box.expand_by_player_form(&player_form);
 
                     self.frame_player_forms_buffer.push(player_form);

@@ -45,17 +45,17 @@
         },
         "red_map_color" :
         {
-            "red": 1.2,
-            "green": 0.0,
-            "blue": 0.0,
-            "multiplier": 1.5
+            "red": 3.5,
+            "green": 0.7,
+            "blue": 0.08,
+            "multiplier": 3.0
         },
         "blue_map_color" :
         {
-            "red": 1.2,
-            "green": 0.0,
-            "blue": 0.0,
-            "multiplier": 1.5
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
         },
         "sun_direction" : {
             "x" : 1.0,
@@ -94,7 +94,7 @@
             "roughness": 0.14
         },
         {
-            "name" : "metallic",
+            "name" : "gun_red",
             "color" : {
                 "red": 0.001,
                 "green": 0.013,
@@ -112,20 +112,45 @@
             },
             "roughness" : 0.7
 
+        },
+        {
+            "name" : "gun_blue",
+            "color" : {
+                "red": 0.016,
+                "green": 0.013,
+                "blue": 0.001
+            },
+            "roughness" : 0.95
+
+        },
+        {
+            "name" : "metallic_blue",
+            "color" : {
+                "red": 0.0,
+                "green": 0.7,
+                "blue": 1.2
+            },
+            "roughness" : 0.7
+
         }
     ],
 
-    "players_visual_materials" : {
+    "red_players_visual_materials" : {
         "inner" : "metallic_red",
-        "outer" : "metallic"
+        "outer" : "gun_red"
     },
 
-    "w_cups_visual_materials" : "metallic",
+    "blue_players_visual_materials" : {
+        "inner" : "metallic_blue",
+        "outer" : "gun_blue"
+    },
+
+    "w_cups_visual_materials" : "gun_red",
 
     "all_shapes_stickiness_radius": 0.3,
 
-    "blue_map_color_level" : 0.0,
-    "red_map_color_level" : 8.0,
+    "blue_base_w_level" : 0.0,
+    "red_base_w_level" : 8.0,
 
     "red_flag_base" :
     {

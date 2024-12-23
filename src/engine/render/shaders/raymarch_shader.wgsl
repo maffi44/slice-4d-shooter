@@ -16,7 +16,7 @@ struct Shape {
 
 struct PlayerForm {
     pos: vec4<f32>,
-    empty_bytes: vec4<u32>,
+    is_red: vec4<u32>,
     color: vec3<f32>,
     radius: f32,
     rotation: mat4x4<f32>,
@@ -269,15 +269,28 @@ struct OtherStaticData {
     // is_w_roof_exist: i32,
     // w_roof: f32,
 
-    players_mat1: i32,
-    players_mat2: i32,
+    blue_players_mat1: i32,
+    blue_players_mat2: i32,
+
+    red_players_mat1: i32,
+    red_players_mat2: i32,
+
+
     w_cups_mat: i32,
     stickiness: f32,
 
+    red_base_w_level: f32,
+    blue_base_w_level: f32,
+
     empty_byte1: u32,
-    // empty_byte2: u32,
-    shadows_enabled: i32,
+    empty_byte2: u32,
+    // empty_byte1: u32,
+    // // empty_byte2: u32,
+    // shadows_enabled: i32,
     materials: array<Material, 32>,
+
+    red_base_color: vec3<f32>,
+    blue_base_color: vec3<f32>,
 
     sky_color: vec3<f32>,
     sun_color: vec3<f32>,
@@ -1900,7 +1913,12 @@ fn get_mats(
         if d < MIN_DIST {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
-            output.materials[0] = static_data.players_mat1;
+            if shape.is_red.x == 1
+            {
+                output.materials[0] = static_data.red_players_mat1;
+            } else {
+                output.materials[0] = static_data.blue_players_mat1;
+            }
             return output;
         }
 
@@ -1926,14 +1944,29 @@ fn get_mats(
             if dd < 0.0 {
                 output.materials_count = 2u;
                 output.material_weights[0] = 0.26;
-                output.materials[0] = -1;
+                if shape.is_red.x == 1
+                {
+                    output.materials[0] = -3;
+                } else {
+                    output.materials[0] = -4;
+                }
                 output.material_weights[1] = 0.74;
-                output.materials[1] = static_data.players_mat2;
+                if shape.is_red.x == 1
+                {
+                    output.materials[0] = static_data.red_players_mat2;
+                } else {
+                    output.materials[0] = static_data.blue_players_mat2;
+                }
                 return output;
             }
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
-            output.materials[0] = static_data.players_mat2;
+            if shape.is_red.x == 1
+            {
+                output.materials[0] = static_data.red_players_mat2;
+            } else {
+                output.materials[0] = static_data.blue_players_mat2;
+            }
             return output;
         }
 
@@ -1961,7 +1994,12 @@ fn get_mats(
         if d < MIN_DIST {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
-            output.materials[0] = static_data.players_mat1;
+            if shape.is_red.x == 1
+            {
+                output.materials[0] = static_data.red_players_mat1;
+            } else {
+                output.materials[0] = static_data.blue_players_mat1;
+            }
             return output;
         }
 
@@ -1997,7 +2035,12 @@ fn get_mats(
         if d < MIN_DIST {
             output.materials_count = 1u;
             output.material_weights[0] = 1.0;
-            output.materials[0] = static_data.players_mat2;
+            if shape.is_red.x == 1
+            {
+                output.materials[0] = static_data.red_players_mat2;
+            } else {
+                output.materials[0] = static_data.blue_players_mat2;
+            }
             return output;
         }
     }
@@ -2833,8 +2876,20 @@ fn apply_material(
         return vec4(color, lightness);
     }
 
-    if material == -1 {
-        var color = static_data.materials[static_data.players_mat1].color.xyz*2.0;
+    if material == -3 {
+        var color = static_data.red_base_color*10.0;
+        
+        let hited_pos = pos + ray_dir * dist;
+        let normal = get_normal(hited_pos);
+        let c = pow(abs(dot(normal, ray_dir)),9.0);
+
+        color = mix(vec3(0.5),color, c);
+
+        return vec4(color, 20.0);
+    }
+
+    if material == -4 {
+        var color = static_data.blue_base_color*10.0;
         
         let hited_pos = pos + ray_dir * dist;
         let normal = get_normal(hited_pos);
@@ -2852,7 +2907,7 @@ fn apply_material(
     
     var lines_size = 5.8;
 
-    if material == static_data.players_mat1 || material == static_data.players_mat2 {
+    if material == static_data.blue_players_mat1 || material == static_data.blue_players_mat2 || material == static_data.red_players_mat1 || material == static_data.red_players_mat2 {
         lines_size = 2.1;
     }
 
@@ -2869,19 +2924,24 @@ fn apply_material(
     let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),45.0+(1.0-roughness)*40.0);
     
     var sun_shadow_1 = 1.0;
-    if static_data.shadows_enabled == 1 {
-        sun_shadow_1 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_1);
+    // if static_data.shadows_enabled == 1 {
+    //     sun_shadow_1 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_1);
+    // }
+
+    var neon_wireframe_color = mix(
+        static_data.blue_base_color,
+        static_data.red_base_color,
+        clamp((hited_pos.w - static_data.blue_base_w_level) / (static_data.red_base_w_level - static_data.blue_base_w_level), 0.0, 1.0)
+    );
+
+    if material == static_data.blue_players_mat1 || material == static_data.blue_players_mat2 {
+        neon_wireframe_color = static_data.blue_base_color;
+    } else {
+        if material == static_data.red_players_mat1 || material == static_data.red_players_mat2 {
+            neon_wireframe_color = static_data.red_base_color;
+        }
     }
 
-    // sun light 2
-    // let sun_dir_2 = normalize(SUN_DIR_2);
-    // let sun_dif_2 = clamp(dot(normal, sun_dir_2),0.0,1.0);
-    // let sun_hal_2 = normalize(sun_dir_2-ray_dir);
-    // let sun_spe_2 = pow(clamp(dot(normal,sun_hal_2),0.0,1.0),20.0);
-    // let sun_shadow_2 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_2);
-    // let bound_dif = clamp(0.5 + 0.5*-normal.y, 0.0, 1.0);
-
-    // frenel reflection
     var ref_dir = reflect(ray_dir, normal);
 
     ref_dir = normalize(
@@ -2905,11 +2965,11 @@ fn apply_material(
     light += static_data.sun_color  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 3.0;// * aocc;
     light += static_data.sky_color    * sky_dif   * 0.3 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
     light += static_data.frenel_color * frenel    * 0.3 * (0.6+0.4*sun_dif_1);// * aocc;
-    light += static_data.neon_wireframe_color* wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
+    light += neon_wireframe_color * wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
 
     lightness = wireframe_dif*30.0;
     
-    let diffuse = static_data.materials[material].color.xyz + static_data.neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
+    let diffuse = static_data.materials[material].color.xyz + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
     let ref_col = get_sky_color(ref_dir);
 
@@ -2985,7 +3045,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     var color = color_and_light.rgb;
     var lightness = color_and_light.a;
 
-    if mats.materials[0] != static_data.players_mat1 && mats.materials[0] != static_data.players_mat2 {
+    if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {
         color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
     }
 

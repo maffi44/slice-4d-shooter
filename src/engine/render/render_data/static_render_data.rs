@@ -51,15 +51,27 @@ pub struct OtherStaticData {
 
     // is_w_roof_exist: i32,
     // w_roof: f32,
-    players_mat1: i32,
-    players_mat2: i32,
+    blue_players_mat1: i32,
+    blue_players_mat2: i32,
+
+    red_players_mat1: i32,
+    red_players_mat2: i32,
+
+    
     w_cups_mat: i32,
     static_shapes_stickiness: f32,
+    
+    red_base_w_level: f32,
+    blue_base_w_level: f32,
 
     empty_byte1: u32,
-    // empty_byte2: u32,
-    shadows_enabled: i32,
+    empty_byte2: u32,
+    // shadows_enabled: i32,
     materials: [VisualMaterial; 32],
+
+
+    red_base_color: [f32;4],
+    blue_base_color: [f32;4],
 
     sky_color: [f32;4],
     sun_color: [f32;4],
@@ -117,8 +129,13 @@ impl OtherStaticData {
             index += 1;
         }
 
-        let (players_mat1, players_mat2) = world.level.players_visual_materials;
-        let w_cups_mat = world.level.w_cups_visual_materials;
+        let (blue_players_mat1, blue_players_mat2) = world.level.blue_players_visual_materials;
+        let (red_players_mat1, red_players_mat2) = world.level.red_players_visual_materials;
+
+        let blue_base_w_level = world.level.blue_base_w_level;
+        let red_base_w_level = world.level.red_base_w_level;
+
+        let w_cups_mat = 0;
 
         let shadows_enabled = {
             if world.players_settings.shadows_enable {
@@ -136,16 +153,28 @@ impl OtherStaticData {
             // w_roof,
             // is_w_roof_exist,
 
-            players_mat1,
-            players_mat2,
+            blue_players_mat1,
+            blue_players_mat2,
+
+            red_players_mat1,
+            red_players_mat2,
+
+            blue_base_w_level,
+            red_base_w_level,
+
+
+
             w_cups_mat,
             static_shapes_stickiness: stickiness,
 
             
             empty_byte1: 0u32,
-            // empty_byte2: 0u32,
-            shadows_enabled,
+            empty_byte2: 0u32,
+            // shadows_enabled,
             materials,
+
+            red_base_color: world.level.visual_settings_of_environment.red_map_color.to_array(),
+            blue_base_color: world.level.visual_settings_of_environment.blue_map_color.to_array(),
 
             sky_color: world.level.visual_settings_of_environment.sky_color.to_array(),
             sun_color: world.level.visual_settings_of_environment.sun_color.to_array(),

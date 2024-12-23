@@ -67,14 +67,18 @@ pub struct Level {
     pub w_floor: Option<WFloor>,
     pub w_roof: Option<WRoof>,
     pub visual_materials: Vec<ObjectMaterial>,
-    pub players_visual_materials: (i32, i32),
+    pub blue_players_visual_materials: (i32, i32),
+    pub red_players_visual_materials: (i32, i32),
     pub w_cups_visual_materials: i32,
     pub visual_settings_of_environment: EnvirnomentVisualSettings,
 
     pub w_levels: Vec<f32>,
 
-    pub blue_map_color_level: f32,
-    pub red_map_color_level: f32,
+    pub blue_base_w_level: f32,
+    pub red_base_w_level: f32,
+
+    // pub blue_map_color_level: f32,
+    // pub red_map_color_level: f32,
     pub red_flag_base: Transform,
     pub blue_flag_base: Transform,
     pub move_w_bonus_spot: Transform,
@@ -296,10 +300,18 @@ fn parse_json_level(
         parse_json_defaults(json_defaults, &materials_table)
     };
 
-    let players_visual_materials = {
+    let red_players_visual_materials = {
         let json_players_visual_materials = json_level
-            .get("players_visual_materials")
-            .expect("Wrong JSON map format. JSON level must have players_visual_materials property");
+            .get("red_players_visual_materials")
+            .expect("Wrong JSON map format. JSON level must have red_players_visual_materials property");
+
+        parse_players_visual_materials(json_players_visual_materials, &materials_table)
+    };
+
+    let blue_players_visual_materials = {
+        let json_players_visual_materials = json_level
+            .get("blue_players_visual_materials")
+            .expect("Wrong JSON map format. JSON level must have blue_players_visual_materials property");
 
         parse_players_visual_materials(json_players_visual_materials, &materials_table)
     };
@@ -365,23 +377,23 @@ fn parse_json_level(
         parse_json_visual_settings_of_environment(json_visual_settings_of_environment)
     };
 
-    let blue_map_color_level = {
-        json_level
-            .get("blue_map_color_level")
-            .expect("Wrong JSON map format. JSON level must have blue_map_color_level property")
-            .as_f64()
-            .expect("Wrong JSON map format. JSON's blue_map_color_level property must be an number")
-            as f32
-    };
+    // let blue_map_color_level = {
+    //     json_level
+    //         .get("blue_map_color_level")
+    //         .expect("Wrong JSON map format. JSON level must have blue_map_color_level property")
+    //         .as_f64()
+    //         .expect("Wrong JSON map format. JSON's blue_map_color_level property must be an number")
+    //         as f32
+    // };
     
-    let red_map_color_level = {
-        json_level
-            .get("red_map_color_level")
-            .expect("Wrong JSON map format. JSON level must have red_map_color_level property")
-            .as_f64()
-            .expect("Wrong JSON map format. JSON's red_map_color_level property must be an number")
-            as f32
-    };
+    // let red_map_color_level = {
+    //     json_level
+    //         .get("red_map_color_level")
+    //         .expect("Wrong JSON map format. JSON level must have red_map_color_level property")
+    //         .as_f64()
+    //         .expect("Wrong JSON map format. JSON's red_map_color_level property must be an number")
+    //         as f32
+    // };
     
     let red_flag_base = {
         let red_flag_base_json = json_level
@@ -406,10 +418,27 @@ fn parse_json_level(
 
         parse_json_into_transform(move_w_bonus_spot_json, "move_w_bonus_spot")
     };
-    
 
+    let blue_base_w_level = {
+        json_level
+            .get("blue_base_w_level")
+            .expect("Wrong JSON map format. JSON level must have blue_base_w_level property")
+            .as_f64()
+            .expect("Wrong JSON map format. JSON's blue_base_w_level property must be an number")
+            as f32
+    };
+    let red_base_w_level = {
+        json_level
+            .get("red_base_w_level")
+            .expect("Wrong JSON map format. JSON level must have red_base_w_level property")
+            .as_f64()
+            .expect("Wrong JSON map format. JSON's red_base_w_level property must be an number")
+            as f32
+    };
 
     let level = Level {
+        blue_base_w_level,
+        red_base_w_level,
         level_name,
         static_objects,
         red_spawns,
@@ -418,14 +447,15 @@ fn parse_json_level(
         w_floor,
         w_roof,
         visual_materials,
-        players_visual_materials,
+        blue_players_visual_materials,
+        red_players_visual_materials,
         w_cups_visual_materials,
         w_levels,
         visual_settings_of_environment,
         red_flag_base,
         blue_flag_base,
-        red_map_color_level,
-        blue_map_color_level,
+        // red_map_color_level,
+        // blue_map_color_level,
         move_w_bonus_spot,
     };
 

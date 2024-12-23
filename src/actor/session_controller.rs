@@ -10,11 +10,11 @@ use super::{
     flag::{self, FlagStatus}, move_w_bonus::BonusSpotStatus, player::PlayerMessage, Actor, ActorID, Message, MessageType, SpecificActorMessage
 };
 
-pub const DEFAULT_TEAM: Team = Team::Red;
+pub const DEFAULT_TEAM: Team = Team::Blue;
 
 pub const SHOW_TEAM_BACKLIGHT_TIME: f32 = 4.0;
 pub const SHOW_TEAM_JOIN_TITLE_TIME: f32 = 5.0;
-pub const SHOW_TEAM_WIN_TITLE_TIME: f32 = 10.0;
+pub const SHOW_TEAM_WIN_TITLE_TIME: f32 = 15.0;
 
 pub const UI_ELEM_FADE_IN_SPEED: f32 = 3.0;
 pub const UI_ELEM_FADE_OUT_SPEED: f32 = 3.0;
