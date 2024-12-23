@@ -540,8 +540,10 @@ fn get_coloring_areas_color(p: vec4<f32>) -> vec3<f32> {
     return color;
 }
 
-fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
+fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec4<f32> {
     var color = vec3(0.0);
+
+    var ray_march_individual_wave_sphere_color = vec4(0.0);
 
     for (
         var i = dynamic_data.spherical_areas_meatadata.explode_areas_start;
@@ -576,7 +578,7 @@ fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distan
         i++
     )
     {
-        color += ray_march_individual_wave_sphere(
+        ray_march_individual_wave_sphere_color += ray_march_individual_wave_sphere(
             dyn_spherical_areas[i],
             start_pos,
             direction, 
@@ -584,78 +586,70 @@ fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distan
         );
     }
 
-    return color;
+    let output_color = vec4(
+        color.r + ray_march_individual_wave_sphere_color.r,
+        color.g + ray_march_individual_wave_sphere_color.g,
+        color.b + ray_march_individual_wave_sphere_color.b,
+        ray_march_individual_wave_sphere_color.a
+    );
+
+    return output_color;
 }
 
 fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
     var color = vec3(0.0);
 
-    var total_dist = 0.0;
+    let intr = sph_intersection(
+        start_pos - sphere.pos,
+        direction,
+        sphere.radius
+    );
 
-    var p = start_pos;
+    if intr.x > 0.0 {
 
-    var prev_d = MAX_DIST;
-
-    for (var i = 0; i < MAX_STEPS; i++) {
-
-        if total_dist > max_distance {
-            break;
-        }
-        
-        let d = sd_sphere(p - sphere.pos, sphere.radius);
-
-        if d > prev_d {
-            break;
-        }
-
-        prev_d = d;
-
-        if d < MIN_DIST {
-
-            let sphere_normal = get_sphere_normal(p, sphere.pos, sphere.radius);
+        if intr.x < max_distance
+        {
+            let sphere_normal = get_sphere_normal(start_pos+direction*intr.y, sphere.pos, sphere.radius);
 
             let color_coef = abs(dot(sphere_normal, direction));
 
             color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00);
-
-            break;
         }
-        total_dist += d;
+    }
+    else
+    {
+        if intr.y > 0.0
+        {
+            if dot(sphere.pos - start_pos, direction) > 0
+            {
+                let sphere_normal = get_sphere_normal(start_pos+direction*intr.y, sphere.pos, sphere.radius);
 
-        p += direction * d;
+                let color_coef = abs(dot(sphere_normal, direction));
+
+                color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00);
+            }
+            else
+            {
+                let sphere_normal = get_sphere_normal(start_pos+direction*-intr.y, sphere.pos, sphere.radius);
+
+                // let brightness_coef = pow(1.0 - (length(sphere.pos - start_pos) / sphere.radius), 6.0);
+
+                let color_coef = abs(dot(sphere_normal, direction));
+
+                color = (mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00));
+
+                // let color_coef = abs(sphere.radius - length(sphere.pos - start_pos)) / sphere.radius;
+
+                // color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00);
+            }
+        } 
     }
 
-    return color;
-}
+    // var total_dist = 0.0;
 
-fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
-    var color = vec3(0.0);
+    // var p = start_pos;
 
-    var total_dist = 0.0;
-
-    var p = start_pos;
-
-    var prev_d = MAX_DIST;
-
-    let intr = sph_intersection(
-        start_pos - sphere.pos,
-        direction,
-        sphere.radius + 0.5
-    );
-        
-    if intr.y > 0.0 {
-
-        let sphere_normal = get_sphere_normal(p, sphere.pos, sphere.radius);
-
-        let dist_to_wave = sd_sphere((start_pos + direction*max_distance) - sphere.pos, sphere.radius);
-        
-        let edge_intensity = clamp(pow(0.5 - abs(dist_to_wave), 5.0), 0.0, 1.0);
-        
-        color += vec3(max(max(sphere.color.r, sphere.color.g), sphere.color.b)*edge_intensity);
-        
-        color = clamp(color, vec3(0.0), vec3(1.0));
-        
-    }
+    // var prev_d = MAX_DIST;
 
     // for (var i = 0; i < MAX_STEPS; i++) {
 
@@ -675,9 +669,9 @@ fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>,
 
     //         let sphere_normal = get_sphere_normal(p, sphere.pos, sphere.radius);
 
-    //         var color_coef = clamp(1.0 - abs(dot(sphere_normal, direction) - 0.1), 0.0, 1.0);
-            
-    //         color = mix(vec3(0.0), sphere.color, clamp(pow(color_coef, 5.0)*2.0+0.0, 0.0, 1.0));
+    //         let color_coef = abs(dot(sphere_normal, direction));
+
+    //         color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00);
 
     //         break;
     //     }
@@ -685,9 +679,76 @@ fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>,
 
     //     p += direction * d;
     // }
-    
 
     return color;
+}
+
+fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec4<f32> {
+    var color = vec3(0.0);
+
+    var output_color = vec4(0.0);
+
+    var luminosity = 0.0;
+
+    var total_dist = 0.0;
+
+    var p = start_pos;
+
+    var prev_d = MAX_DIST;
+
+    let intr = sph_intersection(
+        start_pos - sphere.pos,
+        direction,
+        sphere.radius
+    );
+        
+    if intr.y > 0.0 {
+
+        if intr.y < max_distance
+        {
+            let sphere_normal = get_sphere_normal(p+direction*intr.y, sphere.pos, sphere.radius);
+
+            var color_coef = clamp(1.0 - abs(dot(sphere_normal, direction)), 0.0, 1.0);
+
+            color_coef = clamp(pow(color_coef, 3.0)*1.0, 0.0, 1.0);
+                
+            color = mix(vec3(0.0), sphere.color, color_coef);
+            
+            color += (vec3(0.5)*pow(color_coef,4.0));
+
+            // color += (vec3(1.0)*pow(color_coef,20.0));
+
+            luminosity = pow(color_coef,5.0)*4.0;
+
+            if intr.x > 0.0
+            {
+                color *= 2.0;
+                luminosity *= 2.0;
+            }
+        }
+    }
+
+    let dist_to_wave = sd_sphere((start_pos + direction*max_distance) - sphere.pos, sphere.radius);
+        
+    let edge_intensity = clamp(pow(1.0 - abs(dist_to_wave), 5.0), 0.0, 1.0);
+    
+    color += sphere.color*edge_intensity;
+    
+    color += vec3(0.5 * max(max(sphere.color.r, sphere.color.g), sphere.color.b)*pow(edge_intensity,4.0));
+
+    luminosity += edge_intensity;
+
+    let target_max_v = max(max(sphere.color.r, sphere.color.g), sphere.color.b);
+
+    color = clamp(color, vec3(0.0), vec3(target_max_v));
+    luminosity = clamp(luminosity, 0.0, 1.0);
+    
+    output_color.r = color.r;
+    output_color.g = color.g;
+    output_color.b = color.b;
+    output_color.a = luminosity;
+
+    return output_color;
 }
 
 fn get_sphere_normal(p: vec4<f32>, sphere_pos: vec4<f32>, sphere_radius: f32) -> vec4<f32> {
@@ -2928,7 +2989,10 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
     }
 
-    color += 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
+    let color_areas = 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
+
+    color += color_areas.rgb;
+    lightness += color_areas.a;
 
     let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
     let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
