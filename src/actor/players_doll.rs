@@ -260,7 +260,7 @@ impl PlayersDoll {
             radius: player_sphere_radius,
             my_color,
             on_way_to_next_w_level: false,
-            player_moving_state: PlayerMovingState::MovingNormal,
+            player_moving_state: PlayerMovingState::MovingNormal(0.0, 0.0),
         }
     }
 
@@ -555,18 +555,18 @@ impl Actor for PlayersDoll {
                     SpecificActorMessage::MoverW(message) =>
                     {
                         match message {
-                            MoverWMessage::Rotate =>
+                            MoverWMessage::Rotate(_,_) =>
                             {
-                                match self.player_moving_state {
-                                    PlayerMovingState::MovingNormal =>
-                                    {
-                                        self.player_moving_state = PlayerMovingState::MovingThrowW;
-                                    }
-                                    PlayerMovingState::MovingThrowW =>
-                                    {
-                                        self.player_moving_state = PlayerMovingState::MovingNormal;
-                                    }
-                                }
+                                // match self.player_moving_state {
+                                //     PlayerMovingState::MovingNormal =>
+                                //     {
+                                //         self.player_moving_state = PlayerMovingState::MovingThrowW;
+                                //     }
+                                //     PlayerMovingState::MovingThrowW =>
+                                //     {
+                                //         self.player_moving_state = PlayerMovingState::MovingNormal;
+                                //     }
+                                // }
                             }
                         }
                     }

@@ -13,7 +13,7 @@ const MOVER_W_PHYSICAL_AREA_RADIUS: f32 = 1.0;
 #[derive(Clone)]
 pub enum MoverWMessage
 {
-    Rotate,
+    Rotate(f32, f32),
 }
 
 pub struct MoverW
@@ -122,7 +122,10 @@ impl Actor for MoverW
                                             from: self.id.expect("MoverW hasn't ActorID"),
                                             message: MessageType::SpecificActorMessage(
                                                 SpecificActorMessage::MoverW(
-                                                    MoverWMessage::Rotate
+                                                    MoverWMessage::Rotate(
+                                                        self.transform.get_position().z,
+                                                        self.transform.get_position().w
+                                                    )
                                                 )
                                             )
                                         }

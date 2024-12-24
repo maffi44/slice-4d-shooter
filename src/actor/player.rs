@@ -68,8 +68,8 @@ use super::{
 
 pub enum PlayerMovingState
 {
-    MovingNormal,
-    MovingThrowW,
+    MovingNormal(f32, f32),
+    MovingThrowW(f32, f32),
 }
 
 pub struct PlayerInnerState {
@@ -134,7 +134,7 @@ impl PlayerInnerState {
 
             is_time_after_some_team_win: false,
             amount_of_move_w_bonuses_do_i_have: 0u32,
-            player_moving_state: PlayerMovingState::MovingNormal,
+            player_moving_state: PlayerMovingState::MovingNormal(0.0, 0.0),
         }
     }
 }
@@ -358,16 +358,16 @@ impl Actor for Player {
                     SpecificActorMessage::MoverW(message) =>
                     {
                         match message {
-                            MoverWMessage::Rotate =>
+                            MoverWMessage::Rotate(lock_z, lock_w) =>
                             {
                                 match self.inner_state.player_moving_state {
-                                    PlayerMovingState::MovingNormal =>
+                                    PlayerMovingState::MovingNormal(zw, _) =>
                                     {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingThrowW;
+                                        self.inner_state.player_moving_state = PlayerMovingState::MovingThrowW(zw, lock_z);
                                     }
-                                    PlayerMovingState::MovingThrowW =>
+                                    PlayerMovingState::MovingThrowW(zw, _) =>
                                     {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal;
+                                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(zw, lock_w);
                                     }
                                 }
                             }
@@ -918,9 +918,16 @@ impl Actor for Player {
                     // xz = input.mouse_axis.x + xz;
                     
                 } else {
-                    match self.inner_state.player_moving_state
+                    // zw *= 1.0 - delta * 3.0;
+                    // if zw.abs() < 0.00001 {
+                    //     zw = 0.0;
+                    // }
+                    
+                    // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                    // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+                    match &mut self.inner_state.player_moving_state
                     {
-                        PlayerMovingState::MovingNormal =>
+                        PlayerMovingState::MovingNormal(zw2, _) =>
                         {
                             zw *= 1.0 - delta * 3.0;
                             if zw.abs() < 0.00001 {
@@ -930,7 +937,7 @@ impl Actor for Player {
                             xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
                             yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
                         }
-                        PlayerMovingState::MovingThrowW =>
+                        PlayerMovingState::MovingThrowW(zw2, _) =>
                         {
                             zw = zw.lerp(PI/2.0, delta * 3.0);
                             if PI/2.0 - zw.abs() < 0.00001 {
@@ -1037,23 +1044,79 @@ impl Actor for Player {
             //     -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
             //     0.0,        0.0,                0.0,                1.0
             // ]);
+            
 
-            let zy_rotation = Mat4::from_rotation_x(-yz);
 
-            let zx_rotation = Mat4::from_rotation_y(-xz);
+            // let mut zy_rotation = Mat4::from_rotation_x(-yz);
+
+            // let mut zx_rotation = Mat4::from_rotation_y(-xz);
     
-            let zw_rotation = Mat4::from_cols_slice(&[
-                1.0,    0.0,    0.0,        0.0,
-                0.0,    1.0,    0.0,        0.0,
-                0.0,    0.0,    zw.cos(),   zw.sin(),
-                0.0,    0.0,    -zw.sin(),   zw.cos()
-            ]);
+            // let mut zw_rotation = Mat4::from_cols_slice(&[
+            //     1.0,    0.0,    0.0,        0.0,
+            //     0.0,    1.0,    0.0,        0.0,
+            //     0.0,    0.0,    zw.cos(),   zw.sin(),
+            //     0.0,    0.0,    -zw.sin(),   zw.cos()
+            // ]);
 
-            self.inner_state.zw_rotation = zw_rotation;
-            self.inner_state.zy_rotation = zy_rotation;
-            self.inner_state.zx_rotation = zx_rotation;
+            // self.inner_state.zw_rotation = zw_rotation;
+            // self.inner_state.zy_rotation = zy_rotation;
+            // self.inner_state.zx_rotation = zx_rotation;
     
-            self.set_rotation_matrix(zw_rotation * zy_rotation * zx_rotation);
+            // self.set_rotation_matrix(zw_rotation * zy_rotation * zx_rotation);
+
+
+            match self.inner_state.player_moving_state
+            {
+                PlayerMovingState::MovingNormal(zw2, _) =>
+                {
+                    let zy_rotation = Mat4::from_rotation_x(-yz);
+
+                    let zx_rotation = Mat4::from_rotation_y(-xz);
+            
+                    let zw_rotation = Mat4::from_cols_slice(&[
+                        1.0,    0.0,    0.0,        0.0,
+                        0.0,    1.0,    0.0,        0.0,
+                        0.0,    0.0,    (zw).cos(),   (zw).sin(),
+                        0.0,    0.0,    -(zw).sin(),   (zw).cos()
+                    ]);
+        
+                    self.inner_state.zw_rotation = zw_rotation;
+                    self.inner_state.zy_rotation = zy_rotation;
+                    self.inner_state.zx_rotation = zx_rotation;
+            
+                    self.set_rotation_matrix(zw_rotation * zy_rotation * zx_rotation);
+        
+                }
+                PlayerMovingState::MovingThrowW(zw2, _) =>
+                {
+                    let yw_rotation = Mat4::from_cols_slice(&[
+                        1.0,    0.0,        0.0,      0.0,
+                        0.0,    -(PI-yz).cos(),  0.0,      (PI-yz).sin(),
+                        0.0,    0.0,        1.0,      0.0,
+                        0.0,    -(PI-yz).sin(),   0.0,      -(PI-yz).cos()
+                    ]);
+
+                    let xw_rotation = Mat4::from_cols_slice(&[
+                        (PI-xz).cos(),    0.0,       0.0,      (PI-xz).sin(),
+                        0.0,          1.0,       0.0,      0.0,
+                        0.0,          0.0,       1.0,      0.0,
+                        -(PI-xz).sin(),     0.0,       0.0,      (PI-xz).cos()
+                    ]);
+            
+                    let zw_rotation = Mat4::from_cols_slice(&[
+                        1.0,    0.0,    0.0,        0.0,
+                        0.0,    1.0,    0.0,        0.0,
+                        0.0,    0.0,    (zw).cos(),   (zw).sin(),
+                        0.0,    0.0,    -(zw).sin(),   (zw).cos()
+                    ]);
+        
+                    self.inner_state.zw_rotation = zw_rotation;
+                    self.inner_state.zy_rotation = yw_rotation;
+                    self.inner_state.zx_rotation = xw_rotation;
+            
+                    self.set_rotation_matrix(zw_rotation * yw_rotation * xw_rotation);
+                }
+            }
     
             // self.set_rotation_matrix(Mat4::from_cols_slice(&[
             //     y.cos(),    0.0,    0.0,    y.sin(),
@@ -1307,15 +1370,42 @@ impl Actor for Player {
             let mut movement_vec = Vec4::ZERO;
     
             if input.move_forward.is_action_pressed() {
-                movement_vec += Vec4::NEG_Z;
 
-                player_doll_input_state.move_forward = true;
+                match self.inner_state.player_moving_state
+                {
+                    PlayerMovingState::MovingNormal(_, _) =>
+                    {
+                        movement_vec += Vec4::NEG_Z;
+
+                        player_doll_input_state.move_forward = true;
+                    }
+                    PlayerMovingState::MovingThrowW(_, _) =>
+                    {
+                        movement_vec += Vec4::W;
+
+                        player_doll_input_state.move_forward = true;
+                    }
+                }
+
             }
     
             if input.move_backward.is_action_pressed() {
-                movement_vec += Vec4::Z;
+                
+                match self.inner_state.player_moving_state
+                {
+                    PlayerMovingState::MovingNormal(_, _) =>
+                    {
+                        movement_vec += Vec4::Z;
 
-                player_doll_input_state.move_backward = true;
+                        player_doll_input_state.move_backward = true;
+                    }
+                    PlayerMovingState::MovingThrowW(_, _) =>
+                    {
+                        movement_vec += Vec4::NEG_W;
+
+                        player_doll_input_state.move_backward = true;
+                    }
+                }
             }
     
             if input.move_right.is_action_pressed() {
@@ -1519,20 +1609,46 @@ impl Actor for Player {
     
                 if self.is_gravity_w_enabled {
 
-                    let target_w_pos = self.w_levels_of_map
-                        .get(self.current_w_level)
-                        .expect("Player's carrent_w_level is not exist in w_levels_of_map")
-                        .clone();
+                    match self.inner_state.player_moving_state
+                    {
+                        PlayerMovingState::MovingNormal(_, lock_w) =>
+                        {
+                            // let target_w_pos = self.w_levels_of_map
+                            //     .get(self.current_w_level)
+                            //     .expect("Player's carrent_w_level is not exist in w_levels_of_map")
+                            //     .clone();
+        
+                            let w_dif = lock_w - self.get_position().w;
+        
+                            self.inner_state.collider.current_velocity.w +=
+                                self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
+        
+                            self.inner_state.collider.current_velocity.w *=
+                                (w_dif * 5.0_f32)
+                                .abs()
+                                .clamp(0.0, 1.0);
+                        }
 
-                    let w_dif = target_w_pos - self.get_position().w;
+                        PlayerMovingState::MovingThrowW(_, lock_z) =>
+                        {
+                            // let target_w_pos = self.w_levels_of_map
+                            //     .get(self.current_w_level)
+                            //     .expect("Player's carrent_w_level is not exist in w_levels_of_map")
+                            //     .clone();
+        
+                            let z_dif = lock_z - self.get_position().z;
+        
+                            self.inner_state.collider.current_velocity.z +=
+                                self.player_settings.gravity_w_speed*z_dif.clamp(-1.0, 1.0);
+        
+                            self.inner_state.collider.current_velocity.z *=
+                                (z_dif * 5.0_f32)
+                                .abs()
+                                .clamp(0.0, 1.0);
+                        }
+                    }
 
-                    self.inner_state.collider.current_velocity.w +=
-                        self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
 
-                    self.inner_state.collider.current_velocity.w *=
-                        (w_dif * 5.0_f32)
-                        .abs()
-                        .clamp(0.0, 1.0);
                 }
     
             } else {
@@ -2484,6 +2600,9 @@ impl Player {
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
+        self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
+        self.inner_state.player_moving_state =
+            PlayerMovingState::MovingNormal(0.0, self.w_levels_of_map[spawn.w_level]);
 
         self.view_angle = Vec4::ZERO;
 
