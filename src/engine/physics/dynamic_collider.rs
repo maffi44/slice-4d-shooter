@@ -7,7 +7,7 @@ use crate::actor::{
 };
 
 #[derive(Clone)]
-pub enum DynamicColliderMessages {
+pub enum DynamicColliderMessage {
     
 }
 

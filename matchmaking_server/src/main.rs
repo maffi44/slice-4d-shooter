@@ -574,6 +574,15 @@ async fn async_main(
         }
     });
 
+    // this is necessary to keep matchmaking server alive during long inactivity  
+    async_runtime.spawn(async move {
+        loop
+        {
+            println!("ping");
+            tokio::time::sleep(Duration::from_secs(60)).await;
+        }
+    });
+    
     loop
     {
         match clients_listener.accept().await

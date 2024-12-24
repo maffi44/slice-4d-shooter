@@ -1,24 +1,18 @@
 use std::{collections::HashMap, fs::File, io::Read};
 
 use crate::{
-    transform::Transform,
-    engine::{
-        world::static_object::{
-            StaticObject,
-            ObjectMaterial
-        },
-        physics::{
-            static_collider::StaticCollider,
-            physics_system_data::ShapeType
-        },
-    },
     actor::{
-        ActorWrapper,
-        wandering_actor::{
+        mover_w::MoverW, wandering_actor::{
             WanderingActor,
             WanderingActorMovementType,
-        },
-    },
+        }, ActorWrapper
+    }, engine::{
+        physics::{
+            physics_system_data::ShapeType, static_collider::StaticCollider
+        }, world::static_object::{
+            ObjectMaterial, StaticObject
+        }
+    }, transform::Transform
 };
 
 use client_server_protocol::Team;
@@ -82,6 +76,8 @@ pub struct Level {
     pub red_flag_base: Transform,
     pub blue_flag_base: Transform,
     pub move_w_bonus_spot: Transform,
+
+    pub mover_w_list: Vec<MoverW>,
 }
 
 impl Level {
@@ -436,6 +432,25 @@ fn parse_json_level(
             as f32
     };
 
+    let mover_w_list = {
+        let array = json_level
+            .get("mover_w_list")
+            .expect("Wrong JSON map format. JSON level must have mover_w_list property")
+            .as_array()
+            .expect("Wrong JSON map format. JSON's mover_w_list property must be an array");
+
+        let mut list = Vec::new();
+
+        for json_obj in array
+        {
+            let mover_w = parse_mover_w(json_obj);
+
+            list.push(mover_w);
+        };
+
+        list
+    };
+
     let level = Level {
         blue_base_w_level,
         red_base_w_level,
@@ -457,10 +472,20 @@ fn parse_json_level(
         // red_map_color_level,
         // blue_map_color_level,
         move_w_bonus_spot,
+        mover_w_list,
     };
 
     (level, actors)
 }
+
+
+fn parse_mover_w(json_obj: &Value) -> MoverW
+{
+    let transform = parse_json_into_transform(json_obj, "mover_w");
+
+    MoverW::new(transform.get_position())
+}
+
 
 fn parse_json_visual_settings_of_environment(
     json: &Value,

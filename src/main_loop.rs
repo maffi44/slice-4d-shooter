@@ -321,6 +321,14 @@ fn init(systems: &mut Engine) {
         }
     );
 
+    while let Some(mover_w) = systems.world.level.mover_w_list.pop()
+    {
+        systems.world.add_actor_to_world(
+            ActorWrapper::MoverW(mover_w),
+            &mut systems.engine_handle
+        );
+    } 
+
     let red_flag = Flag::new(
         Team::Red,
         systems.world.level.red_flag_base

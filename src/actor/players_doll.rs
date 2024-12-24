@@ -29,28 +29,9 @@ use crate::{
 };
 
 use super::{
-    device::holegun::HOLE_GUN_COLOR,
-    flag::FlagMessage,
-    holegun_miss::HoleGunMiss,
-    holegun_shot::HoleGunShot,
-    machinegun_shot::MachinegunShot,
-    player::{
-        player_settings::PlayerSettings,
-        PlayerMessage,
-        PLAYER_MAX_HP,
-        TIME_TO_DIE_SLOWLY
-    },
-    players_death_explosion::PlayersDeathExplosion,
-    session_controller::SessionControllerMessage,
-    shooting_impact::ShootingImpact,
-    Actor,
-    ActorID,
-    ActorWrapper,
-    CommonActorsMessages,
-    Component,
-    Message,
-    MessageType,
-    SpecificActorMessage
+    device::holegun::HOLE_GUN_COLOR, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, mover_w::MoverWMessage, player::{
+        player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
+    }, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, Actor, ActorID, ActorWrapper, CommonActorsMessage, Component, Message, MessageType, SpecificActorMessage
 };
 
 #[derive(Clone)]
@@ -124,6 +105,8 @@ pub struct PlayersDoll {
 
     on_way_to_next_w_level: bool,
     current_w_level_prev_frame: u32,
+
+    player_moving_state: PlayerMovingState,
 }
 
 #[derive(Clone)]
@@ -277,6 +260,7 @@ impl PlayersDoll {
             radius: player_sphere_radius,
             my_color,
             on_way_to_next_w_level: false,
+            player_moving_state: PlayerMovingState::MovingNormal,
         }
     }
 
@@ -547,17 +531,17 @@ impl Actor for PlayersDoll {
         match message {
             MessageType::CommonActorsMessages(message) => {
                 match message {
-                    CommonActorsMessages::SetTransform(transform) => {
+                    CommonActorsMessage::SetTransform(transform) => {
                         self.transform = transform.clone();
                     },
-                    CommonActorsMessages::Enable(switch) => {
+                    CommonActorsMessage::Enable(switch) => {
                         self.is_enable = switch;
                     },
 
-                    CommonActorsMessages::IncrementPosition(increment) => {
+                    CommonActorsMessage::IncrementPosition(increment) => {
                         self.transform.increment_position(increment);
                     },
-                    CommonActorsMessages::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::IWasChangedMyId(new_id) => {}
                 }
             }
             MessageType::PhysicsMessages(message) => {
@@ -568,6 +552,43 @@ impl Actor for PlayersDoll {
             MessageType::SpecificActorMessage(message) => {
                 match message
                 {
+                    SpecificActorMessage::MoverW(message) =>
+                    {
+                        match message {
+                            MoverWMessage::Rotate =>
+                            {
+                                match self.player_moving_state {
+                                    PlayerMovingState::MovingNormal =>
+                                    {
+                                        self.player_moving_state = PlayerMovingState::MovingThrowW;
+                                    }
+                                    PlayerMovingState::MovingThrowW =>
+                                    {
+                                        self.player_moving_state = PlayerMovingState::MovingNormal;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    SpecificActorMessage::SessionControllerMessage(message) =>
+                    {
+                        match message
+                        {
+                            SessionControllerMessage::JoinedToSession(_,_,_,_,_,_) =>
+                            {
+                                self.prev_interpolating_model_set_target_time = 0u128;
+                            }
+
+                            SessionControllerMessage::NewSessionStarted(_) =>
+                            {
+                                self.prev_interpolating_model_set_target_time = 0u128;
+                            }
+
+                            _ => {}
+                        }
+                    }
+
                     SpecificActorMessage::PLayerMessage(message) => 
                     {
                         match message

@@ -9,7 +9,7 @@ use crate::{
 
 use std::f32::consts::PI;
 
-use super::{Actor, ActorID, CommonActorsMessages, Component, Message, MessageType};
+use super::{Actor, ActorID, CommonActorsMessage, Component, Message, MessageType};
 
 pub enum WanderingActorMovementType {
     Linear,

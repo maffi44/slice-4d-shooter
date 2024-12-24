@@ -5,13 +5,13 @@ use rand::Rng;
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VolumeArea}
+        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VolumeArea}
     },
     transform::Transform
 };
 
 use super::{
-    player::{BLUE_TEAM_COLOR, RED_TEAM_COLOR}, session_controller::SessionControllerMessage, Actor, ActorID, CommonActorsMessages, Message, MessageType, PhysicsMessages, SpecificActorMessage
+    player::{BLUE_TEAM_COLOR, RED_TEAM_COLOR}, session_controller::SessionControllerMessage, Actor, ActorID, CommonActorsMessage, Message, MessageType, PhysicsMessages, SpecificActorMessage
 };
 
 #[derive(Clone)]
@@ -679,7 +679,7 @@ impl Actor for Flag
             MessageType::CommonActorsMessages(message) =>
             {
                 match message {
-                    CommonActorsMessages::SetTransform(tr) =>
+                    CommonActorsMessage::SetTransform(tr) =>
                     {
                         self.transform = tr;
                     }
@@ -693,7 +693,7 @@ impl Actor for Flag
                     {
                         match message
                         {
-                            AreaMessages::ActorEnterArea(id) =>
+                            AreaMessage::ActorEnterArea(id) =>
                             {
                                 engine_handle.send_direct_message(
                                     id,
@@ -710,7 +710,7 @@ impl Actor for Flag
                                     }
                                 );
                             }
-                            AreaMessages::ActorIsContainedInsideArea(id) =>
+                            AreaMessage::ActorIsContainedInsideArea(id) =>
                             {
 
                             }

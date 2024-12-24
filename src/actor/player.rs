@@ -20,7 +20,7 @@ use crate::{
         players_doll::PlayerDollInputState,
         Actor,
         ActorID,
-        CommonActorsMessages,
+        CommonActorsMessage,
         Component,
         Message,
         MessageType,
@@ -39,7 +39,7 @@ use crate::{
             dynamic_collider::PlayersDollCollider,
             kinematic_collider::{
                 KinematicCollider,
-                KinematicColliderMessages
+                KinematicColliderMessage
             },
             PhysicsSystem
         }, render::VisualElement, time::TimeSystem, ui::{
@@ -63,8 +63,14 @@ use glam::{
 };
 
 use super::{
-    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, PhysicsMessages
+    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, PhysicsMessages
 };
+
+pub enum PlayerMovingState
+{
+    MovingNormal,
+    MovingThrowW,
+}
 
 pub struct PlayerInnerState {
     pub team: Team,
@@ -83,6 +89,7 @@ pub struct PlayerInnerState {
 
     pub is_time_after_some_team_win: bool,
     pub amount_of_move_w_bonuses_do_i_have: u32,
+    pub player_moving_state: PlayerMovingState,
     // pub weapon_offset: Vec4,
 }
 
@@ -127,6 +134,7 @@ impl PlayerInnerState {
 
             is_time_after_some_team_win: false,
             amount_of_move_w_bonuses_do_i_have: 0u32,
+            player_moving_state: PlayerMovingState::MovingNormal,
         }
     }
 }
@@ -303,21 +311,21 @@ impl Actor for Player {
             {
                 match message
                 {
-                    CommonActorsMessages::SetTransform(transform) =>
+                    CommonActorsMessage::SetTransform(transform) =>
                     {
                         self.inner_state.transform = transform;
                     },
 
-                    CommonActorsMessages::Enable(switch) =>
+                    CommonActorsMessage::Enable(switch) =>
                     {
                         self.inner_state.is_enable = switch;
                     },
 
-                    CommonActorsMessages::IncrementPosition(increment) =>
+                    CommonActorsMessage::IncrementPosition(increment) =>
                     {
                         self.inner_state.transform.increment_position(increment);
                     },
-                    CommonActorsMessages::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::IWasChangedMyId(new_id) => {}
                 }
             }
 
@@ -326,7 +334,7 @@ impl Actor for Player {
                 match message {
                     PhysicsMessages::KinematicColliderMessage(message) => {
                         match message {
-                            KinematicColliderMessages::ColliderIsStuckInsideObject =>
+                            KinematicColliderMessage::ColliderIsStuckInsideObject =>
                             {    
                                 self.die(
                                     true,
@@ -347,6 +355,25 @@ impl Actor for Player {
             {
                 match message
                 {
+                    SpecificActorMessage::MoverW(message) =>
+                    {
+                        match message {
+                            MoverWMessage::Rotate =>
+                            {
+                                match self.inner_state.player_moving_state {
+                                    PlayerMovingState::MovingNormal =>
+                                    {
+                                        self.inner_state.player_moving_state = PlayerMovingState::MovingThrowW;
+                                    }
+                                    PlayerMovingState::MovingThrowW =>
+                                    {
+                                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     SpecificActorMessage::PLayerMessage(message) =>
                     {
                         match message {
@@ -891,13 +918,29 @@ impl Actor for Player {
                     // xz = input.mouse_axis.x + xz;
                     
                 } else {
-                    zw *= 1.0 - delta * 3.0;
-                    if zw.abs() < 0.00001 {
-                        zw = 0.0;
+                    match self.inner_state.player_moving_state
+                    {
+                        PlayerMovingState::MovingNormal =>
+                        {
+                            zw *= 1.0 - delta * 3.0;
+                            if zw.abs() < 0.00001 {
+                                zw = 0.0;
+                            }
+                            
+                            xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                            yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+                        }
+                        PlayerMovingState::MovingThrowW =>
+                        {
+                            zw = zw.lerp(PI/2.0, delta * 3.0);
+                            if PI/2.0 - zw.abs() < 0.00001 {
+                                zw = PI/2.0;
+                            }
+                            
+                            xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                            yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+                        }
                     }
-                    
-                    xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                    yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
                 }
             } else {
 

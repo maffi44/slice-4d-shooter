@@ -2,7 +2,7 @@ use glam::{Vec3, Vec4};
 
 use crate::{
     engine::{
-        effects::EffectsSystem, physics::{area::{Area, AreaMessages}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, world::static_object::{SphericalVolumeArea, StaticObject, VolumeArea}
+        effects::EffectsSystem, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, world::static_object::{SphericalVolumeArea, StaticObject, VolumeArea}
     },
     transform::Transform
 };
@@ -11,7 +11,7 @@ use super::{
     session_controller::SessionControllerMessage,
     Actor,
     ActorID,
-    CommonActorsMessages,
+    CommonActorsMessage,
     Message,
     MessageType,
     PhysicsMessages,
@@ -210,7 +210,7 @@ impl Actor for MoveWBonusSpot
             {
                 match message
                 {
-                    CommonActorsMessages::IWasChangedMyId(new_id) =>
+                    CommonActorsMessage::IWasChangedMyId(new_id) =>
                     {
                         match self.status {
                             BonusSpotStatus::BonusCollected(id) =>
@@ -224,17 +224,17 @@ impl Actor for MoveWBonusSpot
                         }
                     }
 
-                    CommonActorsMessages::SetTransform(tr) =>
+                    CommonActorsMessage::SetTransform(tr) =>
                     {
                         self.transform = tr;
                     }
 
-                    CommonActorsMessages::IncrementPosition(incr) =>
+                    CommonActorsMessage::IncrementPosition(incr) =>
                     {
                         self.transform.increment_position(incr);
                     }
 
-                    CommonActorsMessages::Enable(switch) =>
+                    CommonActorsMessage::Enable(switch) =>
                     {
 
                     }
@@ -300,7 +300,7 @@ impl Actor for MoveWBonusSpot
                     PhysicsMessages::AreaMessage(message) =>
                     {
                         match message {
-                            AreaMessages::ActorEnterArea(id) =>
+                            AreaMessage::ActorEnterArea(id) =>
                             {
                                 engine_handle.send_direct_message(
                                     id,
@@ -315,7 +315,7 @@ impl Actor for MoveWBonusSpot
                                 );
                             }
 
-                            AreaMessages::ActorIsContainedInsideArea(id) =>
+                            AreaMessage::ActorIsContainedInsideArea(id) =>
                             {
 
                             }

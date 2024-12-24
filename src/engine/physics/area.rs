@@ -23,7 +23,7 @@ use glam::{Vec4, Vec4Swizzles};
 
    
 #[derive(Clone)]
-pub enum AreaMessages {
+pub enum AreaMessage {
     ActorIsContainedInsideArea(ActorID),
     ActorEscapeArea(ActorID),
     ActorEnterArea(ActorID),
@@ -92,7 +92,7 @@ impl Area {
 
                     let message_content = MessageType::PhysicsMessages(
                         PhysicsMessages::AreaMessage(
-                            AreaMessages::ActorEscapeArea(collider_id)
+                            AreaMessage::ActorEscapeArea(collider_id)
                         )
                     );
 
@@ -114,7 +114,7 @@ impl Area {
 
                     let message_content = MessageType::PhysicsMessages(
                         PhysicsMessages::AreaMessage(
-                            AreaMessages::ActorEnterArea(collider_id)
+                            AreaMessage::ActorEnterArea(collider_id)
                         )
                     );
 
@@ -137,7 +137,7 @@ impl Area {
             
             let message_content = MessageType::PhysicsMessages(
                 PhysicsMessages::AreaMessage(
-                    AreaMessages::ActorIsContainedInsideArea(*intersected_actor_id)
+                    AreaMessage::ActorIsContainedInsideArea(*intersected_actor_id)
                 )
             );
 

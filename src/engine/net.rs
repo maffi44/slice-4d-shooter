@@ -39,7 +39,7 @@ use client_server_protocol::{
 use crate::{
     actor::{
         flag::{FlagMessage, FlagStatus}, hole::Hole, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
-            PlayerDollInputState, PlayersDoll, PlayersDollMessage}, session_controller::SessionControllerMessage, ActorWrapper, CommonActorsMessages, Message, MessageType, SpecificActorMessage
+            PlayerDollInputState, PlayersDoll, PlayersDollMessage}, session_controller::SessionControllerMessage, ActorWrapper, CommonActorsMessage, Message, MessageType, SpecificActorMessage
     },
     transform::{self, Transform}
 };
@@ -991,7 +991,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::CommonActorsMessages(
-                                CommonActorsMessages::SetTransform(transform)
+                                CommonActorsMessage::SetTransform(transform)
                             )
                         }
                     )
@@ -1027,7 +1027,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::CommonActorsMessages(
-                                CommonActorsMessages::Enable(enable_state)
+                                CommonActorsMessage::Enable(enable_state)
                             )
                         }
                     )
@@ -1291,7 +1291,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::CommonActorsMessages(
-                                CommonActorsMessages::SetTransform(transform)
+                                CommonActorsMessage::SetTransform(transform)
                             )
                         }
                     )
@@ -1327,7 +1327,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::CommonActorsMessages(
-                                CommonActorsMessages::Enable(enable_state)
+                                CommonActorsMessage::Enable(enable_state)
                             )
                         }
                     )

@@ -10,7 +10,7 @@ use glam::Vec4;
 
 
 #[derive(Clone)]
-pub enum StaticColliderMessages {
+pub enum StaticColliderMessage {
     
 }
 

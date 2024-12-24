@@ -15,7 +15,7 @@ use glam::Vec4;
 
 
 #[derive(Clone)]
-pub enum KinematicColliderMessages {
+pub enum KinematicColliderMessage {
     ColliderIsStuckInsideObject
 }
 
@@ -152,7 +152,7 @@ impl KinematicCollider {
                             from: my_id,
                             message: crate::actor::MessageType::PhysicsMessages(
                                 crate::actor::PhysicsMessages::KinematicColliderMessage(
-                                    KinematicColliderMessages::ColliderIsStuckInsideObject
+                                    KinematicColliderMessage::ColliderIsStuckInsideObject
                                 )
                             )
                         }
