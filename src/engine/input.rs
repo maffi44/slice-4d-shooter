@@ -48,12 +48,12 @@ pub struct ActionsFrameState {
     pub activate_hand_slot_1: Action,
     pub activate_hand_slot_2: Action,
     pub activate_hand_slot_3: Action,
-    pub mode_1: Action,
-    pub mode_2: Action,
-    pub mode_3: Action,
+    // pub mode_1: Action,
+    // pub mode_2: Action,
+    // pub mode_3: Action,
     pub jump: Action,
-    pub jump_wy: Action,
-    pub jump_w: Action,
+    pub move_w_up: Action,
+    pub move_w_down: Action,
     pub first_mouse: Action,
     pub second_mouse: Action,
     pub mouse_axis: Vec2,
@@ -119,13 +119,13 @@ impl ActionsFrameState {
             w_down,
             w_up,
             jump,
-            jump_wy,
-            jump_w,
+            move_w_up: jump_wy,
+            move_w_down: jump_w,
             first_mouse,
             second_mouse,
-            mode_1,
-            mode_2,
-            mode_3,
+            // mode_1,
+            // mode_2,
+            // mode_3,
             mouse_axis
         }
     }
@@ -139,13 +139,13 @@ impl ActionsFrameState {
         let w_down = Action::new();
         let w_up = Action::new();
         let jump = Action::new();
-        let jump_wy = Action::new();
-        let jump_w = Action::new();
+        let move_w_up = Action::new();
+        let move_w_down = Action::new();
         let first_mouse = Action::new();
         let second_mouse = Action::new();
-        let mode_1 = Action::new();
-        let mode_2 = Action::new();
-        let mode_3 = Action::new();
+        // let mode_1 = Action::new();
+        // let mode_2 = Action::new();
+        // let mode_3 = Action::new();
         let activate_hand_slot_0 = Action::new();
         let activate_hand_slot_1 = Action::new();
         let activate_hand_slot_2 = Action::new();
@@ -165,13 +165,13 @@ impl ActionsFrameState {
             w_down,
             w_up,
             jump,
-            jump_wy,
-            jump_w,
+            move_w_up,
+            move_w_down,
             first_mouse,
             second_mouse,
-            mode_1,
-            mode_2,
-            mode_3,
+            // mode_1,
+            // mode_2,
+            // mode_3,
             mouse_axis
         }
     }

@@ -32,7 +32,7 @@ use super::{
     audio::AudioSystem, effects::EffectsSystem, engine_handle::Command, net::NetSystem, time::TimeSystem, ui::UISystem
 };
 
-use client_server_protocol::NetCommand;
+use client_server_protocol::{NetCommand, Team};
 
 pub struct World {
     pub level: Level,
@@ -205,18 +205,30 @@ impl World {
                 if let Some(player) = self.actors.get_mut(&id) {
                     
                     if let ActorWrapper::Player(player) = player {
-                        
-                        let spawn = self.level.get_random_spawn_position(
-                            player.get_team()
-                        );
-                        
-                        player.respawn(
-                            spawn,
-                            physics_system,
-                            ui_system,
-                            audio_system,
-                            engine_handle
-                        );
+
+                        match player.get_team()
+                        {
+                            Team::Red =>
+                            {
+                                player.respawn(
+                                    &mut self.level.red_spawns,
+                                    physics_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle
+                                );
+                            }
+                            Team::Blue =>
+                            {
+                                player.respawn(
+                                    &mut self.level.red_spawns,
+                                    physics_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle
+                                );
+                            }
+                        }
 
                     } else {
                         
@@ -233,17 +245,29 @@ impl World {
 
                     if let ActorWrapper::Player(player) = player {
                         
-                        let spawn = self.level.get_random_spawn_position(
-                            player.get_team()
-                        );
-                        
-                        player.respawn(
-                            spawn,
-                            physics_system,
-                            ui_system,
-                            audio_system,
-                            engine_handle
-                        );
+                        match player.get_team()
+                        {
+                            Team::Red =>
+                            {
+                                player.respawn(
+                                    &mut self.level.red_spawns,
+                                    physics_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle
+                                );
+                            }
+                            Team::Blue =>
+                            {
+                                player.respawn(
+                                    &mut self.level.red_spawns,
+                                    physics_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle
+                                );
+                            }
+                        }
 
                     } else {
                         panic!("Actor with main_player_id is not Player");

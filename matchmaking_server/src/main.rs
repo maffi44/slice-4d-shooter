@@ -12,7 +12,7 @@ use matchmaking_server_protocol::{
 use core::panic;
 use std::{
     fs::File,
-    io::Read,
+    io::{Read, Write},
     net::Ipv4Addr,
     process::Stdio,
     str::FromStr,
@@ -405,13 +405,19 @@ async fn spawn_game_server(
 async fn keep_server_process(
     server_proccess: Child,
     mut server_stdout_reader: Lines<BufReader<ChildStdout>>,
-    server_stderr: ChildStderr,
+    mut server_stderr: ChildStderr,
     server_index: u16,
 ) {
     while let Some(line) = server_stdout_reader.next_line().await.unwrap() {
         println!("INFO: [{}] server stdout is: {}", server_index, line);
         continue ;
     }
+
+    let mut err = String::new();
+
+    server_stderr.read_to_string(&mut err).await.unwrap();
+
+    println!("{}", err);
 }
 
 
@@ -578,7 +584,17 @@ async fn async_main(
     async_runtime.spawn(async move {
         loop
         {
-            println!("ping");
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .open("./temp")
+                .expect("ERROR: can't open temp file");
+
+            file
+                .write("temp".as_bytes())
+                .expect("ERROR: error during write in temp file");
+
             tokio::time::sleep(Duration::from_secs(60)).await;
         }
     });

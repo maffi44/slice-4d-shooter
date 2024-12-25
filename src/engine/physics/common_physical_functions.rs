@@ -1,3 +1,4 @@
+use client_server_protocol::Team;
 use glam::{
     Vec2,
     Vec3,
@@ -317,13 +318,13 @@ fn smax( a: f32, b: f32, k: f32 ) -> f32
 //     None
 // }
 
-pub fn get_id(p: Vec4, static_objects: &PhysicsState) -> Option<ActorID> {
+pub fn get_id_and_team(p: Vec4, static_objects: &PhysicsState) -> Option<(Option<ActorID>, Option<Team>)> {
 
     for collider in static_objects.player_forms.iter() {
         let d = sd_sphere(p - collider.position.clone(), collider.radius);
 
         if d < THRESHOLD {
-            return  collider.get_id();
+            return  Some((collider.get_id(), Some(collider.actors_team)));
         }
     }
 

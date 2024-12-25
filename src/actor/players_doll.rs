@@ -42,25 +42,50 @@ pub struct PlayerDollInputState
     pub move_right: bool,
     pub move_left: bool,
     pub will_jump: bool,
-    pub current_w_level: u32,
+    pub player_moving_state: PlayerMovingState
 }
 
 
 impl PlayerDollInputState {
-    pub fn serialize(self) -> (bool,bool,bool,bool,bool,u32)
-    {
+    pub fn serialize(self) -> (bool,bool,bool,bool,bool,bool,f32,f32)
+    {   
+        let (moving_normal, lock_val, dir) = match self.player_moving_state {
+            PlayerMovingState::MovingNormal(lock_w) =>
+            {
+                (true, lock_w, 1.0)
+            }
+            PlayerMovingState::MovingThrowW(lock_z, dir) =>
+            {
+                (false, lock_z, dir)
+                
+            }
+        };
+
         (
             self.move_forward,
             self.move_backward,
             self.move_right,
             self.move_left,
             self.will_jump,
-            self.current_w_level
+            moving_normal,
+            lock_val,
+            dir,
         )
     }
 
-    pub fn deserialize(input: (bool,bool,bool,bool,bool,u32)) -> Self
+    pub fn deserialize(input: (bool,bool,bool,bool,bool,bool,f32,f32)) -> Self
     {
+        let player_moving_state = {
+            if input.5
+            {
+                PlayerMovingState::MovingNormal(input.6)
+            }
+            else
+            {
+                PlayerMovingState::MovingThrowW(input.6, input.7)    
+            }
+        };
+
         PlayerDollInputState
         {
             move_forward: input.0,
@@ -68,7 +93,7 @@ impl PlayerDollInputState {
             move_right: input.2,
             move_left: input.3,
             will_jump: input.4,
-            current_w_level: input.5,
+            player_moving_state,
         }
     }
 }
@@ -105,8 +130,6 @@ pub struct PlayersDoll {
 
     on_way_to_next_w_level: bool,
     current_w_level_prev_frame: u32,
-
-    player_moving_state: PlayerMovingState,
 }
 
 #[derive(Clone)]
@@ -213,6 +236,7 @@ impl PlayersDoll {
                 bounce_rate: 0.0,
                 actors_id: Some(id),
                 weapon_offset,
+                actors_team: team,
             });
             vec
         };
@@ -234,7 +258,7 @@ impl PlayersDoll {
             move_right: false,
             move_left: false,
             will_jump: false,
-            current_w_level: 0u32,
+            player_moving_state: PlayerMovingState::MovingNormal(0.0),
         };
 
         PlayersDoll {
@@ -260,7 +284,6 @@ impl PlayersDoll {
             radius: player_sphere_radius,
             my_color,
             on_way_to_next_w_level: false,
-            player_moving_state: PlayerMovingState::MovingNormal(0.0, 0.0),
         }
     }
 
@@ -381,7 +404,7 @@ impl PlayersDoll {
             )
         }
 
-        self.current_w_level_prev_frame = input_state.current_w_level;
+        // self.current_w_level_prev_frame = input_state.current_w_level;
         self.on_way_to_next_w_level = false;
         self.is_alive = true;
         self.is_enable = true;
@@ -444,61 +467,74 @@ impl PlayersDoll {
 
         self.interpolating_model_target.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
 
-        if self.input_state.current_w_level != self.current_w_level_prev_frame
+        // if self.input_state.current_w_level != self.current_w_level_prev_frame
+        // {
+        //     audio_system.spawn_spatial_sound(
+        //         Sound::WShiftStart,
+        //         1.0,
+        //         1.0,
+        //         false,
+        //         true,
+        //         Status::Playing,
+        //         self.transform.get_position(),
+        //         1.0,
+        //         1.0,
+        //         30.0,
+        //     );
+
+        //     self.on_way_to_next_w_level = true;
+        // }
+
+        match self.input_state.player_moving_state
         {
-            audio_system.spawn_spatial_sound(
-                Sound::WShiftStart,
-                1.0,
-                1.0,
-                false,
-                true,
-                Status::Playing,
-                self.transform.get_position(),
-                1.0,
-                1.0,
-                30.0,
-            );
-
-            self.on_way_to_next_w_level = true;
-        }
-
-        self.current_w_level_prev_frame = self.input_state.current_w_level;
-        
-        let target_w_pos = self.w_levels_of_map
-            .get(self.input_state.current_w_level as usize)
-            .expect("PlayerDoll's current_w_level is not exist in w_levels_of_map")
-            .clone();
-
-        let w_dif = target_w_pos - self.target_transform.get_position().w;
-
-        self.interpolating_model_target.current_velocity.w +=
-            self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
-
-        self.interpolating_model_target.current_velocity.w *=
-            (w_dif * 5.0_f32)
-            .abs()
-            .clamp(0.0, 1.0);
-
-        if self.on_way_to_next_w_level
-        {
-            if w_dif.abs() < self.interpolating_model_target.get_collider_radius()*0.2
+            PlayerMovingState::MovingNormal(lock_w) =>
             {
-                self.on_way_to_next_w_level = false;
-    
-                audio_system.spawn_spatial_sound(
-                    Sound::WShiftEnd,
-                    1.0,
-                    1.0,
-                    false,
-                    true,
-                    Status::Playing,
-                    self.transform.get_position(),
-                    1.0,
-                    1.0,
-                    30.0,
-                );
+                let w_dif = lock_w - self.target_transform.get_position().w;
+
+                self.interpolating_model_target.current_velocity.w +=
+                    self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
+
+                self.interpolating_model_target.current_velocity.w *=
+                    (w_dif * 10.0_f32)
+                    .abs()
+                    .clamp(0.0, 1.0);
+            }
+
+            PlayerMovingState::MovingThrowW(lock_z, _) =>
+            {
+
+                let z_dif = lock_z - self.target_transform.get_position().z;
+
+                self.interpolating_model_target.current_velocity.z +=
+                    self.player_settings.gravity_w_speed*z_dif.clamp(-1.0, 1.0);
+
+                self.interpolating_model_target.current_velocity.z *=
+                    (z_dif * 10.0_f32)
+                    .abs()
+                    .clamp(0.0, 1.0);
             }
         }
+
+        // if self.on_way_to_next_w_level
+        // {
+        //     if w_dif.abs() < self.interpolating_model_target.get_collider_radius()*0.2
+        //     {
+        //         self.on_way_to_next_w_level = false;
+    
+        //         audio_system.spawn_spatial_sound(
+        //             Sound::WShiftEnd,
+        //             1.0,
+        //             1.0,
+        //             false,
+        //             true,
+        //             Status::Playing,
+        //             self.transform.get_position(),
+        //             1.0,
+        //             1.0,
+        //             30.0,
+        //         );
+        //     }
+        // }
     }
 
 
@@ -1045,7 +1081,7 @@ impl Actor for PlayersDoll {
                     transform: &mut self.transform,
                     kinematic_collider: Some((&mut self.interpolating_model_target, Some(&mut self.target_transform))),
                     static_colliders: None,
-                    dynamic_colliders: Some(&mut self.interpolating_model),
+                    dynamic_colliders: Some((&mut self.interpolating_model, self.team)),
                     static_objects: None,
                     area: None,
                 }

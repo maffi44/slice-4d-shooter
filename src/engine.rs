@@ -162,15 +162,6 @@ impl Engine {
         let time = TimeSystem::new(60_u32);
         log::info!("engine systems: time init");
 
-        
-        let net = NetSystem::new(
-            &world.players_settings,
-            &world.level.w_levels,
-            #[cfg(not(target_arch = "wasm32"))]
-            &mut runtime
-        ).await;
-        log::info!("engine systems: net init");
-
         let mut pre_initialized_ui = UISystem::new(); 
 
         let render = RenderSystem::new(
@@ -188,6 +179,14 @@ impl Engine {
         let audio = AudioSystem::new().await;
 
         let effects = EffectsSystem::new();
+
+        let net = NetSystem::new(
+            &world.players_settings,
+            &world.level.w_levels,
+            #[cfg(not(target_arch = "wasm32"))]
+            &mut runtime
+        ).await;
+        log::info!("engine systems: net init");
 
 
         Engine {

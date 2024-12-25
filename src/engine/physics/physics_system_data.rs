@@ -6,6 +6,7 @@ use crate::{
     }, transform::Transform
 };
 
+use client_server_protocol::Team;
 use glam::Vec4;
 
 use super::dynamic_collider::PlayersDollCollider;
@@ -183,7 +184,8 @@ pub struct PhysicsState {
 pub struct Hit {
     pub hit_point: Vec4,
     pub hit_normal: Vec4,
-    pub hited_actors_id: Option<u128>, 
+    pub hited_actors_id: Option<u128>,
+    pub hited_actors_team: Option<Team>,
 }
 
 struct StaticColliderData {

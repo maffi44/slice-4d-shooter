@@ -9,6 +9,7 @@ use client_server_protocol::{
     RemoteMessage,
     Team
 };
+use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
@@ -55,7 +56,7 @@ use self::{
 };
 
 use core::panic;
-use std::{collections::btree_set::Difference, f32::consts::PI};
+use std::{collections::btree_set::Difference, f32::consts::PI, usize};
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::{SoundSource, Status};
 use glam::{
@@ -66,9 +67,10 @@ use super::{
     device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, PhysicsMessages
 };
 
+#[derive(Clone)]
 pub enum PlayerMovingState
 {
-    MovingNormal(f32, f32),
+    MovingNormal(f32),
     MovingThrowW(f32, f32),
 }
 
@@ -107,6 +109,7 @@ impl PlayerInnerState {
                 bounce_rate: 0_f32,
                 actors_id: None,
                 weapon_offset: Vec4::ZERO,
+                actors_team: DEFAULT_TEAM,
             });
             vec
         };
@@ -134,7 +137,7 @@ impl PlayerInnerState {
 
             is_time_after_some_team_win: false,
             amount_of_move_w_bonuses_do_i_have: 0u32,
-            player_moving_state: PlayerMovingState::MovingNormal(0.0, 0.0),
+            player_moving_state: PlayerMovingState::MovingNormal(0.0),
         }
     }
 }
@@ -233,7 +236,7 @@ pub struct Player {
 
     flag_pivot_offset: Vec4,
 
-    on_way_to_next_w_level: bool,
+    on_way_to_next_w_level_by_bonus: bool,
 }
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 
@@ -361,13 +364,13 @@ impl Actor for Player {
                             MoverWMessage::Rotate(lock_z, lock_w) =>
                             {
                                 match self.inner_state.player_moving_state {
-                                    PlayerMovingState::MovingNormal(zw, _) =>
+                                    PlayerMovingState::MovingNormal(_) =>
                                     {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingThrowW(zw, lock_z);
+                                        self.inner_state.player_moving_state = PlayerMovingState::MovingThrowW(lock_z, 1.0);
                                     }
-                                    PlayerMovingState::MovingThrowW(zw, _) =>
+                                    PlayerMovingState::MovingThrowW(_,_) =>
                                     {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(zw, lock_w);
+                                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(lock_w);
                                     }
                                 }
                             }
@@ -743,7 +746,7 @@ impl Actor for Player {
                 transform: &mut self.inner_state.transform,
                 kinematic_collider: Some((&mut self.inner_state.collider, None)),
                 static_colliders: None,
-                dynamic_colliders: Some(&mut self.inner_state.collider_for_others),
+                dynamic_colliders: Some((&mut self.inner_state.collider_for_others, self.inner_state.team)),
                 static_objects: None,
                 area: None,
             };
@@ -888,7 +891,7 @@ impl Actor for Player {
             move_right: false,
             move_left: false,
             will_jump: false,
-            current_w_level: self.current_w_level as u32,
+            player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
 
@@ -927,7 +930,7 @@ impl Actor for Player {
                     // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
                     match &mut self.inner_state.player_moving_state
                     {
-                        PlayerMovingState::MovingNormal(zw2, _) =>
+                        PlayerMovingState::MovingNormal(_) =>
                         {
                             zw *= 1.0 - delta * 3.0;
                             if zw.abs() < 0.00001 {
@@ -937,9 +940,11 @@ impl Actor for Player {
                             xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
                             yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
                         }
-                        PlayerMovingState::MovingThrowW(zw2, _) =>
+                        PlayerMovingState::MovingThrowW(_, dir) =>
                         {
-                            zw = zw.lerp(PI/2.0, delta * 3.0);
+                            *dir = if *dir < 0.0 {-1.0} else {1.0};
+
+                            zw = zw.lerp(PI/2.0 * *dir, delta * 3.0);
                             if PI/2.0 - zw.abs() < 0.00001 {
                                 zw = PI/2.0;
                             }
@@ -1067,7 +1072,7 @@ impl Actor for Player {
 
             match self.inner_state.player_moving_state
             {
-                PlayerMovingState::MovingNormal(zw2, _) =>
+                PlayerMovingState::MovingNormal(_) =>
                 {
                     let zy_rotation = Mat4::from_rotation_x(-yz);
 
@@ -1087,20 +1092,20 @@ impl Actor for Player {
                     self.set_rotation_matrix(zw_rotation * zy_rotation * zx_rotation);
         
                 }
-                PlayerMovingState::MovingThrowW(zw2, _) =>
+                PlayerMovingState::MovingThrowW(_, _) =>
                 {
                     let yw_rotation = Mat4::from_cols_slice(&[
                         1.0,    0.0,        0.0,      0.0,
-                        0.0,    -(PI-yz).cos(),  0.0,      (PI-yz).sin(),
+                        0.0,    (-yz).cos(),  0.0,      -(-yz).sin(),
                         0.0,    0.0,        1.0,      0.0,
-                        0.0,    -(PI-yz).sin(),   0.0,      -(PI-yz).cos()
+                        0.0,    (-yz).sin(),   0.0,      (-yz).cos()
                     ]);
 
                     let xw_rotation = Mat4::from_cols_slice(&[
-                        (PI-xz).cos(),    0.0,       0.0,      (PI-xz).sin(),
+                        (-xz).cos(),    0.0,       0.0,      (-xz).sin(),
                         0.0,          1.0,       0.0,      0.0,
                         0.0,          0.0,       1.0,      0.0,
-                        -(PI-xz).sin(),     0.0,       0.0,      (PI-xz).cos()
+                        -(-xz).sin(),     0.0,       0.0,      (-xz).cos()
                     ]);
             
                     let zw_rotation = Mat4::from_cols_slice(&[
@@ -1269,17 +1274,17 @@ impl Actor for Player {
                 }
             }
     
-            if input.mode_1.is_action_just_pressed() {
-                self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
-            }
+            // if input.mode_1.is_action_just_pressed() {
+            //     self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
+            // }
     
-            if input.mode_2.is_action_just_pressed() {
-                self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
-            }
+            // if input.mode_2.is_action_just_pressed() {
+            //     self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
+            // }
     
-            if input.mode_3.is_action_just_pressed() {
-                self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
-            }
+            // if input.mode_3.is_action_just_pressed() {
+            //     self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
+            // }
     
             if input.activate_hand_slot_0.is_action_just_pressed() {
                 self.deavctivate_previous_device(
@@ -1373,7 +1378,7 @@ impl Actor for Player {
 
                 match self.inner_state.player_moving_state
                 {
-                    PlayerMovingState::MovingNormal(_, _) =>
+                    PlayerMovingState::MovingNormal(_) =>
                     {
                         movement_vec += Vec4::NEG_Z;
 
@@ -1393,7 +1398,7 @@ impl Actor for Player {
                 
                 match self.inner_state.player_moving_state
                 {
-                    PlayerMovingState::MovingNormal(_, _) =>
+                    PlayerMovingState::MovingNormal(_) =>
                     {
                         movement_vec += Vec4::Z;
 
@@ -1456,63 +1461,169 @@ impl Actor for Player {
             self.w_jump_reloading_time += delta;
 
             
-            if input.jump_wy.is_action_just_pressed() {
-                // todo!("make bonus and w jumpad logic");
+            if input.move_w_up.is_action_just_pressed() {
 
-                let next_w_level = self.current_w_level + 1;
+                match &mut self.inner_state.player_moving_state
+                {
+                    PlayerMovingState::MovingThrowW(_,_) => {}
 
-                if next_w_level < self.w_levels_of_map.len() {
-                    self.current_w_level = next_w_level;
+                    PlayerMovingState::MovingNormal(lock_w) =>
+                    {
+                        if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
+                        {
+                            let current_w_level = {
+                                let mut nearest_w_level = -100000.0;
 
-                    player_doll_input_state.current_w_level = next_w_level as u32;
+                                for w_level in self.w_levels_of_map.iter()
+                                {
+                                    if (*lock_w - nearest_w_level).abs() >
+                                        (*lock_w - *w_level).abs()
+                                    {
+                                        nearest_w_level = *w_level;
+                                    }                                    
+                                }
+                                
+                                nearest_w_level
+                            };
 
-                    self.on_way_to_next_w_level = true;
+                            let next_w_level = {
 
-                    audio_system.spawn_non_spatial_sound(
-                        Sound::WShiftStart,
-                        1.0,
-                        1.0,
-                        false,
-                        true,
-                        fyrox_sound::source::Status::Playing
-                    );
-                }
-            }
+                                let mut next_w_level = None;
 
-            if input.jump_w.is_action_just_pressed() {
-                // todo!("make bonus and w jumpad logic");
+                                let mut current_w_level_index = usize::MAX;
+                                
+                                let mut i = 0_usize;
 
-                if self.current_w_level > 0 {
+                                for w_level in self.w_levels_of_map.iter()
+                                {
+                                    if *w_level == current_w_level
+                                    {
+                                        current_w_level_index = i;
+                                    }
+                                    i += 1;
+                                }
 
-                    let next_w_level = self.current_w_level - 1;
-    
-                    if next_w_level < self.w_levels_of_map.len() {
-                        self.current_w_level = next_w_level;
+                                if current_w_level_index == usize::MAX
+                                {
+                                    panic!("Didn't find player's current w_level in w_levels_of_map");
+                                }
 
-                        player_doll_input_state.current_w_level = next_w_level as u32;
+                                if current_w_level_index + 1 < self.w_levels_of_map.len()
+                                {
+                                    next_w_level = Some(self.w_levels_of_map[current_w_level_index + 1]);
+                                }
 
-                        self.on_way_to_next_w_level = true;
+                                next_w_level
+                            };
 
-                        audio_system.spawn_non_spatial_sound(
-                            Sound::WShiftStart,
-                            1.0,
-                            1.0,
-                            false,
-                            true,
-                            fyrox_sound::source::Status::Playing
-                        );
+                            if let Some(next_w_level) = next_w_level
+                            {
+                                *lock_w = next_w_level;
+                                self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
+
+                                self.on_way_to_next_w_level_by_bonus = true;
+
+                                audio_system.spawn_non_spatial_sound(
+                                    Sound::WShiftStart,
+                                    1.0,
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing
+                                );
+
+
+                            }
+                        }
                     }
                 }
             }
 
-            if self.on_way_to_next_w_level
+            if input.move_w_down.is_action_just_pressed() {
+                match &mut self.inner_state.player_moving_state
+                {
+                    PlayerMovingState::MovingThrowW(_,_) => {}
+
+                    PlayerMovingState::MovingNormal(lock_w) =>
+                    {
+                        if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
+                        {
+                            let current_w_level = {
+                                let mut nearest_w_level = -100000.0;
+
+                                for w_level in self.w_levels_of_map.iter()
+                                {
+                                    if (*lock_w - nearest_w_level).abs() >
+                                        (*lock_w - *w_level).abs()
+                                    {
+                                        nearest_w_level = *w_level;
+                                    }                                    
+                                }
+                                
+                                nearest_w_level
+                            };
+
+                            let next_w_level = {
+
+                                let mut next_w_level = None;
+
+                                let mut current_w_level_index = usize::MAX;
+                                
+                                let mut i = 0_usize;
+
+                                for w_level in self.w_levels_of_map.iter()
+                                {
+                                    if *w_level == current_w_level
+                                    {
+                                        current_w_level_index = i;
+                                    }
+                                    i += 1;
+                                }
+
+                                if current_w_level_index == usize::MAX
+                                {
+                                    panic!("Didn't find player's current w_level in w_levels_of_map");
+                                }
+
+                                if current_w_level_index != 0
+                                {
+                                    next_w_level = Some(self.w_levels_of_map[current_w_level_index - 1]);
+                                }
+
+                                next_w_level
+                            };
+
+                            if let Some(next_w_level) = next_w_level
+                            {
+                                *lock_w = next_w_level;
+                                self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
+
+                                self.on_way_to_next_w_level_by_bonus = true;
+
+                                audio_system.spawn_non_spatial_sound(
+                                    Sound::WShiftStart,
+                                    1.0,
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing
+                                );
+
+
+                            }
+                        }
+                    }
+                }
+            }
+
+            if self.on_way_to_next_w_level_by_bonus
             {
                 let target_w_pos = self.w_levels_of_map[self.current_w_level];
                 let dist = (self.get_position().w - target_w_pos).abs();
 
                 if dist < self.get_collider_radius()*0.2
                 {
-                    self.on_way_to_next_w_level = false;
+                    self.on_way_to_next_w_level_by_bonus = false;
 
                     audio_system.spawn_non_spatial_sound(
                         Sound::WShiftEnd,
@@ -1611,7 +1722,7 @@ impl Actor for Player {
 
                     match self.inner_state.player_moving_state
                     {
-                        PlayerMovingState::MovingNormal(_, lock_w) =>
+                        PlayerMovingState::MovingNormal(lock_w) =>
                         {
                             // let target_w_pos = self.w_levels_of_map
                             //     .get(self.current_w_level)
@@ -1624,12 +1735,12 @@ impl Actor for Player {
                                 self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
         
                             self.inner_state.collider.current_velocity.w *=
-                                (w_dif * 5.0_f32)
+                                (w_dif * 10.0_f32)
                                 .abs()
                                 .clamp(0.0, 1.0);
                         }
 
-                        PlayerMovingState::MovingThrowW(_, lock_z) =>
+                        PlayerMovingState::MovingThrowW(lock_z, _) =>
                         {
                             // let target_w_pos = self.w_levels_of_map
                             //     .get(self.current_w_level)
@@ -1642,7 +1753,7 @@ impl Actor for Player {
                                 self.player_settings.gravity_w_speed*z_dif.clamp(-1.0, 1.0);
         
                             self.inner_state.collider.current_velocity.z *=
-                                (z_dif * 5.0_f32)
+                                (z_dif * 10.0_f32)
                                 .abs()
                                 .clamp(0.0, 1.0);
                         }
@@ -1831,6 +1942,8 @@ impl Actor for Player {
             v.to_array()
         };
 
+        player_doll_input_state.player_moving_state = self.inner_state.player_moving_state.clone();
+
         engine_handle.send_command(Command{
             sender: my_id,
             command_type: CommandType::NetCommand(
@@ -1969,7 +2082,7 @@ impl Player {
 
             flag_pivot_offset: Vec4::new(0.0, player_radius * 2.0, 0.0, 0.0),
 
-            on_way_to_next_w_level: false,
+            on_way_to_next_w_level_by_bonus: false,
         }
     }
 
@@ -2591,18 +2704,81 @@ impl Player {
 
     pub fn respawn(
         &mut self,
-        spawn: Spawn,
+        spawns: &mut Vec<Spawn>,
         physics_system: &PhysicsSystem,
         ui_system: &mut UISystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
+        let mut rng = thread_rng();
+        spawns.shuffle(&mut rng);
+
+        let mut current_spawn = spawns.last().expect("spawns in respawn function has zero length");
+
+        let mut can_spawn = false;
+
+        for spawn in spawns.iter()
+        {
+            let hits = physics_system.sphere_cast_on_dynamic_colliders(
+                spawn.spawn_position,
+                self.get_collider_radius()
+            );
+    
+            for hit in &hits {
+                if let Some(team) = hit.hited_actors_team
+                {
+                    self.get_team() == team;
+                    continue;
+                }
+            }
+
+            can_spawn = true;
+
+            for hit in hits {
+                engine_handle.send_direct_message(
+                    hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
+                    Message {
+                        from: self.get_id().expect("Player have not ID in respawn func"),
+                        message: MessageType::SpecificActorMessage(
+                            SpecificActorMessage::PLayerMessage(
+                                PlayerMessage::Telefrag
+                            )
+                        )
+                    }
+                )
+            }
+
+            current_spawn = spawn;
+        };
+
+        if !can_spawn
+        {
+            let hits = physics_system.sphere_cast_on_dynamic_colliders(
+                current_spawn.spawn_position,
+                self.get_collider_radius()
+            );
+
+            for hit in hits {
+                engine_handle.send_direct_message(
+                    hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
+                    Message {
+                        from: self.get_id().expect("Player have not ID in respawn func"),
+                        message: MessageType::SpecificActorMessage(
+                            SpecificActorMessage::PLayerMessage(
+                                PlayerMessage::Telefrag
+                            )
+                        )
+                    }
+                )
+            }
+        }
+
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
         self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
         self.inner_state.player_moving_state =
-            PlayerMovingState::MovingNormal(0.0, self.w_levels_of_map[spawn.w_level]);
+            PlayerMovingState::MovingNormal(self.w_levels_of_map[current_spawn.w_level]);
 
         self.view_angle = Vec4::ZERO;
 
@@ -2711,30 +2887,11 @@ impl Player {
 
         self.inner_state.collider.reset_forces_and_velocity();
 
-        self.inner_state.transform = Transform::from_position(spawn.spawn_position);
+        self.inner_state.transform = Transform::from_position(current_spawn.spawn_position);
 
-        self.current_w_level = spawn.w_level;
+        self.current_w_level = current_spawn.w_level;
 
-        self.player_previous_w_position = spawn.spawn_position.w;
-
-        let hits = physics_system.sphere_cast_on_dynamic_colliders(
-            spawn.spawn_position,
-            self.get_collider_radius()
-        );
-
-        for hit in hits {
-            engine_handle.send_direct_message(
-                hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
-                Message {
-                    from: self.get_id().expect("Player have not ID in respawn func"),
-                    message: MessageType::SpecificActorMessage(
-                        SpecificActorMessage::PLayerMessage(
-                            PlayerMessage::Telefrag
-                        )
-                    )
-                }
-            )
-        }
+        self.player_previous_w_position = current_spawn.spawn_position.w;
 
         let player_doll_input_state = PlayerDollInputState {
             move_forward: false,
@@ -2742,7 +2899,7 @@ impl Player {
             move_right: false,
             move_left: false,
             will_jump: false,
-            current_w_level: self.current_w_level as u32,
+            player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
         engine_handle.send_command(

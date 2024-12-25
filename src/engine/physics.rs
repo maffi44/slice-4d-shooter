@@ -23,7 +23,7 @@ use self::{
     area::Area,
     common_physical_functions::{
         get_dist,
-        get_id,
+        get_id_and_team,
         get_normal,
         THRESHOLD
     },
@@ -144,10 +144,11 @@ impl PhysicsSystem {
                     }
                 }
 
-                if let Some(colliders) = physical_element.dynamic_colliders {
+                if let Some((colliders, team)) = physical_element.dynamic_colliders {
                     for dynamic_collider in colliders {
 
                         dynamic_collider.set_id(id);
+                        dynamic_collider.actors_team = team;
                         
                         // temporary solution to immitate kinematic physic
                         let mut temporal_dynamic_collider = dynamic_collider.clone();
@@ -224,15 +225,28 @@ impl PhysicsSystem {
 
             if dist < THRESHOLD {
 
-                let hited_actors_id = get_id(pos, &self.physics_state);
-
-                return Some(
+                if let Some((hited_actors_id, hited_actors_team)) = get_id_and_team(pos, &self.physics_state)
+                {
+                    return Some(
                         Hit {
-                        hit_point: pos,
-                        hit_normal: get_normal(pos, &self.physics_state, excluded_id),
-                        hited_actors_id,
-                    }
-                );
+                            hit_point: pos,
+                            hit_normal: get_normal(pos, &self.physics_state, excluded_id),
+                            hited_actors_id,
+                            hited_actors_team,
+                        }
+                    );
+                }
+                else
+                {
+                    return Some(
+                            Hit {
+                            hit_point: pos,
+                            hit_normal: get_normal(pos, &self.physics_state, excluded_id),
+                            hited_actors_id: None,
+                            hited_actors_team: None,
+                        }
+                    );
+                }
             }
 
             total_dist += dist;
@@ -263,10 +277,13 @@ impl PhysicsSystem {
 
                 let hited_actors_id = dyn_sphere.get_id();
 
+                let hited_actors_team = dyn_sphere.actors_team;
+
                 let hit = Hit {
                     hit_point,
                     hit_normal,
                     hited_actors_id,
+                    hited_actors_team: Some(hited_actors_team),
                 };
 
                 hits.push(hit);

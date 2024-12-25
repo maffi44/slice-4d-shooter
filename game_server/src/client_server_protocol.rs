@@ -176,7 +176,7 @@ pub enum RemoteMessage {
         // position
         SerializableTransform,
         // input state for extrapolation
-        (bool,bool,bool,bool,bool,u32),
+        (bool,bool,bool,bool,bool,bool,f32,f32),
         // force for physic body
         [f32;4],
         // player's team
@@ -184,7 +184,7 @@ pub enum RemoteMessage {
     ),
     Enable(bool),
     SetTransform(SerializableTransform),
-    SetPlayerDollState(SerializableTransform, (bool,bool,bool,bool,bool,u32), [f32;4], u128),
+    SetPlayerDollState(SerializableTransform, (bool,bool,bool,bool,bool,bool,f32,f32), [f32;4], u128),
     SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
     SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
     HoleGunStartCharging,
