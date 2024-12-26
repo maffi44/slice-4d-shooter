@@ -79,7 +79,7 @@ pub struct PlayerInnerState {
     pub collider: KinematicCollider,
     pub collider_for_others: Vec<PlayersDollCollider>,
     pub transform: Transform,
-    pub hp: i32,
+    pub hp: f32,
     pub is_alive: bool,
     pub is_enable: bool,
     pub crosshair_target_size: f32,
@@ -92,12 +92,22 @@ pub struct PlayerInnerState {
     pub is_time_after_some_team_win: bool,
     pub amount_of_move_w_bonuses_do_i_have: u32,
     pub player_moving_state: PlayerMovingState,
+
+    pub blue_map_w_level: f32,
+    pub red_map_w_level: f32,
     // pub weapon_offset: Vec4,
 }
 
 
 impl PlayerInnerState {
-    pub fn new(transform: Transform, settings: &PlayerSettings, is_alive: bool, is_enable: bool) -> Self {
+    pub fn new(
+        transform: Transform,
+        settings: &PlayerSettings,
+        is_alive: bool,
+        is_enable: bool,
+        blue_map_w_level: f32,
+        red_map_w_level: f32,
+    ) -> Self {
 
         let collider_for_others = {
             let mut vec = Vec::with_capacity(1);
@@ -125,7 +135,7 @@ impl PlayerInnerState {
             ),
             collider_for_others,
             transform,
-            hp: 0,
+            hp: 0.0,
             is_alive,
             is_enable,
             crosshair_target_size: 0.04,
@@ -138,6 +148,9 @@ impl PlayerInnerState {
             is_time_after_some_team_win: false,
             amount_of_move_w_bonuses_do_i_have: 0u32,
             player_moving_state: PlayerMovingState::MovingNormal(0.0),
+
+            blue_map_w_level,
+            red_map_w_level,
         }
     }
 }
@@ -237,10 +250,12 @@ pub struct Player {
     flag_pivot_offset: Vec4,
 
     on_way_to_next_w_level_by_bonus: bool,
+
+    base_effect_tick_timer: f32,
 }
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 
-pub const PLAYER_MAX_HP: i32 = 100;
+pub const PLAYER_MAX_HP: f32 = 100.0;
 
 const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
 const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
@@ -269,6 +284,8 @@ pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.0, 0.0, 1.0);
 pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 2;
 
 const HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL: f32 = 0.2;
+
+const BASE_EFFECT_HP_IMPACT_SPEED: f32 = 2.6;
 
 #[derive(Clone)]
 pub enum PlayerMessage {
@@ -947,11 +964,6 @@ impl Actor for Player {
 
         if self.inner_state.is_alive {
 
-            if self.inner_state.is_time_after_some_team_win
-            {
-                input = ActionsFrameState::empty();
-            }
-
             self.screen_effects.death_screen_effect -= delta*DEATH_EFFECT_COEF_DECREASE_SPEED;
             self.screen_effects.death_screen_effect = self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
@@ -982,7 +994,7 @@ impl Actor for Player {
                     {
                         PlayerMovingState::MovingNormal(_) =>
                         {
-                            zw *= 1.0 - delta * 2.1;
+                            zw *= 1.0 - delta * 2.8;
                             if zw.abs() < 0.0001 {
                                 zw = 0.0;
                             }
@@ -994,7 +1006,7 @@ impl Actor for Player {
                         {
                             *dir = if *dir < 0.0 {-1.0} else {1.0};
 
-                            zw = zw.lerp(PI/2.0 * *dir, delta * 2.1);
+                            zw = zw.lerp(PI/2.0 * *dir, delta * 2.8);
                             if PI/2.0 - zw.abs() < 0.0001 {
                                 zw = PI/2.0 * *dir;
                             }
@@ -1903,6 +1915,9 @@ impl Actor for Player {
 
             self.player_previous_w_position = self.get_position().w;
 
+
+            self.get_effected_by_base(delta, physic_system, audio_system, ui_system, engine_handle);
+
             // ---------------------------------------------------
             // temp!
             // y death plane
@@ -2072,6 +2087,12 @@ impl Player {
         audio_system: &mut AudioSystem,
         w_levels_of_map: Vec<f32>,
     ) -> Self {
+
+        assert!(w_levels_of_map.len() > 1);
+
+        let blue_map_w_level = w_levels_of_map[0];
+
+        let red_map_w_level = *w_levels_of_map.last().unwrap();
         
         let screen_effects = PlayerScreenEffects {
             w_scanner_is_active: false,
@@ -2109,7 +2130,14 @@ impl Player {
         Player {
             id: None,
 
-            inner_state: PlayerInnerState::new(Transform::new(), &player_settings, false, false),
+            inner_state: PlayerInnerState::new(
+                Transform::new(),
+                &player_settings,
+                false,
+                false,
+                blue_map_w_level,
+                red_map_w_level,
+            ),
             active_hands_slot: ActiveHandsSlot::Zero,
 
             hands_slot_0: Box::new(HoleGun::new(
@@ -2182,6 +2210,7 @@ impl Player {
             flag_pivot_offset: Vec4::new(0.0, player_radius * 2.0, 0.0, 0.0),
 
             on_way_to_next_w_level_by_bonus: false,
+            base_effect_tick_timer: 0.0,
         }
     }
 
@@ -2234,6 +2263,65 @@ impl Player {
     }
 
 
+    fn get_effected_by_base(
+        &mut self,
+        delta: f32,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
+    ) {
+        let base_coef = 
+        {
+            let w_pos = self.get_position().w;
+
+            let mut coef = f32::clamp(
+                (w_pos - self.inner_state.blue_map_w_level) /
+                (self.inner_state.red_map_w_level - self.inner_state.blue_map_w_level),
+                    0.0,
+                    1.0
+            );
+
+            if self.inner_state.team == Team::Blue
+            {
+                coef = 1.0 - coef;
+            }
+
+            coef = (coef * 2.0) - 1.0;
+
+            coef
+        };
+
+        self.inner_state.hp += BASE_EFFECT_HP_IMPACT_SPEED * delta * base_coef;
+
+        if self.inner_state.hp > PLAYER_MAX_HP
+        {
+            self.inner_state.hp = PLAYER_MAX_HP;
+        }
+
+        let health_bar = match self.inner_state.team {
+            Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
+            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
+        };
+
+        if let UIElement::ProgressBar(bar) = health_bar {
+            let bar_value = {
+                (self.inner_state.hp as f32 / PLAYER_MAX_HP as f32)
+                    .clamp(0.0, 1.0)
+            };
+
+            bar.set_bar_value(bar_value)
+
+        } else {
+            panic!("Health Bar is not Progress Bar")
+        }
+
+        if self.inner_state.hp <= 0.0
+        {
+            self.die(true, engine_handle, physic_system, audio_system, ui_system);
+        }
+    }
+
     fn get_damage_and_add_force(
         &mut self,
         damage: i32,
@@ -2255,7 +2343,7 @@ impl Player {
 
         self.screen_effects.getting_damage_screen_effect = 1.0;
 
-        self.inner_state.hp -= damage;
+        self.inner_state.hp -= damage as f32;
         self.inner_state.collider.add_force(force);
 
         let health_bar = match self.inner_state.team {
@@ -2275,8 +2363,8 @@ impl Player {
             panic!("Health Bar is not Progress Bar")
         }
 
-        if self.inner_state.hp <= 0 {
-            if damage >= PLAYER_MAX_HP {
+        if self.inner_state.hp <= 0.0 {
+            if damage as f32 >= PLAYER_MAX_HP {
                 self.die(
                     true,
                     engine_handle,
@@ -2467,6 +2555,9 @@ impl Player {
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
 
+                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRedW);
+                hud_elem.get_ui_data_mut().rect.transparency = a;
+
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
 
@@ -2495,6 +2586,9 @@ impl Player {
             Team::Blue =>
             {
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
+                hud_elem.get_ui_data_mut().rect.transparency = a;
+
+                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlueW);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);

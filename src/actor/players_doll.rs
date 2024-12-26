@@ -29,7 +29,7 @@ use crate::{
 };
 
 use super::{
-    device::holegun::HOLE_GUN_COLOR, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, mover_w::MoverWMessage, player::{
+    device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, mover_w::MoverWMessage, player::{
         player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
     }, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, Actor, ActorID, ActorWrapper, CommonActorsMessage, Component, Message, MessageType, SpecificActorMessage
 };
@@ -756,9 +756,14 @@ impl Actor for PlayersDoll {
                             {
                                 if self.volume_area.is_empty() {
 
+                                    let color = match self.team {
+                                        Team::Red => HOLE_GUN_RED_COLOR,
+                                        Team::Blue => HOLE_GUN_BLUE_COLOR,
+                                    };
+
                                     let volume_area = VolumeArea::SphericalVolumeArea(
                                         SphericalVolumeArea {
-                                            color: HOLE_GUN_COLOR,
+                                            color,
                                             translation: self.transform.get_rotation().inverse() * self.weapon_shooting_point,
                                             radius: 0.1 * VISUAL_FIRE_SHPERE_MULT,
                                         }

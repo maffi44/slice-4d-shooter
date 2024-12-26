@@ -53,7 +53,7 @@ use client_server_protocol::{
 pub struct HoleGun {
     shooted_on_this_charge: bool,
     is_charging: bool,
-    color: Vec3,
+    // color: Vec3,
     volume_area: Vec<VolumeArea>,
     shooted_from_pivot_point_dir: Vec4,
     charging_sound: Option<Handle<SoundSource>>,
@@ -67,7 +67,8 @@ pub struct HoleGun {
     energy_gun_restoring_speed: f32,
 }
 
-pub const HOLE_GUN_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
+pub const HOLE_GUN_BLUE_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
+pub const HOLE_GUN_RED_COLOR: Vec3 = Vec3::new(1.6, 0.6, 0.05);
 pub const CHARGING_COEF: f32 = 0.7;
 pub const MAX_CHARGING_TIME: f32 = 3.4;
 
@@ -83,7 +84,6 @@ impl HoleGun {
         energy_gun_add_force_mult: f32, 
         energy_gun_damage_mult: f32, 
         energy_gun_restoring_speed: f32,
-
     ) -> Self {
         let shooted_from_pivot_point_dir = Vec4::new(
             1.0,
@@ -92,9 +92,14 @@ impl HoleGun {
             0.0
         );
 
+        // let color = match team {
+        //     Team::Blue => HOLE_GUN_BLUE_COLOR,
+        //     Team::Red => HOLE_GUN_RED_COLOR,
+        // };
+
         HoleGun {
             shooted_on_this_charge: false,
-            color: HOLE_GUN_COLOR,
+            // color,
             volume_area: Vec::with_capacity(1),
             shooted_from_pivot_point_dir,
             is_charging: false,
@@ -197,10 +202,29 @@ impl HoleGun {
                 );
             }
 
+            let base_coef = 
+            {
+                let mut coef = f32::clamp(
+                    (position.w - player.blue_map_w_level) /
+                    (player.red_map_w_level - player.blue_map_w_level),
+                     0.0,
+                     1.0
+                );
+
+                if player.team == Team::Blue
+                {
+                    coef = 1.0 - coef;
+                }
+
+                coef = (coef * 0.38) + 0.62;
+
+                coef
+            };
+
             let hole = HoleGunShot::new(
                 position,
                 shooted_from,
-                radius.abs(),
+                radius.abs()*base_coef,
                 color,
                 volume_area,
                 1.0,
@@ -225,7 +249,7 @@ impl HoleGun {
                                 RemoteMessage::SpawnHoleGunShotActor(
                                     position.to_array(),
                                     shooted_from.to_array(),
-                                    radius.abs(),
+                                    radius.abs()*base_coef,
                                     color.to_array(),
                                     volume_area_radius.abs(),
                                 )
@@ -326,6 +350,11 @@ impl Device for HoleGun {
         delta: f32,
     )
     {
+        let color = match player.team {
+            Team::Red => HOLE_GUN_RED_COLOR,
+            Team::Blue => HOLE_GUN_BLUE_COLOR,
+        };
+
         if input.first_mouse.is_action_pressed() {
 
             if self.energy < ENERGY_SHOT_COST {
@@ -358,7 +387,7 @@ impl Device for HoleGun {
     
                     let volume_area = VolumeArea::SphericalVolumeArea(
                         SphericalVolumeArea {
-                            color: self.color,
+                            color: color,
                             translation: shooted_from_offset,
                             radius: 0.05,
                         }
@@ -424,7 +453,7 @@ impl Device for HoleGun {
                         audio_system,
                         engine_handle,
                         self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
-                        self.color,
+                        color,
                     );
     
                     self.current_shot_charging_energy = 0.0;
@@ -452,7 +481,7 @@ impl Device for HoleGun {
                         audio_system,
                         engine_handle,
                         self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
-                        self.color,
+                        color,
                     );
     
                     self.current_shot_charging_energy = 0.0;
@@ -515,6 +544,11 @@ impl Device for HoleGun {
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
     ) {
+        let color = match player.team {
+            Team::Red => HOLE_GUN_RED_COLOR,
+            Team::Blue => HOLE_GUN_BLUE_COLOR,
+        };
+
         self.shooted_on_this_charge = false;
         
         if self.is_charging {
@@ -527,7 +561,7 @@ impl Device for HoleGun {
                     audio_system,
                     engine_handle,
                     self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
-                    self.color,
+                    color,
                 );
 
                 self.current_shot_charging_energy = 0.0;
