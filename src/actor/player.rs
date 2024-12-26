@@ -1059,10 +1059,38 @@ impl Actor for Player {
                 Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue),
             };
 
-            if let UIElement::Image(arrow) = zw_arrow {
-                arrow.set_rotation_around_screen_center(-zw+PI/2.0);
-            } else {
-                panic!("UI Element ZWScannerArrow is not UIImage")
+            match self.inner_state.player_moving_state {
+                PlayerMovingState::MovingThrowW(_,dir) =>
+                {
+                    let dir_vec = self.get_rotation_matrix().inverse() * Vec4::NEG_Z;
+
+                    let w_dir = if dir_vec.w > 0.0 {1.0} else {-1.0};
+
+                    if dir_vec.w > 0.0
+                    {
+                        if let UIElement::Image(arrow) = zw_arrow {
+                            arrow.set_rotation_around_screen_center(-zw*dir*w_dir + PI/2.0);
+                        } else {
+                            panic!("UI Element ZWScannerArrow is not UIImage")
+                        }
+                    }
+                    else
+                    {
+                        if let UIElement::Image(arrow) = zw_arrow {
+                            arrow.set_rotation_around_screen_center(-zw*dir*w_dir + PI/2.0);
+                        } else {
+                            panic!("UI Element ZWScannerArrow is not UIImage")
+                        }
+                    }
+                }
+                PlayerMovingState::MovingNormal(_) =>
+                {
+                    if let UIElement::Image(arrow) = zw_arrow {
+                        arrow.set_rotation_around_screen_center(-zw+PI/2.0);
+                    } else {
+                        panic!("UI Element ZWScannerArrow is not UIImage")
+                    }
+                }
             }
 
             let zx_arrow = match self.inner_state.team {
@@ -1070,10 +1098,34 @@ impl Actor for Player {
                 Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue),   
             };
 
-            if let UIElement::Image(arrow) = zx_arrow {
-                arrow.set_rotation_around_screen_center(xz-PI/2.0);
-            } else {
-                panic!("UI Element ZXScannerArrow is not UIImage")
+            match self.inner_state.player_moving_state {
+                PlayerMovingState::MovingThrowW(_,dir) =>
+                {
+                    if dir > 0.0
+                    {
+                        if let UIElement::Image(arrow) = zx_arrow {
+                            arrow.set_rotation_around_screen_center(xz*dir - PI/2.0);
+                        } else {
+                            panic!("UI Element ZXScannerArrow is not UIImage")
+                        }
+                    }
+                    else
+                    {
+                        if let UIElement::Image(arrow) = zx_arrow {
+                            arrow.set_rotation_around_screen_center(xz*dir + PI/2.0);
+                        } else {
+                            panic!("UI Element ZXScannerArrow is not UIImage")
+                        }
+                    }
+                }
+                PlayerMovingState::MovingNormal(_) =>
+                {
+                    if let UIElement::Image(arrow) = zx_arrow {
+                        arrow.set_rotation_around_screen_center(xz-PI/2.0);
+                    } else {
+                        panic!("UI Element ZXScannerArrow is not UIImage")
+                    }
+                }
             }
 
             let h_pointer = match self.inner_state.team {
