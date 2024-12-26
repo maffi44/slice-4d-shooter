@@ -13,13 +13,21 @@ const MOVER_W_PHYSICAL_AREA_RADIUS: f32 = 1.0;
 #[derive(Clone)]
 pub enum MoverWMessage
 {
-    Rotate(f32, f32),
+    Rotate(
+        // z_lock
+        f32,
+        // w_lock
+        f32,
+        // direction
+        f32
+    ),
 }
 
 pub struct MoverW
 {
     transform: Transform,
     id: Option<ActorID>,
+    direction: f32,
     actors_to_not_interact_with: HashMap<ActorID, f32>,
     actors_to_remove_from_list: Vec<ActorID>,
     physical_area: Area,
@@ -30,8 +38,18 @@ impl MoverW
 {
     pub fn new(
         position: Vec4,
+        mut direction: f32,
     ) -> Self
     {
+        if direction < 0.0
+        {
+            direction = -1.0;
+        }
+        else
+        {
+            direction = 1.0;    
+        }
+
         let physical_area = Area::new(
             Vec4::ZERO,
             ShapeType::Sphere,
@@ -51,6 +69,7 @@ impl MoverW
         MoverW {
             transform: Transform::from_position(position),
             id: None,
+            direction,
             actors_to_not_interact_with: HashMap::new(),
             actors_to_remove_from_list: Vec::new(),
             physical_area,
@@ -124,7 +143,8 @@ impl Actor for MoverW
                                                 SpecificActorMessage::MoverW(
                                                     MoverWMessage::Rotate(
                                                         self.transform.get_position().z,
-                                                        self.transform.get_position().w
+                                                        self.transform.get_position().w,
+                                                        self.direction
                                                     )
                                                 )
                                             )

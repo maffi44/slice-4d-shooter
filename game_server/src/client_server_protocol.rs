@@ -3,7 +3,7 @@ use alkahest::{alkahest, Serialize};
 type Packet = Box<[u8]>;
 type ActorID = u128;
 
-type SerializableTransform = ([f32; 4], [f32; 16], [f32; 4]);
+type SerializableTransform = ([f32; 4], [f32; 16]);
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
@@ -176,7 +176,7 @@ pub enum RemoteMessage {
         // position
         SerializableTransform,
         // input state for extrapolation
-        (bool,bool,bool,bool,bool,bool,f32,f32),
+        (bool,bool,bool,bool,bool,bool,f32),
         // force for physic body
         [f32;4],
         // player's team
@@ -184,7 +184,7 @@ pub enum RemoteMessage {
     ),
     Enable(bool),
     SetTransform(SerializableTransform),
-    SetPlayerDollState(SerializableTransform, (bool,bool,bool,bool,bool,bool,f32,f32), [f32;4], u128),
+    SetPlayerDollState(SerializableTransform, (bool,bool,bool,bool,bool,bool,f32), [f32;4], u128),
     SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
     SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
     HoleGunStartCharging,

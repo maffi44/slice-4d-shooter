@@ -263,7 +263,8 @@ impl PhysicsSystem {
     pub fn sphere_cast_on_dynamic_colliders(
         &self,
         casted_sphere_pos: Vec4,
-        casted_sphere_radius: f32
+        casted_sphere_radius: f32,
+        excluded_id: Option<ActorID>
     ) -> Vec<Hit> {
         let mut hits = Vec::with_capacity(4);
 
@@ -271,22 +272,75 @@ impl PhysicsSystem {
             let vec_between_centers = casted_sphere_pos - dyn_sphere.position;
 
             if vec_between_centers.length() - (dyn_sphere.radius + casted_sphere_radius) < 0.0 {
-                let hit_normal = vec_between_centers.normalize();
 
-                let hit_point = dyn_sphere.position + (hit_normal * dyn_sphere.radius);
+                match excluded_id
+                {
+                    Some(excluded_id) =>
+                    {
+                        match dyn_sphere.get_id() {
+                            Some(hited_actor_id) =>
+                            {
+                                if excluded_id != hited_actor_id
+                                {
+                                    let hit_normal = vec_between_centers.normalize();
 
-                let hited_actors_id = dyn_sphere.get_id();
+                                    let hit_point = dyn_sphere.position + (hit_normal * dyn_sphere.radius);
+                    
+                                    let hited_actors_id = dyn_sphere.get_id();
+                    
+                                    let hited_actors_team = dyn_sphere.actors_team;
+                    
+                                    let hit = Hit {
+                                        hit_point,
+                                        hit_normal,
+                                        hited_actors_id,
+                                        hited_actors_team: Some(hited_actors_team),
+                                    };
+                    
+                                    hits.push(hit);
+                                }
+                            }
+                            None =>
+                            {
+                                let hit_normal = vec_between_centers.normalize();
 
-                let hited_actors_team = dyn_sphere.actors_team;
+                                let hit_point = dyn_sphere.position + (hit_normal * dyn_sphere.radius);
+                
+                                let hited_actors_id = dyn_sphere.get_id();
+                
+                                let hited_actors_team = dyn_sphere.actors_team;
+                
+                                let hit = Hit {
+                                    hit_point,
+                                    hit_normal,
+                                    hited_actors_id,
+                                    hited_actors_team: Some(hited_actors_team),
+                                };
+                
+                                hits.push(hit);
+                            }
+                        }
+                    }
+                    None =>
+                    {
+                        let hit_normal = vec_between_centers.normalize();
 
-                let hit = Hit {
-                    hit_point,
-                    hit_normal,
-                    hited_actors_id,
-                    hited_actors_team: Some(hited_actors_team),
-                };
-
-                hits.push(hit);
+                        let hit_point = dyn_sphere.position + (hit_normal * dyn_sphere.radius);
+        
+                        let hited_actors_id = dyn_sphere.get_id();
+        
+                        let hited_actors_team = dyn_sphere.actors_team;
+        
+                        let hit = Hit {
+                            hit_point,
+                            hit_normal,
+                            hited_actors_id,
+                            hited_actors_team: Some(hited_actors_team),
+                        };
+        
+                        hits.push(hit);
+                    }
+                }
             } 
         }
 

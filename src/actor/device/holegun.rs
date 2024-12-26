@@ -165,6 +165,7 @@ impl HoleGun {
             let hited_players = physic_system.sphere_cast_on_dynamic_colliders(
                 position,
                 radius,
+                None,
             );
 
             for hit in hited_players {

@@ -483,7 +483,15 @@ fn parse_mover_w(json_obj: &Value) -> MoverW
 {
     let transform = parse_json_into_transform(json_obj, "mover_w");
 
-    MoverW::new(transform.get_position())
+    let direction = {
+        json_obj.get("direction")
+            .expect("Wrong JSON map format. mover_w have not an direction property")
+            .as_f64()
+            .expect("Wrong JSON map format. mover_w have's direction property is not a number")
+            as f32
+    };
+
+    MoverW::new(transform.get_position(), direction)
 }
 
 

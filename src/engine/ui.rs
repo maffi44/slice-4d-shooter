@@ -105,7 +105,9 @@ pub enum UIElementType {
     Crosshair,
     CrosshairHitMark,
     ScannerBlue,
+    ScannerBlueW,
     ScannerRed,
+    ScannerRedW,
     ScannerHPointerBlue,
     ScannerHPointerRed,
     ZXScannerArrowBlue,
@@ -153,7 +155,9 @@ pub enum TextureType {
     Crosshair,
     CrosshairHitMark,
     ScannerTextureBlue,
+    ScannerTextureWBlue,
     ScannerTextureRed,
+    ScannerTextureWRed,
     ScannerPointerBlue,
     ScannerPointerRed,
     ScannerArrowBlue,
@@ -238,8 +242,16 @@ impl UISystem {
             include_bytes!("../assets/textures/blue_scanner_hud.png").as_slice()
         );
         texture_sources.insert(
+            TextureType::ScannerTextureWBlue,
+            include_bytes!("../assets/textures/blue_scanner_hud_w.png").as_slice()
+        );
+        texture_sources.insert(
             TextureType::ScannerTextureRed,
             include_bytes!("../assets/textures/orange_scanner_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ScannerTextureWRed,
+            include_bytes!("../assets/textures/orange_scanner_hud_w.png").as_slice()
         );
         texture_sources.insert(
             TextureType::ScannerPointerBlue,
@@ -394,6 +406,30 @@ impl UISystem {
             )
         );
         ui_elements.insert(
+            UIElementType::ScannerRedW,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterDown,
+                            position: Vec2::new(0.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.322
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::ScannerTextureWRed
+                )
+            )
+        );
+        ui_elements.insert(
             UIElementType::ScannerBlue,
             UIElement::Image(
                 UIImage::new(
@@ -414,6 +450,30 @@ impl UISystem {
                         None,
                     ),
                     TextureType::ScannerTextureBlue
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ScannerBlueW,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterDown,
+                            position: Vec2::new(0.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.322
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            rotation_around_screen_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::ScannerTextureWBlue
                 )
             )
         );

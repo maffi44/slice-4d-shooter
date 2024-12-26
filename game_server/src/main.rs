@@ -1365,29 +1365,29 @@ fn process_player_message(
             ClientMessage::DirectMessageToPlayer(to_player, message) => {
                 let player_info = game_session_state.players.get(&to_player);
 
-                match &message
-                {
-                    NetMessageToPlayer::RemoteBoardCastMessage(message) =>
-                    {
-                        match message
-                        {
-                            RemoteMessage::SpawnHoleGunShotActor(
-                                position,
-                                _shoooted_from,
-                                radius,
-                                color,
-                                _charging_volume_area
-                            ) =>
-                            {
-                                let hole = Hole::new(*radius, *position, *color);
+                // match &message
+                // {
+                //     NetMessageToPlayer::RemoteBoardCastMessage(message) =>
+                //     {
+                //         match message
+                //         {
+                //             RemoteMessage::SpawnHoleGunShotActor(
+                //                 position,
+                //                 _shoooted_from,
+                //                 radius,
+                //                 color,
+                //                 _charging_volume_area
+                //             ) =>
+                //             {
+                //                 let hole = Hole::new(*radius, *position, *color);
 
-                                game_session_state.holes.push(hole);
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
+                //                 game_session_state.holes.push(hole);
+                //             }
+                //             _ => {}
+                //         }
+                //     }
+                //     _ => {}
+                // }
 
                 if player_info.is_some() {
                     channel.send(

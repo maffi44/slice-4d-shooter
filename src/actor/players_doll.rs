@@ -47,7 +47,7 @@ pub struct PlayerDollInputState
 
 
 impl PlayerDollInputState {
-    pub fn serialize(self) -> (bool,bool,bool,bool,bool,bool,f32,f32)
+    pub fn serialize(self) -> (bool,bool,bool,bool,bool,bool,f32)
     {   
         let (moving_normal, lock_val, dir) = match self.player_moving_state {
             PlayerMovingState::MovingNormal(lock_w) =>
@@ -69,11 +69,11 @@ impl PlayerDollInputState {
             self.will_jump,
             moving_normal,
             lock_val,
-            dir,
+            // dir,
         )
     }
 
-    pub fn deserialize(input: (bool,bool,bool,bool,bool,bool,f32,f32)) -> Self
+    pub fn deserialize(input: (bool,bool,bool,bool,bool,bool,f32)) -> Self
     {
         let player_moving_state = {
             if input.5
@@ -82,7 +82,7 @@ impl PlayerDollInputState {
             }
             else
             {
-                PlayerMovingState::MovingThrowW(input.6, input.7)    
+                PlayerMovingState::MovingThrowW(input.6, 1.0)    
             }
         };
 
@@ -384,11 +384,14 @@ impl PlayersDoll {
             50.0
         );
         
-        self.team = team;
 
         let collider_radius = self.interpolating_model[0].radius;
 
-        let hits = physics_system.sphere_cast_on_dynamic_colliders(transform.get_position(), collider_radius);
+        let hits = physics_system.sphere_cast_on_dynamic_colliders(
+            transform.get_position(),
+            collider_radius,
+            Some(self.get_id().expect("PlayerDoll have not ActorID"))
+        );
 
         for hit in hits {
             engine_handle.send_direct_message(
@@ -405,6 +408,7 @@ impl PlayersDoll {
         }
 
         // self.current_w_level_prev_frame = input_state.current_w_level;
+        self.team = team;
         self.on_way_to_next_w_level = false;
         self.is_alive = true;
         self.is_enable = true;
@@ -591,7 +595,7 @@ impl Actor for PlayersDoll {
                     SpecificActorMessage::MoverW(message) =>
                     {
                         match message {
-                            MoverWMessage::Rotate(_,_) =>
+                            MoverWMessage::Rotate(_,_,_) =>
                             {
                                 // match self.player_moving_state {
                                 //     PlayerMovingState::MovingNormal =>
@@ -1130,18 +1134,29 @@ impl Actor for PlayersDoll {
             if !self.volume_area.is_empty() {
     
                 self.charging_time += delta * 1.6;
-    
+
+                let mut clear = false;
+
                 match &mut self.volume_area[0] {
     
                     VolumeArea::SphericalVolumeArea(area) => {
-                        if self.charging_time < 3.4 {
-                            area.radius = self.charging_time * 0.08 * VISUAL_FIRE_SHPERE_MULT;
+                        if self.charging_time < 4.4 {
+                            area.radius = self.charging_time * 0.07 * VISUAL_FIRE_SHPERE_MULT;
+                            area.translation = self.transform.get_rotation().inverse() * self.weapon_shooting_point;
                         }
-                        area.translation = self.transform.get_rotation().inverse() * self.weapon_shooting_point;
+                        else
+                        {
+                            clear = true;
+                        }
                     }
                     _ => {
                         panic!("charging volume area in PlayersDoll is not SphericalVolumeArea")
                     }
+                }
+
+                if clear
+                {
+                    self.volume_area.clear();
                 }
             }
 

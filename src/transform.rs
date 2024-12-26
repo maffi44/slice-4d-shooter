@@ -10,23 +10,23 @@ pub struct Transform {
     scale: Vec4,
 }
 
-pub type SerializableTransform = ([f32; 4], [f32; 16], [f32; 4]);
+pub type SerializableTransform = ([f32; 4], [f32; 16]);
 
 impl Transform {
     pub fn from_serializable_transform(tr: SerializableTransform) -> Self {
         Transform {
             position: Vec4::from_array(tr.0),
             rotation: Mat4::from_cols_array(&tr.1),
-            scale: Vec4::from_array(tr.2),
+            scale: Vec4::ONE,
         }
     }
 
     pub fn to_serializable_transform(&self) -> SerializableTransform {
         let p = self.position.to_array();
         let r = self.rotation.to_cols_array();
-        let s = self.scale.to_array();
+        // let s = self.scale.to_array();
 
-        (p, r, s)
+        (p, r)
     }
     
     #[inline]

@@ -361,12 +361,12 @@ impl Actor for Player {
                     SpecificActorMessage::MoverW(message) =>
                     {
                         match message {
-                            MoverWMessage::Rotate(lock_z, lock_w) =>
+                            MoverWMessage::Rotate(lock_z, lock_w, dir) =>
                             {
                                 match self.inner_state.player_moving_state {
                                     PlayerMovingState::MovingNormal(_) =>
                                     {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingThrowW(lock_z, 1.0);
+                                        self.inner_state.player_moving_state = PlayerMovingState::MovingThrowW(lock_z, dir);
                                     }
                                     PlayerMovingState::MovingThrowW(_,_) =>
                                     {
@@ -805,7 +805,57 @@ impl Actor for Player {
         let ui_elem = ui_system.get_mut_ui_element(&UIElementType::BlueFlagBacklight);
         *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
 
+        match self.inner_state.player_moving_state
+        {
+            PlayerMovingState::MovingNormal(_) =>
+            {
+                match self.inner_state.team
+                {
+                    Team::Red =>
+                    {
+                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRed);
+                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
 
+                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRedW);
+                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
+                    }
+                    Team::Blue =>
+                    {
+                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlue);
+                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlueW);
+                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                    }
+
+                }
+            }
+            PlayerMovingState::MovingThrowW(_,_) =>
+            {
+                match self.inner_state.team
+                {
+                    Team::Red =>
+                    {
+                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRed);
+                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRedW);
+                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+                    }
+                    Team::Blue =>
+                    {
+                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlue);
+                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
+
+                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlueW);
+                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+                    }
+
+                }
+            }
+        }
         let my_id = self.id.expect("Player does not have id");
 
         let mut input = match &self.master {
@@ -932,8 +982,8 @@ impl Actor for Player {
                     {
                         PlayerMovingState::MovingNormal(_) =>
                         {
-                            zw *= 1.0 - delta * 3.0;
-                            if zw.abs() < 0.00001 {
+                            zw *= 1.0 - delta * 2.1;
+                            if zw.abs() < 0.0001 {
                                 zw = 0.0;
                             }
                             
@@ -944,9 +994,9 @@ impl Actor for Player {
                         {
                             *dir = if *dir < 0.0 {-1.0} else {1.0};
 
-                            zw = zw.lerp(PI/2.0 * *dir, delta * 3.0);
-                            if PI/2.0 - zw.abs() < 0.00001 {
-                                zw = PI/2.0;
+                            zw = zw.lerp(PI/2.0 * *dir, delta * 2.1);
+                            if PI/2.0 - zw.abs() < 0.0001 {
+                                zw = PI/2.0 * *dir;
                             }
                             
                             xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
@@ -1092,20 +1142,20 @@ impl Actor for Player {
                     self.set_rotation_matrix(zw_rotation * zy_rotation * zx_rotation);
         
                 }
-                PlayerMovingState::MovingThrowW(_, _) =>
+                PlayerMovingState::MovingThrowW(_, dir) =>
                 {
                     let yw_rotation = Mat4::from_cols_slice(&[
                         1.0,    0.0,        0.0,      0.0,
-                        0.0,    (-yz).cos(),  0.0,      -(-yz).sin(),
+                        0.0,    (-yz*dir).cos(),  0.0,      -(-yz*dir).sin(),
                         0.0,    0.0,        1.0,      0.0,
-                        0.0,    (-yz).sin(),   0.0,      (-yz).cos()
+                        0.0,    (-yz*dir).sin(),   0.0,      (-yz*dir).cos()
                     ]);
 
                     let xw_rotation = Mat4::from_cols_slice(&[
-                        (-xz).cos(),    0.0,       0.0,      (-xz).sin(),
+                        (-xz*dir).cos(),    0.0,       0.0,      (-xz*dir).sin(),
                         0.0,          1.0,       0.0,      0.0,
                         0.0,          0.0,       1.0,      0.0,
-                        -(-xz).sin(),     0.0,       0.0,      (-xz).cos()
+                        -(-xz*dir).sin(),     0.0,       0.0,      (-xz*dir).cos()
                     ]);
             
                     let zw_rotation = Mat4::from_cols_slice(&[
@@ -1384,9 +1434,9 @@ impl Actor for Player {
 
                         player_doll_input_state.move_forward = true;
                     }
-                    PlayerMovingState::MovingThrowW(_, _) =>
+                    PlayerMovingState::MovingThrowW(_, dir) =>
                     {
-                        movement_vec += Vec4::W;
+                        movement_vec += Vec4::W*dir;
 
                         player_doll_input_state.move_forward = true;
                     }
@@ -1404,9 +1454,9 @@ impl Actor for Player {
 
                         player_doll_input_state.move_backward = true;
                     }
-                    PlayerMovingState::MovingThrowW(_, _) =>
+                    PlayerMovingState::MovingThrowW(_, dir) =>
                     {
-                        movement_vec += Vec4::NEG_W;
+                        movement_vec += Vec4::NEG_W*dir;
 
                         player_doll_input_state.move_backward = true;
                     }
@@ -1659,13 +1709,19 @@ impl Actor for Player {
             if input.w_scanner.is_action_just_pressed() {
                 if !self.w_scanner_enable {
                     if self.w_scanner_reloading_time >= self.player_settings.scanner_reloading_time {
-                        self.w_scanner_enable = true;
-
-
-
-                        self.w_scanner_enemies_show_time = 0.0;
-    
-                        self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
+                        match self.inner_state.player_moving_state
+                        {
+                            PlayerMovingState::MovingThrowW(_,_) => {}
+                            
+                            PlayerMovingState::MovingNormal(_) =>
+                            {
+                                self.w_scanner_enable = true;
+        
+                                self.w_scanner_enemies_show_time = 0.0;
+            
+                                self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
+                            }
+                        }
                     }
                 }
             }
@@ -1724,11 +1780,6 @@ impl Actor for Player {
                     {
                         PlayerMovingState::MovingNormal(lock_w) =>
                         {
-                            // let target_w_pos = self.w_levels_of_map
-                            //     .get(self.current_w_level)
-                            //     .expect("Player's carrent_w_level is not exist in w_levels_of_map")
-                            //     .clone();
-        
                             let w_dif = lock_w - self.get_position().w;
         
                             self.inner_state.collider.current_velocity.w +=
@@ -1742,10 +1793,6 @@ impl Actor for Player {
 
                         PlayerMovingState::MovingThrowW(lock_z, _) =>
                         {
-                            // let target_w_pos = self.w_levels_of_map
-                            //     .get(self.current_w_level)
-                            //     .expect("Player's carrent_w_level is not exist in w_levels_of_map")
-                            //     .clone();
         
                             let z_dif = lock_z - self.get_position().z;
         
@@ -2715,13 +2762,12 @@ impl Player {
 
         let mut current_spawn = spawns.last().expect("spawns in respawn function has zero length");
 
-        let mut can_spawn = false;
-
         for spawn in spawns.iter()
         {
             let hits = physics_system.sphere_cast_on_dynamic_colliders(
                 spawn.spawn_position,
-                self.get_collider_radius()
+                self.get_collider_radius(),
+                Some(self.get_id().expect("Player hasn't ActorID"))
             );
     
             for hit in &hits {
@@ -2732,45 +2778,29 @@ impl Player {
                 }
             }
 
-            can_spawn = true;
-
-            for hit in hits {
-                engine_handle.send_direct_message(
-                    hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
-                    Message {
-                        from: self.get_id().expect("Player have not ID in respawn func"),
-                        message: MessageType::SpecificActorMessage(
-                            SpecificActorMessage::PLayerMessage(
-                                PlayerMessage::Telefrag
-                            )
-                        )
-                    }
-                )
-            }
-
             current_spawn = spawn;
+            
+            break;
         };
 
-        if !can_spawn
-        {
-            let hits = physics_system.sphere_cast_on_dynamic_colliders(
-                current_spawn.spawn_position,
-                self.get_collider_radius()
-            );
+        let hits = physics_system.sphere_cast_on_dynamic_colliders(
+            current_spawn.spawn_position,
+            self.get_collider_radius(),
+            Some(self.get_id().expect("Player hasn't ActorID"))
+        );
 
-            for hit in hits {
-                engine_handle.send_direct_message(
-                    hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
-                    Message {
-                        from: self.get_id().expect("Player have not ID in respawn func"),
-                        message: MessageType::SpecificActorMessage(
-                            SpecificActorMessage::PLayerMessage(
-                                PlayerMessage::Telefrag
-                            )
+        for hit in hits {
+            engine_handle.send_direct_message(
+                hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
+                Message {
+                    from: self.get_id().expect("Player have not ID in respawn func"),
+                    message: MessageType::SpecificActorMessage(
+                        SpecificActorMessage::PLayerMessage(
+                            PlayerMessage::Telefrag
                         )
-                    }
-                )
-            }
+                    )
+                }
+            )
         }
 
         self.inner_state.is_alive = true;

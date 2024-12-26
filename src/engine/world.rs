@@ -221,7 +221,7 @@ impl World {
                             Team::Blue =>
                             {
                                 player.respawn(
-                                    &mut self.level.red_spawns,
+                                    &mut self.level.blue_spawns,
                                     physics_system,
                                     ui_system,
                                     audio_system,
