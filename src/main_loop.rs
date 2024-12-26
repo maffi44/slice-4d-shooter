@@ -349,7 +349,11 @@ fn init(systems: &mut Engine) {
         &mut systems.engine_handle,
     );
 
-    let session_controller = SessionController::new(&mut systems.ui);
+    let session_controller = SessionController::new(
+        &mut systems.ui,
+        systems.world.level.red_flag_base.get_position(),
+        systems.world.level.blue_flag_base.get_position()
+    );
     
     systems.world.add_actor_to_world(
         ActorWrapper::SessionController(session_controller),

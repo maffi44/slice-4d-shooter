@@ -68,7 +68,7 @@ pub struct HoleGun {
 }
 
 pub const HOLE_GUN_BLUE_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
-pub const HOLE_GUN_RED_COLOR: Vec3 = Vec3::new(1.6, 0.6, 0.05);
+pub const HOLE_GUN_RED_COLOR: Vec3 = Vec3::new(2.1, 0.45, 0.05);
 pub const CHARGING_COEF: f32 = 0.7;
 pub const MAX_CHARGING_TIME: f32 = 3.4;
 

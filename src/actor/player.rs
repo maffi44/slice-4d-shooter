@@ -278,8 +278,8 @@ const DEATH_EFFECT_COEF_DECREASE_SPEED: f32 = 3.0;
 
 const SHOW_CROSSHAIER_HIT_MARK_TIME: f32 = 0.3;
 
-pub const RED_TEAM_COLOR: Vec3 = Vec3::new(1.0, 0.0, 0.0);
-pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.0, 0.0, 1.0);
+pub const RED_TEAM_COLOR: Vec3 = Vec3::new(3.5, 0.7, 0.08);
+pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.08, 0.7, 3.5);
 
 pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 2;
 
@@ -380,6 +380,15 @@ impl Actor for Player {
                         match message {
                             MoverWMessage::Rotate(lock_z, lock_w, dir) =>
                             {
+                                audio_system.spawn_non_spatial_sound(
+                                    Sound::WShiftEnd,
+                                    0.5,
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing
+                                );
+
                                 match self.inner_state.player_moving_state {
                                     PlayerMovingState::MovingNormal(_) =>
                                     {
@@ -947,6 +956,7 @@ impl Actor for Player {
         }
 
         self.screen_effects.getting_damage_screen_effect -= delta * GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED;
+
         self.screen_effects.getting_damage_screen_effect = self.screen_effects.getting_damage_screen_effect.clamp(0.0, 1.0);
 
         self.make_hud_transparency_as_death_screen_effect(ui_system);
@@ -1147,7 +1157,7 @@ impl Actor for Player {
 
             if let UIElement::Image(h_pointer) = h_pointer {
                 let h = {
-                    ((self.get_position().w / 6.0) - 0.7)
+                    (((self.get_position().w + 20.0) / 40.0) - 0.51)
                         .clamp(-0.7, 0.8)
                 };
                 

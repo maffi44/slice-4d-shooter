@@ -155,27 +155,32 @@ impl Level {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let mut file = File::open("./src/assets/maps/map.json")
-                .unwrap_or_else(|_| {
-                    File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/map.json").expect("Can't find map.fson file")
-                });
+            // let mut file = File::open("./src/assets/maps/map.json")
+            //     .unwrap_or_else(|_| {
+            //         File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/map.json").expect("Can't find map.fson file")
+            //     });
                 
 
-            let mut file_content = String::new();
-            match file.read_to_string(&mut file_content) {
-                Ok(_) => {
-                    let json_map = serde_json::from_str(&file_content)
-                        .expect("Can't parse map.json file");
+            // let mut file_content = String::new();
+            // match file.read_to_string(&mut file_content) {
+            //     Ok(_) => {
+            //         let json_map = serde_json::from_str(&file_content)
+            //             .expect("Can't parse map.json file");
 
-                    return parse_json_level(json_map);
-                },
-                Err(e) => {
-                    panic!(
-                        "ERROR: the map.json cannot be loaded, err: {}",
-                        e.to_string()
-                    );
-                }
-            }
+            //         return parse_json_level(json_map);
+            //     },
+            //     Err(e) => {
+            //         panic!(
+            //             "ERROR: the map.json cannot be loaded, err: {}",
+            //             e.to_string()
+            //         );
+            //     }
+            // }
+
+            let json_map = serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
+                .expect("Can't parse map.json file");
+
+            return parse_json_level(json_map);
         }
     }
 }
@@ -443,7 +448,7 @@ fn parse_json_level(
 
         for json_obj in array
         {
-            let mover_w = parse_mover_w(json_obj);
+            let mover_w = parse_mover_w(json_obj, &w_levels);
 
             list.push(mover_w);
         };
@@ -479,7 +484,7 @@ fn parse_json_level(
 }
 
 
-fn parse_mover_w(json_obj: &Value) -> MoverW
+fn parse_mover_w(json_obj: &Value, w_levels: &Vec<f32>) -> MoverW
 {
     let transform = parse_json_into_transform(json_obj, "mover_w");
 
@@ -491,7 +496,7 @@ fn parse_mover_w(json_obj: &Value) -> MoverW
             as f32
     };
 
-    MoverW::new(transform.get_position(), direction)
+    MoverW::new(transform.get_position(), direction, w_levels)
 }
 
 

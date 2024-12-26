@@ -16,11 +16,7 @@ use crate::{
             static_collider::StaticCollider,
             PhysicsSystem
         }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
-            BeamVolumeArea,
-            ColoringArea,
-            SphericalVolumeArea,
-            StaticObject,
-            VolumeArea
+            BeamVolumeArea, ColoringArea, SphericalVolumeArea, StaticObject, VisualWave, VolumeArea
         }
     },
     transform::Transform,
@@ -40,7 +36,8 @@ pub struct HoleGunShot {
     explode_current_time: f32,
     explode_final_time: f32,
     target_size: f32,
-    target_size_reached: bool
+    target_size_reached: bool,
+    waves: Vec<VisualWave>,
 }
 
 
@@ -111,6 +108,14 @@ impl HoleGunShot {
             }
         );
 
+        let explode_wave = VisualWave {
+            translation: Vec4::ZERO,
+            radius: 0.06,
+            color: color * 0.01,
+        };
+
+        let waves = vec![explode_wave];
+
         let mut volume_areas = Vec::with_capacity(3);
 
         volume_areas.push(beam);
@@ -127,6 +132,7 @@ impl HoleGunShot {
             target_size_reached: false,
             explode_current_time: 0.0,
             explode_final_time: EXPLODE_TIME * (radius.abs()*0.3),
+            waves,
         }
     }
 
@@ -175,6 +181,13 @@ impl Actor for HoleGunShot {
             }
     
             let mut clear = false;
+
+            for wave in self.waves.iter_mut()
+            {
+                wave.radius *= 1.0 - delta*30.0;
+                wave.radius = wave.radius.abs();
+
+            }
     
             for volume_area in self.volume_areas.iter_mut() {
                 
@@ -253,6 +266,16 @@ impl Actor for HoleGunShot {
                 }
                 _ => {}
             }
+
+            for wave in self.waves.iter_mut()
+            {
+                wave.radius = f32::lerp(
+                    0.0,
+                    self.target_size*1.1,
+                    explode_coeff.clamp(0.0, 1.0)
+                );
+                wave.radius = wave.radius.abs();
+            }
             
             match &mut self.volume_areas[2] {
                 VolumeArea::SphericalVolumeArea(area) => {
@@ -284,7 +307,7 @@ impl Actor for HoleGunShot {
                 static_objects:  Some(&self.static_objects),
                 coloring_areas: Some(&self.coloring_areas),
                 volume_areas: Some(&self.volume_areas),
-                waves: None,
+                waves: Some(&self.waves),
                 player: None,
             }
         )

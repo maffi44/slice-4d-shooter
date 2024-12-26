@@ -1,5 +1,6 @@
 use client_server_protocol::Team;
 use fyrox_sound::source::Status;
+use glam::{Vec3, Vec4};
 
 use crate::{
     engine::{audio::Sound, effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{self, UIElement, UIElementType, UISystem}},
@@ -7,7 +8,7 @@ use crate::{
 };
 
 use super::{
-    flag::{self, FlagStatus}, move_w_bonus::BonusSpotStatus, player::PlayerMessage, Actor, ActorID, Message, MessageType, SpecificActorMessage
+    flag::{self, FlagStatus}, move_w_bonus::BonusSpotStatus, player::{PlayerMessage, BLUE_TEAM_COLOR, RED_TEAM_COLOR}, Actor, ActorID, Message, MessageType, SpecificActorMessage
 };
 
 pub const DEFAULT_TEAM: Team = Team::Blue;
@@ -60,12 +61,19 @@ pub struct SessionController
     show_blue_team_win_title_timer: f32,
     show_join_red_team_title_timer: f32,
     show_join_blue_team_title_timer: f32,
+
+    red_flag_base_position: Vec4,
+    blue_flag_base_position: Vec4,
 }
 
 
 impl SessionController
 {
-    pub fn new(ui_system: &mut UISystem) -> Self
+    pub fn new(
+        ui_system: &mut UISystem,
+        red_flag_base_position: Vec4,
+        blue_flag_base_position: Vec4,
+    ) -> Self
     {
         let session_controller = SessionController {
             transform: Transform::new(),
@@ -79,6 +87,8 @@ impl SessionController
             show_blue_team_win_title_timer: 0.0,
             show_join_red_team_title_timer: 0.0,
             show_join_blue_team_title_timer: 0.0,
+            red_flag_base_position,
+            blue_flag_base_position,
         };
 
         session_controller.set_score_ui(ui_system);
@@ -391,6 +401,22 @@ impl Actor for SessionController
                             {
                                 if new_red_team_score > self.red_team_score
                                 {
+                                    effects_system.spawn_wave(
+                                        engine_handle,
+                                        self.red_flag_base_position,
+                                        vec![
+                                            0.0,
+                                            15.0,
+                                        ],
+                                        vec![
+                                            RED_TEAM_COLOR,
+                                            Vec3::ZERO
+                                        ],
+                                        vec![
+                                            2.0,
+                                        ]
+                                    );
+
                                     let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
                                     *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
@@ -406,7 +432,7 @@ impl Actor for SessionController
                                                 false,
                                                 true,
                                                 Status::Playing
-                                            );  
+                                            );
                                         }
                                         Team::Blue =>
                                         {
@@ -423,6 +449,22 @@ impl Actor for SessionController
                                 }
                                 if new_blue_team_score > self.blue_team_score
                                 {
+                                    effects_system.spawn_wave(
+                                        engine_handle,
+                                        self.blue_flag_base_position,
+                                        vec![
+                                            0.0,
+                                            15.0,
+                                        ],
+                                        vec![
+                                            BLUE_TEAM_COLOR,
+                                            Vec3::ZERO
+                                        ],
+                                        vec![
+                                            2.0,
+                                        ]
+                                    );
+
                                     let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
                                     *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 

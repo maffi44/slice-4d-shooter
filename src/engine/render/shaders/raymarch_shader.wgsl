@@ -1868,12 +1868,12 @@ fn get_mats(
     var output: OutputMaterials;
 
     if dist > MAX_DIST-MIN_DIST {
-        if w_plane_intersected {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = -3;
-            return output;
-        }
+        // if w_plane_intersected {
+        //     output.materials_count = 1u;
+        //     output.material_weights[0] = 1.0;
+        //     output.materials[0] = -3;
+        //     return output;
+        // }
         output.materials_count = 1u;
         output.material_weights[0] = 1.0;
         output.materials[0] = -2;
@@ -1953,9 +1953,9 @@ fn get_mats(
                 output.material_weights[1] = 0.74;
                 if shape.is_red.x == 1
                 {
-                    output.materials[0] = static_data.red_players_mat2;
+                    output.materials[1] = static_data.red_players_mat2;
                 } else {
-                    output.materials[0] = static_data.blue_players_mat2;
+                    output.materials[1] = static_data.blue_players_mat2;
                 }
                 return output;
             }
@@ -2877,7 +2877,7 @@ fn apply_material(
     }
 
     if material == -3 {
-        var color = static_data.red_base_color*10.0;
+        var color = static_data.red_base_color*0.5;
         
         let hited_pos = pos + ray_dir * dist;
         let normal = get_normal(hited_pos);
@@ -2889,7 +2889,7 @@ fn apply_material(
     }
 
     if material == -4 {
-        var color = static_data.blue_base_color*10.0;
+        var color = static_data.blue_base_color*0.5;
         
         let hited_pos = pos + ray_dir * dist;
         let normal = get_normal(hited_pos);
@@ -2908,7 +2908,7 @@ fn apply_material(
     var lines_size = 5.8;
 
     if material == static_data.blue_players_mat1 || material == static_data.blue_players_mat2 || material == static_data.red_players_mat1 || material == static_data.red_players_mat2 {
-        lines_size = 2.1;
+        lines_size = 2.8;
     }
 
     let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*lines_size);
@@ -2935,10 +2935,10 @@ fn apply_material(
     );
 
     if material == static_data.blue_players_mat1 || material == static_data.blue_players_mat2 {
-        neon_wireframe_color = static_data.blue_base_color;
+        neon_wireframe_color = static_data.blue_base_color * 0.8;
     } else {
         if material == static_data.red_players_mat1 || material == static_data.red_players_mat2 {
-            neon_wireframe_color = static_data.red_base_color;
+            neon_wireframe_color = static_data.red_base_color * 0.8;
         }
     }
 

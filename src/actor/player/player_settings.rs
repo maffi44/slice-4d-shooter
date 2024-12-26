@@ -108,7 +108,10 @@ impl PlayerSettings {
                     let json_settings = serde_json::from_str(&file_content)
                         .expect("Can't parse settings.json file");
 
-                    return parse_json_into_settings(json_settings);
+                    let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/maps/settings2.json"))
+                        .expect("Can't parse settings.json file");
+
+                    return parse_json_into_settings(json_settings, json_settings2);
                 },
                 Err(e) => {
                     panic!(
@@ -121,17 +124,23 @@ impl PlayerSettings {
     }
 }
 
-fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
+fn parse_json_into_settings(json_settigs: Value, json_settigs2: Value) -> PlayerSettings {
 
 
     let object = json_settigs
         .as_object()
         .expect("Wrong JSON settings format");
 
+    let object2 = json_settigs2
+        .as_object()
+        .expect("Wrong JSON settings format");
+
     let collider_radius = {
         object
             .get("player_sphere_radius")
-            .expect("Have not player_sphere_radius in settings.json")
+            .unwrap_or_else(||{
+                object2.get("player_sphere_radius").unwrap()
+            })
             .as_f64()
             .expect("player_sphere_radius is not float value in settings.json")
             as f32
@@ -140,7 +149,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let max_speed = {
         object
             .get("player_max_speed")
-            .expect("Have not player_max_speed in settings.json")
+            .unwrap_or_else(||{
+                object2.get("player_max_speed").unwrap()
+            })
             .as_f64()
             .expect("player_max_speed is not float value in settings.json")
             as f32
@@ -148,7 +159,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let max_accel = {
         object
             .get("player_max_accel")
-            .expect("Have not player_max_accel in settings.json")
+            .unwrap_or_else(||{
+                object2.get("player_max_accel").unwrap()
+            })
             .as_f64()
             .expect("player_max_accel is not float value in settings.json")
             as f32
@@ -156,7 +169,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let air_speed_mult = {
         object
             .get("air_speed_mult")
-            .expect("Have not air_speed_mult in settings.json")
+            .unwrap_or_else(||{
+                object2.get("air_speed_mult").unwrap()
+            })
             .as_f64()
             .expect("air_speed_mult is not float value in settings.json")
             as f32
@@ -164,7 +179,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let jump_y_speed = {
         object
             .get("player_jump_y_speed")
-            .expect("Have not player_jump_y_speed in settings.json")
+            .unwrap_or_else(||{
+                object2.get("player_jump_y_speed").unwrap()
+            })
             .as_f64()
             .expect("player_jump_y_speed is not float value in settings.json")
             as f32
@@ -172,7 +189,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let jump_w_speed = {
         object
             .get("player_jump_w_speed")
-            .expect("Have not player_jump_w_speed in settings.json")
+            .unwrap_or_else(||{
+                object2.get("player_jump_w_speed").unwrap()
+            })
             .as_f64()
             .expect("player_jump_w_speed is not float value in settings.json")
             as f32
@@ -180,7 +199,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let jetpak_w_speed = {
         object
             .get("player_jetpak_w_speed")
-            .expect("Have not player_jetpak_w_speed in settings.json")
+            .unwrap_or_else(||{
+                object2.get("player_jetpak_w_speed").unwrap()
+            })
             .as_f64()
             .expect("player_jetpak_w_speed is not float value in settings.json")
             as f32
@@ -188,7 +209,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let gravity_y_speed = {
         object
             .get("gravity_y_speed")
-            .expect("Have not gravity_y_speed in settings.json")
+            .unwrap_or_else(||{
+                object2.get("gravity_y_speed").unwrap()
+            })
             .as_f64()
             .expect("gravity_y_speed is not float value in settings.json")
             as f32
@@ -196,7 +219,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let gravity_w_speed = {
         object
             .get("gravity_w_speed")
-            .expect("Have not gravity_w_speed in settings.json")
+            .unwrap_or_else(||{
+                object2.get("gravity_w_speed").unwrap()
+            })
             .as_f64()
             .expect("gravity_w_speed is not float value in settings.json")
             as f32
@@ -204,7 +229,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let friction_on_air = {
         object
             .get("friction_on_air")
-            .expect("Have not friction_on_air in settings.json")
+            .unwrap_or_else(||{
+                object2.get("friction_on_air").unwrap()
+            })
             .as_f64()
             .expect("friction_on_air is not float value in settings.json")
             as f32
@@ -212,21 +239,27 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let rotation_along_w_standard_method = {
         object
             .get("rotation_along_w_standard_method")
-            .expect("Have not rotation_along_w_standard_method in settings.json")
+            .unwrap_or_else(||{
+                object2.get("rotation_along_w_standard_method").unwrap()
+            })
             .as_bool()
             .expect("rotation_along_w_standard_method is not bool value in settings.json")
     };
     let shadows_enable = {
         object
             .get("shadows_enable")
-            .expect("Have not shadows_enable in settings.json")
+            .unwrap_or_else(||{
+                object2.get("shadows_enable").unwrap()
+            })
             .as_bool()
             .expect("shadows_enable is not float value in settings.json")
     };
     let mouse_sensivity = {
         object
         .get("mouse_sensivity")
-        .expect("Have not mouse_sensivity in settings.json")
+        .unwrap_or_else(||{
+            object2.get("mouse_sensivity").unwrap()
+        })
         .as_f64()
         .expect("mouse_sensivity is not float value in settings.json")
         as f32
@@ -234,7 +267,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let w_jump_time_reloading = {
         object
         .get("w_jump_time_reloading")
-        .expect("Have not w_jump_time_reloading in settings.json")
+        .unwrap_or_else(||{
+            object2.get("w_jump_time_reloading").unwrap()
+        })
         .as_f64()
         .expect("w_jump_time_reloading is not float value in settings.json")
         as f32
@@ -242,7 +277,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let min_respawn_timer = {
         object
         .get("min_respawn_timer")
-        .expect("Have not min_respawn_timer in settings.json")
+        .unwrap_or_else(||{
+            object2.get("min_respawn_timer").unwrap()
+        })
         .as_f64()
         .expect("min_respawn_timer is not float value in settings.json")
         as f32
@@ -250,7 +287,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let max_respawn_timer = {
         object
         .get("max_respawn_timer")
-        .expect("Have not max_respawn_timer in settings.json")
+        .unwrap_or_else(||{
+            object2.get("max_respawn_timer").unwrap()
+        })
         .as_f64()
         .expect("max_respawn_timer is not float value in settings.json")
         as f32
@@ -258,7 +297,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let scanner_reloading_time = {
         object
         .get("scanner_reloading_time")
-        .expect("Have not scanner_reloading_time in settings.json")
+        .unwrap_or_else(||{
+            object2.get("scanner_reloading_time").unwrap()
+        })
         .as_f64()
         .expect("scanner_reloading_time is not float value in settings.json")
         as f32
@@ -266,7 +307,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let scanner_show_enemies_time = {
         object
         .get("scanner_show_enemies_time")
-        .expect("Have not scanner_show_enemies_time in settings.json")
+        .unwrap_or_else(||{
+            object2.get("scanner_show_enemies_time").unwrap()
+        })
         .as_f64()
         .expect("scanner_show_enemies_time is not float value in settings.json")
         as f32
@@ -274,7 +317,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let energy_gun_hole_size_mult = {
         object
         .get("energy_gun_hole_size_mult")
-        .expect("Have not energy_gun_hole_size_mult in settings.json")
+        .unwrap_or_else(||{
+            object2.get("energy_gun_hole_size_mult").unwrap()
+        })
         .as_f64()
         .expect("energy_gun_hole_size_mult is not float value in settings.json")
         as f32
@@ -282,7 +327,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let energy_gun_add_force_mult = {
         object
         .get("energy_gun_add_force_mult")
-        .expect("Have not energy_gun_add_force_mult in settings.json")
+        .unwrap_or_else(||{
+            object2.get("energy_gun_add_force_mult").unwrap()
+        })
         .as_f64()
         .expect("energy_gun_add_force_mult is not float value in settings.json")
         as f32
@@ -290,7 +337,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let energy_gun_damage_mult = {
         object
         .get("energy_gun_damage_mult")
-        .expect("Have not energy_gun_damage_mult in settings.json")
+        .unwrap_or_else(||{
+            object2.get("energy_gun_damage_mult").unwrap()
+        })
         .as_f64()
         .expect("energy_gun_damage_mult is not float value in settings.json")
         as f32
@@ -298,7 +347,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let energy_gun_restoring_speed = {
         object
         .get("energy_gun_restoring_speed")
-        .expect("Have not energy_gun_restoring_speed in settings.json")
+        .unwrap_or_else(||{
+            object2.get("energy_gun_restoring_speed").unwrap()
+        })
         .as_f64()
         .expect("energy_gun_restoring_speed is not float value in settings.json")
         as f32
@@ -306,7 +357,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let machinegun_damage = {
         object
         .get("machinegun_damage")
-        .expect("Have not machinegun_damage in settings.json")
+        .unwrap_or_else(||{
+            object2.get("machinegun_damage").unwrap()
+        })
         .as_f64()
         .expect("machinegun_damage is not float value in settings.json")
         as f32
@@ -314,7 +367,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let machinegun_add_force = {
         object
         .get("machinegun_add_force")
-        .expect("Have not machinegun_add_force in settings.json")
+        .unwrap_or_else(||{
+            object2.get("machinegun_add_force").unwrap()
+        })
         .as_f64()
         .expect("machinegun_add_force is not float value in settings.json")
         as f32
@@ -322,7 +377,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let machinegun_heat_add_on_shot = {
         object
         .get("machinegun_heat_add_on_shot")
-        .expect("Have not machinegun_heat_add_on_shot in settings.json")
+        .unwrap_or_else(||{
+            object2.get("machinegun_heat_add_on_shot").unwrap()
+        })
         .as_f64()
         .expect("machinegun_heat_add_on_shot is not float value in settings.json")
         as f32
@@ -330,7 +387,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let machinegun_cooling_speed = {
         object
         .get("machinegun_cooling_speed")
-        .expect("Have not machinegun_cooling_speed in settings.json")
+        .unwrap_or_else(||{
+            object2.get("machinegun_cooling_speed").unwrap()
+        })
         .as_f64()
         .expect("machinegun_cooling_speed is not float value in settings.json")
         as f32
@@ -338,7 +397,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let matchmaking_server_url = {
         object
         .get("matchmaking_server_url")
-        .expect("Have not matchmaking_server_url in settings.json")
+        .unwrap_or_else(||{
+            object2.get("matchmaking_server_url").unwrap()
+        })
         .as_str()
         .expect("matchmaking_server_url is not string value in settings.json")
         .to_string()
@@ -347,7 +408,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let bash_and_turn_servers = {
         object
         .get("bash_and_turn_servers")
-        .expect("Have not bash_and_turn_servers in settings.json")
+        .unwrap_or_else(||{
+            object2.get("bash_and_turn_servers").unwrap()
+        })
         .as_array()
         .expect("bash_and_turn_servers is not array value in settings.json")
         .into_iter()
@@ -358,7 +421,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let turn_server_username = {
         object
         .get("turn_server_username")
-        .expect("Have not turn_server_username in settings.json")
+        .unwrap_or_else(||{
+            object2.get("turn_server_username").unwrap()
+        })
         .as_str()
         .expect("turn_server_username is not string value in settings.json")
         .to_string()
@@ -367,7 +432,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let turn_server_credential = {
         object
         .get("turn_server_credential")
-        .expect("Have not turn_server_credential in settings.json")
+        .unwrap_or_else(||{
+            object2.get("turn_server_credential").unwrap()
+        })
         .as_str()
         .expect("turn_server_credential is not string value in settings.json")
         .to_string()
@@ -376,7 +443,9 @@ fn parse_json_into_settings(json_settigs: Value) -> PlayerSettings {
     let screen_resolution_scale = {
         object
         .get("screen_resolution_scale")
-        .expect("Have not screen_resolution_scale in settings.json")
+        .unwrap_or_else(||{
+            object2.get("screen_resolution_scale").unwrap()
+        })
         .as_f64()
         .expect("screen_resolution_scale is not number value in settings.json")
         as f32

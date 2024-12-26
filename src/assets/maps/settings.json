@@ -1,44 +1,7 @@
 {
-    "player_sphere_radius": 0.5,
-
-    "player_max_speed" : 29.0,
-    "player_max_accel" : 29.0,
-
-    "air_speed_mult" : 0.31,
-
-    "player_jump_y_speed" : 12.0,
-    "player_jump_w_speed" : 14.0,
-
-    "player_jetpak_w_speed" : 0.6,
-
-    "gravity_y_speed" : 0.5,
-    "gravity_w_speed" : 0.4,
-    "friction_on_air" : 0.2,
-
-    "rotation_along_w_standard_method" : true,
-    "shadows_enable" : false,
-    
     "mouse_sensivity" : 0.7,
-    
-    "w_jump_time_reloading" : 1.2,
-    
-    "min_respawn_timer": 3.5,
-    "max_respawn_timer": 9,
-    
-    "scanner_show_enemies_time" : 5.5,
-    "scanner_reloading_time" : 4,
-    
-    "energy_gun_hole_size_mult" : 0.12,
-    "energy_gun_add_force_mult" : 1.4, 
-    "energy_gun_damage_mult" : 0.41,
-    "energy_gun_restoring_speed" : 14,
 
-    "machinegun_damage" : 7,
-    "machinegun_add_force" : 0.4, 
-    "machinegun_heat_add_on_shot" : 5.15, 
-    "machinegun_cooling_speed" : 15.5,
-
-    "matchmaking_server_url" : "ws://localhost:49161/",
+    "matchmaking_server_url" : "ws://109.72.102.215:49161/",
 
     "bash_and_turn_servers" : [
         "stun:stun.l.google.com:19302",

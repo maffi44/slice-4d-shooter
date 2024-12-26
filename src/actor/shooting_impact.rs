@@ -35,12 +35,12 @@ impl ShootingImpact {
             SphericalVolumeArea {
                 translation: Vec4::ZERO,
                 radius: 0.05,
-                color: Vec3::new(12.0, 4.0, 0.0),
+                color: Vec3::new(12.0, 4.0, 2.0),
             }
         );
 
         let max_radius = 0.5.lerp(
-            1.5,
+            2.5,
             damage as f32 / player::PLAYER_MAX_HP as f32
         ); 
 

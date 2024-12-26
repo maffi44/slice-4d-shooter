@@ -1427,7 +1427,7 @@ pub fn sphere_is_above_or_intersect_the_plane
 ) -> bool
 {
     assert!(
-        sphere_radius > 0.0
+        sphere_radius >= 0.0
     );
 
     (sphere_pos + plane*sphere_radius).dot(plane) > 0.0

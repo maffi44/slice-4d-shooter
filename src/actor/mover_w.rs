@@ -4,11 +4,12 @@ use glam::{Vec3, Vec4};
 
 use crate::{engine::{physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}}, transform::Transform};
 
-use super::{Actor, ActorID, Message, MessageType, PhysicsMessages, SpecificActorMessage};
+use super::{player::{BLUE_TEAM_COLOR, RED_TEAM_COLOR}, Actor, ActorID, Message, MessageType, PhysicsMessages, SpecificActorMessage};
 
 
 const TIME_TO_NOT_INTERACT_WITH_ACTOR: f32 = 1.0;
-const MOVER_W_PHYSICAL_AREA_RADIUS: f32 = 1.0;
+const MOVER_W_PHYSICAL_AREA_RADIUS: f32 = 0.8;
+const MOVER_W_VISUAL_AREA_RADIUS: f32 = 0.5;
 
 #[derive(Clone)]
 pub enum MoverWMessage
@@ -23,6 +24,9 @@ pub enum MoverWMessage
     ),
 }
 
+const VISUAL_WAVE_TICK_TIME: f32 = 2.2;
+const MOVER_W_COLOR: Vec3 = Vec3::new(0.5,0.14,0.5);
+
 pub struct MoverW
 {
     transform: Transform,
@@ -32,6 +36,8 @@ pub struct MoverW
     actors_to_remove_from_list: Vec<ActorID>,
     physical_area: Area,
     volume_areas: Vec<VolumeArea>,
+    vlisual_wave_tick_timer: f32,
+    base_color: Vec3,
 }
 
 impl MoverW
@@ -39,8 +45,25 @@ impl MoverW
     pub fn new(
         position: Vec4,
         mut direction: f32,
+        w_levels: &Vec<f32>,
     ) -> Self
     {
+        assert!(w_levels.len() > 1);
+
+        let base_coef = 
+        {
+            let w_pos = position.w;
+
+            f32::clamp(
+                (w_pos - w_levels[0]) /
+                (*w_levels.last().unwrap() - w_levels[0]),
+                    0.0,
+                    1.0
+            )
+        };
+
+        let base_color = BLUE_TEAM_COLOR.lerp(RED_TEAM_COLOR, base_coef);
+        
         if direction < 0.0
         {
             direction = -1.0;
@@ -60,7 +83,7 @@ impl MoverW
             SphericalVolumeArea {
                 translation: Vec4::ZERO,
                 radius: MOVER_W_PHYSICAL_AREA_RADIUS,
-                color: Vec3::new(0.8,0.3,0.8),
+                color: MOVER_W_COLOR,
             }
         );
 
@@ -74,6 +97,8 @@ impl MoverW
             actors_to_remove_from_list: Vec::new(),
             physical_area,
             volume_areas,
+            vlisual_wave_tick_timer: 0.0,
+            base_color,
         }
     }
 }
@@ -103,6 +128,22 @@ impl Actor for MoverW
 
         while let Some(id) = self.actors_to_remove_from_list.pop() {
             self.actors_to_not_interact_with.remove(&id);
+        }
+
+        self.vlisual_wave_tick_timer += delta;
+
+        if self.vlisual_wave_tick_timer >= VISUAL_WAVE_TICK_TIME
+        {
+            self.vlisual_wave_tick_timer = 0.0;
+
+            effects_system.spawn_wave(
+                engine_handle,
+                self.transform.get_position(),
+                vec![3.6, 1.8, 0.0],
+                vec![Vec3::ZERO, self.base_color*0.012, MOVER_W_COLOR*0.8],
+                vec![0.29, 0.29],
+            );
+
         }
     }
 

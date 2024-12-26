@@ -366,7 +366,7 @@ impl UISystem {
                             anchor: RectAnchor::CenterCenter,
                             position: Vec2::ZERO,
                             size: RectSize::LockedHeight(
-                                0.025
+                                0.055
                             ),
                             rotation_around_rect_center: 0.0,
                             rotation_around_screen_center: 0.0,

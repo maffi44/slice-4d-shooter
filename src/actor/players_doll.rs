@@ -597,16 +597,18 @@ impl Actor for PlayersDoll {
                         match message {
                             MoverWMessage::Rotate(_,_,_) =>
                             {
-                                // match self.player_moving_state {
-                                //     PlayerMovingState::MovingNormal =>
-                                //     {
-                                //         self.player_moving_state = PlayerMovingState::MovingThrowW;
-                                //     }
-                                //     PlayerMovingState::MovingThrowW =>
-                                //     {
-                                //         self.player_moving_state = PlayerMovingState::MovingNormal;
-                                //     }
-                                // }
+                                audio_system.spawn_spatial_sound(
+                                    Sound::WShiftEnd,
+                                    0.7,
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing,
+                                    self.transform.get_position(),
+                                    self.radius,
+                                    1.0,
+                                    50.0,
+                                );
                             }
                         }
                     }
@@ -1008,17 +1010,14 @@ impl Actor for PlayersDoll {
                                                 engine_handle,
                                                 self.transform.get_position(),
                                                 vec![
-                                                    self.radius,
-                                                    self.radius * 3.0,
-                                                    self.radius * 6.0,
+                                                    0.0,
+                                                    12.0,
                                                 ],
                                                 vec![
                                                     self.my_color,
-                                                    Vec3::new(1.0, 0.0, 0.0),
                                                     Vec3::ZERO
                                                 ],
                                                 vec![
-                                                    1.5,
                                                     1.5,
                                                 ]
                                             );
@@ -1029,17 +1028,14 @@ impl Actor for PlayersDoll {
                                                 engine_handle,
                                                 self.transform.get_position(),
                                                 vec![
-                                                    self.radius,
-                                                    self.radius * 3.0,
-                                                    self.radius * 6.0,
+                                                    0.0,
+                                                    12.0,
                                                 ],
                                                 vec![
                                                     self.my_color,
-                                                    Vec3::new(0.0, 0.0, 1.0),
                                                     Vec3::ZERO
                                                 ],
                                                 vec![
-                                                    1.5,
                                                     1.5,
                                                 ]
                                             );

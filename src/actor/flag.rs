@@ -1,11 +1,12 @@
+use bincode::de;
 use client_server_protocol::{NetCommand, NetMessageToServer, Team};
 use fyrox_sound::source::Status;
-use glam::{Vec3, Vec4};
+use glam::{FloatExt, Vec3, Vec4};
 use rand::Rng;
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VolumeArea}
+        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
     },
     transform::Transform
 };
@@ -60,6 +61,9 @@ const TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION: f32 = 0.8;
 const FLAG_SWING_RANGE: f32 = 0.07;
 const FLAG_UI_TICK_TIME: f32 = 0.5;
 
+const WAVE_TICK_TIME: f32 = 1.5;
+const WAVE_TARGET_RADIUS: f32 = 2.0;
+
 fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
 {
     assert!(range_min < range_max);
@@ -92,6 +96,13 @@ pub struct Flag
     opponent_color: Vec3,
     flag_ui_tick_switch: bool,
     flag_ui_tick_timer: f32,
+
+    radius_mult: f32,
+
+    wave_tick_timer: f32,
+    waves: Vec<VisualWave>,
+    wave_1_target_rad: f32,
+    wave_2_target_rad: f32,
 }
 
 impl Flag
@@ -150,6 +161,20 @@ impl Flag
 
         visual_areas.push(test_visual_area);
 
+        let waves = vec![
+            VisualWave {
+                translation: Vec4::ZERO,
+                radius: 0.0,
+                color: my_color,
+            },
+            VisualWave {
+                translation: Vec4::ZERO,
+                radius: 1.6,
+                color: my_color,
+            }
+
+        ];
+
         Flag {
             transform: transfrom_of_the_base,
             target_flag_swing_position,
@@ -166,6 +191,11 @@ impl Flag
             opponent_color,
             flag_ui_tick_switch: true,
             flag_ui_tick_timer: 0.0,
+            waves,
+            radius_mult: 1.0,
+            wave_tick_timer: 0.0,
+            wave_1_target_rad: WAVE_TARGET_RADIUS,
+            wave_2_target_rad: 0.0,
         }
     }
 
@@ -176,46 +206,28 @@ impl Flag
         engine_handle: &mut EngineHandle,
     )
     {
-        effects_system.spawn_wave(
-            engine_handle,
-            self.transform.get_position(),
-            vec![
-                FLAG_AREA_RADIUS,
-                FLAG_AREA_RADIUS * 5.0,
-                FLAG_AREA_RADIUS,
-            ],
-            vec![
-                self.my_color,
-                self.my_color,
-                self.my_color
-            ],
-            vec![
-                1.0,
-                3.0,
-            ]
-        );
 
         self.transform = self.transfrom_of_the_base;
         self.target_position = self.transfrom_of_the_base.get_position();
 
-        effects_system.spawn_wave(
-            engine_handle,
-            self.transform.get_position(),
-            vec![
-                FLAG_AREA_RADIUS,
-                FLAG_AREA_RADIUS * 5.0,
-                FLAG_AREA_RADIUS,
-            ],
-            vec![
-                self.my_color,
-                self.my_color,
-                self.my_color
-            ],
-            vec![
-                1.0,
-                3.0,
-            ]
-        );
+        // effects_system.spawn_wave(
+        //     engine_handle,
+        //     self.transform.get_position(),
+        //     vec![
+        //         FLAG_AREA_RADIUS,
+        //         FLAG_AREA_RADIUS * 5.0,
+        //         FLAG_AREA_RADIUS,
+        //     ],
+        //     vec![
+        //         self.my_color,
+        //         self.my_color,
+        //         self.my_color
+        //     ],
+        //     vec![
+        //         1.0,
+        //         3.0,
+        //     ]
+        // );
 
         audio_system.spawn_non_spatial_sound(
             Sound::FlagOnTheBase,
@@ -241,15 +253,15 @@ impl Flag
             engine_handle,
             self.transform.get_position(),
             vec![
-                FLAG_AREA_RADIUS,
-                FLAG_AREA_RADIUS * 6.0,
+                0.0,
+                12.0,
             ],
             vec![
                 self.my_color,
                 Vec3::ZERO
             ],
             vec![
-                3.0,
+                1.5,
             ]
         );
         self.status = FlagStatus::Missed(pos);
@@ -281,9 +293,9 @@ impl Flag
             engine_handle,
             self.transform.get_position(),
             vec![
-                FLAG_AREA_RADIUS,
-                FLAG_AREA_RADIUS * 3.0,
-                FLAG_AREA_RADIUS * 6.0,
+                0.0,
+                2.0,
+                12.0,
             ],
             vec![
                 self.my_color,
@@ -291,8 +303,8 @@ impl Flag
                 Vec3::ZERO
             ],
             vec![
-                1.0,
-                3.0,
+                0.3,
+                1.2,
             ]
         );
         
@@ -327,89 +339,147 @@ impl Actor for Flag
         )
         {
 
-            match self.status
+        match self.status
+        {
+            FlagStatus::OnTheBase =>
             {
-                FlagStatus::OnTheBase =>
-                {
-                    self.flag_ui_tick_switch = true;
-                }
-
-                _ =>
-                {
-                    if self.flag_ui_tick_timer >= FLAG_UI_TICK_TIME
-                    {
-                        self.flag_ui_tick_timer = 0.0;
-                        self.flag_ui_tick_switch = !self.flag_ui_tick_switch;
-                    }
-
-                    self.flag_ui_tick_timer += delta;
-                }
+                self.flag_ui_tick_switch = true;
             }
 
-            match self.owned_by_team
+            _ =>
             {
-                Team::Red =>
+                if self.flag_ui_tick_timer >= FLAG_UI_TICK_TIME
                 {
-                    let ui_flag = ui_system.get_mut_ui_element(&UIElementType::RedFlagMark);
-    
-                    *ui_flag.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = self.flag_ui_tick_switch;
+                    self.flag_ui_tick_timer = 0.0;
+                    self.flag_ui_tick_switch = !self.flag_ui_tick_switch;
                 }
 
-                Team::Blue =>
-                {
-                    let ui_flag = ui_system.get_mut_ui_element(&UIElementType::BlueFlagMark);
-    
-                    *ui_flag.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = self.flag_ui_tick_switch;
-                }
+                self.flag_ui_tick_timer += delta;
             }
+        }
 
-
-            self.next_target_swing_position_in_secs -= delta;
-
-            if self.next_target_swing_position_in_secs <= 0.0
+        match self.status
+        {
+            FlagStatus::Captured(_) =>
             {
-                self.target_flag_swing_position = get_random_vec4(
-                    -FLAG_SWING_RANGE,
-                    FLAG_SWING_RANGE
-                );
-
-                self.next_target_swing_position_in_secs = TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION;
+                self.radius_mult = self.radius_mult.lerp(0.25, 1.0 - delta*3.0);
             }
 
-            self.current_flag_swing_position = self.current_flag_swing_position.lerp(
-                self.target_flag_swing_position,
-                delta * 0.3
+            _ =>
+            {
+                self.radius_mult = self.radius_mult.lerp(1.0, 1.0 - delta*3.0);
+            }
+        }
+
+        match self.owned_by_team
+        {
+            Team::Red =>
+            {
+                let ui_flag = ui_system.get_mut_ui_element(&UIElementType::RedFlagMark);
+
+                *ui_flag.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = self.flag_ui_tick_switch;
+            }
+
+            Team::Blue =>
+            {
+                let ui_flag = ui_system.get_mut_ui_element(&UIElementType::BlueFlagMark);
+
+                *ui_flag.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = self.flag_ui_tick_switch;
+            }
+        }
+
+        self.next_target_swing_position_in_secs -= delta;
+
+        if self.next_target_swing_position_in_secs <= 0.0
+        {
+            self.target_flag_swing_position = get_random_vec4(
+                -FLAG_SWING_RANGE,
+                FLAG_SWING_RANGE
             );
 
-            let mut current_flag_position = self.transform.get_position();
+            self.next_target_swing_position_in_secs = TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION;
+        }
 
-            current_flag_position = current_flag_position.lerp(
-                self.target_position,
-                delta * 8.0
-            );
+        self.current_flag_swing_position = self.current_flag_swing_position.lerp(
+            self.target_flag_swing_position,
+            delta * 0.3
+        );
 
-            current_flag_position += self.current_flag_swing_position;
+        let mut current_flag_position = self.transform.get_position();
 
-            self.transform.set_position(current_flag_position);
+        current_flag_position = current_flag_position.lerp(
+            self.target_position,
+            delta * 9.0
+        );
 
-            match self.status
+        current_flag_position += self.current_flag_swing_position;
+
+        self.transform.set_position(current_flag_position);
+
+        match self.status
+        {
+            FlagStatus::Captured(id) =>
             {
-                FlagStatus::Captured(id) =>
-                {
-                    engine_handle.send_direct_message(
-                        id,
-                        Message {
-                            from: self.get_id().expect("Flag have not ActorID"),
-                            message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::FlagMessage(
-                                    FlagMessage::GiveMeTargetPosition
-                                )
+                engine_handle.send_direct_message(
+                    id,
+                    Message {
+                        from: self.get_id().expect("Flag have not ActorID"),
+                        message: MessageType::SpecificActorMessage(
+                            SpecificActorMessage::FlagMessage(
+                                FlagMessage::GiveMeTargetPosition
                             )
-                        }
-                    );
-                }
-                _ => {}
+                        )
+                    }
+                );
             }
+            _ => {}
+        }
+
+        self.wave_tick_timer += delta;
+
+        if self.wave_tick_timer >= WAVE_TICK_TIME
+        {
+            self.wave_tick_timer = 0.0;
+
+            if self.wave_1_target_rad == 0.0
+            {
+                self.wave_1_target_rad = WAVE_TARGET_RADIUS;
+                self.wave_2_target_rad = 0.0;
+            }
+            else
+            {
+                self.wave_1_target_rad = 0.0;
+                self.wave_2_target_rad = WAVE_TARGET_RADIUS;
+            }
+        }
+        
+        self.waves[0].radius = self.waves[0].radius.lerp(
+            self.wave_1_target_rad * self.radius_mult,
+            delta*WAVE_TICK_TIME*3.0
+        );
+        self.waves[0].color = self.waves[0].color.lerp(
+            self.wave_2_target_rad * self.my_color,
+            delta*WAVE_TICK_TIME*3.0
+        );
+
+        self.waves[1].radius = self.waves[1].radius.lerp(
+            self.wave_2_target_rad  * self.radius_mult,
+            delta*WAVE_TICK_TIME*0.9
+        );
+
+        self.waves[1].color = self.waves[1].color.lerp(
+            self.wave_1_target_rad * self.my_color,
+            delta*WAVE_TICK_TIME*0.9
+        );
+
+        match &mut self.visual_areas[0]
+        {
+            VolumeArea::SphericalVolumeArea(area) =>
+            {
+                area.radius = FLAG_AREA_RADIUS * self.radius_mult;
+            }
+            _ => {}
+        }
     }
 
     fn get_mut_transform(&mut self) -> &mut Transform {
@@ -454,7 +524,7 @@ impl Actor for Flag
                 static_objects: None,
                 coloring_areas: None,
                 volume_areas: Some(&self.visual_areas),
-                waves: None,
+                waves: Some(&self.waves),
                 player: None,
             }
         )
@@ -578,9 +648,9 @@ impl Actor for Flag
                                             engine_handle,
                                             self.transform.get_position(),
                                             vec![
-                                                FLAG_AREA_RADIUS,
-                                                FLAG_AREA_RADIUS * 3.0,
-                                                FLAG_AREA_RADIUS * 6.0,
+                                                0.0,
+                                                2.0,
+                                                12.0,
                                             ],
                                             vec![
                                                 self.my_color,
@@ -588,8 +658,8 @@ impl Actor for Flag
                                                 Vec3::ZERO
                                             ],
                                             vec![
-                                                1.0,
-                                                2.0,
+                                                0.3,
+                                                1.2,
                                             ]
                                         );
                                     }
@@ -599,9 +669,9 @@ impl Actor for Flag
                                             engine_handle,
                                             self.transform.get_position(),
                                             vec![
-                                                FLAG_AREA_RADIUS,
-                                                FLAG_AREA_RADIUS * 3.0,
-                                                FLAG_AREA_RADIUS * 6.0,
+                                                0.0,
+                                                2.0,
+                                                12.0,
                                             ],
                                             vec![
                                                 self.my_color,
@@ -609,8 +679,8 @@ impl Actor for Flag
                                                 Vec3::ZERO
                                             ],
                                             vec![
-                                                1.0,
-                                                2.0,
+                                                0.3,
+                                                1.2,
                                             ]
                                         );
                                     }
