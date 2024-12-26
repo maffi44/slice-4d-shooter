@@ -252,7 +252,7 @@
                     "w": 22.0
                 }
             },
-            "w_level" : 2
+            "w_level" : 1
         },
         {
             "transform" : {
@@ -263,7 +263,7 @@
                     "w": 22.0
                 }
             },
-            "w_level" : 2
+            "w_level" : 1
         },
         {
             "transform" : {
@@ -274,7 +274,7 @@
                     "w": 22.0
                 }
             },
-            "w_level" : 2
+            "w_level" : 1
         }
     ],
 

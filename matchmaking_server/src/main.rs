@@ -584,18 +584,9 @@ async fn async_main(
     async_runtime.spawn(async move {
         loop
         {
-            let mut file = std::fs::OpenOptions::new()
-                .write(true)
-                .truncate(true)
-                .create(true)
-                .open("./temp")
-                .expect("ERROR: can't open temp file");
+            println!("ping");
 
-            file
-                .write("temp".as_bytes())
-                .expect("ERROR: error during write in temp file");
-
-            tokio::time::sleep(Duration::from_secs(60)).await;
+            tokio::time::sleep(Duration::from_secs(60*10)).await;
         }
     });
     
