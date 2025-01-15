@@ -2299,7 +2299,7 @@ impl Player {
 
             coef = (coef * 2.0) - 1.0;
 
-            coef
+            coef.max(0.0)
         };
 
         self.inner_state.hp += BASE_EFFECT_HP_IMPACT_SPEED * delta * base_coef;
@@ -2857,7 +2857,7 @@ impl Player {
         }
 
         let in_space = {
-            self.get_transform().get_position().y < Y_DEATH_PLANE_LEVEL 
+            self.get_transform().get_position().y < Y_DEATH_PLANE_LEVEL+1.0
         };
 
         engine_handle.send_boardcast_message(

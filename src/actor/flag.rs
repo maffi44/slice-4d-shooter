@@ -210,24 +210,28 @@ impl Flag
         self.transform = self.transfrom_of_the_base;
         self.target_position = self.transfrom_of_the_base.get_position();
 
-        // effects_system.spawn_wave(
-        //     engine_handle,
-        //     self.transform.get_position(),
-        //     vec![
-        //         FLAG_AREA_RADIUS,
-        //         FLAG_AREA_RADIUS * 5.0,
-        //         FLAG_AREA_RADIUS,
-        //     ],
-        //     vec![
-        //         self.my_color,
-        //         self.my_color,
-        //         self.my_color
-        //     ],
-        //     vec![
-        //         1.0,
-        //         3.0,
-        //     ]
-        // );
+        match self.status
+        {
+            FlagStatus::Missed(_) =>
+            {
+                effects_system.spawn_wave(
+                    engine_handle,
+                    self.transform.get_position(),
+                    vec![
+                        0.0,
+                        24.0,
+                    ],
+                    vec![
+                        self.my_color,
+                        Vec3::ZERO
+                    ],
+                    vec![
+                        1.5,
+                    ]
+                );
+            }
+            _ => {}
+        }
 
         audio_system.spawn_non_spatial_sound(
             Sound::FlagOnTheBase,
@@ -254,7 +258,7 @@ impl Flag
             self.transform.get_position(),
             vec![
                 0.0,
-                12.0,
+                24.0,
             ],
             vec![
                 self.my_color,
@@ -295,7 +299,7 @@ impl Flag
             vec![
                 0.0,
                 2.0,
-                12.0,
+                24.0,
             ],
             vec![
                 self.my_color,
@@ -650,14 +654,32 @@ impl Actor for Flag
                                             vec![
                                                 0.0,
                                                 2.0,
-                                                12.0,
+                                                24.0,
+                                                0.0,
+                                                2.0,
+                                                24.0,
+                                                0.0,
+                                                2.0,
+                                                24.0,
                                             ],
                                             vec![
                                                 self.my_color,
                                                 RED_TEAM_COLOR,
+                                                Vec3::ZERO,
+                                                Vec3::ZERO,
+                                                RED_TEAM_COLOR,
+                                                Vec3::ZERO,
+                                                Vec3::ZERO,
+                                                RED_TEAM_COLOR,
                                                 Vec3::ZERO
                                             ],
                                             vec![
+                                                0.3,
+                                                1.2,
+                                                0.1,
+                                                0.3,
+                                                1.2,
+                                                0.1,
                                                 0.3,
                                                 1.2,
                                             ]
@@ -671,14 +693,32 @@ impl Actor for Flag
                                             vec![
                                                 0.0,
                                                 2.0,
-                                                12.0,
+                                                24.0,
+                                                0.0,
+                                                2.0,
+                                                24.0,
+                                                0.0,
+                                                2.0,
+                                                24.0,
                                             ],
                                             vec![
                                                 self.my_color,
                                                 BLUE_TEAM_COLOR,
+                                                Vec3::ZERO,
+                                                Vec3::ZERO,
+                                                BLUE_TEAM_COLOR,
+                                                Vec3::ZERO,
+                                                Vec3::ZERO,
+                                                BLUE_TEAM_COLOR,
                                                 Vec3::ZERO
                                             ],
                                             vec![
+                                                0.3,
+                                                1.2,
+                                                0.1,
+                                                0.3,
+                                                1.2,
+                                                0.1,
                                                 0.3,
                                                 1.2,
                                             ]

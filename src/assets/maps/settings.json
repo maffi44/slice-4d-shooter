@@ -1,5 +1,5 @@
 {
-    "mouse_sensivity" : 0.7,
+    "mouse_sensivity" : 0.3,
 
     "matchmaking_server_url" : "ws://109.72.102.215:49161/",
 
@@ -12,5 +12,5 @@
     "turn_server_username" : "homeo",
     "turn_server_credential" : "homeo",
     
-    "screen_resolution_scale" : 0.7
+    "screen_resolution_scale" : 0.9
 }
