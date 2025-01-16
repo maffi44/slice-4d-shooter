@@ -56,6 +56,7 @@ pub struct ActionsFrameState {
     pub move_w_down: Action,
     pub first_mouse: Action,
     pub second_mouse: Action,
+    pub hold_player_rotation: Action,
     pub mouse_axis: Vec2,
 }
 
@@ -80,6 +81,7 @@ impl ActionsFrameState {
         let mut activate_hand_slot_1 = Action::new();
         let mut activate_hand_slot_2 = Action::new();
         let mut activate_hand_slot_3 = Action::new();
+        let mut hold_player_rotation = Action::new();
         let mouse_axis = mouse_axis;
         
         for (_, (button_action, action)) in actions_table.iter() {
@@ -103,6 +105,7 @@ impl ActionsFrameState {
                 ButtonActions::ModeOne => mode_1 = action.clone(),
                 ButtonActions::ModeTwo => mode_2 = action.clone(),
                 ButtonActions::ModeThree => mode_3 = action.clone(),
+                ButtonActions::HoldPlayerRotation => hold_player_rotation = action.clone(),
             }
         }
 
@@ -126,7 +129,8 @@ impl ActionsFrameState {
             // mode_1,
             // mode_2,
             // mode_3,
-            mouse_axis
+            mouse_axis,
+            hold_player_rotation,
         }
     }
 
@@ -150,6 +154,7 @@ impl ActionsFrameState {
         let activate_hand_slot_1 = Action::new();
         let activate_hand_slot_2 = Action::new();
         let activate_hand_slot_3 = Action::new();
+        let hold_player_rotation = Action::new();
         let mouse_axis = Vec2::ZERO;
 
         ActionsFrameState {
@@ -169,6 +174,7 @@ impl ActionsFrameState {
             move_w_down,
             first_mouse,
             second_mouse,
+            hold_player_rotation,
             // mode_1,
             // mode_2,
             // mode_3,
@@ -208,6 +214,7 @@ enum ButtonActions {
     ModeThree,
     FirstMouse,
     SecondMouse,
+    HoldPlayerRotation,
 }
 
 // for future user's settings
@@ -307,6 +314,10 @@ impl InputSystem {
         actions_table.insert(
             SomeButton::MouseButton(MouseButton::Right),
             (ButtonActions::SecondMouse, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyQ),
+            (ButtonActions::HoldPlayerRotation, Action::new())
         );
         InputSystem {
             actions_table,

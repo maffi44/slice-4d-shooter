@@ -985,87 +985,45 @@ impl Actor for Player {
 
             self.time_from_previos_second_mouse_click += delta;
 
-            if self.player_settings.rotation_along_w_standard_method {
+            if input.second_mouse.is_action_pressed() {
+                zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
+                xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
 
-                if input.second_mouse.is_action_pressed() {
-                    zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
-    
-                    // xz = input.mouse_axis.x + xz;
-                    
-                } else {
-                    // zw *= 1.0 - delta * 3.0;
-                    // if zw.abs() < 0.00001 {
-                    //     zw = 0.0;
-                    // }
-                    
-                    // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                    // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-                    match &mut self.inner_state.player_moving_state
+                // xz = input.mouse_axis.x + xz;
+                
+            } else {
+                // zw *= 1.0 - delta * 3.0;
+                // if zw.abs() < 0.00001 {
+                //     zw = 0.0;
+                // }
+                
+                // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+                match &mut self.inner_state.player_moving_state
+                {
+                    PlayerMovingState::MovingNormal(_) =>
                     {
-                        PlayerMovingState::MovingNormal(_) =>
+                        if !input.hold_player_rotation.is_action_pressed()
                         {
                             zw *= 1.0 - delta * 2.8;
                             if zw.abs() < 0.0001 {
                                 zw = 0.0;
                             }
-                            
-                            xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                            yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
                         }
-                        PlayerMovingState::MovingThrowW(_, dir) =>
+                        
+                        xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                        yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+                    }
+                    PlayerMovingState::MovingThrowW(_, dir) =>
+                    {
+                        if !input.hold_player_rotation.is_action_pressed()
                         {
                             *dir = if *dir < 0.0 {-1.0} else {1.0};
-
+    
                             zw = zw.lerp(PI/2.0 * *dir, delta * 2.8);
                             if PI/2.0 - zw.abs() < 0.0001 {
                                 zw = PI/2.0 * *dir;
                             }
-                            
-                            xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                            yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-                        }
-                    }
-                }
-            } else {
-
-                if input.second_mouse.is_action_just_pressed() {
-                    self.need_to_rotate_w_to_zero = false;
-
-                    if self.time_from_previos_second_mouse_click < 0. {
-                        self.need_to_rotate_w_to_zero = true;
-                    }
-
-                    self.time_from_previos_second_mouse_click = 0.0
-                }
-
-                if input.second_mouse.is_action_pressed() {
-                    if !self.need_to_rotate_w_to_zero {
-                        
-                        zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
-                    
-                    } else {
-                        zw *= 1.0 - delta * 3.0;
-                        if zw.abs() < 0.00001 {
-                            zw = 0.0;
-                        }
-
-                        // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                        // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-                    }
-    
-                    // xz = input.mouse_axis.x + xz;
-                    
-                } else {
-                    if !self.need_to_rotate_w_to_zero {
-
-                        xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                        yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-                    
-                    } else {
-                        
-                        zw *= 1.0 - delta * 3.0;
-                        if zw.abs() < 0.00001 {
-                            zw = 0.0;
                         }
                         
                         xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
@@ -1073,6 +1031,55 @@ impl Actor for Player {
                     }
                 }
             }
+            // if self.player_settings.rotation_along_w_standard_method {
+
+            // } else {
+
+            //     if input.second_mouse.is_action_just_pressed() {
+            //         self.need_to_rotate_w_to_zero = false;
+
+            //         if self.time_from_previos_second_mouse_click < 0. {
+            //             self.need_to_rotate_w_to_zero = true;
+            //         }
+
+            //         self.time_from_previos_second_mouse_click = 0.0
+            //     }
+
+            //     if input.second_mouse.is_action_pressed() {
+            //         if !self.need_to_rotate_w_to_zero {
+                        
+            //             zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
+                    
+            //         } else {
+            //             zw *= 1.0 - delta * 3.0;
+            //             if zw.abs() < 0.00001 {
+            //                 zw = 0.0;
+            //             }
+
+            //             // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+            //             // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+            //         }
+    
+            //         // xz = input.mouse_axis.x + xz;
+                    
+            //     } else {
+            //         if !self.need_to_rotate_w_to_zero {
+
+            //             xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+            //             yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+                    
+            //         } else {
+                        
+            //             zw *= 1.0 - delta * 3.0;
+            //             if zw.abs() < 0.00001 {
+            //                 zw = 0.0;
+            //             }
+                        
+            //             xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+            //             yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+            //         }
+            //     }
+            // }
     
 
 
@@ -1213,24 +1220,42 @@ impl Actor for Player {
                     self.inner_state.zy_rotation = zy_rotation;
                     self.inner_state.zx_rotation = zx_rotation;
             
-                    self.set_rotation_matrix(zw_rotation * zy_rotation * zx_rotation);
+                    self.set_rotation_matrix(zy_rotation * zx_rotation * zw_rotation);
         
                 }
                 PlayerMovingState::MovingThrowW(_, dir) =>
                 {
-                    let yw_rotation = Mat4::from_cols_slice(&[
-                        1.0,    0.0,        0.0,      0.0,
-                        0.0,    (-yz*dir).cos(),  0.0,      -(-yz*dir).sin(),
-                        0.0,    0.0,        1.0,      0.0,
-                        0.0,    (-yz*dir).sin(),   0.0,      (-yz*dir).cos()
-                    ]);
+                    // let yw_rotation = Mat4::from_cols_slice(&[
+                    //     1.0,    0.0,        0.0,      0.0,
+                    //     0.0,    (-yz*dir).cos(),  0.0,      -(-yz*dir).sin(),
+                    //     0.0,    0.0,        1.0,      0.0,
+                    //     0.0,    (-yz*dir).sin(),   0.0,      (-yz*dir).cos()
+                    // ]);
 
-                    let xw_rotation = Mat4::from_cols_slice(&[
-                        (-xz*dir).cos(),    0.0,       0.0,      (-xz*dir).sin(),
-                        0.0,          1.0,       0.0,      0.0,
-                        0.0,          0.0,       1.0,      0.0,
-                        -(-xz*dir).sin(),     0.0,       0.0,      (-xz*dir).cos()
-                    ]);
+                    // let xw_rotation = Mat4::from_cols_slice(&[
+                    //     (-xz*dir).cos(),    0.0,       0.0,      (-xz*dir).sin(),
+                    //     0.0,          1.0,       0.0,      0.0,
+                    //     0.0,          0.0,       1.0,      0.0,
+                    //     -(-xz*dir).sin(),     0.0,       0.0,      (-xz*dir).cos()
+                    // ]);
+            
+                    // let zw_rotation = Mat4::from_cols_slice(&[
+                    //     1.0,    0.0,    0.0,        0.0,
+                    //     0.0,    1.0,    0.0,        0.0,
+                    //     0.0,    0.0,    (zw).cos(),   (zw).sin(),
+                    //     0.0,    0.0,    -(zw).sin(),   (zw).cos()
+                    // ]);
+        
+                    // self.inner_state.zw_rotation = zw_rotation;
+                    // self.inner_state.zy_rotation = yw_rotation;
+                    // self.inner_state.zx_rotation = xw_rotation;
+            
+                    // self.set_rotation_matrix(zw_rotation * yw_rotation * xw_rotation);
+
+
+                    let zy_rotation = Mat4::from_rotation_x(-yz);
+
+                    let zx_rotation = Mat4::from_rotation_y(-xz);
             
                     let zw_rotation = Mat4::from_cols_slice(&[
                         1.0,    0.0,    0.0,        0.0,
@@ -1240,10 +1265,10 @@ impl Actor for Player {
                     ]);
         
                     self.inner_state.zw_rotation = zw_rotation;
-                    self.inner_state.zy_rotation = yw_rotation;
-                    self.inner_state.zx_rotation = xw_rotation;
+                    self.inner_state.zy_rotation = zy_rotation;
+                    self.inner_state.zx_rotation = zx_rotation;
             
-                    self.set_rotation_matrix(zw_rotation * yw_rotation * xw_rotation);
+                    self.set_rotation_matrix(zy_rotation * zx_rotation * zw_rotation);
                 }
             }
     
@@ -1500,41 +1525,16 @@ impl Actor for Player {
     
             if input.move_forward.is_action_pressed() {
 
-                match self.inner_state.player_moving_state
-                {
-                    PlayerMovingState::MovingNormal(_) =>
-                    {
-                        movement_vec += Vec4::NEG_Z;
+                movement_vec += Vec4::NEG_Z;
 
-                        player_doll_input_state.move_forward = true;
-                    }
-                    PlayerMovingState::MovingThrowW(_, dir) =>
-                    {
-                        movement_vec += Vec4::W*dir;
-
-                        player_doll_input_state.move_forward = true;
-                    }
-                }
-
+                player_doll_input_state.move_forward = true;
             }
     
             if input.move_backward.is_action_pressed() {
                 
-                match self.inner_state.player_moving_state
-                {
-                    PlayerMovingState::MovingNormal(_) =>
-                    {
-                        movement_vec += Vec4::Z;
+                movement_vec += Vec4::Z;
 
-                        player_doll_input_state.move_backward = true;
-                    }
-                    PlayerMovingState::MovingThrowW(_, dir) =>
-                    {
-                        movement_vec += Vec4::NEG_W*dir;
-
-                        player_doll_input_state.move_backward = true;
-                    }
-                }
+                player_doll_input_state.move_backward = true;
             }
     
             if input.move_right.is_action_pressed() {
@@ -1587,176 +1587,215 @@ impl Actor for Player {
             
             if input.move_w_up.is_action_just_pressed() {
 
-                match &mut self.inner_state.player_moving_state
+                if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
                 {
-                    PlayerMovingState::MovingThrowW(_,_) => {}
-
-                    PlayerMovingState::MovingNormal(lock_w) =>
+                    let current_w_level = match &mut self.inner_state.player_moving_state
                     {
-                        if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
+                        PlayerMovingState::MovingThrowW(_,_) =>
                         {
-                            let current_w_level = {
-                                let mut nearest_w_level = -100000.0;
+                            let w_pos = self.get_position().w;
 
-                                for w_level in self.w_levels_of_map.iter()
-                                {
-                                    if (*lock_w - nearest_w_level).abs() >
-                                        (*lock_w - *w_level).abs()
-                                    {
-                                        nearest_w_level = *w_level;
-                                    }                                    
-                                }
-                                
-                                nearest_w_level
-                            };
+                            let mut nearest_w_level = -100000.0;
 
-                            let next_w_level = {
-
-                                let mut next_w_level = None;
-
-                                let mut current_w_level_index = usize::MAX;
-                                
-                                let mut i = 0_usize;
-
-                                for w_level in self.w_levels_of_map.iter()
-                                {
-                                    if *w_level == current_w_level
-                                    {
-                                        current_w_level_index = i;
-                                    }
-                                    i += 1;
-                                }
-
-                                if current_w_level_index == usize::MAX
-                                {
-                                    panic!("Didn't find player's current w_level in w_levels_of_map");
-                                }
-
-                                if current_w_level_index + 1 < self.w_levels_of_map.len()
-                                {
-                                    next_w_level = Some(self.w_levels_of_map[current_w_level_index + 1]);
-                                }
-
-                                next_w_level
-                            };
-
-                            if let Some(next_w_level) = next_w_level
+                            for w_level in self.w_levels_of_map.iter()
                             {
-                                *lock_w = next_w_level;
-                                self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
-
-                                self.on_way_to_next_w_level_by_bonus = true;
-
-                                audio_system.spawn_non_spatial_sound(
-                                    Sound::WShiftStart,
-                                    1.0,
-                                    1.0,
-                                    false,
-                                    true,
-                                    fyrox_sound::source::Status::Playing
-                                );
-
-
+                                if (w_pos - nearest_w_level).abs() >
+                                    (w_pos - *w_level).abs()
+                                {
+                                    nearest_w_level = *w_level;
+                                }                                    
                             }
+                            
+                            nearest_w_level
                         }
+
+                        PlayerMovingState::MovingNormal(lock_w) =>
+                        {
+                            let mut nearest_w_level = -100000.0;
+
+                            for w_level in self.w_levels_of_map.iter()
+                            {
+                                if (*lock_w - nearest_w_level).abs() >
+                                    (*lock_w - *w_level).abs()
+                                {
+                                    nearest_w_level = *w_level;
+                                }                                    
+                            }
+                            
+                            nearest_w_level
+                        }
+                    };
+
+                    let next_w_level = {
+
+                        let mut next_w_level = None;
+
+                        let mut current_w_level_index = usize::MAX;
+                        
+                        let mut i = 0_usize;
+
+                        for w_level in self.w_levels_of_map.iter()
+                        {
+                            if *w_level == current_w_level
+                            {
+                                current_w_level_index = i;
+                            }
+                            i += 1;
+                        }
+
+                        if current_w_level_index == usize::MAX
+                        {
+                            panic!("Didn't find player's current w_level in w_levels_of_map");
+                        }
+
+                        if current_w_level_index + 1 < self.w_levels_of_map.len()
+                        {
+                            next_w_level = Some(self.w_levels_of_map[current_w_level_index + 1]);
+                        }
+
+                        next_w_level
+                    };
+
+                    if let Some(next_w_level) = next_w_level
+                    {
+                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(next_w_level);
+
+                        self.inner_state.collider.current_velocity.y = 0.0;
+
+                        self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
+
+                        self.on_way_to_next_w_level_by_bonus = true;
+
+                        audio_system.spawn_non_spatial_sound(
+                            Sound::WShiftStart,
+                            1.0,
+                            1.0,
+                            false,
+                            true,
+                            fyrox_sound::source::Status::Playing
+                        );
                     }
                 }
             }
 
             if input.move_w_down.is_action_just_pressed() {
-                match &mut self.inner_state.player_moving_state
+                if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
                 {
-                    PlayerMovingState::MovingThrowW(_,_) => {}
-
-                    PlayerMovingState::MovingNormal(lock_w) =>
+                    let current_w_level = match &mut self.inner_state.player_moving_state
                     {
-                        if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
+                        PlayerMovingState::MovingThrowW(_,_) =>
                         {
-                            let current_w_level = {
-                                let mut nearest_w_level = -100000.0;
+                            let w_pos = self.get_position().w;
 
-                                for w_level in self.w_levels_of_map.iter()
-                                {
-                                    if (*lock_w - nearest_w_level).abs() >
-                                        (*lock_w - *w_level).abs()
-                                    {
-                                        nearest_w_level = *w_level;
-                                    }                                    
-                                }
-                                
-                                nearest_w_level
-                            };
+                            let mut nearest_w_level = -100000.0;
 
-                            let next_w_level = {
-
-                                let mut next_w_level = None;
-
-                                let mut current_w_level_index = usize::MAX;
-                                
-                                let mut i = 0_usize;
-
-                                for w_level in self.w_levels_of_map.iter()
-                                {
-                                    if *w_level == current_w_level
-                                    {
-                                        current_w_level_index = i;
-                                    }
-                                    i += 1;
-                                }
-
-                                if current_w_level_index == usize::MAX
-                                {
-                                    panic!("Didn't find player's current w_level in w_levels_of_map");
-                                }
-
-                                if current_w_level_index != 0
-                                {
-                                    next_w_level = Some(self.w_levels_of_map[current_w_level_index - 1]);
-                                }
-
-                                next_w_level
-                            };
-
-                            if let Some(next_w_level) = next_w_level
+                            for w_level in self.w_levels_of_map.iter()
                             {
-                                *lock_w = next_w_level;
-                                self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
-
-                                self.on_way_to_next_w_level_by_bonus = true;
-
-                                audio_system.spawn_non_spatial_sound(
-                                    Sound::WShiftStart,
-                                    1.0,
-                                    1.0,
-                                    false,
-                                    true,
-                                    fyrox_sound::source::Status::Playing
-                                );
-
-
+                                if (w_pos - nearest_w_level).abs() >
+                                    (w_pos - *w_level).abs()
+                                {
+                                    nearest_w_level = *w_level;
+                                }                                    
                             }
+                            
+                            nearest_w_level
                         }
+
+                        PlayerMovingState::MovingNormal(lock_w) =>
+                        {
+                            let mut nearest_w_level = -100000.0;
+
+                            for w_level in self.w_levels_of_map.iter()
+                            {
+                                if (*lock_w - nearest_w_level).abs() >
+                                    (*lock_w - *w_level).abs()
+                                {
+                                    nearest_w_level = *w_level;
+                                }                                    
+                            }
+                            
+                            nearest_w_level
+                        }
+                    };
+
+                    let next_w_level = {
+
+                        let mut next_w_level = None;
+
+                        let mut current_w_level_index = usize::MAX;
+                        
+                        let mut i = 0_usize;
+
+                        for w_level in self.w_levels_of_map.iter()
+                        {
+                            if *w_level == current_w_level
+                            {
+                                current_w_level_index = i;
+                            }
+                            i += 1;
+                        }
+
+                        if current_w_level_index == usize::MAX
+                        {
+                            panic!("Didn't find player's current w_level in w_levels_of_map");
+                        }
+
+                        if current_w_level_index + 1 < self.w_levels_of_map.len()
+                        {
+                            next_w_level = Some(self.w_levels_of_map[current_w_level_index - 1]);
+                        }
+
+                        next_w_level
+                    };
+
+                    if let Some(next_w_level) = next_w_level
+                    {
+                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(next_w_level);
+
+                        self.inner_state.collider.current_velocity.y = 0.0;
+
+                        self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
+
+                        self.on_way_to_next_w_level_by_bonus = true;
+
+                        audio_system.spawn_non_spatial_sound(
+                            Sound::WShiftStart,
+                            1.0,
+                            1.0,
+                            false,
+                            true,
+                            fyrox_sound::source::Status::Playing
+                        );
                     }
                 }
             }
 
             if self.on_way_to_next_w_level_by_bonus
             {
-                let target_w_pos = self.w_levels_of_map[self.current_w_level];
-                let dist = (self.get_position().w - target_w_pos).abs();
-
-                if dist < self.get_collider_radius()*0.2
+                match self.inner_state.player_moving_state
                 {
-                    self.on_way_to_next_w_level_by_bonus = false;
+                    PlayerMovingState::MovingNormal(target_w_pos) =>
+                    {
+                        let dist = (self.get_position().w - target_w_pos).abs();
 
-                    audio_system.spawn_non_spatial_sound(
-                        Sound::WShiftEnd,
-                        1.0,
-                        1.0,
-                        false,
-                        true,
-                        fyrox_sound::source::Status::Playing
-                    );
+                        if dist < self.get_collider_radius()*1.5
+                        {
+                            self.on_way_to_next_w_level_by_bonus = false;
+
+                            audio_system.spawn_non_spatial_sound(
+                                Sound::WShiftEnd,
+                                1.0,
+                                1.0,
+                                false,
+                                true,
+                                fyrox_sound::source::Status::Playing
+                            );
+                        }
+                    }
+                    PlayerMovingState::MovingThrowW(_,_) =>
+                    {
+                        panic!("BUG: Player is Moving throw w during on_way_to_next_w_level_by_bonus is true")
+                    }
                 }
             }
 
@@ -1825,7 +1864,24 @@ impl Actor for Player {
             if self.inner_state.collider.is_enable {
     
                 if self.is_gravity_y_enabled {
-                    movement_vec = self.get_zx_rotation_matrix().inverse() * movement_vec;
+                    movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+
+                    match self.inner_state.player_moving_state {
+                        PlayerMovingState::MovingNormal(_) =>
+                        {
+                            movement_vec.y = 0.0;
+                            movement_vec.w = 0.0;
+
+                            movement_vec = movement_vec.normalize();
+                        }
+                        PlayerMovingState::MovingThrowW(_,_) =>
+                        {
+                            movement_vec.y = 0.0;
+                            movement_vec.z = 0.0;
+
+                            movement_vec = movement_vec.normalize();
+                        }
+                    }
     
                     if self.inner_state.collider.is_on_y_ground {
                         self.inner_state.collider.set_wish_direction(
@@ -1838,8 +1894,11 @@ impl Actor for Player {
                             self.player_settings.air_speed_mult
                         );
                     }
-    
-                    self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
+
+                    if !self.on_way_to_next_w_level_by_bonus
+                    {
+                        self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
+                    }
     
                 } else {
                    movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
@@ -1860,7 +1919,7 @@ impl Actor for Player {
                                 self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
         
                             self.inner_state.collider.current_velocity.w *=
-                                (w_dif * 10.0_f32)
+                                (w_dif * 6.0_f32)
                                 .abs()
                                 .clamp(0.0, 1.0);
                         }

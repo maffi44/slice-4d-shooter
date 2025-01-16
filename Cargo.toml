@@ -2,7 +2,7 @@ workspace = { members = [ "game_server", "matchmaking_server" ] }
 [package]
 name = "web-4d-shooter"
 author = "maffi44"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 wasm-opt = false
 
