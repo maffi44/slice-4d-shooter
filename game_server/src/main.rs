@@ -280,6 +280,8 @@ async fn game_server_main_loop(
         .take_channel(1)
         .unwrap();
 
+    let server_start_time = Instant::now();
+
     loop {
         let command = start_new_game_session(
             &mut webrtc_socket,
@@ -287,7 +289,8 @@ async fn game_server_main_loop(
             &config,
             &mut relaible_channel,
             &mut unrelaible_channel,
-            &mut players_state
+            &mut players_state,
+            &server_start_time,
         ).await;
 
         match command
@@ -421,7 +424,7 @@ struct PlayerInfo
     captured_flag: bool,
 }
 
-pub const MOVE_W_BONUS_RESPAWN_TIME: u128 = 70_000;
+pub const MOVE_W_BONUS_RESPAWN_TIME: u128 = 30_000;
 pub const FLAG_RESPAWN_TIME: u128 = 30_000;
 pub const MAX_SCORE: u32 = 4;
 pub const TIME_IN_SESSION_AFTER_WIN: u128 = 15_000;
@@ -488,10 +491,10 @@ impl GameSessionState {
 
     pub fn update_items(
         &mut self,
-        game_session_start_time: &Instant,
+        server_start_time: &Instant,
         relaible_channel: &mut WebRtcChannel,
     ) {
-        let current_time = game_session_start_time.elapsed().as_millis();
+        let current_time = server_start_time.elapsed().as_millis();
         
         let delta = {
             current_time
@@ -511,7 +514,7 @@ impl GameSessionState {
                     MOVE_W_BONUS_RESPAWN_TIME
                 {
                     self.set_new_bonus_status_and_send_update_to_players(
-                        game_session_start_time,
+                        server_start_time,
                         0,
                         BonusSpotStatus::BonusOnTheSpot,
                         relaible_channel
@@ -531,7 +534,7 @@ impl GameSessionState {
                     FLAG_RESPAWN_TIME
                 {
                     self.set_new_flag_status_and_send_update_to_players(
-                        game_session_start_time,
+                        server_start_time,
                         Team::Red,
                         FlagStatus::OnTheBase,
                         relaible_channel
@@ -552,7 +555,7 @@ impl GameSessionState {
                     FLAG_RESPAWN_TIME
                 {
                     self.set_new_flag_status_and_send_update_to_players(
-                        game_session_start_time,
+                        server_start_time,
                         Team::Blue,
                         FlagStatus::OnTheBase,
                         relaible_channel
@@ -584,14 +587,14 @@ impl GameSessionState {
 
     pub fn set_new_bonus_status_and_send_update_to_players(
         &mut self,
-        game_session_start_time: &Instant,
+        server_start_time: &Instant,
         index: usize,
         new_status: BonusSpotStatus,
         relaible_channel: &mut WebRtcChannel,
     ) {
         self.move_w_bonus
             .get_previouse_status_time =
-            game_session_start_time.elapsed().as_millis();
+            server_start_time.elapsed().as_millis();
         
         self.move_w_bonus.status = new_status;
 
@@ -614,7 +617,7 @@ impl GameSessionState {
 
     pub fn set_new_flag_status_and_send_update_to_players(
         &mut self,
-        game_session_start_time: &Instant,
+        server_start_time: &Instant,
         flag_team: Team,
         new_status: FlagStatus,
         relaible_channel: &mut WebRtcChannel,
@@ -625,7 +628,7 @@ impl GameSessionState {
             {
                 self.red_flag
                     .get_previouse_status_time =
-                    game_session_start_time.elapsed().as_millis();
+                    server_start_time.elapsed().as_millis();
                 
                 self.red_flag.status = new_status;
             }
@@ -633,7 +636,7 @@ impl GameSessionState {
             {
                 self.blue_flag
                     .get_previouse_status_time =
-                    game_session_start_time.elapsed().as_millis();
+                    server_start_time.elapsed().as_millis();
                 
                 self.blue_flag.status = new_status;
             }
@@ -684,7 +687,7 @@ impl GameSessionState {
     pub fn add_score_for_team_and_send_upadate_for_players(
         &mut self,
         score_for_team: Team,
-        game_session_start_time: &Instant,
+        server_start_time: &Instant,
         relaible_channel: &mut WebRtcChannel,
     )
     {
@@ -726,7 +729,7 @@ impl GameSessionState {
                 if self.red_team_score >= MAX_SCORE
                 {
                     self.game_state = GameState::RedWin(
-                        game_session_start_time.elapsed().as_millis()
+                        server_start_time.elapsed().as_millis()
                     );
 
                     for (_, player_info) in &self.players
@@ -747,7 +750,7 @@ impl GameSessionState {
                 else if self.blue_team_score >= MAX_SCORE
                 {
                     self.game_state = GameState::BlueWin(
-                        game_session_start_time.elapsed().as_millis()
+                        server_start_time.elapsed().as_millis()
                     );
 
                     for (_, player_info) in &self.players
@@ -831,14 +834,14 @@ async fn start_new_game_session(
     config: &GameServerConfig,
     relaible_channel: &mut WebRtcChannel,
     unrelaible_channel: &mut WebRtcChannel,
-    game_session_state: &mut GameSessionState
+    game_session_state: &mut GameSessionState,
+    server_start_time: &Instant,
 ) -> Command
 {
     game_session_state.game_state = GameState::Playing;
     println!("New game session started!");
 
     let mut idle_timer: Option<Instant> = None;
-    let game_session_start_time = std::time::Instant::now();
 
     if webrtc_socket.any_closed() {
         println!("ERROR: game server's WebRTC connection unexpectedly closed, server will shut down immediately");
@@ -848,7 +851,7 @@ async fn start_new_game_session(
     init_game_session(
         game_session_state,
         relaible_channel,
-        &game_session_start_time
+        &server_start_time
     );
 
     loop {
@@ -884,7 +887,7 @@ async fn start_new_game_session(
                     handle_player_connection(
                         sender_to_matchmaking_server,
                         config,
-                        &game_session_start_time,
+                        &server_start_time,
                         relaible_channel,
                         game_session_state,
                         id,
@@ -896,7 +899,7 @@ async fn start_new_game_session(
                     handle_player_disconnection(
                         sender_to_matchmaking_server,
                         config,
-                        &game_session_start_time,
+                        &server_start_time,
                         relaible_channel,
                         game_session_state,
                         id
@@ -910,7 +913,7 @@ async fn start_new_game_session(
         for (from_player, packet) in recieved_messages {
             
             process_player_message(
-                &game_session_start_time,
+                &server_start_time,
                 unrelaible_channel,
                 game_session_state,
                 from_player,
@@ -923,7 +926,7 @@ async fn start_new_game_session(
         for (from_player, packet) in recieved_messages {
             
             process_player_message(
-                &game_session_start_time,
+                &server_start_time,
                 relaible_channel,
                 game_session_state,
                 from_player,
@@ -931,7 +934,7 @@ async fn start_new_game_session(
             );
         }
 
-        game_session_state.update_items(&game_session_start_time, relaible_channel);
+        game_session_state.update_items(&server_start_time, relaible_channel);
 
         match game_session_state.game_state
         {
@@ -939,7 +942,7 @@ async fn start_new_game_session(
             GameState::BlueWin(win_time) =>
             {
                 let time_since_win =
-                    game_session_start_time.elapsed().as_millis()
+                    server_start_time.elapsed().as_millis()
                     -
                     win_time;
                 
@@ -951,7 +954,7 @@ async fn start_new_game_session(
             GameState::RedWin(win_time) =>
             {
                 let time_since_win =
-                    game_session_start_time.elapsed().as_millis()
+                    server_start_time.elapsed().as_millis()
                     -
                     win_time;
                 
@@ -970,7 +973,7 @@ async fn start_new_game_session(
 fn init_game_session(
     game_session_state: &mut GameSessionState,
     relaible_channel:&mut WebRtcChannel,
-    game_session_start_time: &Instant,
+    server_start_time: &Instant,
 )
 {
     for (_, player) in &mut game_session_state.players
@@ -998,21 +1001,21 @@ fn init_game_session(
     update_states_for_players(
         game_session_state,
         relaible_channel,
-        game_session_start_time
+        server_start_time
     );
 }
 
 fn update_states_for_players(
     game_session_state: &GameSessionState,
     relaible_channel: &mut WebRtcChannel,
-    game_session_start_time: &Instant,
+    server_start_time: &Instant,
 )
 {
     for (_, player_info) in &game_session_state.players
     {
         relaible_channel.send(
             ServerMessage::NewSessionStarted(
-                game_session_start_time.elapsed().as_millis(),
+                server_start_time.elapsed().as_millis(),
                 player_info.team
             ).to_packet(),
             player_info.peer_id
@@ -1093,7 +1096,7 @@ fn choose_team_for_new_player(
 async fn handle_player_connection(
     sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
-    game_session_start_time: &Instant,
+    server_start_time: &Instant,
     channel: &mut WebRtcChannel,
     game_session_state: &mut GameSessionState,
     connected_player_id: PeerId,
@@ -1102,7 +1105,7 @@ async fn handle_player_connection(
 
     channel.send(
         ServerMessage::JoinTheMatch(
-            game_session_start_time.elapsed().as_millis(),
+            server_start_time.elapsed().as_millis(),
             new_player_team,
             game_session_state.red_flag.status,
             game_session_state.blue_flag.status,
@@ -1282,7 +1285,7 @@ fn make_teams_equal(
 async fn handle_player_disconnection(
     sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
-    game_session_start_time: &Instant,
+    server_start_time: &Instant,
     relaible_channel: &mut WebRtcChannel,
     game_session_state: &mut GameSessionState,
     disconnected_player_id: PeerId
@@ -1299,7 +1302,7 @@ async fn handle_player_disconnection(
             Team::Red =>
             {
                 game_session_state.set_new_flag_status_and_send_update_to_players(
-                    game_session_start_time,
+                    server_start_time,
                     Team::Blue,
                     FlagStatus::OnTheBase,
                     relaible_channel
@@ -1308,7 +1311,7 @@ async fn handle_player_disconnection(
             Team::Blue =>
             {
                 game_session_state.set_new_flag_status_and_send_update_to_players(
-                    game_session_start_time,
+                    server_start_time,
                     Team::Red,
                     FlagStatus::OnTheBase,
                     relaible_channel
@@ -1353,7 +1356,7 @@ async fn handle_player_disconnection(
 
 
 fn process_player_message(
-    game_session_start_time: &Instant,
+    server_start_time: &Instant,
     channel: &mut WebRtcChannel,
     game_session_state: &mut GameSessionState,
     from_player: PeerId,
@@ -1458,7 +1461,7 @@ fn process_player_message(
                                         if time_of_attempt > game_session_state.blue_flag.get_previouse_status_time
                                         {
                                             game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                game_session_start_time,
+                                                server_start_time,
                                                 Team::Blue,
                                                 FlagStatus::Captured(from_player.0.as_u128()),
                                                 channel
@@ -1479,7 +1482,7 @@ fn process_player_message(
                                         if time_of_attempt > game_session_state.red_flag.get_previouse_status_time
                                         {
                                             game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                game_session_start_time,
+                                                server_start_time,
                                                 Team::Red,
                                                 FlagStatus::Captured(from_player.0.as_u128()),
                                                 channel
@@ -1523,7 +1526,7 @@ fn process_player_message(
                                         FlagStatus::Droped(_) =>
                                         {
                                             game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                game_session_start_time,
+                                                server_start_time,
                                                 Team::Red,
                                                 FlagStatus::OnTheBase,
                                                 channel,
@@ -1543,7 +1546,7 @@ fn process_player_message(
                                         FlagStatus::Droped(_) =>
                                         {
                                             game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                game_session_start_time,
+                                                server_start_time,
                                                 Team::Blue,
                                                 FlagStatus::OnTheBase,
                                                 channel,
@@ -1594,7 +1597,7 @@ fn process_player_message(
                                                     FlagStatus::OnTheBase =>
                                                     {
                                                         game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                            game_session_start_time,
+                                                            server_start_time,
                                                             Team::Blue,
                                                             FlagStatus::OnTheBase,
                                                             channel,
@@ -1602,7 +1605,7 @@ fn process_player_message(
 
                                                         game_session_state.add_score_for_team_and_send_upadate_for_players(
                                                             Team::Red,
-                                                            game_session_start_time,
+                                                            server_start_time,
                                                             channel,
                                                         );
                                                     }
@@ -1632,7 +1635,7 @@ fn process_player_message(
                                                     FlagStatus::OnTheBase =>
                                                     {
                                                         game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                            game_session_start_time,
+                                                            server_start_time,
                                                             Team::Red,
                                                             FlagStatus::OnTheBase,
                                                             channel,
@@ -1640,7 +1643,7 @@ fn process_player_message(
 
                                                         game_session_state.add_score_for_team_and_send_upadate_for_players(
                                                             Team::Blue,
-                                                            game_session_start_time,
+                                                            server_start_time,
                                                             channel,
                                                         );
                                                     }
@@ -1669,7 +1672,7 @@ fn process_player_message(
                                     time_of_attempt
                                 {
                                     game_session_state.set_new_bonus_status_and_send_update_to_players(
-                                        game_session_start_time,
+                                        server_start_time,
                                         bonus_spot_index as usize,
                                         BonusSpotStatus::BonusCollected(from_player.0.as_u128()),
                                         channel
@@ -1699,7 +1702,7 @@ fn process_player_message(
                                             if droped_in_space
                                             {
                                                 game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                    game_session_start_time,
+                                                    server_start_time,
                                                     team,
                                                     FlagStatus::OnTheBase,
                                                     channel
@@ -1708,7 +1711,7 @@ fn process_player_message(
                                             else
                                             {
                                                 game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                    game_session_start_time,
+                                                    server_start_time,
                                                     team,
                                                     FlagStatus::Droped(position),
                                                     channel
@@ -1730,7 +1733,7 @@ fn process_player_message(
                                             if droped_in_space
                                             {
                                                 game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                    game_session_start_time,
+                                                    server_start_time,
                                                     team,
                                                     FlagStatus::OnTheBase,
                                                     channel
@@ -1739,7 +1742,7 @@ fn process_player_message(
                                             else
                                             {
                                                 game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                    game_session_start_time,
+                                                    server_start_time,
                                                     team,
                                                     FlagStatus::Droped(position),
                                                     channel

@@ -1131,7 +1131,7 @@ impl OtherDynamicData {
         
         if let Some(actor) = world.actors.get(&world.main_player_id) {
             if let ActorWrapper::Player(main_player) = actor {
-                cam_pos = main_player.get_position() + Vec4::Y * main_player.get_collider_radius() * 0.98;
+                cam_pos = main_player.get_eyes_position();
                 
                 cam_zw_rot = main_player.get_zw_rotation_matrix().to_cols_array();
                 cam_zy_rot = main_player.get_zy_rotation_matrix().to_cols_array();
@@ -1299,28 +1299,28 @@ pub fn check_if_player_see_cube(
     
     cube_is_above_or_intersect_the_plane
     (
-        cube_pos - player.get_position(),
+        cube_pos - player.get_eyes_position(),
         cube_size,
         up_plane
     )
     &&
     cube_is_above_or_intersect_the_plane
     (
-        cube_pos - player.get_position(),
+        cube_pos - player.get_eyes_position(),
         cube_size,
         down_plane
     )
     &&
     cube_is_above_or_intersect_the_plane
     (
-        cube_pos - player.get_position(),
+        cube_pos - player.get_eyes_position(),
         cube_size,
         left_plane
     )
     &&
     cube_is_above_or_intersect_the_plane
     (
-        cube_pos - player.get_position(),
+        cube_pos - player.get_eyes_position(),
         cube_size,
         right_plane
     )
@@ -1343,28 +1343,28 @@ pub fn check_if_player_see_sphere(
 
     sphere_is_above_or_intersect_the_plane
     (
-        sphere_pos - player.get_position(),
+        sphere_pos - player.get_eyes_position(),
         sphere_radius,
         up_plane
     )
     &&
     sphere_is_above_or_intersect_the_plane
     (
-        sphere_pos - player.get_position(),
+        sphere_pos - player.get_eyes_position(),
         sphere_radius,
         down_plane
     )
     &&
     sphere_is_above_or_intersect_the_plane
     (
-        sphere_pos - player.get_position(),
+        sphere_pos - player.get_eyes_position(),
         sphere_radius,
         left_plane
     )
     &&
     sphere_is_above_or_intersect_the_plane
     (
-        sphere_pos - player.get_position(),
+        sphere_pos - player.get_eyes_position(),
         sphere_radius,
         right_plane
     )
@@ -1426,11 +1426,11 @@ pub fn sphere_is_above_or_intersect_the_plane
     plane: Vec4,
 ) -> bool
 {
-    assert!(
-        sphere_radius >= 0.0
-    );
+    // assert!(
+    //     sphere_radius >= 0.0
+    // );
 
-    (sphere_pos + plane*sphere_radius).dot(plane) > 0.0
+    (plane).dot(sphere_pos + (plane*sphere_radius)) > 0.0
 }
 
 

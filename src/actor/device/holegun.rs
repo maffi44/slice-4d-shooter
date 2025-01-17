@@ -260,12 +260,13 @@ impl HoleGun {
             )
 
         } else {
-            let position = from + (direction * 1500.0);
+            let position_local = from + (direction * 17.0);
+            let position_remote = from + (direction * 1500.0);
             let shooted_from = player.transform.get_position() + weapon_offset;
             let radius = charging_energy*CHARGING_COEF;
 
             let miss = HoleGunMiss::new(
-                position,
+                position_local,
                 shooted_from,
                 radius.abs(),
                 color,
@@ -290,7 +291,7 @@ impl HoleGun {
                             NetMessageToPlayer::RemoteDirectMessage(
                                 player_id,
                                 RemoteMessage::SpawHoleGunMissActor(
-                                    position.to_array(),
+                                    position_remote.to_array(),
                                     shooted_from.to_array(),
                                     radius.abs(),
                                     color.to_array(),
@@ -432,7 +433,7 @@ impl Device for HoleGun {
                             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
                         };
 
-                        area.radius = self.current_shot_charging_energy.abs()*0.03 * 0.08;
+                        area.radius = self.current_shot_charging_energy * 0.003;
                         area.translation = shooted_from_offset;
                     }
                     _ => {

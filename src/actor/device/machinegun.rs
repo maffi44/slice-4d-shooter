@@ -41,7 +41,7 @@ use super::{Device, DeviceType};
 
 const FIRE_RATE: f32 = 0.11;
 const MAX_TEMPERTURE: f32 = 60.0;
-const MAX_SHOOTING_RANGE: f32 = 0.009;
+const MAX_SHOOTING_RANGE: f32 = 0.0023;
 const SHOOTING_RANGE_INCR_SPEED: f32 = 15.0;
 const SHOOTING_RANGE_DCR_SPEED: f32 = 15.0;
 // const self.machinegun_heat_add_on_shot: f32 = 4.15;
@@ -219,11 +219,12 @@ impl MachineGun {
             )
 
         } else {
-            let position = from + (direction * 1500.0);
+            let position_local = from + (direction * 17.0);
+            let position_remote = from + (direction * 1500.0);
             let shooted_from = player.transform.get_position() + weapon_offset;
 
             let shot = MachinegunShot::new(
-                position,
+                position_local,
                 shooted_from,
                 1.0,
                 1.0,
@@ -247,7 +248,7 @@ impl MachineGun {
                             NetMessageToPlayer::RemoteDirectMessage(
                                 player_id,
                                 RemoteMessage::SpawnMachineGunShot(
-                                    position.to_array(),
+                                    position_remote.to_array(),
                                     true,
                                 )
                             )   

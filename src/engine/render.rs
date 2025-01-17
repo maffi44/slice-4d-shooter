@@ -48,6 +48,7 @@ pub struct RenderSystem {
     render_data: RenderData,
     pub window: Window,
     renderer: Arc<Mutex<Renderer>>,
+    outdated_signal_mutex: Arc<Mutex<bool>>,
 }
 
 
@@ -77,11 +78,16 @@ impl RenderSystem {
             )
         );
 
+        let outdated_signal_mutex = Arc::new(Mutex::new(false));
+
+        let outdated_signal_mutex_cloned = outdated_signal_mutex.clone();
         // spawn async tusk for renderer
         #[cfg(not(target_arch="wasm32"))]
         let async_renderer = renderer.clone();
         #[cfg(not(target_arch="wasm32"))]
         runtime.spawn(async move {
+
+            
             loop {
 
                 match async_renderer.try_lock() {
@@ -93,7 +99,9 @@ impl RenderSystem {
                                 // The system is out of memory, we should probably quit
                                 wgpu::SurfaceError::OutOfMemory => panic!("Out of GPU memory"),
                 
-                                // All other errors (Outdated, Timeout) should be resolved by the next frame
+                                wgpu::SurfaceError::Outdated => *outdated_signal_mutex_cloned.lock().unwrap() = true,
+                                
+                                // All other errors (Timeout, ..) should be resolved by the next frame
                                 _ => log::error!("{:?}", err),
                             }
                         }
@@ -113,6 +121,7 @@ impl RenderSystem {
             renderer,
 
             render_data,
+            outdated_signal_mutex,
         }
     }
 
@@ -124,6 +133,13 @@ impl RenderSystem {
         time: &TimeSystem,
         ui: &UISystem,
     ) {
+
+        if *self.outdated_signal_mutex.lock().unwrap() == true
+        {
+            *self.outdated_signal_mutex.lock().unwrap() = false;
+
+            self.window.set_fullscreen(None);
+        }
 
         self.render_data.update_dynamic_render_data(
             world,

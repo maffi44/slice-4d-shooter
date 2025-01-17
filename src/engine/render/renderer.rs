@@ -152,6 +152,7 @@ impl Renderer {
         ).unwrap() };
         log::info!("renderer: wgpu surface init");
 
+
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,

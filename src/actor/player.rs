@@ -1660,7 +1660,7 @@ impl Actor for Player {
                     {
                         self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(next_w_level);
 
-                        self.inner_state.collider.current_velocity.y = 0.0;
+                        self.inner_state.collider.current_velocity = Vec4::ZERO;
 
                         self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
 
@@ -1752,7 +1752,7 @@ impl Actor for Player {
                     {
                         self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(next_w_level);
 
-                        self.inner_state.collider.current_velocity.y = 0.0;
+                        self.inner_state.collider.current_velocity = Vec4::ZERO;
 
                         self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
 
@@ -1914,28 +1914,37 @@ impl Actor for Player {
                         PlayerMovingState::MovingNormal(lock_w) =>
                         {
                             let w_dif = lock_w - self.get_position().w;
+
+                            self.inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
+                                -self.player_settings.gravity_w_speed*25.0,
+                                self.player_settings.gravity_w_speed*25.0
+                            );
+                            // self.inner_state.collider.current_velocity.w +=
+                            //     self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
         
-                            self.inner_state.collider.current_velocity.w +=
-                                self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
-        
-                            self.inner_state.collider.current_velocity.w *=
-                                (w_dif * 6.0_f32)
-                                .abs()
-                                .clamp(0.0, 1.0);
+                            // self.inner_state.collider.current_velocity.w *=
+                            //     (w_dif * 20.0_f32)
+                            //     .abs()
+                            //     .clamp(0.0, 1.0);
                         }
 
                         PlayerMovingState::MovingThrowW(lock_z, _) =>
                         {
         
                             let z_dif = lock_z - self.get_position().z;
+
+                            self.inner_state.collider.current_velocity.z = (z_dif*1.5).clamp(
+                                -self.player_settings.gravity_w_speed*25.0,
+                                self.player_settings.gravity_w_speed*25.0
+                            );
         
-                            self.inner_state.collider.current_velocity.z +=
-                                self.player_settings.gravity_w_speed*z_dif.clamp(-1.0, 1.0);
+                            // self.inner_state.collider.current_velocity.z +=
+                            //     self.player_settings.gravity_w_speed*z_dif.clamp(-1.0, 1.0);
         
-                            self.inner_state.collider.current_velocity.z *=
-                                (z_dif * 10.0_f32)
-                                .abs()
-                                .clamp(0.0, 1.0);
+                            // self.inner_state.collider.current_velocity.z *=
+                            //     (z_dif * 20.0_f32)
+                            //     .abs()
+                            //     .clamp(0.0, 1.0);
                         }
                     }
 
@@ -2298,6 +2307,11 @@ impl Player {
 
     pub fn get_position(&self) -> Vec4 {
         self.inner_state.transform.get_position()
+    }
+
+    pub fn get_eyes_position(&self) -> Vec4
+    {
+        self.inner_state.transform.get_position() + Vec4::Y * self.get_collider_radius() * 0.98
     }
 
 
