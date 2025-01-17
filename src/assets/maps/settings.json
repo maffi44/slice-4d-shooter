@@ -12,5 +12,5 @@
     "turn_server_username" : "homeo",
     "turn_server_credential" : "homeo",
     
-    "screen_resolution_scale" : 1.0
+    "screen_resolution_scale" : 0.8
 }

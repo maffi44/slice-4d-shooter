@@ -442,12 +442,12 @@ impl NetSystem {
                         your_team,
                     ) =>
                     {
-                        engine_handle.send_command(Command {
-                            sender: 0_u128,
-                            command_type: CommandType::NetCommand(
-                                NetCommand::SetServerTime(server_time)   
-                            )
-                        });
+                        // engine_handle.send_command(Command {
+                        //     sender: 0_u128,
+                        //     command_type: CommandType::NetCommand(
+                        //         NetCommand::SetServerTime(server_time)   
+                        //     )
+                        // });
                         engine_handle.send_command(Command {
                             sender: 0_u128,
                             command_type: CommandType::RemoveAllHolesAndEffects

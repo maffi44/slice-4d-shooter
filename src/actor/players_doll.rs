@@ -619,12 +619,12 @@ impl Actor for PlayersDoll {
                         {
                             SessionControllerMessage::JoinedToSession(_,_,_,_,_,_) =>
                             {
-                                self.prev_interpolating_model_set_target_time = 0u128;
+                                // self.prev_interpolating_model_set_target_time = 0u128;
                             }
 
                             SessionControllerMessage::NewSessionStarted(_) =>
                             {
-                                self.prev_interpolating_model_set_target_time = 0u128;
+                                // self.prev_interpolating_model_set_target_time = 0u128;
                             }
 
                             _ => {}
