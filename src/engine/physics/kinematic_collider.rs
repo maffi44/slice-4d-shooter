@@ -190,7 +190,10 @@ impl KinematicCollider {
         self.wish_direction = Vec4::ZERO;
     }
 
-
+    pub fn set_friction_on_air(&mut self, friction_on_air: f32)
+    {
+        self.friction_on_air = friction_on_air;
+    }
     
     fn move_collider(
         &mut self,

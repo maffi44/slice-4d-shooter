@@ -178,7 +178,7 @@ impl HoleGun {
                     hit.hit_point.distance(position)
                 };
 
-                let damage = ((radius * 100.0) / (1.0 + dist_to_hited_point*10.0)) * 
+                let damage = ((radius * 54.0) / (1.0 + dist_to_hited_point*0.8)) * 
                     self.energy_gun_damage_mult;
 
                 let force = (hit.hit_normal * damage / -4.5) *

@@ -30,7 +30,7 @@ use crate::{
 
 use super::{
     device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, mover_w::MoverWMessage, player::{
-        player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
+        player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, PLAYER_FREE_MOVING_SPEED_MULT, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
     }, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, Actor, ActorID, ActorWrapper, CommonActorsMessage, Component, Message, MessageType, SpecificActorMessage
 };
 
@@ -47,17 +47,20 @@ pub struct PlayerDollInputState
 
 
 impl PlayerDollInputState {
-    pub fn serialize(self) -> (bool,bool,bool,bool,bool,bool,f32)
+    pub fn serialize(self) -> (bool,bool,bool,bool,bool,u8,f32)
     {   
-        let (moving_normal, lock_val, dir) = match self.player_moving_state {
-            PlayerMovingState::MovingNormal(lock_w) =>
+        let (moving_state, moving_state_val) = match self.player_moving_state {
+            PlayerMovingState::MovingPerpendicularW(lock_w) =>
             {
-                (true, lock_w, 1.0)
+                (0_u8, lock_w)
             }
-            PlayerMovingState::MovingThrowW(lock_z, dir) =>
+            PlayerMovingState::MovingParallelW(lock_z) =>
             {
-                (false, lock_z, dir)
-                
+                (1_u8, lock_z)
+            }
+            PlayerMovingState::MovingFree(time) =>
+            {
+                (2_u8, time)
             }
         };
 
@@ -67,22 +70,21 @@ impl PlayerDollInputState {
             self.move_right,
             self.move_left,
             self.will_jump,
-            moving_normal,
-            lock_val,
+            moving_state,
+            moving_state_val,
             // dir,
         )
     }
 
-    pub fn deserialize(input: (bool,bool,bool,bool,bool,bool,f32)) -> Self
+    pub fn deserialize(input: (bool,bool,bool,bool,bool,u8,f32)) -> Self
     {
         let player_moving_state = {
-            if input.5
+            match input.5
             {
-                PlayerMovingState::MovingNormal(input.6)
-            }
-            else
-            {
-                PlayerMovingState::MovingThrowW(input.6, 1.0)    
+                0_u8 => PlayerMovingState::MovingPerpendicularW(input.6),
+                1_u8 => PlayerMovingState::MovingParallelW(input.6),
+                2_u8 => PlayerMovingState::MovingFree(input.6),
+                _ => panic!("Get wrong value on net message set player doll position")
             }
         };
 
@@ -130,6 +132,8 @@ pub struct PlayersDoll {
 
     on_way_to_next_w_level: bool,
     current_w_level_prev_frame: u32,
+
+    friction_on_air: f32,
 }
 
 #[derive(Clone)]
@@ -203,6 +207,7 @@ impl PlayersDoll {
         player_settings: PlayerSettings,
         w_levels_of_map: Vec<f32>,
         team: Team,
+        friction_on_air: f32,
     ) -> Self {
 
         let my_color = match team {
@@ -258,7 +263,7 @@ impl PlayersDoll {
             move_right: false,
             move_left: false,
             will_jump: false,
-            player_moving_state: PlayerMovingState::MovingNormal(0.0),
+            player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
         };
 
         PlayersDoll {
@@ -284,6 +289,7 @@ impl PlayersDoll {
             radius: player_sphere_radius,
             my_color,
             on_way_to_next_w_level: false,
+            friction_on_air,
         }
     }
 
@@ -419,7 +425,7 @@ impl PlayersDoll {
     }
 
 
-    fn extrapolate_interpolatating_model_target(&mut self, audio_system: &mut AudioSystem)
+    fn extrapolate_interpolatating_model_target(&mut self, delta: f32, audio_system: &mut AudioSystem)
     {
         let mut movement_vec = Vec4::ZERO;
         
@@ -450,26 +456,98 @@ impl PlayersDoll {
 
         movement_vec = self.target_transform.get_rotation().inverse() * movement_vec;
 
-        movement_vec.y = 0_f32;
-        movement_vec.w = 0_f32;
+        match self.input_state.player_moving_state {
+            PlayerMovingState::MovingPerpendicularW(lock_w) =>
+            {
+                movement_vec.y = 0.0;
+                movement_vec.w = 0.0;
 
-        if let Some(vec) = movement_vec.try_normalize() {
-            movement_vec = vec;
+                match movement_vec.try_normalize()
+                {
+                    Some(vec) => movement_vec = vec,
+                    None => movement_vec = Vec4::ZERO,
+                }
+
+                let w_dif = lock_w - self.target_transform.get_position().w;
+
+                self.interpolating_model_target.current_velocity.w = (w_dif*1.5).clamp(
+                    -self.player_settings.gravity_w_speed*25.0,
+                    self.player_settings.gravity_w_speed*25.0
+                );
+
+                self.interpolating_model_target.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
+
+                if self.interpolating_model_target.is_on_y_ground {
+                    self.interpolating_model_target.set_wish_direction(
+                        movement_vec,
+                        1.0
+                    );
+                } else {
+                    self.interpolating_model_target.set_wish_direction(
+                        movement_vec,
+                        self.player_settings.air_speed_mult
+                    );
+                }
+
+                self.interpolating_model_target.set_friction_on_air(
+                    self.friction_on_air
+                );
+            }
+            PlayerMovingState::MovingParallelW(lock_z) =>
+            {
+                movement_vec.y = 0.0;
+                movement_vec.z = 0.0;
+
+                match movement_vec.try_normalize()
+                {
+                    Some(vec) => movement_vec = vec,
+                    None => movement_vec = Vec4::ZERO,
+                }
+
+                let z_dif = lock_z - self.target_transform.get_position().z;
+
+                self.interpolating_model_target.current_velocity.z = (z_dif*1.5).clamp(
+                    -self.player_settings.gravity_w_speed*25.0,
+                    self.player_settings.gravity_w_speed*25.0
+                );
+
+                self.interpolating_model_target.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
+
+                if self.interpolating_model_target.is_on_y_ground {
+                    self.interpolating_model_target.set_wish_direction(
+                        movement_vec,
+                        1.0
+                    );
+                } else {
+                    self.interpolating_model_target.set_wish_direction(
+                        movement_vec,
+                        self.player_settings.air_speed_mult
+                    );
+                }
+
+                self.interpolating_model_target.set_friction_on_air(
+                    self.friction_on_air
+                );
+            }
+            PlayerMovingState::MovingFree(_) =>
+            {
+                match movement_vec.try_normalize()
+                {
+                    Some(vec) => movement_vec = vec,
+                    None => movement_vec = Vec4::ZERO,
+                }
+
+                self.interpolating_model_target.set_wish_direction(
+                    movement_vec,
+                    PLAYER_FREE_MOVING_SPEED_MULT
+                );
+
+                self.interpolating_model_target.set_friction_on_air(
+                    self.friction_on_air * 15.0
+                );
+            }
         }
 
-        if self.interpolating_model_target.is_on_y_ground {
-            self.interpolating_model_target.set_wish_direction(
-                movement_vec,
-                1.0
-            );
-        } else {
-            self.interpolating_model_target.set_wish_direction(
-                movement_vec,
-                self.player_settings.air_speed_mult
-            );
-        }
-
-        self.interpolating_model_target.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
 
         // if self.input_state.current_w_level != self.current_w_level_prev_frame
         // {
@@ -489,35 +567,44 @@ impl PlayersDoll {
         //     self.on_way_to_next_w_level = true;
         // }
 
-        match self.input_state.player_moving_state
-        {
-            PlayerMovingState::MovingNormal(lock_w) =>
-            {
-                let w_dif = lock_w - self.target_transform.get_position().w;
+        // match self.input_state.player_moving_state
+        // {
+        //     PlayerMovingState::MovingPerpendicularW(lock_w) =>
+        //     {
+        //         let w_dif = lock_w - self.target_transform.get_position().w;
 
-                self.interpolating_model_target.current_velocity.w +=
-                    self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
+        //         self.interpolating_model_target.current_velocity.w +=
+        //             self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
 
-                self.interpolating_model_target.current_velocity.w *=
-                    (w_dif * 10.0_f32)
-                    .abs()
-                    .clamp(0.0, 1.0);
-            }
+        //         self.interpolating_model_target.current_velocity.w *=
+        //             (w_dif * 10.0_f32)
+        //             .abs()
+        //             .clamp(0.0, 1.0);
 
-            PlayerMovingState::MovingThrowW(lock_z, _) =>
-            {
+        //         self.interpolating_model_target.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
+        //     }
 
-                let z_dif = lock_z - self.target_transform.get_position().z;
+        //     PlayerMovingState::MovingParallelW(lock_z) =>
+        //     {
 
-                self.interpolating_model_target.current_velocity.z +=
-                    self.player_settings.gravity_w_speed*z_dif.clamp(-1.0, 1.0);
+        //         let z_dif = lock_z - self.target_transform.get_position().z;
 
-                self.interpolating_model_target.current_velocity.z *=
-                    (z_dif * 10.0_f32)
-                    .abs()
-                    .clamp(0.0, 1.0);
-            }
-        }
+        //         self.interpolating_model_target.current_velocity.z +=
+        //             self.player_settings.gravity_w_speed*z_dif.clamp(-1.0, 1.0);
+
+        //         self.interpolating_model_target.current_velocity.z *=
+        //             (z_dif * 10.0_f32)
+        //             .abs()
+        //             .clamp(0.0, 1.0);
+
+        //         self.interpolating_model_target.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
+        //     }
+
+        //     PlayerMovingState::MovingFree(_) =>
+        //     {
+
+        //     }
+        // }
 
         // if self.on_way_to_next_w_level
         // {
@@ -619,7 +706,7 @@ impl Actor for PlayersDoll {
                         {
                             SessionControllerMessage::JoinedToSession(_,_,_,_,_,_) =>
                             {
-                                // self.prev_interpolating_model_set_target_time = 0u128;
+                                self.prev_interpolating_model_set_target_time = 0u128;
                             }
 
                             SessionControllerMessage::NewSessionStarted(_) =>
@@ -1161,7 +1248,7 @@ impl Actor for PlayersDoll {
                 }
             }
 
-            self.extrapolate_interpolatating_model_target(audio_system);
+            self.extrapolate_interpolatating_model_target(delta, audio_system);
 
             self.interpolate_model(delta);
 

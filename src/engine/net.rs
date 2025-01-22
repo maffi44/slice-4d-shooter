@@ -90,6 +90,7 @@ pub struct NetSystem {
 
     player_settings: PlayerSettings,
     w_levels: Vec<f32>,
+    players_friction_on_air: f32,
 }
 
 impl NetSystem {
@@ -123,6 +124,7 @@ impl NetSystem {
 
             player_settings: settings.clone(),
             w_levels: w_levels.clone(),
+            players_friction_on_air: settings.friction_on_air
         }
     }
 
@@ -434,7 +436,15 @@ impl NetSystem {
                     }
                     
                     ServerMessage::NetMessageToPlayer(from_player, message) => {
-                        process_message(from_player, message, engine_handle, audio_system, &self.player_settings, &self.w_levels);
+                        process_message(
+                            from_player,
+                            message,
+                            engine_handle,
+                            audio_system,
+                            &self.player_settings,
+                            &self.w_levels,
+                            self.players_friction_on_air,
+                        );
                     }
 
                     ServerMessage::NewSessionStarted(
@@ -493,7 +503,15 @@ impl NetSystem {
                     }
                     
                     ServerMessage::NetMessageToPlayer(from_player, message) => {
-                        process_message(from_player, message, engine_handle, audio_system, &self.player_settings, &self.w_levels);
+                        process_message(
+                            from_player,
+                            message,
+                            engine_handle,
+                            audio_system,
+                            &self.player_settings,
+                            &self.w_levels,
+                            self.players_friction_on_air,
+                        );
                     }
                 }
             }
@@ -629,6 +647,7 @@ fn process_message(
     audio_system: &mut AudioSystem,
     player_settings: &PlayerSettings,
     w_levels: &Vec<f32>,
+    players_friction_on_air: f32,
 ) {
     match message
     {
@@ -676,6 +695,7 @@ fn process_message(
                         player_settings.clone(),
                         w_levels.clone(),
                         team,
+                        players_friction_on_air
                     );
 
                     let actor = ActorWrapper::PlayersDoll(players_doll);

@@ -70,8 +70,12 @@ use super::{
 #[derive(Clone)]
 pub enum PlayerMovingState
 {
-    MovingNormal(f32),
-    MovingThrowW(f32, f32),
+    // f32 - lock position on w axis
+    MovingPerpendicularW(f32),
+    // f32 - lock position on z axis
+    MovingParallelW(f32),
+    // f32 - how much time moving free player have
+    MovingFree(f32)
 }
 
 pub struct PlayerInnerState {
@@ -95,6 +99,8 @@ pub struct PlayerInnerState {
 
     pub blue_map_w_level: f32,
     pub red_map_w_level: f32,
+
+    pub friction_on_air: f32,
     // pub weapon_offset: Vec4,
 }
 
@@ -147,10 +153,11 @@ impl PlayerInnerState {
 
             is_time_after_some_team_win: false,
             amount_of_move_w_bonuses_do_i_have: 0u32,
-            player_moving_state: PlayerMovingState::MovingNormal(0.0),
+            player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
 
             blue_map_w_level,
             red_map_w_level,
+            friction_on_air: settings.friction_on_air,
         }
     }
 }
@@ -249,9 +256,9 @@ pub struct Player {
 
     flag_pivot_offset: Vec4,
 
-    on_way_to_next_w_level_by_bonus: bool,
-
     base_effect_tick_timer: f32,
+
+    holding_player_rotation_along_w: bool,
 }
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 
@@ -281,11 +288,15 @@ const SHOW_CROSSHAIER_HIT_MARK_TIME: f32 = 0.3;
 pub const RED_TEAM_COLOR: Vec3 = Vec3::new(3.5, 0.7, 0.08);
 pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.08, 0.7, 3.5);
 
-pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 2;
+pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 1;
 
 const HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL: f32 = 0.2;
 
 const BASE_EFFECT_HP_IMPACT_SPEED: f32 = 2.6;
+
+const DURATION_OF_MOVING_FREE_BY_BONUS: f32 = 8.0;
+
+pub const PLAYER_FREE_MOVING_SPEED_MULT: f32 = 0.6;
 
 #[derive(Clone)]
 pub enum PlayerMessage {
@@ -390,14 +401,17 @@ impl Actor for Player {
                                 );
 
                                 match self.inner_state.player_moving_state {
-                                    PlayerMovingState::MovingNormal(_) =>
+                                    PlayerMovingState::MovingPerpendicularW(_) =>
                                     {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingThrowW(lock_z, dir);
+                                        self.inner_state.player_moving_state = PlayerMovingState::MovingParallelW(lock_z);
+                                        self.holding_player_rotation_along_w = false;
                                     }
-                                    PlayerMovingState::MovingThrowW(_,_) =>
+                                    PlayerMovingState::MovingParallelW(_) =>
                                     {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(lock_w);
+                                        self.inner_state.player_moving_state = PlayerMovingState::MovingPerpendicularW(lock_w);
+                                        self.holding_player_rotation_along_w = false;
                                     }
+                                    PlayerMovingState::MovingFree(_) => {}
                                 }
                             }
                         }
@@ -831,57 +845,57 @@ impl Actor for Player {
         let ui_elem = ui_system.get_mut_ui_element(&UIElementType::BlueFlagBacklight);
         *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
 
-        match self.inner_state.player_moving_state
-        {
-            PlayerMovingState::MovingNormal(_) =>
-            {
-                match self.inner_state.team
-                {
-                    Team::Red =>
-                    {
-                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRed);
-                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+        // match self.inner_state.player_moving_state
+        // {
+        //     PlayerMovingState::MovingPerpendicularW(_) =>
+        //     {
+        //         match self.inner_state.team
+        //         {
+        //             Team::Red =>
+        //             {
+        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRed);
+        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
 
-                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRedW);
-                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
-                    }
-                    Team::Blue =>
-                    {
-                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlue);
-                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRedW);
+        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
+        //             }
+        //             Team::Blue =>
+        //             {
+        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlue);
+        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
 
-                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlueW);
-                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
+        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlueW);
+        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
 
-                    }
+        //             }
 
-                }
-            }
-            PlayerMovingState::MovingThrowW(_,_) =>
-            {
-                match self.inner_state.team
-                {
-                    Team::Red =>
-                    {
-                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRed);
-                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
+        //         }
+        //     }
+        //     PlayerMovingState::MovingParallelW(_) =>
+        //     {
+        //         match self.inner_state.team
+        //         {
+        //             Team::Red =>
+        //             {
+        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRed);
+        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
 
-                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRedW);
-                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
-                    }
-                    Team::Blue =>
-                    {
-                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlue);
-                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
+        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRedW);
+        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+        //             }
+        //             Team::Blue =>
+        //             {
+        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlue);
+        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
 
-                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlueW);
-                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlueW);
+        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
 
-                    }
+        //             }
 
-                }
-            }
-        }
+        //         }
+        //     }
+        // }
         let my_id = self.id.expect("Player does not have id");
 
         let mut input = match &self.master {
@@ -974,6 +988,18 @@ impl Actor for Player {
 
         if self.inner_state.is_alive {
 
+            if input.hold_player_rotation.is_action_just_pressed()
+            {
+                self.holding_player_rotation_along_w = !self.holding_player_rotation_along_w;
+            }
+
+            // if input.hold_player_rotation.is_action_pressed()
+            // {
+            //     self.holding_player_rotation_along_w = true;
+            // } else {
+            //     self.holding_player_rotation_along_w = false;
+            // }
+
             self.screen_effects.death_screen_effect -= delta*DEATH_EFFECT_COEF_DECREASE_SPEED;
             self.screen_effects.death_screen_effect = self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
@@ -1001,35 +1027,33 @@ impl Actor for Player {
                 // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
                 match &mut self.inner_state.player_moving_state
                 {
-                    PlayerMovingState::MovingNormal(_) =>
+                    PlayerMovingState::MovingPerpendicularW(_) =>
                     {
-                        if !input.hold_player_rotation.is_action_pressed()
+                        if !self.holding_player_rotation_along_w
                         {
                             zw *= 1.0 - delta * 2.8;
                             if zw.abs() < 0.0001 {
                                 zw = 0.0;
                             }
                         }
-                        
-                        xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                        yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
                     }
-                    PlayerMovingState::MovingThrowW(_, dir) =>
+                    PlayerMovingState::MovingParallelW(_) =>
                     {
-                        if !input.hold_player_rotation.is_action_pressed()
+                        if !self.holding_player_rotation_along_w
                         {
-                            *dir = if *dir < 0.0 {-1.0} else {1.0};
+                            // *dir = if *dir < 0.0 {-1.0} else {1.0};
     
-                            zw = zw.lerp(PI/2.0 * *dir, delta * 2.8);
+                            zw = zw.lerp(PI/2.0, delta * 2.8);
                             if PI/2.0 - zw.abs() < 0.0001 {
-                                zw = PI/2.0 * *dir;
+                                zw = PI/2.0;
                             }
                         }
-                        
-                        xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                        yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
                     }
+                    PlayerMovingState::MovingFree(_) => {}
                 }
+
+                xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
             }
             // if self.player_settings.rotation_along_w_standard_method {
 
@@ -1088,74 +1112,78 @@ impl Actor for Player {
                 Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue),
             };
 
-            match self.inner_state.player_moving_state {
-                PlayerMovingState::MovingThrowW(_,dir) =>
-                {
-                    let dir_vec = self.get_rotation_matrix().inverse() * Vec4::NEG_Z;
-
-                    let w_dir = if dir_vec.w > 0.0 {1.0} else {-1.0};
-
-                    if dir_vec.w > 0.0
-                    {
-                        if let UIElement::Image(arrow) = zw_arrow {
-                            arrow.set_rotation_around_screen_center(-zw*dir*w_dir + PI/2.0);
-                        } else {
-                            panic!("UI Element ZWScannerArrow is not UIImage")
-                        }
-                    }
-                    else
-                    {
-                        if let UIElement::Image(arrow) = zw_arrow {
-                            arrow.set_rotation_around_screen_center(-zw*dir*w_dir + PI/2.0);
-                        } else {
-                            panic!("UI Element ZWScannerArrow is not UIImage")
-                        }
-                    }
-                }
-                PlayerMovingState::MovingNormal(_) =>
-                {
-                    if let UIElement::Image(arrow) = zw_arrow {
-                        arrow.set_rotation_around_screen_center(-zw+PI/2.0);
-                    } else {
-                        panic!("UI Element ZWScannerArrow is not UIImage")
-                    }
-                }
+            if let UIElement::Image(arrow) = zw_arrow {
+                arrow.set_rotation_around_screen_center(-zw+PI/2.0);
+            } else {
+                panic!("UI Element ZWScannerArrow is not UIImage")
             }
+
+            // match self.inner_state.player_moving_state {
+            //     PlayerMovingState::MovingParallelW(_) =>
+            //     {
+            //         let dir_vec = self.get_rotation_matrix().inverse() * Vec4::NEG_Z;
+
+            //         let w_dir = if dir_vec.w > 0.0 {1.0} else {-1.0};
+
+            //         if dir_vec.w > 0.0
+            //         {
+            //             if let UIElement::Image(arrow) = zw_arrow {
+            //                 arrow.set_rotation_around_screen_center(-zw*w_dir + PI/2.0);
+            //             } else {
+            //                 panic!("UI Element ZWScannerArrow is not UIImage")
+            //             }
+            //         }
+            //         else
+            //         {
+            //             if let UIElement::Image(arrow) = zw_arrow {
+            //                 arrow.set_rotation_around_screen_center(-zw*w_dir + PI/2.0);
+            //             } else {
+            //                 panic!("UI Element ZWScannerArrow is not UIImage")
+            //             }
+            //         }
+            //     }
+            //     PlayerMovingState::MovingPerpendicularW(_) =>
+            //     {
+
+            //     }
+            // }
 
             let zx_arrow = match self.inner_state.team {
                 Team::Red => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowRed),   
                 Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue),   
             };
 
-            match self.inner_state.player_moving_state {
-                PlayerMovingState::MovingThrowW(_,dir) =>
-                {
-                    if dir > 0.0
-                    {
-                        if let UIElement::Image(arrow) = zx_arrow {
-                            arrow.set_rotation_around_screen_center(xz*dir - PI/2.0);
-                        } else {
-                            panic!("UI Element ZXScannerArrow is not UIImage")
-                        }
-                    }
-                    else
-                    {
-                        if let UIElement::Image(arrow) = zx_arrow {
-                            arrow.set_rotation_around_screen_center(xz*dir + PI/2.0);
-                        } else {
-                            panic!("UI Element ZXScannerArrow is not UIImage")
-                        }
-                    }
-                }
-                PlayerMovingState::MovingNormal(_) =>
-                {
-                    if let UIElement::Image(arrow) = zx_arrow {
-                        arrow.set_rotation_around_screen_center(xz-PI/2.0);
-                    } else {
-                        panic!("UI Element ZXScannerArrow is not UIImage")
-                    }
-                }
+            if let UIElement::Image(arrow) = zx_arrow {
+                arrow.set_rotation_around_screen_center(xz-PI/2.0);
+            } else {
+                panic!("UI Element ZXScannerArrow is not UIImage")
             }
+
+            // match self.inner_state.player_moving_state {
+            //     PlayerMovingState::MovingParallelW(_,dir) =>
+            //     {
+            //         if dir > 0.0
+            //         {
+            //             if let UIElement::Image(arrow) = zx_arrow {
+            //                 arrow.set_rotation_around_screen_center(xz*dir - PI/2.0);
+            //             } else {
+            //                 panic!("UI Element ZXScannerArrow is not UIImage")
+            //             }
+            //         }
+            //         else
+            //         {
+            //             if let UIElement::Image(arrow) = zx_arrow {
+            //                 arrow.set_rotation_around_screen_center(xz*dir + PI/2.0);
+            //             } else {
+            //                 panic!("UI Element ZXScannerArrow is not UIImage")
+            //             }
+            //         }
+            //     }
+            //     PlayerMovingState::MovingPerpendicularW(_) =>
+            //     {
+                    
+            //     }
+            // }
 
             let h_pointer = match self.inner_state.team {
                 Team::Red => ui_system.get_mut_ui_element(&UIElementType::ScannerHPointerRed),
@@ -1201,76 +1229,93 @@ impl Actor for Player {
             // self.set_rotation_matrix(zw_rotation * zy_rotation * zx_rotation);
 
 
-            match self.inner_state.player_moving_state
-            {
-                PlayerMovingState::MovingNormal(_) =>
-                {
-                    let zy_rotation = Mat4::from_rotation_x(-yz);
+            let zy_rotation = Mat4::from_rotation_x(-yz);
 
-                    let zx_rotation = Mat4::from_rotation_y(-xz);
+            let zx_rotation = Mat4::from_rotation_y(-xz);
+    
+            let zw_rotation = Mat4::from_cols_slice(&[
+                1.0,    0.0,    0.0,        0.0,
+                0.0,    1.0,    0.0,        0.0,
+                0.0,    0.0,    (zw).cos(),   (zw).sin(),
+                0.0,    0.0,    -(zw).sin(),   (zw).cos()
+            ]);
+
+            self.inner_state.zw_rotation = zw_rotation;
+            self.inner_state.zy_rotation = zy_rotation;
+            self.inner_state.zx_rotation = zx_rotation;
+    
+            self.set_rotation_matrix(zy_rotation * zx_rotation * zw_rotation);
             
-                    let zw_rotation = Mat4::from_cols_slice(&[
-                        1.0,    0.0,    0.0,        0.0,
-                        0.0,    1.0,    0.0,        0.0,
-                        0.0,    0.0,    (zw).cos(),   (zw).sin(),
-                        0.0,    0.0,    -(zw).sin(),   (zw).cos()
-                    ]);
+            // match self.inner_state.player_moving_state
+            // {
+            //     PlayerMovingState::MovingPerpendicularW(_) =>
+            //     {
+            //         let zy_rotation = Mat4::from_rotation_x(-yz);
+
+            //         let zx_rotation = Mat4::from_rotation_y(-xz);
+            
+            //         let zw_rotation = Mat4::from_cols_slice(&[
+            //             1.0,    0.0,    0.0,        0.0,
+            //             0.0,    1.0,    0.0,        0.0,
+            //             0.0,    0.0,    (zw).cos(),   (zw).sin(),
+            //             0.0,    0.0,    -(zw).sin(),   (zw).cos()
+            //         ]);
         
-                    self.inner_state.zw_rotation = zw_rotation;
-                    self.inner_state.zy_rotation = zy_rotation;
-                    self.inner_state.zx_rotation = zx_rotation;
+            //         self.inner_state.zw_rotation = zw_rotation;
+            //         self.inner_state.zy_rotation = zy_rotation;
+            //         self.inner_state.zx_rotation = zx_rotation;
             
-                    self.set_rotation_matrix(zy_rotation * zx_rotation * zw_rotation);
+            //         self.set_rotation_matrix(zy_rotation * zx_rotation * zw_rotation);
         
-                }
-                PlayerMovingState::MovingThrowW(_, dir) =>
-                {
-                    // let yw_rotation = Mat4::from_cols_slice(&[
-                    //     1.0,    0.0,        0.0,      0.0,
-                    //     0.0,    (-yz*dir).cos(),  0.0,      -(-yz*dir).sin(),
-                    //     0.0,    0.0,        1.0,      0.0,
-                    //     0.0,    (-yz*dir).sin(),   0.0,      (-yz*dir).cos()
-                    // ]);
+            //     }
+            //     PlayerMovingState::MovingParallelW(_) =>
+            //     {
+            //         // let yw_rotation = Mat4::from_cols_slice(&[
+            //         //     1.0,    0.0,        0.0,      0.0,
+            //         //     0.0,    (-yz*dir).cos(),  0.0,      -(-yz*dir).sin(),
+            //         //     0.0,    0.0,        1.0,      0.0,
+            //         //     0.0,    (-yz*dir).sin(),   0.0,      (-yz*dir).cos()
+            //         // ]);
 
-                    // let xw_rotation = Mat4::from_cols_slice(&[
-                    //     (-xz*dir).cos(),    0.0,       0.0,      (-xz*dir).sin(),
-                    //     0.0,          1.0,       0.0,      0.0,
-                    //     0.0,          0.0,       1.0,      0.0,
-                    //     -(-xz*dir).sin(),     0.0,       0.0,      (-xz*dir).cos()
-                    // ]);
+            //         // let xw_rotation = Mat4::from_cols_slice(&[
+            //         //     (-xz*dir).cos(),    0.0,       0.0,      (-xz*dir).sin(),
+            //         //     0.0,          1.0,       0.0,      0.0,
+            //         //     0.0,          0.0,       1.0,      0.0,
+            //         //     -(-xz*dir).sin(),     0.0,       0.0,      (-xz*dir).cos()
+            //         // ]);
             
-                    // let zw_rotation = Mat4::from_cols_slice(&[
-                    //     1.0,    0.0,    0.0,        0.0,
-                    //     0.0,    1.0,    0.0,        0.0,
-                    //     0.0,    0.0,    (zw).cos(),   (zw).sin(),
-                    //     0.0,    0.0,    -(zw).sin(),   (zw).cos()
-                    // ]);
+            //         // let zw_rotation = Mat4::from_cols_slice(&[
+            //         //     1.0,    0.0,    0.0,        0.0,
+            //         //     0.0,    1.0,    0.0,        0.0,
+            //         //     0.0,    0.0,    (zw).cos(),   (zw).sin(),
+            //         //     0.0,    0.0,    -(zw).sin(),   (zw).cos()
+            //         // ]);
         
-                    // self.inner_state.zw_rotation = zw_rotation;
-                    // self.inner_state.zy_rotation = yw_rotation;
-                    // self.inner_state.zx_rotation = xw_rotation;
+            //         // self.inner_state.zw_rotation = zw_rotation;
+            //         // self.inner_state.zy_rotation = yw_rotation;
+            //         // self.inner_state.zx_rotation = xw_rotation;
             
-                    // self.set_rotation_matrix(zw_rotation * yw_rotation * xw_rotation);
+            //         // self.set_rotation_matrix(zw_rotation * yw_rotation * xw_rotation);
 
 
-                    let zy_rotation = Mat4::from_rotation_x(-yz);
+            //         let zy_rotation = Mat4::from_rotation_x(-yz);
 
-                    let zx_rotation = Mat4::from_rotation_y(-xz);
+            //         let zx_rotation = Mat4::from_rotation_y(-xz);
             
-                    let zw_rotation = Mat4::from_cols_slice(&[
-                        1.0,    0.0,    0.0,        0.0,
-                        0.0,    1.0,    0.0,        0.0,
-                        0.0,    0.0,    (zw).cos(),   (zw).sin(),
-                        0.0,    0.0,    -(zw).sin(),   (zw).cos()
-                    ]);
+            //         let zw_rotation = Mat4::from_cols_slice(&[
+            //             1.0,    0.0,    0.0,        0.0,
+            //             0.0,    1.0,    0.0,        0.0,
+            //             0.0,    0.0,    (zw).cos(),   (zw).sin(),
+            //             0.0,    0.0,    -(zw).sin(),   (zw).cos()
+            //         ]);
         
-                    self.inner_state.zw_rotation = zw_rotation;
-                    self.inner_state.zy_rotation = zy_rotation;
-                    self.inner_state.zx_rotation = zx_rotation;
+            //         self.inner_state.zw_rotation = zw_rotation;
+            //         self.inner_state.zy_rotation = zy_rotation;
+            //         self.inner_state.zx_rotation = zx_rotation;
             
-                    self.set_rotation_matrix(zy_rotation * zx_rotation * zw_rotation);
-                }
-            }
+            //         self.set_rotation_matrix(zy_rotation * zx_rotation * zw_rotation);
+            //     }
+            // }
     
             // self.set_rotation_matrix(Mat4::from_cols_slice(&[
             //     y.cos(),    0.0,    0.0,    y.sin(),
@@ -1585,219 +1630,262 @@ impl Actor for Player {
             self.w_jump_reloading_time += delta;
 
             
+
             if input.move_w_up.is_action_just_pressed() {
 
                 if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
                 {
-                    let current_w_level = match &mut self.inner_state.player_moving_state
-                    {
-                        PlayerMovingState::MovingThrowW(_,_) =>
-                        {
-                            let w_pos = self.get_position().w;
+                    self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1; 
+                    self.inner_state.player_moving_state = PlayerMovingState::MovingFree(DURATION_OF_MOVING_FREE_BY_BONUS);
 
-                            let mut nearest_w_level = -100000.0;
+                    // let current_w_level = match &mut self.inner_state.player_moving_state
+                    // {
+                    //     PlayerMovingState::MovingParallelW(_) =>
+                    //     {
+                    //         let w_pos = self.get_position().w;
 
-                            for w_level in self.w_levels_of_map.iter()
-                            {
-                                if (w_pos - nearest_w_level).abs() >
-                                    (w_pos - *w_level).abs()
-                                {
-                                    nearest_w_level = *w_level;
-                                }                                    
-                            }
+                    //         let mut nearest_w_level = -100000.0;
+
+                    //         for w_level in self.w_levels_of_map.iter()
+                    //         {
+                    //             if (w_pos - nearest_w_level).abs() >
+                    //                 (w_pos - *w_level).abs()
+                    //             {
+                    //                 nearest_w_level = *w_level;
+                    //             }                                    
+                    //         }
                             
-                            nearest_w_level
-                        }
+                    //         nearest_w_level
+                    //     }
 
-                        PlayerMovingState::MovingNormal(lock_w) =>
-                        {
-                            let mut nearest_w_level = -100000.0;
+                    //     PlayerMovingState::MovingPerpendicularW(lock_w) =>
+                    //     {
+                    //         let mut nearest_w_level = -100000.0;
 
-                            for w_level in self.w_levels_of_map.iter()
-                            {
-                                if (*lock_w - nearest_w_level).abs() >
-                                    (*lock_w - *w_level).abs()
-                                {
-                                    nearest_w_level = *w_level;
-                                }                                    
-                            }
+                    //         for w_level in self.w_levels_of_map.iter()
+                    //         {
+                    //             if (*lock_w - nearest_w_level).abs() >
+                    //                 (*lock_w - *w_level).abs()
+                    //             {
+                    //                 nearest_w_level = *w_level;
+                    //             }                                    
+                    //         }
                             
-                            nearest_w_level
-                        }
-                    };
+                    //         nearest_w_level
+                    //     }
+                    // };
 
-                    let next_w_level = {
+                    // let next_w_level = {
 
-                        let mut next_w_level = None;
+                    //     let mut next_w_level = None;
 
-                        let mut current_w_level_index = usize::MAX;
+                    //     let mut current_w_level_index = usize::MAX;
                         
-                        let mut i = 0_usize;
+                    //     let mut i = 0_usize;
 
-                        for w_level in self.w_levels_of_map.iter()
-                        {
-                            if *w_level == current_w_level
-                            {
-                                current_w_level_index = i;
-                            }
-                            i += 1;
-                        }
+                    //     for w_level in self.w_levels_of_map.iter()
+                    //     {
+                    //         if *w_level == current_w_level
+                    //         {
+                    //             current_w_level_index = i;
+                    //         }
+                    //         i += 1;
+                    //     }
 
-                        if current_w_level_index == usize::MAX
-                        {
-                            panic!("Didn't find player's current w_level in w_levels_of_map");
-                        }
+                    //     if current_w_level_index == usize::MAX
+                    //     {
+                    //         panic!("Didn't find player's current w_level in w_levels_of_map");
+                    //     }
 
-                        if current_w_level_index + 1 < self.w_levels_of_map.len()
-                        {
-                            next_w_level = Some(self.w_levels_of_map[current_w_level_index + 1]);
-                        }
+                    //     if current_w_level_index + 1 < self.w_levels_of_map.len()
+                    //     {
+                    //         next_w_level = Some(self.w_levels_of_map[current_w_level_index + 1]);
+                    //     }
 
-                        next_w_level
-                    };
+                    //     next_w_level
+                    // };
 
-                    if let Some(next_w_level) = next_w_level
-                    {
-                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(next_w_level);
+                    // if let Some(next_w_level) = next_w_level
+                    // {
+                    //     self.inner_state.player_moving_state = PlayerMovingState::MovingPerpendicularW(next_w_level);
 
-                        self.inner_state.collider.current_velocity = Vec4::ZERO;
+                    //     self.inner_state.collider.current_velocity = Vec4::ZERO;
 
-                        self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
+                    //     self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
 
-                        self.on_way_to_next_w_level_by_bonus = true;
+                    //     self.on_way_to_next_w_level_by_bonus = true;
 
-                        audio_system.spawn_non_spatial_sound(
-                            Sound::WShiftStart,
-                            1.0,
-                            1.0,
-                            false,
-                            true,
-                            fyrox_sound::source::Status::Playing
-                        );
-                    }
+                    //     audio_system.spawn_non_spatial_sound(
+                    //         Sound::WShiftStart,
+                    //         1.0,
+                    //         1.0,
+                    //         false,
+                    //         true,
+                    //         fyrox_sound::source::Status::Playing
+                    //     );
+                    // }
                 }
             }
 
-            if input.move_w_down.is_action_just_pressed() {
-                if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
-                {
-                    let current_w_level = match &mut self.inner_state.player_moving_state
-                    {
-                        PlayerMovingState::MovingThrowW(_,_) =>
-                        {
-                            let w_pos = self.get_position().w;
-
-                            let mut nearest_w_level = -100000.0;
-
-                            for w_level in self.w_levels_of_map.iter()
-                            {
-                                if (w_pos - nearest_w_level).abs() >
-                                    (w_pos - *w_level).abs()
-                                {
-                                    nearest_w_level = *w_level;
-                                }                                    
-                            }
-                            
-                            nearest_w_level
-                        }
-
-                        PlayerMovingState::MovingNormal(lock_w) =>
-                        {
-                            let mut nearest_w_level = -100000.0;
-
-                            for w_level in self.w_levels_of_map.iter()
-                            {
-                                if (*lock_w - nearest_w_level).abs() >
-                                    (*lock_w - *w_level).abs()
-                                {
-                                    nearest_w_level = *w_level;
-                                }                                    
-                            }
-                            
-                            nearest_w_level
-                        }
-                    };
-
-                    let next_w_level = {
-
-                        let mut next_w_level = None;
-
-                        let mut current_w_level_index = usize::MAX;
-                        
-                        let mut i = 0_usize;
-
-                        for w_level in self.w_levels_of_map.iter()
-                        {
-                            if *w_level == current_w_level
-                            {
-                                current_w_level_index = i;
-                            }
-                            i += 1;
-                        }
-
-                        if current_w_level_index == usize::MAX
-                        {
-                            panic!("Didn't find player's current w_level in w_levels_of_map");
-                        }
-
-                        if current_w_level_index + 1 < self.w_levels_of_map.len()
-                        {
-                            next_w_level = Some(self.w_levels_of_map[current_w_level_index - 1]);
-                        }
-
-                        next_w_level
-                    };
-
-                    if let Some(next_w_level) = next_w_level
-                    {
-                        self.inner_state.player_moving_state = PlayerMovingState::MovingNormal(next_w_level);
-
-                        self.inner_state.collider.current_velocity = Vec4::ZERO;
-
-                        self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
-
-                        self.on_way_to_next_w_level_by_bonus = true;
-
-                        audio_system.spawn_non_spatial_sound(
-                            Sound::WShiftStart,
-                            1.0,
-                            1.0,
-                            false,
-                            true,
-                            fyrox_sound::source::Status::Playing
-                        );
-                    }
-                }
-            }
-
-            if self.on_way_to_next_w_level_by_bonus
+            match &mut self.inner_state.player_moving_state
             {
-                match self.inner_state.player_moving_state
+                PlayerMovingState::MovingFree(time) =>
                 {
-                    PlayerMovingState::MovingNormal(target_w_pos) =>
-                    {
-                        let dist = (self.get_position().w - target_w_pos).abs();
+                    *time -= delta;
 
-                        if dist < self.get_collider_radius()*1.5
+                    if *time <= 0.0
+                    {
+                        let w_pos = self.get_position().w;
+
+                        let mut nearest_w_level = -100000.0;
+
+                        for w_level in self.w_levels_of_map.iter()
                         {
-                            self.on_way_to_next_w_level_by_bonus = false;
+                            if (w_pos - nearest_w_level).abs() >
+                                (w_pos - *w_level).abs()
+                            {
+                                nearest_w_level = *w_level;
+                            }                                    
+                        }                        
 
-                            audio_system.spawn_non_spatial_sound(
-                                Sound::WShiftEnd,
-                                1.0,
-                                1.0,
-                                false,
-                                true,
-                                fyrox_sound::source::Status::Playing
-                            );
-                        }
-                    }
-                    PlayerMovingState::MovingThrowW(_,_) =>
-                    {
-                        panic!("BUG: Player is Moving throw w during on_way_to_next_w_level_by_bonus is true")
+                        self.inner_state.player_moving_state =
+                            PlayerMovingState::MovingPerpendicularW(nearest_w_level);
+                        
+                        self.holding_player_rotation_along_w = false;
                     }
                 }
+                _ => {}
             }
+
+            // if input.move_w_down.is_action_just_pressed() {
+            //     if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
+            //     {
+            //         let current_w_level = match &mut self.inner_state.player_moving_state
+            //         {
+            //             PlayerMovingState::MovingParallelW(_,_) =>
+            //             {
+            //                 let w_pos = self.get_position().w;
+
+            //                 let mut nearest_w_level = -100000.0;
+
+            //                 for w_level in self.w_levels_of_map.iter()
+            //                 {
+            //                     if (w_pos - nearest_w_level).abs() >
+            //                         (w_pos - *w_level).abs()
+            //                     {
+            //                         nearest_w_level = *w_level;
+            //                     }                                    
+            //                 }
+                            
+            //                 nearest_w_level
+            //             }
+
+            //             PlayerMovingState::MovingPerpendicularW(lock_w) =>
+            //             {
+            //                 let mut nearest_w_level = -100000.0;
+
+            //                 for w_level in self.w_levels_of_map.iter()
+            //                 {
+            //                     if (*lock_w - nearest_w_level).abs() >
+            //                         (*lock_w - *w_level).abs()
+            //                     {
+            //                         nearest_w_level = *w_level;
+            //                     }                                    
+            //                 }
+                            
+            //                 nearest_w_level
+            //             }
+            //         };
+
+            //         let next_w_level = {
+
+            //             let mut next_w_level = None;
+
+            //             let mut current_w_level_index = usize::MAX;
+                        
+            //             let mut i = 0_usize;
+
+            //             for w_level in self.w_levels_of_map.iter()
+            //             {
+            //                 if *w_level == current_w_level
+            //                 {
+            //                     current_w_level_index = i;
+            //                 }
+            //                 i += 1;
+            //             }
+
+            //             if current_w_level_index == usize::MAX
+            //             {
+            //                 panic!("Didn't find player's current w_level in w_levels_of_map");
+            //             }
+
+            //             if current_w_level_index + 1 < self.w_levels_of_map.len()
+            //             {
+            //                 next_w_level = Some(self.w_levels_of_map[current_w_level_index - 1]);
+            //             }
+
+            //             next_w_level
+            //         };
+
+            //         if let Some(next_w_level) = next_w_level
+            //         {
+            //             self.inner_state.player_moving_state = PlayerMovingState::MovingPerpendicularW(next_w_level);
+
+            //             self.inner_state.collider.current_velocity = Vec4::ZERO;
+
+            //             self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1;
+
+            //             self.on_way_to_next_w_level_by_bonus = true;
+
+            //             audio_system.spawn_non_spatial_sound(
+            //                 Sound::WShiftStart,
+            //                 1.0,
+            //                 1.0,
+            //                 false,
+            //                 true,
+            //                 fyrox_sound::source::Status::Playing
+            //             );
+            //         }
+            //     }
+            // }
+
+            match &mut self.inner_state.player_moving_state
+            {
+                PlayerMovingState::MovingFree(time) =>
+                {
+
+                }
+                _ => {}
+            }
+            
+            // if self.on_way_to_next_w_level_by_bonus
+            // {
+            //     match self.inner_state.player_moving_state
+            //     {
+            //         PlayerMovingState::MovingPerpendicularW(target_w_pos) =>
+            //         {
+            //             let dist = (self.get_position().w - target_w_pos).abs();
+
+            //             if dist < self.get_collider_radius()*1.5
+            //             {
+            //                 self.on_way_to_next_w_level_by_bonus = false;
+
+            //                 audio_system.spawn_non_spatial_sound(
+            //                     Sound::WShiftEnd,
+            //                     1.0,
+            //                     1.0,
+            //                     false,
+            //                     true,
+            //                     fyrox_sound::source::Status::Playing
+            //                 );
+            //             }
+            //         }
+            //         PlayerMovingState::MovingParallelW(_,_) =>
+            //         {
+            //             panic!("BUG: Player is Moving throw w during on_way_to_next_w_level_by_bonus is true")
+            //         }
+            //     }
+            // }
 
             if input.w_up.is_action_pressed() {
 
@@ -1822,19 +1910,26 @@ impl Actor for Player {
             if input.w_scanner.is_action_just_pressed() {
                 if !self.w_scanner_enable {
                     if self.w_scanner_reloading_time >= self.player_settings.scanner_reloading_time {
-                        match self.inner_state.player_moving_state
-                        {
-                            PlayerMovingState::MovingThrowW(_,_) => {}
+                        
+                        self.w_scanner_enable = true;
+
+                        self.w_scanner_enemies_show_time = 0.0;
+    
+                        self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
+                        
+                        // match self.inner_state.player_moving_state
+                        // {
+                        //     PlayerMovingState::MovingParallelW(_) => {}
                             
-                            PlayerMovingState::MovingNormal(_) =>
-                            {
-                                self.w_scanner_enable = true;
+                        //     PlayerMovingState::MovingPerpendicularW(_) =>
+                        //     {
+                        //         self.w_scanner_enable = true;
         
-                                self.w_scanner_enemies_show_time = 0.0;
+                        //         self.w_scanner_enemies_show_time = 0.0;
             
-                                self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
-                            }
-                        }
+                        //         self.w_scanner_radius = self.inner_state.collider.get_collider_radius() + 0.1;
+                        //     }
+                        // }
                     }
                 }
             }
@@ -1867,38 +1962,103 @@ impl Actor for Player {
                     movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
 
                     match self.inner_state.player_moving_state {
-                        PlayerMovingState::MovingNormal(_) =>
+                        PlayerMovingState::MovingPerpendicularW(lock_w) =>
                         {
                             movement_vec.y = 0.0;
                             movement_vec.w = 0.0;
 
-                            movement_vec = movement_vec.normalize();
+                            match movement_vec.try_normalize()
+                            {
+                                Some(vec) => movement_vec = vec,
+                                None => movement_vec = Vec4::ZERO,
+                            }
+
+                            let w_dif = lock_w - self.get_position().w;
+
+                            self.inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
+                                -self.player_settings.gravity_w_speed*25.0,
+                                self.player_settings.gravity_w_speed*25.0
+                            );
+
+                            self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
+
+                            if self.inner_state.collider.is_on_y_ground {
+                                self.inner_state.collider.set_wish_direction(
+                                    movement_vec,
+                                    1.0
+                                );
+                            } else {
+                                self.inner_state.collider.set_wish_direction(
+                                    movement_vec,
+                                    self.player_settings.air_speed_mult
+                                );
+                            }
+
+                            self.inner_state.collider.set_friction_on_air(
+                                self.inner_state.friction_on_air
+                            );
                         }
-                        PlayerMovingState::MovingThrowW(_,_) =>
+                        PlayerMovingState::MovingParallelW(lock_z) =>
                         {
                             movement_vec.y = 0.0;
                             movement_vec.z = 0.0;
 
-                            movement_vec = movement_vec.normalize();
+                            match movement_vec.try_normalize()
+                            {
+                                Some(vec) => movement_vec = vec,
+                                None => movement_vec = Vec4::ZERO,
+                            }
+
+                            let z_dif = lock_z - self.get_position().z;
+
+                            self.inner_state.collider.current_velocity.z = (z_dif*1.5).clamp(
+                                -self.player_settings.gravity_w_speed*25.0,
+                                self.player_settings.gravity_w_speed*25.0
+                            );
+
+                            self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
+
+                            if self.inner_state.collider.is_on_y_ground {
+                                self.inner_state.collider.set_wish_direction(
+                                    movement_vec,
+                                    1.0
+                                );
+                            } else {
+                                self.inner_state.collider.set_wish_direction(
+                                    movement_vec,
+                                    self.player_settings.air_speed_mult
+                                );
+                            }
+
+                            self.inner_state.collider.set_friction_on_air(
+                                self.inner_state.friction_on_air
+                            );
+                        }
+                        PlayerMovingState::MovingFree(_) =>
+                        {
+                            match movement_vec.try_normalize()
+                            {
+                                Some(vec) => movement_vec = vec,
+                                None => movement_vec = Vec4::ZERO,
+                            }
+
+                            self.inner_state.collider.set_wish_direction(
+                                movement_vec,
+                                PLAYER_FREE_MOVING_SPEED_MULT
+                            );
+
+                            self.inner_state.collider.set_friction_on_air(
+                                self.inner_state.friction_on_air * 15.0
+                            );
                         }
                     }
     
-                    if self.inner_state.collider.is_on_y_ground {
-                        self.inner_state.collider.set_wish_direction(
-                            movement_vec,
-                            1.0
-                        );
-                    } else {
-                        self.inner_state.collider.set_wish_direction(
-                            movement_vec,
-                            self.player_settings.air_speed_mult
-                        );
-                    }
+                    
 
-                    if !self.on_way_to_next_w_level_by_bonus
-                    {
-                        self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
-                    }
+                    // if !self.on_way_to_next_w_level_by_bonus
+                    // {
+                    //     self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed);
+                    // }
     
                 } else {
                    movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
@@ -1907,49 +2067,49 @@ impl Actor for Player {
     
                 }
     
-                if self.is_gravity_w_enabled {
+                // if self.is_gravity_w_enabled {
 
-                    match self.inner_state.player_moving_state
-                    {
-                        PlayerMovingState::MovingNormal(lock_w) =>
-                        {
-                            let w_dif = lock_w - self.get_position().w;
+                //     match self.inner_state.player_moving_state
+                //     {
+                //         PlayerMovingState::MovingPerpendicularW(lock_w) =>
+                //         {
+                //             let w_dif = lock_w - self.get_position().w;
 
-                            self.inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
-                                -self.player_settings.gravity_w_speed*25.0,
-                                self.player_settings.gravity_w_speed*25.0
-                            );
-                            // self.inner_state.collider.current_velocity.w +=
-                            //     self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
+                //             self.inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
+                //                 -self.player_settings.gravity_w_speed*25.0,
+                //                 self.player_settings.gravity_w_speed*25.0
+                //             );
+                //             // self.inner_state.collider.current_velocity.w +=
+                //             //     self.player_settings.gravity_w_speed*w_dif.clamp(-1.0, 1.0);
         
-                            // self.inner_state.collider.current_velocity.w *=
-                            //     (w_dif * 20.0_f32)
-                            //     .abs()
-                            //     .clamp(0.0, 1.0);
-                        }
+                //             // self.inner_state.collider.current_velocity.w *=
+                //             //     (w_dif * 20.0_f32)
+                //             //     .abs()
+                //             //     .clamp(0.0, 1.0);
+                //         }
 
-                        PlayerMovingState::MovingThrowW(lock_z, _) =>
-                        {
+                //         PlayerMovingState::MovingParallelW(lock_z, _) =>
+                //         {
         
-                            let z_dif = lock_z - self.get_position().z;
+                //             let z_dif = lock_z - self.get_position().z;
 
-                            self.inner_state.collider.current_velocity.z = (z_dif*1.5).clamp(
-                                -self.player_settings.gravity_w_speed*25.0,
-                                self.player_settings.gravity_w_speed*25.0
-                            );
+                //             self.inner_state.collider.current_velocity.z = (z_dif*1.5).clamp(
+                //                 -self.player_settings.gravity_w_speed*25.0,
+                //                 self.player_settings.gravity_w_speed*25.0
+                //             );
         
-                            // self.inner_state.collider.current_velocity.z +=
-                            //     self.player_settings.gravity_w_speed*z_dif.clamp(-1.0, 1.0);
+                //             // self.inner_state.collider.current_velocity.z +=
+                //             //     self.player_settings.gravity_w_speed*z_dif.clamp(-1.0, 1.0);
         
-                            // self.inner_state.collider.current_velocity.z *=
-                            //     (z_dif * 20.0_f32)
-                            //     .abs()
-                            //     .clamp(0.0, 1.0);
-                        }
-                    }
+                //             // self.inner_state.collider.current_velocity.z *=
+                //             //     (z_dif * 20.0_f32)
+                //             //     .abs()
+                //             //     .clamp(0.0, 1.0);
+                //         }
+                //     }
 
 
-                }
+                // }
     
             } else {
                 
@@ -2287,8 +2447,9 @@ impl Player {
 
             flag_pivot_offset: Vec4::new(0.0, player_radius * 2.0, 0.0, 0.0),
 
-            on_way_to_next_w_level_by_bonus: false,
             base_effect_tick_timer: 0.0,
+
+            holding_player_rotation_along_w: false,
         }
     }
 
@@ -2581,9 +2742,9 @@ impl Player {
         hud_elem.get_ui_data_mut().rect.transparency =
             self.fisrt_move_w_bonus_transparency_level * a;
         
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
-        hud_elem.get_ui_data_mut().rect.transparency =
-            self.second_move_w_bonus_transparency_level * a;
+        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
+        // hud_elem.get_ui_data_mut().rect.transparency =
+        //     self.second_move_w_bonus_transparency_level * a;
 
 
         let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
@@ -2638,8 +2799,8 @@ impl Player {
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
 
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRedW);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
+                // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRedW);
+                // hud_elem.get_ui_data_mut().rect.transparency = a;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
@@ -2671,8 +2832,8 @@ impl Player {
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
 
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlueW);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
+                // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlueW);
+                // hud_elem.get_ui_data_mut().rect.transparency = a;
 
                 let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
                 hud_elem.get_ui_data_mut().rect.transparency = a;
@@ -2712,8 +2873,8 @@ impl Player {
         let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
         *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
-        *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
+        // *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
 
         match self.inner_state.team
@@ -3002,8 +3163,10 @@ impl Player {
             for hit in &hits {
                 if let Some(team) = hit.hited_actors_team
                 {
-                    self.get_team() == team;
-                    continue;
+                    if self.get_team() == team
+                    {
+                        continue;
+                    }
                 }
             }
 
@@ -3032,12 +3195,13 @@ impl Player {
             )
         }
 
+        self.holding_player_rotation_along_w = false;
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
         self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
         self.inner_state.player_moving_state =
-            PlayerMovingState::MovingNormal(self.w_levels_of_map[current_spawn.w_level]);
+            PlayerMovingState::MovingPerpendicularW(self.w_levels_of_map[current_spawn.w_level]);
 
         self.view_angle = Vec4::ZERO;
 

@@ -202,9 +202,9 @@ impl Actor for HoleGunShot {
 
                     },
                     VolumeArea::SphericalVolumeArea(area) => {
-                        area.radius *= 1.0 - delta*30.0;
+                        area.radius *= 1.0 - delta*105.0;
                         
-                        if area.radius < 0.01 {
+                        if area.radius < 0.001 {
                             clear = true;
                         }
                         area.radius = area.radius.abs();
