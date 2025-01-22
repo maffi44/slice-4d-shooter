@@ -208,7 +208,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
             en_pos *= vec4(1.0, 1.0, -1.0, 1.0);
 
-            en_pos *= dynamic_data.camera_data.cam_zx_rot;
             
             en_a += clamp(pow(1.0- length(uv_pos-en_pos.zw*vec2(1.0,1.0)), 10.0)*visible,0.0,1.0);
         }

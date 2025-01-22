@@ -2625,7 +2625,7 @@ fn w_scanner_ring_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec4<f
 
         if dist > dynamic_data.w_scanner_radius {
 
-            let view_dir = vec4(0.0, 0.0, -1.0, 0.0)*dynamic_data.camera_data.cam_zw_rot*dynamic_data.camera_data.cam_zy_rot*dynamic_data.camera_data.cam_zx_rot;
+            let view_dir = vec4(0.0, 0.0, -1.0, 0.0)*dynamic_data.camera_data.cam_zy_rot*dynamic_data.camera_data.cam_zx_rot*dynamic_data.camera_data.cam_zw_rot;
 
             let y_coof = clamp(pow((1.0-dot(ray_dir, view_dir))*3.0,2.4), 0.0, 1.0);
             let y_coof2 = clamp(pow(1.0-ray_dir.y , 6.0), 0.0, 1.0);
