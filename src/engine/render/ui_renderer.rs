@@ -184,7 +184,7 @@ impl UIRenderer {
             layout: Some(&progress_bar_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &progress_bar_shader,
-                entry_point: "vs_main", // 1.
+                entry_point: Some("vs_main"), // 1.
                 buffers: &[
                     Vertex::desc(),
                 ], // 2.
@@ -193,7 +193,7 @@ impl UIRenderer {
             fragment: Some(wgpu::FragmentState { // 3.
                 module: &progress_bar_shader,
                 compilation_options: PipelineCompilationOptions::default(),
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -216,6 +216,7 @@ impl UIRenderer {
                 alpha_to_coverage_enabled: false, // 4.
             },
             multiview: None, // 5.
+            cache: None,
         });
 
         // ------------------------------------------------------------
@@ -276,7 +277,7 @@ impl UIRenderer {
             layout: Some(&image_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &image_shader,
-                entry_point: "vs_main", // 1.
+                entry_point: Some("vs_main"), // 1.
                 buffers: &[
                     Vertex::desc(),
                 ], // 2.
@@ -285,7 +286,7 @@ impl UIRenderer {
             fragment: Some(wgpu::FragmentState { // 3.
                 module: &image_shader,
                 compilation_options: PipelineCompilationOptions::default(),
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -311,6 +312,7 @@ impl UIRenderer {
                 alpha_to_coverage_enabled: false, // 4.
             },
             multiview: None, // 5.
+            cache: None,
         });
 
         // --------------------------------------------------------------
@@ -383,7 +385,7 @@ impl UIRenderer {
             layout: Some(&scanner_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &scanner_shader,
-                entry_point: "vs_main", // 1.
+                entry_point: Some("vs_main"), // 1.
                 buffers: &[
                     Vertex::desc(),
                 ], // 2.
@@ -392,7 +394,7 @@ impl UIRenderer {
             fragment: Some(wgpu::FragmentState { // 3.
                 module: &scanner_shader,
                 compilation_options: PipelineCompilationOptions::default(),
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -418,6 +420,7 @@ impl UIRenderer {
                 alpha_to_coverage_enabled: false, // 4.
             },
             multiview: None, // 5.
+            cache: None
         });
 
 

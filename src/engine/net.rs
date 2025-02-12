@@ -16,7 +16,6 @@ use tokio_tungstenite::{
 };
 
 use matchbox_socket::{
-    MultipleChannels,
     PeerId,
     PeerState,
     RtcIceServerConfig,
@@ -69,8 +68,8 @@ enum ConnectionError {
 
 enum ConnectionState {
     ConnectingToMatchmakingServer(Option<JoinHandle<Result<String, ConnectionError>>>),
-    ConnectingToGameServer(u64, Option<WebRtcSocket<MultipleChannels>>),
-    ConnectedToGameServer(WebRtcSocket<MultipleChannels>, PeerId, Vec<u128>),
+    ConnectingToGameServer(u64, Option<WebRtcSocket>),
+    ConnectedToGameServer(WebRtcSocket, PeerId, Vec<u128>),
 }
 
 struct ConnectionData {
@@ -233,7 +232,7 @@ impl NetSystem {
     fn handle_connecting_to_game_server_state(
         &mut self,
         mut delay_counter: u64,
-        webrtc_socket: Option<WebRtcSocket<MultipleChannels>>,
+        webrtc_socket: Option<WebRtcSocket>,
         async_runtime: &mut Runtime,
         engine_handle: &mut EngineHandle,
     ) -> ConnectionState
@@ -248,7 +247,7 @@ impl NetSystem {
         match webrtc_socket {
             Some(mut webrtc_socket) =>
             {
-                if webrtc_socket.any_closed() {
+                if webrtc_socket.any_channel_closed() {
 
                     println!("WARNING: WebRTC connection is closed, trying to reconnect");
                     return ConnectionState::ConnectingToGameServer(90, None);
@@ -333,14 +332,14 @@ impl NetSystem {
 
     fn handle_connected_to_game_server_state(
         &mut self,
-        mut webrtc_socket: WebRtcSocket<MultipleChannels>,
+        mut webrtc_socket: WebRtcSocket,
         server_id: PeerId,
         mut players_id: Vec<u128>,
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
     ) -> ConnectionState
     {
-        if webrtc_socket.any_closed() {
+        if webrtc_socket.any_channel_closed() {
             println!("WARNING: WebRTC connection is closed, trying to reconnect");
             return ConnectionState::ConnectingToGameServer(90, None);
         }
@@ -528,7 +527,7 @@ impl NetSystem {
         {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
-                if webrtc_socket.any_closed() {return;}
+                if webrtc_socket.any_channel_closed() {return;}
                 
                 let packet = ClientMessage::MessageToServer(message).to_packet();
         
@@ -552,7 +551,7 @@ impl NetSystem {
         {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
-                if webrtc_socket.any_closed() {return;}
+                if webrtc_socket.any_channel_closed() {return;}
                 
                 let packet = ClientMessage::BoardcastMessageToPlayers(message).to_packet();
         
@@ -576,7 +575,7 @@ impl NetSystem {
         {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
-                if webrtc_socket.any_closed() {return;}
+                if webrtc_socket.any_channel_closed() {return;}
 
                 let packet = ClientMessage::BoardcastMessageToPlayers(message).to_packet();
 
@@ -600,7 +599,7 @@ impl NetSystem {
         {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
-                if webrtc_socket.any_closed() {return;}
+                if webrtc_socket.any_channel_closed() {return;}
                 
                 let packet = ClientMessage::DirectMessageToPlayer(peer, message).to_packet();
         
@@ -624,7 +623,7 @@ impl NetSystem {
         {
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id , players_id) =>
             {
-                if webrtc_socket.any_closed() {return;}
+                if webrtc_socket.any_channel_closed() {return;}
 
                 let packet = ClientMessage::DirectMessageToPlayer(peer, message).to_packet();
         

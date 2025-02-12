@@ -31,7 +31,6 @@ use fyrox_core::{
 };
 use matchbox_signaling::SignalingServer;
 use matchbox_socket::{
-    MultipleChannels,
     PeerId,
     PeerState::{Connected, Disconnected},
     RtcIceServerConfig,
@@ -263,7 +262,7 @@ async fn async_main(
 }
 
 async fn game_server_main_loop(
-    mut webrtc_socket: WebRtcSocket<MultipleChannels>,
+    mut webrtc_socket: WebRtcSocket,
     mut sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>,
     config: GameServerConfig,
     handle_to_matchmaking_server_connect: JoinHandle<()>,
@@ -829,7 +828,7 @@ struct MoveWBonusSpot
 }
 
 async fn start_new_game_session(
-    webrtc_socket: &mut WebRtcSocket<MultipleChannels>,
+    webrtc_socket: &mut WebRtcSocket,
     sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
     relaible_channel: &mut WebRtcChannel,
@@ -843,7 +842,7 @@ async fn start_new_game_session(
 
     let mut idle_timer: Option<Instant> = None;
 
-    if webrtc_socket.any_closed() {
+    if webrtc_socket.any_channel_closed() {
         println!("ERROR: game server's WebRTC connection unexpectedly closed, server will shut down immediately");
         return Command::ShutDownServer(1);
     }
@@ -856,7 +855,7 @@ async fn start_new_game_session(
 
     loop {
 
-        if webrtc_socket.any_closed() {
+        if webrtc_socket.any_channel_closed() {
             println!("ERROR: game server's WebRTC connection unexpectedly closed, server will shut down immediately");
             return Command::ShutDownServer(1);
         }
@@ -1023,7 +1022,7 @@ fn update_states_for_players(
     }
 }
 
-use rand::{thread_rng, Rng};
+use rand::{rng, Rng};
 
 fn shuffle_teams(players_state: &mut GameSessionState)
 {
@@ -1037,7 +1036,7 @@ fn shuffle_teams(players_state: &mut GameSessionState)
         keys.push(*key);
     }
 
-    let mut rng = thread_rng();
+    let mut rng = fyrox_core::rand::thread_rng();
 
     keys.shuffle(&mut rng);
 
@@ -1079,9 +1078,9 @@ fn choose_team_for_new_player(
     {
         return Team::Blue;
     }
-    let mut rng = thread_rng();
+    let mut rng = rng();
 
-    if rng.gen_bool(0.5)
+    if rng.random_bool(0.5)
     {
         return Team::Red;
     }
@@ -1916,7 +1915,7 @@ async fn connect_to_matchmaking_server(
             }
         }
         
-        ws_stream.send(Message::Binary(message.to_packet()))
+        ws_stream.send(Message::Binary(message.to_packet().into()))
             .await
             .unwrap();
 

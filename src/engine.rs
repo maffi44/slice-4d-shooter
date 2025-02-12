@@ -22,7 +22,7 @@ use std::{
 
 use crate::{
     actor::player::player_settings::PlayerSettings,
-    main_loop::MainLoop
+    main_loop::{self, MainLoop}
 };
 
 use self::{
@@ -38,12 +38,13 @@ use self::{
 };
 
 use effects::EffectsSystem;
-use winit::window::WindowBuilder;
+// use winit::window::WindowBuilder;
 
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::WindowBuilderExtWebSys;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
+use winit::{event_loop::ActiveEventLoop, monitor::MonitorHandle, window::{Cursor, Fullscreen, Window, WindowAttributes, WindowButtons}};
 
 pub struct Engine {
     pub render: RenderSystem,
@@ -125,13 +126,12 @@ impl Engine {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let window_builder = WindowBuilder::new();
-            window = window_builder
+            window = cleint_main_loop.event_loop.create_window(
+                WindowAttributes::default()
                 .with_active(true)
                 .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
-                // .with_inner_size(PhysicalSize::new(1200, 800))
-                .build(&cleint_main_loop.event_loop)
-                .unwrap();
+                .with_title("Just 4D Shooter")
+            ).unwrap();
         }
         log::info!("engine systems: window init");
 

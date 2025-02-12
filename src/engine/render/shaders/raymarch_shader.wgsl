@@ -2593,6 +2593,7 @@ fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, offset: f32) 
         }
 
         ray_origin += ray_direction * d;
+        // ray_origin += ray_direction * max(d, MIN_DIST*5.0);
 
         // if is_outside_of_bouding_box(ray_origin) {
         //     return vec2<f32>(MAX_DIST*2.0, f32(i));

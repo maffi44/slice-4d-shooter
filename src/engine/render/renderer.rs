@@ -9,7 +9,7 @@ use wgpu::{
     }, util::{
         BufferInitDescriptor,
         DeviceExt,
-    }, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MaintainResult, PipelineCompilationOptions, Sampler, Texture, TextureView, TextureViewDescriptor
+    }, BackendOptions, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MaintainResult, PipelineCompilationOptions, Sampler, ShaderRuntimeChecks, Texture, TextureView, TextureViewDescriptor
 };
 
 
@@ -135,11 +135,10 @@ impl Renderer {
     ) -> Renderer {
         let size = window.inner_size();
 
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
-            dx12_shader_compiler: Default::default(),
             flags: InstanceFlags::empty(),
-            gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
+            backend_options: BackendOptions::from_env_or_default()
         });
 
         log::info!("renderer: wgpu instance init");
@@ -166,19 +165,24 @@ impl Renderer {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    required_features: if cfg!(target_arch = "wasm32") {
-                        wgpu::Features::empty()
-                    } else {
-                        wgpu::Features::default()
-                    },
-                    // WebGL doesn't support all of wgpu's features, so if
-                    // we're building for the web we'll have to disable some.
-                    required_limits: if cfg!(target_arch = "wasm32") {
-                        wgpu::Limits::downlevel_webgl2_defaults()
-                    } else {
-                        wgpu::Limits::default()
-                    },
+
+
+                    // required_features: if cfg!(target_arch = "wasm32") {
+                    //     wgpu::Features::empty()
+                    // } else {
+                    //     wgpu::Features::default()
+                    // },
+                    // // WebGL doesn't support all of wgpu's features, so if
+                    // // we're building for the web we'll have to disable some.
+                    // required_limits: if cfg!(target_arch = "wasm32") {
+                    //     wgpu::Limits::downlevel_webgl2_defaults()
+                    // } else {
+                    //     wgpu::Limits::default()
+                    // },
                     label: None,
+                    required_features: wgpu::Features::default(),
+                    required_limits: wgpu::Limits::default(),
+                    memory_hints: wgpu::MemoryHints::Performance,
                 },
                 None, // Trace path
             )
@@ -216,13 +220,16 @@ impl Renderer {
         log::info!("renderer: wgpu surface configurated");
 
         // for WGSL shaders
-        let raymarch_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Vertex Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/raymarch_shader.wgsl").into())
-        });
+        let raymarch_shader = unsafe {device.create_shader_module_trusted(
+            wgpu::ShaderModuleDescriptor {
+                label: Some("Raymarch Shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/raymarch_shader.wgsl").into())
+            },
+            ShaderRuntimeChecks::unchecked()
+        )};
 
         let upscale_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Vertex Shader"),
+            label: Some("Upscale Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/upscale_shader.wgsl").into())
         });
 
@@ -628,7 +635,7 @@ impl Renderer {
             layout: Some(&raymarch_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &raymarch_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 compilation_options: PipelineCompilationOptions::default(), 
                 buffers: &[
                     Vertex::desc(),
@@ -637,7 +644,7 @@ impl Renderer {
             fragment: Some(wgpu::FragmentState {
                 module: &raymarch_shader,
                 compilation_options: PipelineCompilationOptions::default(),
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -663,6 +670,7 @@ impl Renderer {
                 alpha_to_coverage_enabled: false, // 4.
             },
             multiview: None, // 5.
+            cache: None,
         });
 
         let upscale_render_bind_group_layout = device.create_bind_group_layout(
@@ -705,7 +713,7 @@ impl Renderer {
             layout: Some(&upscale_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &upscale_shader,
-                entry_point: "vs_main", // 1.
+                entry_point: Some("vs_main"), // 1.
                 buffers: &[
                     Vertex::desc(),
                 ], // 2.
@@ -714,7 +722,7 @@ impl Renderer {
             fragment: Some(wgpu::FragmentState { // 3.
                 module: &upscale_shader,
                 compilation_options: PipelineCompilationOptions::default(),
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState { // 4.
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -740,6 +748,7 @@ impl Renderer {
                 alpha_to_coverage_enabled: false, // 4.
             },
             multiview: None, // 5.
+            cache: None,
         });
 
 
