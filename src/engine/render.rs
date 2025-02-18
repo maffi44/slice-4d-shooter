@@ -71,7 +71,8 @@ impl RenderSystem {
                     &window,
                     &render_data,
                     ui,
-                    time.target_frame_duration.as_secs_f64(),
+                    0.008,
+                    // time.target_frame_duration.as_secs_f64(),
                     world.players_settings.screen_resolution_scale,
                     &world.level.visual_settings_of_environment.sky_box_name
                 ).await
@@ -86,10 +87,7 @@ impl RenderSystem {
         let async_renderer = renderer.clone();
         #[cfg(not(target_arch="wasm32"))]
         runtime.spawn(async move {
-
-            
             loop {
-
                 match async_renderer.try_lock() {
                     Ok(mut renderer_lock) => {
                         if let Err(err) = renderer_lock.render(/*&self.window*/) {
@@ -109,7 +107,7 @@ impl RenderSystem {
                     Err(_) => {}
                 }
 
-                tokio::time::sleep(tokio::time::Duration::from_micros(8000)).await;
+                tokio::time::sleep(tokio::time::Duration::from_micros(2000)).await;
             }
         });
 

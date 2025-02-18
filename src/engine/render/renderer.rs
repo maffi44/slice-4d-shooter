@@ -85,6 +85,8 @@ pub struct Renderer {
     prev_time_instant: Option<web_time::Instant>,
     total_frames_count: u64,
     target_frame_duration: f64,
+    min_time: f64,
+    max_time: f64,
     // prev_surface_texture: Option<SurfaceTexture>,
     // prev_frame_rendered: Arc<Mutex<bool>>,
 
@@ -94,6 +96,17 @@ pub struct Renderer {
 
     ui_renderer: UIRenderer,
 
+}
+
+impl Drop for Renderer {
+    fn drop(&mut self) {
+        println!(
+            "AV DT {}, MIN DT: {}, MAX DT: {}",
+            self.total_time / (self.total_frames_count) as f64,
+            self.min_time,
+            self.max_time,
+        );
+    }
 }
 
 impl Renderer {
@@ -136,7 +149,7 @@ impl Renderer {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::all(),
+            backends: wgpu::Backends::PRIMARY,
             flags: InstanceFlags::empty(),
             backend_options: BackendOptions::from_env_or_default()
         });
@@ -180,7 +193,16 @@ impl Renderer {
                     //     wgpu::Limits::default()
                     // },
                     label: None,
-                    required_features: wgpu::Features::default(),
+                    required_features:
+                        wgpu::Features::all_native_mask() ^
+                        wgpu::Features::EXPERIMENTAL_RAY_TRACING_ACCELERATION_STRUCTURE ^
+                        wgpu::Features::TEXTURE_COMPRESSION_ASTC_HDR ^
+                        wgpu::Features::VULKAN_GOOGLE_DISPLAY_TIMING ^
+                        wgpu::Features::VULKAN_EXTERNAL_MEMORY_WIN32 ^
+                        wgpu::Features::SHADER_EARLY_DEPTH_TEST ^
+                        wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
+                        wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
+                        wgpu::Features::SHADER_FLOAT32_ATOMIC,
                     required_limits: wgpu::Limits::default(),
                     memory_hints: wgpu::MemoryHints::Performance,
                 },
@@ -219,7 +241,6 @@ impl Renderer {
         surface.configure(&device, &config);
         log::info!("renderer: wgpu surface configurated");
 
-        // for WGSL shaders
         let raymarch_shader = unsafe {device.create_shader_module_trusted(
             wgpu::ShaderModuleDescriptor {
                 label: Some("Raymarch Shader"),
@@ -228,10 +249,14 @@ impl Renderer {
             ShaderRuntimeChecks::unchecked()
         )};
 
-        let upscale_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Upscale Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/upscale_shader.wgsl").into())
-        });
+        let upscale_shader = unsafe {device.create_shader_module_trusted(
+            wgpu::ShaderModuleDescriptor {
+                label: Some("Upscale Shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/upscale_shader.wgsl").into())
+            },
+            ShaderRuntimeChecks::unchecked()
+        )};
+
 
         // // temp
         // let raymarch_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -838,6 +863,8 @@ impl Renderer {
             total_time: 0.0,
             prev_time_instant: None,
             target_frame_duration,
+            min_time: 99999.0,
+            max_time: 0.0,
 
             sky_box_texture,
             sky_box_texture_view,
@@ -938,14 +965,18 @@ impl Renderer {
                 return Ok(());
             }
 
-            // self.total_time += current_frame_time;
-            // self.total_frames_count += 1;
+            self.total_time += current_frame_time;
+            self.total_frames_count += 1;
+            self.min_time = self.min_time.min(current_frame_time);
+            self.max_time = self.max_time.max(current_frame_time);
 
-            // println!(
-            //     "AV DT {}, CUR DT: {}",
-            //     self.total_time / (self.total_frames_count) as f64,
-            //     current_frame_time,
-            // );
+            println!(
+                "CT: {}, AV: {}",
+                current_frame_time,
+                self.total_time / (self.total_frames_count) as f64,
+                // self.min_time,
+                // self.max_time,
+            );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());

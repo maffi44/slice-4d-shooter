@@ -973,7 +973,7 @@ fn store_intersection_exit(val: f32) {
     return;
 }
 
-fn find_intersections_next(ro: vec4<f32>, rdd: vec4<f32>) {
+fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
 
     var rd = rdd;
 
@@ -1705,7 +1705,7 @@ fn find_intersections_next(ro: vec4<f32>, rdd: vec4<f32>) {
     // return offset;
 }
 
-fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
+fn find_intersections_prev(ro: vec4<f32>, rdd: vec4<f32>) {
 
     var rd = rdd;
 
@@ -2655,7 +2655,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
 //     return d;
 // }
 
-fn map_next(p: vec4<f32>) -> f32 {
+fn map(p: vec4<f32>) -> f32 {
     var d = MAX_DIST*2.0;
 
         // for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
@@ -2957,7 +2957,7 @@ fn map_next(p: vec4<f32>) -> f32 {
     return d;
 }
 
-fn map(p: vec4<f32>) -> f32 {
+fn map_prev(p: vec4<f32>) -> f32 {
     var d = MAX_DIST*2.0;
 
     // static normal shapes
