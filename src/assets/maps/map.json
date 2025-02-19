@@ -6,7 +6,7 @@
         "is_positive": true,
         "friction": 3.5,
         "bounce_rate": 0.0,
-        "visual_material": "common",
+        "visual_material": "blue_team",
         "roundness": 0.05,
         "stickiness": false
     },
@@ -81,6 +81,15 @@
                 "red":1.1,
                 "green": 0.82,
                 "blue": 0.23
+            },
+            "roughness": 0.09
+        },
+        {
+            "name" : "super_red",
+            "color" : {
+                "red":5.1,
+                "green": 0.82,
+                "blue": 3.23
             },
             "roughness": 0.09
         },

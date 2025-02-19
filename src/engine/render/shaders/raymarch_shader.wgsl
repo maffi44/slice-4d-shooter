@@ -3247,7 +3247,7 @@ fn map(p: vec4<f32>) -> f32 {
     return d;
 }
 
-fn get_mats(
+fn get_mats_simple(
     cam_pos: vec4<f32>,
     ray_dir: vec4<f32>,
     dist: f32,
@@ -3273,7 +3273,7 @@ fn get_mats(
     return output;
 }
 
-fn get_mats_prev(
+fn get_mats(
     cam_pos: vec4<f32>,
     ray_dir: vec4<f32>,
     dist: f32,
@@ -3545,55 +3545,101 @@ fn get_mats_prev(
 
     // dynamic normal shapes
     // if dyn_noramls_intersected {
-        for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
-            let shape = dyn_normal_shapes[i];
+        // for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
+        //     let shape = dyn_normal_shapes[i];
 
-            let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
+        //     let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
 
-            if  dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = shape.material;
-                return output;
-            }
+        //     if  dd < MIN_DIST*2.0 {
+        //         output.materials_count = 1u;
+        //         output.material_weights[0] = 1.0;
+        //         output.materials[0] = shape.material;
+        //         return output;
+        //     }
 
-            if dd < d {
-                d = dd;
-                output.materials[0] = shape.material;
-            }
-        }
-        for (var i = dynamic_data.shapes_arrays_metadata.spheres_start; i < dynamic_data.shapes_arrays_metadata.spheres_amount + dynamic_data.shapes_arrays_metadata.spheres_start; i++) {
-            let shape = dyn_normal_shapes[i];
+        //     if dd < d {
+        //         d = dd;
+        //         output.materials[0] = shape.material;
+        //     }
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.spheres_start; i < dynamic_data.shapes_arrays_metadata.spheres_amount + dynamic_data.shapes_arrays_metadata.spheres_start; i++) {
+        //     let shape = dyn_normal_shapes[i];
 
-            let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
+        //     let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
 
-            if  dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = shape.material;
-                return output;
-            }
+        //     if  dd < MIN_DIST*2.0 {
+        //         output.materials_count = 1u;
+        //         output.material_weights[0] = 1.0;
+        //         output.materials[0] = shape.material;
+        //         return output;
+        //     }
 
-            if dd < d {
-                d = dd;
-                output.materials[0] = shape.material;
-            }
-        }
-        for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-            let shape = dyn_normal_shapes[i];
+        //     if dd < d {
+        //         d = dd;
+        //         output.materials[0] = shape.material;
+        //     }
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+        //     let shape = dyn_normal_shapes[i];
 
-            let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
+        //     let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
 
-            if  dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = shape.material;
-                return output;
-            }
+        //     if  dd < MIN_DIST*2.0 {
+        //         output.materials_count = 1u;
+        //         output.material_weights[0] = 1.0;
+        //         output.materials[0] = shape.material;
+        //         return output;
+        //     }
 
-            if dd < d {
-                d = dd;
-                output.materials[0] = shape.material;
+        //     if dd < d {
+        //         d = dd;
+        //         output.materials[0] = shape.material;
+        //     }
+        // }
+
+        for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+            if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
+                let dd = sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness;
+
+                if  dd < MIN_DIST*2.0 {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = dyn_normal_shapes[i].material;
+                    return output;
+                }
+
+                if dd < d {
+                    d = dd;
+                    output.materials[0] = dyn_normal_shapes[i].material;
+                }
+            } else if (i < dynamic_data.shapes_arrays_metadata.sph_cubes_start) {
+                let dd = sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness;
+
+                if  dd < MIN_DIST*2.0 {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = dyn_normal_shapes[i].material;
+                    return output;
+                }
+
+                if dd < d {
+                    d = dd;
+                    output.materials[0] = dyn_normal_shapes[i].material;
+                }
+            } else {
+                let dd = sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness;
+
+                if  dd < MIN_DIST*2.0 {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = dyn_normal_shapes[i].material;
+                    return output;
+                }
+
+                if dd < d {
+                    d = dd;
+                    output.materials[0] = dyn_normal_shapes[i].material;
+                }
             }
         }
         // for (var i = dynamic_data.shapes_arrays_metadata.inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.inf_cubes_amount + dynamic_data.shapes_arrays_metadata.inf_cubes_start; i++) {
@@ -3776,117 +3822,229 @@ fn get_mats_prev(
 
     // dynamic stickiness
     // if dyn_stickiness_intersected {
-        for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
-            let shape = dyn_stickiness_shapes[i];
-            let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
+        //     let shape = dyn_stickiness_shapes[i];
+        //     let dd = sd_box(p - shape.pos, shape.size) - shape.roundness;
             
-            if dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = shape.material;
-                return output;
-            }
+        //     if dd < MIN_DIST*2.0 {
+        //         output.materials_count = 1u;
+        //         output.material_weights[0] = 1.0;
+        //         output.materials[0] = shape.material;
+        //         return output;
+        //     }
 
-            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                if output.materials_count == 0u {
+        //     if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+        //         if output.materials_count == 0u {
+        //             output.materials_count = 1u;
+        //             output.material_weights[0] = 1.0;
+        //             output.materials[0] = shape.material;
+        //             d = dd;
+        //         } else {
+        //             var coef = 0.0;
+        //             if d<dd {
+        //                 coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+        //             } else {
+        //                 coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+        //             }
+        //             output.materials[output.materials_count] = shape.material;
+        //             output.material_weights[output.materials_count] = coef;
+
+        //             let mult = 1.0 - coef;
+
+        //             for (var k = 0u; k < output.materials_count; k++) {
+        //                 output.material_weights[k] *= mult;
+        //             }
+
+        //             output.materials_count += 1u;
+        //             d = min(d,dd);
+        //         }
+        //     }
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
+        //     let shape = dyn_stickiness_shapes[i];
+        //     let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
+            
+        //     if dd < MIN_DIST*2.0 {
+        //         output.materials_count = 1u;
+        //         output.material_weights[0] = 1.0;
+        //         output.materials[0] = shape.material;
+        //         return output;
+        //     }
+
+        //     if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+        //         if output.materials_count == 0u {
+        //             output.materials_count = 1u;
+        //             output.material_weights[0] = 1.0;
+        //             output.materials[0] = shape.material;
+        //             d = dd;
+        //         } else {
+        //             var coef = 0.0;
+        //             if d<dd {
+        //                 coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+        //             } else {
+        //                 coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+        //             }
+        //             output.materials[output.materials_count] = shape.material;
+        //             output.material_weights[output.materials_count] = coef;
+
+        //             let mult = 1.0 - coef;
+
+        //             for (var k = 0u; k < output.materials_count; k++) {
+        //                 output.material_weights[k] *= mult;
+        //             }
+
+        //             output.materials_count += 1u;
+        //             d = min(d,dd);
+        //         }
+        //     }
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+        //     let shape = dyn_stickiness_shapes[i];
+        //     let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
+            
+        //     if dd < MIN_DIST*2.0 {
+        //         output.materials_count = 1u;
+        //         output.material_weights[0] = 1.0;
+        //         output.materials[0] = shape.material;
+        //         return output;
+        //     }
+
+        //     if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+        //         if output.materials_count == 0u {
+        //             output.materials_count = 1u;
+        //             output.material_weights[0] = 1.0;
+        //             output.materials[0] = shape.material;
+        //             d = dd;
+        //         } else {
+        //             var coef = 0.0;
+        //             if d<dd {
+        //                 coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+        //             } else {
+        //                 coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+        //             }
+        //             output.materials[output.materials_count] = shape.material;
+        //             output.material_weights[output.materials_count] = coef;
+
+        //             let mult = 1.0 - coef;
+
+        //             for (var k = 0u; k < output.materials_count; k++) {
+        //                 output.material_weights[k] *= mult;
+        //             }
+
+        //             output.materials_count += 1u;
+        //             d = min(d,dd);
+        //         }
+        //     }
+        // }
+
+        for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+            if (i < dynamic_data.shapes_arrays_metadata.s_spheres_start) {
+                let dd = sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness;
+            
+                if dd < MIN_DIST*2.0 {
                     output.materials_count = 1u;
                     output.material_weights[0] = 1.0;
-                    output.materials[0] = shape.material;
-                    d = dd;
-                } else {
-                    var coef = 0.0;
-                    if d<dd {
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                    } else {
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
-                    }
-                    output.materials[output.materials_count] = shape.material;
-                    output.material_weights[output.materials_count] = coef;
-
-                    let mult = 1.0 - coef;
-
-                    for (var k = 0u; k < output.materials_count; k++) {
-                        output.material_weights[k] *= mult;
-                    }
-
-                    output.materials_count += 1u;
-                    d = min(d,dd);
+                    output.materials[0] = dyn_stickiness_shapes[i].material;
+                    return output;
                 }
-            }
-        }
-        for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
-            let shape = dyn_stickiness_shapes[i];
-            let dd = sd_sphere(p - shape.pos, shape.size.x) - shape.roundness;
-            
-            if dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = shape.material;
-                return output;
-            }
 
-            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                if output.materials_count == 0u {
-                    output.materials_count = 1u;
-                    output.material_weights[0] = 1.0;
-                    output.materials[0] = shape.material;
-                    d = dd;
-                } else {
-                    var coef = 0.0;
-                    if d<dd {
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                    if output.materials_count == 0u {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_stickiness_shapes[i].material;
+                        d = dd;
                     } else {
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                        var coef = 0.0;
+                        if d<dd {
+                            coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                        } else {
+                            coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                        }
+                        output.materials[output.materials_count] = dyn_stickiness_shapes[i].material;
+                        output.material_weights[output.materials_count] = coef;
+
+                        let mult = 1.0 - coef;
+
+                        for (var k = 0u; k < output.materials_count; k++) {
+                            output.material_weights[k] *= mult;
+                        }
+
+                        output.materials_count += 1u;
+                        d = min(d,dd);
                     }
-                    output.materials[output.materials_count] = shape.material;
-                    output.material_weights[output.materials_count] = coef;
-
-                    let mult = 1.0 - coef;
-
-                    for (var k = 0u; k < output.materials_count; k++) {
-                        output.material_weights[k] *= mult;
-                    }
-
-                    output.materials_count += 1u;
-                    d = min(d,dd);
                 }
-            }
-        }
-        for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-            let shape = dyn_stickiness_shapes[i];
-            let dd = sd_sph_box(p - shape.pos, shape.size) - shape.roundness;
+            } else if (i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_start) {
+                let dd = sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness;
             
-            if dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = shape.material;
-                return output;
-            }
-
-            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                if output.materials_count == 0u {
+                if dd < MIN_DIST*2.0 {
                     output.materials_count = 1u;
                     output.material_weights[0] = 1.0;
-                    output.materials[0] = shape.material;
-                    d = dd;
-                } else {
-                    var coef = 0.0;
-                    if d<dd {
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                    output.materials[0] = dyn_stickiness_shapes[i].material;
+                    return output;
+                }
+
+                if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                    if output.materials_count == 0u {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_stickiness_shapes[i].material;
+                        d = dd;
                     } else {
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                        var coef = 0.0;
+                        if d<dd {
+                            coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                        } else {
+                            coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                        }
+                        output.materials[output.materials_count] = dyn_stickiness_shapes[i].material;
+                        output.material_weights[output.materials_count] = coef;
+
+                        let mult = 1.0 - coef;
+
+                        for (var k = 0u; k < output.materials_count; k++) {
+                            output.material_weights[k] *= mult;
+                        }
+
+                        output.materials_count += 1u;
+                        d = min(d,dd);
                     }
-                    output.materials[output.materials_count] = shape.material;
-                    output.material_weights[output.materials_count] = coef;
+                }
+            } else {
+                let dd = sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness;
+                
+                if dd < MIN_DIST*2.0 {
+                    output.materials_count = 1u;
+                    output.material_weights[0] = 1.0;
+                    output.materials[0] = dyn_stickiness_shapes[i].material;
+                    return output;
+                }
 
-                    let mult = 1.0 - coef;
+                if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                    if output.materials_count == 0u {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_stickiness_shapes[i].material;
+                        d = dd;
+                    } else {
+                        var coef = 0.0;
+                        if d<dd {
+                            coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                        } else {
+                            coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                        }
+                        output.materials[output.materials_count] = dyn_stickiness_shapes[i].material;
+                        output.material_weights[output.materials_count] = coef;
 
-                    for (var k = 0u; k < output.materials_count; k++) {
-                        output.material_weights[k] *= mult;
+                        let mult = 1.0 - coef;
+
+                        for (var k = 0u; k < output.materials_count; k++) {
+                            output.material_weights[k] *= mult;
+                        }
+
+                        output.materials_count += 1u;
+                        d = min(d,dd);
                     }
-
-                    output.materials_count += 1u;
-                    d = min(d,dd);
                 }
             }
         }
@@ -4328,15 +4486,15 @@ fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
     return color;
 }
 
-fn apply_material(
+fn get_color_and_light_from_mats(
     pos: vec4<f32>,
     ray_dir: vec4<f32>,
     dist: f32,
-    material: i32,
+    mats: OutputMaterials,
 ) -> vec4<f32> {
     var lightness = 0.0;
     
-    if material == -2 {
+    if mats.materials[0] == -2 {
         var color = get_sky_color(ray_dir);
         
         color = clamp(color, vec3(0.0), vec3(1.0));
@@ -4344,7 +4502,7 @@ fn apply_material(
         return vec4(color, lightness);
     }
 
-    if material == -3 {
+    if mats.materials[0] == -3 {
         var color = static_data.red_base_color*0.5;
         
         let hited_pos = pos + ray_dir * dist;
@@ -4356,7 +4514,7 @@ fn apply_material(
         return vec4(color, 20.0);
     }
 
-    if material == -4 {
+    if mats.materials[0] == -4 {
         var color = static_data.blue_base_color*0.5;
         
         let hited_pos = pos + ray_dir * dist;
@@ -4368,14 +4526,23 @@ fn apply_material(
         return vec4(color, 20.0);
     }
 
-    let roughness = static_data.materials[material].color.w;
+    var roughness = static_data.materials[mats.materials[0]].color.w;
+
+    for (var i = 1u; i < mats.materials_count; i++) {
+        let new_roughness = static_data.materials[mats.materials[i]].color.w;
+        roughness = mix(roughness, new_roughness, mats.material_weights[i]);
+    }
 
     let hited_pos = pos + ray_dir * dist;
     let normal = get_normal(hited_pos);
     
     var lines_size = 5.8;
 
-    if material == static_data.blue_players_mat1 || material == static_data.blue_players_mat2 || material == static_data.red_players_mat1 || material == static_data.red_players_mat2 {
+    if mats.materials[0] == static_data.blue_players_mat1 ||
+        mats.materials[0] == static_data.blue_players_mat2 ||
+        mats.materials[0] == static_data.red_players_mat1 ||
+        mats.materials[0] == static_data.red_players_mat2
+    {
         lines_size = 2.8;
     }
 
@@ -4402,10 +4569,10 @@ fn apply_material(
         clamp((hited_pos.w - static_data.blue_base_w_level) / (static_data.red_base_w_level - static_data.blue_base_w_level), 0.0, 1.0)
     );
 
-    if material == static_data.blue_players_mat1 || material == static_data.blue_players_mat2 {
+    if mats.materials[0] == static_data.blue_players_mat1 || mats.materials[0] == static_data.blue_players_mat2 {
         neon_wireframe_color = static_data.blue_base_color * 0.8;
     } else {
-        if material == static_data.red_players_mat1 || material == static_data.red_players_mat2 {
+        if mats.materials[0] == static_data.red_players_mat1 || mats.materials[0] == static_data.red_players_mat2 {
             neon_wireframe_color = static_data.red_base_color * 0.8;
         }
     }
@@ -4436,8 +4603,15 @@ fn apply_material(
     light += neon_wireframe_color * wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
 
     lightness = wireframe_dif*30.0;
+
+    var base_diffuse = static_data.materials[mats.materials[0]].color.xyz;
+
+    for (var i = 1u; i < mats.materials_count; i++) {
+        let new_base_diffuse = static_data.materials[mats.materials[i]].color.xyz;
+        base_diffuse = mix(base_diffuse, new_base_diffuse, mats.material_weights[i]);
+    }
     
-    let diffuse = static_data.materials[material].color.xyz + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
+    let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
     let ref_col = get_sky_color(ref_dir);
 
@@ -4503,12 +4677,12 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
 
     var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
-    var color_and_light = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[0]);
+    var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats);
 
-    for (var i = 1u; i < mats.materials_count; i++) {
-        let new_color = apply_material(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
-        color_and_light = mix(color_and_light, new_color, mats.material_weights[i]);
-    }
+    // for (var i = 1u; i < min(mats.materials_count,2u); i++) {
+    //     let new_color = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
+    //     color_and_light = mix(color_and_light, new_color, mats.material_weights[i]);
+    // }
 
     var color = color_and_light.rgb;
     var lightness = color_and_light.a;
