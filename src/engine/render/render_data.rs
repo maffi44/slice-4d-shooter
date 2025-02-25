@@ -201,6 +201,11 @@ pub struct ShapesArraysMetadata {
 
     s_neg_sph_cubes_start: u32,
     s_neg_sph_cubes_amount: u32,
+
+    // padding_byte1: u32,
+    // padding_byte2: u32,
+    // undestroyable_cubes_start: u32,
+    // undestroyable_cubes_amount: u32,
 }
 
 #[repr(C)]

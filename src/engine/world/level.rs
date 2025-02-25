@@ -155,30 +155,42 @@ impl Level {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            // let mut file = File::open("./src/assets/maps/map.json")
-            //     .unwrap_or_else(|_| {
-            //         File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/map.json").expect("Can't find map.fson file")
-            //     });
-                
+            let json_map = {
+                let mut file = File::open("./map.json");
 
-            // let mut file_content = String::new();
-            // match file.read_to_string(&mut file_content) {
-            //     Ok(_) => {
-            //         let json_map = serde_json::from_str(&file_content)
-            //             .expect("Can't parse map.json file");
+                if file.is_err()
+                {
+                    file = File::open("./src/assets/maps/map.json");
+                }
+                if file.is_err()
+                {
+                    file = File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/map.json");
+                }
 
-            //         return parse_json_level(json_map);
-            //     },
-            //     Err(e) => {
-            //         panic!(
-            //             "ERROR: the map.json cannot be loaded, err: {}",
-            //             e.to_string()
-            //         );
-            //     }
-            // }
-
-            let json_map = serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
-                .expect("Can't parse map.json file");
+                if file.is_ok()
+                {
+                    let mut file_content = String::new();
+                    match file.unwrap().read_to_string(&mut file_content) {
+                        Ok(_) => {
+                            serde_json::from_str(&file_content)
+                                .expect("Can't parse map.json file")
+                        },
+                        Err(e) => {
+                            println!(
+                                "ERROR: the map.json cannot be loaded, err: {}",
+                                e.to_string()
+                            );
+                            serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
+                                .expect("Can't parse map.json file")
+                        }
+                    }
+                }
+                else
+                {
+                    serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
+                        .expect("Can't parse map.json file")
+                }
+            };
 
             return parse_json_level(json_map);
         }

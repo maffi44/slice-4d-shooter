@@ -75,6 +75,11 @@ struct ShapesMetadata {
 
     s_neg_sph_cubes_start: u32,
     s_neg_sph_cubes_amount: u32,
+
+    // padding_byte1: u32,
+    // padding_byte2: u32,
+    // undestroyable_cubes_start: u32,
+    // undestroyable_cubes_amount: u32,
 }
 
 struct IntersectedShapesMetadata {
@@ -4403,6 +4408,7 @@ fn w_scanner_enemies_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec
 //     return fract(sin(n)*8.5453123);
 // }
 
+
 fn noise( x: vec2<f32> ) -> f32
 {
     let p = floor(x);
@@ -4417,6 +4423,7 @@ fn noise( x: vec2<f32> ) -> f32
 
     return res;
 }
+
 
 // fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
 
@@ -4435,11 +4442,13 @@ fn noise( x: vec2<f32> ) -> f32
 //     }
 // }
 
+
 fn hash( n: f32 ) -> f32
 {
     // return fract(sin(n)*43758.5453123);
     return fract(sin(n)*8818.5453123);
 }
+
 
 fn hash2d( n: vec2<f32> ) -> f32
 {
@@ -4448,6 +4457,7 @@ fn hash2d( n: vec2<f32> ) -> f32
         dot(n, vec2(1441.958, 385.414))
     )*8818.5453123);
 }
+
 
 fn noise2( x: vec4<f32> ) -> f32
 {
@@ -4473,6 +4483,7 @@ fn noise2( x: vec4<f32> ) -> f32
     return res;
 }
 
+
 fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
     // var color =  2.9*static_data.sky_color*static_data.fog_color* mix(vec3(.1,0.2,0.55), vec3(0.1,1.2,2.4), sqrt(abs(ray_dir.y)+0.1));
     // color = mix(HORIZONT_COLOR*0.12, color, sqrt(clamp(abs(ray_dir.y*2.0)+0.1,0.0,1.0)))*0.1;
@@ -4485,6 +4496,7 @@ fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
 
     return color;
 }
+
 
 fn get_color_and_light_from_mats(
     pos: vec4<f32>,
@@ -4630,10 +4642,12 @@ struct VertexInput {
     @location(0) @interpolate(perspective) position: vec3<f32>,
 };
 
+
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) position: vec3<f32>
 };
+
 
 @vertex
 fn vs_main(
@@ -4645,17 +4659,82 @@ fn vs_main(
     return out;
 }
 
+
 fn tv_hash(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 19.19);
     return fract((p3.x + p3.y) * p3.z);
 }
 
+
 fn tv_noise(uv: vec2<f32>, time: f32) -> f32 {
     let scale = 10.0;
     let p = uv * scale + vec2<f32>(time);
     return tv_hash(p);
 }
+
+fn plane_x_intersect(rd: vec4<f32>, h: f32 ) -> f32
+{
+    return h/rd.x;
+}
+
+fn gew_w_projection_color(uv: vec2<f32>) -> vec3<f32>
+{
+    let offset = 1.5;
+
+
+    if uv.x < -0.00
+    {
+        var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
+
+        let dist = plane_x_intersect(ray, -offset);
+
+        ray *= dist;
+
+        ray *= dynamic_data.camera_data.cam_zy_rot;
+        ray *= dynamic_data.camera_data.cam_zx_rot;
+        ray *= dynamic_data.camera_data.cam_zw_rot;
+
+        let swap = ray.y;
+        ray.y = ray.w;
+        ray.w = swap;
+
+        let d = map(ray + dynamic_data.camera_data.cam_pos);
+
+        let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0) + clamp(-d*10.0,0.0,1.0)*0.2;
+
+        return vec3(0.0,c,0.0);
+    }
+    else if uv.x > 0.01
+    {
+        var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
+
+        let dist = plane_x_intersect(ray, offset);
+
+        ray *= dist;
+
+        ray *= dynamic_data.camera_data.cam_zy_rot;
+        ray *= dynamic_data.camera_data.cam_zx_rot;
+        ray *= dynamic_data.camera_data.cam_zw_rot;
+
+        let swap = ray.y;
+        ray.y = ray.w;
+        ray.w = swap;
+
+        let d = map(ray + dynamic_data.camera_data.cam_pos);
+
+        let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0) + clamp(-d*10.0,0.0,1.0)*0.2;
+
+        return vec3(0.0,c,0.0);
+    }
+    else
+    {
+        return vec3(0.0);
+    }
+}
+
+
+
 
 
 @fragment
@@ -4685,6 +4764,9 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     // }
 
     var color = color_and_light.rgb;
+
+    color += gew_w_projection_color(uv);
+
     var lightness = color_and_light.a;
 
     if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {

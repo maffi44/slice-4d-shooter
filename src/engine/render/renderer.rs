@@ -970,13 +970,13 @@ impl Renderer {
             self.min_time = self.min_time.min(current_frame_time);
             self.max_time = self.max_time.max(current_frame_time);
 
-            println!(
-                "CT: {}, AV: {}",
-                current_frame_time,
-                self.total_time / (self.total_frames_count) as f64,
-                // self.min_time,
-                // self.max_time,
-            );
+            // println!(
+            //     "CT: {}, AV: {}",
+            //     current_frame_time,
+            //     self.total_time / (self.total_frames_count) as f64,
+            //     // self.min_time,
+            //     // self.max_time,
+            // );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());

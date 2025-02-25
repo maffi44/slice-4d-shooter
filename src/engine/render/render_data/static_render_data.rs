@@ -689,6 +689,10 @@ impl StaticRenderData {
             s_neg_inf_cubes_amount,
             s_neg_sph_cubes_start,
             s_neg_sph_cubes_amount,
+            // padding_byte1: 0u32,
+            // padding_byte2: 0u32,
+            // undestroyable_cubes_start: 0u32,
+            // undestroyable_cubes_amount: 0u32,
         };
         
         log::info!("static shapes metadata: \n{:?}", metadata);

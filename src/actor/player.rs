@@ -1633,11 +1633,16 @@ impl Actor for Player {
 
             if input.move_w_up.is_action_just_pressed() {
 
+                // w movement first variant
+                self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+
                 if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
                 {
-                    self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1; 
-                    self.inner_state.player_moving_state = PlayerMovingState::MovingFree(DURATION_OF_MOVING_FREE_BY_BONUS);
+                    // w movement third variant 
+                    // self.inner_state.amount_of_move_w_bonuses_do_i_have -= 1; 
+                    // self.inner_state.player_moving_state = PlayerMovingState::MovingFree(DURATION_OF_MOVING_FREE_BY_BONUS);
 
+                    // w movement second variant 
                     // let current_w_level = match &mut self.inner_state.player_moving_state
                     // {
                     //     PlayerMovingState::MovingParallelW(_) =>
@@ -1973,12 +1978,16 @@ impl Actor for Player {
                                 None => movement_vec = Vec4::ZERO,
                             }
 
-                            let w_dif = lock_w - self.get_position().w;
+                            // w gravity second variant
+                            // let w_dif = lock_w - self.get_position().w;
 
-                            self.inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
-                                -self.player_settings.gravity_w_speed*25.0,
-                                self.player_settings.gravity_w_speed*25.0
-                            );
+                            // self.inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
+                            //     -self.player_settings.gravity_w_speed*25.0,
+                            //     self.player_settings.gravity_w_speed*25.0
+                            // );
+
+                            // w gravity first variant
+                            self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.gravity_w_speed * delta);
 
                             self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
 
