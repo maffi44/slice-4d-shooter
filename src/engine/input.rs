@@ -328,22 +328,39 @@ impl InputSystem {
     pub fn get_input(&mut self, world: &mut World ,net: &mut NetSystem) {
 
         for (_, actor) in world.actors.iter_mut() {
-
-            if let ActorWrapper::Player(player) = actor {
-                
-                match &mut player.master {
-                    LocalMaster(master) => {
-                        master.current_input =
-                            ActionsFrameState::current(
-                                &self.actions_table,
-                                self.mouse_axis
-                            );
-                        // log::info!("current input is {:?}", master.current_input);
-                    }
-                    RemoteMaster(master) => {
-                        // Didn't implement yet
+            
+            match actor {
+                ActorWrapper::Player(player) => {
+                    match &mut player.master {
+                        LocalMaster(master) => {
+                            master.current_input =
+                                ActionsFrameState::current(
+                                    &self.actions_table,
+                                    self.mouse_axis
+                                );
+                            // log::info!("current input is {:?}", master.current_input);
+                        }
+                        RemoteMaster(master) => {
+                            unimplemented!("Remote input aster didn't implement yet")
+                        }
                     }
                 }
+                ActorWrapper::PlayerFor2d3dExample(player) => {
+                    match &mut player.master {
+                        LocalMaster(master) => {
+                            master.current_input =
+                                ActionsFrameState::current(
+                                    &self.actions_table,
+                                    self.mouse_axis
+                                );
+                            // log::info!("current input is {:?}", master.current_input);
+                        }
+                        RemoteMaster(master) => {
+                            unimplemented!("Remote input aster didn't implement yet")
+                        }
+                    }
+                }
+                _ => {}
             }
         }
     }

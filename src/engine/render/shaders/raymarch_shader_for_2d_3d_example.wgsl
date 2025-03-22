@@ -4963,27 +4963,62 @@ const SCREEN_WIDTH_IN_2D: f32 = 10.0;
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
-    var uv: vec2<f32> = inn.position.xy;
-    uv.x *= dynamic_data.screen_aspect;
+    if inn.position.x < 0.0
+    {
+        var uv: vec2<f32> = inn.position.xy;
+        uv.x += 0.5;
+        uv.x *= dynamic_data.screen_aspect;
 
-    let p_pos = uv*SCREEN_WIDTH_IN_2D + dynamic_data.camera_data.cam_pos.zy;
+        let p_pos = uv*SCREEN_WIDTH_IN_2D + dynamic_data.camera_data.cam_pos.zy;
 
-    var pixel_pos = dynamic_data.camera_data.cam_pos;
-    pixel_pos.z += p_pos.x;
-    pixel_pos.y += p_pos.y;
+        var pixel_pos = dynamic_data.camera_data.cam_pos;
+        pixel_pos.z += p_pos.x;
+        pixel_pos.y += p_pos.y;
 
-    var dist = map(pixel_pos);
+        var dist = map(pixel_pos);
 
-    if dist > MIN_DIST {
-        dist = MAX_DIST*2.0;
+        if dist > MIN_DIST {
+            dist = MAX_DIST*2.0;
+        }
+
+        let mats = get_mats(pixel_pos, vec4(0.0), dist);
+
+        let fake_dir = normalize(vec4(-1.0,uv.x,uv.y,0.0));
+
+        let color_and_light = get_color_and_light_from_mats_2d(pixel_pos, fake_dir, mats);
+
+        return color_and_light;
+
+    }
+    else
+    {
+        var uv: vec2<f32> = inn.position.xy;
+        uv.x -= 0.5;
+        // uv *= 0.7;
+        uv.x *= dynamic_data.screen_aspect;
+
+        var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
+
+        ray_direction *= dynamic_data.camera_data.cam_zw_rot;
+        ray_direction *= dynamic_data.camera_data.cam_zy_rot;
+        ray_direction *= dynamic_data.camera_data.cam_zx_rot;
+
+        let camera_position = dynamic_data.camera_data.cam_pos;
+
+        find_intersections(camera_position, ray_direction);
+        let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction); 
+
+
+        var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
+        var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats);
+
+        return color_and_light;
+        // for (var i = 1u; i < min(mats.materials_count,2u); i++) {
+        //     let new_color = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
+        //     color_and_light = mix(color_and_light, new_color, mats.material_weights[i]);
+        // }
     }
 
-    let mats = get_mats(pixel_pos, vec4(0.0), dist);
 
-    let fake_dir = normalize(vec4(-1.0,uv.x,uv.y,0.0));
-
-    let color_and_light = get_color_and_light_from_mats_2d(pixel_pos, fake_dir, mats);
-
-    return color_and_light;
     // return vec4<f32>(color, lightness);
 }
