@@ -14,6 +14,7 @@ pub mod move_w_bonus;
 pub mod hole;
 pub mod wave;
 pub mod mover_w;
+pub mod player_for_2d_3d_example;
 
 use crate::{
     engine::{
@@ -28,7 +29,7 @@ use crate::{
             static_collider::StaticColliderMessage,
             PhysicsSystem
         },
-        render::VisualElement,
+        render::{camera::Camera, VisualElement},
         time::TimeSystem,
         ui::UISystem
     },
@@ -93,6 +94,10 @@ pub trait Actor {
         
     fn set_id(&mut self, id: ActorID);
 
+    fn get_camera(&self) -> Camera {
+        panic!("This Actor havn't a Camera")
+    }
+
     fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
         let prev_id = match self.get_id() {
             Some(id) =>
@@ -122,6 +127,7 @@ pub trait Actor {
 
 pub enum ActorWrapper {
     Player(Player),
+    PlayerFor2d3dExample(PlayerFor2d3dExample),
     WonderingActor(WanderingActor),
     HoleGunShot(HoleGunShot),
     HoleGunMiss(HoleGunMiss),
@@ -185,6 +191,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoverW(actor) => {
                 actor.get_transform()
             }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.get_transform()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -232,6 +241,9 @@ impl Actor for ActorWrapper {
                 actor.get_mut_transform()
             }
             ActorWrapper::MoverW(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
                 actor.get_mut_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -292,6 +304,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoverW(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -350,6 +365,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoverW(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -397,6 +415,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             }
             ActorWrapper::MoverW(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
                 actor.get_physical_element()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -448,6 +469,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoverW(actor) => {
                 actor.get_visual_element()
             }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -495,6 +519,9 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             }
             ActorWrapper::MoverW(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
                 actor.get_id()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -546,6 +573,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoverW(actor) => {
                 actor.change_id(id, engine_handle)
             }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -595,6 +625,61 @@ impl Actor for ActorWrapper {
             ActorWrapper::MoverW(actor) => {
                 actor.set_id(id)
             }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
+        }
+    }
+
+    fn get_camera(&self) -> Camera {
+        match self {
+            ActorWrapper::Player(actor) => {
+                actor.get_camera()
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::HoleGunShot(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::HoleGunMiss(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::PlayersDoll(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::PlayersDeathExplosion(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::MachinegunShot(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::ShootingImpact(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::SessionController(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::Wave(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::MoverW(actor) => {
+                actor.get_camera()
+            }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.get_camera()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -626,6 +711,7 @@ use glam::Vec4;
 use hole::Hole;
 use move_w_bonus::{MoveWBonusSpot, MoveWBonusSpotMessage};
 use mover_w::{MoverW, MoverWMessage};
+use player_for_2d_3d_example::PlayerFor2d3dExample;
 use session_controller::SessionController;
 use wave::Wave;
 

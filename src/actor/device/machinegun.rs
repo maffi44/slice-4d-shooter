@@ -119,7 +119,7 @@ impl MachineGun {
             fyrox_sound::source::Status::Playing,
         );
 
-        let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
+        let from = player.get_eyes_position();
 
         let mut bytes = [0_u8;4];
         getrandom::getrandom(&mut bytes).expect("Func getrandom is fail in mahinegun shoot fn");
@@ -149,7 +149,7 @@ impl MachineGun {
         // direction = random_dir_x * direction;
 
         let weapon_offset = {
-            (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
+            player.get_eyes_offset() +
             (player.transform.get_rotation().inverse() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };

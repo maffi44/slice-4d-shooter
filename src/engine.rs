@@ -96,6 +96,7 @@ impl<'a> Future for WindowReadyFuture<'a> {
 impl Engine {
     pub async fn new(
         cleint_main_loop: &MainLoop,
+        it_is_2d_3d_example: bool,
         // async_runtime: &Runtime,
     ) -> Engine {
 
@@ -150,7 +151,18 @@ impl Engine {
         let global_players_settings = PlayerSettings::load_player_settings().await;
         log::info!("engine systems: global_players_settings init");
         
-        let world = World::new(&mut engine_handle, global_players_settings).await;
+        let world = World::new(
+            &mut engine_handle,
+            global_players_settings,
+            if it_is_2d_3d_example
+            {
+                "map_2d_3d".to_string()
+            }
+            else
+            {
+                "map".to_string()    
+            }
+        ).await;
         log::info!("engine systems: world init");
         
         let physic = PhysicsSystem::new(&world);
@@ -170,7 +182,8 @@ impl Engine {
             &time,
             &mut pre_initialized_ui,
             #[cfg(not(target_arch = "wasm32"))]
-            &mut runtime
+            &mut runtime,
+            it_is_2d_3d_example,
         ).await;
         log::info!("engine systems: render init");
 

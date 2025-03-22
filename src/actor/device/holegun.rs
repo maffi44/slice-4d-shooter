@@ -142,12 +142,12 @@ impl HoleGun {
             fyrox_sound::source::Status::Playing,
         );
 
-        let from = player.transform.get_position() + Vec4::Y * player.collider.get_collider_radius() * 0.98;
+        let from = player.get_eyes_position();
                 
         let direction = player.transform.get_rotation().inverse() * Vec4::NEG_Z;
     
         let weapon_offset = {
-            (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
+            player.get_eyes_offset() +
             (player.transform.get_rotation().inverse() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
@@ -381,7 +381,7 @@ impl Device for HoleGun {
 
     
                     let shooted_from_offset = {
-                        (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
+                        (player.get_eyes_offset()) +
                         (player.transform.get_rotation().inverse() *
                         (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
                     };
@@ -428,7 +428,7 @@ impl Device for HoleGun {
                     
                     VolumeArea::SphericalVolumeArea(area) => {
                         let shooted_from_offset = {
-                            (Vec4::Y * player.collider.get_collider_radius() * 0.98) +
+                            (player.get_eyes_offset()) +
                             (player.transform.get_rotation().inverse() *
                             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
                         };

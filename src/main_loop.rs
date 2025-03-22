@@ -45,11 +45,12 @@ impl MainLoop {
     pub async fn run(
         self,
         mut systems : Engine,
+        init_level: Box<dyn FnOnce(&mut Engine)>
     ) {
         
         let systems = &mut systems;
         
-        init(systems);
+        init_level(systems);
 
         log::info!("init(systems) called");
 
@@ -283,93 +284,4 @@ fn main_loop_tick(
 
 fn init(systems: &mut Engine) {
 
-    let mut main_player = Player::new(
-        InputMaster::LocalMaster(
-            LocalMaster::new(ActionsFrameState::empty())
-        ),
-        systems.world.players_settings.clone(),
-        &mut systems.audio,
-        systems.world.level.w_levels.clone()
-    );
-
-    // let spawn = systems
-    //     .world
-    //     .level
-    //     .get_random_spawn_position(main_player.get_team());
-
-    // main_player.get_mut_transform().set_position(
-    //     spawn.spawn_position
-    // );
-
-    // main_player.set_current_w_level(spawn.w_level);
-
-    let main_player_id = systems.world.add_actor_to_world(
-        ActorWrapper::Player(main_player),
-        &mut systems.engine_handle,
-    );
-
-    systems.engine_handle.send_boardcast_message(
-        Message {
-            from: 0u128,
-            message: crate::actor::MessageType::SpecificActorMessage(
-                SpecificActorMessage::PLayerMessage(
-                    PlayerMessage::SetNewTeam(
-                        session_controller::DEFAULT_TEAM
-                    )
-                )
-            )
-        }
-    );
-
-    while let Some(mover_w) = systems.world.level.mover_w_list.pop()
-    {
-        systems.world.add_actor_to_world(
-            ActorWrapper::MoverW(mover_w),
-            &mut systems.engine_handle
-        );
-    } 
-
-    let red_flag = Flag::new(
-        Team::Red,
-        systems.world.level.red_flag_base
-    );
-
-    systems.world.add_actor_to_world(
-        ActorWrapper::Flag(red_flag),
-        &mut systems.engine_handle,
-    );
-
-    let blue_flag = Flag::new(
-        Team::Blue,
-        systems.world.level.blue_flag_base
-    );
-
-    systems.world.add_actor_to_world(
-        ActorWrapper::Flag(blue_flag),
-        &mut systems.engine_handle,
-    );
-
-    let session_controller = SessionController::new(
-        &mut systems.ui,
-        systems.world.level.red_flag_base.get_position(),
-        systems.world.level.blue_flag_base.get_position()
-    );
-    
-    systems.world.add_actor_to_world(
-        ActorWrapper::SessionController(session_controller),
-        &mut systems.engine_handle,
-    );
-
-    let move_w_bonus = MoveWBonusSpot::new(
-        systems.world.level.move_w_bonus_spot,
-        0
-    );
-
-    systems.world.add_actor_to_world(
-        ActorWrapper::MoveWBonusSpot(move_w_bonus),
-        &mut systems.engine_handle,
-    );
-
-
-    systems.world.main_player_id = main_player_id;
 }

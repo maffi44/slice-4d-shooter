@@ -80,6 +80,10 @@ impl UIRenderer {
         screen_aspect: f32,
         other_dynamic_data_buffer: &Buffer,
         player_forms_data_buffer: &Buffer,
+        dynamic_normal_shapes_buffer: &Buffer,
+        dynamic_stickiness_shapes_buffer: &Buffer,
+        dynamic_negative_shapes_buffer: &Buffer,
+        dynamic_neg_stickiness_shapes_buffer: &Buffer,
     ) -> UIRenderer {
 
         // ------------------------------------------------------------
@@ -360,6 +364,46 @@ impl UIRenderer {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 3,
+                        visibility: ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 5,
+                        visibility: ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 6,
+                        visibility: ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 7,
                         visibility: ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -677,6 +721,22 @@ impl UIRenderer {
                                 wgpu::BindGroupEntry {
                                     binding: 3,
                                     resource: scanner_data_buffer.as_entire_binding(),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 4,
+                                    resource: dynamic_normal_shapes_buffer.as_entire_binding(),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 5,
+                                    resource: dynamic_stickiness_shapes_buffer.as_entire_binding(),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 6,
+                                    resource: dynamic_negative_shapes_buffer.as_entire_binding(),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 7,
+                                    resource: dynamic_neg_stickiness_shapes_buffer.as_entire_binding(),
                                 }
                             ],
                             label: Some("scanner_bind_group"),

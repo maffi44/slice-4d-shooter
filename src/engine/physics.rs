@@ -210,7 +210,7 @@ impl PhysicsSystem {
         let mut pos: Vec4 = from;
 
         let dir = direction.try_normalize().expect(
-            "Direction vector in ray_cast function cannot be normalized"
+            "Direction vector in ray_cast function can not be normalized"
         );
 
         let mut total_dist = 0.0;

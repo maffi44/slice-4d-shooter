@@ -145,6 +145,7 @@ impl Renderer {
         target_frame_duration: f64,
         raymarch_target_texture_scale_factor: f32,
         sky_box_name: &str,
+        it_is_2d_3d_example: bool,
     ) -> Renderer {
         let size = window.inner_size();
 
@@ -244,7 +245,17 @@ impl Renderer {
         let raymarch_shader = unsafe {device.create_shader_module_trusted(
             wgpu::ShaderModuleDescriptor {
                 label: Some("Raymarch Shader"),
-                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/raymarch_shader.wgsl").into())
+                source:
+                {
+                    if it_is_2d_3d_example
+                    {
+                        wgpu::ShaderSource::Wgsl(include_str!("shaders/raymarch_shader_for_2d_3d_example.wgsl").into())
+                    }
+                    else
+                    {
+                        wgpu::ShaderSource::Wgsl(include_str!("shaders/raymarch_shader.wgsl").into())
+                    }
+                }
             },
             ShaderRuntimeChecks::unchecked()
         )};
@@ -309,29 +320,29 @@ impl Renderer {
 
         log::info!("renderer: wgpu shaders init");
 
-        let static_normal_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("static_normal_shapes_buffer"),
-            contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.normal.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let static_normal_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("static_normal_shapes_buffer"),
+        //     contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.normal.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
-        let static_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("static_stickiness_shapes_buffer"),
-            contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.stickiness.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let static_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("static_stickiness_shapes_buffer"),
+        //     contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.stickiness.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
-        let static_negative_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("static_negative_shapes_buffer"),
-            contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.negative.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let static_negative_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("static_negative_shapes_buffer"),
+        //     contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.negative.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
-        let static_neg_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("static_neg_stickiness_shapes_buffer"),
-            contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.neg_stickiness.as_slice()),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        // let static_neg_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        //     label: Some("static_neg_stickiness_shapes_buffer"),
+        //     contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.neg_stickiness.as_slice()),
+        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        // });
 
         let other_static_data = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("other_static_data"),
@@ -811,6 +822,10 @@ impl Renderer {
             window.inner_size().height as f32,
             &other_dynamic_data_buffer,
             &player_forms_data_buffer,
+            &dynamic_normal_shapes_buffer,
+            &dynamic_stickiness_shapes_buffer,
+            &dynamic_negative_shapes_buffer,
+            &dynamic_neg_stickiness_shapes_buffer,
         );
 
         let (

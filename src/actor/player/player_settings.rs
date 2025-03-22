@@ -198,9 +198,9 @@ fn parse_json_into_settings(json_settigs: Value, json_settigs2: Value) -> Player
     };
     let jetpak_w_speed = {
         object
-            .get("player_jetpak_w_speed")
+            .get("player_jetpack_w_speed")
             .unwrap_or_else(||{
-                object2.get("player_jetpak_w_speed").unwrap()
+                object2.get("player_jetpack_w_speed").unwrap()
             })
             .as_f64()
             .expect("player_jetpak_w_speed is not float value in settings.json")

@@ -6,13 +6,13 @@ use crate::{
     },
     engine::{
         physics::physics_system_data::ShapeType,
-        render::render_data::{
+        render::{camera::Camera, render_data::{
             Shape,
             ShapesArrays,
             ShapesArraysMetadata,
             SphericalArea,
             SphericalAreasMetadata
-        },
+        }},
         time::TimeSystem,
         world::{
             static_object::{VisualWave, VolumeArea},
@@ -286,7 +286,7 @@ impl DynamicRenderData {
         &mut self,
         sd: &StaticRenderData,
 
-        player: &Player,
+        camera: &Camera,
         clip_planes: (Vec4, Vec4, Vec4, Vec4),
         stickiness_value: f32,
 
@@ -352,7 +352,7 @@ impl DynamicRenderData {
         for shape in &sd.cubes
         {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
                 clip_planes,
@@ -366,7 +366,7 @@ impl DynamicRenderData {
         while let Some(shape) = self.frame_cubes_buffer.normal.pop()
         {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
                 clip_planes,
@@ -384,7 +384,7 @@ impl DynamicRenderData {
 
         for shape in &sd.spheres {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
@@ -397,7 +397,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_spheres_buffer.normal.pop() {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
@@ -415,7 +415,7 @@ impl DynamicRenderData {
 
         for shape in &sd.sph_cubes {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::new(
                     (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
@@ -433,7 +433,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_sph_cubes_buffer.normal.pop() {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::new(
                     (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
@@ -473,7 +473,7 @@ impl DynamicRenderData {
 
         for shape in &sd.s_cubes {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
                 clip_planes,
@@ -486,7 +486,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_cubes_buffer.stickiness.pop() {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
                 clip_planes,
@@ -504,7 +504,7 @@ impl DynamicRenderData {
 
         for shape in &sd.s_spheres {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
@@ -517,7 +517,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_spheres_buffer.stickiness.pop() {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
@@ -535,7 +535,7 @@ impl DynamicRenderData {
 
         for shape in &sd.s_sph_cubes {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::new(
                     (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
@@ -553,7 +553,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_sph_cubes_buffer.stickiness.pop() {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::new(
                     (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
@@ -595,7 +595,7 @@ impl DynamicRenderData {
 
         for shape in &sd.neg_cubes {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
                 clip_planes,
@@ -608,7 +608,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_cubes_buffer.negative.pop() {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
                 clip_planes,
@@ -626,7 +626,7 @@ impl DynamicRenderData {
 
         for shape in &sd.neg_spheres {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
@@ -639,7 +639,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
@@ -657,7 +657,7 @@ impl DynamicRenderData {
 
         for shape in &sd.neg_sph_cubes {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::new(
                     (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
@@ -675,7 +675,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_sph_cubes_buffer.negative.pop() {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::new(
                     (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
@@ -717,7 +717,7 @@ impl DynamicRenderData {
 
         for shape in &sd.s_neg_cubes {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
                 clip_planes,
@@ -730,7 +730,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_cubes_buffer.neg_stickiness.pop() {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
                 clip_planes,
@@ -748,7 +748,7 @@ impl DynamicRenderData {
 
         for shape in &sd.s_neg_spheres {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
@@ -761,7 +761,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_spheres_buffer.neg_stickiness.pop() {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 shape.size[0] + shape.roundness + stickiness_value*PI,
                 clip_planes,
@@ -779,7 +779,7 @@ impl DynamicRenderData {
 
         for shape in &sd.s_neg_sph_cubes {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::new(
                     (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
@@ -797,7 +797,7 @@ impl DynamicRenderData {
 
         while let Some(shape) = self.frame_sph_cubes_buffer.neg_stickiness.pop() {
             if check_if_player_see_cube(
-                player,
+                camera,
                 Vec4::from_array(shape.pos),
                 Vec4::new(
                     (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
@@ -876,7 +876,7 @@ impl DynamicRenderData {
 
     fn update_spherical_areas_and_get_meatadata(
         &mut self,
-        player: &Player,
+        camera: &Camera,
         clip_planes: (Vec4, Vec4, Vec4, Vec4),
         stickiness_value: f32,
     ) -> (SphericalAreasMetadata, u32, u32)
@@ -895,7 +895,7 @@ impl DynamicRenderData {
 
         while let Some(area) = self.frame_coloring_areas_buffer.pop() {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(area.pos),
                 area.radius,
                 clip_planes,
@@ -913,7 +913,7 @@ impl DynamicRenderData {
 
         while let Some(area) = self.frame_spherical_volume_areas_buffer.pop() {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(area.pos),
                 area.radius,
                 clip_planes,
@@ -932,7 +932,7 @@ impl DynamicRenderData {
 
         while let Some(area) = self.frame_waves_buffer.pop() {
             if check_if_player_see_sphere(
-                player,
+                camera,
                 Vec4::from_array(area.pos),
                 area.radius,
                 clip_planes,
@@ -977,7 +977,7 @@ impl DynamicRenderData {
 
     fn update_player_forms_buffers_and_get_amount(
         &mut self,
-        player: &Player,
+        camera: &Camera,
         clip_planes: (Vec4, Vec4, Vec4, Vec4),
         stickiness_value: f32,
     ) -> u32
@@ -1005,13 +1005,10 @@ impl DynamicRenderData {
     ) {
         self.clear_all_frame_buffers();
 
-        let player = {
-            match world.actors.get(&world.main_player_id).expect("World have wrong main_player id")
-            {
-                ActorWrapper::Player(player) => player,
-                _ => panic!("World's main_player is not a Player")
-            }
-        };
+        let main_camera =  world.actors
+            .get(&world.main_player_id)
+            .expect("World have wrong main_player id")
+            .get_camera();
 
         let screen_aspect = {
             let size = window.inner_size();
@@ -1019,21 +1016,21 @@ impl DynamicRenderData {
         };
 
 
-        let clip_planes = get_view_clip_planes(player, screen_aspect);
+        let clip_planes = get_view_clip_planes(&main_camera, screen_aspect);
 
         let dyn_bb = self.get_data_from_actors_visual_elements(world, static_bounding_box);
 
         let shapes_arrays_metadata = self.update_dynamic_shapes_buffers_and_get_metadata(
             static_data,
 
-            player,
+            &main_camera,
             clip_planes,
             world.level.all_shapes_stickiness_radius
         );
 
         let (spherical_areas_meatadata, waves_start, waves_amount) =
             self.update_spherical_areas_and_get_meatadata(
-                player,
+                &main_camera,
                 clip_planes,
                 world.level.all_shapes_stickiness_radius
             );
@@ -1041,7 +1038,7 @@ impl DynamicRenderData {
         let beams_areas_amount = self.update_beams_buffers_and_get_amount();
 
         let player_forms_amount = self.update_player_forms_buffers_and_get_amount(
-            player,
+            &main_camera,
             clip_planes,
             world.level.all_shapes_stickiness_radius
         );
@@ -1072,10 +1069,19 @@ fn get_players_screen_effects(world: &World) -> &PlayerScreenEffects {
         .expect("Render system ERROR: World have not main player on main_player_id");
 
     {
-        if let ActorWrapper::Player(player) = main_player {
-            player.get_player_visual_effects()
-        } else {
-            panic!("Render system ERROR: actor with main_player_id is not a Player")
+        match main_player {
+            ActorWrapper::Player(player) =>
+            {
+                player.get_player_visual_effects()
+            }
+            ActorWrapper::PlayerFor2d3dExample(player) =>
+            {
+                player.get_player_visual_effects()
+            }
+            _ =>
+            {
+                panic!("Render system ERROR: actor with main_player_id is not a Player")
+            }
         }
     }
 }
@@ -1099,7 +1105,7 @@ pub struct OtherDynamicData {
 
     death_screen_effect: f32,
     getting_damage_screen_effect: f32,
-    stickiness: f32,
+    splited_screen_in_2d_3d_example: f32,
     screen_aspect: f32,
     time: f32,
 
@@ -1122,43 +1128,25 @@ impl OtherDynamicData {
         players_screen_effects: &PlayerScreenEffects,
         frame_bounding_box: BoundingBox,
     ) {
-
-        let cam_pos;
-        let cam_zw_rot;
-        let cam_zy_rot;
-        let cam_zx_rot;
-
         // let explore_w_pos;
         // let explore_w_coef;
 
         self.bouding_box_pos_side = frame_bounding_box.pos_surfs.to_array();
         self.bouding_box_neg_side = frame_bounding_box.neg_surfs.to_array();
-        
-        if let Some(actor) = world.actors.get(&world.main_player_id) {
-            if let ActorWrapper::Player(main_player) = actor {
-                cam_pos = main_player.get_eyes_position();
-                
-                cam_zw_rot = main_player.get_zw_rotation_matrix().to_cols_array();
-                cam_zy_rot = main_player.get_zy_rotation_matrix().to_cols_array();
-                cam_zx_rot = main_player.get_zx_rotation_matrix().to_cols_array();        
 
-                // explore_w_pos = main_player.get_explore_w_position();
-                // explore_w_coef = main_player.get_explore_w_coefficient();
-            } else {
-                panic!("main camera is connected to the actor that is not a Player")
-            }
-        } else {
-            panic!("main camera is not connected to the player")
-        }
+        let camera = world.actors
+            .get(&world.main_player_id)
+            .expect("World have not main player Actor")
+            .get_camera();
 
         // self.explore_w_pos = explore_w_pos;
         // self.explore_w_coef = explore_w_coef;
 
         self.camera_data = CameraUniform {
-            cam_pos: cam_pos.to_array(),
-            cam_zw_rot: cam_zw_rot,
-            cam_zy_rot: cam_zy_rot,
-            cam_zx_rot: cam_zx_rot,
+            cam_pos: camera.get_position().to_array(),
+            cam_zw_rot: camera.get_zw_rotation_matrix().to_cols_array(),
+            cam_zy_rot: camera.get_zy_rotation_matrix().to_cols_array(),
+            cam_zx_rot: camera.get_zx_rotation_matrix().to_cols_array(),
         };
 
         self.dynamic_shapes_arrays_metadata = shapes_arrays_metadata;
@@ -1215,7 +1203,7 @@ impl Default for OtherDynamicData {
 
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
-            stickiness: 0.5,
+            splited_screen_in_2d_3d_example: 0.5,
             screen_aspect: 1.0,
             time: 0.0,
             bouding_box_pos_side: [0.0;4],
@@ -1288,7 +1276,7 @@ impl SpecificShapeBuffers {
 
 
 pub fn check_if_player_see_cube(
-    player: &Player,
+    camera: &Camera,
     cube_pos: Vec4,
     cube_size: Vec4,
     planes: (Vec4, Vec4, Vec4, Vec4),
@@ -1304,28 +1292,28 @@ pub fn check_if_player_see_cube(
     
     cube_is_above_or_intersect_the_plane
     (
-        cube_pos - player.get_eyes_position(),
+        cube_pos - camera.get_position(),
         cube_size,
         up_plane
     )
     &&
     cube_is_above_or_intersect_the_plane
     (
-        cube_pos - player.get_eyes_position(),
+        cube_pos - camera.get_position(),
         cube_size,
         down_plane
     )
     &&
     cube_is_above_or_intersect_the_plane
     (
-        cube_pos - player.get_eyes_position(),
+        cube_pos - camera.get_position(),
         cube_size,
         left_plane
     )
     &&
     cube_is_above_or_intersect_the_plane
     (
-        cube_pos - player.get_eyes_position(),
+        cube_pos - camera.get_position(),
         cube_size,
         right_plane
     )
@@ -1333,7 +1321,7 @@ pub fn check_if_player_see_cube(
 
 
 pub fn check_if_player_see_sphere(
-    player: &Player,
+    camera: &Camera,
     sphere_pos: Vec4,
     sphere_radius: f32,
     planes: (Vec4, Vec4, Vec4, Vec4),
@@ -1348,28 +1336,28 @@ pub fn check_if_player_see_sphere(
 
     sphere_is_above_or_intersect_the_plane
     (
-        sphere_pos - player.get_eyes_position(),
+        sphere_pos - camera.get_position(),
         sphere_radius,
         up_plane
     )
     &&
     sphere_is_above_or_intersect_the_plane
     (
-        sphere_pos - player.get_eyes_position(),
+        sphere_pos - camera.get_position(),
         sphere_radius,
         down_plane
     )
     &&
     sphere_is_above_or_intersect_the_plane
     (
-        sphere_pos - player.get_eyes_position(),
+        sphere_pos - camera.get_position(),
         sphere_radius,
         left_plane
     )
     &&
     sphere_is_above_or_intersect_the_plane
     (
-        sphere_pos - player.get_eyes_position(),
+        sphere_pos - camera.get_position(),
         sphere_radius,
         right_plane
     )
@@ -1440,15 +1428,15 @@ pub fn sphere_is_above_or_intersect_the_plane
 
 
 pub fn get_view_clip_planes(
-    player: &Player,
+    camera: &Camera,
     screen_aspect: f32,
 ) -> (Vec4, Vec4, Vec4, Vec4)
 {
-    let cam_zw_rot = player.get_zw_rotation_matrix();
-    let cam_zy_rot = player.get_zy_rotation_matrix();
-    let cam_zx_rot = player.get_zx_rotation_matrix();
+    let cam_zw_rot = camera.get_zw_rotation_matrix();
+    let cam_zy_rot = camera.get_zy_rotation_matrix();
+    let cam_zx_rot = camera.get_zx_rotation_matrix();
 
-    let rotation = player.get_rotation_matrix().inverse();
+    let rotation = camera.get_rotation_matrix().inverse();
     
     let up_clip_plane = Vec4::new(0.0, -1.428573, -1.0, 0.0).normalize();
     let up_clip_plane = rotation * up_clip_plane;

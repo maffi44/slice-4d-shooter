@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::File, io::Read};
+use std::{collections::HashMap, fmt::format, fs::File, io::Read};
 
 use crate::{
     actor::{
@@ -111,13 +111,13 @@ impl Level {
     }
 
 
-    pub async fn load_level() -> (Level, Vec<ActorWrapper>)
+    pub async fn load_level(level_name: String) -> (Level, Vec<ActorWrapper>)
     {
         #[cfg(target_arch = "wasm32")]
         {
             let window = web_sys::window().unwrap();
         
-            let target = "http://127.0.0.1:5500/src/assets/maps/map.json";
+            let target = format!("http://127.0.0.1:5500/src/assets/maps/{}.json", level_name);
             
             let promise = window.fetch_with_str(target);
         
@@ -160,11 +160,15 @@ impl Level {
 
                 if file.is_err()
                 {
-                    file = File::open("./src/assets/maps/map.json");
+                    file = File::open(
+                        format!("./src/assets/maps/{}.json", level_name)
+                    )
                 }
                 if file.is_err()
                 {
-                    file = File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/map.json");
+                    file = File::open(
+                        format!("/home/maffi/Dream/web-engine4d/src/assets/maps/{}.json", level_name)
+                    );
                 }
 
                 if file.is_ok()

@@ -1,6 +1,3 @@
-pub mod player_input_master;
-pub mod player_settings;
-
 use client_server_protocol::{
     NetCommand,
     NetMessageToPlayer,
@@ -18,6 +15,7 @@ use crate::{
             Device,
             DeviceType
         },
+        player::{player_input_master, player_settings, PlayerInnerState, PlayerMessage, PlayerMovingState, PlayerScreenEffects},
         players_doll::PlayerDollInputState,
         Actor,
         ActorID,
@@ -67,110 +65,110 @@ use super::{
     device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, PhysicsMessages
 };
 
-#[derive(Clone)]
-pub enum PlayerMovingState
-{
-    // f32 - lock position on w axis
-    MovingPerpendicularW(f32),
-    // f32 - lock position on z axis
-    MovingParallelW(f32),
-    // f32 - how much time moving free player have
-    MovingFree(f32)
-}
+// #[derive(Clone)]
+// pub enum PlayerMovingState
+// {
+//     // f32 - lock position on w axis
+//     MovingPerpendicularW(f32),
+//     // f32 - lock position on z axis
+//     MovingParallelW(f32),
+//     // f32 - how much time moving free player have
+//     MovingFree(f32)
+// }
 
-pub struct PlayerInnerState {
-    pub team: Team,
-    pub collider: KinematicCollider,
-    pub collider_for_others: Vec<PlayersDollCollider>,
-    pub transform: Transform,
-    pub hp: f32,
-    pub is_alive: bool,
-    pub is_enable: bool,
-    pub crosshair_target_size: f32,
-    pub crosshair_size: f32,
+// pub struct PlayerInnerState {
+//     pub team: Team,
+//     pub collider: KinematicCollider,
+//     pub collider_for_others: Vec<PlayersDollCollider>,
+//     pub transform: Transform,
+//     pub hp: f32,
+//     pub is_alive: bool,
+//     pub is_enable: bool,
+//     pub crosshair_target_size: f32,
+//     pub crosshair_size: f32,
 
-    pub zw_rotation: Mat4,
-    pub zy_rotation: Mat4,
-    pub zx_rotation: Mat4,
+//     pub zw_rotation: Mat4,
+//     pub zy_rotation: Mat4,
+//     pub zx_rotation: Mat4,
 
-    pub is_time_after_some_team_win: bool,
-    pub amount_of_move_w_bonuses_do_i_have: u32,
-    pub player_moving_state: PlayerMovingState,
+//     pub is_time_after_some_team_win: bool,
+//     pub amount_of_move_w_bonuses_do_i_have: u32,
+//     pub player_moving_state: PlayerMovingState,
 
-    pub blue_map_w_level: f32,
-    pub red_map_w_level: f32,
+//     pub blue_map_w_level: f32,
+//     pub red_map_w_level: f32,
 
-    pub friction_on_air: f32,
-    // pub weapon_offset: Vec4,
-}
+//     pub friction_on_air: f32,
+//     // pub weapon_offset: Vec4,
+// }
 
 
-impl PlayerInnerState {
-    pub fn new(
-        transform: Transform,
-        settings: &PlayerSettings,
-        is_alive: bool,
-        is_enable: bool,
-        blue_map_w_level: f32,
-        red_map_w_level: f32,
-    ) -> Self {
+// impl PlayerInnerState {
+//     pub fn new(
+//         transform: Transform,
+//         settings: &PlayerSettings,
+//         is_alive: bool,
+//         is_enable: bool,
+//         blue_map_w_level: f32,
+//         red_map_w_level: f32,
+//     ) -> Self {
 
-        let collider_for_others = {
-            let mut vec = Vec::with_capacity(1);
+//         let collider_for_others = {
+//             let mut vec = Vec::with_capacity(1);
             
-            vec.push(PlayersDollCollider {
-                position: Vec4::ZERO,
-                radius: settings.collider_radius,
-                friction: 0_f32,
-                bounce_rate: 0_f32,
-                actors_id: None,
-                weapon_offset: Vec4::ZERO,
-                actors_team: DEFAULT_TEAM,
-            });
-            vec
-        };
+//             vec.push(PlayersDollCollider {
+//                 position: Vec4::ZERO,
+//                 radius: settings.collider_radius,
+//                 friction: 0_f32,
+//                 bounce_rate: 0_f32,
+//                 actors_id: None,
+//                 weapon_offset: Vec4::ZERO,
+//                 actors_team: DEFAULT_TEAM,
+//             });
+//             vec
+//         };
 
-        PlayerInnerState {
-            team: DEFAULT_TEAM,
-            collider: KinematicCollider::new(
-                settings.max_speed,
-                settings.max_accel,
-                settings.collider_radius,
-                settings.friction_on_air,
-                // settings.friction_on_ground,
-            ),
-            collider_for_others,
-            transform,
-            hp: 0.0,
-            is_alive,
-            is_enable,
-            crosshair_target_size: 0.04,
-            crosshair_size: 0.04,
+//         PlayerInnerState {
+//             team: DEFAULT_TEAM,
+//             collider: KinematicCollider::new(
+//                 settings.max_speed,
+//                 settings.max_accel,
+//                 settings.collider_radius,
+//                 settings.friction_on_air,
+//                 // settings.friction_on_ground,
+//             ),
+//             collider_for_others,
+//             transform,
+//             hp: 0.0,
+//             is_alive,
+//             is_enable,
+//             crosshair_target_size: 0.04,
+//             crosshair_size: 0.04,
 
-            zw_rotation: Mat4::IDENTITY,
-            zy_rotation: Mat4::IDENTITY,
-            zx_rotation: Mat4::IDENTITY,
+//             zw_rotation: Mat4::IDENTITY,
+//             zy_rotation: Mat4::IDENTITY,
+//             zx_rotation: Mat4::IDENTITY,
 
-            is_time_after_some_team_win: false,
-            amount_of_move_w_bonuses_do_i_have: 0u32,
-            player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
+//             is_time_after_some_team_win: false,
+//             amount_of_move_w_bonuses_do_i_have: 0u32,
+//             player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
 
-            blue_map_w_level,
-            red_map_w_level,
-            friction_on_air: settings.friction_on_air,
-        }
-    }
+//             blue_map_w_level,
+//             red_map_w_level,
+//             friction_on_air: settings.friction_on_air,
+//         }
+//     }
 
-    pub fn get_eyes_offset(&self) -> Vec4
-    {
-        Vec4::Y * self.collider.get_collider_radius() * 0.7
-    }
+//     pub fn get_eyes_offset(&self) -> Vec4
+//     {
+//         Vec4::Y * self.collider.get_collider_radius() * 0.7
+//     }
 
-    pub fn get_eyes_position(&self) -> Vec4
-    {
-        self.transform.get_position() + self.get_eyes_offset()
-    }
-}
+//     pub fn get_eyes_position(&self) -> Vec4
+//     {
+//         self.transform.get_position() + self.get_eyes_offset()
+//     }
+// }
 
 
 #[derive(PartialEq)]
@@ -189,18 +187,18 @@ pub enum PlayersDeviceSlotNumber {
     Fourth,
 }
 
-pub struct PlayerScreenEffects {
-    pub w_scanner_is_active: bool,
-    pub w_scanner_radius: f32,
-    pub w_scanner_ring_intesity: f32,
-    pub w_scanner_enemies_intesity: f32,
+// pub struct PlayerScreenEffects {
+//     pub w_scanner_is_active: bool,
+//     pub w_scanner_radius: f32,
+//     pub w_scanner_ring_intesity: f32,
+//     pub w_scanner_enemies_intesity: f32,
 
-    pub death_screen_effect: f32,
-    pub getting_damage_screen_effect: f32,
-}
+//     pub death_screen_effect: f32,
+//     pub getting_damage_screen_effect: f32,
+// }
 
 
-pub struct Player {
+pub struct PlayerFor2d3dExample {
     id: Option<ActorID>,
 
     inner_state: PlayerInnerState,
@@ -308,30 +306,30 @@ const DURATION_OF_MOVING_FREE_BY_BONUS: f32 = 8.0;
 
 pub const PLAYER_FREE_MOVING_SPEED_MULT: f32 = 0.6;
 
-#[derive(Clone)]
-pub enum PlayerMessage {
-    DealDamageAndAddForce(
-        // damage
-        u32,
-        //force
-        Vec4,
-        // pos of impact (for spawn get damage effect)
-        Vec4,
-        // team damage from
-        Team,
-    ),
-    NewPeerConnected(u128),
-    Telefrag,
-    DieImmediately,
-    DieSlowly,
-    SetNewTeam(
-        // new team you have joined
-        Team, 
-    )
-}
+// #[derive(Clone)]
+// pub enum PlayerMessage {
+//     DealDamageAndAddForce(
+//         // damage
+//         u32,
+//         //force
+//         Vec4,
+//         // pos of impact (for spawn get damage effect)
+//         Vec4,
+//         // team damage from
+//         Team,
+//     ),
+//     NewPeerConnected(u128),
+//     Telefrag,
+//     DieImmediately,
+//     DieSlowly,
+//     SetNewTeam(
+//         // new team you have joined
+//         Team, 
+//     )
+// }
 
 
-impl Actor for Player {
+impl Actor for PlayerFor2d3dExample {
 
     fn get_camera(&self) -> Camera {
         Camera {
@@ -928,67 +926,67 @@ impl Actor for Player {
             }   
         };
 
-        let crosshair = ui_system.get_mut_ui_element(&UIElementType::Crosshair);
+        // let crosshair = ui_system.get_mut_ui_element(&UIElementType::Crosshair);
 
-        if let UIElement::Image(crosshair) = crosshair {
-            crosshair.ui_data.rect.size = RectSize::LockedHeight(self.inner_state.crosshair_size);
-        }
+        // if let UIElement::Image(crosshair) = crosshair {
+        //     crosshair.ui_data.rect.size = RectSize::LockedHeight(self.inner_state.crosshair_size);
+        // }
 
-        self.inner_state.crosshair_target_size = self.inner_state.crosshair_target_size
-            .min(CROSSHAIR_MAX_SIZE); 
+        // self.inner_state.crosshair_target_size = self.inner_state.crosshair_target_size
+        //     .min(CROSSHAIR_MAX_SIZE); 
 
-        if self.inner_state.crosshair_size < self.inner_state.crosshair_target_size {
+        // if self.inner_state.crosshair_size < self.inner_state.crosshair_target_size {
 
-            self.inner_state.crosshair_size += CROSSHAIR_INCREASING_SPEED*delta;
+        //     self.inner_state.crosshair_size += CROSSHAIR_INCREASING_SPEED*delta;
 
-            if self.inner_state.crosshair_size >= self.inner_state.crosshair_target_size {
-                self.inner_state.crosshair_size = self.inner_state.crosshair_target_size;
+        //     if self.inner_state.crosshair_size >= self.inner_state.crosshair_target_size {
+        //         self.inner_state.crosshair_size = self.inner_state.crosshair_target_size;
                 
-                self.inner_state.crosshair_target_size = CROSSHAIR_MIN_SIZE;
-            }
-        } else {
-            self.inner_state.crosshair_size =
-                (self.inner_state.crosshair_size - CROSSHAIR_DECREASING_SPEED*delta)
-                .max(CROSSHAIR_MIN_SIZE);
-        }
+        //         self.inner_state.crosshair_target_size = CROSSHAIR_MIN_SIZE;
+        //     }
+        // } else {
+        //     self.inner_state.crosshair_size =
+        //         (self.inner_state.crosshair_size - CROSSHAIR_DECREASING_SPEED*delta)
+        //         .max(CROSSHAIR_MIN_SIZE);
+        // }
 
-        if self.show_crosshaier_hit_mark_timer > 0.0
-        {
-            let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
+        // if self.show_crosshaier_hit_mark_timer > 0.0
+        // {
+        //     let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
     
-            *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+        //     *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
-            self.show_crosshaier_hit_mark_timer -= delta;
-        }
-        else
-        {
-            let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
+        //     self.show_crosshaier_hit_mark_timer -= delta;
+        // }
+        // else
+        // {
+        //     let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
     
-            *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-        }
+        //     *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+        // }
 
-        match self.inner_state.amount_of_move_w_bonuses_do_i_have
-        {
-            0 =>
-            {
-                self.fisrt_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
-                self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
-            }
+        // match self.inner_state.amount_of_move_w_bonuses_do_i_have
+        // {
+        //     0 =>
+        //     {
+        //         self.fisrt_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
+        //         self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
+        //     }
 
-            1 =>
-            {
-                self.fisrt_move_w_bonus_transparency_level = 1.0;
-                self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
-            }
+        //     1 =>
+        //     {
+        //         self.fisrt_move_w_bonus_transparency_level = 1.0;
+        //         self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
+        //     }
 
-            2 =>
-            {
-                self.fisrt_move_w_bonus_transparency_level = 1.0;
-                self.second_move_w_bonus_transparency_level = 1.0;
-            }
+        //     2 =>
+        //     {
+        //         self.fisrt_move_w_bonus_transparency_level = 1.0;
+        //         self.second_move_w_bonus_transparency_level = 1.0;
+        //     }
 
-            _ => panic!("Player have move w bonuses > 2")
-        }
+        //     _ => panic!("Player have move w bonuses > 2")
+        // }
 
         self.screen_effects.getting_damage_screen_effect -= delta * GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED;
 
@@ -1033,7 +1031,7 @@ impl Actor for Player {
             self.time_from_previos_second_mouse_click += delta;
 
             if input.second_mouse.is_action_pressed() {
-                zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
+                // zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
                 xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
 
                 // xz = input.mouse_axis.x + xz;
@@ -1046,34 +1044,34 @@ impl Actor for Player {
                 
                 // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
                 // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-                match &mut self.inner_state.player_moving_state
-                {
-                    PlayerMovingState::MovingPerpendicularW(_) =>
-                    {
-                        if !self.holding_player_rotation_along_w
-                        {
-                            zw *= 1.0 - delta * 2.8;
-                            if zw.abs() < 0.0001 {
-                                zw = 0.0;
-                            }
-                        }
-                    }
-                    PlayerMovingState::MovingParallelW(_) =>
-                    {
-                        if !self.holding_player_rotation_along_w
-                        {
-                            // *dir = if *dir < 0.0 {-1.0} else {1.0};
+                // match &mut self.inner_state.player_moving_state
+                // {
+                //     PlayerMovingState::MovingPerpendicularW(_) =>
+                //     {
+                //         if !self.holding_player_rotation_along_w
+                //         {
+                //             zw *= 1.0 - delta * 2.8;
+                //             if zw.abs() < 0.0001 {
+                //                 zw = 0.0;
+                //             }
+                //         }
+                //     }
+                //     PlayerMovingState::MovingParallelW(_) =>
+                //     {
+                //         if !self.holding_player_rotation_along_w
+                //         {
+                //             // *dir = if *dir < 0.0 {-1.0} else {1.0};
     
-                            zw = zw.lerp(PI/2.0, delta * 2.8);
-                            if PI/2.0 - zw.abs() < 0.0001 {
-                                zw = PI/2.0;
-                            }
-                        }
-                    }
-                    PlayerMovingState::MovingFree(_) => {}
-                }
+                //             zw = zw.lerp(PI/2.0, delta * 2.8);
+                //             if PI/2.0 - zw.abs() < 0.0001 {
+                //                 zw = PI/2.0;
+                //             }
+                //         }
+                //     }
+                //     PlayerMovingState::MovingFree(_) => {}
+                // }
 
-                xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
                 yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
             }
             // if self.player_settings.rotation_along_w_standard_method {
@@ -1589,30 +1587,40 @@ impl Actor for Player {
     
             let mut movement_vec = Vec4::ZERO;
     
-            if input.move_forward.is_action_pressed() {
+            // if input.move_forward.is_action_pressed() {
+
+            //     movement_vec += Vec4::NEG_Z;
+
+            //     player_doll_input_state.move_forward = true;
+            // }
+    
+            // if input.move_backward.is_action_pressed() {
+                
+            //     movement_vec += Vec4::Z;
+
+            //     player_doll_input_state.move_backward = true;
+            // }
+    
+            if input.move_right.is_action_pressed() {
 
                 movement_vec += Vec4::NEG_Z;
 
                 player_doll_input_state.move_forward = true;
-            }
-    
-            if input.move_backward.is_action_pressed() {
-                
-                movement_vec += Vec4::Z;
 
-                player_doll_input_state.move_backward = true;
-            }
-    
-            if input.move_right.is_action_pressed() {
-                movement_vec += Vec4::X;
+                // movement_vec += Vec4::X;
 
-                player_doll_input_state.move_right = true;
+                // player_doll_input_state.move_right = true;
             }
     
             if input.move_left.is_action_pressed() {
-                movement_vec += Vec4::NEG_X;
+
+                movement_vec += Vec4::Z;
+
+                player_doll_input_state.move_backward = true;
+
+                // movement_vec += Vec4::NEG_X;
                 
-                player_doll_input_state.move_left = true;
+                // player_doll_input_state.move_left = true;
             }
     
             if let Some(vec) = movement_vec.try_normalize() {
@@ -1655,7 +1663,7 @@ impl Actor for Player {
             if input.move_w_up.is_action_just_pressed() {
 
                 // w movement first variant
-                self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
+                self.inner_state.collider.add_force(Vec4::X * self.player_settings.jump_w_speed);
 
                 if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
                 {
@@ -1916,9 +1924,9 @@ impl Actor for Player {
             if input.w_up.is_action_pressed() {
 
                 if self.inner_state.collider.is_enable {
-                    self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
+                    self.inner_state.collider.add_force(Vec4::X * self.player_settings.jetpak_w_speed);
                 } else {
-                    self.no_collider_veclocity += Vec4::W * self.player_settings.jetpak_w_speed;
+                    self.no_collider_veclocity += Vec4::X * self.player_settings.jetpak_w_speed;
                 }
             }
     
@@ -1926,9 +1934,9 @@ impl Actor for Player {
             if input.w_down.is_action_pressed() {
 
                 if self.inner_state.collider.is_enable {
-                    self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
+                    self.inner_state.collider.add_force(Vec4::NEG_X * self.player_settings.jetpak_w_speed);
                 } else {
-                    self.no_collider_veclocity += Vec4::NEG_W * self.player_settings.jetpak_w_speed;
+                    self.no_collider_veclocity += Vec4::NEG_X * self.player_settings.jetpak_w_speed;
                 }
             }
 
@@ -2008,7 +2016,7 @@ impl Actor for Player {
                             // );
 
                             // w gravity first variant
-                            self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.gravity_w_speed * delta);
+                            self.inner_state.collider.add_force(Vec4::NEG_X * self.player_settings.gravity_w_speed * delta);
 
                             self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
 
@@ -2347,7 +2355,7 @@ impl Actor for Player {
 
 
 
-impl Player {
+impl PlayerFor2d3dExample {
 
     pub fn new(
         master: InputMaster,
@@ -2395,7 +2403,7 @@ impl Player {
 
         let player_radius = player_settings.collider_radius;
         
-        Player {
+        PlayerFor2d3dExample {
             id: None,
 
             inner_state: PlayerInnerState::new(

@@ -118,10 +118,27 @@ struct ScannerData {
     // hits: array<vec4<f32>, 16>,
 }
 
+struct Shape {
+    pos: vec4<f32>,
+    size: vec4<f32>,
+    material: i32,
+    empty_bytes1: u32,
+    empty_bytes2: u32,
+    roundness: f32,
+}
+
+const MAX_DIST: f32 = 150.0;
+
+
 @group(0) @binding(0) var<uniform> rect_transform: RectTransformUniform;
 @group(0) @binding(1) var<uniform> dynamic_data: OtherDynamicData;
 @group(0) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
 @group(0) @binding(3) var<uniform> scanner_data: ScannerData;
+
+@group(0) @binding(4) var<uniform> dyn_normal_shapes: array<Shape, 256>;
+@group(0) @binding(5) var<uniform> dyn_negatives_shapes: array<Shape, 256>;
+@group(0) @binding(6) var<uniform> dyn_stickiness_shapes: array<Shape, 256>;
+@group(0) @binding(7) var<uniform> dyn_neg_stickiness_shapes: array<Shape, 256>;
 
 
 
@@ -169,7 +186,7 @@ fn vs_main(
     return out;
 }
 
-const MAX_SCANNER_RADIUS: f32 = 43.0; 
+const MAX_SCANNER_RADIUS: f32 = 21.0; 
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
@@ -193,6 +210,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let ring_a = pow(1.0-abs(dist_to_cntr-sc_ring_radius), 13.0)*dynamic_data.w_scanner_ring_intesity;
 
     col.a += ring_a;
+
+    let map_a = get_map_cut_col(uv_pos);
+
+    col.a += map_a;
+
 
     var en_a = 0.0;
 
@@ -218,8 +240,240 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     col.a += en_a;
     col.g -= en_a;
     col.b -= en_a;
-
+    
     col.a *= rect_transform.transparency;
 
+
     return col;
+}
+
+fn get_map_cut_col(uv: vec2<f32>) -> f32
+{
+    var pos = vec4(0.0);
+
+    if scanner_data.orientation == 0
+    {
+        pos = vec4(uv.x*MAX_SCANNER_RADIUS, 0.0, uv.y*MAX_SCANNER_RADIUS, 0.0);
+
+        pos *= dynamic_data.camera_data.cam_zx_rot;
+    }
+    else
+    {
+        pos = vec4(0.0, 0.0, uv.x*MAX_SCANNER_RADIUS, -uv.y*MAX_SCANNER_RADIUS);
+
+        pos *= dynamic_data.camera_data.cam_zx_rot;
+    }
+
+    pos += dynamic_data.camera_data.cam_pos;
+
+    let d = map(pos);
+
+    let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0) + clamp(-d*10.0,0.0,1.0)*0.2;
+
+    return c;
+}
+
+fn map(p: vec4<f32>) -> f32 {
+    var d = MAX_DIST*2.0;
+
+    // static normal shapes
+    // if st_noramls_intersected {
+        // for (var i = static_data.shapes_arrays_metadata.cubes_start; i < static_data.shapes_arrays_metadata.cubes_amount + static_data.shapes_arrays_metadata.cubes_start; i++) {
+        //     d = min(d, sd_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.spheres_start; i < static_data.shapes_arrays_metadata.spheres_amount + static_data.shapes_arrays_metadata.spheres_start; i++) {
+        //     d = min(d, sd_sphere(p - normal_shapes[i].pos, normal_shapes[i].size.x) - normal_shapes[i].roundness);
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.sph_cubes_start; i < static_data.shapes_arrays_metadata.sph_cubes_amount + static_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+        //     d = min(d, sd_sph_box(p - normal_shapes[i].pos, normal_shapes[i].size) - normal_shapes[i].roundness);
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.inf_cubes_start; i < static_data.shapes_arrays_metadata.inf_cubes_amount + static_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+        //     d = min(d, sd_inf_box(p - normal_shapes[i].pos, normal_shapes[i].size.xyz) - normal_shapes[i].roundness);
+        // }
+    // }
+
+    // dynamic normal shapes
+    // if dyn_noramls_intersected {
+        
+        // for (var i = dynamic_data.shapes_arrays_metadata.cubes_start; i < dynamic_data.shapes_arrays_metadata.cubes_amount + dynamic_data.shapes_arrays_metadata.cubes_start; i++) {
+        //     d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.spheres_start; i < dynamic_data.shapes_arrays_metadata.spheres_amount + dynamic_data.shapes_arrays_metadata.spheres_start; i++) {
+        //     d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+        //     d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+        // }
+
+        for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+            if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
+                d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+            } else if (i < dynamic_data.shapes_arrays_metadata.sph_cubes_start) {
+                d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
+            } else {
+                d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+            }
+        }
+
+        // for (var i = dynamic_data.shapes_arrays_metadata.inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.inf_cubes_amount + dynamic_data.shapes_arrays_metadata.inf_cubes_start; i++) {
+        //     d = min(d, sd_inf_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.xyz) - dyn_normal_shapes[i].roundness);
+        // }
+    // }
+
+    // static stickiness shapes
+    // if st_stickiness_intersected {
+        // for (var i = static_data.shapes_arrays_metadata.s_cubes_start; i < static_data.shapes_arrays_metadata.s_cubes_amount + static_data.shapes_arrays_metadata.s_cubes_start; i++) {
+        //     d = smin(d, sd_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, 0.28);
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.s_spheres_start; i < static_data.shapes_arrays_metadata.s_spheres_amount + static_data.shapes_arrays_metadata.s_spheres_start; i++) {
+        //     d = smin(d, sd_sphere(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.x) - stickiness_shapes[i].roundness, 0.28);
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.s_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_sph_cubes_amount + static_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+        //     d = smin(d, sd_sph_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size) - stickiness_shapes[i].roundness, 0.28);
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.s_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_inf_cubes_amount + static_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+        //     d = smin(d, sd_inf_box(p - stickiness_shapes[i].pos, stickiness_shapes[i].size.xyz) - stickiness_shapes[i].roundness, 0.28);
+        // }
+    // }
+
+    // dynamic stickiness
+    // if dyn_stickiness_intersected {
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_cubes_amount + dynamic_data.shapes_arrays_metadata.s_cubes_start; i++) {
+        //     d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, 0.28);
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_spheres_amount + dynamic_data.shapes_arrays_metadata.s_spheres_start; i++) {
+        //     d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, 0.28);
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+        //     d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, 0.28);
+        // }
+
+        for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+            if (i < dynamic_data.shapes_arrays_metadata.s_spheres_start) {
+                d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, 0.28);
+            } else if (i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_start) {
+                d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, 0.28);
+            } else {
+                d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, 0.28);
+            }
+        }
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_inf_cubes_start; i++) {
+        //     d = smin(d, sd_inf_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.xyz) - dyn_stickiness_shapes[i].roundness, 0.28);
+        // }
+    // }
+
+    // static negative shapes
+    // if st_negative_intersected {
+        // for (var i = static_data.shapes_arrays_metadata.neg_cubes_start; i < static_data.shapes_arrays_metadata.neg_cubes_amount + static_data.shapes_arrays_metadata.neg_cubes_start; i++) {
+        //     d = max(d, -(sd_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.neg_spheres_start; i < static_data.shapes_arrays_metadata.neg_spheres_amount + static_data.shapes_arrays_metadata.neg_spheres_start; i++) {
+        //     d = max(d, -(sd_sphere(p - negatives_shapes[i].pos, negatives_shapes[i].size.x) - negatives_shapes[i].roundness));
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.neg_sph_cubes_amount + static_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+        //     d = max(d, -(sd_sph_box(p - negatives_shapes[i].pos, negatives_shapes[i].size) - negatives_shapes[i].roundness));
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.neg_inf_cubes_amount + static_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
+        //     d = max(d, -(sd_inf_box(p - negatives_shapes[i].pos, negatives_shapes[i].size.xyz) - negatives_shapes[i].roundness));
+        // }
+    // }
+
+    // dynamic negative shapes
+    // if dyn_negative_intersected {
+        // for (var i = dynamic_data.shapes_arrays_metadata.neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_cubes_start; i++) {
+        //     d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount + dynamic_data.shapes_arrays_metadata.neg_spheres_start; i++) {
+        //     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+        //     d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+        // }
+
+        for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+            if (i < dynamic_data.shapes_arrays_metadata.neg_spheres_start) {
+                d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+            } else if (i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start) {
+                d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+            } else {
+                d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+            }
+        }
+        // for (var i = dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_inf_cubes_start; i++) {
+        //     d = max(d, -(sd_inf_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.xyz) - dyn_negatives_shapes[i].roundness));
+        // }
+    // }
+
+        // static negative stickiness shapes
+    // var dd = MAX_DIST;
+    // if st_neg_stickiness_intersected {
+        // for (var i = static_data.shapes_arrays_metadata.s_neg_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_cubes_amount + static_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+        //     d = smax(d, -(sd_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness), 0.28);
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.s_neg_spheres_start; i < static_data.shapes_arrays_metadata.s_neg_spheres_amount + static_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+        //     d = smax(d, -(sd_sphere(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.x) - neg_stickiness_shapes[i].roundness), 0.28);
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + static_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+        //     d = smax(d, -(sd_sph_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size) - neg_stickiness_shapes[i].roundness), 0.28);
+        // }
+        // for (var i = static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < static_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + static_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
+        //     d = smax(d, -(sd_inf_box(p - neg_stickiness_shapes[i].pos, neg_stickiness_shapes[i].size.xyz) - neg_stickiness_shapes[i].roundness), 0.28);
+        // }
+        // d = max(d, -dd);
+    // }
+
+    // dynamic negative stickiness shapes
+    // if dyn_neg_stickiness_intersected {
+        // var ddd = dd;
+
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_cubes_start; i++) {
+        //     d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), 0.28);
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_amount + dynamic_data.shapes_arrays_metadata.s_neg_spheres_start; i++) {
+        //     d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), 0.28);
+        // }
+        // for (var i = dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+        //     d = smax(d, -(sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), 0.28);
+        // }
+
+        for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+            if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
+                d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), 0.28);
+            } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
+                d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), 0.28);
+            } else {
+                d = smax(d, -(sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), 0.28);
+            }
+        }
+
+    return d;
+}
+
+fn sd_box(p: vec4<f32>, b: vec4<f32>) -> f32 {
+    var d: vec4<f32> = abs(p) - b;
+    return min(max(d.x,max(d.y,max(d.z, d.w))),0.0) + length(max(d,vec4<f32>(0.0)));
+}
+
+fn sd_sph_box(p: vec4<f32>, b: vec4<f32>) -> f32 {
+    var d1: f32 = length(p.xy) - b.z;
+    var d2: f32 = length(p.xz) - b.y;
+    var d3: f32 = length(p.yz) - b.x;
+    var d4: f32 = length(p.wx) - b.w;
+    var d5: f32 = length(p.wy) - b.w;
+    var d6: f32 = length(p.wz) - b.w;
+    return max(d6,max(d5,max(d4,max(d1,max(d2, d3)))));
+}
+
+fn smin( a: f32, b: f32, k: f32 ) -> f32
+{
+    let kk = k * 1.0/(1.0-sqrt(0.5));
+    let h = max( kk-abs(a-b), 0.0 )/kk;
+    return min(a,b) - kk*0.5*(1.0+h-sqrt(1.0-h*(h - 2.0)));
+}
+
+fn smax( a: f32, b: f32, k: f32 ) -> f32
+{
+    let kk = k * 1.0/(1.0-sqrt(0.5));
+    let h = max( kk-abs(a-b), 0.0 )/kk;
+    return max(a,b) + kk*0.5*(1.0+h-sqrt(1.0-h*(h - 2.0)));
 }

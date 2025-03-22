@@ -1,4 +1,5 @@
 pub mod render_data;
+pub mod camera;
 mod renderer;
 mod ui_renderer;
 
@@ -61,6 +62,7 @@ impl RenderSystem {
         ui: &mut UISystem,
         #[cfg(not(target_arch="wasm32"))]
         runtime: &mut Runtime,
+        it_is_2d_3d_example: bool,
     ) -> Self {
         
         let render_data = RenderData::new(world, time, &window);
@@ -74,7 +76,8 @@ impl RenderSystem {
                     0.008,
                     // time.target_frame_duration.as_secs_f64(),
                     world.players_settings.screen_resolution_scale,
-                    &world.level.visual_settings_of_environment.sky_box_name
+                    &world.level.visual_settings_of_environment.sky_box_name,
+                    it_is_2d_3d_example,
                 ).await
             )
         );

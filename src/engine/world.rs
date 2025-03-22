@@ -43,17 +43,17 @@ pub struct World {
 
 impl World {
 
-    pub async fn new(engine_handle: &mut EngineHandle, players_settings: PlayerSettings) -> Self {
+    pub async fn new(engine_handle: &mut EngineHandle, players_settings: PlayerSettings, level_name: String) -> Self {
         
         // 0 it is id of engine
         // in case when engine send message to the some actor
         // sender property will be 0      
-        let (level, actors) = Level::load_level().await;
+        let (level, actors) = Level::load_level(level_name).await;
 
         log::info!("world system: level downloaded and init");
 
         let mut world = World {
-            actors: HashMap::with_capacity(actors.len()),
+            actors: HashMap::with_capacity(actors.len()*3),
             players_settings,
             level,
             main_player_id: 0,
@@ -203,36 +203,61 @@ impl World {
             {
             
                 if let Some(player) = self.actors.get_mut(&id) {
-                    
-                    if let ActorWrapper::Player(player) = player {
 
-                        match player.get_team()
-                        {
-                            Team::Red =>
+                    match player {
+                        ActorWrapper::Player(player) => {
+                            match player.get_team()
                             {
-                                player.respawn(
-                                    &mut self.level.red_spawns,
-                                    physics_system,
-                                    ui_system,
-                                    audio_system,
-                                    engine_handle
-                                );
-                            }
-                            Team::Blue =>
-                            {
-                                player.respawn(
-                                    &mut self.level.blue_spawns,
-                                    physics_system,
-                                    ui_system,
-                                    audio_system,
-                                    engine_handle
-                                );
+                                Team::Red =>
+                                {
+                                    player.respawn(
+                                        &mut self.level.red_spawns,
+                                        physics_system,
+                                        ui_system,
+                                        audio_system,
+                                        engine_handle
+                                    );
+                                }
+                                Team::Blue =>
+                                {
+                                    player.respawn(
+                                        &mut self.level.blue_spawns,
+                                        physics_system,
+                                        ui_system,
+                                        audio_system,
+                                        engine_handle
+                                    );
+                                }
                             }
                         }
-
-                    } else {
-                        
-                        panic!("Player send wrong ID into RespawnPlayer command. Actor with this ID is not player")
+                        ActorWrapper::PlayerFor2d3dExample(player) => {
+                            match player.get_team()
+                            {
+                                Team::Red =>
+                                {
+                                    player.respawn(
+                                        &mut self.level.red_spawns,
+                                        physics_system,
+                                        ui_system,
+                                        audio_system,
+                                        engine_handle
+                                    );
+                                }
+                                Team::Blue =>
+                                {
+                                    player.respawn(
+                                        &mut self.level.blue_spawns,
+                                        physics_system,
+                                        ui_system,
+                                        audio_system,
+                                        engine_handle
+                                    );
+                                }
+                            }
+                        }
+                        _ => {
+                            panic!("Player send wrong ID into RespawnPlayer command. Actor with this ID is not player")
+                        }
                     }
                 } else {
                     //this case is possible when player send command to get respawn and before
