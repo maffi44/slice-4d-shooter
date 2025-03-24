@@ -84,14 +84,8 @@ impl HoleGun {
         energy_gun_add_force_mult: f32, 
         energy_gun_damage_mult: f32, 
         energy_gun_restoring_speed: f32,
+        shooted_from_pivot_point_dir: Vec4,
     ) -> Self {
-        let shooted_from_pivot_point_dir = Vec4::new(
-            1.0,
-            -0.42,
-            -1.0,
-            0.0
-        );
-
         // let color = match team {
         //     Team::Blue => HOLE_GUN_BLUE_COLOR,
         //     Team::Red => HOLE_GUN_RED_COLOR,

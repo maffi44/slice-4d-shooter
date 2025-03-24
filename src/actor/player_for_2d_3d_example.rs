@@ -58,7 +58,7 @@ use std::{collections::btree_set::Difference, f32::consts::PI, usize};
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::{SoundSource, Status};
 use glam::{
-    FloatExt, Mat4, Vec2, Vec3, Vec4
+    FloatExt, Mat2, Mat3, Mat4, Vec2, Vec3, Vec4
 };
 
 use super::{
@@ -267,6 +267,12 @@ pub struct PlayerFor2d3dExample {
     base_effect_tick_timer: f32,
 
     holding_player_rotation_along_w: bool,
+    
+    camera3d_rotation: Mat4,
+    camera3d_rotation_zy: Mat4,
+    camera3d_rotation_zx: Mat4,
+    camera3d_rotation_zw: Mat4,
+    camera3d_offset: Vec4,
 }
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 
@@ -331,14 +337,16 @@ pub const PLAYER_FREE_MOVING_SPEED_MULT: f32 = 0.6;
 
 impl Actor for PlayerFor2d3dExample {
 
-    fn get_camera(&self) -> Camera {
-        Camera {
-            position: self.get_position(),
-            rotation_matrix: self.get_rotation_matrix(),
-            zw_rotation_matrix: self.get_zw_rotation_matrix(),
-            zx_rotation_matrix: self.get_zx_rotation_matrix(),
-            zy_rotation_matrix: self.get_zy_rotation_matrix(),
-        }
+    fn get_camera(&self) -> Option<Camera> {
+        Some(
+            Camera {
+                position: self.get_position() + self.camera3d_offset,
+                rotation_matrix: self.camera3d_rotation,
+                zw_rotation_matrix: self.camera3d_rotation_zw,
+                zx_rotation_matrix: self.camera3d_rotation_zx,
+                zy_rotation_matrix: self.camera3d_rotation_zy,
+            }
+        )
     }
 
     fn recieve_message(
@@ -817,32 +825,53 @@ impl Actor for PlayerFor2d3dExample {
 
     fn get_visual_element(&self) -> Option<VisualElement> {
         if self.inner_state.is_enable {
-            match self.active_hands_slot {
+            let mut visual_elem: Option<VisualElement> = match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
-                    return self.hands_slot_0.get_visual_element(self.get_transform());
+                    self.hands_slot_0.get_visual_element(self.get_transform())
                 },
                 ActiveHandsSlot::First => {
                     if let Some(device) = &self.hands_slot_1 {
-                        return device.get_visual_element(self.get_transform());
+                        device.get_visual_element(self.get_transform())
                     } else {
-                        return None;
+                        None
                     }
                 },
                 ActiveHandsSlot::Second => {
                     if let Some(device) = &self.hands_slot_2 {
-                        return device.get_visual_element(self.get_transform());
+                        device.get_visual_element(self.get_transform())
                     } else {
-                        return None;
+                        None
                     }
                 },
                 ActiveHandsSlot::Third => {
                     if let Some(device) = &self.hands_slot_3 {
-                        return device.get_visual_element(self.get_transform());
+                        device.get_visual_element(self.get_transform())
                     } else {
-                        return None;
+                        None
                     }
                 }
+            };
+
+            if let Some(vl) = visual_elem.as_mut()
+            {
+                vl.player = Some((&self.inner_state.collider_for_others[0], self.inner_state.team));
             }
+            else
+            {
+                visual_elem = Some(
+                    VisualElement {
+                        transform: self.get_transform(),
+                        static_objects: None,
+                        coloring_areas: None,
+                        volume_areas: None,
+                        waves: None,
+                        player: Some((&self.inner_state.collider_for_others[0], self.inner_state.team))
+                    }
+                )
+            }
+
+            return visual_elem;
+
         }
         None
     }
@@ -1070,7 +1099,10 @@ impl Actor for PlayerFor2d3dExample {
                 //     }
                 //     PlayerMovingState::MovingFree(_) => {}
                 // }
-
+                xz *= 1.0 - delta * 2.8;
+                if xz.abs() < 0.0001 {
+                    xz = 0.0;
+                }
                 // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
                 yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
             }
@@ -1993,7 +2025,7 @@ impl Actor for PlayerFor2d3dExample {
             if self.inner_state.collider.is_enable {
     
                 if self.is_gravity_y_enabled {
-                    movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
+                    // movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
 
                     match self.inner_state.player_moving_state {
                         PlayerMovingState::MovingPerpendicularW(lock_w) =>
@@ -2008,12 +2040,12 @@ impl Actor for PlayerFor2d3dExample {
                             }
 
                             // w gravity second variant
-                            // let w_dif = lock_w - self.get_position().w;
+                            let w_dif = lock_w - self.get_position().w;
 
-                            // self.inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
-                            //     -self.player_settings.gravity_w_speed*25.0,
-                            //     self.player_settings.gravity_w_speed*25.0
-                            // );
+                            self.inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
+                                -self.player_settings.gravity_w_speed*25.0,
+                                self.player_settings.gravity_w_speed*25.0
+                            );
 
                             // w gravity first variant
                             self.inner_state.collider.add_force(Vec4::NEG_X * self.player_settings.gravity_w_speed * delta);
@@ -2402,6 +2434,14 @@ impl PlayerFor2d3dExample {
         let after_death_timer =  player_settings.min_respawn_timer;
 
         let player_radius = player_settings.collider_radius;
+
+        let camera3d_rotation_zy = Mat4::IDENTITY;
+        let camera3d_rotation_zx = Mat4::from_rotation_y(-PI/2.0);
+        let camera3d_rotation_zw = Mat4::IDENTITY;
+
+        let camera3d_rotation = camera3d_rotation_zw * camera3d_rotation_zy * camera3d_rotation_zx;
+        let camera3d_offset = Vec4::X*15.0;
+
         
         PlayerFor2d3dExample {
             id: None,
@@ -2421,12 +2461,14 @@ impl PlayerFor2d3dExample {
                 player_settings.energy_gun_add_force_mult, 
                 player_settings.energy_gun_damage_mult, 
                 player_settings.energy_gun_restoring_speed,
+                Vec4::new(0.0, 1.0, -0.6, 0.0),
             )),
             hands_slot_1: Some(Box::new(MachineGun::new(
                 player_settings.machinegun_damage,
                 player_settings.machinegun_add_force, 
                 player_settings.machinegun_heat_add_on_shot, 
-                player_settings.machinegun_cooling_speed
+                player_settings.machinegun_cooling_speed,
+                Vec4::new(0.0, 1.0, -0.6, 0.0),
             ))),
             hands_slot_2: None,
             hands_slot_3: None,
@@ -2488,7 +2530,29 @@ impl PlayerFor2d3dExample {
             base_effect_tick_timer: 0.0,
 
             holding_player_rotation_along_w: false,
+
+            camera3d_rotation_zy,
+            camera3d_rotation_zx,
+            camera3d_rotation_zw,
+            camera3d_rotation,
+            camera3d_offset,
         }
+    }
+
+    pub fn get_2d_slice_pos(&self) -> Vec4
+    {
+        self.get_position()
+    }
+
+    pub fn get_2d_slice_xz_rot(&self) -> Mat2
+    {
+        let x_axis = self.inner_state.zx_rotation.x_axis;
+        let z_axis = self.inner_state.zx_rotation.z_axis;
+
+        Mat2::from_cols(
+            Vec2::new(x_axis.x, x_axis.z),
+            Vec2::new(z_axis.x, z_axis.z)
+        )
     }
 
     pub fn get_team(&self) -> Team

@@ -31,11 +31,14 @@ use crate::{
         audio::{
             AudioSystem,
             Sound
-        }, effects::EffectsSystem, engine_handle::{
+        },
+        effects::EffectsSystem,
+        engine_handle::{
             Command,
             CommandType,
             EngineHandle
-        }, input::ActionsFrameState, physics::{
+        },
+        input::ActionsFrameState, physics::{
             colliders_container::PhysicalElement,
             dynamic_collider::PlayersDollCollider,
             kinematic_collider::{
@@ -124,7 +127,7 @@ impl PlayerInnerState {
                 friction: 0_f32,
                 bounce_rate: 0_f32,
                 actors_id: None,
-                weapon_offset: Vec4::ZERO,
+                weapon_offset: Vec4::Y*0.6,
                 actors_team: DEFAULT_TEAM,
             });
             vec
@@ -163,7 +166,7 @@ impl PlayerInnerState {
 
     pub fn get_eyes_offset(&self) -> Vec4
     {
-        Vec4::Y * self.collider.get_collider_radius() * 0.7
+        Vec4::Y * self.collider.get_collider_radius() * 0.2
     }
 
     pub fn get_eyes_position(&self) -> Vec4
@@ -333,14 +336,16 @@ pub enum PlayerMessage {
 
 impl Actor for Player {
 
-    fn get_camera(&self) -> Camera {
-        Camera {
-            position: self.get_position(),
-            rotation_matrix: self.get_rotation_matrix(),
-            zw_rotation_matrix: self.get_zw_rotation_matrix(),
-            zx_rotation_matrix: self.get_zx_rotation_matrix(),
-            zy_rotation_matrix: self.get_zy_rotation_matrix(),
-        }
+    fn get_camera(&self) -> Option<Camera> {
+        Some(
+            Camera {
+                position: self.get_eyes_position(),
+                rotation_matrix: self.get_rotation_matrix(),
+                zw_rotation_matrix: self.get_zw_rotation_matrix(),
+                zx_rotation_matrix: self.get_zx_rotation_matrix(),
+                zy_rotation_matrix: self.get_zy_rotation_matrix(),
+            }
+        )
     }
 
     fn recieve_message(
@@ -927,7 +932,7 @@ impl Actor for Player {
                master.current_input.clone()
             }   
         };
-
+ 
         let crosshair = ui_system.get_mut_ui_element(&UIElementType::Crosshair);
 
         if let UIElement::Image(crosshair) = crosshair {
@@ -2413,12 +2418,24 @@ impl Player {
                 player_settings.energy_gun_add_force_mult, 
                 player_settings.energy_gun_damage_mult, 
                 player_settings.energy_gun_restoring_speed,
+                Vec4::new(
+                    1.0,
+                    -0.42,
+                    -1.0,
+                    0.0
+                ),
             )),
             hands_slot_1: Some(Box::new(MachineGun::new(
                 player_settings.machinegun_damage,
                 player_settings.machinegun_add_force, 
                 player_settings.machinegun_heat_add_on_shot, 
-                player_settings.machinegun_cooling_speed
+                player_settings.machinegun_cooling_speed,
+                Vec4::new(
+                    1.0,
+                    -0.42,
+                    -1.0,
+                    0.0
+                ),
             ))),
             hands_slot_2: None,
             hands_slot_3: None,

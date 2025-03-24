@@ -268,8 +268,8 @@ struct OtherDynamicData {
     screen_aspect: f32,
     time: f32,
     //all shapes bounding box sides
-    bb_pos_side: vec4<f32>,
-    bb_neg_side: vec4<f32>,
+    additional_data: vec4<f32>,
+    additional_data_2: vec4<f32>,
 }
 
 struct Material {
@@ -840,7 +840,7 @@ fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direct
 
     for (var i = 0; i < MAX_STEPS; i++) {
 
-        if total_dist > max_distance*2.0 {
+        if total_dist > max_distance {
             break;
         }
 
@@ -4622,10 +4622,10 @@ fn get_color_and_light_from_mats(
     lightness = wireframe_dif*30.0;
 
 
-    let w_height_coef = clamp(hited_pos.w - 10.0 / 20.0, 0.0 ,1.0);
-    base_diffuse *= pow((1.0-w_height_coef) * 2.0, 1.0);
+    // let w_height_coef = clamp(hited_pos.w - 10.0 / 20.0, 0.0 ,1.0);
+    // base_diffuse *= pow((1.0-w_height_coef) * 2.0, 1.0);
     
-    let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,w_height_coef*2.5)*20.0*(0.1+0.9*wireframe_fog);
+    let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
     let ref_col = get_sky_color(ref_dir);
 

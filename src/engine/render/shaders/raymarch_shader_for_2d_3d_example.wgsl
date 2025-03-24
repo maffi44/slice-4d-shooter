@@ -268,8 +268,8 @@ struct OtherDynamicData {
     screen_aspect: f32,
     time: f32,
     //all shapes bounding box sides
-    bb_pos_side: vec4<f32>,
-    bb_neg_side: vec4<f32>,
+    additional_data: vec4<f32>,
+    additional_data_2: vec4<f32>,
 }
 
 struct Material {
@@ -624,6 +624,80 @@ fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distan
     return output_color;
 }
 
+
+fn get_volume_areas_color_for_2d(p: vec4<f32>) -> vec4<f32> {
+    var color = vec3(0.0);
+
+    var ray_march_individual_wave_sphere_color = vec4(0.0);
+
+    for (
+        var i = dynamic_data.spherical_areas_meatadata.explode_areas_start;
+        i < dynamic_data.spherical_areas_meatadata.explode_areas_amount + dynamic_data.spherical_areas_meatadata.explode_areas_start;
+        i++
+    )
+    {
+        let d = sd_sphere(dyn_spherical_areas[i].pos - p, dyn_spherical_areas[i].radius*1.2);
+
+        if d < MIN_DIST
+        {
+            // let sphere_normal = get_sphere_normal(p, dyn_spherical_areas[i].pos, dyn_spherical_areas[i].radius);
+
+            // let color_coef = abs(dot(sphere_normal, vec4(1.0, 0.0, 0.0, 0.0)));
+            
+            let color_coef = clamp(abs(d/dyn_spherical_areas[i].radius*1.2), 0.0, 1.0);
+
+
+            color += mix(dyn_spherical_areas[i].color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00);
+        }
+    }
+
+    for (
+        var i = 0u;
+        i < dynamic_data.beam_areas_amount;
+        i++
+    )
+    {
+        let d = sd_capsule(p, dyn_beam_areas[i].pos1, dyn_beam_areas[i].pos2, dyn_beam_areas[i].radius*1.1);
+
+        if d < MIN_DIST {
+            // let beam_normal = get_capsule_normal(p, dyn_beam_areas[i].pos1, dyn_beam_areas[i].pos2, dyn_beam_areas[i].radius);
+
+            // let beam_dir = normalize(dyn_beam_areas[i].pos1 - dyn_beam_areas[i].pos2);
+
+            // let beam_perpendicular = normalize(vec4(-1.0, 0.0, 0.0, 0.0) - (dot(vec4(-1.0, 0.0, 0.0, 0.0) , beam_dir) * beam_dir));
+
+            // let color_coef = clamp(abs(d*40.0), 0.0, 1.0);
+
+            // color += mix(dyn_beam_areas[i].color, vec3(1.0), pow(color_coef, 80.5)) * pow(color_coef, 20.0);
+            color += dyn_beam_areas[i].color;
+        }
+    }
+
+    // for (
+    //     var i = dynamic_data.waves_start;
+    //     i < dynamic_data.waves_amount + dynamic_data.waves_start;
+    //     i++
+    // )
+    // {
+    //     ray_march_individual_wave_sphere_color += ray_march_individual_wave_sphere(
+    //         dyn_spherical_areas[i],
+    //         start_pos,
+    //         direction, 
+    //         max_distance
+    //     );
+    // }
+
+    let output_color = vec4(
+        color.r + ray_march_individual_wave_sphere_color.r,
+        color.g + ray_march_individual_wave_sphere_color.g,
+        color.b + ray_march_individual_wave_sphere_color.b,
+        ray_march_individual_wave_sphere_color.a
+    );
+
+    return output_color;
+}
+
+
 fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
     var color = vec3(0.0);
 
@@ -840,11 +914,11 @@ fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direct
 
     for (var i = 0; i < MAX_STEPS; i++) {
 
-        if total_dist > max_distance*2.0 {
+        if total_dist > max_distance {
             break;
         }
 
-        let d = sd_capsule(p, beam.pos1, beam.pos2, beam.radius);
+        let d = sd_capsule(p, beam.pos1, beam.pos2, beam.radius*1.5);
         
         if d > prev_d {
             break;
@@ -3150,8 +3224,8 @@ fn map(p: vec4<f32>) -> f32 {
             dddd = max(dddd, -sd_box(
                 rotated_p,
                 vec4(
-                    dyn_player_forms[i].radius * 0.18,
-                    dyn_player_forms[i].radius* 1.2,
+                    dyn_player_forms[i].radius * 1.2,
+                    dyn_player_forms[i].radius* 0.18,
                     dyn_player_forms[i].radius* 1.2,
                     dyn_player_forms[i].radius * 1.2
                 )));
@@ -3314,8 +3388,8 @@ fn get_mats(
         d = max(d, -sd_box(
             rotated_p,
             vec4(
-                shape.radius * 0.18,
-                shape.radius* 1.2,
+                shape.radius * 1.2,
+                shape.radius* 0.18,
                 shape.radius* 1.2,
                 shape.radius * 1.2
             )));
@@ -4622,10 +4696,10 @@ fn get_color_and_light_from_mats(
     lightness = wireframe_dif*30.0;
 
 
-    let w_height_coef = clamp(hited_pos.w - 10.0 / 20.0, 0.0 ,1.0);
-    base_diffuse *= pow((1.0-w_height_coef) * 2.0, 1.0);
+    // let w_height_coef = clamp(hited_pos.w - 10.0 / 20.0, 0.0 ,1.0);
+    // base_diffuse *= pow((1.0-w_height_coef) * 2.0, 1.0);
     
-    let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,w_height_coef*2.5)*20.0*(0.1+0.9*wireframe_fog);
+    let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
     let ref_col = get_sky_color(ref_dir);
 
@@ -4642,6 +4716,7 @@ fn get_color_and_light_from_mats(
 fn get_color_and_light_from_mats_2d(
     hited_pos: vec4<f32>,
     ray_dir: vec4<f32>,
+    dist: f32,
     mats: OutputMaterials,
 ) -> vec4<f32> {
     var lightness = 0.0;
@@ -4677,7 +4752,7 @@ fn get_color_and_light_from_mats_2d(
         base_diffuse = mix(base_diffuse, new_base_diffuse, mats.material_weights[i]);
     }
 
-    let normal = vec4(1.0,0.0,0.0,0.0);
+    let normal = normalize(ray_dir);
     
     var lines_size = 5.8;
 
@@ -4686,11 +4761,14 @@ fn get_color_and_light_from_mats_2d(
         mats.materials[0] == static_data.red_players_mat1 ||
         mats.materials[0] == static_data.red_players_mat2
     {
-        lines_size = 2.8;
+        lines_size = 4.8;
     }
 
-    let wireframe_dif = 1.0 - pow(clamp(abs(map(hited_pos)), 0.0, 0.3), 3.0);
+    // let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*lines_size);
+    // let aocc = calc_ambient_occlusion(hited_pos, normal);
+
     let wireframe_fog = 1.0;
+    let wireframe_dif = pow(clamp(1.0-abs(dist*20.0),0.0,1.0),1.3);
 
 
     // sun light 1
@@ -4746,15 +4824,11 @@ fn get_color_and_light_from_mats_2d(
     light += static_data.sun_color  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 3.0;// * aocc;
     light += static_data.sky_color    * sky_dif   * 0.3 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
     light += static_data.frenel_color * frenel    * 0.3 * (0.6+0.4*sun_dif_1);// * aocc;
-    light += neon_wireframe_color * wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
+    light += neon_wireframe_color * wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1);// * (wireframe_fog*0.5+0.5);
 
     lightness = wireframe_dif*30.0;
-
-
-    let w_height_coef = clamp(hited_pos.w - 10.0 / 20.0, 0.0 ,1.0);
-    base_diffuse *= pow((1.0-w_height_coef) * 2.0, 1.0);
     
-    let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,w_height_coef*2.5)*20.0*(0.1+0.9*wireframe_fog);
+    let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
     let ref_col = get_sky_color(-ray_dir);
 
@@ -4967,11 +5041,11 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     {
         var uv: vec2<f32> = inn.position.xy;
         uv.x += 0.5;
-        uv.x *= dynamic_data.screen_aspect;
+        uv.x *= -dynamic_data.screen_aspect;
 
-        let p_pos = uv*SCREEN_WIDTH_IN_2D + dynamic_data.camera_data.cam_pos.zy;
+        let p_pos = uv*SCREEN_WIDTH_IN_2D;
 
-        var pixel_pos = dynamic_data.camera_data.cam_pos;
+        var pixel_pos = dynamic_data.additional_data;
         pixel_pos.z += p_pos.x;
         pixel_pos.y += p_pos.y;
 
@@ -4985,16 +5059,87 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
         let fake_dir = normalize(vec4(-1.0,uv.x,uv.y,0.0));
 
-        let color_and_light = get_color_and_light_from_mats_2d(pixel_pos, fake_dir, mats);
+        var color_and_light = get_color_and_light_from_mats_2d(pixel_pos, fake_dir, dist, mats);
 
-        return color_and_light;
+        // return color_and_light;
+        
+        var color = color_and_light.rgb;
+
+        // color += gew_w_projection_color(uv);
+
+        var lightness = color_and_light.a;
+
+        if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {
+            
+            if dist < MIN_DIST
+            {
+                color += 0.145*get_coloring_areas_color(pixel_pos);
+            }
+        }
+
+        let color_areas = 0.6*get_volume_areas_color_for_2d(pixel_pos);
+
+        color += color_areas.rgb;
+        lightness += color_areas.a;
+
+        // let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
+        // let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
+        // color = mix(color, sc_r_c.rgb, sc_r_c.a*0.3);
+        // color = mix(color, sc_e_c.rgb, sc_e_c.a*0.55);
+
+        // color correction
+        color = pow(color, vec3(0.4545));
+
+        let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
+        
+        // making damage effect
+        let q = (inn.position.xy+vec2(1.0))/2.0;
+        
+        // making vignetting effect
+        let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
+        color *= v;
+
+        let hurt_coef = max(
+            clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
+            (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
+        );
+        // color.g *= clamp(hurt_coef*1.4, 0.0, 1.0);
+        // color.b *= clamp(hurt_coef*1.5, 0.0, 1.0);
+        // color.r *= hurt_coef;
+        color -= (1.0-hurt_coef)*0.2;
+
+        color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
+
+        // making death effect
+        let death_eff_col = max(
+            clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
+            (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
+        );
+        color *= death_eff_col;
+
+        // color = mix(vec3(tv_noise(uv*100.0, dynamic_data.time)),color, death_eff_col*0.7);
+
+        var bw_col = clamp(color, vec3(color.r), vec3(100.0));
+        bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
+        bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
+        bw_col += (tv_noise - 0.5)*(1.0-death_eff_col*0.5)*0.3;
+
+        color = mix(
+            color,
+            bw_col*(bw_col*1.4),
+            clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
+        ); 
+
+        // color.r += (dist_and_depth.y / f32(MAX_STEPS/2));
+
+        return vec4<f32>(color, lightness);
 
     }
     else
     {
         var uv: vec2<f32> = inn.position.xy;
         uv.x -= 0.5;
-        // uv *= 0.7;
+        uv *= 0.7;
         uv.x *= dynamic_data.screen_aspect;
 
         var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
@@ -5012,7 +5157,73 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
         var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats);
 
-        return color_and_light;
+        var color = color_and_light.rgb;
+
+        // color += gew_w_projection_color(uv);
+
+        var lightness = color_and_light.a;
+
+        if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {
+            color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
+        }
+
+        let color_areas = 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
+
+        color += color_areas.rgb;
+        lightness += color_areas.a;
+
+        let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
+        let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
+        color = mix(color, sc_r_c.rgb, sc_r_c.a*0.3);
+        color = mix(color, sc_e_c.rgb, sc_e_c.a*0.55);
+
+        // color correction
+        color = pow(color, vec3(0.4545));
+
+        let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
+        
+        // making damage effect
+        let q = (inn.position.xy+vec2(1.0))/2.0;
+        
+        // making vignetting effect
+        let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
+        color *= v;
+
+        let hurt_coef = max(
+            clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
+            (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
+        );
+        // color.g *= clamp(hurt_coef*1.4, 0.0, 1.0);
+        // color.b *= clamp(hurt_coef*1.5, 0.0, 1.0);
+        // color.r *= hurt_coef;
+        color -= (1.0-hurt_coef)*0.2;
+
+        color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
+
+        // making death effect
+        let death_eff_col = max(
+            clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
+            (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
+        );
+        color *= death_eff_col;
+
+        // color = mix(vec3(tv_noise(uv*100.0, dynamic_data.time)),color, death_eff_col*0.7);
+
+        var bw_col = clamp(color, vec3(color.r), vec3(100.0));
+        bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
+        bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
+        bw_col += (tv_noise - 0.5)*(1.0-death_eff_col*0.5)*0.3;
+
+        color = mix(
+            color,
+            bw_col*(bw_col*1.4),
+            clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
+        ); 
+
+        // color.r += (dist_and_depth.y / f32(MAX_STEPS/2));
+
+        return vec4<f32>(color, lightness);
+        // return color_and_light;
         // for (var i = 1u; i < min(mats.materials_count,2u); i++) {
         //     let new_color = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
         //     color_and_light = mix(color_and_light, new_color, mats.material_weights[i]);

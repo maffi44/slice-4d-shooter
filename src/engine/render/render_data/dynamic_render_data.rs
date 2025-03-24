@@ -1008,7 +1008,8 @@ impl DynamicRenderData {
         let main_camera =  world.actors
             .get(&world.main_player_id)
             .expect("World have wrong main_player id")
-            .get_camera();
+            .get_camera()
+            .expect("Main actor have not Camera");
 
         let screen_aspect = {
             let size = window.inner_size();
@@ -1109,8 +1110,8 @@ pub struct OtherDynamicData {
     screen_aspect: f32,
     time: f32,
 
-    bouding_box_pos_side: [f32;4],
-    bouding_box_neg_side: [f32;4],
+    additional_data: [f32;4],
+    additional_data_2: [f32;4],
 }
 
 impl OtherDynamicData {
@@ -1131,14 +1132,23 @@ impl OtherDynamicData {
         // let explore_w_pos;
         // let explore_w_coef;
 
-        self.bouding_box_pos_side = frame_bounding_box.pos_surfs.to_array();
-        self.bouding_box_neg_side = frame_bounding_box.neg_surfs.to_array();
+        // self.additional_data = frame_bounding_box.pos_surfs.to_array();
+        // self.additional_data_2 = frame_bounding_box.neg_surfs.to_array();
 
-        let camera = world.actors
+        let main_actor = world.actors
             .get(&world.main_player_id)
-            .expect("World have not main player Actor")
-            .get_camera();
+            .expect("World have not main player Actor");
 
+        let camera = main_actor
+            .get_camera()
+            .expect("Main actor have not Camera");
+
+        // if it is 2d-3d example: send 3d slice transform data into the raymarch shader
+        if let ActorWrapper::PlayerFor2d3dExample(player) = main_actor
+        {
+            self.additional_data = player.get_2d_slice_pos().to_array();
+            self.additional_data_2 = player.get_2d_slice_xz_rot().to_cols_array();
+        }
         // self.explore_w_pos = explore_w_pos;
         // self.explore_w_coef = explore_w_coef;
 
@@ -1206,8 +1216,8 @@ impl Default for OtherDynamicData {
             splited_screen_in_2d_3d_example: 0.5,
             screen_aspect: 1.0,
             time: 0.0,
-            bouding_box_pos_side: [0.0;4],
-            bouding_box_neg_side: [0.0;4],
+            additional_data: [0.0;4],
+            additional_data_2: [0.0;4],
         }
     }
 }

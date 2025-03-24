@@ -94,8 +94,8 @@ pub trait Actor {
         
     fn set_id(&mut self, id: ActorID);
 
-    fn get_camera(&self) -> Camera {
-        panic!("This Actor havn't a Camera")
+    fn get_camera(&self) -> Option<Camera> {
+        None
     }
 
     fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
@@ -633,7 +633,7 @@ impl Actor for ActorWrapper {
         }
     }
 
-    fn get_camera(&self) -> Camera {
+    fn get_camera(&self) -> Option<Camera> {
         match self {
             ActorWrapper::Player(actor) => {
                 actor.get_camera()

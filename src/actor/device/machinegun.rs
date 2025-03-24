@@ -70,15 +70,10 @@ impl MachineGun {
         machinegun_damage: f32,
         machinegun_add_force: f32, 
         machinegun_heat_add_on_shot: f32, 
-        machinegun_cooling_speed: f32
+        machinegun_cooling_speed: f32,
+        shooted_from_pivot_point_dir: Vec4,
 
     ) -> Self {
-        let shooted_from_pivot_point_dir = Vec4::new(
-            1.0,
-            -0.42,
-            -1.0,
-            0.0
-        );
 
         MachineGun {
             temperature: 0.0,
@@ -153,6 +148,8 @@ impl MachineGun {
             (player.transform.get_rotation().inverse() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
+
+        println!("offset: {}", weapon_offset);
 
         let hit = physic_system.ray_cast(from, direction, 700.0, Some(player_id));
 
