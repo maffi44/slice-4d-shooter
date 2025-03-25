@@ -1148,6 +1148,7 @@ impl OtherDynamicData {
         {
             self.additional_data = player.get_2d_slice_pos().to_array();
             self.additional_data_2 = player.get_2d_slice_xz_rot().to_cols_array();
+            self.splited_screen_in_2d_3d_example = player.show_3d_example_current_value;
         }
         // self.explore_w_pos = explore_w_pos;
         // self.explore_w_coef = explore_w_coef;

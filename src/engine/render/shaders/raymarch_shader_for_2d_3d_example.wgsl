@@ -657,35 +657,43 @@ fn get_volume_areas_color_for_2d(p: vec4<f32>) -> vec4<f32> {
         i++
     )
     {
-        let d = sd_capsule(p, dyn_beam_areas[i].pos1, dyn_beam_areas[i].pos2, dyn_beam_areas[i].radius*1.1);
+        let d = sd_capsule(p, dyn_beam_areas[i].pos1, dyn_beam_areas[i].pos2, dyn_beam_areas[i].radius*1.5);
 
         if d < MIN_DIST {
-            // let beam_normal = get_capsule_normal(p, dyn_beam_areas[i].pos1, dyn_beam_areas[i].pos2, dyn_beam_areas[i].radius);
+            let color_coef = clamp(abs(d/dyn_beam_areas[i].radius*1.5), 0.0, 1.0);
 
-            // let beam_dir = normalize(dyn_beam_areas[i].pos1 - dyn_beam_areas[i].pos2);
-
-            // let beam_perpendicular = normalize(vec4(-1.0, 0.0, 0.0, 0.0) - (dot(vec4(-1.0, 0.0, 0.0, 0.0) , beam_dir) * beam_dir));
-
-            // let color_coef = clamp(abs(d*40.0), 0.0, 1.0);
-
-            // color += mix(dyn_beam_areas[i].color, vec3(1.0), pow(color_coef, 80.5)) * pow(color_coef, 20.0);
-            color += dyn_beam_areas[i].color;
+            color += mix(dyn_beam_areas[i].color, vec3(1.0), pow(color_coef, 80.5)) * pow(color_coef, 20.0);
+            // color += dyn_beam_areas[i].color;
         }
     }
 
-    // for (
-    //     var i = dynamic_data.waves_start;
-    //     i < dynamic_data.waves_amount + dynamic_data.waves_start;
-    //     i++
-    // )
-    // {
-    //     ray_march_individual_wave_sphere_color += ray_march_individual_wave_sphere(
-    //         dyn_spherical_areas[i],
-    //         start_pos,
-    //         direction, 
-    //         max_distance
-    //     );
-    // }
+    for (
+        var i = dynamic_data.waves_start;
+        i < dynamic_data.waves_amount + dynamic_data.waves_start;
+        i++
+    )
+    {
+        var c = vec3(0.0);
+
+        var luminosity = 0.0;
+
+        let dist_to_wave = sd_sphere(p - dyn_spherical_areas[i].pos, dyn_spherical_areas[i].radius);
+
+        let edge_intensity = clamp(pow(1.0 - abs(dist_to_wave), 5.0), 0.0, 1.0);
+        
+        c += dyn_spherical_areas[i].color*edge_intensity;
+        
+        c += vec3(0.5 * max(max(dyn_spherical_areas[i].color.r, dyn_spherical_areas[i].color.g), dyn_spherical_areas[i].color.b)*pow(edge_intensity,4.0));
+
+        luminosity += edge_intensity;
+
+        let target_max_v = max(max(dyn_spherical_areas[i].color.r, dyn_spherical_areas[i].color.g), dyn_spherical_areas[i].color.b);
+
+        c = clamp(c, vec3(0.0), vec3(target_max_v));
+        luminosity = clamp(luminosity, 0.0, 1.0);
+
+        ray_march_individual_wave_sphere_color += vec4(c, luminosity);
+    }
 
     let output_color = vec4(
         color.r + ray_march_individual_wave_sphere_color.r,
@@ -918,7 +926,7 @@ fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direct
             break;
         }
 
-        let d = sd_capsule(p, beam.pos1, beam.pos2, beam.radius*1.5);
+        let d = sd_capsule(p, beam.pos1, beam.pos2, beam.radius*2.0);
         
         if d > prev_d {
             break;
@@ -4934,7 +4942,54 @@ fn gew_w_projection_color(uv: vec2<f32>) -> vec3<f32>
     }
 }
 
+fn plane_intersect( ro: vec4<f32>, rd: vec4<f32>, p: vec4<f32>, p_dist: f32 ) -> f32
+{
+    return -(dot(ro,p)+p_dist)/dot(rd,p);
+}
 
+fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec3<f32>
+{
+    var slice_plane = vec4(1.0, 0.0, 0.0, 0.0);
+
+    let m2 = dynamic_data.additional_data_2;
+
+    let rot_mat = mat4x4(
+        m2.x, 0.0, m2.z, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        m2.y, 0.0, m2.w, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    );
+
+    slice_plane = rot_mat * slice_plane;
+
+    let plane_dist = -dot(slice_plane, dynamic_data.additional_data);
+
+    var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
+    ray *= dynamic_data.camera_data.cam_zw_rot;
+    ray *= dynamic_data.camera_data.cam_zy_rot;
+    ray *= dynamic_data.camera_data.cam_zx_rot;
+
+    let dist_to_slice = plane_intersect(
+        dynamic_data.camera_data.cam_pos,
+        ray,
+        slice_plane,
+        plane_dist
+    );
+
+    if dist_to_slice > 0.0 {
+        let d = dist_to_slice - dist_to_scene;
+
+        let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0)*0.4 + clamp(-d*10.0,0.0,1.0)*0.03;
+
+        // return vec3(c*0.2,c*0.6, c*0.8);
+        return vec3(c);
+    }
+    else
+    {
+        return vec3(0.0);
+    }
+
+}
 
 
 
@@ -5032,22 +5087,49 @@ fn gew_w_projection_color(uv: vec2<f32>) -> vec3<f32>
 //     return vec4<f32>(color, lightness);
 // }
 
-const SCREEN_WIDTH_IN_2D: f32 = 10.0;
+const SCREEN_WIDTH_IN_2D: f32 = 7.0;
 
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
-    if inn.position.x < 0.0
+    if inn.position.x < dynamic_data.splited_screen_in_2d_3d_example
     {
         var uv: vec2<f32> = inn.position.xy;
-        uv.x += 0.5;
+
+        let uv_center_shift = 1.0 - ((1.0 + dynamic_data.splited_screen_in_2d_3d_example) * 0.5);
+        uv.x += uv_center_shift;
         uv.x *= -dynamic_data.screen_aspect;
 
-        let p_pos = uv*SCREEN_WIDTH_IN_2D;
+        var p_pos = uv*SCREEN_WIDTH_IN_2D;
 
-        var pixel_pos = dynamic_data.additional_data;
+        // let m2 = dynamic_data.additional_data_2;
+
+        // let rot_mat = mat4x4(
+        //     m2.x, 0.0, m2.z, 0.0,
+        //     0.0, 1.0, 0.0, 0.0,
+        //     m2.y, 0.0, m2.w, 0.0,
+        //     0.0, 0.0, 0.0, 1.0,
+        // );
+
+        // p_pos = rot_mat * p_pos
+
+
+        var pixel_pos = vec4(0.0);
         pixel_pos.z += p_pos.x;
         pixel_pos.y += p_pos.y;
+
+        let m2 = dynamic_data.additional_data_2;
+
+        let rot_mat = mat4x4(
+            m2.x, 0.0, m2.z, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            m2.y, 0.0, m2.w, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        );
+
+        pixel_pos = rot_mat * pixel_pos;
+
+        pixel_pos += dynamic_data.additional_data;
 
         var dist = map(pixel_pos);
 
@@ -5057,15 +5139,11 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
         let mats = get_mats(pixel_pos, vec4(0.0), dist);
 
-        let fake_dir = normalize(vec4(-1.0,uv.x,uv.y,0.0));
+        let fake_dir = rot_mat * normalize(vec4(uv.x,uv.y,1.0,0.0));
 
         var color_and_light = get_color_and_light_from_mats_2d(pixel_pos, fake_dir, dist, mats);
-
-        // return color_and_light;
         
         var color = color_and_light.rgb;
-
-        // color += gew_w_projection_color(uv);
 
         var lightness = color_and_light.a;
 
@@ -5138,7 +5216,14 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     else
     {
         var uv: vec2<f32> = inn.position.xy;
-        uv.x -= 0.5;
+
+        if (uv.x - dynamic_data.splited_screen_in_2d_3d_example < 0.01)
+        {
+            return vec4(1.0);
+        }
+
+        let uv_center_shift = 1.0 - ((1.0 + dynamic_data.splited_screen_in_2d_3d_example) * 0.5);
+        uv.x -= uv_center_shift;
         uv *= 0.7;
         uv.x *= dynamic_data.screen_aspect;
 
@@ -5159,7 +5244,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
         var color = color_and_light.rgb;
 
-        // color += gew_w_projection_color(uv);
+        color += get_2d_player_view_slice_color(uv, dist_and_depth.x);
 
         var lightness = color_and_light.a;
 

@@ -43,7 +43,7 @@ use crate::{
             PhysicsSystem
         }, render::{camera::Camera, VisualElement}, time::TimeSystem, ui::{
             self, RectSize, UIElement, UIElementType, UISystem
-        }, world::level::Spawn
+        }, world::{level::Spawn, static_object::{BeamVolumeArea, VolumeArea}}
     },
     transform::Transform,
 };
@@ -273,6 +273,11 @@ pub struct PlayerFor2d3dExample {
     camera3d_rotation_zx: Mat4,
     camera3d_rotation_zw: Mat4,
     camera3d_offset: Vec4,
+
+    show_3d_example_target_value: f32,
+    pub show_3d_example_current_value: f32,
+
+    view_volume_beams: Vec<VolumeArea>,
 }
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 
@@ -855,6 +860,8 @@ impl Actor for PlayerFor2d3dExample {
             if let Some(vl) = visual_elem.as_mut()
             {
                 vl.player = Some((&self.inner_state.collider_for_others[0], self.inner_state.team));
+
+                // vl.volume_areas = Some(&self.view_volume_beams);
             }
             else
             {
@@ -863,7 +870,7 @@ impl Actor for PlayerFor2d3dExample {
                         transform: self.get_transform(),
                         static_objects: None,
                         coloring_areas: None,
-                        volume_areas: None,
+                        volume_areas: None,//Some(&self.view_volume_beams),
                         waves: None,
                         player: Some((&self.inner_state.collider_for_others[0], self.inner_state.team))
                     }
@@ -1033,14 +1040,38 @@ impl Actor for PlayerFor2d3dExample {
             player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
+        if input.hold_player_rotation.is_action_just_pressed()
+            {
+                if self.show_3d_example_target_value == 0.0
+                {
+                    self.show_3d_example_target_value = 1.0;
+                }
+                else
+                {
+                    self.show_3d_example_target_value = 0.0;
+                }
+            }
+
+            let example_expand_speed = 5.0 * delta;
+
+            let mut diff = self.show_3d_example_target_value - self.show_3d_example_current_value;
+
+            diff = diff.clamp(-example_expand_speed, example_expand_speed);
+
+            self.show_3d_example_current_value += diff;
+
 
         if self.inner_state.is_alive {
 
-            if input.hold_player_rotation.is_action_just_pressed()
+            let rot_mat = self.get_rotation_matrix();
+            if let VolumeArea::BeamVolumeArea(beam) = self.view_volume_beams.get_mut(0).unwrap()
             {
-                self.holding_player_rotation_along_w = !self.holding_player_rotation_along_w;
+                beam.translation_pos_2 = rot_mat.inverse() * Vec4::new(0.0, 8.0, -15.0, 0.0);
             }
-
+            if let VolumeArea::BeamVolumeArea(beam) = self.view_volume_beams.get_mut(1).unwrap()
+            {
+                beam.translation_pos_2 = rot_mat.inverse() * Vec4::new(0.0, -8.0, -15.0, 0.0);
+            }
             // if input.hold_player_rotation.is_action_pressed()
             // {
             //     self.holding_player_rotation_along_w = true;
@@ -1062,6 +1093,7 @@ impl Actor for PlayerFor2d3dExample {
             if input.second_mouse.is_action_pressed() {
                 // zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
                 xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
+                yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
 
                 // xz = input.mouse_axis.x + xz;
                 
@@ -2435,13 +2467,33 @@ impl PlayerFor2d3dExample {
 
         let player_radius = player_settings.collider_radius;
 
-        let camera3d_rotation_zy = Mat4::IDENTITY;
-        let camera3d_rotation_zx = Mat4::from_rotation_y(-PI/2.0);
+        let camera3d_rotation_zy = Mat4::from_rotation_x(PI*0.1);
+        let camera3d_rotation_zx = Mat4::from_rotation_y(-PI*0.6);
         let camera3d_rotation_zw = Mat4::IDENTITY;
 
         let camera3d_rotation = camera3d_rotation_zw * camera3d_rotation_zy * camera3d_rotation_zx;
-        let camera3d_offset = Vec4::X*15.0;
+        let camera3d_offset = Vec4::new(8.0, 3.0, -2.5, 0.0);
 
+        let view_beam_radius = 0.035;
+
+        let view_volume_beams = vec![
+            VolumeArea::BeamVolumeArea(
+                BeamVolumeArea {
+                    translation_pos_1: Vec4::ZERO,
+                    translation_pos_2: Vec4::NEG_Z * 20.0,
+                    radius: view_beam_radius,
+                    color: Vec3::ONE,
+                }
+            ),
+            VolumeArea::BeamVolumeArea(
+                BeamVolumeArea {
+                    translation_pos_1: Vec4::ZERO,
+                    translation_pos_2: Vec4::NEG_Z * 20.0,
+                    radius: view_beam_radius,
+                    color: Vec3::ONE,
+                }
+            )
+        ];
         
         PlayerFor2d3dExample {
             id: None,
@@ -2536,6 +2588,11 @@ impl PlayerFor2d3dExample {
             camera3d_rotation_zw,
             camera3d_rotation,
             camera3d_offset,
+
+            show_3d_example_current_value: 1.0,
+            show_3d_example_target_value: 1.0,
+
+            view_volume_beams,
         }
     }
 

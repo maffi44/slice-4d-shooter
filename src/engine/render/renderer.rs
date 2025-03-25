@@ -95,7 +95,7 @@ pub struct Renderer {
     sky_box_sampler: Sampler,
 
     ui_renderer: UIRenderer,
-
+    it_is_2d_3d_example: bool,
 }
 
 impl Drop for Renderer {
@@ -888,6 +888,7 @@ impl Renderer {
             ui_renderer,
             // prev_surface_texture: None,
             // prev_frame_rendered: Arc::new(Mutex::new(true)),
+            it_is_2d_3d_example,
         }
     }
 
@@ -1069,7 +1070,10 @@ impl Renderer {
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
         }
 
-        self.ui_renderer.render_ui(&mut encoder, &view);
+        if !self.it_is_2d_3d_example
+        {
+            self.ui_renderer.render_ui(&mut encoder, &view);
+        }
 
         // let istts = web_time::Instant::now();
         self.queue.submit(std::iter::once(encoder.finish()));
