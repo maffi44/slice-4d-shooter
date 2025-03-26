@@ -4580,6 +4580,7 @@ fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
     return color;
 }
 
+const STRIPES_COLOR: vec3<f32> = vec3(4.3, 0.0, 2.0);
 
 fn get_color_and_light_from_mats(
     pos: vec4<f32>,
@@ -4706,6 +4707,8 @@ fn get_color_and_light_from_mats(
 
     // let w_height_coef = clamp(hited_pos.w - 10.0 / 20.0, 0.0 ,1.0);
     // base_diffuse *= pow((1.0-w_height_coef) * 2.0, 1.0);
+
+    base_diffuse += pow((sin(hited_pos.x*3.9)+1.0)*0.5, 8.0)*STRIPES_COLOR;
     
     let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
@@ -4835,6 +4838,8 @@ fn get_color_and_light_from_mats_2d(
     light += neon_wireframe_color * wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1);// * (wireframe_fog*0.5+0.5);
 
     lightness = wireframe_dif*30.0;
+
+    base_diffuse += pow((sin(hited_pos.x*3.9)+1.0)*0.5, 8.0)*STRIPES_COLOR;
     
     let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
@@ -4981,8 +4986,9 @@ fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec3<f32
 
         let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0)*0.4 + clamp(-d*10.0,0.0,1.0)*0.03;
 
-        // return vec3(c*0.2,c*0.6, c*0.8);
-        return vec3(c);
+        let dist_coef = clamp(1.0-(dist_to_slice/13.0), 0.0, 1.0);
+        
+        return vec3(c*dist_coef);
     }
     else
     {
