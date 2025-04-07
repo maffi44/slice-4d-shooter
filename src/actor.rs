@@ -31,7 +31,7 @@ use crate::{
         },
         render::{camera::Camera, VisualElement},
         time::TimeSystem,
-        ui::UISystem
+        ui::UISystem, world::level::Spawn
     },
     transform::Transform,
 };
@@ -59,6 +59,16 @@ use self::{
 pub type ActorID = u128;
 
 pub trait Actor {
+
+    fn get_actor_as_controlled(&self) -> Option<&dyn ControlledActor>
+    {
+        None
+    }
+
+    fn get_actor_as_controlled_mut(&mut self) -> Option<&mut dyn ControlledActor>
+    {
+        None
+    }
 
     fn recieve_message(
         &mut self,
@@ -93,10 +103,6 @@ pub trait Actor {
     fn get_id(&self) -> Option<ActorID>;
         
     fn set_id(&mut self, id: ActorID);
-
-    fn get_camera(&self) -> Option<Camera> {
-        None
-    }
 
     fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
         let prev_id = match self.get_id() {
@@ -633,52 +639,106 @@ impl Actor for ActorWrapper {
         }
     }
 
-    fn get_camera(&self) -> Option<Camera> {
-        match self {
+    fn get_actor_as_controlled(&self) -> Option<&dyn ControlledActor>
+    {
+        match  self {
             ActorWrapper::Player(actor) => {
-                actor.get_camera()
+                actor.get_actor_as_controlled()
             },
             ActorWrapper::WonderingActor(actor) => {
-                actor.get_camera()
-            }
+                actor.get_actor_as_controlled()
+            },
             ActorWrapper::HoleGunShot(actor) => {
-                actor.get_camera()
-            }
+                actor.get_actor_as_controlled()
+            },
             ActorWrapper::HoleGunMiss(actor) => {
-                actor.get_camera()
-            }
+                actor.get_actor_as_controlled()
+            },
             ActorWrapper::PlayersDoll(actor) => {
-                actor.get_camera()
-            }
+                actor.get_actor_as_controlled()
+            },
             ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.get_camera()
-            }
+                actor.get_actor_as_controlled()
+            },
             ActorWrapper::MachinegunShot(actor) => {
-                actor.get_camera()
-            }
+                actor.get_actor_as_controlled()
+            },
             ActorWrapper::ShootingImpact(actor) => {
-                actor.get_camera()
-            }
+                actor.get_actor_as_controlled()
+            },
             ActorWrapper::SessionController(actor) => {
-                actor.get_camera()
+                actor.get_actor_as_controlled()
             }
             ActorWrapper::Flag(actor) => {
-                actor.get_camera()
+                actor.get_actor_as_controlled()
             }
             ActorWrapper::Hole(actor) => {
-                actor.get_camera()
+                actor.get_actor_as_controlled()
             }
             ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.get_camera()
+                actor.get_actor_as_controlled()
             }
             ActorWrapper::Wave(actor) => {
-                actor.get_camera()
+                actor.get_actor_as_controlled()
             }
             ActorWrapper::MoverW(actor) => {
-                actor.get_camera()
+                actor.get_actor_as_controlled()
             }
             ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.get_camera()
+                actor.get_actor_as_controlled()
+            }
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
+        }
+    }
+
+    fn get_actor_as_controlled_mut(&mut self) -> Option<&mut dyn ControlledActor>
+    {
+        match  self {
+            ActorWrapper::Player(actor) => {
+                actor.get_actor_as_controlled_mut()
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.get_actor_as_controlled_mut()
+            },
+            ActorWrapper::HoleGunShot(actor) => {
+                actor.get_actor_as_controlled_mut()
+            },
+            ActorWrapper::HoleGunMiss(actor) => {
+                actor.get_actor_as_controlled_mut()
+            },
+            ActorWrapper::PlayersDoll(actor) => {
+                actor.get_actor_as_controlled_mut()
+            },
+            ActorWrapper::PlayersDeathExplosion(actor) => {
+                actor.get_actor_as_controlled_mut()
+            },
+            ActorWrapper::MachinegunShot(actor) => {
+                actor.get_actor_as_controlled_mut()
+            },
+            ActorWrapper::ShootingImpact(actor) => {
+                actor.get_actor_as_controlled_mut()
+            },
+            ActorWrapper::SessionController(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::Wave(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::MoverW(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.get_actor_as_controlled_mut()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
@@ -706,11 +766,13 @@ pub enum MessageType {
     PhysicsMessages(PhysicsMessages),
 }
 
+use client_server_protocol::Team;
 use flag::Flag;
 use glam::Vec4;
 use hole::Hole;
 use move_w_bonus::{MoveWBonusSpot, MoveWBonusSpotMessage};
 use mover_w::{MoverW, MoverWMessage};
+use player::{player_input_master::InputMaster, PlayerScreenEffects};
 use player_for_2d_3d_example::PlayerFor2d3dExample;
 use session_controller::SessionController;
 use wave::Wave;
@@ -739,5 +801,24 @@ pub enum PhysicsMessages {
     StaticColliderMessage(StaticColliderMessage),
     DynamicColliderMessage(DynamicColliderMessage),
     AreaMessage(AreaMessage),
+}
+
+pub trait ControlledActor {
+    fn get_camera(&self) -> Camera;
+
+    fn get_screen_effects(&self) -> &PlayerScreenEffects;
+
+    fn get_team(&self) -> Team;
+
+    fn get_input_master(&mut self) -> &mut InputMaster;
+
+    fn spawn(
+        &mut self,
+        spawns: &mut Vec<Spawn>,
+        physics_system: &PhysicsSystem,
+        ui_system: &mut UISystem,
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle,
+    );
 }
 

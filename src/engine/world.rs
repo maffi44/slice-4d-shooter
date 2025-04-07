@@ -15,6 +15,7 @@ use crate::{
         Message,
         MessageType,
         SpecificActorMessage,
+        ControlledActor,
     },
     engine::{
         engine_handle::{
@@ -202,79 +203,15 @@ impl World {
             CommandType::RespawnPlayer(id) =>
             {
             
-                if let Some(player) = self.actors.get_mut(&id) {
+                if let Some(actor) = self.actors.get_mut(&id) {
 
-                    match player {
-                        ActorWrapper::Player(player) => {
-                            match player.get_team()
-                            {
-                                Team::Red =>
-                                {
-                                    player.respawn(
-                                        &mut self.level.red_spawns,
-                                        physics_system,
-                                        ui_system,
-                                        audio_system,
-                                        engine_handle
-                                    );
-                                }
-                                Team::Blue =>
-                                {
-                                    player.respawn(
-                                        &mut self.level.blue_spawns,
-                                        physics_system,
-                                        ui_system,
-                                        audio_system,
-                                        engine_handle
-                                    );
-                                }
-                            }
-                        }
-                        ActorWrapper::PlayerFor2d3dExample(player) => {
-                            match player.get_team()
-                            {
-                                Team::Red =>
-                                {
-                                    player.respawn(
-                                        &mut self.level.red_spawns,
-                                        physics_system,
-                                        ui_system,
-                                        audio_system,
-                                        engine_handle
-                                    );
-                                }
-                                Team::Blue =>
-                                {
-                                    player.respawn(
-                                        &mut self.level.blue_spawns,
-                                        physics_system,
-                                        ui_system,
-                                        audio_system,
-                                        engine_handle
-                                    );
-                                }
-                            }
-                        }
-                        _ => {
-                            panic!("Player send wrong ID into RespawnPlayer command. Actor with this ID is not player")
-                        }
-                    }
-                } else {
-                    //this case is possible when player send command to get respawn and before
-                    //command is processed player's id was changed (for example when game connected to singnaling server)
-
-                    // temporal solution is get main_player_id (todo: need to detect when actor change ID, store pair (new 
-                    // and old ids) for one frame and change old id for new in this case)
-
-                    let player = self.actors.get_mut(&self.main_player_id).expect("World have not actor with main_player_id");
-
-                    if let ActorWrapper::Player(player) = player {
-                        
-                        match player.get_team()
+                    if let Some(controlled_actor) = actor.get_actor_as_controlled_mut()
+                    {
+                        match controlled_actor.get_team()
                         {
                             Team::Red =>
                             {
-                                player.respawn(
+                                controlled_actor.spawn(
                                     &mut self.level.red_spawns,
                                     physics_system,
                                     ui_system,
@@ -284,8 +221,8 @@ impl World {
                             }
                             Team::Blue =>
                             {
-                                player.respawn(
-                                    &mut self.level.red_spawns,
+                                controlled_actor.spawn(
+                                    &mut self.level.blue_spawns,
                                     physics_system,
                                     ui_system,
                                     audio_system,
@@ -293,9 +230,41 @@ impl World {
                                 );
                             }
                         }
+                    }
+                } else {
+                    //this case is possible when player send command to get respawn and before
+                    //command is processed player's id was changed (for example when game connected to singnaling server)
 
-                    } else {
-                        panic!("Actor with main_player_id is not Player");
+                    // temporal solution is get main_player_id (todo: need to detect when actor change ID, store pair (new 
+                    // and old ids) for one frame and change old id for new in this case)
+
+                    let actor = self.actors.get_mut(&self.main_player_id).expect("World have not actor with main_player_id");
+
+                    if let Some(controlled_actor) = actor.get_actor_as_controlled_mut()
+                    {
+                        match controlled_actor.get_team()
+                        {
+                            Team::Red =>
+                            {
+                                controlled_actor.spawn(
+                                    &mut self.level.red_spawns,
+                                    physics_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle
+                                );
+                            }
+                            Team::Blue =>
+                            {
+                                controlled_actor.spawn(
+                                    &mut self.level.blue_spawns,
+                                    physics_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle
+                                );
+                            }
+                        }
                     }
                 }
 

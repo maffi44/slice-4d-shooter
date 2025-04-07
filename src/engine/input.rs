@@ -1,17 +1,15 @@
 pub mod action;
 
 use crate::{
-    engine::{
-        net::NetSystem,
-        world::World,
-    },
     actor::{
         player::player_input_master::InputMaster::{
             LocalMaster,
             RemoteMaster,
-        },
-        ActorWrapper,
-    },
+        }, Actor, ActorWrapper
+    }, engine::{
+        net::NetSystem,
+        world::World,
+    }
 };
 
 use self::action::Action;
@@ -328,39 +326,22 @@ impl InputSystem {
     pub fn get_input(&mut self, world: &mut World ,net: &mut NetSystem) {
 
         for (_, actor) in world.actors.iter_mut() {
-            
-            match actor {
-                ActorWrapper::Player(player) => {
-                    match &mut player.master {
-                        LocalMaster(master) => {
-                            master.current_input =
-                                ActionsFrameState::current(
-                                    &self.actions_table,
-                                    self.mouse_axis
-                                );
-                            // log::info!("current input is {:?}", master.current_input);
-                        }
-                        RemoteMaster(master) => {
-                            unimplemented!("Remote input aster didn't implement yet")
-                        }
+
+            if let Some(controlled_actor) = actor.get_actor_as_controlled_mut()
+            {
+                match controlled_actor.get_input_master() {
+                    LocalMaster(master) => {
+                        master.current_input =
+                            ActionsFrameState::current(
+                                &self.actions_table,
+                                self.mouse_axis
+                            );
+                        // log::info!("current input is {:?}", master.current_input);
+                    }
+                    RemoteMaster(master) => {
+                        unimplemented!("Remote input aster didn't implement yet")
                     }
                 }
-                ActorWrapper::PlayerFor2d3dExample(player) => {
-                    match &mut player.master {
-                        LocalMaster(master) => {
-                            master.current_input =
-                                ActionsFrameState::current(
-                                    &self.actions_table,
-                                    self.mouse_axis
-                                );
-                            // log::info!("current input is {:?}", master.current_input);
-                        }
-                        RemoteMaster(master) => {
-                            unimplemented!("Remote input aster didn't implement yet")
-                        }
-                    }
-                }
-                _ => {}
             }
         }
     }

@@ -62,7 +62,7 @@ use glam::{
 };
 
 use super::{
-    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, PhysicsMessages
+    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
 };
 
 // #[derive(Clone)]
@@ -342,16 +342,12 @@ pub const PLAYER_FREE_MOVING_SPEED_MULT: f32 = 0.6;
 
 impl Actor for PlayerFor2d3dExample {
 
-    fn get_camera(&self) -> Option<Camera> {
-        Some(
-            Camera {
-                position: self.get_position() + self.camera3d_offset,
-                rotation_matrix: self.camera3d_rotation,
-                zw_rotation_matrix: self.camera3d_rotation_zw,
-                zx_rotation_matrix: self.camera3d_rotation_zx,
-                zy_rotation_matrix: self.camera3d_rotation_zy,
-            }
-        )
+    fn get_actor_as_controlled(&self) -> Option<&dyn ControlledActor> {
+        Some(self)
+    }
+
+    fn get_actor_as_controlled_mut(&mut self) -> Option<&mut dyn ControlledActor> {
+        Some(self)
     }
 
     fn recieve_message(
@@ -2645,7 +2641,7 @@ impl PlayerFor2d3dExample {
         self.inner_state.zx_rotation
     }
 
-    pub fn get_player_visual_effects(&self) -> &PlayerScreenEffects {
+    pub fn get_screen_effects(&self) -> &PlayerScreenEffects {
         &self.screen_effects
     }
 
@@ -3297,7 +3293,145 @@ impl PlayerFor2d3dExample {
         self.current_w_level
     }
 
-    pub fn respawn(
+
+    fn set_gun_to_1_slot(
+        &mut self,
+        device: Box<dyn Device>
+    ) -> Option<Box<dyn Device>>
+    {
+
+        match device.get_device_type() {
+            DeviceType::Gun => {
+                let prev_device = self.hands_slot_1.take();
+                self.hands_slot_1 = Some(device);
+
+                return prev_device;
+            }
+            _ => {
+                Some(device)
+            }
+        }
+    }
+
+
+    fn set_gun_to_2_slot(
+        &mut self,
+        device: Box<dyn Device>
+    ) -> Option<Box<dyn Device>>
+    {
+
+        match device.get_device_type() {
+            DeviceType::Gun => {
+                let prev_device = self.hands_slot_2.take();
+                self.hands_slot_2 = Some(device);
+
+                return prev_device;
+            }
+            _ => {
+                Some(device)
+            }
+        }
+    }
+
+
+    fn set_gun_to_3_slot(
+        &mut self,
+        device: Box<dyn Device>
+    ) -> Option<Box<dyn Device>>
+    {
+
+        match device.get_device_type() {
+            DeviceType::Gun => {
+                let prev_device = self.hands_slot_3.take();
+                self.hands_slot_3 = Some(device);
+
+                return prev_device;
+            }
+            _ => {
+                Some(device)
+            }
+        }
+    }
+
+
+    fn set_device_to_device_slot(
+        &mut self,
+        slot_number: PlayersDeviceSlotNumber,
+        device: Box<dyn Device>
+    ) -> Option<Box<dyn Device>> {
+
+        match device.get_device_type() {
+            DeviceType::Device => {
+                match slot_number {
+                    PlayersDeviceSlotNumber::First => {
+                        let prev_device = self.devices[0].take();
+                        self.devices[0] = Some(device);
+                        prev_device
+                    }
+                    PlayersDeviceSlotNumber::Second => {
+                        let prev_device = self.devices[1].take();
+                        self.devices[1] = Some(device);
+                        prev_device
+                    }
+                    PlayersDeviceSlotNumber::Third => {
+                        let prev_device = self.devices[2].take();
+                        self.devices[2] = Some(device);
+                        prev_device
+                    }
+                    PlayersDeviceSlotNumber::Fourth => {
+                        let prev_device = self.devices[3].take();
+                        self.devices[3] = Some(device);
+                        prev_device
+                    }
+                }
+
+                
+            },
+            _ => {Some(device)}
+        }
+    }
+
+    fn restore_scanner_values(&mut self) {
+        self.w_scanner_enable = false;
+        self.w_scanner_radius = 0.0;
+        self.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
+        self.w_scanner_enemies_show_time = self.player_settings.scanner_show_enemies_time;
+    }
+
+    fn restore_w_shift_and_rotate_values(&mut self) {
+        self.rotating_around_w_sound_pitch = 1.0;
+        self.rotating_around_w_sound_gain = 0.0;
+        self.shifting_along_w_sound_pitch = 1.0;
+        self.shifting_along_w_sound_gain = 0.0;
+        self.player_previous_w_position = 0.0;
+    }
+}
+
+impl ControlledActor for PlayerFor2d3dExample
+{
+    fn get_camera(&self) -> Camera {
+        Camera {
+            position: self.get_position() + self.camera3d_offset,
+            rotation_matrix: self.camera3d_rotation,
+            zw_rotation_matrix: self.camera3d_rotation_zw,
+            zx_rotation_matrix: self.camera3d_rotation_zx,
+            zy_rotation_matrix: self.camera3d_rotation_zy,
+        }
+    }
+
+    fn get_screen_effects(&self) -> &PlayerScreenEffects {
+        &self.screen_effects
+    }
+
+    fn get_team(&self) -> Team {
+        self.inner_state.team
+    }
+
+    fn get_input_master(&mut self) -> &mut InputMaster {
+        &mut self.master
+    }
+
+    fn spawn(
         &mut self,
         spawns: &mut Vec<Spawn>,
         physics_system: &PhysicsSystem,
@@ -3501,118 +3635,5 @@ impl PlayerFor2d3dExample {
                 )
             }
         )
-    }
-
-
-    fn set_gun_to_1_slot(
-        &mut self,
-        device: Box<dyn Device>
-    ) -> Option<Box<dyn Device>>
-    {
-
-        match device.get_device_type() {
-            DeviceType::Gun => {
-                let prev_device = self.hands_slot_1.take();
-                self.hands_slot_1 = Some(device);
-
-                return prev_device;
-            }
-            _ => {
-                Some(device)
-            }
-        }
-    }
-
-
-    fn set_gun_to_2_slot(
-        &mut self,
-        device: Box<dyn Device>
-    ) -> Option<Box<dyn Device>>
-    {
-
-        match device.get_device_type() {
-            DeviceType::Gun => {
-                let prev_device = self.hands_slot_2.take();
-                self.hands_slot_2 = Some(device);
-
-                return prev_device;
-            }
-            _ => {
-                Some(device)
-            }
-        }
-    }
-
-
-    fn set_gun_to_3_slot(
-        &mut self,
-        device: Box<dyn Device>
-    ) -> Option<Box<dyn Device>>
-    {
-
-        match device.get_device_type() {
-            DeviceType::Gun => {
-                let prev_device = self.hands_slot_3.take();
-                self.hands_slot_3 = Some(device);
-
-                return prev_device;
-            }
-            _ => {
-                Some(device)
-            }
-        }
-    }
-
-
-    fn set_device_to_device_slot(
-        &mut self,
-        slot_number: PlayersDeviceSlotNumber,
-        device: Box<dyn Device>
-    ) -> Option<Box<dyn Device>> {
-
-        match device.get_device_type() {
-            DeviceType::Device => {
-                match slot_number {
-                    PlayersDeviceSlotNumber::First => {
-                        let prev_device = self.devices[0].take();
-                        self.devices[0] = Some(device);
-                        prev_device
-                    }
-                    PlayersDeviceSlotNumber::Second => {
-                        let prev_device = self.devices[1].take();
-                        self.devices[1] = Some(device);
-                        prev_device
-                    }
-                    PlayersDeviceSlotNumber::Third => {
-                        let prev_device = self.devices[2].take();
-                        self.devices[2] = Some(device);
-                        prev_device
-                    }
-                    PlayersDeviceSlotNumber::Fourth => {
-                        let prev_device = self.devices[3].take();
-                        self.devices[3] = Some(device);
-                        prev_device
-                    }
-                }
-
-                
-            },
-            _ => {Some(device)}
-        }
-    }
-
-    fn restore_scanner_values(&mut self) {
-        self.w_scanner_enable = false;
-        self.w_scanner_radius = 0.0;
-        self.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
-        self.w_scanner_enemies_show_time = self.player_settings.scanner_show_enemies_time;
-    }
-
-    fn restore_w_shift_and_rotate_values(&mut self) {
-        self.rotating_around_w_sound_pitch = 1.0;
-        self.rotating_around_w_sound_gain = 0.0;
-        self.shifting_along_w_sound_pitch = 1.0;
-        self.shifting_along_w_sound_gain = 0.0;
-        self.player_previous_w_position = 0.0;
     }
 }

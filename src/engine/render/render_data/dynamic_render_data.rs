@@ -1008,8 +1008,9 @@ impl DynamicRenderData {
         let main_camera =  world.actors
             .get(&world.main_player_id)
             .expect("World have wrong main_player id")
-            .get_camera()
-            .expect("Main actor have not Camera");
+            .get_actor_as_controlled()
+            .expect("Main actor is not ControlledActor")
+            .get_camera();
 
         let screen_aspect = {
             let size = window.inner_size();
@@ -1065,26 +1066,12 @@ impl DynamicRenderData {
 
 
 fn get_players_screen_effects(world: &World) -> &PlayerScreenEffects {
-    let main_player = world.actors
+    world.actors
         .get(&world.main_player_id)
-        .expect("Render system ERROR: World have not main player on main_player_id");
-
-    {
-        match main_player {
-            ActorWrapper::Player(player) =>
-            {
-                player.get_player_visual_effects()
-            }
-            ActorWrapper::PlayerFor2d3dExample(player) =>
-            {
-                player.get_player_visual_effects()
-            }
-            _ =>
-            {
-                panic!("Render system ERROR: actor with main_player_id is not a Player")
-            }
-        }
-    }
+        .expect("Render system ERROR: World have not main player on main_player_id")
+        .get_actor_as_controlled()
+        .expect("Main actor is not ControlledActor")
+        .get_screen_effects()
 }
 
 #[repr(C)]
@@ -1140,8 +1127,9 @@ impl OtherDynamicData {
             .expect("World have not main player Actor");
 
         let camera = main_actor
-            .get_camera()
-            .expect("Main actor have not Camera");
+            .get_actor_as_controlled()
+            .expect("Main actor is not ControlledActor")
+            .get_camera();
 
         // if it is 2d-3d example: send 3d slice transform data into the raymarch shader
         if let ActorWrapper::PlayerFor2d3dExample(player) = main_actor
