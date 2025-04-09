@@ -15,7 +15,7 @@ use crate::{
             Device,
             DeviceType
         },
-        player::{player_input_master, player_settings, PlayerInnerState, PlayerMessage, PlayerMovingState, PlayerScreenEffects},
+        player::{player_input_master, player_settings, player_inner_state::PlayerInnerState, PlayerMessage, PlayerMovingState, PlayerScreenEffects},
         players_doll::PlayerDollInputState,
         Actor,
         ActorID,
@@ -1192,7 +1192,7 @@ impl Actor for PlayerFor2d3dExample {
             };
 
             if let UIElement::Image(arrow) = zw_arrow {
-                arrow.set_rotation_around_screen_center(-zw+PI/2.0);
+                arrow.set_rotation_around_rect_center(-zw+PI/2.0);
             } else {
                 panic!("UI Element ZWScannerArrow is not UIImage")
             }
@@ -1233,7 +1233,7 @@ impl Actor for PlayerFor2d3dExample {
             };
 
             if let UIElement::Image(arrow) = zx_arrow {
-                arrow.set_rotation_around_screen_center(xz-PI/2.0);
+                arrow.set_rotation_around_rect_center(xz-PI/2.0);
             } else {
                 panic!("UI Element ZXScannerArrow is not UIImage")
             }
@@ -2855,7 +2855,7 @@ impl PlayerFor2d3dExample {
         }
     }
 
-    fn telefrag(&mut self, audio_system: &mut AudioSystem, engine_handle: &mut EngineHandle) {
+    fn telefraged(&mut self, audio_system: &mut AudioSystem, engine_handle: &mut EngineHandle) {
         self.die_immediately(audio_system, engine_handle);
     }
 
@@ -2892,9 +2892,9 @@ impl PlayerFor2d3dExample {
     fn make_hud_transparency_as_death_screen_effect(&mut self, ui: &mut UISystem) {
         let a = 1.0 - self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
-        hud_elem.get_ui_data_mut().rect.transparency =
-            self.fisrt_move_w_bonus_transparency_level * a;
+        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
+        // hud_elem.get_ui_data_mut().rect.transparency =
+        //     self.fisrt_move_w_bonus_transparency_level * a;
         
         // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
         // hud_elem.get_ui_data_mut().rect.transparency =
@@ -3024,8 +3024,8 @@ impl PlayerFor2d3dExample {
         let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
         *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
-        *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
+        // *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
         // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
         // *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;

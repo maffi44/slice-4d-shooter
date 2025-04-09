@@ -1,4 +1,5 @@
 pub mod player_input_master;
+pub mod player_inner_state;
 pub mod player_settings;
 
 use bincode::de;
@@ -57,6 +58,7 @@ use crate::{
 use self::{
     player_input_master::InputMaster,
     player_settings::PlayerSettings,
+    player_inner_state::PlayerInnerState,
 };
 
 use core::panic;
@@ -80,100 +82,6 @@ pub enum PlayerMovingState
     MovingParallelW(f32),
     // f32 - how much time moving free player have
     MovingFree(f32)
-}
-
-pub struct PlayerInnerState {
-    pub team: Team,
-    pub collider: KinematicCollider,
-    pub collider_for_others: Vec<PlayersDollCollider>,
-    pub transform: Transform,
-    pub hp: f32,
-    pub is_alive: bool,
-    pub is_enable: bool,
-    pub crosshair_target_size: f32,
-    pub crosshair_size: f32,
-
-    pub zw_rotation: Mat4,
-    pub zy_rotation: Mat4,
-    pub zx_rotation: Mat4,
-
-    pub is_time_after_some_team_win: bool,
-    pub amount_of_move_w_bonuses_do_i_have: u32,
-    pub player_moving_state: PlayerMovingState,
-
-    pub blue_map_w_level: f32,
-    pub red_map_w_level: f32,
-
-    pub friction_on_air: f32,
-    // pub weapon_offset: Vec4,
-}
-
-
-impl PlayerInnerState {
-    pub fn new(
-        transform: Transform,
-        settings: &PlayerSettings,
-        is_alive: bool,
-        is_enable: bool,
-        blue_map_w_level: f32,
-        red_map_w_level: f32,
-    ) -> Self {
-
-        let collider_for_others = {
-            let mut vec = Vec::with_capacity(1);
-            
-            vec.push(PlayersDollCollider {
-                position: Vec4::ZERO,
-                radius: settings.collider_radius,
-                friction: 0_f32,
-                bounce_rate: 0_f32,
-                actors_id: None,
-                weapon_offset: Vec4::Y*0.6,
-                actors_team: DEFAULT_TEAM,
-            });
-            vec
-        };
-
-        PlayerInnerState {
-            team: DEFAULT_TEAM,
-            collider: KinematicCollider::new(
-                settings.max_speed,
-                settings.max_accel,
-                settings.collider_radius,
-                settings.friction_on_air,
-                // settings.friction_on_ground,
-            ),
-            collider_for_others,
-            transform,
-            hp: 0.0,
-            is_alive,
-            is_enable,
-            crosshair_target_size: 0.04,
-            crosshair_size: 0.04,
-
-            zw_rotation: Mat4::IDENTITY,
-            zy_rotation: Mat4::IDENTITY,
-            zx_rotation: Mat4::IDENTITY,
-
-            is_time_after_some_team_win: false,
-            amount_of_move_w_bonuses_do_i_have: 0u32,
-            player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
-
-            blue_map_w_level,
-            red_map_w_level,
-            friction_on_air: settings.friction_on_air,
-        }
-    }
-
-    pub fn get_eyes_offset(&self) -> Vec4
-    {
-        Vec4::Y * self.collider.get_collider_radius() * 0.2
-    }
-
-    pub fn get_eyes_position(&self) -> Vec4
-    {
-        self.transform.get_position() + self.get_eyes_offset()
-    }
 }
 
 
@@ -203,13 +111,27 @@ pub struct PlayerScreenEffects {
     pub getting_damage_screen_effect: f32,
 }
 
+impl Default for PlayerScreenEffects
+{
+    fn default() -> Self {
+        PlayerScreenEffects {
+            w_scanner_is_active: false,
+            w_scanner_radius: 0.0,
+            w_scanner_ring_intesity: 0.0,
+            w_scanner_enemies_intesity: 0.0,
+            death_screen_effect: 0.0,
+            getting_damage_screen_effect: 0.0,
+        }
+    }
+}
+
 
 pub struct Player {
     id: Option<ActorID>,
 
     inner_state: PlayerInnerState,
 
-    view_angle: Vec4,
+    saved_angle_of_rotation: Vec4,
 
     active_hands_slot: ActiveHandsSlot, 
 
@@ -227,8 +149,8 @@ pub struct Player {
 
     no_collider_veclocity: Vec4,
 
-    explore_w_position: f32,
-    explore_w_coefficient: f32,
+    // explore_w_position: f32,
+    // explore_w_coefficient: f32,
 
     pub master: InputMaster,
 
@@ -249,24 +171,23 @@ pub struct Player {
     shifting_along_w_sound_handle: Handle<SoundSource>,
     shifting_along_w_sound_pitch: f64,
     shifting_along_w_sound_gain: f32,
-    player_previous_w_position: f32,
 
     jumped_to_y_on_current_action: bool,
     jumped_to_w_on_current_action: bool,
     jumped_to_wy_on_current_action: bool,
 
-    w_jump_reloading_time: f32,
+    // w_jump_reloading_time: f32,
 
-    need_to_rotate_w_to_zero: bool,
-    time_from_previos_second_mouse_click: f32,
+    // need_to_rotate_w_to_zero: bool,
+    // time_from_previos_second_mouse_click: f32,
 
-    w_levels_of_map: Vec<f32>,
-    current_w_level: usize,
+    // w_levels_of_map: Vec<f32>,
+    // current_w_level: usize,
 
-    show_crosshaier_hit_mark_timer: f32,
+    
 
-    fisrt_move_w_bonus_transparency_level: f32,
-    second_move_w_bonus_transparency_level: f32,
+    // fisrt_move_w_bonus_transparency_level: f32,
+    // second_move_w_bonus_transparency_level: f32,
 
     flag_pivot_offset: Vec4,
 
@@ -409,36 +330,36 @@ impl Actor for Player {
             {
                 match message
                 {
-                    SpecificActorMessage::MoverW(message) =>
-                    {
-                        match message {
-                            MoverWMessage::Rotate(lock_z, lock_w, dir) =>
-                            {
-                                audio_system.spawn_non_spatial_sound(
-                                    Sound::WShiftEnd,
-                                    0.5,
-                                    1.0,
-                                    false,
-                                    true,
-                                    fyrox_sound::source::Status::Playing
-                                );
+                    // SpecificActorMessage::MoverW(message) =>
+                    // {
+                    //     match message {
+                    //         MoverWMessage::Rotate(lock_z, lock_w, dir) =>
+                    //         {
+                    //             audio_system.spawn_non_spatial_sound(
+                    //                 Sound::WShiftEnd,
+                    //                 0.5,
+                    //                 1.0,
+                    //                 false,
+                    //                 true,
+                    //                 fyrox_sound::source::Status::Playing
+                    //             );
 
-                                match self.inner_state.player_moving_state {
-                                    PlayerMovingState::MovingPerpendicularW(_) =>
-                                    {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingParallelW(lock_z);
-                                        self.holding_player_rotation_along_w = false;
-                                    }
-                                    PlayerMovingState::MovingParallelW(_) =>
-                                    {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingPerpendicularW(lock_w);
-                                        self.holding_player_rotation_along_w = false;
-                                    }
-                                    PlayerMovingState::MovingFree(_) => {}
-                                }
-                            }
-                        }
-                    }
+                    //             match self.inner_state.player_moving_state {
+                    //                 PlayerMovingState::MovingPerpendicularW(_) =>
+                    //                 {
+                    //                     self.inner_state.player_moving_state = PlayerMovingState::MovingParallelW(lock_z);
+                    //                     self.holding_player_rotation_along_w = false;
+                    //                 }
+                    //                 PlayerMovingState::MovingParallelW(_) =>
+                    //                 {
+                    //                     self.inner_state.player_moving_state = PlayerMovingState::MovingPerpendicularW(lock_w);
+                    //                     self.holding_player_rotation_along_w = false;
+                    //                 }
+                    //                 PlayerMovingState::MovingFree(_) => {}
+                    //             }
+                    //         }
+                    //     }
+                    // }
 
                     SpecificActorMessage::PLayerMessage(message) =>
                     {
@@ -748,12 +669,14 @@ impl Actor for Player {
                         {
                             PlayersDollMessage::YouHitMe(_) =>
                             {
-                                self.show_crosshaier_hit_mark_timer = SHOW_CROSSHAIER_HIT_MARK_TIME;
+                                self.inner_state.show_crosshaier_hit_mark_timer = SHOW_CROSSHAIER_HIT_MARK_TIME;
                             }
 
                             _ => {}
                         }
                     }
+
+                    _ => {}
                 }
 
             }  
@@ -861,11 +784,8 @@ impl Actor for Player {
             }   
         };
 
-        self.process_crosshair_ui(ui_system, delta);
-
-        self.process_bonuses_ui();
-        
-
+        self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
+    
         self.screen_effects.getting_damage_screen_effect -= delta * GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED;
 
         self.screen_effects.getting_damage_screen_effect = self.screen_effects.getting_damage_screen_effect.clamp(0.0, 1.0);
@@ -879,7 +799,7 @@ impl Actor for Player {
             move_right: false,
             move_left: false,
             will_jump: false,
-            player_moving_state: self.inner_state.player_moving_state.clone(),
+            // player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
 
@@ -893,474 +813,75 @@ impl Actor for Player {
             self.screen_effects.death_screen_effect -= delta*DEATH_EFFECT_COEF_DECREASE_SPEED;
             self.screen_effects.death_screen_effect = self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
-            let mut xz = self.view_angle.x;
-            let mut yz = self.view_angle.y;
-            let mut zw = self.view_angle.w;
+            process_player_rotation(
+                &input,
+                &self.player_settings,
+                &mut self.saved_angle_of_rotation,
+                &mut self.inner_state,
+                delta
+            );
 
-            let prev_zw = zw;
+            process_w_scanner_ui(
+                ui_system,
+                &self.inner_state,
+                &self.saved_angle_of_rotation,
+            );
 
-            self.time_from_previos_second_mouse_click += delta;
-
-            if input.second_mouse.is_action_pressed() {
-                zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
-                xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                
-            } else {
-                match &mut self.inner_state.player_moving_state
-                {
-                    PlayerMovingState::MovingPerpendicularW(_) =>
-                    {
-                        if !self.holding_player_rotation_along_w
-                        {
-                            zw *= 1.0 - delta * 2.8;
-                            if zw.abs() < 0.0001 {
-                                zw = 0.0;
-                            }
-                        }
-                    }
-                    PlayerMovingState::MovingParallelW(_) =>
-                    {
-                        if !self.holding_player_rotation_along_w
-                        {
-                            // *dir = if *dir < 0.0 {-1.0} else {1.0};
-    
-                            zw = zw.lerp(PI/2.0, delta * 2.8);
-                            if PI/2.0 - zw.abs() < 0.0001 {
-                                zw = PI/2.0;
-                            }
-                        }
-                    }
-                    PlayerMovingState::MovingFree(_) => {}
-                }
-
-                xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-            }
-
-            let zw_arrow = match self.inner_state.team {
-                Team::Red => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowRed),
-                Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue),
-            };
-
-            if let UIElement::Image(arrow) = zw_arrow {
-                arrow.set_rotation_around_screen_center(-zw+PI/2.0);
-            } else {
-                panic!("UI Element ZWScannerArrow is not UIImage")
-            }
-
-            let zx_arrow = match self.inner_state.team {
-                Team::Red => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowRed),   
-                Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue),   
-            };
-
-            if let UIElement::Image(arrow) = zx_arrow {
-                arrow.set_rotation_around_screen_center(xz-PI/2.0);
-            } else {
-                panic!("UI Element ZXScannerArrow is not UIImage")
-            }
-
-            let h_pointer = match self.inner_state.team {
-                Team::Red => ui_system.get_mut_ui_element(&UIElementType::ScannerHPointerRed),
-                Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ScannerHPointerBlue),
-            };
-
-            if let UIElement::Image(h_pointer) = h_pointer {
-                let h = {
-                    (((self.get_position().w + 20.0) / 40.0) - 0.51)
-                        .clamp(-0.7, 0.8)
-                };
-                
-                h_pointer.set_position(Vec2::new(0.002, h));
-            } else {
-                panic!("UI Element ScannerHPointer is not UIImage")
-            }
-    
-            let zy_rotation = Mat4::from_rotation_x(-yz);
-
-            let zx_rotation = Mat4::from_rotation_y(-xz);
-    
-            let zw_rotation = Mat4::from_cols_slice(&[
-                1.0,    0.0,    0.0,        0.0,
-                0.0,    1.0,    0.0,        0.0,
-                0.0,    0.0,    (zw).cos(),   (zw).sin(),
-                0.0,    0.0,    -(zw).sin(),   (zw).cos()
-            ]);
-
-            self.inner_state.zw_rotation = zw_rotation;
-            self.inner_state.zy_rotation = zy_rotation;
-            self.inner_state.zx_rotation = zx_rotation;
-    
-            self.set_rotation_matrix( zw_rotation * zy_rotation * zx_rotation);
-    
-            let xz_player_rotation = Mat4::from_rotation_y(xz);
-            self.view_angle = Vec4::new(xz, yz, 0.0, zw);
-
-            let base_pitch = {
-                0.8.lerp(
-                    1.5,
-                    (std::f64::consts::PI/2.0 + zw as f64) / std::f64::consts::PI
-                )
-            };
-
-            let addition_pitch = {
-                self.rotating_around_w_sound_pitch * (1.0-delta as f64*22.0) +
-                ((prev_zw - zw) as f64).abs() * 2.0
-            };
-
-            self.rotating_around_w_sound_pitch = addition_pitch;
-
-            let gain = {
-                self.rotating_around_w_sound_gain * (1.0-(delta*42.0)) +
-                (prev_zw - zw).abs() * 10.0
-            };
-
-            self.rotating_around_w_sound_gain = gain;
-
-            audio_system.sound_set_pitch_and_gain(
+            procces_w_rotation_sound(
+                audio_system,
                 self.rotating_around_w_sound_handle,
-                base_pitch,//D + addition_pitch,
-                gain
+                &self.saved_angle_of_rotation,
+                &mut self.rotating_around_w_sound_pitch,
+                &mut self.rotating_around_w_sound_gain,
+                self.inner_state.last_frame_zw_rotation,
+                delta,
             );
 
-
-
-
-            let shift_pitch = {
-                1.0.lerp(
-                    1.5,
-                    0.5 +
-                    (
-                        (self.get_position().w - self.player_previous_w_position) *
-                        10.0
-                    ).clamp(-0.5, 0.5)
-                )
-            };
-
-            let shift_gain = {
-                0.0.lerp(
-                    1.0,
-                    (
-                        (self.get_position().w - self.player_previous_w_position).abs() *
-                        20.0
-                    ).clamp(0.0, 1.0)
-                )
-            };
-
-            // let addition_pitch = {
-            //     self.rotating_around_w_sound_pitch * (1.0-delta as f64*22.0) +
-            //     ((prev_zw - zw) as f64).abs() * 2.0
-            // };
-
-            // self.rotating_around_w_sound_pitch = addition_pitch;
-
-            // let gain = {
-            //     self.rotating_around_w_sound_gain * (1.0-(delta*42.0)) +
-            //     (prev_zw - zw).abs() * 10.0
-            // };
-
-            self.rotating_around_w_sound_gain = gain;
-
-            audio_system.sound_set_pitch_and_gain(
+            procces_w_shift_sound(
+                audio_system,
                 self.shifting_along_w_sound_handle,
-                shift_pitch as f64,//D + addition_pitch,
-                shift_gain
+                &self.inner_state,
             );
-    
-            // self.inner_state.collision.transform.rotation *= new_rotation_matrix;
-    
-            match self.active_hands_slot {
-                ActiveHandsSlot::Zero => {
-                    self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
 
-                    if let Some(device) = &mut self.hands_slot_1 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
-                    if let Some(device) = &mut self.hands_slot_2 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
-                    if let Some(device) = &mut self.hands_slot_3 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
-                },
-                ActiveHandsSlot::First => {
-                    if let Some(device) = self.hands_slot_1.as_mut() {
-                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
+            self.process_active_devices_input(
+                &input,
+                physic_system,
+                audio_system,
+                ui_system,
+                engine_handle,
+                delta,
+            );
 
-                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    if let Some(device) = &mut self.hands_slot_2 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
-                    if let Some(device) = &mut self.hands_slot_3 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
-                },
-                ActiveHandsSlot::Second => {
-                    if let Some(device) = self.hands_slot_2.as_mut() {
-                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
+            self.process_switch_active_hand_slot_input(
+                &input,
+                physic_system,
+                audio_system,
+                ui_system,
+                engine_handle,
+            );
 
-                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    if let Some(device) = &mut self.hands_slot_1 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
-                    if let Some(device) = &mut self.hands_slot_3 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
-                },
-                ActiveHandsSlot::Third => {
-                    if let Some(device) = self.hands_slot_3.as_mut() {
-                        device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
+            process_player_movement_input(
+                &input,
+                &mut player_doll_input_state,
+                &mut self.inner_state,
+                &self.player_settings,
+                delta,
+            );
 
-                    self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    if let Some(device) = &mut self.hands_slot_1 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
-                    if let Some(device) = &mut self.hands_slot_2 {
-                        device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                    }
-                }
-            }
-    
-            for device in self.devices.iter_mut() {
-                if let Some(device) = device {
-                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
-                }
-            }
-    
-            // if input.mode_1.is_action_just_pressed() {
-            //     self.is_gravity_y_enabled = !self.is_gravity_y_enabled;
-            // }
-    
-            // if input.mode_2.is_action_just_pressed() {
-            //     self.is_gravity_w_enabled = !self.is_gravity_w_enabled;
-            // }
-    
-            // if input.mode_3.is_action_just_pressed() {
-            //     self.inner_state.collider.is_enable = !self.inner_state.collider.is_enable;
-            // }
-    
-            if input.activate_hand_slot_0.is_action_just_pressed() {
-                self.deavctivate_previous_device(
-                    ActiveHandsSlot::Zero,
-                    physic_system,
-                    audio_system,
-                    ui_system,
-                    engine_handle,
-                );
-                self.active_hands_slot = ActiveHandsSlot::Zero;
+            process_player_y_jump_input(
+                &input,
+                &mut player_doll_input_state,
+                &mut self.inner_state,
+                &self.player_settings,
+            );
 
-                self.hands_slot_0.activate(
-                    self.get_id().expect("Player have not ActorID"),
-                    &mut self.inner_state,
-                    physic_system,
-                    audio_system,
-                    ui_system,
-                    engine_handle,
-                );
-            }
-    
-            if input.activate_hand_slot_1.is_action_just_pressed() {
-                if self.hands_slot_1.is_some() {
-                    self.deavctivate_previous_device(
-                        ActiveHandsSlot::First,
-                        physic_system,
-                        audio_system,
-                        ui_system,
-                        engine_handle,
-                    );
-                    self.active_hands_slot = ActiveHandsSlot::First;
+            process_player_w_jump_input(
+                &input,
+                &mut player_doll_input_state,
+                &mut self.inner_state,
+                &self.player_settings,
+            );
 
-                    self.hands_slot_1.as_mut().unwrap().activate(
-                        self.id.expect("Player have not ActorID"),
-                        &mut self.inner_state,
-                        physic_system,
-                        audio_system,
-                        ui_system,
-                        engine_handle,
-                    );
-                }
-            }
-    
-            if input.activate_hand_slot_2.is_action_just_pressed() {
-                if self.hands_slot_2.is_some() {
-                    self.deavctivate_previous_device(
-                        ActiveHandsSlot::Second,
-                        physic_system,
-                        audio_system,
-                        ui_system,
-                        engine_handle,
-                    );
-                    self.active_hands_slot = ActiveHandsSlot::Second;
-
-                    self.hands_slot_2.as_mut().unwrap().activate(
-                        self.id.expect("Player have not ActorID"),
-                        &mut self.inner_state,
-                        physic_system,
-                        audio_system,
-                        ui_system,
-                        engine_handle,
-                    );
-                }
-            }
-    
-            if input.activate_hand_slot_3.is_action_just_pressed() {
-                if self.hands_slot_3.is_some() {
-                    self.deavctivate_previous_device(
-                        ActiveHandsSlot::Third,
-                        physic_system,
-                        audio_system,
-                        ui_system,
-                        engine_handle,
-                    );
-                    self.active_hands_slot = ActiveHandsSlot::Third;
-
-                    self.hands_slot_3.as_mut().unwrap().activate(
-                        self.id.expect("Player have not ActorID"),
-                        &mut self.inner_state,
-                        physic_system,
-                        audio_system,
-                        ui_system,
-                        engine_handle,
-                    );
-                }
-            }
-    
-            let mut movement_vec = Vec4::ZERO;
-    
-            if input.move_forward.is_action_pressed() {
-
-                movement_vec += Vec4::NEG_Z;
-
-                player_doll_input_state.move_forward = true;
-            }
-    
-            if input.move_backward.is_action_pressed() {
-                
-                movement_vec += Vec4::Z;
-
-                player_doll_input_state.move_backward = true;
-            }
-    
-            if input.move_right.is_action_pressed() {
-                movement_vec += Vec4::X;
-
-                player_doll_input_state.move_right = true;
-            }
-    
-            if input.move_left.is_action_pressed() {
-                movement_vec += Vec4::NEG_X;
-                
-                player_doll_input_state.move_left = true;
-            }
-    
-            if let Some(vec) = movement_vec.try_normalize() {
-                movement_vec = vec;
-            }
-    
-            if input.jump.is_action_just_pressed() {
-
-                player_doll_input_state.will_jump = true;
-
-                self.jumped_to_y_on_current_action = false;
-    
-                if self.inner_state.collider.is_on_y_ground {
-                    self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-
-                    self.jumped_to_y_on_current_action = true;
-                    
-                    player_doll_input_state.will_jump = false;
-                }
-            }
-
-            if input.jump.is_action_pressed() {
-                if !self.jumped_to_y_on_current_action {
-                    if self.inner_state.collider.is_on_y_ground {
-                        self.inner_state.collider.add_force(Vec4::Y * self.player_settings.jump_y_speed);
-
-                        self.jumped_to_y_on_current_action = true;
-                        
-                        player_doll_input_state.will_jump = false;
-                    }
-                }
-            } else {
-                player_doll_input_state.will_jump = false;
-            }
-
-            self.w_jump_reloading_time += delta;
-
-            
-
-            if input.move_w_up.is_action_just_pressed() {
-
-                // w movement first variant
-                self.inner_state.collider.add_force(Vec4::W * self.player_settings.jump_w_speed);
-
-                if self.inner_state.amount_of_move_w_bonuses_do_i_have > 0
-                {
-
-                }
-            }
-
-            match &mut self.inner_state.player_moving_state
-            {
-                PlayerMovingState::MovingFree(time) =>
-                {
-                    *time -= delta;
-
-                    if *time <= 0.0
-                    {
-                        let w_pos = self.get_position().w;
-
-                        let mut nearest_w_level = -100000.0;
-
-                        for w_level in self.w_levels_of_map.iter()
-                        {
-                            if (w_pos - nearest_w_level).abs() >
-                                (w_pos - *w_level).abs()
-                            {
-                                nearest_w_level = *w_level;
-                            }                                    
-                        }                        
-
-                        self.inner_state.player_moving_state =
-                            PlayerMovingState::MovingPerpendicularW(nearest_w_level);
-                        
-                        self.holding_player_rotation_along_w = false;
-                    }
-                }
-                _ => {}
-            }
-
-            match &mut self.inner_state.player_moving_state
-            {
-                PlayerMovingState::MovingFree(time) =>
-                {
-
-                }
-                _ => {}
-            }
-
-
-            if input.w_up.is_action_pressed() {
-
-                if self.inner_state.collider.is_enable {
-                    self.inner_state.collider.add_force(Vec4::W * self.player_settings.jetpak_w_speed);
-                } else {
-                    self.no_collider_veclocity += Vec4::W * self.player_settings.jetpak_w_speed;
-                }
-            }
-    
-
-            if input.w_down.is_action_pressed() {
-
-                if self.inner_state.collider.is_enable {
-                    self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.jetpak_w_speed);
-                } else {
-                    self.no_collider_veclocity += Vec4::NEG_W * self.player_settings.jetpak_w_speed;
-                }
-            }
 
     
             if input.w_scanner.is_action_just_pressed() {
@@ -1396,133 +917,6 @@ impl Actor for Player {
                 
             }
     
-            
-    
-            if self.inner_state.collider.is_enable {
-    
-                if self.is_gravity_y_enabled {
-                    movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
-
-                    match self.inner_state.player_moving_state {
-                        PlayerMovingState::MovingPerpendicularW(lock_w) =>
-                        {
-                            movement_vec.y = 0.0;
-                            movement_vec.w = 0.0;
-
-                            match movement_vec.try_normalize()
-                            {
-                                Some(vec) => movement_vec = vec,
-                                None => movement_vec = Vec4::ZERO,
-                            }
-
-                            self.inner_state.collider.add_force(Vec4::NEG_W * self.player_settings.gravity_w_speed * delta);
-
-                            self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
-
-                            if self.inner_state.collider.is_on_y_ground {
-                                self.inner_state.collider.set_wish_direction(
-                                    movement_vec,
-                                    1.0
-                                );
-                            } else {
-                                self.inner_state.collider.set_wish_direction(
-                                    movement_vec,
-                                    self.player_settings.air_speed_mult
-                                );
-                            }
-
-                            self.inner_state.collider.set_friction_on_air(
-                                self.inner_state.friction_on_air
-                            );
-                        }
-
-                        PlayerMovingState::MovingParallelW(lock_z) =>
-                        {
-                            movement_vec.y = 0.0;
-                            movement_vec.z = 0.0;
-
-                            match movement_vec.try_normalize()
-                            {
-                                Some(vec) => movement_vec = vec,
-                                None => movement_vec = Vec4::ZERO,
-                            }
-
-                            let z_dif = lock_z - self.get_position().z;
-
-                            self.inner_state.collider.current_velocity.z = (z_dif*1.5).clamp(
-                                -self.player_settings.gravity_w_speed*25.0,
-                                self.player_settings.gravity_w_speed*25.0
-                            );
-
-                            self.inner_state.collider.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
-
-                            if self.inner_state.collider.is_on_y_ground {
-                                self.inner_state.collider.set_wish_direction(
-                                    movement_vec,
-                                    1.0
-                                );
-                            } else {
-                                self.inner_state.collider.set_wish_direction(
-                                    movement_vec,
-                                    self.player_settings.air_speed_mult
-                                );
-                            }
-
-                            self.inner_state.collider.set_friction_on_air(
-                                self.inner_state.friction_on_air
-                            );
-                        }
-                        PlayerMovingState::MovingFree(_) =>
-                        {
-                            match movement_vec.try_normalize()
-                            {
-                                Some(vec) => movement_vec = vec,
-                                None => movement_vec = Vec4::ZERO,
-                            }
-
-                            self.inner_state.collider.set_wish_direction(
-                                movement_vec,
-                                PLAYER_FREE_MOVING_SPEED_MULT
-                            );
-
-                            self.inner_state.collider.set_friction_on_air(
-                                self.inner_state.friction_on_air * 15.0
-                            );
-                        }
-                    }
-    
-                } else {
-                   movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
-    
-                   self.inner_state.collider.set_wish_direction(movement_vec, 1.0);
-    
-                }
-
-            } else {
-                
-                movement_vec = self.get_rotation_matrix().inverse() * movement_vec;
-    
-                const MAX_SPEED: f32 = 24.0;
-                const MAX_ACCEL: f32 = 32.0;
-    
-                if movement_vec.length().is_normal() {
-                    let current_speed_in_wishdir = self.no_collider_veclocity.dot(movement_vec);
-        
-                    let speed = MAX_SPEED - current_speed_in_wishdir;
-        
-                    let add_speed = 0.0_f32.max(speed.min(MAX_ACCEL * delta));
-        
-                    self.no_collider_veclocity += movement_vec * add_speed;
-        
-                }
-    
-                self.inner_state.transform.increment_position(self.no_collider_veclocity * delta);
-            }
-    
-            self.no_collider_veclocity *= 1.0 - delta*3.4;
-    
-            log::info!("Position: {:.2}", self.get_position());
-    
             self.screen_effects.w_scanner_is_active = self.w_scanner_enable;
             self.screen_effects.w_scanner_radius = self.w_scanner_radius;
             self.screen_effects.w_scanner_ring_intesity = {
@@ -1538,7 +932,7 @@ impl Actor for Player {
                 intensity.clamp(0.0, 1.0)
             };
 
-            self.player_previous_w_position = self.get_position().w;
+            self.inner_state.player_previous_w_position = self.inner_state.get_position().w;
 
 
             self.get_effected_by_base(delta, physic_system, audio_system, ui_system, engine_handle);
@@ -1546,7 +940,7 @@ impl Actor for Player {
             // ---------------------------------------------------
             // temp!
             // y death plane
-            if self.get_position().y < Y_DEATH_PLANE_LEVEL {
+            if self.inner_state.get_position().y < Y_DEATH_PLANE_LEVEL {
                 self.die(
                     true,
                     engine_handle,
@@ -1667,7 +1061,7 @@ impl Actor for Player {
         }
 
         audio_system.set_listener_position_and_look_vector(
-            self.get_position(),
+            self.inner_state.get_position(),
             self.get_transform().get_direction_for_audio_system()
         );
 
@@ -1681,7 +1075,7 @@ impl Actor for Player {
             v.to_array()
         };
 
-        player_doll_input_state.player_moving_state = self.inner_state.player_moving_state.clone();
+        // player_doll_input_state.player_moving_state = self.inner_state.player_moving_state.clone();
 
         engine_handle.send_command(Command{
             sender: my_id,
@@ -1699,6 +1093,307 @@ impl Actor for Player {
                 )
             )
         });
+    }
+}
+
+
+pub fn process_player_rotation(
+    input: &ActionsFrameState,
+    player_settings: &PlayerSettings,
+    saved_angle_of_rotation: &mut Vec4,
+    inner_state: &mut PlayerInnerState,
+    delta: f32,
+)
+{
+    let mut xz = saved_angle_of_rotation.x;
+    let mut yz = saved_angle_of_rotation.y;
+    let mut zw = saved_angle_of_rotation.w;
+
+    inner_state.last_frame_zw_rotation = zw;
+
+    if input.second_mouse.is_action_pressed() {
+        zw = (input.mouse_axis.y * player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
+        xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
+        
+    } else {
+        // restore player's rotation along W
+        zw *= 1.0 - delta * 2.8;
+        if zw.abs() < 0.0001 {
+            zw = 0.0;
+        }
+
+        xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
+        yz = (input.mouse_axis.y * player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+    }
+
+    let zy_rotation = Mat4::from_rotation_x(-yz);
+
+    let zx_rotation = Mat4::from_rotation_y(-xz);
+
+    let zw_rotation = Mat4::from_cols_slice(&[
+        1.0,    0.0,    0.0,        0.0,
+        0.0,    1.0,    0.0,        0.0,
+        0.0,    0.0,    (zw).cos(),   (zw).sin(),
+        0.0,    0.0,    -(zw).sin(),   (zw).cos()
+    ]);
+
+    saved_angle_of_rotation.x = xz;
+    saved_angle_of_rotation.y = yz;
+    saved_angle_of_rotation.w = zw;
+
+    inner_state.zw_rotation = zw_rotation;
+    inner_state.zy_rotation = zy_rotation;
+    inner_state.zx_rotation = zx_rotation;
+    inner_state.set_rotation_matrix( zw_rotation * zy_rotation * zx_rotation);
+}
+
+
+pub fn process_w_scanner_ui(
+    ui_system: &mut UISystem,
+    inner_state: &PlayerInnerState,
+    saved_angle_of_rotation: &Vec4,
+)
+{
+    let xz = saved_angle_of_rotation.x;
+    let zw = saved_angle_of_rotation.w;
+
+    let zw_arrow = match inner_state.team {
+        Team::Red => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowRed),
+        Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue),
+    };
+
+    if let UIElement::Image(arrow) = zw_arrow {
+        arrow.set_rotation_around_rect_center(-zw+PI/2.0);
+    } else {
+        panic!("UI Element ZWScannerArrow is not UIImage")
+    }
+
+    let zx_arrow = match inner_state.team {
+        Team::Red => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowRed),   
+        Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue),   
+    };
+
+    if let UIElement::Image(arrow) = zx_arrow {
+        arrow.set_rotation_around_rect_center(xz-PI/2.0);
+    } else {
+        panic!("UI Element ZXScannerArrow is not UIImage")
+    }
+
+    let h_pointer = match inner_state.team {
+        Team::Red => ui_system.get_mut_ui_element(&UIElementType::ScannerHPointerRed),
+        Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ScannerHPointerBlue),
+    };
+
+    if let UIElement::Image(h_pointer) = h_pointer {
+        let h = {
+            (((inner_state.get_position().w + 20.0) / 40.0) - 0.51)
+                .clamp(-0.7, 0.8)
+        };
+        
+        h_pointer.set_position(Vec2::new(0.002, h));
+    } else {
+        panic!("UI Element ScannerHPointer is not UIImage")
+    }
+}
+
+
+pub fn procces_w_rotation_sound(
+    audio_system: &mut AudioSystem,
+    rotating_around_w_sound_handle: Handle<SoundSource>,
+    saved_angle_of_rotation: &Vec4,
+    rotating_around_w_sound_pitch: &mut f64,
+    rotating_around_w_sound_gain: &mut f32,
+    last_frame_zw_rotation: f32,
+    delta: f32,
+)
+{
+    let zw = saved_angle_of_rotation.w;
+
+    let base_pitch = {
+        0.8.lerp(
+            1.5,
+            (std::f64::consts::PI/2.0 + zw as f64) / std::f64::consts::PI
+        )
+    };
+
+    let addition_pitch = {
+        *rotating_around_w_sound_pitch * (1.0-delta as f64*22.0) +
+        ((last_frame_zw_rotation - zw) as f64).abs() * 2.0
+    };
+
+    *rotating_around_w_sound_pitch = addition_pitch;
+
+    let gain = {
+        *rotating_around_w_sound_gain * (1.0-(delta*42.0)) +
+        (last_frame_zw_rotation - zw).abs() * 10.0
+    };
+
+    *rotating_around_w_sound_gain = gain;
+
+    audio_system.sound_set_pitch_and_gain(
+        rotating_around_w_sound_handle,
+        base_pitch,//D + addition_pitch,
+        gain
+    );
+}
+
+
+pub fn procces_w_shift_sound(
+    audio_system: &mut AudioSystem,
+    shifting_along_w_sound_handle: Handle<SoundSource>,
+    inner_state: &PlayerInnerState,
+)
+{
+    let shift_pitch = {
+        1.0.lerp(
+            1.5,
+            0.5 +
+            (
+                (inner_state.get_position().w - inner_state.player_previous_w_position) *
+                10.0
+            ).clamp(-0.5, 0.5)
+        )
+    };
+
+    let shift_gain = {
+        0.0.lerp(
+            1.0,
+            (
+                (inner_state.get_position().w - inner_state.player_previous_w_position).abs() *
+                20.0
+            ).clamp(0.0, 1.0)
+        )
+    };
+
+    audio_system.sound_set_pitch_and_gain(
+        shifting_along_w_sound_handle,
+        shift_pitch as f64,//D + addition_pitch,
+        shift_gain
+    );
+}
+
+
+pub fn process_player_movement_input(
+    input: &ActionsFrameState,
+    player_doll_input_state: &mut PlayerDollInputState,
+    inner_state: &mut PlayerInnerState,
+    player_settings: &PlayerSettings,
+    delta: f32,
+)
+{
+    let mut movement_vec = Vec4::ZERO;
+    
+    if input.move_forward.is_action_pressed() {
+
+        movement_vec += Vec4::NEG_Z;
+
+        player_doll_input_state.move_forward = true;
+    }
+
+    if input.move_backward.is_action_pressed() {
+        
+        movement_vec += Vec4::Z;
+
+        player_doll_input_state.move_backward = true;
+    }
+
+    if input.move_right.is_action_pressed() {
+        movement_vec += Vec4::X;
+
+        player_doll_input_state.move_right = true;
+    }
+
+    if input.move_left.is_action_pressed() {
+        movement_vec += Vec4::NEG_X;
+        
+        player_doll_input_state.move_left = true;
+    }
+
+    if let Some(vec) = movement_vec.try_normalize() {
+        movement_vec = vec;
+    }
+
+    movement_vec = inner_state.get_rotation_matrix().inverse() * movement_vec;
+    movement_vec.y = 0.0;
+    movement_vec.w = 0.0;
+
+    match movement_vec.try_normalize()
+    {
+        Some(vec) => movement_vec = vec,
+        None => movement_vec = Vec4::ZERO,
+    }
+
+    // add w gravity
+    inner_state.collider.add_force(Vec4::NEG_W * player_settings.gravity_w_speed * delta);
+    
+    // add y gravity
+    inner_state.collider.add_force(Vec4::NEG_Y * player_settings.gravity_y_speed * delta);
+
+    if inner_state.collider.is_on_y_ground {
+        inner_state.collider.set_wish_direction(
+            movement_vec,
+            1.0
+        );
+    } else {
+        inner_state.collider.set_wish_direction(
+            movement_vec,
+            player_settings.air_speed_mult
+        );
+    }
+
+    inner_state.collider.set_friction_on_air(
+        inner_state.friction_on_air
+    );
+}
+
+
+pub fn process_player_y_jump_input(
+    input: &ActionsFrameState,
+    player_doll_input_state: &mut PlayerDollInputState,
+    inner_state: &mut PlayerInnerState,
+    player_settings: &PlayerSettings,
+)
+{
+    if input.jump.is_action_just_pressed() {
+
+        player_doll_input_state.will_jump = true;
+
+        inner_state.jumped_to_y_on_current_action = false;
+
+        if inner_state.collider.is_on_y_ground {
+            inner_state.collider.add_force(Vec4::Y * player_settings.jump_y_speed);
+
+            inner_state.jumped_to_y_on_current_action = true;
+            
+            player_doll_input_state.will_jump = false;
+        }
+    }
+
+    if input.jump.is_action_pressed() {
+        if !inner_state.jumped_to_y_on_current_action {
+            if inner_state.collider.is_on_y_ground {
+                inner_state.collider.add_force(Vec4::Y * player_settings.jump_y_speed);
+
+                inner_state.jumped_to_y_on_current_action = true;
+                
+                player_doll_input_state.will_jump = false;
+            }
+        }
+    } else {
+        player_doll_input_state.will_jump = false;
+    }
+}
+
+
+pub fn process_player_w_jump_input(
+    input: &ActionsFrameState,
+    player_doll_input_state: &mut PlayerDollInputState,
+    inner_state: &mut PlayerInnerState,
+    player_settings: &PlayerSettings,
+)
+{
+    if input.move_w_up.is_action_just_pressed() {
+        inner_state.collider.add_force(Vec4::W * player_settings.jump_w_speed);
     }
 }
 
@@ -1800,12 +1495,12 @@ impl Player {
 
             master,
 
-            explore_w_position: 0.0,
-            explore_w_coefficient: 0.0,
+            // explore_w_position: 0.0,
+            // explore_w_coefficient: 0.0,
 
             no_collider_veclocity: Vec4::ZERO,
 
-            view_angle: Vec4::ZERO,
+            saved_angle_of_rotation: Vec4::ZERO,
 
             screen_effects,
 
@@ -1824,24 +1519,19 @@ impl Player {
             shifting_along_w_sound_handle,
             shifting_along_w_sound_pitch: 1.0,
             shifting_along_w_sound_gain: 0.0,
-            player_previous_w_position: 0.0,
 
             jumped_to_y_on_current_action: false,
             jumped_to_w_on_current_action: false,
             jumped_to_wy_on_current_action: false,
 
-            w_jump_reloading_time: 0.0,
+            // need_to_rotate_w_to_zero: true,
+            // time_from_previos_second_mouse_click: 0.0,
 
-            need_to_rotate_w_to_zero: true,
-            time_from_previos_second_mouse_click: 0.0,
+            // w_levels_of_map,
+            // current_w_level: 0,
 
-            w_levels_of_map,
-            current_w_level: 0,
-
-            show_crosshaier_hit_mark_timer: 0.0,
-
-            fisrt_move_w_bonus_transparency_level: HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL,
-            second_move_w_bonus_transparency_level: HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL,
+            // fisrt_move_w_bonus_transparency_level: HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL,
+            // second_move_w_bonus_transparency_level: HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL,
 
             flag_pivot_offset: Vec4::new(0.0, player_radius * 2.0, 0.0, 0.0),
 
@@ -1851,250 +1541,46 @@ impl Player {
         }
     }
 
-    pub fn process_bonuses_ui(&mut self)
-    {
-        match self.inner_state.amount_of_move_w_bonuses_do_i_have
-        {
-            0 =>
-            {
-                self.fisrt_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
-                self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
-            }
+    // pub fn process_bonuses_ui(&mut self)
+    // {
+    //     match self.inner_state.amount_of_move_w_bonuses_do_i_have
+    //     {
+    //         0 =>
+    //         {
+    //             self.fisrt_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
+    //             self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
+    //         }
 
-            1 =>
-            {
-                self.fisrt_move_w_bonus_transparency_level = 1.0;
-                self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
-            }
+    //         1 =>
+    //         {
+    //             self.fisrt_move_w_bonus_transparency_level = 1.0;
+    //             self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
+    //         }
 
-            2 =>
-            {
-                self.fisrt_move_w_bonus_transparency_level = 1.0;
-                self.second_move_w_bonus_transparency_level = 1.0;
-            }
+    //         2 =>
+    //         {
+    //             self.fisrt_move_w_bonus_transparency_level = 1.0;
+    //             self.second_move_w_bonus_transparency_level = 1.0;
+    //         }
 
-            _ => panic!("Player have move w bonuses > 2")
-        }
-    }
-    pub fn process_crosshair_ui(&mut self, ui_system: &mut UISystem, delta: f32)
-    {
-        let crosshair = ui_system.get_mut_ui_element(&UIElementType::Crosshair);
+    //         _ => panic!("Player have move w bonuses > 2")
+    //     }
+    // }
 
-        if let UIElement::Image(crosshair) = crosshair {
-            crosshair.ui_data.rect.size = RectSize::LockedHeight(self.inner_state.crosshair_size);
-        }
 
-        self.inner_state.crosshair_target_size = self.inner_state.crosshair_target_size
-            .min(CROSSHAIR_MAX_SIZE); 
-
-        if self.inner_state.crosshair_size < self.inner_state.crosshair_target_size {
-
-            self.inner_state.crosshair_size += CROSSHAIR_INCREASING_SPEED*delta;
-
-            if self.inner_state.crosshair_size >= self.inner_state.crosshair_target_size {
-                self.inner_state.crosshair_size = self.inner_state.crosshair_target_size;
-                
-                self.inner_state.crosshair_target_size = CROSSHAIR_MIN_SIZE;
-            }
-        } else {
-            self.inner_state.crosshair_size =
-                (self.inner_state.crosshair_size - CROSSHAIR_DECREASING_SPEED*delta)
-                .max(CROSSHAIR_MIN_SIZE);
-        }
-
-        if self.show_crosshaier_hit_mark_timer > 0.0
-        {
-            let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
-    
-            *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-            self.show_crosshaier_hit_mark_timer -= delta;
-        }
-        else
-        {
-            let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
-    
-            *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-        }
+    fn restore_scanner_values(&mut self) {
+        self.w_scanner_enable = false;
+        self.w_scanner_radius = 0.0;
+        self.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
+        self.w_scanner_enemies_show_time = self.player_settings.scanner_show_enemies_time;
     }
 
-
-    pub fn get_team(&self) -> Team
-    {
-        self.inner_state.team
-    }
-
-    pub fn get_explore_w_position(&self) -> f32 {
-        self.explore_w_position
-    }
-
-    pub fn get_explore_w_coefficient(&self) -> f32 {
-        self.explore_w_coefficient
-    }
-
-    pub fn get_position(&self) -> Vec4 {
-        self.inner_state.transform.get_position()
-    }
-
-    pub fn get_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.transform.get_rotation()
-    }
-
-    pub fn get_zw_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.zw_rotation
-    }
-
-    pub fn get_zy_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.zy_rotation
-    }
-
-    pub fn get_zx_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.zx_rotation
-    }
-
-    pub fn get_screen_effects(&self) -> &PlayerScreenEffects {
-        &self.screen_effects
-    }
-
-
-    pub fn set_rotation_matrix(&mut self, new_rotation: Mat4) {
-        self.inner_state.transform.set_rotation(new_rotation)
-    }
-
-
-    pub fn get_collider_radius(&self) -> f32 {
-        self.inner_state.collider.get_collider_radius()
-    }
-
-    pub fn get_eyes_position(&self) -> Vec4
-    {
-        self.inner_state.get_eyes_position()
-    }
-
-
-    fn get_effected_by_base(
-        &mut self,
-        delta: f32,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-    ) {
-        let base_coef = 
-        {
-            let w_pos = self.get_position().w;
-
-            let mut coef = f32::clamp(
-                (w_pos - self.inner_state.blue_map_w_level) /
-                (self.inner_state.red_map_w_level - self.inner_state.blue_map_w_level),
-                    0.0,
-                    1.0
-            );
-
-            if self.inner_state.team == Team::Blue
-            {
-                coef = 1.0 - coef;
-            }
-
-            coef = (coef * 2.0) - 1.0;
-
-            coef.max(0.0)
-        };
-
-        self.inner_state.hp += BASE_EFFECT_HP_IMPACT_SPEED * delta * base_coef;
-
-        if self.inner_state.hp > PLAYER_MAX_HP
-        {
-            self.inner_state.hp = PLAYER_MAX_HP;
-        }
-
-        let health_bar = match self.inner_state.team {
-            Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
-            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
-        };
-
-        if let UIElement::ProgressBar(bar) = health_bar {
-            let bar_value = {
-                (self.inner_state.hp as f32 / PLAYER_MAX_HP as f32)
-                    .clamp(0.0, 1.0)
-            };
-
-            bar.set_bar_value(bar_value)
-
-        } else {
-            panic!("Health Bar is not Progress Bar")
-        }
-
-        if self.inner_state.hp <= 0.0
-        {
-            self.die(true, engine_handle, physic_system, audio_system, ui_system);
-        }
-    }
-
-    fn get_damage_and_add_force(
-        &mut self,
-        damage: i32,
-        force: Vec4,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-    ) {
-
-        audio_system.spawn_non_spatial_sound(
-            Sound::PlayerHited,
-            0.6.lerp(1.0, (damage as f32/PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
-            1.0,
-            false,
-            true,
-            fyrox_sound::source::Status::Playing
-        );
-
-        self.screen_effects.getting_damage_screen_effect = 1.0;
-
-        self.inner_state.hp -= damage as f32;
-        self.inner_state.collider.add_force(force);
-
-        let health_bar = match self.inner_state.team {
-            Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
-            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
-        };
-
-        if let UIElement::ProgressBar(bar) = health_bar {
-            let bar_value = {
-                (self.inner_state.hp as f32 / PLAYER_MAX_HP as f32)
-                    .clamp(0.0, 1.0)
-            };
-
-            bar.set_bar_value(bar_value)
-
-        } else {
-            panic!("Health Bar is not Progress Bar")
-        }
-
-        if self.inner_state.hp <= 0.0 {
-            if damage as f32 >= PLAYER_MAX_HP {
-                self.die(
-                    true,
-                    engine_handle,
-                    physic_system,
-                    audio_system,
-                    ui_system,
-                );
-            } else {
-
-                // self.die(false, engine_handle, physic_system, audio_system);
-                
-                // temproral solution
-                self.die(
-                    true,
-                    engine_handle,
-                    physic_system,
-                    audio_system,
-                    ui_system,
-                );
-            }
-        }
+    fn restore_w_shift_and_rotate_values(&mut self) {
+        self.rotating_around_w_sound_pitch = 1.0;
+        self.rotating_around_w_sound_gain = 0.0;
+        self.shifting_along_w_sound_pitch = 1.0;
+        self.shifting_along_w_sound_gain = 0.0;
+        self.player_previous_w_position = 0.0;
     }
 
     fn deavctivate_previous_device(&mut self,
@@ -2166,7 +1652,7 @@ impl Player {
         }
     }
 
-    fn telefrag(&mut self, audio_system: &mut AudioSystem, engine_handle: &mut EngineHandle) {
+    fn telefraged(&mut self, audio_system: &mut AudioSystem, engine_handle: &mut EngineHandle) {
         self.die_immediately(audio_system, engine_handle);
     }
 
@@ -2203,9 +1689,9 @@ impl Player {
     fn make_hud_transparency_as_death_screen_effect(&mut self, ui: &mut UISystem) {
         let a = 1.0 - self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
-        hud_elem.get_ui_data_mut().rect.transparency =
-            self.fisrt_move_w_bonus_transparency_level * a;
+        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
+        // hud_elem.get_ui_data_mut().rect.transparency =
+        //     self.fisrt_move_w_bonus_transparency_level * a;
         
         // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
         // hud_elem.get_ui_data_mut().rect.transparency =
@@ -2335,8 +1821,8 @@ impl Player {
         let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
         *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
-        *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
+        // *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
         // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
         // *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
@@ -2584,7 +2070,6 @@ impl Player {
         }
 
         self.restore_scanner_values();
-
         self.restore_w_shift_and_rotate_values();
 
         if die_immediately {
@@ -2594,15 +2079,140 @@ impl Player {
         }
     }
 
-    pub fn set_current_w_level(&mut self, w_level: usize)
-    {
-        self.current_w_level = w_level;
+    fn get_damage_and_add_force(
+        &mut self,
+        damage: i32,
+        force: Vec4,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
+    ) {
+
+        audio_system.spawn_non_spatial_sound(
+            Sound::PlayerHited,
+            0.6.lerp(1.0, (damage as f32/PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
+            1.0,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing
+        );
+
+        self.screen_effects.getting_damage_screen_effect = 1.0;
+
+        self.inner_state.hp -= damage as f32;
+        self.inner_state.collider.add_force(force);
+
+        let health_bar = match self.inner_state.team {
+            Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
+            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
+        };
+
+        if let UIElement::ProgressBar(bar) = health_bar {
+            let bar_value = {
+                (self.inner_state.hp as f32 / PLAYER_MAX_HP as f32)
+                    .clamp(0.0, 1.0)
+            };
+
+            bar.set_bar_value(bar_value)
+
+        } else {
+            panic!("Health Bar is not Progress Bar")
+        }
+
+        if self.inner_state.hp <= 0.0 {
+            if damage as f32 >= PLAYER_MAX_HP {
+                self.die(
+                    true,
+                    engine_handle,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                );
+            } else {
+
+                // self.die(false, engine_handle, physic_system, audio_system);
+                
+                // temproral solution
+                self.die(
+                    true,
+                    engine_handle,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                );
+            }
+        }
     }
 
-    pub fn get_current_w_level(&self) -> usize
-    {
-        self.current_w_level
+    fn get_effected_by_base(
+        &mut self,
+        delta: f32,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
+    ) {
+        let base_coef = 
+        {
+            let w_pos = self.inner_state.get_position().w;
+
+            let mut coef = f32::clamp(
+                (w_pos - self.inner_state.blue_map_w_level) /
+                (self.inner_state.red_map_w_level - self.inner_state.blue_map_w_level),
+                    0.0,
+                    1.0
+            );
+
+            if self.inner_state.team == Team::Blue
+            {
+                coef = 1.0 - coef;
+            }
+
+            coef = (coef * 2.0) - 1.0;
+
+            coef.max(0.0)
+        };
+
+        self.inner_state.hp += BASE_EFFECT_HP_IMPACT_SPEED * delta * base_coef;
+
+        if self.inner_state.hp > PLAYER_MAX_HP
+        {
+            self.inner_state.hp = PLAYER_MAX_HP;
+        }
+
+        let health_bar = match self.inner_state.team {
+            Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
+            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
+        };
+
+        if let UIElement::ProgressBar(bar) = health_bar {
+            let bar_value = {
+                (self.inner_state.hp as f32 / PLAYER_MAX_HP as f32)
+                    .clamp(0.0, 1.0)
+            };
+
+            bar.set_bar_value(bar_value)
+
+        } else {
+            panic!("Health Bar is not Progress Bar")
+        }
+
+        if self.inner_state.hp <= 0.0
+        {
+            self.die(true, engine_handle, physic_system, audio_system, ui_system);
+        }
     }
+
+    // pub fn set_current_w_level(&mut self, w_level: usize)
+    // {
+    //     self.current_w_level = w_level;
+    // }
+
+    // pub fn get_current_w_level(&self) -> usize
+    // {
+    //     self.current_w_level
+    // }
 
     fn set_gun_to_1_slot(
         &mut self,
@@ -2664,7 +2274,7 @@ impl Player {
     }
 
 
-    fn set_device_to_device_slot(
+    fn put_device_into_device_slot(
         &mut self,
         slot_number: PlayersDeviceSlotNumber,
         device: Box<dyn Device>
@@ -2701,19 +2311,174 @@ impl Player {
         }
     }
 
-    fn restore_scanner_values(&mut self) {
-        self.w_scanner_enable = false;
-        self.w_scanner_radius = 0.0;
-        self.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
-        self.w_scanner_enemies_show_time = self.player_settings.scanner_show_enemies_time;
+
+    fn process_switch_active_hand_slot_input(
+        &mut self,
+        input: &ActionsFrameState,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
+    )
+    {
+        if input.activate_hand_slot_0.is_action_just_pressed() {
+            self.deavctivate_previous_device(
+                ActiveHandsSlot::Zero,
+                physic_system,
+                audio_system,
+                ui_system,
+                engine_handle,
+            );
+            self.active_hands_slot = ActiveHandsSlot::Zero;
+
+            self.hands_slot_0.activate(
+                self.get_id().expect("Player have not ActorID"),
+                &mut self.inner_state,
+                physic_system,
+                audio_system,
+                ui_system,
+                engine_handle,
+            );
+        }
+
+        if input.activate_hand_slot_1.is_action_just_pressed() {
+            if self.hands_slot_1.is_some() {
+                self.deavctivate_previous_device(
+                    ActiveHandsSlot::First,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+                self.active_hands_slot = ActiveHandsSlot::First;
+
+                self.hands_slot_1.as_mut().unwrap().activate(
+                    self.id.expect("Player have not ActorID"),
+                    &mut self.inner_state,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+            }
+        }
+
+        if input.activate_hand_slot_2.is_action_just_pressed() {
+            if self.hands_slot_2.is_some() {
+                self.deavctivate_previous_device(
+                    ActiveHandsSlot::Second,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+                self.active_hands_slot = ActiveHandsSlot::Second;
+
+                self.hands_slot_2.as_mut().unwrap().activate(
+                    self.id.expect("Player have not ActorID"),
+                    &mut self.inner_state,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+            }
+        }
+
+        if input.activate_hand_slot_3.is_action_just_pressed() {
+            if self.hands_slot_3.is_some() {
+                self.deavctivate_previous_device(
+                    ActiveHandsSlot::Third,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+                self.active_hands_slot = ActiveHandsSlot::Third;
+
+                self.hands_slot_3.as_mut().unwrap().activate(
+                    self.id.expect("Player have not ActorID"),
+                    &mut self.inner_state,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+            }
+        }
     }
 
-    fn restore_w_shift_and_rotate_values(&mut self) {
-        self.rotating_around_w_sound_pitch = 1.0;
-        self.rotating_around_w_sound_gain = 0.0;
-        self.shifting_along_w_sound_pitch = 1.0;
-        self.shifting_along_w_sound_gain = 0.0;
-        self.player_previous_w_position = 0.0;
+    fn process_active_devices_input(
+        &mut self,
+        input: &ActionsFrameState,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32,
+    )
+    {
+        let my_id = self.get_id().expect("Player have not ActorID");
+        match self.active_hands_slot {
+            ActiveHandsSlot::Zero => {
+                self.hands_slot_0.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+
+                if let Some(device) = &mut self.hands_slot_1 {
+                    device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+                if let Some(device) = &mut self.hands_slot_2 {
+                    device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+                if let Some(device) = &mut self.hands_slot_3 {
+                    device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+            },
+            ActiveHandsSlot::First => {
+                if let Some(device) = self.hands_slot_1.as_mut() {
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+
+                self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                if let Some(device) = &mut self.hands_slot_2 {
+                    device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+                if let Some(device) = &mut self.hands_slot_3 {
+                    device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+            },
+            ActiveHandsSlot::Second => {
+                if let Some(device) = self.hands_slot_2.as_mut() {
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+
+                self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                if let Some(device) = &mut self.hands_slot_1 {
+                    device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+                if let Some(device) = &mut self.hands_slot_3 {
+                    device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+            },
+            ActiveHandsSlot::Third => {
+                if let Some(device) = self.hands_slot_3.as_mut() {
+                    device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+
+                self.hands_slot_0.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                if let Some(device) = &mut self.hands_slot_1 {
+                    device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+                if let Some(device) = &mut self.hands_slot_2 {
+                    device.process_while_deactive(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+                }
+            }
+        }
+
+        for device in self.devices.iter_mut() {
+            if let Some(device) = device {
+                device.process_input(my_id, &mut self.inner_state, &input, physic_system, audio_system, ui_system, engine_handle, delta);
+            }
+        }
     }
 }
 
@@ -2721,11 +2486,11 @@ impl ControlledActor for Player
 {
     fn get_camera(&self) -> Camera {
         Camera {
-            position: self.get_eyes_position(),
-            rotation_matrix: self.get_rotation_matrix(),
-            zw_rotation_matrix: self.get_zw_rotation_matrix(),
-            zx_rotation_matrix: self.get_zx_rotation_matrix(),
-            zy_rotation_matrix: self.get_zy_rotation_matrix(),
+            position: self.inner_state.get_eyes_position(),
+            rotation_matrix: self.inner_state.get_rotation_matrix(),
+            zw_rotation_matrix: self.inner_state.get_zw_rotation_matrix(),
+            zx_rotation_matrix: self.inner_state.get_zx_rotation_matrix(),
+            zy_rotation_matrix: self.inner_state.get_zy_rotation_matrix(),
         }
     }
 
@@ -2758,7 +2523,7 @@ impl ControlledActor for Player
         {
             let hits = physics_system.sphere_cast_on_dynamic_colliders(
                 spawn.spawn_position,
-                self.get_collider_radius(),
+                self.inner_state.get_collider_radius(),
                 Some(self.get_id().expect("Player hasn't ActorID"))
             );
     
@@ -2779,7 +2544,7 @@ impl ControlledActor for Player
 
         let hits = physics_system.sphere_cast_on_dynamic_colliders(
             current_spawn.spawn_position,
-            self.get_collider_radius(),
+            self.inner_state.get_collider_radius(),
             Some(self.get_id().expect("Player hasn't ActorID"))
         );
 
@@ -2802,10 +2567,10 @@ impl ControlledActor for Player
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
         self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
-        self.inner_state.player_moving_state =
-            PlayerMovingState::MovingPerpendicularW(self.w_levels_of_map[current_spawn.w_level]);
+        // self.inner_state.player_moving_state =
+        //     PlayerMovingState::MovingPerpendicularW(self.w_levels_of_map[current_spawn.w_level]);
 
-        self.view_angle = Vec4::ZERO;
+        self.saved_angle_of_rotation = Vec4::ZERO;
 
         self.restore_scanner_values();
 
@@ -2914,9 +2679,9 @@ impl ControlledActor for Player
 
         self.inner_state.transform = Transform::from_position(current_spawn.spawn_position);
 
-        self.current_w_level = current_spawn.w_level;
+        // self.current_w_level = current_spawn.w_level;
 
-        self.player_previous_w_position = current_spawn.spawn_position.w;
+        self.inner_state.player_previous_w_position = current_spawn.spawn_position.w;
 
         let player_doll_input_state = PlayerDollInputState {
             move_forward: false,
@@ -2924,7 +2689,7 @@ impl ControlledActor for Player
             move_right: false,
             move_left: false,
             will_jump: false,
-            player_moving_state: self.inner_state.player_moving_state.clone(),
+            // player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
         engine_handle.send_command(

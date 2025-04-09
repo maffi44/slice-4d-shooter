@@ -3,7 +3,7 @@ pub mod machinegun;
 
 use crate::{
     actor::{
-        player::PlayerInnerState,
+        player::player_inner_state::PlayerInnerState,
         ActorID,
     }, engine::{
         audio::AudioSystem, engine_handle::EngineHandle, input::ActionsFrameState, physics::PhysicsSystem, render::VisualElement, ui::UISystem

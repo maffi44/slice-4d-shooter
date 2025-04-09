@@ -4,7 +4,7 @@ use crate::{
     actor::{
         machinegun_shot::MachinegunShot,
         player::{
-            PlayerInnerState,
+            player_inner_state::PlayerInnerState,
             PlayerMessage
         },
         ActorID,

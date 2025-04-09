@@ -11,7 +11,7 @@ use crate::{
         holegun_miss::HoleGunMiss,
         holegun_shot::HoleGunShot,
         player::{
-            PlayerInnerState,
+            player_inner_state::PlayerInnerState,
             PlayerMessage
         },
         ActorID,

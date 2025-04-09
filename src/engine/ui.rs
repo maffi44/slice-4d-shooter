@@ -129,7 +129,7 @@ pub enum UIElementType {
     SecondScoreMarkRed,
     ThirdScoreMarkRed,
     FinalScoreMarkRed,
-    MoveWBonusMarkFirst,
+    // MoveWBonusMarkFirst,
     // MoveWBonusMarkSecond,
     RedTeamWinTitle,
     BlueTeamWinTitle,
@@ -345,7 +345,6 @@ impl UISystem {
                                 0.04
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -369,7 +368,6 @@ impl UISystem {
                                 0.055
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -393,7 +391,6 @@ impl UISystem {
                                 0.322
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -441,7 +438,6 @@ impl UISystem {
                                 0.322
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -490,7 +486,6 @@ impl UISystem {
                                 0.053
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
                             transform_buffer: None,
@@ -515,7 +510,6 @@ impl UISystem {
                                 0.053
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
                             transform_buffer: None,
@@ -540,7 +534,6 @@ impl UISystem {
                                 0.81
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
                             transform_buffer: None,
@@ -565,7 +558,6 @@ impl UISystem {
                                 0.81
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
                             transform_buffer: None,
@@ -590,7 +582,6 @@ impl UISystem {
                                 0.81
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
                             transform_buffer: None,
@@ -615,7 +606,6 @@ impl UISystem {
                                 0.81
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
                             transform_buffer: None,
@@ -640,7 +630,6 @@ impl UISystem {
                                 0.81
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 2,
                             transform_buffer: None,
@@ -665,7 +654,6 @@ impl UISystem {
                                 0.81
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 2,
                             transform_buffer: None,
@@ -690,7 +678,6 @@ impl UISystem {
                                 0.81
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 2,
                             transform_buffer: None,
@@ -715,7 +702,6 @@ impl UISystem {
                                 0.81
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 2,
                             transform_buffer: None,
@@ -739,7 +725,6 @@ impl UISystem {
                                 0.224
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -767,7 +752,6 @@ impl UISystem {
                                 0.224
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -795,7 +779,6 @@ impl UISystem {
                                 0.224
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -824,7 +807,6 @@ impl UISystem {
                                 0.224
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -853,7 +835,6 @@ impl UISystem {
                                 0.224
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -877,7 +858,6 @@ impl UISystem {
                                 0.224
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -906,7 +886,6 @@ impl UISystem {
                                 0.224
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -935,7 +914,6 @@ impl UISystem {
                                 0.224
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -947,30 +925,30 @@ impl UISystem {
                 )
             )
         );
-        ui_elements.insert(
-            UIElementType::MoveWBonusMarkFirst,
-            UIElement::Image(
-                UIImage::new(
-                    UIData::new(
-                        UIRect {
-                            anchor: RectAnchor::DownLeft,
-                            position: Vec2::new(-1.0, -1.0),
-                            size: RectSize::LockedWight(
-                                0.224
-                            ),
-                            rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
-                            transparency: 1.0,
-                            drawing_order: 0,
-                            transform_buffer: None,
-                        },
-                        false,
-                        None,
-                    ),
-                    TextureType::MoveWBonusImageFirst
-                )
-            )
-        );
+        // ui_elements.insert(
+        //     UIElementType::MoveWBonusMarkFirst,
+        //     UIElement::Image(
+        //         UIImage::new(
+        //             UIData::new(
+        //                 UIRect {
+        //                     anchor: RectAnchor::DownLeft,
+        //                     position: Vec2::new(-1.0, -1.0),
+        //                     size: RectSize::LockedWight(
+        //                         0.224
+        //                     ),
+        //                     rotation_around_rect_center: 0.0,
+        //                     rotation_around_screen_center: 0.0,
+        //                     transparency: 1.0,
+        //                     drawing_order: 0,
+        //                     transform_buffer: None,
+        //                 },
+        //                 false,
+        //                 None,
+        //             ),
+        //             TextureType::MoveWBonusImageFirst
+        //         )
+        //     )
+        // );
         // ui_elements.insert(
         //     UIElementType::MoveWBonusMarkSecond,
         //     UIElement::Image(
@@ -1007,7 +985,6 @@ impl UISystem {
                                 0.345
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1031,7 +1008,6 @@ impl UISystem {
                                 0.03
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1055,7 +1031,6 @@ impl UISystem {
                                 0.03
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1079,7 +1054,6 @@ impl UISystem {
                                 0.00633
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1103,7 +1077,6 @@ impl UISystem {
                                 0.00633
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1127,7 +1100,6 @@ impl UISystem {
                                 0.00633
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1151,7 +1123,6 @@ impl UISystem {
                                 0.0267
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1175,7 +1146,6 @@ impl UISystem {
                                 0.00633
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1199,7 +1169,6 @@ impl UISystem {
                                 0.00633
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1223,7 +1192,6 @@ impl UISystem {
                                 0.00633
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1247,7 +1215,6 @@ impl UISystem {
                                 0.0267
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1272,7 +1239,6 @@ impl UISystem {
                                 1.0
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1297,7 +1263,6 @@ impl UISystem {
                                 1.0
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1321,7 +1286,6 @@ impl UISystem {
                                 0.3,
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1345,7 +1309,6 @@ impl UISystem {
                                 0.3,
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1369,7 +1332,6 @@ impl UISystem {
                                 0.45,
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1393,7 +1355,6 @@ impl UISystem {
                                 0.45,
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1418,7 +1379,6 @@ impl UISystem {
                                 1.0
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1443,7 +1403,6 @@ impl UISystem {
                                 1.0
                             ),
                             rotation_around_rect_center: 0.0,
-                            rotation_around_screen_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
                             transform_buffer: None,
@@ -1757,7 +1716,6 @@ pub struct UIRect {
     // size of rect in screen space
     pub size: RectSize,
     pub rotation_around_rect_center: f32,
-    pub rotation_around_screen_center: f32,
 
     pub transparency: f32,
     pub drawing_order: usize,
@@ -1826,7 +1784,7 @@ impl UIRect {
 
             return RectTransformUniform {
                 rotation_around_rect_center: self.rotation_around_rect_center,
-                rotation_around_screen_center: self.rotation_around_screen_center,
+                rotation_around_screen_center: self.rotation_around_rect_center,
                 transparency: self.transparency,
                 empty_bytes: 0.0,
                 scale,
@@ -1899,7 +1857,7 @@ impl UIRect {
             
             return RectTransformUniform {
                 rotation_around_rect_center: self.rotation_around_rect_center,
-                rotation_around_screen_center: self.rotation_around_screen_center,
+                rotation_around_screen_center: self.rotation_around_rect_center,
                 transparency: self.transparency,
                 empty_bytes: 0.0,
                 scale,
@@ -1962,20 +1920,12 @@ impl UIData {
         self.rect.position
     }
 
-    pub fn set_rotation_around_screen_center(&mut self, rotation_around_screen_center: f32) {
-        self.rect.rotation_around_screen_center = rotation_around_screen_center;
-    }
-
-    pub fn get_rotation_around_screen_center(&self) -> f32 {
-        self.rect.rotation_around_screen_center
+    pub fn get_rotation_around_rect_center(&self) -> f32 {
+        self.rect.rotation_around_rect_center
     }
 
     pub fn set_rotation_around_rect_center(&mut self, rotation_around_rect_center: f32) {
         self.rect.rotation_around_rect_center = rotation_around_rect_center;
-    }
-
-    pub fn get_rotation_around_rect_center(&self) -> f32 {
-        self.rect.rotation_around_rect_center
     }
 }
 
@@ -2038,20 +1988,12 @@ impl UIImage {
         self.ui_data.get_position()
     }
 
-    pub fn set_rotation_around_screen_center(&mut self, rotation_around_screen_center: f32) {
-        self.ui_data.set_rotation_around_screen_center(rotation_around_screen_center);
-    }
-
-    pub fn get_rotation_around_screen_center(&self) -> f32 {
-        self.ui_data.get_rotation_around_screen_center()
+    pub fn get_rotation_around_rect_center(&self) -> f32 {
+        self.ui_data.get_rotation_around_rect_center()
     }
 
     pub fn set_rotation_around_rect_center(&mut self, rotation_around_rect_center: f32) {
         self.ui_data.set_rotation_around_rect_center(rotation_around_rect_center);
-    }
-
-    pub fn get_rotation_around_rect_center(&self) -> f32 {
-        self.ui_data.get_rotation_around_rect_center()
     }
 }
 

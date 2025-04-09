@@ -42,7 +42,7 @@ pub struct PlayerDollInputState
     pub move_right: bool,
     pub move_left: bool,
     pub will_jump: bool,
-    pub player_moving_state: PlayerMovingState
+    // pub player_moving_state: PlayerMovingState
 }
 
 
@@ -95,7 +95,7 @@ impl PlayerDollInputState {
             move_right: input.2,
             move_left: input.3,
             will_jump: input.4,
-            player_moving_state,
+            // player_moving_state,
         }
     }
 }
@@ -263,7 +263,7 @@ impl PlayersDoll {
             move_right: false,
             move_left: false,
             will_jump: false,
-            player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
+            // player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
         };
 
         PlayersDoll {
