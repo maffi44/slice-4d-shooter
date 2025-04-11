@@ -1,6 +1,5 @@
 [package]
 name = "game_server"
-author = "maffi44"
 version = "0.1.2"
 edition = "2021"
 

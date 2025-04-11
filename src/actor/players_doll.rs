@@ -29,7 +29,7 @@ use crate::{
 };
 
 use super::{
-    device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, mover_w::MoverWMessage, player::{
+    device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, mover_w::MoverWMessage, main_player::{
         player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, PLAYER_FREE_MOVING_SPEED_MULT, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
     }, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, Actor, ActorID, ActorWrapper, CommonActorsMessage, Component, Message, MessageType, SpecificActorMessage
 };

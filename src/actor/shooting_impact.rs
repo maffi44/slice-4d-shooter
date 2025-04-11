@@ -15,7 +15,7 @@ use crate::{
 };
 
 use super::{
-    player::{self},
+    main_player::{self},
     Actor,
     ActorID
 };
@@ -41,7 +41,7 @@ impl ShootingImpact {
 
         let max_radius = 0.5.lerp(
             2.5,
-            damage as f32 / player::PLAYER_MAX_HP as f32
+            damage as f32 / main_player::PLAYER_MAX_HP as f32
         ); 
 
         volume_areas.push(volume_area);

@@ -3,7 +3,7 @@ mod actor;
 mod main_loop;
 mod transform;
 
-use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, player::{player_input_master::{InputMaster, LocalMaster}, Player, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
+use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
 use engine::{input::ActionsFrameState, Engine};
 use main_loop::MainLoop;
@@ -11,7 +11,10 @@ use main_loop::MainLoop;
 use wasm_bindgen::prelude::*;
 use log;
 
-
+// The web version is currently not working.
+// Some times ago I stopped supporting the web version because it took too much time.
+// Later, when I choose the final sdf render approach (and graphics backend along with it)
+// I will restore web support.
 #[wasm_bindgen(start)]
 async fn client_main() {
 
@@ -32,7 +35,7 @@ async fn client_main() {
     log::info!("main: Engine systems init");
 
     main_loop.run(systems, Box::new(|systems| {
-            let main_player = Player::new(
+            let main_player = MainPlayer::new(
                 InputMaster::LocalMaster(
                     LocalMaster::new(ActionsFrameState::empty())
                 ),

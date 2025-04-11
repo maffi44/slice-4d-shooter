@@ -1,14 +1,17 @@
 use crate::{
     actor::{
-        flag::Flag, move_w_bonus::{self, MoveWBonusSpot}, player::{
+        flag::Flag, move_w_bonus::{self, MoveWBonusSpot}, main_player::{
             self, player_input_master::{
                 InputMaster,
                 LocalMaster
-            }, Player, PlayerMessage
+            }, MainPlayer, PlayerMessage
         }, session_controller::{self, SessionController}, Actor, ActorWrapper, Message, SpecificActorMessage
     },
     engine::{
-        engine_handle::{Command, CommandType}, input::ActionsFrameState, world, Engine
+        engine_handle::{
+            Command,
+            CommandType
+        }, input::ActionsFrameState, world, Engine
     },
 };
 

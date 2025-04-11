@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::{
-    flag::{self, FlagStatus}, move_w_bonus::BonusSpotStatus, player::{PlayerMessage, BLUE_TEAM_COLOR, RED_TEAM_COLOR}, Actor, ActorID, Message, MessageType, SpecificActorMessage
+    flag::{self, FlagStatus}, move_w_bonus::BonusSpotStatus, main_player::{PlayerMessage, BLUE_TEAM_COLOR, RED_TEAM_COLOR}, Actor, ActorID, Message, MessageType, SpecificActorMessage
 };
 
 pub const DEFAULT_TEAM: Team = Team::Blue;

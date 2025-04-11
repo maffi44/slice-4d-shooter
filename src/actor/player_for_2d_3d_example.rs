@@ -15,7 +15,7 @@ use crate::{
             Device,
             DeviceType
         },
-        player::{player_input_master, player_settings, player_inner_state::PlayerInnerState, PlayerMessage, PlayerMovingState, PlayerScreenEffects},
+        main_player::{player_input_master, player_settings, player_inner_state::PlayerInnerState, PlayerMessage, PlayerMovingState, PlayerScreenEffects},
         players_doll::PlayerDollInputState,
         Actor,
         ActorID,
@@ -62,148 +62,14 @@ use glam::{
 };
 
 use super::{
-    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
+    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
 };
-
-// #[derive(Clone)]
-// pub enum PlayerMovingState
-// {
-//     // f32 - lock position on w axis
-//     MovingPerpendicularW(f32),
-//     // f32 - lock position on z axis
-//     MovingParallelW(f32),
-//     // f32 - how much time moving free player have
-//     MovingFree(f32)
-// }
-
-// pub struct PlayerInnerState {
-//     pub team: Team,
-//     pub collider: KinematicCollider,
-//     pub collider_for_others: Vec<PlayersDollCollider>,
-//     pub transform: Transform,
-//     pub hp: f32,
-//     pub is_alive: bool,
-//     pub is_enable: bool,
-//     pub crosshair_target_size: f32,
-//     pub crosshair_size: f32,
-
-//     pub zw_rotation: Mat4,
-//     pub zy_rotation: Mat4,
-//     pub zx_rotation: Mat4,
-
-//     pub is_time_after_some_team_win: bool,
-//     pub amount_of_move_w_bonuses_do_i_have: u32,
-//     pub player_moving_state: PlayerMovingState,
-
-//     pub blue_map_w_level: f32,
-//     pub red_map_w_level: f32,
-
-//     pub friction_on_air: f32,
-//     // pub weapon_offset: Vec4,
-// }
-
-
-// impl PlayerInnerState {
-//     pub fn new(
-//         transform: Transform,
-//         settings: &PlayerSettings,
-//         is_alive: bool,
-//         is_enable: bool,
-//         blue_map_w_level: f32,
-//         red_map_w_level: f32,
-//     ) -> Self {
-
-//         let collider_for_others = {
-//             let mut vec = Vec::with_capacity(1);
-            
-//             vec.push(PlayersDollCollider {
-//                 position: Vec4::ZERO,
-//                 radius: settings.collider_radius,
-//                 friction: 0_f32,
-//                 bounce_rate: 0_f32,
-//                 actors_id: None,
-//                 weapon_offset: Vec4::ZERO,
-//                 actors_team: DEFAULT_TEAM,
-//             });
-//             vec
-//         };
-
-//         PlayerInnerState {
-//             team: DEFAULT_TEAM,
-//             collider: KinematicCollider::new(
-//                 settings.max_speed,
-//                 settings.max_accel,
-//                 settings.collider_radius,
-//                 settings.friction_on_air,
-//                 // settings.friction_on_ground,
-//             ),
-//             collider_for_others,
-//             transform,
-//             hp: 0.0,
-//             is_alive,
-//             is_enable,
-//             crosshair_target_size: 0.04,
-//             crosshair_size: 0.04,
-
-//             zw_rotation: Mat4::IDENTITY,
-//             zy_rotation: Mat4::IDENTITY,
-//             zx_rotation: Mat4::IDENTITY,
-
-//             is_time_after_some_team_win: false,
-//             amount_of_move_w_bonuses_do_i_have: 0u32,
-//             player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
-
-//             blue_map_w_level,
-//             red_map_w_level,
-//             friction_on_air: settings.friction_on_air,
-//         }
-//     }
-
-//     pub fn get_eyes_offset(&self) -> Vec4
-//     {
-//         Vec4::Y * self.collider.get_collider_radius() * 0.7
-//     }
-
-//     pub fn get_eyes_position(&self) -> Vec4
-//     {
-//         self.transform.get_position() + self.get_eyes_offset()
-//     }
-// }
-
-
-#[derive(PartialEq)]
-enum ActiveHandsSlot {
-    Zero,
-    First,
-    Second,
-    Third,
-}
-
-
-pub enum PlayersDeviceSlotNumber {
-    First,
-    Second,
-    Third,
-    Fourth,
-}
-
-// pub struct PlayerScreenEffects {
-//     pub w_scanner_is_active: bool,
-//     pub w_scanner_radius: f32,
-//     pub w_scanner_ring_intesity: f32,
-//     pub w_scanner_enemies_intesity: f32,
-
-//     pub death_screen_effect: f32,
-//     pub getting_damage_screen_effect: f32,
-// }
 
 
 pub struct PlayerFor2d3dExample {
     id: Option<ActorID>,
 
     inner_state: PlayerInnerState,
-
-    view_angle: Vec4,
 
     active_hands_slot: ActiveHandsSlot, 
 
@@ -214,70 +80,22 @@ pub struct PlayerFor2d3dExample {
 
     devices: [Option<Box<dyn Device>>; 4],
 
-    is_gravity_y_enabled: bool,
-    is_gravity_w_enabled: bool,
-
     pub player_settings: PlayerSettings,
-
-    no_collider_veclocity: Vec4,
-
-    explore_w_position: f32,
-    explore_w_coefficient: f32,
 
     pub master: InputMaster,
 
     screen_effects: PlayerScreenEffects,
 
-    w_scanner_enable: bool,
-    w_scanner_radius: f32,
-    w_scanner_reloading_time: f32,
-    w_scanner_enemies_show_time: f32,
+    w_scanner: WScanner,
 
-    after_death_timer: f32,
-    need_to_die_slowly: bool,
-
-    rotating_around_w_sound_handle: Handle<SoundSource>,
-    rotating_around_w_sound_pitch: f64,
-    rotating_around_w_sound_gain: f32,
-
-    shifting_along_w_sound_handle: Handle<SoundSource>,
-    shifting_along_w_sound_pitch: f64,
-    shifting_along_w_sound_gain: f32,
-    player_previous_w_position: f32,
-
-    jumped_to_y_on_current_action: bool,
-    jumped_to_w_on_current_action: bool,
-    jumped_to_wy_on_current_action: bool,
-
-    w_jump_reloading_time: f32,
-
-    need_to_rotate_w_to_zero: bool,
-    time_from_previos_second_mouse_click: f32,
-
-    w_levels_of_map: Vec<f32>,
-    current_w_level: usize,
-
-    show_crosshaier_hit_mark_timer: f32,
-
-    fisrt_move_w_bonus_transparency_level: f32,
-    second_move_w_bonus_transparency_level: f32,
-
-    flag_pivot_offset: Vec4,
-
-    base_effect_tick_timer: f32,
-
-    holding_player_rotation_along_w: bool,
-    
     camera3d_rotation: Mat4,
     camera3d_rotation_zy: Mat4,
     camera3d_rotation_zx: Mat4,
     camera3d_rotation_zw: Mat4,
     camera3d_offset: Vec4,
 
-    show_3d_example_target_value: f32,
     pub show_3d_example_current_value: f32,
-
-    view_volume_beams: Vec<VolumeArea>,
+    show_3d_example_target_value: f32,
 }
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 
@@ -316,29 +134,6 @@ const BASE_EFFECT_HP_IMPACT_SPEED: f32 = 2.6;
 const DURATION_OF_MOVING_FREE_BY_BONUS: f32 = 8.0;
 
 pub const PLAYER_FREE_MOVING_SPEED_MULT: f32 = 0.6;
-
-// #[derive(Clone)]
-// pub enum PlayerMessage {
-//     DealDamageAndAddForce(
-//         // damage
-//         u32,
-//         //force
-//         Vec4,
-//         // pos of impact (for spawn get damage effect)
-//         Vec4,
-//         // team damage from
-//         Team,
-//     ),
-//     NewPeerConnected(u128),
-//     Telefrag,
-//     DieImmediately,
-//     DieSlowly,
-//     SetNewTeam(
-//         // new team you have joined
-//         Team, 
-//     )
-// }
-
 
 impl Actor for PlayerFor2d3dExample {
 
@@ -395,12 +190,23 @@ impl Actor for PlayerFor2d3dExample {
                         match message {
                             KinematicColliderMessage::ColliderIsStuckInsideObject =>
                             {    
-                                self.die(
-                                    true,
-                                    engine_handle,
+                                let my_id = self.get_id().expect("Player Have not ActorID");
+
+                                main_player::die(
+                                    &mut self.inner_state,
+                                    &mut self.active_hands_slot,
+                                    &mut self.hands_slot_0,
+                                    &mut self.hands_slot_1,
+                                    &mut self.hands_slot_2,
+                                    &mut self.hands_slot_3,
+                                    &mut self.w_scanner,
+                                    &mut self.devices,
+                                    my_id,
+                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
-                                    ui_system
+                                    ui_system,
+                                    engine_handle,
                                 );
                             }
                             _ => {}
@@ -414,70 +220,72 @@ impl Actor for PlayerFor2d3dExample {
             {
                 match message
                 {
-                    SpecificActorMessage::MoverW(message) =>
-                    {
-                        match message {
-                            MoverWMessage::Rotate(lock_z, lock_w, dir) =>
-                            {
-                                audio_system.spawn_non_spatial_sound(
-                                    Sound::WShiftEnd,
-                                    0.5,
-                                    1.0,
-                                    false,
-                                    true,
-                                    fyrox_sound::source::Status::Playing
-                                );
-
-                                match self.inner_state.player_moving_state {
-                                    PlayerMovingState::MovingPerpendicularW(_) =>
-                                    {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingParallelW(lock_z);
-                                        self.holding_player_rotation_along_w = false;
-                                    }
-                                    PlayerMovingState::MovingParallelW(_) =>
-                                    {
-                                        self.inner_state.player_moving_state = PlayerMovingState::MovingPerpendicularW(lock_w);
-                                        self.holding_player_rotation_along_w = false;
-                                    }
-                                    PlayerMovingState::MovingFree(_) => {}
-                                }
-                            }
-                        }
-                    }
-
                     SpecificActorMessage::PLayerMessage(message) =>
                     {
                         match message {
                             PlayerMessage::Telefrag =>
                             {
-                                self.die(
-                                    true,
-                                    engine_handle,
+                                let my_id = self.get_id().expect("Player Have not ActorID");
+
+                                main_player::die(
+                                    &mut self.inner_state,
+                                    &mut self.active_hands_slot,
+                                    &mut self.hands_slot_0,
+                                    &mut self.hands_slot_1,
+                                    &mut self.hands_slot_2,
+                                    &mut self.hands_slot_3,
+                                    &mut self.w_scanner,
+                                    &mut self.devices,
+                                    my_id,
+                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
+                                    engine_handle,
                                 );
                             }
 
                             PlayerMessage::DieImmediately =>
                             {
-                                self.die(
-                                    true,
-                                    engine_handle,
+                                let my_id = self.get_id().expect("Player Have not ActorID");
+
+                                main_player::die(
+                                    &mut self.inner_state,
+                                    &mut self.active_hands_slot,
+                                    &mut self.hands_slot_0,
+                                    &mut self.hands_slot_1,
+                                    &mut self.hands_slot_2,
+                                    &mut self.hands_slot_3,
+                                    &mut self.w_scanner,
+                                    &mut self.devices,
+                                    my_id,
+                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
+                                    engine_handle,
                                 );
                             }
 
                             PlayerMessage::DieSlowly =>
                             {
-                                self.die(
-                                    true,
-                                    engine_handle,
+                                let my_id = self.get_id().expect("Player Have not ActorID");
+
+                                main_player::die(
+                                    &mut self.inner_state,
+                                    &mut self.active_hands_slot,
+                                    &mut self.hands_slot_0,
+                                    &mut self.hands_slot_1,
+                                    &mut self.hands_slot_2,
+                                    &mut self.hands_slot_3,
+                                    &mut self.w_scanner,
+                                    &mut self.devices,
+                                    my_id,
+                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
+                                    engine_handle,
                                 );
                             }
 
@@ -490,9 +298,22 @@ impl Actor for PlayerFor2d3dExample {
                             {
                                 if team != self.inner_state.team
                                 {
-                                    self.get_damage_and_add_force(
+                                    let my_id = self.get_id().expect("Player Have not ActorID");
+
+                                    main_player::get_damage_and_add_force(
                                         damage as i32,
                                         force,
+                                        &mut self.screen_effects,
+                                        &mut self.inner_state,
+                                        &mut self.active_hands_slot,
+                                        &mut self.hands_slot_0,
+                                        &mut self.hands_slot_1,
+                                        &mut self.hands_slot_2,
+                                        &mut self.hands_slot_3,
+                                        &mut self.w_scanner,
+                                        &mut self.devices,
+                                        my_id,
+                                        &mut self.player_settings,
                                         physic_system,
                                         audio_system,
                                         ui_system,
@@ -528,7 +349,10 @@ impl Actor for PlayerFor2d3dExample {
                                 self.inner_state.team = team;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
-                                self.set_right_team_hud(ui_system);
+                                main_player::set_right_team_hud(
+                                    &self.inner_state,
+                                    ui_system
+                                );
 
                                 engine_handle.send_command(
                                     Command {
@@ -551,7 +375,10 @@ impl Actor for PlayerFor2d3dExample {
                                 self.inner_state.is_time_after_some_team_win = false;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
-                                self.set_right_team_hud(ui_system);
+                                main_player::set_right_team_hud(
+                                    &self.inner_state,
+                                    ui_system
+                                );
 
                                 engine_handle.send_command(
                                     Command {
@@ -574,7 +401,10 @@ impl Actor for PlayerFor2d3dExample {
                                 self.inner_state.is_time_after_some_team_win = false;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
-                                self.set_right_team_hud(ui_system);
+                                main_player::set_right_team_hud(
+                                    &self.inner_state,
+                                    ui_system
+                                );
 
                                 engine_handle.send_command(
                                     Command {
@@ -599,24 +429,6 @@ impl Actor for PlayerFor2d3dExample {
                     {
                         match message
                         {
-                            // FlagMessage::SetFlagStatus(
-                            //     team,
-                            //     flag_status
-                            // ) =>
-                            // {
-                            //     match flag_status
-                            //     {
-                            //         FlagStatus::Captured(id) =>
-                            //         {
-                            //             if id == self.get_id().expect("Player have not ActorID")
-                            //             {
-                            //                 self.inner_state.has_flag = true;
-                            //             }
-                            //         }
-                            //         _ => {}
-                            //     }
-                            // }
-
                             FlagMessage::GiveMeTargetPosition =>
                             {
                                 match self.inner_state.team {
@@ -639,7 +451,7 @@ impl Actor for PlayerFor2d3dExample {
                                         message:                                     MessageType::SpecificActorMessage(
                                             SpecificActorMessage::FlagMessage(
                                                 FlagMessage::SetTargetPosition(
-                                                    self.get_transform().get_position() + self.flag_pivot_offset
+                                                    self.get_transform().get_position() + self.inner_state.flag_pivot_offset
                                                 )
                                             )
                                         )
@@ -771,12 +583,14 @@ impl Actor for PlayerFor2d3dExample {
                         {
                             PlayersDollMessage::YouHitMe(_) =>
                             {
-                                self.show_crosshaier_hit_mark_timer = SHOW_CROSSHAIER_HIT_MARK_TIME;
+                                self.inner_state.show_crosshaier_hit_mark_timer = SHOW_CROSSHAIER_HIT_MARK_TIME;
                             }
 
                             _ => {}
                         }
                     }
+
+                    _ => {}
                 }
 
             }  
@@ -890,66 +704,7 @@ impl Actor for PlayerFor2d3dExample {
         delta: f32
     ) {
 
-        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::RedFlagBacklight);
-        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::BlueFlagBacklight);
-        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-        // match self.inner_state.player_moving_state
-        // {
-        //     PlayerMovingState::MovingPerpendicularW(_) =>
-        //     {
-        //         match self.inner_state.team
-        //         {
-        //             Team::Red =>
-        //             {
-        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRed);
-        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRedW);
-        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
-        //             }
-        //             Team::Blue =>
-        //             {
-        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlue);
-        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlueW);
-        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-        //             }
-
-        //         }
-        //     }
-        //     PlayerMovingState::MovingParallelW(_) =>
-        //     {
-        //         match self.inner_state.team
-        //         {
-        //             Team::Red =>
-        //             {
-        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRed);
-        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerRedW);
-        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
-        //             }
-        //             Team::Blue =>
-        //             {
-        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlue);
-        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-        //                 let ui_elem = ui_system.get_mut_ui_element(&UIElementType::ScannerBlueW);
-        //                 *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-        //             }
-
-        //         }
-        //     }
-        // }
-        let my_id = self.id.expect("Player does not have id");
-
-        let mut input = match &self.master {
+        let input = match &self.master {
             InputMaster::LocalMaster(master) => {
                 master.current_input.clone()
             }
@@ -958,125 +713,150 @@ impl Actor for PlayerFor2d3dExample {
             }   
         };
 
-        // let crosshair = ui_system.get_mut_ui_element(&UIElementType::Crosshair);
-
-        // if let UIElement::Image(crosshair) = crosshair {
-        //     crosshair.ui_data.rect.size = RectSize::LockedHeight(self.inner_state.crosshair_size);
-        // }
-
-        // self.inner_state.crosshair_target_size = self.inner_state.crosshair_target_size
-        //     .min(CROSSHAIR_MAX_SIZE); 
-
-        // if self.inner_state.crosshair_size < self.inner_state.crosshair_target_size {
-
-        //     self.inner_state.crosshair_size += CROSSHAIR_INCREASING_SPEED*delta;
-
-        //     if self.inner_state.crosshair_size >= self.inner_state.crosshair_target_size {
-        //         self.inner_state.crosshair_size = self.inner_state.crosshair_target_size;
-                
-        //         self.inner_state.crosshair_target_size = CROSSHAIR_MIN_SIZE;
-        //     }
-        // } else {
-        //     self.inner_state.crosshair_size =
-        //         (self.inner_state.crosshair_size - CROSSHAIR_DECREASING_SPEED*delta)
-        //         .max(CROSSHAIR_MIN_SIZE);
-        // }
-
-        // if self.show_crosshaier_hit_mark_timer > 0.0
-        // {
-        //     let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
-    
-        //     *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-        //     self.show_crosshaier_hit_mark_timer -= delta;
-        // }
-        // else
-        // {
-        //     let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
-    
-        //     *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-        // }
-
-        // match self.inner_state.amount_of_move_w_bonuses_do_i_have
-        // {
-        //     0 =>
-        //     {
-        //         self.fisrt_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
-        //         self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
-        //     }
-
-        //     1 =>
-        //     {
-        //         self.fisrt_move_w_bonus_transparency_level = 1.0;
-        //         self.second_move_w_bonus_transparency_level = HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL;
-        //     }
-
-        //     2 =>
-        //     {
-        //         self.fisrt_move_w_bonus_transparency_level = 1.0;
-        //         self.second_move_w_bonus_transparency_level = 1.0;
-        //     }
-
-        //     _ => panic!("Player have move w bonuses > 2")
-        // }
-
-        self.screen_effects.getting_damage_screen_effect -= delta * GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED;
-
-        self.screen_effects.getting_damage_screen_effect = self.screen_effects.getting_damage_screen_effect.clamp(0.0, 1.0);
-
-        self.make_hud_transparency_as_death_screen_effect(ui_system);
-
-        
         let mut player_doll_input_state = PlayerDollInputState {
             move_forward: false,
             move_backward: false,
             move_right: false,
             move_left: false,
             will_jump: false,
-            player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
-        if input.hold_player_rotation.is_action_just_pressed()
-            {
-                if self.show_3d_example_target_value == 0.0
-                {
-                    self.show_3d_example_target_value = 1.0;
-                }
-                else
-                {
-                    self.show_3d_example_target_value = 0.0;
-                }
-            }
+        let my_id = self.get_id().expect("Player have not ActorID");
 
-            let example_expand_speed = 5.0 * delta;
-
-            let mut diff = self.show_3d_example_target_value - self.show_3d_example_current_value;
-
-            diff = diff.clamp(-example_expand_speed, example_expand_speed);
-
-            self.show_3d_example_current_value += diff;
-
+        self.process_show_3d_example(
+            &input,
+            delta,
+        );
 
         if self.inner_state.is_alive {
 
-            let rot_mat = self.get_rotation_matrix();
-            if let VolumeArea::BeamVolumeArea(beam) = self.view_volume_beams.get_mut(0).unwrap()
-            {
-                beam.translation_pos_2 = rot_mat.inverse() * Vec4::new(0.0, 8.0, -15.0, 0.0);
-            }
-            if let VolumeArea::BeamVolumeArea(beam) = self.view_volume_beams.get_mut(1).unwrap()
-            {
-                beam.translation_pos_2 = rot_mat.inverse() * Vec4::new(0.0, -8.0, -15.0, 0.0);
-            }
-            // if input.hold_player_rotation.is_action_pressed()
-            // {
-            //     self.holding_player_rotation_along_w = true;
-            // } else {
-            //     self.holding_player_rotation_along_w = false;
-            // }
+            main_player::process_screen_effects_while_alive
+            (
+                &mut self.screen_effects,
+                delta,
+            );
 
-            self.screen_effects.death_screen_effect -= delta*DEATH_EFFECT_COEF_DECREASE_SPEED;
-            self.screen_effects.death_screen_effect = self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
+            main_player::process_player_rotation(
+                &input,
+                &self.player_settings,
+                &mut self.inner_state,
+                delta
+            );
+
+            main_player::process_w_scanner_ui(
+                ui_system,
+                &self.inner_state,
+            );
+
+            main_player::procces_w_rotation_sound(
+                audio_system,
+                &mut self.inner_state,
+                delta,
+            );
+
+            main_player::procces_w_shift_sound(
+                audio_system,
+                &mut self.inner_state,
+            );
+
+            main_player::process_active_devices_input
+            (
+                &self.active_hands_slot,
+                &mut self.hands_slot_0,
+                &mut self.hands_slot_1,
+                &mut self.hands_slot_2,
+                &mut self.hands_slot_3,
+                &mut self.devices,
+                &mut self.inner_state,
+                &input,
+                my_id,
+                physic_system,
+                audio_system,
+                ui_system,
+                engine_handle,
+                delta,
+            );
+
+            main_player::process_switch_active_hand_slot_input
+            (
+                &mut self.active_hands_slot,
+                &mut self.hands_slot_0,
+                &mut self.hands_slot_1,
+                &mut self.hands_slot_2,
+                &mut self.hands_slot_3,
+                &mut self.inner_state,
+                &input,
+                my_id,
+                physic_system,
+                audio_system,
+                ui_system,
+                engine_handle,
+            );
+
+            main_player::process_player_movement_input(
+                &input,
+                &mut player_doll_input_state,
+                &mut self.inner_state,
+                &self.player_settings,
+                delta,
+            );
+
+            main_player::process_player_y_jump_input(
+                &input,
+                &mut player_doll_input_state,
+                &mut self.inner_state,
+                &self.player_settings,
+            );
+
+            main_player::process_player_w_jump_input(
+                &input,
+                &mut self.inner_state,
+                &self.player_settings,
+            );
+
+            main_player::process_w_scanner(
+                &input,
+                &self.inner_state,
+                &self.player_settings,
+                &mut self.screen_effects,
+                &mut self.w_scanner,
+                delta,
+            );
+            
+            main_player::get_effected_by_base(
+                &mut self.inner_state,
+                &self.active_hands_slot,
+                &mut self.hands_slot_0,
+                &mut self.hands_slot_1,
+                &mut self.hands_slot_2,
+                &mut self.hands_slot_3,
+                &mut self.w_scanner,
+                &mut self.devices,
+                my_id,
+                &self.player_settings,
+                physic_system,
+                audio_system,
+                ui_system,
+                engine_handle,
+                delta,
+            );
+
+            main_player::check_if_touching_death_plane(
+                &mut self.inner_state,
+                &self.active_hands_slot,
+                &mut self.hands_slot_0,
+                &mut self.hands_slot_1,
+                &mut self.hands_slot_2,
+                &mut self.hands_slot_3,
+                &mut self.w_scanner,
+                &mut self.devices,
+                my_id,
+                &self.player_settings,
+                physic_system,
+                audio_system,
+                ui_system,
+                engine_handle,
+            );
 
             let mut xz = self.view_angle.x;
             let mut yz = self.view_angle.y;
@@ -1087,105 +867,16 @@ impl Actor for PlayerFor2d3dExample {
             self.time_from_previos_second_mouse_click += delta;
 
             if input.second_mouse.is_action_pressed() {
-                // zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
                 xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
                 yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-
-                // xz = input.mouse_axis.x + xz;
-                
             } else {
-                // zw *= 1.0 - delta * 3.0;
-                // if zw.abs() < 0.00001 {
-                //     zw = 0.0;
-                // }
-                
-                // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-                // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-                // match &mut self.inner_state.player_moving_state
-                // {
-                //     PlayerMovingState::MovingPerpendicularW(_) =>
-                //     {
-                //         if !self.holding_player_rotation_along_w
-                //         {
-                //             zw *= 1.0 - delta * 2.8;
-                //             if zw.abs() < 0.0001 {
-                //                 zw = 0.0;
-                //             }
-                //         }
-                //     }
-                //     PlayerMovingState::MovingParallelW(_) =>
-                //     {
-                //         if !self.holding_player_rotation_along_w
-                //         {
-                //             // *dir = if *dir < 0.0 {-1.0} else {1.0};
-    
-                //             zw = zw.lerp(PI/2.0, delta * 2.8);
-                //             if PI/2.0 - zw.abs() < 0.0001 {
-                //                 zw = PI/2.0;
-                //             }
-                //         }
-                //     }
-                //     PlayerMovingState::MovingFree(_) => {}
-                // }
                 xz *= 1.0 - delta * 2.8;
                 if xz.abs() < 0.0001 {
                     xz = 0.0;
                 }
-                // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
                 yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
             }
-            // if self.player_settings.rotation_along_w_standard_method {
-
-            // } else {
-
-            //     if input.second_mouse.is_action_just_pressed() {
-            //         self.need_to_rotate_w_to_zero = false;
-
-            //         if self.time_from_previos_second_mouse_click < 0. {
-            //             self.need_to_rotate_w_to_zero = true;
-            //         }
-
-            //         self.time_from_previos_second_mouse_click = 0.0
-            //     }
-
-            //     if input.second_mouse.is_action_pressed() {
-            //         if !self.need_to_rotate_w_to_zero {
-                        
-            //             zw = (input.mouse_axis.y * self.player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
-                    
-            //         } else {
-            //             zw *= 1.0 - delta * 3.0;
-            //             if zw.abs() < 0.00001 {
-            //                 zw = 0.0;
-            //             }
-
-            //             // xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-            //             // yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-            //         }
     
-            //         // xz = input.mouse_axis.x + xz;
-                    
-            //     } else {
-            //         if !self.need_to_rotate_w_to_zero {
-
-            //             xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-            //             yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-                    
-            //         } else {
-                        
-            //             zw *= 1.0 - delta * 3.0;
-            //             if zw.abs() < 0.00001 {
-            //                 zw = 0.0;
-            //             }
-                        
-            //             xz = input.mouse_axis.x * self.player_settings.mouse_sensivity + xz;
-            //             yz = (input.mouse_axis.y * self.player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
-            //         }
-            //     }
-            // }
-    
-
-
             let zw_arrow = match self.inner_state.team {
                 Team::Red => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowRed),
                 Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue),
@@ -1197,36 +888,6 @@ impl Actor for PlayerFor2d3dExample {
                 panic!("UI Element ZWScannerArrow is not UIImage")
             }
 
-            // match self.inner_state.player_moving_state {
-            //     PlayerMovingState::MovingParallelW(_) =>
-            //     {
-            //         let dir_vec = self.get_rotation_matrix().inverse() * Vec4::NEG_Z;
-
-            //         let w_dir = if dir_vec.w > 0.0 {1.0} else {-1.0};
-
-            //         if dir_vec.w > 0.0
-            //         {
-            //             if let UIElement::Image(arrow) = zw_arrow {
-            //                 arrow.set_rotation_around_screen_center(-zw*w_dir + PI/2.0);
-            //             } else {
-            //                 panic!("UI Element ZWScannerArrow is not UIImage")
-            //             }
-            //         }
-            //         else
-            //         {
-            //             if let UIElement::Image(arrow) = zw_arrow {
-            //                 arrow.set_rotation_around_screen_center(-zw*w_dir + PI/2.0);
-            //             } else {
-            //                 panic!("UI Element ZWScannerArrow is not UIImage")
-            //             }
-            //         }
-            //     }
-            //     PlayerMovingState::MovingPerpendicularW(_) =>
-            //     {
-
-            //     }
-            // }
-
             let zx_arrow = match self.inner_state.team {
                 Team::Red => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowRed),   
                 Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue),   
@@ -1237,32 +898,6 @@ impl Actor for PlayerFor2d3dExample {
             } else {
                 panic!("UI Element ZXScannerArrow is not UIImage")
             }
-
-            // match self.inner_state.player_moving_state {
-            //     PlayerMovingState::MovingParallelW(_,dir) =>
-            //     {
-            //         if dir > 0.0
-            //         {
-            //             if let UIElement::Image(arrow) = zx_arrow {
-            //                 arrow.set_rotation_around_screen_center(xz*dir - PI/2.0);
-            //             } else {
-            //                 panic!("UI Element ZXScannerArrow is not UIImage")
-            //             }
-            //         }
-            //         else
-            //         {
-            //             if let UIElement::Image(arrow) = zx_arrow {
-            //                 arrow.set_rotation_around_screen_center(xz*dir + PI/2.0);
-            //             } else {
-            //                 panic!("UI Element ZXScannerArrow is not UIImage")
-            //             }
-            //         }
-            //     }
-            //     PlayerMovingState::MovingPerpendicularW(_) =>
-            //     {
-                    
-            //     }
-            // }
 
             let h_pointer = match self.inner_state.team {
                 Team::Red => ui_system.get_mut_ui_element(&UIElementType::ScannerHPointerRed),
@@ -1279,34 +914,6 @@ impl Actor for PlayerFor2d3dExample {
             } else {
                 panic!("UI Element ScannerHPointer is not UIImage")
             }
-    
-    
-            // let normal_rotation = Mat4::from_cols_slice(&[
-            //     x.cos(),    y.sin() * x.sin(),  y.cos() * x.sin(),  0.0,
-            //     0.0,        y.cos(),            -y.sin(),           0.0,
-            //     -x.sin(),   y.sin() * x.cos(),  y.cos()*x.cos(),    0.0,
-            //     0.0,        0.0,                0.0,                1.0
-            // ]);
-            
-
-
-            // let mut zy_rotation = Mat4::from_rotation_x(-yz);
-
-            // let mut zx_rotation = Mat4::from_rotation_y(-xz);
-    
-            // let mut zw_rotation = Mat4::from_cols_slice(&[
-            //     1.0,    0.0,    0.0,        0.0,
-            //     0.0,    1.0,    0.0,        0.0,
-            //     0.0,    0.0,    zw.cos(),   zw.sin(),
-            //     0.0,    0.0,    -zw.sin(),   zw.cos()
-            // ]);
-
-            // self.inner_state.zw_rotation = zw_rotation;
-            // self.inner_state.zy_rotation = zy_rotation;
-            // self.inner_state.zx_rotation = zx_rotation;
-    
-            // self.set_rotation_matrix(zw_rotation * zy_rotation * zx_rotation);
-
 
             let zy_rotation = Mat4::from_rotation_x(-yz);
 
@@ -2270,6 +1877,42 @@ impl Actor for PlayerFor2d3dExample {
 
         } else {
             //while player is not alive
+            main_player::update_after_death_timer(
+                &mut self.inner_state,
+                delta
+            );
+
+            main_player::process_screen_effects_while_dead
+            (
+                &mut self.screen_effects,
+                delta,
+            );
+
+            main_player::process_devices_while_player_is_dead
+            (
+                &self.active_hands_slot,
+                &mut self.hands_slot_0,
+                &mut self.hands_slot_1,
+                &mut self.hands_slot_2,
+                &mut self.hands_slot_3,
+                &mut self.devices,
+                &mut self.inner_state,
+                &input,
+                my_id,
+                physic_system,
+                audio_system,
+                ui_system,
+                engine_handle,
+                delta,
+            );
+
+            main_player::process_player_respawn(
+                engine_handle,
+                &self.player_settings,
+                &input,
+                &self.inner_state,
+                my_id,
+            );
 
             self.after_death_timer += delta;
 
@@ -2377,6 +2020,35 @@ impl Actor for PlayerFor2d3dExample {
             };
         }
 
+        self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
+
+        main_player::decrease_getting_damage_screen_effect
+        (
+            &mut self.screen_effects,
+            delta,
+        );
+
+        main_player::make_hud_transparency_as_death_screen_effect(
+            &self.screen_effects,
+            &self.inner_state,
+            ui_system
+        );
+
+        main_player::set_audio_listener_position
+        (
+            audio_system,
+            &self.inner_state,
+        );
+
+        main_player::send_player_state_to_remote_player_doll
+        (
+            player_doll_input_state,
+            &self.inner_state,
+            my_id,
+            time_system,
+            engine_handle,
+        );
+
         audio_system.set_listener_position_and_look_vector(
             self.get_position(),
             self.get_transform().get_direction_for_audio_system()
@@ -2421,7 +2093,7 @@ impl PlayerFor2d3dExample {
         master: InputMaster,
         player_settings: PlayerSettings,
         audio_system: &mut AudioSystem,
-        w_levels_of_map: Vec<f32>,
+        w_levels_of_map: Vec<f32>
     ) -> Self {
 
         assert!(w_levels_of_map.len() > 1);
@@ -2439,29 +2111,7 @@ impl PlayerFor2d3dExample {
             getting_damage_screen_effect: 0.0,
         };
 
-        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
-            Sound::RotatingAroundW,
-            0.0,
-            1.0,
-            true,
-            false,
-            fyrox_sound::source::Status::Playing
-        );
-
-        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
-            Sound::ShiftingAlongW,
-            0.0,
-            1.0,
-            true,
-            false,
-            fyrox_sound::source::Status::Playing
-        );
-
-        let w_scanner_reloading_time =  player_settings.scanner_reloading_time;
-        let w_scanner_enemies_show_time =  player_settings.scanner_show_enemies_time;
-        let after_death_timer =  player_settings.min_respawn_timer;
-
-        let player_radius = player_settings.collider_radius;
+        let w_scanner = WScanner::new(&player_settings);
 
         let camera3d_rotation_zy = Mat4::from_rotation_x(PI*0.1);
         let camera3d_rotation_zx = Mat4::from_rotation_y(-PI*0.6);
@@ -2469,27 +2119,6 @@ impl PlayerFor2d3dExample {
 
         let camera3d_rotation = camera3d_rotation_zw * camera3d_rotation_zy * camera3d_rotation_zx;
         let camera3d_offset = Vec4::new(8.0, 3.0, -2.5, 0.0);
-
-        let view_beam_radius = 0.035;
-
-        let view_volume_beams = vec![
-            VolumeArea::BeamVolumeArea(
-                BeamVolumeArea {
-                    translation_pos_1: Vec4::ZERO,
-                    translation_pos_2: Vec4::NEG_Z * 20.0,
-                    radius: view_beam_radius,
-                    color: Vec3::ONE,
-                }
-            ),
-            VolumeArea::BeamVolumeArea(
-                BeamVolumeArea {
-                    translation_pos_1: Vec4::ZERO,
-                    translation_pos_2: Vec4::NEG_Z * 20.0,
-                    radius: view_beam_radius,
-                    color: Vec3::ONE,
-                }
-            )
-        ];
         
         PlayerFor2d3dExample {
             id: None,
@@ -2501,6 +2130,7 @@ impl PlayerFor2d3dExample {
                 false,
                 blue_map_w_level,
                 red_map_w_level,
+                audio_system,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
 
@@ -2509,20 +2139,27 @@ impl PlayerFor2d3dExample {
                 player_settings.energy_gun_add_force_mult, 
                 player_settings.energy_gun_damage_mult, 
                 player_settings.energy_gun_restoring_speed,
-                Vec4::new(0.0, 1.0, -0.6, 0.0),
+                Vec4::new(
+                    1.0,
+                    -0.42,
+                    -1.0,
+                    0.0
+                ),
             )),
             hands_slot_1: Some(Box::new(MachineGun::new(
                 player_settings.machinegun_damage,
                 player_settings.machinegun_add_force, 
                 player_settings.machinegun_heat_add_on_shot, 
                 player_settings.machinegun_cooling_speed,
-                Vec4::new(0.0, 1.0, -0.6, 0.0),
+                Vec4::new(
+                    1.0,
+                    -0.42,
+                    -1.0,
+                    0.0
+                ),
             ))),
             hands_slot_2: None,
             hands_slot_3: None,
-
-            is_gravity_y_enabled: true,
-            is_gravity_w_enabled: true,
 
             devices: [None, None, None, None],
             
@@ -2530,54 +2167,9 @@ impl PlayerFor2d3dExample {
 
             master,
 
-            explore_w_position: 0.0,
-            explore_w_coefficient: 0.0,
-
-            no_collider_veclocity: Vec4::ZERO,
-
-            view_angle: Vec4::ZERO,
-
             screen_effects,
 
-            w_scanner_enable: false,
-            w_scanner_radius: 0.0,
-            w_scanner_reloading_time,
-            w_scanner_enemies_show_time,
-
-            after_death_timer,
-            need_to_die_slowly: false,
-
-            rotating_around_w_sound_handle,
-            rotating_around_w_sound_pitch: 1.0,
-            rotating_around_w_sound_gain: 0.0,
-
-            shifting_along_w_sound_handle,
-            shifting_along_w_sound_pitch: 1.0,
-            shifting_along_w_sound_gain: 0.0,
-            player_previous_w_position: 0.0,
-
-            jumped_to_y_on_current_action: false,
-            jumped_to_w_on_current_action: false,
-            jumped_to_wy_on_current_action: false,
-
-            w_jump_reloading_time: 0.0,
-
-            need_to_rotate_w_to_zero: true,
-            time_from_previos_second_mouse_click: 0.0,
-
-            w_levels_of_map,
-            current_w_level: 0,
-
-            show_crosshaier_hit_mark_timer: 0.0,
-
-            fisrt_move_w_bonus_transparency_level: HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL,
-            second_move_w_bonus_transparency_level: HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL,
-
-            flag_pivot_offset: Vec4::new(0.0, player_radius * 2.0, 0.0, 0.0),
-
-            base_effect_tick_timer: 0.0,
-
-            holding_player_rotation_along_w: false,
+            w_scanner,
 
             camera3d_rotation_zy,
             camera3d_rotation_zx,
@@ -2585,16 +2177,14 @@ impl PlayerFor2d3dExample {
             camera3d_rotation,
             camera3d_offset,
 
-            show_3d_example_current_value: 1.0,
-            show_3d_example_target_value: 1.0,
-
-            view_volume_beams,
+            show_3d_example_current_value: 0.0,
+            show_3d_example_target_value: 0.0,
         }
     }
 
     pub fn get_2d_slice_pos(&self) -> Vec4
     {
-        self.get_position()
+        self.inner_state.get_position()
     }
 
     pub fn get_2d_slice_xz_rot(&self) -> Mat2
@@ -2608,802 +2198,32 @@ impl PlayerFor2d3dExample {
         )
     }
 
-    pub fn get_team(&self) -> Team
-    {
-        self.inner_state.team
-    }
-
-    pub fn get_explore_w_position(&self) -> f32 {
-        self.explore_w_position
-    }
-
-    pub fn get_explore_w_coefficient(&self) -> f32 {
-        self.explore_w_coefficient
-    }
-
-    pub fn get_position(&self) -> Vec4 {
-        self.inner_state.transform.get_position()
-    }
-
-    pub fn get_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.transform.get_rotation()
-    }
-
-    pub fn get_zw_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.zw_rotation
-    }
-
-    pub fn get_zy_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.zy_rotation
-    }
-
-    pub fn get_zx_rotation_matrix(&self) -> Mat4 {
-        self.inner_state.zx_rotation
-    }
-
-    pub fn get_screen_effects(&self) -> &PlayerScreenEffects {
-        &self.screen_effects
-    }
-
-
-    pub fn set_rotation_matrix(&mut self, new_rotation: Mat4) {
-        self.inner_state.transform.set_rotation(new_rotation)
-    }
-
-
-    pub fn get_collider_radius(&self) -> f32 {
-        self.inner_state.collider.get_collider_radius()
-    }
-
-    pub fn get_eyes_position(&self) -> Vec4
-    {
-        self.inner_state.get_eyes_position()
-    }
-
-
-    fn get_effected_by_base(
+    fn process_show_3d_example
+    (
         &mut self,
+        input: &ActionsFrameState,
         delta: f32,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-    ) {
-        let base_coef = 
+    )
+    {
+        if input.hold_player_rotation.is_action_just_pressed()
         {
-            let w_pos = self.get_position().w;
-
-            let mut coef = f32::clamp(
-                (w_pos - self.inner_state.blue_map_w_level) /
-                (self.inner_state.red_map_w_level - self.inner_state.blue_map_w_level),
-                    0.0,
-                    1.0
-            );
-
-            if self.inner_state.team == Team::Blue
+            if self.show_3d_example_target_value == 0.0
             {
-                coef = 1.0 - coef;
+                self.show_3d_example_target_value = 1.0;
             }
-
-            coef = (coef * 2.0) - 1.0;
-
-            coef.max(0.0)
-        };
-
-        self.inner_state.hp += BASE_EFFECT_HP_IMPACT_SPEED * delta * base_coef;
-
-        if self.inner_state.hp > PLAYER_MAX_HP
-        {
-            self.inner_state.hp = PLAYER_MAX_HP;
-        }
-
-        let health_bar = match self.inner_state.team {
-            Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
-            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
-        };
-
-        if let UIElement::ProgressBar(bar) = health_bar {
-            let bar_value = {
-                (self.inner_state.hp as f32 / PLAYER_MAX_HP as f32)
-                    .clamp(0.0, 1.0)
-            };
-
-            bar.set_bar_value(bar_value)
-
-        } else {
-            panic!("Health Bar is not Progress Bar")
-        }
-
-        if self.inner_state.hp <= 0.0
-        {
-            self.die(true, engine_handle, physic_system, audio_system, ui_system);
-        }
-    }
-
-    fn get_damage_and_add_force(
-        &mut self,
-        damage: i32,
-        force: Vec4,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-    ) {
-
-        audio_system.spawn_non_spatial_sound(
-            Sound::PlayerHited,
-            0.6.lerp(1.0, (damage as f32/PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
-            1.0,
-            false,
-            true,
-            fyrox_sound::source::Status::Playing
-        );
-
-        self.screen_effects.getting_damage_screen_effect = 1.0;
-
-        self.inner_state.hp -= damage as f32;
-        self.inner_state.collider.add_force(force);
-
-        let health_bar = match self.inner_state.team {
-            Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
-            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
-        };
-
-        if let UIElement::ProgressBar(bar) = health_bar {
-            let bar_value = {
-                (self.inner_state.hp as f32 / PLAYER_MAX_HP as f32)
-                    .clamp(0.0, 1.0)
-            };
-
-            bar.set_bar_value(bar_value)
-
-        } else {
-            panic!("Health Bar is not Progress Bar")
-        }
-
-        if self.inner_state.hp <= 0.0 {
-            if damage as f32 >= PLAYER_MAX_HP {
-                self.die(
-                    true,
-                    engine_handle,
-                    physic_system,
-                    audio_system,
-                    ui_system,
-                );
-            } else {
-
-                // self.die(false, engine_handle, physic_system, audio_system);
-                
-                // temproral solution
-                self.die(
-                    true,
-                    engine_handle,
-                    physic_system,
-                    audio_system,
-                    ui_system,
-                );
-            }
-        }
-    }
-
-    fn deavctivate_previous_device(&mut self,
-        new_active_slot: ActiveHandsSlot,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-    ) {
-        let my_id = self.get_id().expect("Player have nit ActorID");
-
-        match self.active_hands_slot {
-            ActiveHandsSlot::Zero => {
-                if new_active_slot != ActiveHandsSlot::Zero {
-                    self
-                        .hands_slot_0
-                        .deactivate(
-                            my_id,
-                            &mut self.inner_state,
-                            physic_system,
-                            audio_system,
-                            ui_system,
-                            engine_handle
-                        );
-                }
-            },
-            ActiveHandsSlot::First => {
-                if new_active_slot != ActiveHandsSlot::First {
-                    self
-                        .hands_slot_1.as_mut().expect("Player have not any device in active hand's slot")
-                        .deactivate(
-                            my_id,
-                            &mut self.inner_state,
-                            physic_system,
-                            audio_system,
-                            ui_system,
-                            engine_handle,
-                        );
-                }
-            }
-            ActiveHandsSlot::Second => {
-                if new_active_slot != ActiveHandsSlot::Second {
-                    self
-                        .hands_slot_2.as_mut().expect("Player have not any device in active hand's slot")
-                        .deactivate(
-                            my_id,
-                            &mut self.inner_state,
-                            physic_system,
-                            audio_system,
-                            ui_system,
-                            engine_handle,
-                        );
-                }
-            }
-            ActiveHandsSlot::Third => {
-                if new_active_slot != ActiveHandsSlot::Third {
-                    self
-                        .hands_slot_3.as_mut().expect("Player have not any device in active hand's slot")
-                        .deactivate(
-                            my_id,
-                            &mut self.inner_state,
-                            physic_system,
-                            audio_system,
-                            ui_system,
-                            engine_handle,
-                        );
-                }
-            }
-        }
-    }
-
-    fn telefraged(&mut self, audio_system: &mut AudioSystem, engine_handle: &mut EngineHandle) {
-        self.die_immediately(audio_system, engine_handle);
-    }
-
-    fn die_immediately(
-        &mut self,
-        audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
-    ) {
-        if self.inner_state.is_alive {
-
-            self.inner_state.is_alive = false;
-            self.inner_state.is_enable = false;
-            self.need_to_die_slowly = false;
-            self.after_death_timer = 0.0;
-
-            self.play_die_effects(audio_system, engine_handle);
-
-            engine_handle.send_command(
-                Command {
-                    sender: self.get_id().expect("Player have not ActorID"),
-                    command_type: CommandType::NetCommand(
-                        NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessageToPlayer::RemoteDirectMessage(
-                                self.get_id().expect("Player have not ActorID"),
-                                RemoteMessage::DieImmediately
-                            )
-                        )
-                    )
-                }
-            );
-        }
-    }
-
-    fn make_hud_transparency_as_death_screen_effect(&mut self, ui: &mut UISystem) {
-        let a = 1.0 - self.screen_effects.death_screen_effect.clamp(0.0, 1.0);
-
-        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
-        // hud_elem.get_ui_data_mut().rect.transparency =
-        //     self.fisrt_move_w_bonus_transparency_level * a;
-        
-        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
-        // hud_elem.get_ui_data_mut().rect.transparency =
-        //     self.second_move_w_bonus_transparency_level * a;
-
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunImage);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::EnergyGunImage);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::CrosshairHitMark);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::RedFlagMark);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::BlueFlagMark);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
-        hud_elem.get_ui_data_mut().rect.transparency = a;
-        
-        match self.inner_state.team
-        {
-            Team::Red =>
+            else
             {
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRedW);
-                // hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::EnergyGunBarRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-                
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunBarRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-            }
-
-            Team::Blue =>
-            {
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlueW);
-                // hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::EnergyGunBarBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-                
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunBarBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
-                hud_elem.get_ui_data_mut().rect.transparency = a;
+                self.show_3d_example_target_value = 0.0;
             }
         }
-    }
-
-    fn set_right_team_hud(&self, ui: &mut UISystem)
-    {
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
-        *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-        let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
-        *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkFirst);
-        // *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-        // let hud_elem = ui.get_mut_ui_element(&UIElementType::MoveWBonusMarkSecond);
-        // *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-
-        match self.inner_state.team
-        {
-            Team::Red =>
-            {
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-            }
-
-            Team::Blue =>
-            {
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-                let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
-                *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-            }
-        }
-    }
-
-    fn play_die_effects(&mut self, audio_system: &mut AudioSystem, engine_handle: &mut EngineHandle) {
-        
-        audio_system.spawn_non_spatial_sound(
-            Sound::PlayerDied,
-            0.37,
-            1.0,
-            false,
-            true,
-            fyrox_sound::source::Status::Playing
-        );
-
-        let players_death_explode = PlayersDeathExplosion::new(
-            self.get_transform().get_position()
-        );
-
-        self.screen_effects.death_screen_effect = 0.0;
-        self.screen_effects.getting_damage_screen_effect = 1.0;
-
-        engine_handle.send_command(
-            Command {
-                sender: self.get_id().expect("Player have not ActorID"),
-                command_type: CommandType::SpawnActor(
-                    super::ActorWrapper::PlayersDeathExplosion(players_death_explode)
-                )
-            }
-        );
-    }
-
-
-    fn die_slowly(&mut self, engine_handle: &mut EngineHandle) {
-        if self.inner_state.is_alive {
-        
-            self.inner_state.is_alive = false;
-            self.inner_state.is_enable = true;
-            self.need_to_die_slowly = true;
-            self.after_death_timer = 0.0;
-
-            engine_handle.send_command(
-                Command {
-                    sender: self.get_id().expect("Player have not ActorID"),
-                    command_type: CommandType::NetCommand(
-                        NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessageToPlayer::RemoteDirectMessage(
-                                self.get_id().expect("Player have not ActorID"),
-                                RemoteMessage::DieSlowly
-                            )
-                        )
-                    )
-                }
-            );
-        }
-    }
-
-    fn die(
-        &mut self,
-        die_immediately: bool,
-        engine_handle: &mut EngineHandle,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-
-    ) {
-        let my_id = self.get_id().expect("Player have not ActorID");
-
-        match self.active_hands_slot {
-            ActiveHandsSlot::Zero => {
-                self.hands_slot_0.deactivate(
-                    my_id,
-                    &mut self.inner_state,
-                    physic_system,
-                    audio_system,
-                    ui_system,
-                    engine_handle,
-                );
-
-            },
-            ActiveHandsSlot::First => {
-                if let Some(device) = self.hands_slot_1.as_mut() {
-                    device.deactivate(
-                        my_id,
-                        &mut self.inner_state,
-                        physic_system,
-                        audio_system,
-                        ui_system,
-                        engine_handle,
-                    );
-                }
-
-            },
-            ActiveHandsSlot::Second => {
-                if let Some(device) = self.hands_slot_2.as_mut() {
-                    device.deactivate(
-                        my_id,
-                        &mut self.inner_state,
-                        physic_system,
-                        audio_system,
-                        ui_system,
-                        engine_handle,
-                    );
-                }
-
-            },
-            ActiveHandsSlot::Third => {
-                if let Some(device) = self.hands_slot_3.as_mut() {
-                    device.deactivate(
-                        my_id,
-                        &mut self.inner_state,
-                        physic_system,
-                        audio_system,
-                        ui_system,
-                        engine_handle,
-                    );
-                }
-
-            }
-        }
-
-        let in_space = {
-            self.get_transform().get_position().y < Y_DEATH_PLANE_LEVEL+1.0
-        };
-
-        engine_handle.send_boardcast_message(
-            Message {
-                from: self.get_id().expect("Player have not ActorID"),
-                message: MessageType::SpecificActorMessage(
-                    SpecificActorMessage::FlagMessage(
-                        FlagMessage::PlayerDied(in_space)
-                    )
-                )
-            }
-        );
-
-        for device in self.devices.iter_mut() {
-            if let Some(device) = device {
-                device.deactivate(
-                    my_id,
-                    &mut self.inner_state,
-                    physic_system,
-                    audio_system,
-                    ui_system,
-                    engine_handle,
-                );
-            }
-        }
-
-        self.restore_scanner_values();
-
-        self.restore_w_shift_and_rotate_values();
-
-        if die_immediately {
-            self.die_immediately(audio_system, engine_handle);
-        } else {
-            self.die_slowly(engine_handle);
-        }
-    }
-
-    pub fn set_current_w_level(&mut self, w_level: usize)
-    {
-        self.current_w_level = w_level;
-    }
-
-    pub fn get_current_w_level(&self) -> usize
-    {
-        self.current_w_level
-    }
-
-
-    fn set_gun_to_1_slot(
-        &mut self,
-        device: Box<dyn Device>
-    ) -> Option<Box<dyn Device>>
-    {
-
-        match device.get_device_type() {
-            DeviceType::Gun => {
-                let prev_device = self.hands_slot_1.take();
-                self.hands_slot_1 = Some(device);
-
-                return prev_device;
-            }
-            _ => {
-                Some(device)
-            }
-        }
-    }
-
-
-    fn set_gun_to_2_slot(
-        &mut self,
-        device: Box<dyn Device>
-    ) -> Option<Box<dyn Device>>
-    {
-
-        match device.get_device_type() {
-            DeviceType::Gun => {
-                let prev_device = self.hands_slot_2.take();
-                self.hands_slot_2 = Some(device);
-
-                return prev_device;
-            }
-            _ => {
-                Some(device)
-            }
-        }
-    }
-
-
-    fn set_gun_to_3_slot(
-        &mut self,
-        device: Box<dyn Device>
-    ) -> Option<Box<dyn Device>>
-    {
-
-        match device.get_device_type() {
-            DeviceType::Gun => {
-                let prev_device = self.hands_slot_3.take();
-                self.hands_slot_3 = Some(device);
-
-                return prev_device;
-            }
-            _ => {
-                Some(device)
-            }
-        }
-    }
-
-
-    fn set_device_to_device_slot(
-        &mut self,
-        slot_number: PlayersDeviceSlotNumber,
-        device: Box<dyn Device>
-    ) -> Option<Box<dyn Device>> {
-
-        match device.get_device_type() {
-            DeviceType::Device => {
-                match slot_number {
-                    PlayersDeviceSlotNumber::First => {
-                        let prev_device = self.devices[0].take();
-                        self.devices[0] = Some(device);
-                        prev_device
-                    }
-                    PlayersDeviceSlotNumber::Second => {
-                        let prev_device = self.devices[1].take();
-                        self.devices[1] = Some(device);
-                        prev_device
-                    }
-                    PlayersDeviceSlotNumber::Third => {
-                        let prev_device = self.devices[2].take();
-                        self.devices[2] = Some(device);
-                        prev_device
-                    }
-                    PlayersDeviceSlotNumber::Fourth => {
-                        let prev_device = self.devices[3].take();
-                        self.devices[3] = Some(device);
-                        prev_device
-                    }
-                }
-
-                
-            },
-            _ => {Some(device)}
-        }
-    }
-
-    fn restore_scanner_values(&mut self) {
-        self.w_scanner_enable = false;
-        self.w_scanner_radius = 0.0;
-        self.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
-        self.w_scanner_enemies_show_time = self.player_settings.scanner_show_enemies_time;
-    }
-
-    fn restore_w_shift_and_rotate_values(&mut self) {
-        self.rotating_around_w_sound_pitch = 1.0;
-        self.rotating_around_w_sound_gain = 0.0;
-        self.shifting_along_w_sound_pitch = 1.0;
-        self.shifting_along_w_sound_gain = 0.0;
-        self.player_previous_w_position = 0.0;
+    
+        let example_expand_speed = 5.0 * delta;
+    
+        let mut diff = self.show_3d_example_target_value - self.show_3d_example_current_value;
+    
+        diff = diff.clamp(-example_expand_speed, example_expand_speed);
+    
+        self.show_3d_example_current_value += diff;
     }
 }
 
@@ -3411,7 +2231,7 @@ impl ControlledActor for PlayerFor2d3dExample
 {
     fn get_camera(&self) -> Camera {
         Camera {
-            position: self.get_position() + self.camera3d_offset,
+            position: self.inner_state.get_position() + self.camera3d_offset,
             rotation_matrix: self.camera3d_rotation,
             zw_rotation_matrix: self.camera3d_rotation_zw,
             zx_rotation_matrix: self.camera3d_rotation_zx,
@@ -3448,7 +2268,7 @@ impl ControlledActor for PlayerFor2d3dExample
         {
             let hits = physics_system.sphere_cast_on_dynamic_colliders(
                 spawn.spawn_position,
-                self.get_collider_radius(),
+                self.inner_state.get_collider_radius(),
                 Some(self.get_id().expect("Player hasn't ActorID"))
             );
     
@@ -3469,7 +2289,7 @@ impl ControlledActor for PlayerFor2d3dExample
 
         let hits = physics_system.sphere_cast_on_dynamic_colliders(
             current_spawn.spawn_position,
-            self.get_collider_radius(),
+            self.inner_state.get_collider_radius(),
             Some(self.get_id().expect("Player hasn't ActorID"))
         );
 
@@ -3487,19 +2307,16 @@ impl ControlledActor for PlayerFor2d3dExample
             )
         }
 
-        self.holding_player_rotation_along_w = false;
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;
         self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
-        self.inner_state.player_moving_state =
-            PlayerMovingState::MovingPerpendicularW(self.w_levels_of_map[current_spawn.w_level]);
 
-        self.view_angle = Vec4::ZERO;
+        self.inner_state.saved_angle_of_rotation = Vec4::ZERO;
 
-        self.restore_scanner_values();
+        self.w_scanner.restore_scanner_values(&self.player_settings);
 
-        self.restore_w_shift_and_rotate_values();
+        self.inner_state.restore_w_shift_and_rotate_values();
 
         audio_system.spawn_non_spatial_sound(
             Sound::PlayerRespawned,
@@ -3598,15 +2415,13 @@ impl ControlledActor for PlayerFor2d3dExample
         self.screen_effects.w_scanner_ring_intesity = 0.0;
         self.screen_effects.w_scanner_radius = 0.0;
         self.screen_effects.w_scanner_is_active = false;
-        self.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
+        self.w_scanner.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
 
         self.inner_state.collider.reset_forces_and_velocity();
 
         self.inner_state.transform = Transform::from_position(current_spawn.spawn_position);
 
-        self.current_w_level = current_spawn.w_level;
-
-        self.player_previous_w_position = current_spawn.spawn_position.w;
+        self.inner_state.player_previous_w_position = current_spawn.spawn_position.w;
 
         let player_doll_input_state = PlayerDollInputState {
             move_forward: false,
@@ -3614,7 +2429,6 @@ impl ControlledActor for PlayerFor2d3dExample
             move_right: false,
             move_left: false,
             will_jump: false,
-            player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
         engine_handle.send_command(

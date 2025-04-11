@@ -6,11 +6,7 @@ edition = "2021"
 # author = "maffi44"
 # wasm-opt = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-# matchbox_socket = "*"
-# webrtc = "*"
 matchmaking_server = { path = "./matchmaking_server" }
 game_server = { path = "./game_server" }
 env_logger = "*"
@@ -54,6 +50,8 @@ matchbox_socket = "*"
 rustc-hash = "1.1.0"
 
 [lib]
+name="game_client_web"
+path = "src/game_client_web.rs"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]

@@ -1,6 +1,6 @@
 use crate::{
     actor::{
-        player::{Player, PlayerScreenEffects},
+        main_player::{MainPlayer, PlayerScreenEffects},
         Actor,
         ActorWrapper
     },

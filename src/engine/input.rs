@@ -2,7 +2,7 @@ pub mod action;
 
 use crate::{
     actor::{
-        player::player_input_master::InputMaster::{
+        main_player::player_input_master::InputMaster::{
             LocalMaster,
             RemoteMaster,
         }, Actor, ActorWrapper

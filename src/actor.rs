@@ -1,4 +1,4 @@
-pub mod player;
+pub mod main_player;
 pub mod diamond;
 pub mod wandering_actor;
 pub mod device;
@@ -40,8 +40,8 @@ use self::{
     holegun_miss::HoleGunMiss,
     holegun_shot::HoleGunShot,
     machinegun_shot::MachinegunShot,
-    player::{
-        Player,
+    main_player::{
+        MainPlayer,
         PlayerMessage
     },
     players_death_explosion::PlayersDeathExplosion,
@@ -132,7 +132,7 @@ pub trait Actor {
 }
 
 pub enum ActorWrapper {
-    Player(Player),
+    Player(MainPlayer),
     PlayerFor2d3dExample(PlayerFor2d3dExample),
     WonderingActor(WanderingActor),
     HoleGunShot(HoleGunShot),
@@ -772,7 +772,7 @@ use glam::Vec4;
 use hole::Hole;
 use move_w_bonus::{MoveWBonusSpot, MoveWBonusSpotMessage};
 use mover_w::{MoverW, MoverWMessage};
-use player::{player_input_master::InputMaster, PlayerScreenEffects};
+use main_player::{player_input_master::InputMaster, PlayerScreenEffects};
 use player_for_2d_3d_example::PlayerFor2d3dExample;
 use session_controller::SessionController;
 use wave::Wave;

@@ -3,7 +3,7 @@ use glam::Vec4;
 use crate::{
     actor::{
         machinegun_shot::MachinegunShot,
-        player::{
+        main_player::{
             player_inner_state::PlayerInnerState,
             PlayerMessage
         },

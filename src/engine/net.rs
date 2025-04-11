@@ -37,7 +37,7 @@ use client_server_protocol::{
 
 use crate::{
     actor::{
-        flag::{FlagMessage, FlagStatus}, hole::Hole, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
+        flag::{FlagMessage, FlagStatus}, hole::Hole, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, main_player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
             PlayerDollInputState, PlayersDoll, PlayersDollMessage}, session_controller::SessionControllerMessage, ActorWrapper, CommonActorsMessage, Message, MessageType, SpecificActorMessage
     },
     transform::{self, Transform}

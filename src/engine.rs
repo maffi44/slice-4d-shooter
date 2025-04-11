@@ -21,7 +21,7 @@ use std::{
 };
 
 use crate::{
-    actor::player::player_settings::PlayerSettings,
+    actor::main_player::player_settings::PlayerSettings,
     main_loop::{self, MainLoop}
 };
 

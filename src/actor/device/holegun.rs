@@ -10,7 +10,7 @@ use crate::{
         },
         holegun_miss::HoleGunMiss,
         holegun_shot::HoleGunShot,
-        player::{
+        main_player::{
             player_inner_state::PlayerInnerState,
             PlayerMessage
         },

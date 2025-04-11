@@ -5,7 +5,7 @@ use self::level::Level;
 
 use crate::{
     actor::{
-        player::{
+        main_player::{
             player_settings::PlayerSettings,
             PlayerMessage
         },

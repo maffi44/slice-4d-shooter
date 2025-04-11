@@ -1,4 +1,6 @@
 use client_server_protocol::Team;
+use fyrox_core::pool::Handle;
+use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Mat4, Vec4};
 
 use crate::{actor::session_controller::DEFAULT_TEAM, engine::{audio::{AudioSystem, Sound}, engine_handle::EngineHandle, physics::{dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, PhysicsSystem}, ui::{RectSize, UIElement, UIElementType, UISystem}}, transform::Transform};
@@ -13,43 +15,47 @@ pub struct PlayerInnerState {
     pub hp: f32,
     pub is_alive: bool,
     pub is_enable: bool,
-    
     pub crosshair_target_size: f32,
     pub crosshair_size: f32,
-
     pub zw_rotation: Mat4,
     pub zy_rotation: Mat4,
     pub zx_rotation: Mat4,
-
     pub is_time_after_some_team_win: bool,
     pub amount_of_move_w_bonuses_do_i_have: u32,
-    // pub player_moving_state: PlayerMovingState,
-
     pub blue_map_w_level: f32,
     pub red_map_w_level: f32,
-
     pub friction_on_air: f32,
-
     pub screen_effects: PlayerScreenEffects,
-    
     pub show_crosshaier_hit_mark_timer: f32,
     pub last_frame_zw_rotation: f32,
-
     pub jumped_to_y_on_current_action: bool,
     pub player_previous_w_position: f32,
-    
-    pub saved_angle_of_rotation: f32,
+    pub after_death_timer: f32,
+    pub saved_angle_of_rotation: Vec4,
+    pub rotating_around_w_sound_handle: Handle<SoundSource>,
+    pub rotating_around_w_sound_pitch: f64,
+    pub rotating_around_w_sound_gain: f32,
+    pub shifting_along_w_sound_handle: Handle<SoundSource>,
+    pub shifting_along_w_sound_pitch: f64,
+    pub shifting_along_w_sound_gain: f32,
+    pub jumped_to_w_on_current_action: bool,
+    pub jumped_to_wy_on_current_action: bool,
+    pub flag_pivot_offset: Vec4,
+    pub base_effect_tick_timer: f32,
+    pub holding_player_rotation_along_w: bool,
 }
 
 
 impl PlayerInnerState {
     pub fn new(
         transform: Transform,
-        settings: &PlayerSettings,
+        player_settings: &PlayerSettings,
         is_alive: bool,
         is_enable: bool,
         blue_map_w_level: f32,
         red_map_w_level: f32,
+
+        audio_system: &mut AudioSystem,
     ) -> Self {
 
         let collider_for_others = {
@@ -57,7 +63,7 @@ impl PlayerInnerState {
             
             vec.push(PlayersDollCollider {
                 position: Vec4::ZERO,
-                radius: settings.collider_radius,
+                radius: player_settings.collider_radius,
                 friction: 0_f32,
                 bounce_rate: 0_f32,
                 actors_id: None,
@@ -67,13 +73,33 @@ impl PlayerInnerState {
             vec
         };
 
+        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::RotatingAroundW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
+        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::ShiftingAlongW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+        let player_radius = player_settings.collider_radius;
+        let after_death_timer =  player_settings.min_respawn_timer;
+
         PlayerInnerState {
             team: DEFAULT_TEAM,
             collider: KinematicCollider::new(
-                settings.max_speed,
-                settings.max_accel,
-                settings.collider_radius,
-                settings.friction_on_air,
+                player_settings.max_speed,
+                player_settings.max_accel,
+                player_settings.collider_radius,
+                player_settings.friction_on_air,
                 // settings.friction_on_ground,
             ),
             collider_for_others,
@@ -95,13 +121,29 @@ impl PlayerInnerState {
 
             blue_map_w_level,
             red_map_w_level,
-            friction_on_air: settings.friction_on_air,
+            friction_on_air: player_settings.friction_on_air,
             last_frame_zw_rotation: 0.0,
 
             jumped_to_y_on_current_action: false,
             player_previous_w_position: 0.0,
-            saved_angle_of_rotation: 0.0,
+            saved_angle_of_rotation: Vec4::ZERO,
             screen_effects: PlayerScreenEffects::default(),
+
+            rotating_around_w_sound_pitch: 1.0,
+            rotating_around_w_sound_gain: 0.0,
+            shifting_along_w_sound_pitch: 1.0,
+            shifting_along_w_sound_gain: 0.0,
+            flag_pivot_offset: Vec4::new(0.0, player_radius * 2.0, 0.0, 0.0),
+
+            rotating_around_w_sound_handle,
+            shifting_along_w_sound_handle,
+
+            after_death_timer,
+
+            jumped_to_w_on_current_action: false,
+            jumped_to_wy_on_current_action: false,
+            base_effect_tick_timer: 0.0,
+            holding_player_rotation_along_w: false,
         }
     }
 
@@ -188,5 +230,15 @@ impl PlayerInnerState {
     
             *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
         }
+    }
+
+    pub fn restore_w_shift_and_rotate_values(
+        &mut self,
+    )
+    {
+        self.rotating_around_w_sound_pitch = 1.0;
+        self.rotating_around_w_sound_gain = 0.0;
+        self.shifting_along_w_sound_pitch = 1.0;
+        self.shifting_along_w_sound_gain = 0.0;
     }
 }

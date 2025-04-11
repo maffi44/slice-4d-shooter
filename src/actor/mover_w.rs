@@ -4,7 +4,7 @@ use glam::{Vec3, Vec4};
 
 use crate::{engine::{physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}}, transform::Transform};
 
-use super::{player::{BLUE_TEAM_COLOR, RED_TEAM_COLOR}, Actor, ActorID, Message, MessageType, PhysicsMessages, SpecificActorMessage};
+use super::{main_player::{BLUE_TEAM_COLOR, RED_TEAM_COLOR}, Actor, ActorID, Message, MessageType, PhysicsMessages, SpecificActorMessage};
 
 
 const TIME_TO_NOT_INTERACT_WITH_ACTOR: f32 = 1.0;
