@@ -8,7 +8,7 @@ use main_loop::MainLoop;
 use pollster;
 use blink_alloc::UnsafeGlobalBlinkAlloc;
 
-use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, player::{player_input_master::{InputMaster, LocalMaster}, Player, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
+use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
@@ -36,7 +36,7 @@ fn main() {
 
     pollster::block_on(main_loop.run(systems, Box::new(|systems| {
 
-        let mut main_player = Player::new(
+        let mut main_player = MainPlayer::new(
             InputMaster::LocalMaster(
                 LocalMaster::new(ActionsFrameState::empty())
             ),

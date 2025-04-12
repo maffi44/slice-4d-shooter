@@ -889,10 +889,11 @@ impl Actor for MainPlayer {
                 &self.player_settings,
             );
 
-            process_player_w_jump_input(
+            process_player_second_jump_input(
                 &input,
                 &mut self.inner_state,
                 &self.player_settings,
+                Vec4::W,
             );
 
             process_w_scanner(
@@ -1295,14 +1296,17 @@ pub fn process_player_y_jump_input(
 }
 
 
-pub fn process_player_w_jump_input(
+pub fn process_player_second_jump_input(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
     player_settings: &PlayerSettings,
+    mut axis: Vec4,
 )
 {
+    axis = axis.normalize();
+
     if input.move_w_up.is_action_just_pressed() {
-        inner_state.collider.add_force(Vec4::W * player_settings.jump_w_speed);
+        inner_state.collider.add_force(axis * player_settings.jump_w_speed);
     }
 }
 
@@ -2543,6 +2547,7 @@ impl MainPlayer {
                 false,
                 blue_map_w_level,
                 red_map_w_level,
+                Vec4::X*0.6,
                 audio_system,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,

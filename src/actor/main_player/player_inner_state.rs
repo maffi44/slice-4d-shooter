@@ -54,6 +54,7 @@ impl PlayerInnerState {
         is_enable: bool,
         blue_map_w_level: f32,
         red_map_w_level: f32,
+        weapon_offset: Vec4,
 
         audio_system: &mut AudioSystem,
     ) -> Self {
@@ -67,7 +68,7 @@ impl PlayerInnerState {
                 friction: 0_f32,
                 bounce_rate: 0_f32,
                 actors_id: None,
-                weapon_offset: Vec4::Y*0.6,
+                weapon_offset,
                 actors_team: DEFAULT_TEAM,
             });
             vec
