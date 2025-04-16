@@ -58,7 +58,7 @@ impl MainLoop {
         log::info!("init(systems) called");
 
         #[cfg(target_arch="wasm32")]
-        let mut it_is_first_action = true;
+        let mut it_is_first_input_action = true;
 
         let _ = self.event_loop.run(move |event, elwt|{
             match event {
@@ -175,9 +175,9 @@ impl MainLoop {
                                         // it is necessary on web target because a browsers is prevent 
                                         // to create an audio context before first input action
                                         #[cfg(target_arch="wasm32")]
-                                        if it_is_first_action {
+                                        if it_is_first_input_action {
                                             systems.audio.sound_engine.initialize_audio_output_device().unwrap();
-                                            it_is_first_action = false
+                                            it_is_first_input_action = false
                                         }
                                         
                                         systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::Confined).or_else(

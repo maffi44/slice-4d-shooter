@@ -41,13 +41,10 @@ use crate::{
             EngineHandle
         },
         input::ActionsFrameState, physics::{
-            colliders_container::PhysicalElement,
-            dynamic_collider::PlayersDollCollider,
-            kinematic_collider::{
+            colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::{
                 KinematicCollider,
                 KinematicColliderMessage
-            },
-            PhysicsSystem
+            }, physics_system_data::PhysicsState, PhysicsSystem
         }, render::{camera::Camera, VisualElement}, time::TimeSystem, ui::{
             self, RectSize, UIElement, UIElementType, UISystem
         }, world::level::Spawn
@@ -63,7 +60,7 @@ use self::{
 
 use core::panic;
 use std::{collections::btree_set::Difference, f32::consts::PI, usize};
-use fyrox_core::pool::Handle;
+use fyrox_core::{math::lerpf, pool::Handle};
 use fyrox_sound::source::{SoundSource, Status};
 use glam::{
     FloatExt, Mat4, Vec2, Vec3, Vec4
@@ -109,6 +106,45 @@ pub struct PlayerScreenEffects {
 
     pub death_screen_effect: f32,
     pub getting_damage_screen_effect: f32,
+
+    pub player_projections: Vec<PlayerProjection>,
+}
+
+
+pub struct PlayerProjection
+{
+    pub player_id: ActorID,
+    pub timer: f32,
+    pub intensity: f32,
+
+    pub body: Option<PlayerProjectionBody>
+}
+
+
+pub struct PlayerProjectionBody
+{
+    pub position: Vec4,
+    pub radius: f32,
+    pub zx_rotation_offset: f32,
+}
+
+
+
+impl PlayerProjection
+{
+    pub fn new(
+        player_id: ActorID,
+        time: f32,
+    ) -> Self
+    {
+        PlayerProjection {
+            player_id,
+            timer,
+            intensity: 0.0,
+
+            body: None,
+        }
+    }
 }
 
 impl Default for PlayerScreenEffects
@@ -121,6 +157,7 @@ impl Default for PlayerScreenEffects
             w_scanner_enemies_intesity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
+            player_projections: Vec::with_capacity(10),
         }
     }
 }
@@ -233,6 +270,13 @@ pub enum PlayerMessage {
         // team damage from
         Team,
     ),
+    GiveMeDataForProjection,
+    DataForProjection(
+        // position
+        Vec4,
+        // player radius
+        f32,
+    ),
     NewPeerConnected(u128),
     Telefrag,
     DieImmediately,
@@ -332,6 +376,22 @@ impl Actor for MainPlayer {
                     SpecificActorMessage::PLayerMessage(message) =>
                     {
                         match message {
+                            PlayerMessage::DataForProjection(
+                                updated_projection_position,
+                                updated_projection_radius
+                            ) =>
+                            {
+                                update_player_projection(
+                                    from,
+                                    updated_projection_position,
+                                    updated_projection_radius,
+                                    &mut self.screen_effects.player_projections,
+                                    &self.inner_state
+                                )
+                            }
+
+                            PlayerMessage::GiveMeDataForProjection => {}
+
                             PlayerMessage::Telefrag =>
                             {
                                 let my_id = self.get_id().expect("Player Have not ActorID");
@@ -902,7 +962,16 @@ impl Actor for MainPlayer {
                 &self.player_settings,
                 &mut self.screen_effects,
                 &mut self.w_scanner,
+                physic_system,
+                my_id,
                 delta,
+            );
+
+            process_player_projections(
+                &mut self.screen_effects.player_projections,
+                engine_handle,
+                my_id,
+                delta
             );
             
             get_effected_by_base(
@@ -1311,12 +1380,17 @@ pub fn process_player_second_jump_input(
 }
 
 
+pub const PLAYER_PROJECTION_DISPLAY_TIME: f32 = 2.8;
+
+
 pub fn process_w_scanner(
     input: &ActionsFrameState,
     inner_state: &PlayerInnerState,
     player_settings: &PlayerSettings,
     screen_effects: &mut PlayerScreenEffects,
     w_scanner: &mut WScanner,
+    physic_system: &PhysicsSystem,
+    my_id: ActorID,
     delta: f32,
 )
 {
@@ -1365,6 +1439,156 @@ pub fn process_w_scanner(
 
         intensity.clamp(0.0, 1.0)
     };
+
+    // update player projections if scanner is enabled
+    if w_scanner.w_scanner_enable
+    {
+        let hits = physic_system.sphere_cast_on_dynamic_colliders(
+            inner_state.get_position(),
+            screen_effects.w_scanner_radius,
+            Some(my_id)
+        );
+
+        for hit in hits
+        {
+            let team = hit.hited_actors_team
+                .expect("scanned by W Scanner dynamic collider have not Team");
+
+            if team != inner_state.team
+            {
+                let id = hit.hited_actors_id
+                    .expect("scanned by W Scanner dynamic collider have not ActorID");
+
+                let player_projection = find_player_projection(
+                    id,
+                    &mut screen_effects.player_projections
+                );
+
+                match player_projection {
+                    Some(projection) =>
+                    {
+                        projection.timer = PLAYER_PROJECTION_DISPLAY_TIME;
+                    }
+                    None =>
+                    {
+                        let projection = PlayerProjection::new(
+                            id,
+                            PLAYER_PROJECTION_DISPLAY_TIME,
+                        );
+
+                        screen_effects.player_projections.push(projection);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+fn find_player_projection(
+    id: ActorID,
+    player_projections: &'a mut Vec<PlayerProjection>
+) -> Option<&'a mut PlayerProjection>
+{
+    for projection in player_projections
+    {
+        if projection.player_id == id
+        {
+            return Some(projection);
+        }
+    }
+    return None;
+}
+
+
+pub fn process_player_projections
+(
+    player_projections: &mut Vec<PlayerProjection>,
+    engine_handle: &mut EngineHandle,
+    my_id: ActorID,
+    delta: f32,
+)
+{
+    player_projections.retain(|projection|
+    {
+        projection.timer -= delta;
+        if projection.timer <= 0.0
+        {
+            return false;
+        }
+
+        projection.intensity = {
+            lerpf(
+                projection.intensity,
+                projection.timer.clamp(0.0, 1.0),
+                delta*3.0
+            )
+        };
+
+        projection.body = None;
+
+        engine_handle.send_direct_message(
+            projection.player_id,
+            Message {
+                from: my_id,
+                message: MessageType::SpecificActorMessage(
+                    SpecificActorMessage::PLayerMessage(
+                        PlayerMessage::GiveMeDataForProjection,
+                    )
+                )
+            }
+        );
+    });
+}
+
+
+pub fn update_player_projection
+(
+    projection_id: ActorID,
+    updated_projection_position: Vec4,
+    projection_updated_radius: f32,
+    player_projections: &mut Vec<PlayerProjection>,
+    inner_state: &PlayerInnerState,
+)
+{
+    let projection = find_player_projection(
+        projection_id,
+        player_projections
+    );
+
+    if let Some(projection) = projection
+    {
+        let player_position = inner_state.get_position();
+    
+        let player_to_projection_vec = updated_projection_position - player_position;
+    
+        let zx_rotation_offset = Vec4::W.dot(player_to_projection_vec.normalize()).acos();
+        
+        if zx_rotation_offset.is_nan() {panic!("Got NAN during update player projection")}
+        
+        let player_view_dir = inner_state.get_zw_rotation_matrix() * Vec4::Z;
+        
+        let wr = player_view_dir.dot(player_to_projection_vec.normalize()).acos();
+
+        if relative_rotation.is_nan() {panic!("Got NAN during update player projection")}
+
+        let rot_mat = Mat4::from_cols_slice(&[
+            1.0,    0.0,    0.0,        0.0,
+            0.0,    1.0,    0.0,        0.0,
+            0.0,    0.0,    (wr).cos(),   (wr).sin(),
+            0.0,    0.0,    -(wr).sin(),   (wr).cos()
+        ]);
+    
+
+        let body = PlayerProjectionBody
+        {
+            position: player_position + (rot_mat * player_to_projection_vec),
+            radius: projection_updated_radius,
+            zx_rotation_offset,
+        };
+
+        projection.body = Some(body);
+    }
 }
 
 
@@ -2525,17 +2749,7 @@ impl MainPlayer {
 
         let red_map_w_level = *w_levels_of_map.last().unwrap();
         
-        let screen_effects = PlayerScreenEffects {
-            w_scanner_is_active: false,
-            w_scanner_radius: 0.0,
-            w_scanner_ring_intesity: 0.0,
-            w_scanner_enemies_intesity: 0.0,
-            death_screen_effect: 0.0,
-            getting_damage_screen_effect: 0.0,
-        };
-
-        let w_scanner = WScanner::new(&player_settings);
-        
+        let screen_effects = PlayerScreenEffects::default();
         
         MainPlayer {
             id: None,

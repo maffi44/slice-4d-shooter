@@ -104,8 +104,6 @@ pub const PLAYER_MAX_HP: f32 = 100.0;
 const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
 const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
 
-// const self.player_settings.scanner_reloading_time: f32 = 6.5;
-// const self.player_settings.scanner_show_enemies_time: f32 = 5.5;
 const W_SCANNER_MAX_RADIUS: f32 = 21.0;
 const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
 
@@ -223,6 +221,22 @@ impl Actor for PlayerFor2d3dExample {
                     SpecificActorMessage::PLayerMessage(message) =>
                     {
                         match message {
+                            PlayerMessage::DataForProjection(
+                                updated_projection_position,
+                                updated_projection_radius
+                            ) =>
+                            {
+                                main_player::update_player_projection(
+                                    from,
+                                    updated_projection_position,
+                                    updated_projection_radius,
+                                    &mut self.screen_effects.player_projections,
+                                    &self.inner_state
+                                )
+                            }
+
+                            PlayerMessage::GiveMeDataForProjection => {}
+
                             PlayerMessage::Telefrag =>
                             {
                                 let my_id = self.get_id().expect("Player Have not ActorID");
@@ -821,8 +835,18 @@ impl Actor for PlayerFor2d3dExample {
                 &self.player_settings,
                 &mut self.screen_effects,
                 &mut self.w_scanner,
+                physic_system,
+                my_id,
                 delta,
             );
+
+            main_player::process_player_projections(
+                &mut self.screen_effects.player_projections,
+                engine_handle,
+                my_id,
+                delta
+            );
+            
             
             main_player::get_effected_by_base(
                 &mut self.inner_state,
@@ -1062,6 +1086,7 @@ impl PlayerFor2d3dExample {
             w_scanner_enemies_intesity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
+            player_projections: Vec::with_capacity(10),
         };
 
         let w_scanner = WScanner::new(&player_settings);

@@ -551,6 +551,25 @@ impl Actor for PlayersDoll {
                     {
                         match message
                         {
+                            PlayerMessage::GiveMeDataForProjection => {
+                                engine_handle.send_direct_message(
+                                    from,
+                                    Message {
+                                        from: self.get_id().expect("Player Doll have not ActorID"),
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::PLayerMessage(
+                                                PlayerMessage::DataForProjection(
+                                                    self.transform.get_position(),
+                                                    self.player_settings.collider_radius
+                                                )
+                                            )
+                                        )
+                                    }
+                                );
+                            }
+
+                            PlayerMessage::DataForProjection(_,_) => {}
+
                             PlayerMessage::Telefrag =>
                             {
                                 self.die_immediately(engine_handle, audio_system);
