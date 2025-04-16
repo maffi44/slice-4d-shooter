@@ -134,7 +134,7 @@ impl PlayerProjection
 {
     pub fn new(
         player_id: ActorID,
-        time: f32,
+        timer: f32,
     ) -> Self
     {
         PlayerProjection {
@@ -1485,7 +1485,7 @@ pub fn process_w_scanner(
 }
 
 
-fn find_player_projection(
+fn find_player_projection<'a>(
     id: ActorID,
     player_projections: &'a mut Vec<PlayerProjection>
 ) -> Option<&'a mut PlayerProjection>
@@ -1509,7 +1509,7 @@ pub fn process_player_projections
     delta: f32,
 )
 {
-    player_projections.retain(|projection|
+    player_projections.retain_mut(|projection|
     {
         projection.timer -= delta;
         if projection.timer <= 0.0
@@ -1538,6 +1538,8 @@ pub fn process_player_projections
                 )
             }
         );
+
+        true
     });
 }
 
@@ -1570,7 +1572,7 @@ pub fn update_player_projection
         
         let wr = player_view_dir.dot(player_to_projection_vec.normalize()).acos();
 
-        if relative_rotation.is_nan() {panic!("Got NAN during update player projection")}
+        if wr.is_nan() {panic!("Got NAN during update player projection")}
 
         let rot_mat = Mat4::from_cols_slice(&[
             1.0,    0.0,    0.0,        0.0,
@@ -2750,6 +2752,8 @@ impl MainPlayer {
         let red_map_w_level = *w_levels_of_map.last().unwrap();
         
         let screen_effects = PlayerScreenEffects::default();
+
+        let w_scanner = WScanner::new(&player_settings);
         
         MainPlayer {
             id: None,

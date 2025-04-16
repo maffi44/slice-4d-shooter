@@ -51,7 +51,7 @@ rustc-hash = "1.1.0"
 
 [lib]
 name="game_client_main_web"
-path = "src/game_client_web.rs"
+path = "src/game_client_main_web.rs"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
