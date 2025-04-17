@@ -54,7 +54,7 @@ pub struct ActionsFrameState {
     pub move_w_down: Action,
     pub first_mouse: Action,
     pub second_mouse: Action,
-    pub hold_player_rotation: Action,
+    pub w_aim: Action,
     pub mouse_axis: Vec2,
 }
 
@@ -128,7 +128,7 @@ impl ActionsFrameState {
             // mode_2,
             // mode_3,
             mouse_axis,
-            hold_player_rotation,
+            w_aim: hold_player_rotation,
         }
     }
 
@@ -172,7 +172,7 @@ impl ActionsFrameState {
             move_w_down,
             first_mouse,
             second_mouse,
-            hold_player_rotation,
+            w_aim: hold_player_rotation,
             // mode_1,
             // mode_2,
             // mode_3,

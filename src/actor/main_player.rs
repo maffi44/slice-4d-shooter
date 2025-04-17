@@ -44,7 +44,7 @@ use crate::{
             colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::{
                 KinematicCollider,
                 KinematicColliderMessage
-            }, physics_system_data::PhysicsState, PhysicsSystem
+            }, physics_system_data::{Hit, PhysicsState}, PhysicsSystem
         }, render::{camera::Camera, VisualElement}, time::TimeSystem, ui::{
             self, RectSize, UIElement, UIElementType, UISystem
         }, world::level::Spawn
@@ -877,6 +877,12 @@ impl Actor for MainPlayer {
                 delta,
             );
 
+            process_projection_w_aim(
+                &input,
+                &mut self.inner_state,
+                &self.screen_effects,
+            );
+
             process_player_rotation(
                 &input,
                 &self.player_settings,
@@ -1081,6 +1087,99 @@ impl Actor for MainPlayer {
     }
 }
 
+pub const DEFAULT_ZW_ROTATION_TARGET_IN_RADS: f32 = 0.0;
+
+pub fn process_projection_w_aim(
+    input: &ActionsFrameState,
+    inner_state: &mut PlayerInnerState,
+    screen_effects: &PlayerScreenEffects,
+)
+{
+    if input.w_aim.is_action_just_pressed()
+    {
+        inner_state.projections_w_aim_enabled = !inner_state.projections_w_aim_enabled; 
+    }
+
+    if inner_state.projections_w_aim_enabled
+    {
+        let view_vec = inner_state.get_rotation_matrix().inverse() * Vec4::Z;
+        let hited_projection = get_intersected_projection(
+            inner_state.get_position(),
+            view_vec,
+            &screen_effects.player_projections
+        );
+
+        if let Some(projection) = hited_projection
+        {
+            inner_state.zw_rotation_target_in_rads = projection
+                .body
+                .as_ref()
+                .expect("Intersected projection have not body")
+                .zx_rotation_offset;
+        }
+        else
+        {
+            inner_state.zw_rotation_target_in_rads = DEFAULT_ZW_ROTATION_TARGET_IN_RADS;
+        }
+    }
+    else
+    {
+        inner_state.zw_rotation_target_in_rads = DEFAULT_ZW_ROTATION_TARGET_IN_RADS;
+    }
+}
+
+
+fn get_intersected_projection
+(
+    origin: Vec4,
+    view_vec: Vec4,
+    projections: &Vec<PlayerProjection>
+) -> Option<&PlayerProjection>
+{
+    let mut closest_intr = (-2.0_f32, None);
+    for projection in projections
+    {
+        if let Some(body) = &projection.body
+        {
+            let current_intr = get_sphere_intersection(
+                origin - body.position,
+                view_vec,
+                body.radius
+            );
+
+            if current_intr.x > 0.0
+            {
+                if closest_intr.0 > current_intr.x
+                {
+                    closest_intr.1 = Some(projection)            
+                }
+            }
+        }
+    }
+
+    closest_intr.1
+}
+
+fn get_sphere_intersection(
+    ray_origin: Vec4,
+    ray_direction: Vec4,
+    radius: f32
+) -> Vec2
+{
+    let b = ray_origin.dot(ray_direction);
+    let c = ray_origin.dot(ray_origin) - radius*radius;
+    let mut h = b*b - c;
+    
+    if h < 0.0
+    {
+        return Vec2::NEG_ONE; // no intersection
+    }
+
+    h = h*h;
+
+    return Vec2::new(-b-h, -b+h);
+}
+
 
 pub fn process_player_rotation(
     input: &ActionsFrameState,
@@ -1099,11 +1198,15 @@ pub fn process_player_rotation(
         zw = (input.mouse_axis.y * player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
         xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
         
-    } else {
-        // restore player's rotation along W
-        zw *= 1.0 - delta * 2.8;
-        if zw.abs() < 0.0001 {
-            zw = 0.0;
+    } else {            
+        // reset player's rotation along W
+        zw = lerpf(
+            zw,
+            inner_state.zw_rotation_target_in_rads,
+            1.0 - delta * 2.8,
+        );
+        if (zw - inner_state.zw_rotation_target_in_rads).abs() < 0.0005 {
+            zw = inner_state.zw_rotation_target_in_rads;
         }
 
         xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
@@ -2890,7 +2993,7 @@ impl ControlledActor for MainPlayer
             )
         }
 
-        self.inner_state.holding_player_rotation_along_w = false;
+        self.inner_state.projections_w_aim_enabled = false;
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;

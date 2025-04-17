@@ -5,7 +5,7 @@ use glam::{FloatExt, Mat4, Vec4};
 
 use crate::{actor::session_controller::DEFAULT_TEAM, engine::{audio::{AudioSystem, Sound}, engine_handle::EngineHandle, physics::{dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, PhysicsSystem}, ui::{RectSize, UIElement, UIElementType, UISystem}}, transform::Transform};
 
-use super::{player_settings::PlayerSettings, PlayerMovingState, PlayerScreenEffects, BASE_EFFECT_HP_IMPACT_SPEED, CROSSHAIR_DECREASING_SPEED, CROSSHAIR_INCREASING_SPEED, CROSSHAIR_MAX_SIZE, CROSSHAIR_MIN_SIZE, PLAYER_MAX_HP};
+use super::{player_settings::PlayerSettings, PlayerMovingState, PlayerScreenEffects, BASE_EFFECT_HP_IMPACT_SPEED, CROSSHAIR_DECREASING_SPEED, CROSSHAIR_INCREASING_SPEED, CROSSHAIR_MAX_SIZE, CROSSHAIR_MIN_SIZE, DEFAULT_ZW_ROTATION_TARGET_IN_RADS, PLAYER_MAX_HP};
 
 pub struct PlayerInnerState {
     pub team: Team,
@@ -42,7 +42,9 @@ pub struct PlayerInnerState {
     pub jumped_to_wy_on_current_action: bool,
     pub flag_pivot_offset: Vec4,
     pub base_effect_tick_timer: f32,
-    pub holding_player_rotation_along_w: bool,
+    pub projections_w_aim_enabled: bool,
+
+    pub zw_rotation_target_in_rads: f32,
 }
 
 
@@ -144,7 +146,9 @@ impl PlayerInnerState {
             jumped_to_w_on_current_action: false,
             jumped_to_wy_on_current_action: false,
             base_effect_tick_timer: 0.0,
-            holding_player_rotation_along_w: false,
+            projections_w_aim_enabled: false,
+
+            zw_rotation_target_in_rads: DEFAULT_ZW_ROTATION_TARGET_IN_RADS,
         }
     }
 

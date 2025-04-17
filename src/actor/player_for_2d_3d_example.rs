@@ -1184,7 +1184,7 @@ impl PlayerFor2d3dExample {
         delta: f32,
     )
     {
-        if input.hold_player_rotation.is_action_just_pressed()
+        if input.w_aim.is_action_just_pressed()
         {
             if self.show_3d_example_target_value == 0.0
             {

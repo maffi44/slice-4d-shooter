@@ -1,6 +1,6 @@
 use crate::{
     actor::{
-        main_player::{MainPlayer, PlayerScreenEffects},
+        main_player::{MainPlayer, PlayerProjection, PlayerScreenEffects},
         Actor,
         ActorWrapper
     },
@@ -1074,6 +1074,63 @@ fn get_players_screen_effects(world: &World) -> &PlayerScreenEffects {
         .get_screen_effects()
 }
 
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct PlayerProjectionForShader
+{
+    position: [f32;4],
+    empty_byte1: f32,
+    empty_byte2: f32,
+    radius: f32,
+    zw_offset: f32,
+}
+
+impl From<&PlayerProjection> for PlayerProjectionForShader
+{
+    fn from(value: &PlayerProjection) -> Self {
+        let body = value.body.as_ref();
+
+        match body {
+            Some(projection_body) =>
+            {
+                PlayerProjectionForShader {
+                    position: projection_body.position.to_array(),
+                    empty_byte1: 0.0,
+                    empty_byte2: 0.0,
+                    radius: projection_body.radius,
+                    zw_offset: projection_body.zx_rotation_offset,
+                }                
+            }
+            None =>
+            {
+                PlayerProjectionForShader {
+                    position: [0.0;4],
+                    empty_byte1: 0.0,
+                    empty_byte2: 0.0,
+                    radius: 0.0,
+                    zw_offset: 0.0,
+                }
+            }
+        }
+    }
+}
+
+
+impl Default for PlayerProjectionForShader
+{
+    fn default() -> Self {
+        PlayerProjectionForShader {
+            position: [0.0;4],
+            empty_byte1: 0.0,
+            empty_byte2: 0.0,
+            radius: 0.0,
+            zw_offset: 0.0
+        }
+    }
+}
+
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct OtherDynamicData {
@@ -1086,6 +1143,8 @@ pub struct OtherDynamicData {
 
     beam_areas_amount: u32,
     player_forms_amount: u32,
+
+    player_projections: [PlayerProjectionForShader; 16],
 
     w_scanner_radius: f32,
     w_scanner_ring_intesity: f32,
@@ -1162,6 +1221,13 @@ impl OtherDynamicData {
 
         self.player_forms_amount = player_forms_amount;
 
+        self.player_projections = [PlayerProjectionForShader::default(); 16];
+
+        for (i, projection) in players_screen_effects.player_projections.iter().enumerate()
+        {
+            self.player_projections[i] = PlayerProjectionForShader::from(projection);
+        }
+
         self.w_scanner_radius = {
             players_screen_effects.w_scanner_radius
         };
@@ -1195,6 +1261,8 @@ impl Default for OtherDynamicData {
             waves_amount: 0u32,
             beam_areas_amount: 0,
             player_forms_amount: 0,
+
+            player_projections: [PlayerProjectionForShader::default(); 16],
 
             w_scanner_radius: 0.0,
             w_scanner_ring_intesity: 0.0,
