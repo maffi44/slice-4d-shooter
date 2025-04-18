@@ -1081,9 +1081,9 @@ pub struct PlayerProjectionForShader
 {
     position: [f32;4],
     empty_byte1: f32,
-    empty_byte2: f32,
     radius: f32,
     zw_offset: f32,
+    intensity: f32,
 }
 
 impl From<&PlayerProjection> for PlayerProjectionForShader
@@ -1097,9 +1097,9 @@ impl From<&PlayerProjection> for PlayerProjectionForShader
                 PlayerProjectionForShader {
                     position: projection_body.position.to_array(),
                     empty_byte1: 0.0,
-                    empty_byte2: 0.0,
                     radius: projection_body.radius,
-                    zw_offset: projection_body.zx_rotation_offset,
+                    zw_offset: projection_body.zw_rotation_offset,
+                    intensity: value.intensity,
                 }                
             }
             None =>
@@ -1107,9 +1107,9 @@ impl From<&PlayerProjection> for PlayerProjectionForShader
                 PlayerProjectionForShader {
                     position: [0.0;4],
                     empty_byte1: 0.0,
-                    empty_byte2: 0.0,
                     radius: 0.0,
                     zw_offset: 0.0,
+                    intensity: 0.0,
                 }
             }
         }
@@ -1123,9 +1123,9 @@ impl Default for PlayerProjectionForShader
         PlayerProjectionForShader {
             position: [0.0;4],
             empty_byte1: 0.0,
-            empty_byte2: 0.0,
             radius: 0.0,
-            zw_offset: 0.0
+            zw_offset: 0.0,
+            intensity: 0.0,
         }
     }
 }

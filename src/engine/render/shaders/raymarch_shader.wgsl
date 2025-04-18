@@ -253,9 +253,9 @@ struct PlayerProjection
 {
     position: vec4<f32>,
     empty_byte1: f32,
-    empty_byte2: f32,
     radius: f32,
     zw_offset: f32,
+    intensity: f32
 }
 
 struct OtherDynamicData {
@@ -4299,79 +4299,51 @@ fn w_scanner_ring_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec4<f
 fn w_scanner_enemies_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec4<f32> {
     var scanner_color = vec4(1.0,0.0,0.0,0.0);
 
-    var closest_intr = vec2(-2.0, -1.0);
+    var closest_intr = vec2(999.0, -999.0);
     
     for (var i = 0u; i < 16u; i++) {
 
-        let current_intr = sph_intersection(
-            pos - dynamic_data.player_projections[i].position,
-            ray_dir,
-            dynamic_data.player_projections[i].radius
-        );
-
-        if current_intr.x > 0.0
+        if dynamic_data.player_projections[i].radius > 0.0
         {
-            if current_intr.x < closest_intr.x
+            let current_intr = sph_intersection(
+                pos - dynamic_data.player_projections[i].position,
+                ray_dir,
+                dynamic_data.player_projections[i].radius
+            );
+    
+            if current_intr.x > 0.0
             {
-                closest_intr = vec2(current_intr.x, f32(i));
-            } 
+                if current_intr.x < closest_intr.x
+                {
+                    closest_intr = vec2(current_intr.x, f32(i));
+                } 
+            }
         }
     }
 
     if closest_intr.y > -1.0
     {
+        scanner_color.a += 0.5;
+
+        // let i = u32(closest_intr.y);
+
+        // let n = get_sphere_normal(
+        //     pos+ray_dir*closest_intr.x,
+        //     dynamic_data.player_projections[i].position,
+        //     dynamic_data.player_projections[i].radius
+        // );
+
+        // let vis_d = dot(ray_dir,n);
+
+        // var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0);
+        // red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0);
+        // // red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
         
+        // scanner_color.a += red * dynamic_data.player_projections[i].intensity;
     }
 
-        let d = sd_sphere(pos - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
-
-        let visible = clamp((dynamic_data.w_scanner_radius - d) * 5.0, 0.0, 1.0);
-
-        let vis_d = length(
-            (
-                (
-                    pos + ray_dir * min(
-                        dynamic_data.w_scanner_radius,
-                        length(pos.xyz - dyn_player_forms[i].pos.xyz)
-                    )
-                ) - dyn_player_forms[i].pos
-            ).xyz
-        ) - dyn_player_forms[i].radius;
-
-        var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0) * visible;
-        red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0) * visible;
-        red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
-        
-        scanner_color.a += red;
-    }
-    
-    
-    for (var i = 0u; i < 16; i++) {
-
-        let d = sd_sphere(pos - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
-
-        let visible = clamp((dynamic_data.w_scanner_radius - d) * 5.0, 0.0, 1.0);
-
-        let vis_d = length(
-            (
-                (
-                    pos + ray_dir * min(
-                        dynamic_data.w_scanner_radius,
-                        length(pos.xyz - dyn_player_forms[i].pos.xyz)
-                    )
-                ) - dyn_player_forms[i].pos
-            ).xyz
-        ) - dyn_player_forms[i].radius;
-
-        var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0) * visible;
-        red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0) * visible;
-        red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
-        
-        scanner_color.a += red;
-    }
-    
     scanner_color.a = clamp(scanner_color.a, 0.0, 1.0);
-    
+
     return scanner_color;
 }
 

@@ -125,7 +125,7 @@ pub struct PlayerProjectionBody
 {
     pub position: Vec4,
     pub radius: f32,
-    pub zx_rotation_offset: f32,
+    pub zw_rotation_offset: f32,
 }
 
 
@@ -1115,7 +1115,7 @@ pub fn process_projection_w_aim(
                 .body
                 .as_ref()
                 .expect("Intersected projection have not body")
-                .zx_rotation_offset;
+                .zw_rotation_offset;
         }
         else
         {
@@ -1666,33 +1666,43 @@ pub fn update_player_projection
         let player_position = inner_state.get_position();
     
         let player_to_projection_vec = updated_projection_position - player_position;
-    
-        let zx_rotation_offset = Vec4::W.dot(player_to_projection_vec.normalize()).acos();
-        
-        if zx_rotation_offset.is_nan() {panic!("Got NAN during update player projection")}
-        
-        let player_view_dir = inner_state.get_zw_rotation_matrix() * Vec4::Z;
-        
-        let wr = player_view_dir.dot(player_to_projection_vec.normalize()).acos();
 
-        if wr.is_nan() {panic!("Got NAN during update player projection")}
+        let mut zw_player_to_projection_vec = Vec2::new(
+            player_to_projection_vec.z,
+            player_to_projection_vec.w,
+        ).normalize();
+
+        if zw_player_to_projection_vec.is_nan() {zw_player_to_projection_vec = Vec2::NEG_X};
+    
+        let zw_rotation_offset = Vec2::Y.dot(zw_player_to_projection_vec).asin();
+        
+        if zw_rotation_offset.is_nan() {panic!("Got NAN during update player projection")}
+        
+        // let player_view_dir = inner_state.get_zw_rotation_matrix() * Vec4::Z;
+        
+        // let wr = -(player_view_dir.dot(player_to_projection_vec.normalize()).acos());
+
+        // if wr.is_nan() {panic!("Got NAN during update player projection")}
 
         let rot_mat = Mat4::from_cols_slice(&[
             1.0,    0.0,    0.0,        0.0,
             0.0,    1.0,    0.0,        0.0,
-            0.0,    0.0,    (wr).cos(),   (wr).sin(),
-            0.0,    0.0,    -(wr).sin(),   (wr).cos()
+            0.0,    0.0,    (zw_rotation_offset).cos(),   (zw_rotation_offset).sin(),
+            0.0,    0.0,    -(zw_rotation_offset).sin(),   (zw_rotation_offset).cos()
         ]);
     
-
+        
         let body = PlayerProjectionBody
         {
             position: player_position + (rot_mat * player_to_projection_vec),
             radius: projection_updated_radius,
-            zx_rotation_offset,
+            zw_rotation_offset,
         };
 
+        println!("{} {} {}", body.position, body.radius, body.zw_rotation_offset);
+
         projection.body = Some(body);
+
     }
 }
 
