@@ -44,7 +44,7 @@ pub struct PlayerInnerState {
     pub base_effect_tick_timer: f32,
     pub projections_w_aim_enabled: bool,
 
-    pub zw_rotation_target_in_rads: f32,
+    pub target_zw_rotation: f32,
 }
 
 
@@ -148,7 +148,7 @@ impl PlayerInnerState {
             base_effect_tick_timer: 0.0,
             projections_w_aim_enabled: false,
 
-            zw_rotation_target_in_rads: DEFAULT_ZW_ROTATION_TARGET_IN_RADS,
+            target_zw_rotation: DEFAULT_ZW_ROTATION_TARGET_IN_RADS,
         }
     }
 

@@ -4323,23 +4323,24 @@ fn w_scanner_enemies_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec
 
     if closest_intr.y > -1.0
     {
-        scanner_color.a += 0.5;
+        let i = u32(closest_intr.y);
 
-        // let i = u32(closest_intr.y);
+        let n = get_sphere_normal(
+            pos+ray_dir*closest_intr.x,
+            dynamic_data.player_projections[i].position,
+            dynamic_data.player_projections[i].radius
+        );
 
-        // let n = get_sphere_normal(
-        //     pos+ray_dir*closest_intr.x,
-        //     dynamic_data.player_projections[i].position,
-        //     dynamic_data.player_projections[i].radius
-        // );
+        let vis_d = dot(ray_dir,n);
 
-        // let vis_d = dot(ray_dir,n);
-
-        // var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0);
-        // red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0);
-        // // red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
+        var red = pow(clamp((1.0 - abs(vis_d*1.1)), 0.0, 1.0), 2.0);
         
-        // scanner_color.a += red * dynamic_data.player_projections[i].intensity;
+        let rot_coef = abs(sin(dynamic_data.player_projections[i].zw_offset));
+        
+        red += pow((clamp(-vis_d * 1.3, 0.0, 1.0)), mix(25.0, 9.0, rot_coef)) * rot_coef;
+        // red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
+        
+        scanner_color.a += red * dynamic_data.player_projections[i].intensity;
     }
 
     scanner_color.a = clamp(scanner_color.a, 0.0, 1.0);

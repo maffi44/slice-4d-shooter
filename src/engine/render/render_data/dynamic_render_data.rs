@@ -1098,7 +1098,7 @@ impl From<&PlayerProjection> for PlayerProjectionForShader
                     position: projection_body.position.to_array(),
                     empty_byte1: 0.0,
                     radius: projection_body.radius,
-                    zw_offset: projection_body.zw_rotation_offset,
+                    zw_offset: projection_body.abs_zw_rotation_offset,
                     intensity: value.intensity,
                 }                
             }

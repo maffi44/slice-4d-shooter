@@ -49,7 +49,7 @@ use crate::{
             self, RectSize, UIElement, UIElementType, UISystem
         }, world::level::Spawn
     },
-    transform::Transform,
+    transform::{Transform, BACKWARD, DOWN, FORWARD, LEFT, RIGHT, UP, W_DOWN, W_UP},
 };
 
 use self::{
@@ -125,7 +125,7 @@ pub struct PlayerProjectionBody
 {
     pub position: Vec4,
     pub radius: f32,
-    pub zw_rotation_offset: f32,
+    pub abs_zw_rotation_offset: f32,
 }
 
 
@@ -959,7 +959,7 @@ impl Actor for MainPlayer {
                 &input,
                 &mut self.inner_state,
                 &self.player_settings,
-                Vec4::W,
+                W_UP,
             );
 
             process_w_scanner(
@@ -1102,7 +1102,7 @@ pub fn process_projection_w_aim(
 
     if inner_state.projections_w_aim_enabled
     {
-        let view_vec = inner_state.get_rotation_matrix().inverse() * Vec4::Z;
+        let view_vec = inner_state.get_rotation_matrix().inverse() * FORWARD;
         let hited_projection = get_intersected_projection(
             inner_state.get_position(),
             view_vec,
@@ -1111,20 +1111,20 @@ pub fn process_projection_w_aim(
 
         if let Some(projection) = hited_projection
         {
-            inner_state.zw_rotation_target_in_rads = projection
+            inner_state.target_zw_rotation = projection
                 .body
                 .as_ref()
                 .expect("Intersected projection have not body")
-                .zw_rotation_offset;
+                .abs_zw_rotation_offset;
         }
         else
         {
-            inner_state.zw_rotation_target_in_rads = DEFAULT_ZW_ROTATION_TARGET_IN_RADS;
+            inner_state.target_zw_rotation = DEFAULT_ZW_ROTATION_TARGET_IN_RADS;
         }
     }
     else
     {
-        inner_state.zw_rotation_target_in_rads = DEFAULT_ZW_ROTATION_TARGET_IN_RADS;
+        inner_state.target_zw_rotation = DEFAULT_ZW_ROTATION_TARGET_IN_RADS;
     }
 }
 
@@ -1136,7 +1136,8 @@ fn get_intersected_projection
     projections: &Vec<PlayerProjection>
 ) -> Option<&PlayerProjection>
 {
-    let mut closest_intr = (-2.0_f32, None);
+    let mut closest_intr = (99999.0_f32, None);
+    
     for projection in projections
     {
         if let Some(body) = &projection.body
@@ -1149,8 +1150,9 @@ fn get_intersected_projection
 
             if current_intr.x > 0.0
             {
-                if closest_intr.0 > current_intr.x
+                if current_intr.x < closest_intr.0 
                 {
+                    closest_intr.0 = current_intr.x; 
                     closest_intr.1 = Some(projection)            
                 }
             }
@@ -1198,15 +1200,16 @@ pub fn process_player_rotation(
         zw = (input.mouse_axis.y * player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
         xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
         
-    } else {            
+    } else {  
+
         // reset player's rotation along W
         zw = lerpf(
             zw,
-            inner_state.zw_rotation_target_in_rads,
-            1.0 - delta * 2.8,
+            inner_state.target_zw_rotation,
+            delta * 4.8,
         );
-        if (zw - inner_state.zw_rotation_target_in_rads).abs() < 0.0005 {
-            zw = inner_state.zw_rotation_target_in_rads;
+        if (zw - inner_state.target_zw_rotation).abs() < 0.0005 {
+            zw = inner_state.target_zw_rotation;
         }
 
         xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
@@ -1368,26 +1371,26 @@ pub fn process_player_movement_input(
     
     if input.move_forward.is_action_pressed() {
 
-        movement_vec += Vec4::NEG_Z;
+        movement_vec += FORWARD;
 
         player_doll_input_state.move_forward = true;
     }
 
     if input.move_backward.is_action_pressed() {
         
-        movement_vec += Vec4::Z;
+        movement_vec += BACKWARD;
 
         player_doll_input_state.move_backward = true;
     }
 
     if input.move_right.is_action_pressed() {
-        movement_vec += Vec4::X;
+        movement_vec += RIGHT;
 
         player_doll_input_state.move_right = true;
     }
 
     if input.move_left.is_action_pressed() {
-        movement_vec += Vec4::NEG_X;
+        movement_vec += LEFT;
         
         player_doll_input_state.move_left = true;
     }
@@ -1407,10 +1410,10 @@ pub fn process_player_movement_input(
     }
 
     // add w gravity
-    inner_state.collider.add_force(Vec4::NEG_W * player_settings.gravity_w_speed * delta);
+    inner_state.collider.add_force(W_DOWN * player_settings.gravity_w_speed * delta);
     
     // add y gravity
-    inner_state.collider.add_force(Vec4::NEG_Y * player_settings.gravity_y_speed * delta);
+    inner_state.collider.add_force(DOWN * player_settings.gravity_y_speed * delta);
 
     if inner_state.collider.is_on_y_ground {
         inner_state.collider.set_wish_direction(
@@ -1444,7 +1447,7 @@ pub fn process_player_y_jump_input(
         inner_state.jumped_to_y_on_current_action = false;
 
         if inner_state.collider.is_on_y_ground {
-            inner_state.collider.add_force(Vec4::Y * player_settings.jump_y_speed);
+            inner_state.collider.add_force(UP * player_settings.jump_y_speed);
 
             inner_state.jumped_to_y_on_current_action = true;
             
@@ -1455,7 +1458,7 @@ pub fn process_player_y_jump_input(
     if input.jump.is_action_pressed() {
         if !inner_state.jumped_to_y_on_current_action {
             if inner_state.collider.is_on_y_ground {
-                inner_state.collider.add_force(Vec4::Y * player_settings.jump_y_speed);
+                inner_state.collider.add_force(UP * player_settings.jump_y_speed);
 
                 inner_state.jumped_to_y_on_current_action = true;
                 
@@ -1623,8 +1626,8 @@ pub fn process_player_projections
         projection.intensity = {
             lerpf(
                 projection.intensity,
-                projection.timer.clamp(0.0, 1.0),
-                delta*3.0
+                (projection.timer*0.3).clamp(0.0, 1.0),
+                delta*6.0
             )
         };
 
@@ -1660,46 +1663,49 @@ pub fn update_player_projection
         projection_id,
         player_projections
     );
-
+ 
     if let Some(projection) = projection
     {
         let player_position = inner_state.get_position();
     
         let player_to_projection_vec = updated_projection_position - player_position;
+        let player_w_vertical_dir = inner_state.get_rotation_matrix().inverse() * W_UP;
 
-        let mut zw_player_to_projection_vec = Vec2::new(
-            player_to_projection_vec.z,
-            player_to_projection_vec.w,
-        ).normalize();
+        let rel_projection_w_offset = player_w_vertical_dir.dot(player_to_projection_vec.normalize());
 
-        if zw_player_to_projection_vec.is_nan() {zw_player_to_projection_vec = Vec2::NEG_X};
-    
-        let zw_rotation_offset = Vec2::Y.dot(zw_player_to_projection_vec).asin();
+        let mut rotated_player_to_projection_vec = player_to_projection_vec -
+            ((rel_projection_w_offset * player_to_projection_vec.length()) * player_w_vertical_dir);
         
-        if zw_rotation_offset.is_nan() {panic!("Got NAN during update player projection")}
-        
-        // let player_view_dir = inner_state.get_zw_rotation_matrix() * Vec4::Z;
-        
-        // let wr = -(player_view_dir.dot(player_to_projection_vec.normalize()).acos());
-
-        // if wr.is_nan() {panic!("Got NAN during update player projection")}
-
-        let rot_mat = Mat4::from_cols_slice(&[
-            1.0,    0.0,    0.0,        0.0,
-            0.0,    1.0,    0.0,        0.0,
-            0.0,    0.0,    (zw_rotation_offset).cos(),   (zw_rotation_offset).sin(),
-            0.0,    0.0,    -(zw_rotation_offset).sin(),   (zw_rotation_offset).cos()
-        ]);
-    
-        
-        let body = PlayerProjectionBody
+        // it possible if the projected player is exactly above the player on the W axis
+        if rotated_player_to_projection_vec.length() == 0.0 ||
+            rotated_player_to_projection_vec.is_nan() ||
+            !rotated_player_to_projection_vec.is_finite()
         {
-            position: player_position + (rot_mat * player_to_projection_vec),
-            radius: projection_updated_radius,
-            zw_rotation_offset,
+            return;
+        }
+
+        rotated_player_to_projection_vec = {
+            (player_to_projection_vec.length() / rotated_player_to_projection_vec.length())
+            *
+            rotated_player_to_projection_vec
+        };
+        
+        let projection_position = {
+            player_position +
+            rotated_player_to_projection_vec
         };
 
-        println!("{} {} {}", body.position, body.radius, body.zw_rotation_offset);
+        let abs_zw_rotation_offset = W_UP.dot(player_to_projection_vec.normalize()).asin();
+
+
+        if abs_zw_rotation_offset.is_nan() {panic!("Got NAN during update player projection")}
+    
+        let body = PlayerProjectionBody
+        {
+            position: projection_position,
+            radius: projection_updated_radius,
+            abs_zw_rotation_offset,
+        };
 
         projection.body = Some(body);
 

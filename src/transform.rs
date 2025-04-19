@@ -10,6 +10,15 @@ pub struct Transform {
     scale: Vec4,
 }
 
+pub const FORWARD: Vec4 = Vec4::NEG_Z;
+pub const BACKWARD: Vec4 = Vec4::Z;
+pub const RIGHT: Vec4 = Vec4::X;
+pub const LEFT: Vec4 = Vec4::NEG_X;
+pub const UP: Vec4 = Vec4::Y;
+pub const DOWN: Vec4 = Vec4::NEG_Y;
+pub const W_UP: Vec4 = Vec4::W;
+pub const W_DOWN: Vec4 = Vec4::NEG_W;
+
 pub type SerializableTransform = ([f32; 4], [f32; 16]);
 
 impl Transform {
