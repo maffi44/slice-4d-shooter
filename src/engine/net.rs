@@ -820,7 +820,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessage(
+                                SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::SetNewTeam(team)
                                 )
                             )
@@ -926,7 +926,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessage(
+                                SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DieImmediately
                                 )
                             )
@@ -941,7 +941,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessage(
+                                SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DieSlowly
                                 )
                             )
@@ -1028,7 +1028,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessage(
+                                SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DealDamageAndAddForce(
                                         damage,
                                         Vec4::from_array(force),
@@ -1130,7 +1130,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessage(
+                                SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::SetNewTeam(team)
                                 )
                             )
@@ -1216,7 +1216,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessage(
+                                SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DieImmediately
                                 )
                             )
@@ -1230,7 +1230,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessage(
+                                SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DieSlowly
                                 )
                             )
@@ -1327,7 +1327,7 @@ fn process_message(
                         Message {
                             from: 0u128,
                             message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PLayerMessage(
+                                SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DealDamageAndAddForce(
                                         damage,
                                         Vec4::from_array(force),

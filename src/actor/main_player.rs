@@ -111,6 +111,47 @@ pub struct PlayerScreenEffects {
 }
 
 
+pub struct PlayersProjections
+{
+    projections: Vec<PlayerProjection>,
+}
+
+impl PlayersProjections
+{
+    pub fn new() -> Self
+    {
+        PlayersProjections
+        {
+            projections: Vec::with_capacity(10),
+        }
+    }
+
+    pub fn update_or_add_projection(&mut self)
+    {
+
+    }
+
+    pub fn projections_tick(&mut self)
+    {
+
+    }
+
+    pub fn find_projection(&self, id: ActorID) -> &PlayerProjection
+    {
+
+    }
+
+    pub fn get_active_projection(&self) -> Option<&PlayerProjection>
+    {
+        None
+    }
+
+    pub fn update_projection_postiton(&mut self)
+    {
+        
+    }
+}
+
 pub struct PlayerProjection
 {
     pub player_id: ActorID,
@@ -373,7 +414,7 @@ impl Actor for MainPlayer {
             {
                 match message
                 {
-                    SpecificActorMessage::PLayerMessage(message) =>
+                    SpecificActorMessage::PlayerMessage(message) =>
                     {
                         match message {
                             PlayerMessage::DataForProjection(
@@ -915,6 +956,7 @@ impl Actor for MainPlayer {
                 &mut self.hands_slot_3,
                 &mut self.devices,
                 &mut self.inner_state,
+                &mut self.screen_effects,
                 &input,
                 my_id,
                 physic_system,
@@ -948,7 +990,7 @@ impl Actor for MainPlayer {
                 delta,
             );
 
-            process_player_y_jump_input(
+            process_player_primary_jump_input(
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
@@ -1433,7 +1475,7 @@ pub fn process_player_movement_input(
 }
 
 
-pub fn process_player_y_jump_input(
+pub fn process_player_primary_jump_input(
     input: &ActionsFrameState,
     player_doll_input_state: &mut PlayerDollInputState,
     inner_state: &mut PlayerInnerState,
@@ -1573,7 +1615,7 @@ pub fn process_w_scanner(
                 match player_projection {
                     Some(projection) =>
                     {
-                        projection.timer = PLAYER_PROJECTION_DISPLAY_TIME;
+                        projection.timer = projection.timer.max(PLAYER_PROJECTION_DISPLAY_TIME);
                     }
                     None =>
                     {
@@ -1638,7 +1680,7 @@ pub fn process_player_projections
             Message {
                 from: my_id,
                 message: MessageType::SpecificActorMessage(
-                    SpecificActorMessage::PLayerMessage(
+                    SpecificActorMessage::PlayerMessage(
                         PlayerMessage::GiveMeDataForProjection,
                     )
                 )
@@ -1903,6 +1945,7 @@ pub fn process_active_devices_input
     hands_slot_3: &mut Option<Box<dyn Device>>,
     devices: &mut [Option<Box<dyn Device>>;4],
     inner_state: &mut PlayerInnerState,
+    screen_effects: &mut PlayerScreenEffects,
     input: &ActionsFrameState,
     my_id: ActorID,
     physic_system: &PhysicsSystem,
@@ -1914,7 +1957,7 @@ pub fn process_active_devices_input
 {
     match active_hands_slot {
         ActiveHandsSlot::Zero => {
-            hands_slot_0.process_input(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+            hands_slot_0.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
 
             if let Some(device) = hands_slot_1 {
                 device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
@@ -1928,7 +1971,7 @@ pub fn process_active_devices_input
         },
         ActiveHandsSlot::First => {
             if let Some(device) = hands_slot_1.as_mut() {
-                device.process_input(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
             }
 
             hands_slot_0.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
@@ -1941,7 +1984,7 @@ pub fn process_active_devices_input
         },
         ActiveHandsSlot::Second => {
             if let Some(device) = hands_slot_2.as_mut() {
-                device.process_input(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
             }
 
             hands_slot_0.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
@@ -1954,7 +1997,7 @@ pub fn process_active_devices_input
         },
         ActiveHandsSlot::Third => {
             if let Some(device) = hands_slot_3.as_mut() {
-                device.process_input(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
             }
 
             hands_slot_0.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
@@ -1969,7 +2012,7 @@ pub fn process_active_devices_input
 
     for device in devices.iter_mut() {
         if let Some(device) = device {
-            device.process_input(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+            device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
         }
     }
 }
@@ -3001,7 +3044,7 @@ impl ControlledActor for MainPlayer
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     message: MessageType::SpecificActorMessage(
-                        SpecificActorMessage::PLayerMessage(
+                        SpecificActorMessage::PlayerMessage(
                             PlayerMessage::Telefrag
                         )
                     )

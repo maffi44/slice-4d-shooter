@@ -15,7 +15,6 @@ use crate::{
         Message,
         MessageType,
         SpecificActorMessage,
-        ControlledActor,
     },
     engine::{
         engine_handle::{
@@ -302,7 +301,7 @@ impl World {
                             Message {
                                 from: 0u128,
                                 message: MessageType::SpecificActorMessage(
-                                    SpecificActorMessage::PLayerMessage(
+                                    SpecificActorMessage::PlayerMessage(
                                         PlayerMessage::NewPeerConnected(peer_id)
                                     )
                                 )
@@ -468,7 +467,7 @@ fn get_random_non_zero_id() -> ActorID {
 
     let mut id: u128 = u128::from_be_bytes(bytes);
 
-    // 0 it is reserved ID for the Engine itself
+    // 0 is reserved ID for the Engine itself
     while id == 0u128 {
         id = get_random_non_zero_id();
     }

@@ -642,7 +642,7 @@ impl Actor for SessionController
                         }
                     }
 
-                    SpecificActorMessage::PLayerMessage(message) =>
+                    SpecificActorMessage::PlayerMessage(message) =>
                     {
                         match message 
                         {

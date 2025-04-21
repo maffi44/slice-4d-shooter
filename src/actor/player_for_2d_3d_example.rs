@@ -218,7 +218,7 @@ impl Actor for PlayerFor2d3dExample {
             {
                 match message
                 {
-                    SpecificActorMessage::PLayerMessage(message) =>
+                    SpecificActorMessage::PlayerMessage(message) =>
                     {
                         match message {
                             PlayerMessage::DataForProjection(
@@ -782,6 +782,7 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.hands_slot_3,
                 &mut self.devices,
                 &mut self.inner_state,
+                &mut self.screen_effects,
                 &input,
                 my_id,
                 physic_system,
@@ -815,7 +816,7 @@ impl Actor for PlayerFor2d3dExample {
                 delta,
             );
 
-            main_player::process_player_y_jump_input(
+            main_player::process_player_primary_jump_input(
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
@@ -1278,7 +1279,7 @@ impl ControlledActor for PlayerFor2d3dExample
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     message: MessageType::SpecificActorMessage(
-                        SpecificActorMessage::PLayerMessage(
+                        SpecificActorMessage::PlayerMessage(
                             PlayerMessage::Telefrag
                         )
                     )

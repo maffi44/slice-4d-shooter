@@ -5,7 +5,7 @@ use crate::{
         machinegun_shot::MachinegunShot,
         main_player::{
             player_inner_state::PlayerInnerState,
-            PlayerMessage
+            PlayerMessage, PlayerScreenEffects
         },
         ActorID,
         ActorWrapper,
@@ -101,6 +101,7 @@ impl MachineGun {
         &mut self,
         player_id: ActorID,
         player: &mut PlayerInnerState,
+        screen_effects: &mut PlayerScreenEffects,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
@@ -149,8 +150,6 @@ impl MachineGun {
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
 
-        println!("offset: {}", weapon_offset);
-
         let hit = physic_system.ray_cast(from, direction, 700.0, Some(player_id));
 
         if let Some(hit) = hit {
@@ -160,25 +159,33 @@ impl MachineGun {
 
 
             if let Some(hited_id) = hit.hited_actors_id {
-                
-                let force = hit.hit_normal * -self.machinegun_add_force;
-    
-                engine_handle.send_direct_message(
-                    hited_id,
-                    Message {
-                        from: player_id,
-                        message: MessageType::SpecificActorMessage(
-                            SpecificActorMessage::PLayerMessage(
-                                PlayerMessage::DealDamageAndAddForce(
-                                    self.machinegun_damage as u32,
-                                    force,
-                                    position,
-                                    player.team
+
+                if let Some(hited_actors_team) = hit.hited_actors_team
+                {
+                    if hited_actors_team != player.team
+                    {
+                        
+                        
+                        let force = hit.hit_normal * -self.machinegun_add_force;
+            
+                        engine_handle.send_direct_message(
+                            hited_id,
+                            Message {
+                                from: player_id,
+                                message: MessageType::SpecificActorMessage(
+                                    SpecificActorMessage::PlayerMessage(
+                                        PlayerMessage::DealDamageAndAddForce(
+                                            self.machinegun_damage as u32,
+                                            force,
+                                            position,
+                                            player.team
+                                        )
+                                    )
                                 )
-                            )
-                        )
+                            }
+                        );
                     }
-                );
+                }
             }
 
             let shot = MachinegunShot::new(
@@ -270,6 +277,7 @@ impl Device for MachineGun {
         &mut self,
         player_id: ActorID,
         player: &mut PlayerInnerState,
+        screen_effects: &mut PlayerScreenEffects,
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
@@ -282,6 +290,7 @@ impl Device for MachineGun {
                 self.shoot(
                     player_id,
                     player,
+                    screen_effects,
                     physic_system,
                     audio_system,
                     engine_handle,

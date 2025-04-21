@@ -10,6 +10,8 @@ use crate::{
     }, transform::Transform
 };
 
+use super::main_player::PlayerScreenEffects;
+
 
 
 const DEFAULT_PISTOL_DAMAGE: u32 = 5;
@@ -36,6 +38,7 @@ impl Device for DefaultPointer {
             &mut self,
             player_id: ActorID,
             player: &mut PlayerInnerState,
+            screen_effects: &mut PlayerScreenEffects,
             input: &ActionsFrameState,
             physic_system: &PhysicsSystem,
             audio_system: &mut AudioSystem,
@@ -61,6 +64,7 @@ pub trait Device {
         &mut self,
         player_id: ActorID,
         player: &mut PlayerInnerState,
+        screen_effects: &mut PlayerScreenEffects,
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,

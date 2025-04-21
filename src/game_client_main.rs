@@ -45,17 +45,6 @@ fn main() {
             systems.world.level.w_levels.clone()
         );
 
-        // let spawn = systems
-        //     .world
-        //     .level
-        //     .get_random_spawn_position(main_player.get_team());
-
-        // main_player.get_mut_transform().set_position(
-        //     spawn.spawn_position
-        // );
-
-        // main_player.set_current_w_level(spawn.w_level);
-
         let main_player_id = systems.world.add_actor_to_world(
             ActorWrapper::Player(main_player),
             &mut systems.engine_handle,
@@ -65,7 +54,7 @@ fn main() {
             Message {
                 from: 0u128,
                 message: crate::actor::MessageType::SpecificActorMessage(
-                    SpecificActorMessage::PLayerMessage(
+                    SpecificActorMessage::PlayerMessage(
                         PlayerMessage::SetNewTeam(
                             session_controller::DEFAULT_TEAM
                         )

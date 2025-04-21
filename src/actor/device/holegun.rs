@@ -12,7 +12,7 @@ use crate::{
         holegun_shot::HoleGunShot,
         main_player::{
             player_inner_state::PlayerInnerState,
-            PlayerMessage
+            PlayerMessage, PlayerScreenEffects
         },
         ActorID,
         ActorWrapper,
@@ -183,7 +183,7 @@ impl HoleGun {
                     Message {
                         from: player_id,
                         message: MessageType::SpecificActorMessage(
-                            SpecificActorMessage::PLayerMessage(
+                            SpecificActorMessage::PlayerMessage(
                                 PlayerMessage::DealDamageAndAddForce(
                                     damage as u32,
                                     force,
@@ -337,6 +337,7 @@ impl Device for HoleGun {
         &mut self,
         player_id: ActorID,
         player: &mut PlayerInnerState,
+        screen_effects: &mut PlayerScreenEffects,
         input: &ActionsFrameState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,

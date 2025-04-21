@@ -790,7 +790,7 @@ pub enum SpecificActorMessage {
     SessionControllerMessage(SessionControllerMessage),
     MoveWBonusSpotMessage(MoveWBonusSpotMessage),
     PlayersDollMessage(PlayersDollMessage),
-    PLayerMessage(PlayerMessage),
+    PlayerMessage(PlayerMessage),
     FlagMessage(FlagMessage),
     MoverW(MoverWMessage)
 }

@@ -376,7 +376,7 @@ impl PlayersDoll {
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     message: MessageType::SpecificActorMessage(
-                        SpecificActorMessage::PLayerMessage(
+                        SpecificActorMessage::PlayerMessage(
                             PlayerMessage::Telefrag
                         )
                     )
@@ -547,7 +547,7 @@ impl Actor for PlayersDoll {
                         }
                     }
 
-                    SpecificActorMessage::PLayerMessage(message) => 
+                    SpecificActorMessage::PlayerMessage(message) => 
                     {
                         match message
                         {
@@ -557,7 +557,7 @@ impl Actor for PlayersDoll {
                                     Message {
                                         from: self.get_id().expect("Player Doll have not ActorID"),
                                         message: MessageType::SpecificActorMessage(
-                                            SpecificActorMessage::PLayerMessage(
+                                            SpecificActorMessage::PlayerMessage(
                                                 PlayerMessage::DataForProjection(
                                                     self.transform.get_position(),
                                                     self.player_settings.collider_radius
