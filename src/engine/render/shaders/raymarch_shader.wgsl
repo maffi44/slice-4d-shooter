@@ -252,7 +252,7 @@ struct OutputMaterials {
 struct PlayerProjection
 {
     position: vec4<f32>,
-    empty_byte1: f32,
+    is_active_intensity: f32,
     radius: f32,
     zw_offset: f32,
     intensity: f32
@@ -4340,7 +4340,10 @@ fn w_scanner_enemies_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec
         red += pow((clamp(-vis_d * 1.3, 0.0, 1.0)), mix(25.0, 9.0, rot_coef)) * rot_coef;
         // red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
         
-        scanner_color.a += red * dynamic_data.player_projections[i].intensity;
+        scanner_color.a += red * (dynamic_data.player_projections[i].intensity*0.25 + dynamic_data.player_projections[i].is_active_intensity*0.75);
+
+        scanner_color.g = 0.4 * dynamic_data.player_projections[i].is_active_intensity;
+        scanner_color.b = 0.4 * dynamic_data.player_projections[i].is_active_intensity;
     }
 
     scanner_color.a = clamp(scanner_color.a, 0.0, 1.0);

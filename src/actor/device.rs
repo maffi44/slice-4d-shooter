@@ -87,6 +87,7 @@ pub trait Device {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
+        screen_effects: &mut PlayerScreenEffects,
     ) {}
 
     fn activate(

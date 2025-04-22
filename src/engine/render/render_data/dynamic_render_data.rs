@@ -1080,7 +1080,7 @@ fn get_players_screen_effects(world: &World) -> &PlayerScreenEffects {
 pub struct PlayerProjectionForShader
 {
     position: [f32;4],
-    empty_byte1: f32,
+    is_active_intensity: f32,
     radius: f32,
     zw_offset: f32,
     intensity: f32,
@@ -1096,7 +1096,7 @@ impl From<&PlayerProjection> for PlayerProjectionForShader
             {
                 PlayerProjectionForShader {
                     position: projection_body.position.to_array(),
-                    empty_byte1: 0.0,
+                    is_active_intensity: value.is_active_intensity,
                     radius: projection_body.radius,
                     zw_offset: projection_body.abs_zw_rotation_offset,
                     intensity: value.intensity,
@@ -1106,7 +1106,7 @@ impl From<&PlayerProjection> for PlayerProjectionForShader
             {
                 PlayerProjectionForShader {
                     position: [0.0;4],
-                    empty_byte1: 0.0,
+                    is_active_intensity: 0.0,
                     radius: 0.0,
                     zw_offset: 0.0,
                     intensity: 0.0,
@@ -1122,7 +1122,7 @@ impl Default for PlayerProjectionForShader
     fn default() -> Self {
         PlayerProjectionForShader {
             position: [0.0;4],
-            empty_byte1: 0.0,
+            is_active_intensity: 0.0,
             radius: 0.0,
             zw_offset: 0.0,
             intensity: 0.0,
@@ -1223,7 +1223,7 @@ impl OtherDynamicData {
 
         self.player_projections = [PlayerProjectionForShader::default(); 16];
 
-        for (i, projection) in players_screen_effects.player_projections.iter().enumerate()
+        for (i, projection) in players_screen_effects.player_projections.projections.iter().enumerate()
         {
             self.player_projections[i] = PlayerProjectionForShader::from(projection);
         }

@@ -59,7 +59,7 @@ use self::{
 };
 
 use core::panic;
-use std::{collections::btree_set::Difference, f32::consts::PI, usize};
+use std::{collections::btree_set::Difference, f32::consts::PI, iter::Enumerate, path::Iter, usize};
 use fyrox_core::{math::lerpf, pool::Handle};
 use fyrox_sound::source::{SoundSource, Status};
 use glam::{
@@ -107,13 +107,12 @@ pub struct PlayerScreenEffects {
     pub death_screen_effect: f32,
     pub getting_damage_screen_effect: f32,
 
-    pub player_projections: Vec<PlayerProjection>,
+    pub player_projections: PlayersProjections,
 }
-
 
 pub struct PlayersProjections
 {
-    projections: Vec<PlayerProjection>,
+    pub projections: Vec<PlayerProjection>,
 }
 
 impl PlayersProjections
@@ -126,37 +125,267 @@ impl PlayersProjections
         }
     }
 
-    pub fn update_or_add_projection(&mut self)
+
+    pub fn get_intersected_projection
+    (
+        &self,
+        origin: Vec4,
+        view_vec: Vec4,
+    ) -> Option<&PlayerProjection>
     {
+        let mut closest_intr = (99999.0_f32, None);
+        
+        for projection in &self.projections
+        {
+            if let Some(body) = &projection.body
+            {
+                let current_intr = get_sphere_intersection(
+                    origin - body.position,
+                    view_vec,
+                    body.radius
+                );
+
+                if current_intr.x > 0.0
+                {
+                    if current_intr.x < closest_intr.0 
+                    {
+                        closest_intr.0 = current_intr.x; 
+                        closest_intr.1 = Some(projection)            
+                    }
+                }
+            }
+        }
+
+        closest_intr.1
+    }
+
+
+    pub fn set_projection_active(
+        &mut self,
+        projection_id: ActorID,
+    )
+    {
+        for projection in &mut self.projections
+        {
+            if projection.id == projection_id
+            {
+                projection.is_active_by_timer = PROJECTION_ACTIVE_TIME;
+            }
+            else
+            {
+                projection.is_active_by_timer = 0.0;
+            }
+        }
+    }
+
+    pub fn update_or_add_projection(
+        &mut self,
+        projection_id: ActorID,
+        projection_show_time: f32,
+        projection_is_active: bool,
+    )
+    {
+        let player_projection = self.find_projection_mut(
+            projection_id,
+        );
+
+        match player_projection {
+            Some(projection) =>
+            {
+                projection.timer = projection.timer.max(projection_show_time);
+            }
+            None =>
+            {
+                let projection = PlayerProjection::new(
+                    projection_id,
+                    projection_show_time,
+                );
+
+                self.projections.push(projection);
+            }
+        }
+
+        if projection_is_active
+        {
+            self.set_projection_active(projection_id);
+        }
 
     }
 
-    pub fn projections_tick(&mut self)
+    pub fn projections_tick(
+        &mut self,
+        my_id: ActorID,
+        engine_handle: &mut EngineHandle,
+        delta: f32,
+    )
     {
+        self.projections.retain_mut(|projection|
+        {
+            projection.timer -= delta;
+            if projection.timer <= 0.0
+            {
+                return false;
+            }
 
+            if projection.is_active_by_timer > 0.0
+            {
+                projection.is_active_by_timer -= delta;
+
+                projection.is_active_intensity = lerpf(
+                    projection.is_active_intensity,
+                    projection.is_active_by_timer /
+                    PROJECTION_ACTIVE_TIME,
+                    delta*16.0
+                );
+            }
+            else
+            {
+                projection.is_active_by_timer = 0.0;
+                projection.is_active_intensity = 0.0;
+            }
+    
+            projection.intensity = {
+                lerpf(
+                    projection.intensity,
+                    (projection.timer*0.3).clamp(0.0, 1.0),
+                    delta*6.0
+                )
+            };
+    
+            projection.body = None;
+    
+            engine_handle.send_direct_message(
+                projection.id,
+                Message {
+                    from: my_id,
+                    message: MessageType::SpecificActorMessage(
+                        SpecificActorMessage::PlayerMessage(
+                            PlayerMessage::GiveMeDataForProjection,
+                        )
+                    )
+                }
+            );
+    
+            true
+        });
     }
 
-    pub fn find_projection(&self, id: ActorID) -> &PlayerProjection
+    pub fn find_projection(&self, id: ActorID) -> Option<&PlayerProjection>
     {
+        for projection in &self.projections
+        {
+            if projection.id == id
+            {
+                return Some(projection);
+            }
+        }
+        return None;
+    }
 
+    pub fn find_projection_mut(&mut self, id: ActorID) -> Option<&mut PlayerProjection>
+    {
+        for projection in &mut self.projections
+        {
+            if projection.id == id
+            {
+                return Some(projection);
+            }
+        }
+        return None;
     }
 
     pub fn get_active_projection(&self) -> Option<&PlayerProjection>
     {
+        for projection in &self.projections
+        {
+            if projection.is_active_by_timer > 0.0
+            {
+                return Some(projection);
+            }
+        }
         None
     }
 
-    pub fn update_projection_postiton(&mut self)
+    pub fn get_active_projection_mut(&mut self) -> Option<&mut PlayerProjection>
     {
+        for projection in &mut self.projections
+        {
+            if projection.is_active_by_timer > 0.0
+            {
+                return Some(projection);
+            }
+        }
+        None
+    }
+
+    pub fn update_projection_postiton(
+        &mut self,
+        projection_id: ActorID,
+        updated_projection_position: Vec4,
+        projection_updated_radius: f32,
+        inner_state: &PlayerInnerState
+    )
+    {
+        let projection = self.find_projection_mut(
+            projection_id,
+        );
+     
+        if let Some(projection) = projection
+        {
+            let player_position = inner_state.get_position();
         
+            let player_to_projection_vec = updated_projection_position - player_position;
+            let player_w_vertical_dir = inner_state.get_rotation_matrix().inverse() * W_UP;
+    
+            let rel_projection_w_offset = player_w_vertical_dir.dot(player_to_projection_vec.normalize());
+    
+            let mut rotated_player_to_projection_vec = player_to_projection_vec -
+                ((rel_projection_w_offset * player_to_projection_vec.length()) * player_w_vertical_dir);
+            
+            // it possible if the projected player is exactly above the player on the W axis
+            if rotated_player_to_projection_vec.length() == 0.0 ||
+                rotated_player_to_projection_vec.is_nan() ||
+                !rotated_player_to_projection_vec.is_finite()
+            {
+                return;
+            }
+    
+            rotated_player_to_projection_vec = {
+                (player_to_projection_vec.length() / rotated_player_to_projection_vec.length())
+                *
+                rotated_player_to_projection_vec
+            };
+            
+            let projection_position = {
+                player_position +
+                rotated_player_to_projection_vec
+            };
+    
+            let abs_zw_rotation_offset = W_UP.dot(player_to_projection_vec.normalize()).asin();
+    
+    
+            if abs_zw_rotation_offset.is_nan() {panic!("Got NAN during update player projection")}
+        
+            let body = PlayerProjectionBody
+            {
+                position: projection_position,
+                radius: projection_updated_radius * 1.2,
+                abs_zw_rotation_offset,
+            };
+    
+            projection.body = Some(body);
+        }
     }
 }
 
 pub struct PlayerProjection
 {
-    pub player_id: ActorID,
+    pub id: ActorID,
     pub timer: f32,
     pub intensity: f32,
+    pub is_active_intensity: f32,
+
+    pub is_active_by_timer: f32,
 
     pub body: Option<PlayerProjectionBody>
 }
@@ -179,9 +408,11 @@ impl PlayerProjection
     ) -> Self
     {
         PlayerProjection {
-            player_id,
+            id: player_id,
             timer,
             intensity: 0.0,
+            is_active_by_timer: 0.0,
+            is_active_intensity: 0.0,
 
             body: None,
         }
@@ -198,7 +429,7 @@ impl Default for PlayerScreenEffects
             w_scanner_enemies_intesity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
-            player_projections: Vec::with_capacity(10),
+            player_projections: PlayersProjections::new(),
         }
     }
 }
@@ -291,13 +522,13 @@ pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.08, 0.7, 3.5);
 
 pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 1;
 
-const HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL: f32 = 0.2;
-
 const BASE_EFFECT_HP_IMPACT_SPEED: f32 = 2.6;
 
-const DURATION_OF_MOVING_FREE_BY_BONUS: f32 = 8.0;
+const PROJECTION_ACTIVE_TIME: f32 = 1.5;
 
-pub const PLAYER_FREE_MOVING_SPEED_MULT: f32 = 0.6;
+pub const DEFAULT_ZW_ROTATION_TARGET_IN_RADS: f32 = 0.0;
+
+pub const PLAYER_PROJECTION_DISPLAY_TIME: f32 = 3.4;
 
 #[derive(Clone)]
 pub enum PlayerMessage {
@@ -394,6 +625,7 @@ impl Actor for MainPlayer {
                                     &mut self.hands_slot_2,
                                     &mut self.hands_slot_3,
                                     &mut self.w_scanner,
+                                    &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
                                     &mut self.player_settings,
@@ -422,13 +654,12 @@ impl Actor for MainPlayer {
                                 updated_projection_radius
                             ) =>
                             {
-                                update_player_projection(
+                                self.screen_effects.player_projections.update_projection_postiton(
                                     from,
                                     updated_projection_position,
                                     updated_projection_radius,
-                                    &mut self.screen_effects.player_projections,
                                     &self.inner_state
-                                )
+                                );
                             }
 
                             PlayerMessage::GiveMeDataForProjection => {}
@@ -445,6 +676,7 @@ impl Actor for MainPlayer {
                                     &mut self.hands_slot_2,
                                     &mut self.hands_slot_3,
                                     &mut self.w_scanner,
+                                    &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
                                     &mut self.player_settings,
@@ -467,6 +699,7 @@ impl Actor for MainPlayer {
                                     &mut self.hands_slot_2,
                                     &mut self.hands_slot_3,
                                     &mut self.w_scanner,
+                                    &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
                                     &mut self.player_settings,
@@ -489,6 +722,7 @@ impl Actor for MainPlayer {
                                     &mut self.hands_slot_2,
                                     &mut self.hands_slot_3,
                                     &mut self.w_scanner,
+                                    &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
                                     &mut self.player_settings,
@@ -921,13 +1155,14 @@ impl Actor for MainPlayer {
             process_projection_w_aim(
                 &input,
                 &mut self.inner_state,
-                &self.screen_effects,
+                &mut self.screen_effects,
             );
 
             process_player_rotation(
                 &input,
                 &self.player_settings,
                 &mut self.inner_state,
+                &self.screen_effects,
                 delta
             );
 
@@ -974,6 +1209,7 @@ impl Actor for MainPlayer {
                 &mut self.hands_slot_2,
                 &mut self.hands_slot_3,
                 &mut self.inner_state,
+                &mut self.screen_effects,
                 &input,
                 my_id,
                 physic_system,
@@ -1015,10 +1251,9 @@ impl Actor for MainPlayer {
                 delta,
             );
 
-            process_player_projections(
-                &mut self.screen_effects.player_projections,
-                engine_handle,
+            self.screen_effects.player_projections.projections_tick(
                 my_id,
+                engine_handle,
                 delta
             );
             
@@ -1030,6 +1265,7 @@ impl Actor for MainPlayer {
                 &mut self.hands_slot_2,
                 &mut self.hands_slot_3,
                 &mut self.w_scanner,
+                &mut self.screen_effects,
                 &mut self.devices,
                 my_id,
                 &self.player_settings,
@@ -1048,6 +1284,7 @@ impl Actor for MainPlayer {
                 &mut self.hands_slot_2,
                 &mut self.hands_slot_3,
                 &mut self.w_scanner,
+                &mut self.screen_effects,
                 &mut self.devices,
                 my_id,
                 &self.player_settings,
@@ -1129,12 +1366,12 @@ impl Actor for MainPlayer {
     }
 }
 
-pub const DEFAULT_ZW_ROTATION_TARGET_IN_RADS: f32 = 0.0;
+
 
 pub fn process_projection_w_aim(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
-    screen_effects: &PlayerScreenEffects,
+    screen_effects: &mut PlayerScreenEffects,
 )
 {
     if input.w_aim.is_action_just_pressed()
@@ -1145,64 +1382,30 @@ pub fn process_projection_w_aim(
     if inner_state.projections_w_aim_enabled
     {
         let view_vec = inner_state.get_rotation_matrix().inverse() * FORWARD;
-        let hited_projection = get_intersected_projection(
-            inner_state.get_position(),
-            view_vec,
-            &screen_effects.player_projections
-        );
+        let hited_projection = screen_effects
+            .player_projections
+            .get_intersected_projection
+            (
+                inner_state.get_position(),
+                view_vec,
+            );
 
-        if let Some(projection) = hited_projection
+        let projection_id = if let Some(projection) = hited_projection
         {
-            inner_state.target_zw_rotation = projection
-                .body
-                .as_ref()
-                .expect("Intersected projection have not body")
-                .abs_zw_rotation_offset;
+            Some(projection.id)
         }
         else
         {
-            inner_state.target_zw_rotation = DEFAULT_ZW_ROTATION_TARGET_IN_RADS;
-        }
-    }
-    else
-    {
-        inner_state.target_zw_rotation = DEFAULT_ZW_ROTATION_TARGET_IN_RADS;
-    }
-}
+            None
+        };
 
-
-fn get_intersected_projection
-(
-    origin: Vec4,
-    view_vec: Vec4,
-    projections: &Vec<PlayerProjection>
-) -> Option<&PlayerProjection>
-{
-    let mut closest_intr = (99999.0_f32, None);
-    
-    for projection in projections
-    {
-        if let Some(body) = &projection.body
+        if let Some(projection_id) = projection_id
         {
-            let current_intr = get_sphere_intersection(
-                origin - body.position,
-                view_vec,
-                body.radius
-            );
-
-            if current_intr.x > 0.0
-            {
-                if current_intr.x < closest_intr.0 
-                {
-                    closest_intr.0 = current_intr.x; 
-                    closest_intr.1 = Some(projection)            
-                }
-            }
+            screen_effects.player_projections.set_projection_active(projection_id);
         }
     }
-
-    closest_intr.1
 }
+
 
 fn get_sphere_intersection(
     ray_origin: Vec4,
@@ -1229,6 +1432,7 @@ pub fn process_player_rotation(
     input: &ActionsFrameState,
     player_settings: &PlayerSettings,
     inner_state: &mut PlayerInnerState,
+    screen_effects: &PlayerScreenEffects,
     delta: f32,
 )
 {
@@ -1242,16 +1446,45 @@ pub fn process_player_rotation(
         zw = (input.mouse_axis.y * player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
         xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
         
-    } else {  
+    }
+    else
+    {
+        let target_zw_angle = {
+            if inner_state.projections_w_aim_enabled
+            {
+                let active_projection = screen_effects
+                    .player_projections
+                    .get_active_projection();
 
-        // reset player's rotation along W
+                if let Some(projection) = active_projection {
+                    if let Some(projection_body) = projection.body.as_ref()
+                    {
+                        projection_body.abs_zw_rotation_offset
+                    }
+                    else
+                    {
+                        DEFAULT_ZW_ROTATION_TARGET_IN_RADS
+                    }
+                }
+                else
+                {
+                    DEFAULT_ZW_ROTATION_TARGET_IN_RADS
+                }
+            }
+            else
+            {
+                DEFAULT_ZW_ROTATION_TARGET_IN_RADS
+            }
+        };
+
+        // target player's rotation along W
         zw = lerpf(
             zw,
-            inner_state.target_zw_rotation,
+            target_zw_angle,
             delta * 4.8,
         );
-        if (zw - inner_state.target_zw_rotation).abs() < 0.0005 {
-            zw = inner_state.target_zw_rotation;
+        if (zw - target_zw_angle).abs() < 0.0005 {
+            zw = target_zw_angle;
         }
 
         xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
@@ -1528,7 +1761,6 @@ pub fn process_player_second_jump_input(
 }
 
 
-pub const PLAYER_PROJECTION_DISPLAY_TIME: f32 = 2.8;
 
 
 pub fn process_w_scanner(
@@ -1604,153 +1836,16 @@ pub fn process_w_scanner(
 
             if team != inner_state.team
             {
-                let id = hit.hited_actors_id
+                let projection_id = hit.hited_actors_id
                     .expect("scanned by W Scanner dynamic collider have not ActorID");
 
-                let player_projection = find_player_projection(
-                    id,
-                    &mut screen_effects.player_projections
+                screen_effects.player_projections.update_or_add_projection(
+                    projection_id,
+                    PLAYER_PROJECTION_DISPLAY_TIME,
+                    false
                 );
-
-                match player_projection {
-                    Some(projection) =>
-                    {
-                        projection.timer = projection.timer.max(PLAYER_PROJECTION_DISPLAY_TIME);
-                    }
-                    None =>
-                    {
-                        let projection = PlayerProjection::new(
-                            id,
-                            PLAYER_PROJECTION_DISPLAY_TIME,
-                        );
-
-                        screen_effects.player_projections.push(projection);
-                    }
-                }
             }
         }
-    }
-}
-
-
-fn find_player_projection<'a>(
-    id: ActorID,
-    player_projections: &'a mut Vec<PlayerProjection>
-) -> Option<&'a mut PlayerProjection>
-{
-    for projection in player_projections
-    {
-        if projection.player_id == id
-        {
-            return Some(projection);
-        }
-    }
-    return None;
-}
-
-
-pub fn process_player_projections
-(
-    player_projections: &mut Vec<PlayerProjection>,
-    engine_handle: &mut EngineHandle,
-    my_id: ActorID,
-    delta: f32,
-)
-{
-    player_projections.retain_mut(|projection|
-    {
-        projection.timer -= delta;
-        if projection.timer <= 0.0
-        {
-            return false;
-        }
-
-        projection.intensity = {
-            lerpf(
-                projection.intensity,
-                (projection.timer*0.3).clamp(0.0, 1.0),
-                delta*6.0
-            )
-        };
-
-        projection.body = None;
-
-        engine_handle.send_direct_message(
-            projection.player_id,
-            Message {
-                from: my_id,
-                message: MessageType::SpecificActorMessage(
-                    SpecificActorMessage::PlayerMessage(
-                        PlayerMessage::GiveMeDataForProjection,
-                    )
-                )
-            }
-        );
-
-        true
-    });
-}
-
-
-pub fn update_player_projection
-(
-    projection_id: ActorID,
-    updated_projection_position: Vec4,
-    projection_updated_radius: f32,
-    player_projections: &mut Vec<PlayerProjection>,
-    inner_state: &PlayerInnerState,
-)
-{
-    let projection = find_player_projection(
-        projection_id,
-        player_projections
-    );
- 
-    if let Some(projection) = projection
-    {
-        let player_position = inner_state.get_position();
-    
-        let player_to_projection_vec = updated_projection_position - player_position;
-        let player_w_vertical_dir = inner_state.get_rotation_matrix().inverse() * W_UP;
-
-        let rel_projection_w_offset = player_w_vertical_dir.dot(player_to_projection_vec.normalize());
-
-        let mut rotated_player_to_projection_vec = player_to_projection_vec -
-            ((rel_projection_w_offset * player_to_projection_vec.length()) * player_w_vertical_dir);
-        
-        // it possible if the projected player is exactly above the player on the W axis
-        if rotated_player_to_projection_vec.length() == 0.0 ||
-            rotated_player_to_projection_vec.is_nan() ||
-            !rotated_player_to_projection_vec.is_finite()
-        {
-            return;
-        }
-
-        rotated_player_to_projection_vec = {
-            (player_to_projection_vec.length() / rotated_player_to_projection_vec.length())
-            *
-            rotated_player_to_projection_vec
-        };
-        
-        let projection_position = {
-            player_position +
-            rotated_player_to_projection_vec
-        };
-
-        let abs_zw_rotation_offset = W_UP.dot(player_to_projection_vec.normalize()).asin();
-
-
-        if abs_zw_rotation_offset.is_nan() {panic!("Got NAN during update player projection")}
-    
-        let body = PlayerProjectionBody
-        {
-            position: projection_position,
-            radius: projection_updated_radius,
-            abs_zw_rotation_offset,
-        };
-
-        projection.body = Some(body);
-
     }
 }
 
@@ -2026,6 +2121,7 @@ pub fn process_switch_active_hand_slot_input
     hands_slot_2: &mut Option<Box<dyn Device>>,
     hands_slot_3: &mut Option<Box<dyn Device>>,
     inner_state: &mut PlayerInnerState,
+    screen_effects: &mut PlayerScreenEffects,
     input: &ActionsFrameState,
     my_id: ActorID,
     physic_system: &PhysicsSystem,
@@ -2043,6 +2139,7 @@ pub fn process_switch_active_hand_slot_input
             hands_slot_2,
             hands_slot_3,
             inner_state,
+            screen_effects,
             my_id,
             physic_system,
             audio_system,
@@ -2071,6 +2168,7 @@ pub fn process_switch_active_hand_slot_input
                 hands_slot_2,
                 hands_slot_3,
                 inner_state,
+                screen_effects,
                 my_id,
                 physic_system,
                 audio_system,
@@ -2100,6 +2198,7 @@ pub fn process_switch_active_hand_slot_input
                 hands_slot_2,
                 hands_slot_3,
                 inner_state,
+                screen_effects,
                 my_id,
                 physic_system,
                 audio_system,
@@ -2129,6 +2228,7 @@ pub fn process_switch_active_hand_slot_input
                 hands_slot_2,
                 hands_slot_3,
                 inner_state,
+                screen_effects,
                 my_id,
                 physic_system,
                 audio_system,
@@ -2159,6 +2259,7 @@ pub fn deavctivate_previous_device
     hands_slot_2: &mut Option<Box<dyn Device>>,
     hands_slot_3: &mut Option<Box<dyn Device>>,
     inner_state: &mut PlayerInnerState,
+    screen_effects: &mut PlayerScreenEffects,
     my_id: ActorID,
     physic_system: &PhysicsSystem,
     audio_system: &mut AudioSystem,
@@ -2176,7 +2277,8 @@ pub fn deavctivate_previous_device
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle
+                        engine_handle,
+                        screen_effects,
                     );
             }
         },
@@ -2190,6 +2292,7 @@ pub fn deavctivate_previous_device
                         audio_system,
                         ui_system,
                         engine_handle,
+                        screen_effects,
                     );
             }
         }
@@ -2203,6 +2306,7 @@ pub fn deavctivate_previous_device
                         audio_system,
                         ui_system,
                         engine_handle,
+                        screen_effects,
                     );
             }
         }
@@ -2216,6 +2320,7 @@ pub fn deavctivate_previous_device
                         audio_system,
                         ui_system,
                         engine_handle,
+                        screen_effects,
                     );
             }
         }
@@ -2232,6 +2337,7 @@ pub fn get_effected_by_base
     hands_slot_2: &mut Option<Box<dyn Device>>,
     hands_slot_3: &mut Option<Box<dyn Device>>,
     w_scanner: &mut WScanner,
+    screen_effects: &mut PlayerScreenEffects,
     devices: &mut [Option<Box<dyn Device>>;4],
     my_id: ActorID,
     player_settings: &PlayerSettings,
@@ -2298,6 +2404,7 @@ pub fn get_effected_by_base
             hands_slot_2,
             hands_slot_3,
             w_scanner,
+            screen_effects,
             devices,
             my_id,
             player_settings,
@@ -2318,6 +2425,7 @@ pub fn check_if_touching_death_plane(
     hands_slot_2: &mut Option<Box<dyn Device>>,
     hands_slot_3: &mut Option<Box<dyn Device>>,
     w_scanner: &mut WScanner,
+    screen_effects: &mut PlayerScreenEffects,
     devices: &mut [Option<Box<dyn Device>>;4],
     my_id: ActorID,
     player_settings: &PlayerSettings,
@@ -2336,6 +2444,7 @@ pub fn check_if_touching_death_plane(
             hands_slot_2,
             hands_slot_3,
             w_scanner,
+            screen_effects,
             devices,
             my_id,
             player_settings,
@@ -2358,6 +2467,7 @@ pub fn die
     hands_slot_2: &mut Option<Box<dyn Device>>,
     hands_slot_3: &mut Option<Box<dyn Device>>,
     w_scanner: &mut WScanner,
+    screen_effects: &mut PlayerScreenEffects,
     devices: &mut [Option<Box<dyn Device>>;4],
     my_id: ActorID,
     player_settings: &PlayerSettings,
@@ -2376,6 +2486,7 @@ pub fn die
                 audio_system,
                 ui_system,
                 engine_handle,
+                screen_effects,
             );
 
         },
@@ -2388,6 +2499,7 @@ pub fn die
                     audio_system,
                     ui_system,
                     engine_handle,
+                    screen_effects,
                 );
             }
 
@@ -2401,6 +2513,7 @@ pub fn die
                     audio_system,
                     ui_system,
                     engine_handle,
+                    screen_effects,
                 );
             }
 
@@ -2414,6 +2527,7 @@ pub fn die
                     audio_system,
                     ui_system,
                     engine_handle,
+                    screen_effects,
                 );
             }
 
@@ -2444,6 +2558,7 @@ pub fn die
                 audio_system,
                 ui_system,
                 engine_handle,
+                screen_effects,
             );
         }
     }
@@ -2508,6 +2623,7 @@ pub fn telefraged
     hands_slot_2: &mut Option<Box<dyn Device>>,
     hands_slot_3: &mut Option<Box<dyn Device>>,
     w_scanner: &mut WScanner,
+    screen_effects: &mut PlayerScreenEffects,
     devices: &mut [Option<Box<dyn Device>>;4],
     my_id: ActorID,
     player_settings: &PlayerSettings,
@@ -2526,6 +2642,7 @@ pub fn telefraged
         hands_slot_2,
         hands_slot_3,
         w_scanner,
+        screen_effects,
         devices,
         my_id,
         player_settings,
@@ -2830,6 +2947,7 @@ pub fn get_damage_and_add_force(
             hands_slot_2,
             hands_slot_3,
             w_scanner,
+            screen_effects,
             devices,
             my_id,
             player_settings,

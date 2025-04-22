@@ -164,7 +164,11 @@ impl MachineGun {
                 {
                     if hited_actors_team != player.team
                     {
-                        
+                        screen_effects.player_projections.update_or_add_projection(
+                            hited_id,
+                            1.7,
+                            true
+                        );
                         
                         let force = hit.hit_normal * -self.machinegun_add_force;
             
@@ -383,6 +387,7 @@ impl Device for MachineGun {
             audio_system: &mut AudioSystem,
             ui_system: &mut UISystem,
             engine_handle: &mut EngineHandle,
+            screen_effects: &mut PlayerScreenEffects,
         ) {
 
             let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBarRed);

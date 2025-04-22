@@ -15,7 +15,7 @@ use crate::{
             Device,
             DeviceType
         },
-        main_player::{player_input_master, player_settings, player_inner_state::PlayerInnerState, PlayerMessage, PlayerMovingState, PlayerScreenEffects},
+        main_player::{player_inner_state::PlayerInnerState, player_input_master, player_settings, PlayerMessage, PlayerMovingState, PlayerScreenEffects, PlayersProjections},
         players_doll::PlayerDollInputState,
         Actor,
         ActorID,
@@ -198,6 +198,7 @@ impl Actor for PlayerFor2d3dExample {
                                     &mut self.hands_slot_2,
                                     &mut self.hands_slot_3,
                                     &mut self.w_scanner,
+                                    &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
                                     &mut self.player_settings,
@@ -226,13 +227,12 @@ impl Actor for PlayerFor2d3dExample {
                                 updated_projection_radius
                             ) =>
                             {
-                                main_player::update_player_projection(
+                                self.screen_effects.player_projections.update_projection_postiton(
                                     from,
                                     updated_projection_position,
                                     updated_projection_radius,
-                                    &mut self.screen_effects.player_projections,
                                     &self.inner_state
-                                )
+                                );
                             }
 
                             PlayerMessage::GiveMeDataForProjection => {}
@@ -249,6 +249,7 @@ impl Actor for PlayerFor2d3dExample {
                                     &mut self.hands_slot_2,
                                     &mut self.hands_slot_3,
                                     &mut self.w_scanner,
+                                    &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
                                     &mut self.player_settings,
@@ -271,6 +272,7 @@ impl Actor for PlayerFor2d3dExample {
                                     &mut self.hands_slot_2,
                                     &mut self.hands_slot_3,
                                     &mut self.w_scanner,
+                                    &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
                                     &mut self.player_settings,
@@ -293,6 +295,7 @@ impl Actor for PlayerFor2d3dExample {
                                     &mut self.hands_slot_2,
                                     &mut self.hands_slot_3,
                                     &mut self.w_scanner,
+                                    &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
                                     &mut self.player_settings,
@@ -800,6 +803,7 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.hands_slot_2,
                 &mut self.hands_slot_3,
                 &mut self.inner_state,
+                &mut self.screen_effects,
                 &input,
                 my_id,
                 physic_system,
@@ -841,13 +845,11 @@ impl Actor for PlayerFor2d3dExample {
                 delta,
             );
 
-            main_player::process_player_projections(
-                &mut self.screen_effects.player_projections,
-                engine_handle,
+            self.screen_effects.player_projections.projections_tick(
                 my_id,
+                engine_handle,
                 delta
             );
-            
             
             main_player::get_effected_by_base(
                 &mut self.inner_state,
@@ -857,6 +859,7 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.hands_slot_2,
                 &mut self.hands_slot_3,
                 &mut self.w_scanner,
+                &mut self.screen_effects,
                 &mut self.devices,
                 my_id,
                 &self.player_settings,
@@ -875,6 +878,7 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.hands_slot_2,
                 &mut self.hands_slot_3,
                 &mut self.w_scanner,
+                &mut self.screen_effects,
                 &mut self.devices,
                 my_id,
                 &self.player_settings,
@@ -1087,7 +1091,7 @@ impl PlayerFor2d3dExample {
             w_scanner_enemies_intesity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
-            player_projections: Vec::with_capacity(10),
+            player_projections: PlayersProjections::new(),
         };
 
         let w_scanner = WScanner::new(&player_settings);

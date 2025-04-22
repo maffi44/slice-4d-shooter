@@ -43,8 +43,6 @@ pub struct PlayerInnerState {
     pub flag_pivot_offset: Vec4,
     pub base_effect_tick_timer: f32,
     pub projections_w_aim_enabled: bool,
-
-    pub target_zw_rotation: f32,
 }
 
 
@@ -147,8 +145,6 @@ impl PlayerInnerState {
             jumped_to_wy_on_current_action: false,
             base_effect_tick_timer: 0.0,
             projections_w_aim_enabled: false,
-
-            target_zw_rotation: DEFAULT_ZW_ROTATION_TARGET_IN_RADS,
         }
     }
 

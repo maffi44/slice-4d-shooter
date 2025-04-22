@@ -12,7 +12,7 @@ use crate::{
         holegun_shot::HoleGunShot,
         main_player::{
             player_inner_state::PlayerInnerState,
-            PlayerMessage, PlayerScreenEffects
+            PlayerMessage, PlayerScreenEffects, PLAYER_PROJECTION_DISPLAY_TIME
         },
         ActorID,
         ActorWrapper,
@@ -116,6 +116,7 @@ impl HoleGun {
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
+        screen_effects: &mut PlayerScreenEffects,
         charging_energy: f32,
         color: Vec3,
     ) {
@@ -168,32 +169,48 @@ impl HoleGun {
             );
 
             for hit in hited_players {
-                let dist_to_hited_point = {
-                    hit.hit_point.distance(position)
-                };
 
-                let damage = ((radius * 54.0) / (1.0 + dist_to_hited_point*0.3)) * 
-                    self.energy_gun_damage_mult;
-
-                let force = (hit.hit_normal * damage / -4.5) *
-                    self.energy_gun_add_force_mult;
-
-                engine_handle.send_direct_message(
-                    hit.hited_actors_id.expect("Hited Player have not Actor's ID"),
-                    Message {
-                        from: player_id,
-                        message: MessageType::SpecificActorMessage(
-                            SpecificActorMessage::PlayerMessage(
-                                PlayerMessage::DealDamageAndAddForce(
-                                    damage as u32,
-                                    force,
-                                    hit.hit_point,
-                                    player.team
-                                )
-                            )
-                        )
+                if let Some(hited_id) = hit.hited_actors_id
+                {
+                    if let Some(hited_team) = hit.hited_actors_team
+                    {
+                        if hited_team != player.team
+                        {
+                            screen_effects.player_projections.update_or_add_projection(
+                                hited_id,
+                                PLAYER_PROJECTION_DISPLAY_TIME,
+                                false
+                            );
+                            
+                            let dist_to_hited_point = {
+                                hit.hit_point.distance(position)
+                            };
+            
+                            let damage = ((radius * 54.0) / (1.0 + dist_to_hited_point*0.3)) * 
+                                self.energy_gun_damage_mult;
+            
+                            let force = (hit.hit_normal * damage / -4.5) *
+                                self.energy_gun_add_force_mult;
+            
+                            engine_handle.send_direct_message(
+                                hited_id,
+                                Message {
+                                    from: player_id,
+                                    message: MessageType::SpecificActorMessage(
+                                        SpecificActorMessage::PlayerMessage(
+                                            PlayerMessage::DealDamageAndAddForce(
+                                                damage as u32,
+                                                force,
+                                                hit.hit_point,
+                                                player.team
+                                            )
+                                        )
+                                    )
+                                }
+                            );
+                        }
                     }
-                );
+                }
             }
 
             let base_coef = 
@@ -448,6 +465,7 @@ impl Device for HoleGun {
                         physic_system,
                         audio_system,
                         engine_handle,
+                        screen_effects,
                         self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                         color,
                     );
@@ -476,6 +494,7 @@ impl Device for HoleGun {
                         physic_system,
                         audio_system,
                         engine_handle,
+                        screen_effects,
                         self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                         color,
                     );
@@ -539,6 +558,7 @@ impl Device for HoleGun {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
+        screen_effects: &mut PlayerScreenEffects,
     ) {
         let color = match player.team {
             Team::Red => HOLE_GUN_RED_COLOR,
@@ -556,6 +576,7 @@ impl Device for HoleGun {
                     physic_system,
                     audio_system,
                     engine_handle,
+                    screen_effects,
                     self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                     color,
                 );
