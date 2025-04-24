@@ -71,12 +71,41 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     if bar_uni.direction > 2.5 {
         // from top to down direction
 
-        // unimplemented
+        if in.uv.y > bar_uni.v_from && in.uv.y < bar_uni.v_to {
+            let d = abs(bar_uni.v_to - bar_uni.v_from);
+
+            let ot = bar_uni.v_from + bar_uni.value * d;
+
+            if in.uv.y < ot {
+                let bar_col = textureSample(mask, tex_sampler, in.uv);
+
+                let bar_edge_coof = pow((d-(ot-in.uv.y))/d, 5.0);
+
+                let bar_edge_col = bar_edge_coof * (bar_col*bar_col);
+
+                col += bar_col + bar_edge_col + vec4(pow(bar_edge_coof, 20.0)*0.6)*bar_col.a;
+            }
+        }
 
     } else if bar_uni.direction > 1.5 {
         // from down to top direction
+        let y = 1.0 - in.uv.y;
 
-        // unimplemented
+        if y > bar_uni.v_to && y < bar_uni.v_from {
+            let d = abs(bar_uni.v_from - bar_uni.v_to);
+
+            let ot = bar_uni.v_to + bar_uni.value * d;
+
+            if y < ot {
+                let bar_col = textureSample(mask, tex_sampler, in.uv);
+
+                let bar_edge_coof = pow((d-(ot-y))/d, 5.0);
+
+                let bar_edge_col = bar_edge_coof * (bar_col*bar_col);
+
+                col += bar_col + bar_edge_col + vec4(pow(bar_edge_coof, 20.0)*0.6)*bar_col.a;
+            }
+        }
 
     } else if bar_uni.direction > 0.5 {
         // from right to left direction
@@ -115,11 +144,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
                 let bar_edge_col = bar_edge_coof * (bar_col*bar_col);
 
                 col += bar_col + bar_edge_col + vec4(pow(bar_edge_coof, 20.0)*0.6)*bar_col.a;
-
-                
             }
         }
-
     }
 
     col.a *= rect_transform.transparency;

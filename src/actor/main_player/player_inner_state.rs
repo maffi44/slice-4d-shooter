@@ -42,7 +42,8 @@ pub struct PlayerInnerState {
     pub jumped_to_wy_on_current_action: bool,
     pub flag_pivot_offset: Vec4,
     pub base_effect_tick_timer: f32,
-    pub projections_w_aim_enabled: bool,
+    pub w_aim_enabled: bool,
+    pub w_aim_ui_frame_intensity: f32,
 }
 
 
@@ -144,7 +145,8 @@ impl PlayerInnerState {
             jumped_to_w_on_current_action: false,
             jumped_to_wy_on_current_action: false,
             base_effect_tick_timer: 0.0,
-            projections_w_aim_enabled: false,
+            w_aim_enabled: true,
+            w_aim_ui_frame_intensity: 0.0,
         }
     }
 

@@ -700,17 +700,17 @@ fn process_ui_animation(
 
             let ui_elem = ui_system.get_mut_ui_element(ui_elem_type);
 
-            let transparency = ui_elem.get_ui_data().get_transparecy();
+            let transparency = ui_elem.get_ui_data().get_transparency();
 
             if transparency < 1.0
             {
-                ui_elem.get_ui_data_mut().set_transparecy(
+                ui_elem.get_ui_data_mut().set_transparency(
                     transparency + (UI_ELEM_FADE_IN_SPEED * delta)
                 );
             }
             else
             {
-                ui_elem.get_ui_data_mut().set_transparecy(
+                ui_elem.get_ui_data_mut().set_transparency(
                     1.0
                 );
             }
@@ -719,17 +719,17 @@ fn process_ui_animation(
             *timer = 0.0;
 
             let ui_elem = ui_system.get_mut_ui_element(ui_elem_type);
-            let transparency = ui_elem.get_ui_data().get_transparecy();
+            let transparency = ui_elem.get_ui_data().get_transparency();
 
             if transparency > 0.0
             {
-                ui_elem.get_ui_data_mut().set_transparecy(
+                ui_elem.get_ui_data_mut().set_transparency(
                     transparency - (UI_ELEM_FADE_OUT_SPEED * delta)
                 );
             }
             else
             {
-                ui_elem.get_ui_data_mut().set_transparecy(
+                ui_elem.get_ui_data_mut().set_transparency(
                     0.0
                 );
 

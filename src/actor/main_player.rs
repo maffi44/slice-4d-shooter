@@ -142,7 +142,7 @@ impl PlayersProjections
                 let current_intr = get_sphere_intersection(
                     origin - body.position,
                     view_vec,
-                    body.radius
+                    projection.get_projection_radius().expect("Projection have not body during getting intersection"),
                 );
 
                 if current_intr.x > 0.0
@@ -181,8 +181,7 @@ impl PlayersProjections
     pub fn update_or_add_projection(
         &mut self,
         projection_id: ActorID,
-        projection_show_time: f32,
-        projection_is_active: bool,
+        projection_show_time: f32
     )
     {
         let player_projection = self.find_projection_mut(
@@ -204,12 +203,6 @@ impl PlayersProjections
                 self.projections.push(projection);
             }
         }
-
-        if projection_is_active
-        {
-            self.set_projection_active(projection_id);
-        }
-
     }
 
     pub fn projections_tick(
@@ -235,7 +228,7 @@ impl PlayersProjections
                     projection.is_active_intensity,
                     projection.is_active_by_timer /
                     PROJECTION_ACTIVE_TIME,
-                    delta*16.0
+                    delta*20.0
                 );
             }
             else
@@ -369,7 +362,7 @@ impl PlayersProjections
             let body = PlayerProjectionBody
             {
                 position: projection_position,
-                radius: projection_updated_radius * 1.2,
+                radius: projection_updated_radius * 1.111,
                 abs_zw_rotation_offset,
             };
     
@@ -391,10 +384,27 @@ pub struct PlayerProjection
 }
 
 
+impl PlayerProjection
+{
+    pub fn get_projection_radius(&self) -> Option<f32>
+    {
+        if let Some(body) = self.body.as_ref()
+        {
+            let radius = body.radius * (1.0 + 0.111*self.is_active_intensity);
+            
+            Some(radius)
+        }
+        else
+        {
+            None
+        }
+    }
+}
+
 pub struct PlayerProjectionBody
 {
     pub position: Vec4,
-    pub radius: f32,
+    radius: f32,
     pub abs_zw_rotation_offset: f32,
 }
 
@@ -524,7 +534,7 @@ pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 1;
 
 const BASE_EFFECT_HP_IMPACT_SPEED: f32 = 2.6;
 
-const PROJECTION_ACTIVE_TIME: f32 = 1.5;
+const PROJECTION_ACTIVE_TIME: f32 = 1.0;
 
 pub const DEFAULT_ZW_ROTATION_TARGET_IN_RADS: f32 = 0.0;
 
@@ -1142,6 +1152,14 @@ impl Actor for MainPlayer {
             will_jump: false,
         };
 
+        *ui_system.get_ui_element(&UIElementType::WAimFrame)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap()
+            =
+            false;
+
         let my_id = self.get_id().expect("Player have not ActorID");
         
         if self.inner_state.is_alive {
@@ -1156,6 +1174,7 @@ impl Actor for MainPlayer {
                 &input,
                 &mut self.inner_state,
                 &mut self.screen_effects,
+                ui_system,
             );
 
             process_player_rotation(
@@ -1247,6 +1266,7 @@ impl Actor for MainPlayer {
                 &mut self.screen_effects,
                 &mut self.w_scanner,
                 physic_system,
+                ui_system,
                 my_id,
                 delta,
             );
@@ -1372,15 +1392,26 @@ pub fn process_projection_w_aim(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
     screen_effects: &mut PlayerScreenEffects,
+    ui_system: &mut UISystem,
 )
 {
     if input.w_aim.is_action_just_pressed()
     {
-        inner_state.projections_w_aim_enabled = !inner_state.projections_w_aim_enabled; 
+        inner_state.w_aim_enabled = !inner_state.w_aim_enabled; 
     }
 
-    if inner_state.projections_w_aim_enabled
+    if inner_state.w_aim_enabled
     {
+        {
+            *ui_system.get_ui_element(&UIElementType::WAimFrame)
+                .get_ui_data()
+                .get_is_visible_cloned_arc()
+                .lock()
+                .unwrap()
+                =
+                true;
+        }
+        
         let view_vec = inner_state.get_rotation_matrix().inverse() * FORWARD;
         let hited_projection = screen_effects
             .player_projections
@@ -1392,6 +1423,7 @@ pub fn process_projection_w_aim(
 
         let projection_id = if let Some(projection) = hited_projection
         {
+
             Some(projection.id)
         }
         else
@@ -1442,6 +1474,8 @@ pub fn process_player_rotation(
 
     inner_state.last_frame_zw_rotation = zw;
 
+    inner_state.w_aim_ui_frame_intensity = 0.20;
+
     if input.second_mouse.is_action_pressed() {
         zw = (input.mouse_axis.y * player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
         xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
@@ -1450,7 +1484,7 @@ pub fn process_player_rotation(
     else
     {
         let target_zw_angle = {
-            if inner_state.projections_w_aim_enabled
+            if inner_state.w_aim_enabled
             {
                 let active_projection = screen_effects
                     .player_projections
@@ -1459,6 +1493,9 @@ pub fn process_player_rotation(
                 if let Some(projection) = active_projection {
                     if let Some(projection_body) = projection.body.as_ref()
                     {
+                        inner_state.w_aim_ui_frame_intensity = 0.20 +
+                            (projection.is_active_intensity*4.0).clamp(0.0, 0.5);
+
                         projection_body.abs_zw_rotation_offset
                     }
                     else
@@ -1521,10 +1558,7 @@ pub fn process_w_scanner_ui(
     let xz = inner_state.saved_angle_of_rotation.x;
     let zw = inner_state.saved_angle_of_rotation.w;
 
-    let zw_arrow = match inner_state.team {
-        Team::Red => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowRed),
-        Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue),
-    };
+    let zw_arrow = ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrow);
 
     if let UIElement::Image(arrow) = zw_arrow {
         arrow.set_rotation_around_rect_center(-zw+PI/2.0);
@@ -1532,21 +1566,15 @@ pub fn process_w_scanner_ui(
         panic!("UI Element ZWScannerArrow is not UIImage")
     }
 
-    let zx_arrow = match inner_state.team {
-        Team::Red => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowRed),   
-        Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue),   
-    };
+    let zx_arrow = ui_system.get_mut_ui_element(&UIElementType::ZXScannerArrow);
 
     if let UIElement::Image(arrow) = zx_arrow {
-        arrow.set_rotation_around_rect_center(xz-PI/2.0);
+        arrow.set_rotation_around_rect_center(0.0);
     } else {
         panic!("UI Element ZXScannerArrow is not UIImage")
     }
 
-    let h_pointer = match inner_state.team {
-        Team::Red => ui_system.get_mut_ui_element(&UIElementType::ScannerHPointerRed),
-        Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ScannerHPointerBlue),
-    };
+    let h_pointer = ui_system.get_mut_ui_element(&UIElementType::ScannerHPointer);
 
     if let UIElement::Image(h_pointer) = h_pointer {
         let h = {
@@ -1770,6 +1798,7 @@ pub fn process_w_scanner(
     screen_effects: &mut PlayerScreenEffects,
     w_scanner: &mut WScanner,
     physic_system: &PhysicsSystem,
+    ui_system: &mut UISystem,
     my_id: ActorID,
     delta: f32,
 )
@@ -1777,6 +1806,8 @@ pub fn process_w_scanner(
     if input.w_scanner.is_action_just_pressed() {
         if !w_scanner.w_scanner_enable {
             if w_scanner.w_scanner_reloading_time >= player_settings.scanner_reloading_time {
+
+                w_scanner.w_scanner_reloading_time = 0.0;
                 
                 w_scanner.w_scanner_enable = true;
 
@@ -1842,10 +1873,26 @@ pub fn process_w_scanner(
                 screen_effects.player_projections.update_or_add_projection(
                     projection_id,
                     PLAYER_PROJECTION_DISPLAY_TIME,
-                    false
                 );
             }
         }
+    }
+
+    let scanner_ui = match inner_state.team {
+        Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ScannerBlue),
+        Team::Red => ui_system.get_mut_ui_element(&UIElementType::ScannerRed),
+    };
+
+    if let UIElement::ProgressBar(bar) = scanner_ui {
+        let bar_value = {
+            (w_scanner.w_scanner_reloading_time / player_settings.scanner_reloading_time)
+                .clamp(0.0, 1.0)
+        };
+
+        bar.set_bar_value(bar_value)
+
+    } else {
+        panic!("Scanner UI is not Progress Bar")
     }
 }
 
@@ -2661,6 +2708,8 @@ pub fn make_hud_transparency_as_death_screen_effect(
 ) {
     let a = 1.0 - screen_effects.death_screen_effect.clamp(0.0, 1.0);
 
+    let hud_elem = ui.get_mut_ui_element(&UIElementType::WAimFrame);
+    hud_elem.get_ui_data_mut().rect.transparency = inner_state.w_aim_ui_frame_intensity * a;
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
     hud_elem.get_ui_data_mut().rect.transparency = a;
@@ -2706,6 +2755,14 @@ pub fn make_hud_transparency_as_death_screen_effect(
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
     hud_elem.get_ui_data_mut().rect.transparency = a;
+
+    let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointer);
+    hud_elem.get_ui_data_mut().rect.transparency = a;
+
+    let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrow);
+    hud_elem.get_ui_data_mut().rect.transparency = a;
+
+    let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrow);
     
     match inner_state.team
     {
@@ -2717,13 +2774,6 @@ pub fn make_hud_transparency_as_death_screen_effect(
             // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRedW);
             // hud_elem.get_ui_data_mut().rect.transparency = a;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
-            hud_elem.get_ui_data_mut().rect.transparency = a;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowRed);
-            hud_elem.get_ui_data_mut().rect.transparency = a;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowRed);
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
@@ -2750,13 +2800,6 @@ pub fn make_hud_transparency_as_death_screen_effect(
             // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlueW);
             // hud_elem.get_ui_data_mut().rect.transparency = a;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
-            hud_elem.get_ui_data_mut().rect.transparency = a;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue);
-            hud_elem.get_ui_data_mut().rect.transparency = a;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue);
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
@@ -2789,21 +2832,21 @@ pub fn set_right_team_hud(
     let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
     *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
+    let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointer);
+    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+    let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrow);
+    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+    let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrow);
+    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
 
     match inner_state.team
     {
         Team::Red =>
         {
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowRed);
             *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
@@ -2815,17 +2858,7 @@ pub fn set_right_team_hud(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
             *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
-
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue);
             *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
@@ -2843,13 +2876,6 @@ pub fn set_right_team_hud(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
             *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowRed);
             *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
@@ -2861,17 +2887,7 @@ pub fn set_right_team_hud(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
             *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
 
-
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointerBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrowBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
-
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrowBlue);
             *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
@@ -3170,7 +3186,7 @@ impl ControlledActor for MainPlayer
             )
         }
 
-        self.inner_state.projections_w_aim_enabled = false;
+        self.inner_state.w_aim_enabled = true;
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
         self.inner_state.hp = PLAYER_MAX_HP;

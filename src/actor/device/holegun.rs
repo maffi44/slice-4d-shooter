@@ -178,8 +178,7 @@ impl HoleGun {
                         {
                             screen_effects.player_projections.update_or_add_projection(
                                 hited_id,
-                                PLAYER_PROJECTION_DISPLAY_TIME,
-                                false
+                                PLAYER_PROJECTION_DISPLAY_TIME
                             );
                             
                             let dist_to_hited_point = {

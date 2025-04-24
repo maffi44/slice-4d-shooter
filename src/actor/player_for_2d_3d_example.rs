@@ -841,6 +841,7 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.screen_effects,
                 &mut self.w_scanner,
                 physic_system,
+                ui_system,
                 my_id,
                 delta,
             );

@@ -18,7 +18,7 @@ use crate::{
             static_object::{VisualWave, VolumeArea},
             World
         }
-    }, transform::Transform
+    }, transform::{Transform, FORWARD}
 };
 
 use std::f32::consts::PI;
@@ -287,7 +287,7 @@ impl DynamicRenderData {
         sd: &StaticRenderData,
 
         camera: &Camera,
-        clip_planes: (Vec4, Vec4, Vec4, Vec4),
+        clip_planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
         stickiness_value: f32,
 
     ) -> ShapesArraysMetadata
@@ -877,7 +877,7 @@ impl DynamicRenderData {
     fn update_spherical_areas_and_get_meatadata(
         &mut self,
         camera: &Camera,
-        clip_planes: (Vec4, Vec4, Vec4, Vec4),
+        clip_planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
         stickiness_value: f32,
     ) -> (SphericalAreasMetadata, u32, u32)
     {
@@ -978,7 +978,7 @@ impl DynamicRenderData {
     fn update_player_forms_buffers_and_get_amount(
         &mut self,
         camera: &Camera,
-        clip_planes: (Vec4, Vec4, Vec4, Vec4),
+        clip_planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
         stickiness_value: f32,
     ) -> u32
     {
@@ -986,11 +986,19 @@ impl DynamicRenderData {
 
         while let Some(player_form) = self.frame_player_forms_buffer.pop()
         {
-            self.player_forms_data[index] = player_form;
+            if check_if_player_see_sphere(
+                camera,
+                Vec4::from_array(player_form.pos),
+                player_form.radius * 1.7,
+                clip_planes,
+            )
+            {
+                self.player_forms_data[index] = player_form;
 
-            index += 1;
+                index += 1;
+            }
         }
-
+        
         index as u32
     }
 
@@ -1097,7 +1105,7 @@ impl From<&PlayerProjection> for PlayerProjectionForShader
                 PlayerProjectionForShader {
                     position: projection_body.position.to_array(),
                     is_active_intensity: value.is_active_intensity,
-                    radius: projection_body.radius,
+                    radius: value.get_projection_radius().expect("Projection have not body during converting to shader projection"),
                     zw_offset: projection_body.abs_zw_rotation_offset,
                     intensity: value.intensity,
                 }                
@@ -1346,7 +1354,7 @@ pub fn check_if_player_see_cube(
     camera: &Camera,
     cube_pos: Vec4,
     cube_size: Vec4,
-    planes: (Vec4, Vec4, Vec4, Vec4),
+    planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
 
 ) -> bool
 {
@@ -1355,6 +1363,7 @@ pub fn check_if_player_see_cube(
         down_plane,
         left_plane,
         right_plane,
+        forward_plane,
     ) = planes;
     
     cube_is_above_or_intersect_the_plane
@@ -1384,6 +1393,13 @@ pub fn check_if_player_see_cube(
         cube_size,
         right_plane
     )
+    &&
+    cube_is_above_or_intersect_the_plane
+    (
+        cube_pos - camera.get_position(),
+        cube_size,
+        forward_plane
+    )
 }
 
 
@@ -1391,7 +1407,7 @@ pub fn check_if_player_see_sphere(
     camera: &Camera,
     sphere_pos: Vec4,
     sphere_radius: f32,
-    planes: (Vec4, Vec4, Vec4, Vec4),
+    planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
 ) -> bool
 {
     let (
@@ -1399,6 +1415,7 @@ pub fn check_if_player_see_sphere(
         down_plane,
         left_plane,
         right_plane,
+        forward_plane,
     ) = planes;
 
     sphere_is_above_or_intersect_the_plane
@@ -1427,6 +1444,13 @@ pub fn check_if_player_see_sphere(
         sphere_pos - camera.get_position(),
         sphere_radius,
         right_plane
+    )
+    &&
+    sphere_is_above_or_intersect_the_plane
+    (
+        sphere_pos - camera.get_position(),
+        sphere_radius,
+        forward_plane
     )
 }
 
@@ -1497,7 +1521,7 @@ pub fn sphere_is_above_or_intersect_the_plane
 pub fn get_view_clip_planes(
     camera: &Camera,
     screen_aspect: f32,
-) -> (Vec4, Vec4, Vec4, Vec4)
+) -> (Vec4, Vec4, Vec4, Vec4, Vec4)
 {
     let cam_zw_rot = camera.get_zw_rotation_matrix();
     let cam_zy_rot = camera.get_zy_rotation_matrix();
@@ -1520,10 +1544,13 @@ pub fn get_view_clip_planes(
         )
     };
 
+    let forward_clip_plane = rotation * FORWARD; 
+
     (
         up_clip_plane,
         down_clip_plane,
         left_clip_plane,
-        right_clip_plane
+        right_clip_plane,
+        forward_clip_plane
     )
 }

@@ -105,15 +105,10 @@ pub enum UIElementType {
     Crosshair,
     CrosshairHitMark,
     ScannerBlue,
-    // ScannerBlueW,
     ScannerRed,
-    // ScannerRedW,
-    ScannerHPointerBlue,
-    ScannerHPointerRed,
-    ZXScannerArrowBlue,
-    ZXScannerArrowRed,
-    ZWScannerArrowBlue,
-    ZWScannerArrowRed,
+    ScannerHPointer,
+    ZXScannerArrow,
+    ZWScannerArrow,
     LeftScannerDsiplayRed,
     LeftScannerDsiplayBlue,
     RightScannerDsiplayRed,
@@ -129,8 +124,6 @@ pub enum UIElementType {
     SecondScoreMarkRed,
     ThirdScoreMarkRed,
     FinalScoreMarkRed,
-    // MoveWBonusMarkFirst,
-    // MoveWBonusMarkSecond,
     RedTeamWinTitle,
     BlueTeamWinTitle,
     JoinRedTeamTitle,
@@ -139,6 +132,7 @@ pub enum UIElementType {
     RedTeamBacklight,
     BlueFlagBacklight,
     RedFlagBacklight,
+    WAimFrame,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -158,10 +152,9 @@ pub enum TextureType {
     ScannerTextureWBlue,
     ScannerTextureRed,
     ScannerTextureWRed,
-    ScannerPointerBlue,
-    ScannerPointerRed,
-    ScannerArrowBlue,
-    ScannerArrowRed,
+    ScannerTextureProgressBar,
+    ScannerPointer,
+    ScannerArrow,
     BacklightBlue,
     BacklightRed,
     BlueTeamWinTitle,
@@ -177,6 +170,7 @@ pub enum TextureType {
     RedFinalMark,
     MoveWBonusImageFirst,
     MoveWBonusImageSecond,
+    WAimFrame,
 }
 
 
@@ -254,20 +248,16 @@ impl UISystem {
             include_bytes!("../assets/textures/orange_scanner_hud_w.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::ScannerPointerBlue,
-            include_bytes!("../assets/textures/blue_scanner_pointer_hud.png").as_slice()
+            TextureType::ScannerTextureProgressBar,
+            include_bytes!("../assets/textures/scanner_progress_bar_mask.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::ScannerPointerRed,
-            include_bytes!("../assets/textures/orange_scanner_pointer_hud.png").as_slice()
+            TextureType::ScannerPointer,
+            include_bytes!("../assets/textures/scanner_pointer_hud.png").as_slice()
         );
         texture_sources.insert(
-            TextureType::ScannerArrowBlue,
-            include_bytes!("../assets/textures/blue_scanner_arrow_hud.png").as_slice()
-        );
-        texture_sources.insert(
-            TextureType::ScannerArrowRed,
-            include_bytes!("../assets/textures/orange_scanner_arrow_hud.png").as_slice()
+            TextureType::ScannerArrow,
+            include_bytes!("../assets/textures/scanner_arrow_hud.png").as_slice()
         );
         texture_sources.insert(
             TextureType::BacklightBlue,
@@ -329,6 +319,10 @@ impl UISystem {
             TextureType::MoveWBonusImageSecond,
             include_bytes!("../assets/textures/move_w_bonus_second_img.png").as_slice()
         );
+        texture_sources.insert(
+            TextureType::WAimFrame,
+            include_bytes!("../assets/textures/w_aim_frame.png").as_slice()
+        );
         
 
         let mut ui_elements = HashMap::with_capacity(10);
@@ -381,8 +375,8 @@ impl UISystem {
         );
         ui_elements.insert(
             UIElementType::ScannerRed,
-            UIElement::Image(
-                UIImage::new(
+            UIElement::ProgressBar(
+                UIProgressBar::new(
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::CenterDown,
@@ -398,38 +392,18 @@ impl UISystem {
                         false,
                         None,
                     ),
-                    TextureType::ScannerTextureRed
-                )
+                    TextureType::ScannerTextureRed,
+                    TextureType::ScannerTextureProgressBar,
+                    0.993,
+                    0.07,
+                    ProgressBarDirection::DownTop,
+                ),
             )
         );
-        // ui_elements.insert(
-        //     UIElementType::ScannerRedW,
-        //     UIElement::Image(
-        //         UIImage::new(
-        //             UIData::new(
-        //                 UIRect {
-        //                     anchor: RectAnchor::CenterDown,
-        //                     position: Vec2::new(0.0, -1.0),
-        //                     size: RectSize::LockedWight(
-        //                         0.322
-        //                     ),
-        //                     rotation_around_rect_center: 0.0,
-        //                     rotation_around_screen_center: 0.0,
-        //                     transparency: 1.0,
-        //                     drawing_order: 0,
-        //                     transform_buffer: None,
-        //                 },
-        //                 false,
-        //                 None,
-        //             ),
-        //             TextureType::ScannerTextureWRed
-        //         )
-        //     )
-        // );
         ui_elements.insert(
             UIElementType::ScannerBlue,
-            UIElement::Image(
-                UIImage::new(
+            UIElement::ProgressBar(
+                UIProgressBar::new(
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::CenterDown,
@@ -445,60 +419,16 @@ impl UISystem {
                         false,
                         None,
                     ),
-                    TextureType::ScannerTextureBlue
-                )
-            )
-        );
-        // ui_elements.insert(
-        //     UIElementType::ScannerBlueW,
-        //     UIElement::Image(
-        //         UIImage::new(
-        //             UIData::new(
-        //                 UIRect {
-        //                     anchor: RectAnchor::CenterDown,
-        //                     position: Vec2::new(0.0, -1.0),
-        //                     size: RectSize::LockedWight(
-        //                         0.322
-        //                     ),
-        //                     rotation_around_rect_center: 0.0,
-        //                     rotation_around_screen_center: 0.0,
-        //                     transparency: 1.0,
-        //                     drawing_order: 0,
-        //                     transform_buffer: None,
-        //                 },
-        //                 false,
-        //                 None,
-        //             ),
-        //             TextureType::ScannerTextureWBlue
-        //         )
-        //     )
-        // );
-        ui_elements.insert(
-            UIElementType::ScannerHPointerRed,
-            UIElement::Image(
-                UIImage::new(
-                    UIData::new(
-                        UIRect {
-                            anchor: RectAnchor::CenterCenter,
-                            position: Vec2::new(0.0, -0.3),
-                            size: RectSize::LockedBoth(
-                                0.0315,
-                                0.053
-                            ),
-                            rotation_around_rect_center: 0.0,
-                            transparency: 1.0,
-                            drawing_order: 1,
-                            transform_buffer: None,
-                        },
-                        false,
-                        Some(UIElementType::ScannerRed),
-                    ),
-                    TextureType::ScannerPointerRed
-                )
+                    TextureType::ScannerTextureBlue,
+                    TextureType::ScannerTextureProgressBar,
+                    0.993,
+                    0.07,
+                    ProgressBarDirection::DownTop,
+                ),
             )
         );
         ui_elements.insert(
-            UIElementType::ScannerHPointerBlue,
+            UIElementType::ScannerHPointer,
             UIElement::Image(
                 UIImage::new(
                     UIData::new(
@@ -517,12 +447,12 @@ impl UISystem {
                         false,
                         Some(UIElementType::ScannerBlue),
                     ),
-                    TextureType::ScannerPointerBlue
+                    TextureType::ScannerPointer
                 )
             )
         );
         ui_elements.insert(
-            UIElementType::ZXScannerArrowRed,
+            UIElementType::ZXScannerArrow,
             UIElement::Image(
                 UIImage::new(
                     UIData::new(
@@ -541,36 +471,12 @@ impl UISystem {
                         false,
                         Some(UIElementType::ScannerRed),
                     ),
-                    TextureType::ScannerArrowRed
+                    TextureType::ScannerArrow
                 )
             )
         );
         ui_elements.insert(
-            UIElementType::ZXScannerArrowBlue,
-            UIElement::Image(
-                UIImage::new(
-                    UIData::new(
-                        UIRect {
-                            anchor: RectAnchor::CenterCenter,
-                            position: Vec2::new(-0.305, 0.063),
-                            size: RectSize::LockedBoth(
-                                0.229,
-                                0.81
-                            ),
-                            rotation_around_rect_center: 0.0,
-                            transparency: 1.0,
-                            drawing_order: 1,
-                            transform_buffer: None,
-                        },
-                        false,
-                        Some(UIElementType::ScannerBlue),
-                    ),
-                    TextureType::ScannerArrowBlue
-                )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ZWScannerArrowRed,
+            UIElementType::ZWScannerArrow,
             UIElement::Image(
                 UIImage::new(
                     UIData::new(
@@ -589,31 +495,7 @@ impl UISystem {
                         false,
                         Some(UIElementType::ScannerRed),
                     ),
-                    TextureType::ScannerArrowRed
-                )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ZWScannerArrowBlue,
-            UIElement::Image(
-                UIImage::new(
-                    UIData::new(
-                        UIRect {
-                            anchor: RectAnchor::CenterCenter,
-                            position: Vec2::new(0.305, 0.063),
-                            size: RectSize::LockedBoth(
-                                0.229,
-                                0.81
-                            ),
-                            rotation_around_rect_center: 0.0,
-                            transparency: 1.0,
-                            drawing_order: 1,
-                            transform_buffer: None,
-                        },
-                        false,
-                        Some(UIElementType::ScannerBlue),
-                    ),
-                    TextureType::ScannerArrowBlue
+                    TextureType::ScannerArrow
                 )
             )
         );
@@ -925,54 +807,6 @@ impl UISystem {
                 )
             )
         );
-        // ui_elements.insert(
-        //     UIElementType::MoveWBonusMarkFirst,
-        //     UIElement::Image(
-        //         UIImage::new(
-        //             UIData::new(
-        //                 UIRect {
-        //                     anchor: RectAnchor::DownLeft,
-        //                     position: Vec2::new(-1.0, -1.0),
-        //                     size: RectSize::LockedWight(
-        //                         0.224
-        //                     ),
-        //                     rotation_around_rect_center: 0.0,
-        //                     rotation_around_screen_center: 0.0,
-        //                     transparency: 1.0,
-        //                     drawing_order: 0,
-        //                     transform_buffer: None,
-        //                 },
-        //                 false,
-        //                 None,
-        //             ),
-        //             TextureType::MoveWBonusImageFirst
-        //         )
-        //     )
-        // );
-        // ui_elements.insert(
-        //     UIElementType::MoveWBonusMarkSecond,
-        //     UIElement::Image(
-        //         UIImage::new(
-        //             UIData::new(
-        //                 UIRect {
-        //                     anchor: RectAnchor::DownLeft,
-        //                     position: Vec2::new(-1.0, -1.0),
-        //                     size: RectSize::LockedWight(
-        //                         0.224
-        //                     ),
-        //                     rotation_around_rect_center: 0.0,
-        //                     rotation_around_screen_center: 0.0,
-        //                     transparency: 1.0,
-        //                     drawing_order: 0,
-        //                     transform_buffer: None,
-        //                 },
-        //                 false,
-        //                 None,
-        //             ),
-        //             TextureType::MoveWBonusImageSecond
-        //         )
-        //     )
-        // );
         ui_elements.insert(
             UIElementType::ScoreBar,
             UIElement::Image(
@@ -1411,6 +1245,29 @@ impl UISystem {
                         None,
                     ),
                     TextureType::BacklightBlue
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::WAimFrame,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedWight(
+                                0.33,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::WAimFrame
                 )
             )
         );
@@ -1904,11 +1761,11 @@ impl UIData {
         self.is_visible.clone()
     }
 
-    pub fn set_transparecy(&mut self, transparency: f32) {
+    pub fn set_transparency(&mut self, transparency: f32) {
         self.rect.transparency = transparency;
     }
 
-    pub fn get_transparecy(&self) -> f32 {
+    pub fn get_transparency(&self) -> f32 {
         self.rect.transparency
     }
 
@@ -1973,11 +1830,11 @@ impl UIImage {
     }
 
     pub fn set_transparecy(&mut self, transparency: f32) {
-        self.ui_data.set_transparecy(transparency);
+        self.ui_data.set_transparency(transparency);
     }
 
     pub fn get_transparecy(&self) -> f32 {
-        self.ui_data.get_transparecy()
+        self.ui_data.get_transparency()
     }
 
     pub fn set_position(&mut self, position: Vec2) {

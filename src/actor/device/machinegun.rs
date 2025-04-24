@@ -5,7 +5,7 @@ use crate::{
         machinegun_shot::MachinegunShot,
         main_player::{
             player_inner_state::PlayerInnerState,
-            PlayerMessage, PlayerScreenEffects
+            PlayerMessage, PlayerScreenEffects, PLAYER_PROJECTION_DISPLAY_TIME
         },
         ActorID,
         ActorWrapper,
@@ -166,8 +166,7 @@ impl MachineGun {
                     {
                         screen_effects.player_projections.update_or_add_projection(
                             hited_id,
-                            1.7,
-                            true
+                            PLAYER_PROJECTION_DISPLAY_TIME
                         );
                         
                         let force = hit.hit_normal * -self.machinegun_add_force;
