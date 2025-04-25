@@ -163,18 +163,14 @@ impl MachineGun {
                 if let Some(hited_actors_team) = hit.hited_actors_team
                 {
                     if hited_actors_team != player.team
-                    {
-                        screen_effects.player_projections.update_or_add_projection(
-                            hited_id,
-                            PLAYER_PROJECTION_DISPLAY_TIME
-                        );
-                        
+                    {                       
                         let force = hit.hit_normal * -self.machinegun_add_force;
             
                         engine_handle.send_direct_message(
                             hited_id,
                             Message {
                                 from: player_id,
+                                remote_sender: false,
                                 message: MessageType::SpecificActorMessage(
                                     SpecificActorMessage::PlayerMessage(
                                         PlayerMessage::DealDamageAndAddForce(

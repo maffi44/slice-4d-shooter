@@ -252,9 +252,14 @@ struct OutputMaterials {
 struct PlayerProjection
 {
     position: vec4<f32>,
+    original_position: vec4<f32>,
     is_active_intensity: f32,
     radius: f32,
     zw_offset: f32,
+    rel_zw_offset: f32,
+    damage_intensity: f32,
+    padding_byte1: f32,
+    padding_byte2: f32,
     intensity: f32
 }
 
@@ -271,14 +276,14 @@ struct OtherDynamicData {
 
     w_scanner_radius: f32,
     w_scanner_ring_intesity: f32,
-    w_scanner_enemies_intesity: f32,
+    w_scanner_max_radius: f32,
 
     death_screen_effect: f32,
 
 
 
     getting_damage_screen_effect: f32,
-    stickiness: f32,
+    zx_player_rotation: f32,
     screen_aspect: f32,
     time: f32,
     //all shapes bounding box sides
@@ -4340,7 +4345,7 @@ fn w_scanner_enemies_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec
         red += pow((clamp(-vis_d * 1.3, 0.0, 1.0)), mix(25.0, 9.0, rot_coef)) * rot_coef;
         // red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
         
-        scanner_color.a += red * (dynamic_data.player_projections[i].intensity*0.3 + dynamic_data.player_projections[i].is_active_intensity*0.7);
+        scanner_color.a += red * (dynamic_data.player_projections[i].intensity*0.3 + dynamic_data.player_projections[i].is_active_intensity*1.0);
         scanner_color.a *= dynamic_data.player_projections[i].intensity;
 
         // scanner_color.g -= 0.5 * dynamic_data.player_projections[i].is_active_intensity;
@@ -4851,6 +4856,40 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
     );
     color *= death_eff_col;
+
+    // add w rotation effect
+    let zw_dir = dynamic_data.camera_data.cam_zw_rot * vec4(0.0, 0.0, -1.0, 0.0);
+
+    let ring_r = 0.29;
+    let line_width = 0.004;
+    let n_uv = normalize(uv);
+
+    // let rot_c = clamp(clamp(0.03-(ring_r-length(uv)),0.0,1.0)*150.0,0.0,1.0);
+    let rot_c = clamp(clamp(line_width-abs(length(uv)-(ring_r-line_width)),0.0,1.0)*100.0,0.0,1.0);
+    // let rot_c = clamp(rot_c_outer*150.0,0.0,1.0);
+
+
+    if zw_dir.w > 0.0
+    {
+        if n_uv.x < 0.0 && n_uv.y < 0.0
+        {
+            if -n_uv.y < zw_dir.w
+            {
+                color = mix(color, vec3(2.0, 0.0, 0.0), rot_c);
+            } 
+        }
+    }
+    else
+    {
+        if n_uv.x > 0.0 && n_uv.y > 0.0
+        {
+            if -n_uv.y > zw_dir.w
+            {
+                color = mix(color, vec3(2.0, 0.0, 0.0), rot_c);
+            }
+        }
+    }
+
 
     // color = mix(vec3(tv_noise(uv*100.0, dynamic_data.time)),color, death_eff_col*0.7);
 

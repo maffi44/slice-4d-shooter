@@ -385,6 +385,7 @@ impl NetSystem {
                         engine_handle.send_boardcast_message(
                             Message {
                                 from: 0u128,
+                                remote_sender: true,
                                 message: MessageType::SpecificActorMessage(
                                     SpecificActorMessage::SessionControllerMessage(
                                         SessionControllerMessage::JoinedToSession(
@@ -464,6 +465,7 @@ impl NetSystem {
                         engine_handle.send_boardcast_message(
                             Message {
                                 from: 0u128,
+                                remote_sender: true,
                                 message: MessageType::SpecificActorMessage(
                                     SpecificActorMessage::SessionControllerMessage(
                                         SessionControllerMessage::NewSessionStarted(your_team)
@@ -640,7 +642,7 @@ impl NetSystem {
 }
 
 fn process_message(
-    peer_id: u128,
+    message_from_peer_id: u128,
     message: NetMessageToPlayer,
     engine_handle: &mut EngineHandle,
     audio_system: &mut AudioSystem,
@@ -686,7 +688,7 @@ fn process_message(
                     let transform = Transform::from_serializable_transform(tr);
 
                     let players_doll = PlayersDoll::new(
-                        peer_id,
+                        message_from_peer_id,
                         player_sphere_radius,
                         transform,
                         is_alive,
@@ -747,7 +749,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::SessionControllerMessage(
                                     SessionControllerMessage::TeamWin(
@@ -764,7 +767,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::SessionControllerMessage(
                                     SessionControllerMessage::SetScore(
@@ -782,7 +786,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::FlagMessage(
                                     FlagMessage::SetFlagStatus(
@@ -800,7 +805,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::MoveWBonusSpotMessage(
                                     MoveWBonusSpotMessage::SetBonusStatus(
@@ -818,7 +824,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::SetNewTeam(team)
@@ -842,7 +849,7 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::SetInterploatedModelTargetState(
@@ -862,7 +869,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::SpawnMachineGunShot(
@@ -889,7 +897,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::Respawn(
@@ -909,7 +918,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::HoleGunStartCharging
@@ -924,7 +934,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DieImmediately
@@ -939,7 +950,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DieSlowly
@@ -960,7 +972,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::SpawHoleGunMissActor(
@@ -986,7 +999,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::SpawnHoleGunShotActor(
@@ -1008,7 +1022,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::CommonActorsMessages(
                                 CommonActorsMessage::SetTransform(transform)
                             )
@@ -1026,7 +1041,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DealDamageAndAddForce(
@@ -1044,7 +1060,8 @@ fn process_message(
                     engine_handle.send_direct_message(
                         actor_id,
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::CommonActorsMessages(
                                 CommonActorsMessage::Enable(enable_state)
                             )
@@ -1061,7 +1078,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::SessionControllerMessage(
                                     SessionControllerMessage::TeamWin(
@@ -1077,7 +1095,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::SessionControllerMessage(
                                     SessionControllerMessage::SetScore(
@@ -1094,7 +1113,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::FlagMessage(
                                     FlagMessage::SetFlagStatus(
@@ -1111,7 +1131,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::MoveWBonusSpotMessage(
                                     MoveWBonusSpotMessage::SetBonusStatus(
@@ -1128,7 +1149,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::SetNewTeam(team)
@@ -1151,7 +1173,8 @@ fn process_message(
 
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::SetInterploatedModelTargetState(
@@ -1170,7 +1193,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::SpawnMachineGunShot(
@@ -1195,7 +1219,8 @@ fn process_message(
                     
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::Respawn(
@@ -1214,7 +1239,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DieImmediately
@@ -1228,7 +1254,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DieSlowly
@@ -1242,7 +1269,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::HoleGunStartCharging
@@ -1262,7 +1290,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::SpawHoleGunMissActor(
@@ -1287,7 +1316,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::SpawnHoleGunShotActor(
@@ -1308,7 +1338,8 @@ fn process_message(
 
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::CommonActorsMessages(
                                 CommonActorsMessage::SetTransform(transform)
                             )
@@ -1325,7 +1356,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
                                     PlayerMessage::DealDamageAndAddForce(
@@ -1344,7 +1376,8 @@ fn process_message(
                 {
                     engine_handle.send_boardcast_message(
                         Message {
-                            from: 0u128,
+                            from: message_from_peer_id,
+                            remote_sender: true,
                             message: MessageType::CommonActorsMessages(
                                 CommonActorsMessage::Enable(enable_state)
                             )

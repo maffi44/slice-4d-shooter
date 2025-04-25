@@ -120,6 +120,7 @@ pub trait Actor {
         engine_handle.send_boardcast_message(
             Message {
                 from: prev_id,
+                remote_sender: false,
                 message: MessageType::CommonActorsMessages(
                     CommonActorsMessage::IWasChangedMyId(id)
                 )
@@ -132,7 +133,7 @@ pub trait Actor {
 }
 
 pub enum ActorWrapper {
-    Player(MainPlayer),
+    MainPlayer(MainPlayer),
     PlayerFor2d3dExample(PlayerFor2d3dExample),
     WonderingActor(WanderingActor),
     HoleGunShot(HoleGunShot),
@@ -155,7 +156,7 @@ impl Actor for ActorWrapper {
 
     fn get_transform(&self) -> &Transform {
         match self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.get_transform()
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -207,7 +208,7 @@ impl Actor for ActorWrapper {
 
     fn get_mut_transform(&mut self) -> &mut Transform {
         match  self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.get_mut_transform()
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -268,7 +269,7 @@ impl Actor for ActorWrapper {
         effects_system: &mut EffectsSystem,
     ) {
         match  self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -329,7 +330,7 @@ impl Actor for ActorWrapper {
         delta: f32
     ) {
         match  self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -381,7 +382,7 @@ impl Actor for ActorWrapper {
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {
         match  self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.get_physical_element()
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -433,7 +434,7 @@ impl Actor for ActorWrapper {
 
     fn get_visual_element(&self) -> Option<VisualElement>{
         match self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.get_visual_element()
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -485,7 +486,7 @@ impl Actor for ActorWrapper {
 
     fn get_id(&self) -> Option<ActorID> {
         match self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.get_id()
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -537,7 +538,7 @@ impl Actor for ActorWrapper {
 
     fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
         match self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.change_id(id, engine_handle)
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -589,7 +590,7 @@ impl Actor for ActorWrapper {
 
     fn set_id(&mut self, id: ActorID) {
         match  self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.set_id(id)
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -642,7 +643,7 @@ impl Actor for ActorWrapper {
     fn get_actor_as_controlled(&self) -> Option<&dyn ControlledActor>
     {
         match  self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.get_actor_as_controlled()
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -695,7 +696,7 @@ impl Actor for ActorWrapper {
     fn get_actor_as_controlled_mut(&mut self) -> Option<&mut dyn ControlledActor>
     {
         match  self {
-            ActorWrapper::Player(actor) => {
+            ActorWrapper::MainPlayer(actor) => {
                 actor.get_actor_as_controlled_mut()
             },
             ActorWrapper::WonderingActor(actor) => {
@@ -756,6 +757,7 @@ pub trait Component {
 #[derive(Clone)]
 pub struct Message {
     pub from: ActorID,
+    pub remote_sender: bool,
     pub message: MessageType,
 }
 

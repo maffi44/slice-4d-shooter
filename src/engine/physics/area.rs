@@ -98,6 +98,7 @@ impl Area {
 
                     let message = Message {
                         from: self.actors_id.expect("Area was not initialized"),
+                        remote_sender: false,
                         message: message_content,
                     };
 
@@ -120,6 +121,7 @@ impl Area {
 
                     let message = Message {
                         from: self.actors_id.expect("Area was not initialized"),
+                        remote_sender: false,
                         message: message_content,
                     };
 
@@ -143,6 +145,7 @@ impl Area {
 
             let message = Message {
                 from: self.actors_id.expect("Area was not initialized"),
+                remote_sender: false,
                 message: message_content,
             };
 

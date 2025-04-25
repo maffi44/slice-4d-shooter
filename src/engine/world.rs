@@ -300,6 +300,7 @@ impl World {
                         engine_handle.send_boardcast_message(
                             Message {
                                 from: 0u128,
+                                remote_sender: false,
                                 message: MessageType::SpecificActorMessage(
                                     SpecificActorMessage::PlayerMessage(
                                         PlayerMessage::NewPeerConnected(peer_id)

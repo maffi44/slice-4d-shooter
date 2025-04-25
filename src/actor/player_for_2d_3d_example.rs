@@ -62,7 +62,7 @@ use glam::{
 };
 
 use super::{
-    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
+    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner, GET_DAMAGE_PROJECTION_INTENSITY, PLAYER_PROJECTION_DISPLAY_TIME}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
 };
 
 
@@ -315,6 +315,12 @@ impl Actor for PlayerFor2d3dExample {
                             {
                                 if team != self.inner_state.team
                                 {
+                                    self.screen_effects.player_projections.update_or_add_projection(
+                                        from,
+                                        PLAYER_PROJECTION_DISPLAY_TIME,
+                                        GET_DAMAGE_PROJECTION_INTENSITY,
+                                    );
+
                                     let my_id = self.get_id().expect("Player Have not ActorID");
 
                                     main_player::get_damage_and_add_force(
@@ -465,7 +471,8 @@ impl Actor for PlayerFor2d3dExample {
                                     from,
                                     Message {
                                         from: self.get_id().expect("Player have not ActorID"),
-                                        message:                                     MessageType::SpecificActorMessage(
+                                        remote_sender: false,
+                                        message: MessageType::SpecificActorMessage(
                                             SpecificActorMessage::FlagMessage(
                                                 FlagMessage::SetTargetPosition(
                                                     self.get_transform().get_position() + self.inner_state.flag_pivot_offset
@@ -598,9 +605,15 @@ impl Actor for PlayerFor2d3dExample {
                     {
                         match message
                         {
-                            PlayersDollMessage::YouHitMe(_) =>
+                            PlayersDollMessage::YouHitedMe(_,_,_) =>
                             {
                                 self.inner_state.show_crosshaier_hit_mark_timer = SHOW_CROSSHAIER_HIT_MARK_TIME;
+
+                                self.screen_effects.player_projections.update_or_add_projection(
+                                    from,
+                                    PLAYER_PROJECTION_DISPLAY_TIME,
+                                    0.0,
+                                );
                             }
 
                             _ => {}
@@ -1283,6 +1296,7 @@ impl ControlledActor for PlayerFor2d3dExample
                 hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
+                    remote_sender: false,
                     message: MessageType::SpecificActorMessage(
                         SpecificActorMessage::PlayerMessage(
                             PlayerMessage::Telefrag

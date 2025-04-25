@@ -1087,10 +1087,15 @@ fn get_players_screen_effects(world: &World) -> &PlayerScreenEffects {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct PlayerProjectionForShader
 {
-    position: [f32;4],
+    projected_position: [f32;4],
+    original_position: [f32;4],
     is_active_intensity: f32,
     radius: f32,
-    zw_offset: f32,
+    abs_zw_offset: f32,
+    rel_zw_offset: f32,
+    damage_intensity: f32,
+    padding_byte1: f32,
+    padding_byte2: f32,
     intensity: f32,
 }
 
@@ -1103,20 +1108,30 @@ impl From<&PlayerProjection> for PlayerProjectionForShader
             Some(projection_body) =>
             {
                 PlayerProjectionForShader {
-                    position: projection_body.position.to_array(),
+                    projected_position: projection_body.projected_position.to_array(),
+                    original_position: projection_body.original_position.to_array(),
                     is_active_intensity: value.is_active_intensity,
                     radius: value.get_projection_radius().expect("Projection have not body during converting to shader projection"),
-                    zw_offset: projection_body.abs_zw_rotation_offset,
+                    abs_zw_offset: projection_body.abs_zw_rotation_offset,
+                    rel_zw_offset: 0.0, //temp
+                    damage_intensity: value.damage_intensity,
+                    padding_byte1: 0.0,
+                    padding_byte2: 0.0,
                     intensity: value.intensity,
                 }                
             }
             None =>
             {
                 PlayerProjectionForShader {
-                    position: [0.0;4],
+                    projected_position: [0.0;4],
+                    original_position: [0.0;4],
                     is_active_intensity: 0.0,
+                    damage_intensity: 0.0,
                     radius: 0.0,
-                    zw_offset: 0.0,
+                    abs_zw_offset: 0.0,
+                    rel_zw_offset: 0.0,
+                    padding_byte1: 0.0,
+                    padding_byte2: 0.0,
                     intensity: 0.0,
                 }
             }
@@ -1129,10 +1144,15 @@ impl Default for PlayerProjectionForShader
 {
     fn default() -> Self {
         PlayerProjectionForShader {
-            position: [0.0;4],
+            projected_position: [0.0;4],
+            original_position: [0.0;4],
             is_active_intensity: 0.0,
+            damage_intensity: 0.0,
             radius: 0.0,
-            zw_offset: 0.0,
+            abs_zw_offset: 0.0,
+            rel_zw_offset: 0.0,
+            padding_byte1: 0.0,
+            padding_byte2: 0.0,
             intensity: 0.0,
         }
     }
@@ -1156,11 +1176,11 @@ pub struct OtherDynamicData {
 
     w_scanner_radius: f32,
     w_scanner_ring_intesity: f32,
-    w_scanner_enemies_intesity: f32,
+    w_scanner_max_radius: f32,
 
     death_screen_effect: f32,
     getting_damage_screen_effect: f32,
-    splited_screen_in_2d_3d_example: f32,
+    splited_screen_in_2d_3d_example_or_zx_player_rotation: f32,
     screen_aspect: f32,
     time: f32,
 
@@ -1203,7 +1223,12 @@ impl OtherDynamicData {
         {
             self.additional_data = player.get_2d_slice_pos().to_array();
             self.additional_data_2 = player.get_2d_slice_xz_rot().to_cols_array();
-            self.splited_screen_in_2d_3d_example = player.show_3d_example_current_value;
+            self.splited_screen_in_2d_3d_example_or_zx_player_rotation = player.show_3d_example_current_value;
+        }
+
+        if let ActorWrapper::MainPlayer(player) = main_actor
+        {
+            self.splited_screen_in_2d_3d_example_or_zx_player_rotation = player.get_xz_rotation();
         }
         // self.explore_w_pos = explore_w_pos;
         // self.explore_w_coef = explore_w_coef;
@@ -1246,7 +1271,7 @@ impl OtherDynamicData {
                 0.0
             }
         };
-        self.w_scanner_enemies_intesity = {
+        self.w_scanner_max_radius = {
             players_screen_effects.w_scanner_enemies_intesity
         };
 
@@ -1274,11 +1299,11 @@ impl Default for OtherDynamicData {
 
             w_scanner_radius: 0.0,
             w_scanner_ring_intesity: 0.0,
-            w_scanner_enemies_intesity: 0.0,
+            w_scanner_max_radius: 0.0,
 
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
-            splited_screen_in_2d_3d_example: 0.5,
+            splited_screen_in_2d_3d_example_or_zx_player_rotation: 0.0,
             screen_aspect: 1.0,
             time: 0.0,
             additional_data: [0.0;4],

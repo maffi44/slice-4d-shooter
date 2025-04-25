@@ -76,28 +76,46 @@ struct RectTransformUniform {
     rotation_around_screen_center: f32,
 }
 
+struct PlayerProjection
+{
+    position: vec4<f32>,
+    original_position: vec4<f32>,
+    is_active_intensity: f32,
+    radius: f32,
+    zw_offset: f32,
+    rel_zw_offset: f32,
+    damage_intensity: f32,
+    padding_byte1: f32,
+    padding_byte2: f32,
+    intensity: f32
+}
+
 struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     spherical_areas_meatadata: SphericalAreasMetadata,
     camera_data: CameraUniform,
-    empty_byte0: u32,
-    empty_byte1: u32,
+    waves_start: u32,
+    waves_amount: u32,
     beam_areas_amount: u32,
     player_forms_amount: u32,
 
+    player_projections: array<PlayerProjection, 16>,
+
     w_scanner_radius: f32,
     w_scanner_ring_intesity: f32,
-    w_scanner_enemies_intesity: f32,
+    w_scanner_max_radius: f32,
 
     death_screen_effect: f32,
+
+
+
     getting_damage_screen_effect: f32,
-    
-    stickiness: f32,
+    zx_player_rotation: f32,
     screen_aspect: f32,
     time: f32,
     //all shapes bounding box sides
-    bb_pos_side: vec4<f32>,
-    bb_neg_side: vec4<f32>,
+    additional_data: vec4<f32>,
+    additional_data_2: vec4<f32>,
 }
 
 struct PlayerForm {
@@ -191,17 +209,9 @@ const MAX_SCANNER_RADIUS: f32 = 21.0;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
-    // if dynamic_data.w_scanner_ring_intesity == 0.0 {
-    //     return vec4(0.0);
-    // }
-
     let uv_pos = (in.uv-vec2(0.5))*2.0;
 
     let dist_to_cntr = length(uv_pos);
-
-    // if dist_to_cntr > 1.0 {
-    //     return vec4(0.0);
-    // }
 
     var col = vec4(1.0, 1.0, 1.0, 0.0);
 
@@ -211,31 +221,43 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     col.a += ring_a;
 
-    let map_a = get_map_cut_col(uv_pos);
-
-    col.a += map_a;
-
-
     var en_a = 0.0;
 
-    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+    let rot_xz_mat_4d = rotate_in_xz_4d(-dynamic_data.zx_player_rotation);
+    let rot_xz_mat_2d = rotate_in_2d(dynamic_data.zx_player_rotation);
 
-        var en_pos  = (dynamic_data.camera_data.cam_pos - dyn_player_forms[i].pos) / MAX_SCANNER_RADIUS;
+    for (var i = 0u; i < 16u; i++) {
         
-        let visible = clamp(((sc_ring_radius + 0.1) - length(en_pos)) * 10.0, 0.0, 1.0);
+        if dynamic_data.player_projections[i].radius > 0.0
+        {
+            var en_pos  = (dynamic_data.camera_data.cam_pos - dynamic_data.player_projections[i].original_position) / MAX_SCANNER_RADIUS;
 
-        if scanner_data.orientation == 0 {
-            en_a += clamp(pow(1.0- length(uv_pos-en_pos.zx*vec2(1.0,-1.0)), 10.0)*visible,0.0,1.0);
-        } else {
+            if scanner_data.orientation == 0 {
 
-            en_pos *= vec4(1.0, 1.0, -1.0, 1.0);
+                let en_pos_2d = rot_xz_mat_2d * (en_pos.xz*vec2(-1.0,-1.0)); 
+                let e = clamp((0.09 - length(uv_pos-en_pos_2d)) * 100.0, 0.0, 1.0);
 
-            
-            en_a += clamp(pow(1.0- length(uv_pos-en_pos.zw*vec2(1.0,1.0)), 10.0)*visible,0.0,1.0);
+                let l = clamp((0.13 - sd_line(uv_pos, en_pos_2d, vec2(0.0))) * 12.0, 0.0, 1.0) *
+                    clamp(dynamic_data.player_projections[i].damage_intensity*2.0,0.0,1.0);
+
+                en_a += (e+l) * clamp(dynamic_data.player_projections[i].intensity*2.0,0.0,1.0);
+
+            } else {
+                en_pos *= vec4(-1.0, 1.0, -1.0, 1.0);
+                
+                en_pos *= rot_xz_mat_4d;
+
+                let en_pos_2d = en_pos.zw;
+
+                let e = clamp((0.13 - length(uv_pos-en_pos_2d)) * 100.0, 0.0, 1.0);
+
+                let l = clamp((0.09 - sd_line(uv_pos, en_pos_2d, vec2(0.0))) * 12.0, 0.0, 1.0) *
+                    clamp(dynamic_data.player_projections[i].damage_intensity*2.0,0.0,1.0);
+
+                en_a += (e+l)* clamp(dynamic_data.player_projections[i].intensity*2.0,0.0,1.0);
+            }
         }
     }
-
-    en_a *= dynamic_data.w_scanner_enemies_intesity*2.0;
 
     col.a += en_a;
     col.g -= en_a;
@@ -243,9 +265,38 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     
     col.a *= rect_transform.transparency;
 
-
     return col;
 }
+
+
+fn sd_line(p: vec2<f32>, a: vec2<f32> , b: vec2<f32>) -> f32
+{
+    let pa = p-a;
+    let ba = b-a;
+    let h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+    return length( pa - ba*h );
+}
+
+
+fn rotate_in_2d(a: f32) -> mat2x2<f32>
+{
+    let c_1: vec2<f32> = vec2<f32>(cos(a), sin(a));
+    let c_2: vec2<f32> = vec2<f32>(-sin(a), cos(a));
+    let matrix = mat2x2<f32>(c_1, c_2); 
+    return matrix; 
+}
+
+
+fn rotate_in_xz_4d(a: f32) -> mat4x4<f32>
+{
+    let c_1: vec4<f32> = vec4<f32>(cos(a), sin(a), 0., 0.);
+    let c_2: vec4<f32> = vec4<f32>(0., 1., 0., 0.);
+    let c_3: vec4<f32> = vec4<f32>(-sin(a), 0., cos(a), 0.);
+    let c_4: vec4<f32> = vec4<f32>(0., 0., 0., 1.);
+    let matrix = mat4x4<f32>(c_1, c_2, c_3, c_4); 
+    return matrix; 
+}
+
 
 fn get_map_cut_col(uv: vec2<f32>) -> f32
 {

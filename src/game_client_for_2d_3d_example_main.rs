@@ -53,6 +53,7 @@ fn main() {
         systems.engine_handle.send_boardcast_message(
             Message {
                 from: 0u128,
+                remote_sender: false,
                 message: crate::actor::MessageType::SpecificActorMessage(
                     SpecificActorMessage::PlayerMessage(
                         PlayerMessage::SetNewTeam(

@@ -140,7 +140,7 @@ impl PlayersProjections
             if let Some(body) = &projection.body
             {
                 let current_intr = get_sphere_intersection(
-                    origin - body.position,
+                    origin - body.projected_position,
                     view_vec,
                     projection.get_projection_radius().expect("Projection have not body during getting intersection"),
                 );
@@ -181,7 +181,8 @@ impl PlayersProjections
     pub fn update_or_add_projection(
         &mut self,
         projection_id: ActorID,
-        projection_show_time: f32
+        projection_show_time: f32,
+        damage_intensity: f32,
     )
     {
         let player_projection = self.find_projection_mut(
@@ -192,12 +193,14 @@ impl PlayersProjections
             Some(projection) =>
             {
                 projection.timer = projection.timer.max(projection_show_time);
+                projection.damage_intensity = projection.damage_intensity.max(damage_intensity);
             }
             None =>
             {
                 let projection = PlayerProjection::new(
                     projection_id,
                     projection_show_time,
+                    damage_intensity,
                 );
 
                 self.projections.push(projection);
@@ -220,6 +223,15 @@ impl PlayersProjections
                 return false;
             }
 
+            if projection.damage_intensity > 0.0
+            {
+                projection.damage_intensity -= delta;
+            }
+            else
+            {
+                projection.damage_intensity = 0.0;
+            }
+
             if projection.is_active_by_timer > 0.0
             {
                 projection.is_active_by_timer -= delta;
@@ -228,7 +240,7 @@ impl PlayersProjections
                     projection.is_active_intensity,
                     projection.is_active_by_timer /
                     PROJECTION_ACTIVE_TIME,
-                    delta*20.0
+                    delta*30.0
                 );
             }
             else
@@ -241,7 +253,7 @@ impl PlayersProjections
                 lerpf(
                     projection.intensity,
                     (projection.timer*0.3).clamp(0.0, 1.0),
-                    delta*6.0
+                    delta*12.0
                 )
             };
     
@@ -251,6 +263,7 @@ impl PlayersProjections
                 projection.id,
                 Message {
                     from: my_id,
+                    remote_sender: false,
                     message: MessageType::SpecificActorMessage(
                         SpecificActorMessage::PlayerMessage(
                             PlayerMessage::GiveMeDataForProjection,
@@ -314,7 +327,7 @@ impl PlayersProjections
     pub fn update_projection_postiton(
         &mut self,
         projection_id: ActorID,
-        updated_projection_position: Vec4,
+        updated_projection_original_position: Vec4,
         projection_updated_radius: f32,
         inner_state: &PlayerInnerState
     )
@@ -327,7 +340,7 @@ impl PlayersProjections
         {
             let player_position = inner_state.get_position();
         
-            let player_to_projection_vec = updated_projection_position - player_position;
+            let player_to_projection_vec = updated_projection_original_position - player_position;
             let player_w_vertical_dir = inner_state.get_rotation_matrix().inverse() * W_UP;
     
             let rel_projection_w_offset = player_w_vertical_dir.dot(player_to_projection_vec.normalize());
@@ -349,7 +362,7 @@ impl PlayersProjections
                 rotated_player_to_projection_vec
             };
             
-            let projection_position = {
+            let projected_position = {
                 player_position +
                 rotated_player_to_projection_vec
             };
@@ -361,7 +374,8 @@ impl PlayersProjections
         
             let body = PlayerProjectionBody
             {
-                position: projection_position,
+                projected_position,
+                original_position: updated_projection_original_position,
                 radius: projection_updated_radius * 1.111,
                 abs_zw_rotation_offset,
             };
@@ -377,6 +391,7 @@ pub struct PlayerProjection
     pub timer: f32,
     pub intensity: f32,
     pub is_active_intensity: f32,
+    pub damage_intensity: f32,
 
     pub is_active_by_timer: f32,
 
@@ -403,7 +418,8 @@ impl PlayerProjection
 
 pub struct PlayerProjectionBody
 {
-    pub position: Vec4,
+    pub projected_position: Vec4,
+    pub original_position: Vec4,
     radius: f32,
     pub abs_zw_rotation_offset: f32,
 }
@@ -415,6 +431,7 @@ impl PlayerProjection
     pub fn new(
         player_id: ActorID,
         timer: f32,
+        damage_intensity: f32,
     ) -> Self
     {
         PlayerProjection {
@@ -423,7 +440,7 @@ impl PlayerProjection
             intensity: 0.0,
             is_active_by_timer: 0.0,
             is_active_intensity: 0.0,
-
+            damage_intensity,
             body: None,
         }
     }
@@ -539,6 +556,8 @@ const PROJECTION_ACTIVE_TIME: f32 = 1.0;
 pub const DEFAULT_ZW_ROTATION_TARGET_IN_RADS: f32 = 0.0;
 
 pub const PLAYER_PROJECTION_DISPLAY_TIME: f32 = 3.4;
+
+pub const GET_DAMAGE_PROJECTION_INTENSITY: f32 = 1.2;
 
 #[derive(Clone)]
 pub enum PlayerMessage {
@@ -752,6 +771,12 @@ impl Actor for MainPlayer {
                             {
                                 if team != self.inner_state.team
                                 {
+                                    self.screen_effects.player_projections.update_or_add_projection(
+                                        from,
+                                        PLAYER_PROJECTION_DISPLAY_TIME,
+                                        GET_DAMAGE_PROJECTION_INTENSITY,
+                                    );
+
                                     let my_id = self.get_id().expect("Player Have not ActorID");
 
                                     get_damage_and_add_force(
@@ -902,7 +927,8 @@ impl Actor for MainPlayer {
                                     from,
                                     Message {
                                         from: self.get_id().expect("Player have not ActorID"),
-                                        message:                                     MessageType::SpecificActorMessage(
+                                        remote_sender: false,
+                                        message: MessageType::SpecificActorMessage(
                                             SpecificActorMessage::FlagMessage(
                                                 FlagMessage::SetTargetPosition(
                                                     self.get_transform().get_position() + self.inner_state.flag_pivot_offset
@@ -1035,9 +1061,15 @@ impl Actor for MainPlayer {
                     {
                         match message
                         {
-                            PlayersDollMessage::YouHitMe(_) =>
+                            PlayersDollMessage::YouHitedMe(_,position, radius) =>
                             {
                                 self.inner_state.show_crosshaier_hit_mark_timer = SHOW_CROSSHAIER_HIT_MARK_TIME;
+
+                                self.screen_effects.player_projections.update_or_add_projection(
+                                    from,
+                                    PLAYER_PROJECTION_DISPLAY_TIME,
+                                    0.0,
+                                );
                             }
 
                             _ => {}
@@ -1483,7 +1515,7 @@ pub fn process_player_rotation(
     }
     else
     {
-        let target_zw_angle = {
+        let (target_zw_angle, rotation_speed) = {
             if inner_state.w_aim_enabled
             {
                 let active_projection = screen_effects
@@ -1496,21 +1528,21 @@ pub fn process_player_rotation(
                         inner_state.w_aim_ui_frame_intensity = 0.20 +
                             (projection.is_active_intensity*4.0).clamp(0.0, 0.5);
 
-                        projection_body.abs_zw_rotation_offset
+                        (projection_body.abs_zw_rotation_offset, 2.1)
                     }
                     else
                     {
-                        DEFAULT_ZW_ROTATION_TARGET_IN_RADS
+                        (DEFAULT_ZW_ROTATION_TARGET_IN_RADS, 1.0)
                     }
                 }
                 else
                 {
-                    DEFAULT_ZW_ROTATION_TARGET_IN_RADS
+                    (DEFAULT_ZW_ROTATION_TARGET_IN_RADS, 1.0)
                 }
             }
             else
             {
-                DEFAULT_ZW_ROTATION_TARGET_IN_RADS
+                (DEFAULT_ZW_ROTATION_TARGET_IN_RADS, 1.0)
             }
         };
 
@@ -1518,7 +1550,7 @@ pub fn process_player_rotation(
         zw = lerpf(
             zw,
             target_zw_angle,
-            delta * 4.8,
+            (delta * 4.8) * rotation_speed,
         );
         if (zw - target_zw_angle).abs() < 0.0005 {
             zw = target_zw_angle;
@@ -1873,6 +1905,7 @@ pub fn process_w_scanner(
                 screen_effects.player_projections.update_or_add_projection(
                     projection_id,
                     PLAYER_PROJECTION_DISPLAY_TIME,
+                    0.0,
                 );
             }
         }
@@ -2588,6 +2621,7 @@ pub fn die
     engine_handle.send_boardcast_message(
         Message {
             from: my_id,
+            remote_sender: false,
             message: MessageType::SpecificActorMessage(
                 SpecificActorMessage::FlagMessage(
                     FlagMessage::PlayerDied(in_space)
@@ -2763,6 +2797,8 @@ pub fn make_hud_transparency_as_death_screen_effect(
     hud_elem.get_ui_data_mut().rect.transparency = a;
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrow);
+    hud_elem.get_ui_data_mut().rect.transparency = a;
+
     
     match inner_state.team
     {
@@ -2770,9 +2806,6 @@ pub fn make_hud_transparency_as_death_screen_effect(
         {
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
             hud_elem.get_ui_data_mut().rect.transparency = a;
-
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRedW);
-            // hud_elem.get_ui_data_mut().rect.transparency = a;
 
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
@@ -2796,9 +2829,6 @@ pub fn make_hud_transparency_as_death_screen_effect(
         {
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
             hud_elem.get_ui_data_mut().rect.transparency = a;
-
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlueW);
-            // hud_elem.get_ui_data_mut().rect.transparency = a;
 
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
@@ -3104,6 +3134,11 @@ impl MainPlayer {
             w_scanner,
         }
     }
+
+    pub fn get_xz_rotation(&self) -> f32
+    {
+        self.inner_state.saved_angle_of_rotation.x
+    }
 }
 
 impl ControlledActor for MainPlayer
@@ -3177,6 +3212,7 @@ impl ControlledActor for MainPlayer
                 hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
+                    remote_sender: false,
                     message: MessageType::SpecificActorMessage(
                         SpecificActorMessage::PlayerMessage(
                             PlayerMessage::Telefrag

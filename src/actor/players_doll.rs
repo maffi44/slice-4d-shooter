@@ -160,7 +160,14 @@ pub enum PlayersDollMessage{
         // timestamp in millis
         u128,
     ),
-    YouHitMe(u32),
+    YouHitedMe(
+        //damage
+        u32,
+        //my position
+        Vec4,
+        //my radius
+        f32,
+    ),
 }
 
 
@@ -375,6 +382,7 @@ impl PlayersDoll {
                 hit.hited_actors_id.expect("In respawn func in death on resapwn hit have not ActorID"),
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
+                    remote_sender: false,
                     message: MessageType::SpecificActorMessage(
                         SpecificActorMessage::PlayerMessage(
                             PlayerMessage::Telefrag
@@ -558,6 +566,7 @@ impl Actor for PlayersDoll {
                                         from,
                                         Message {
                                             from: self.get_id().expect("Player Doll have not ActorID"),
+                                            remote_sender: false,
                                             message: MessageType::SpecificActorMessage(
                                                 SpecificActorMessage::PlayerMessage(
                                                     PlayerMessage::DataForProjection(
@@ -640,9 +649,14 @@ impl Actor for PlayersDoll {
                                         from,
                                         Message {
                                             from: self.get_id().expect("Player Doll have not ActorID"),
+                                            remote_sender: false,
                                             message: MessageType::SpecificActorMessage(
                                                 SpecificActorMessage::PlayersDollMessage(
-                                                    PlayersDollMessage::YouHitMe(damage)
+                                                    PlayersDollMessage::YouHitedMe(
+                                                        damage,
+                                                        self.transform.get_position(),
+                                                        self.radius
+                                                    )
                                                 )
                                             )
                                         }
@@ -672,7 +686,7 @@ impl Actor for PlayersDoll {
                     {
                         match message
                         {
-                            PlayersDollMessage::YouHitMe(_) => {}
+                            PlayersDollMessage::YouHitedMe(_,_,_) => {}
 
                             PlayersDollMessage::SetInterploatedModelTargetState(
                                 transform,
@@ -917,6 +931,7 @@ impl Actor for PlayersDoll {
                                     from,
                                     Message {
                                         from: self.id.expect("PlayerDoll have not ActorID"),
+                                        remote_sender: false,
                                         message: MessageType::SpecificActorMessage(
                                             SpecificActorMessage::FlagMessage(
                                                 FlagMessage::SetTargetPosition(

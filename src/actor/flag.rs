@@ -285,6 +285,7 @@ impl Flag
             captured_by,
             Message {
                 from: self.id.expect("Flag has no ActorID"),
+                remote_sender: false,
                 message: MessageType::SpecificActorMessage(
                     SpecificActorMessage::FlagMessage(
                         FlagMessage::GiveMeTargetPosition
@@ -428,6 +429,7 @@ impl Actor for Flag
                     id,
                     Message {
                         from: self.get_id().expect("Flag have not ActorID"),
+                        remote_sender: false,
                         message: MessageType::SpecificActorMessage(
                             SpecificActorMessage::FlagMessage(
                                 FlagMessage::GiveMeTargetPosition
@@ -809,6 +811,7 @@ impl Actor for Flag
                                     id,
                                     Message {
                                         from: self.id.expect("Flag have not ActorID"),
+                                        remote_sender: false,
                                         message: MessageType::SpecificActorMessage(
                                             SpecificActorMessage::FlagMessage(
                                                 FlagMessage::YouInteractingWithFlag(

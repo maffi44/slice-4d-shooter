@@ -640,7 +640,7 @@ async fn async_main(
         {
             cloned_state_3.lock().await.remove(&game_server_index);
         }
-        panic!("BUG: game servers alive checker channel is closed")
+        panic!("ERROR: game servers alive checker channel is closed")
     });
     
     loop

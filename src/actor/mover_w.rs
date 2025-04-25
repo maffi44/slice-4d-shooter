@@ -180,6 +180,7 @@ impl Actor for MoverW
                                         id,
                                         Message {
                                             from: self.id.expect("MoverW hasn't ActorID"),
+                                            remote_sender: false,
                                             message: MessageType::SpecificActorMessage(
                                                 SpecificActorMessage::MoverW(
                                                     MoverWMessage::Rotate(

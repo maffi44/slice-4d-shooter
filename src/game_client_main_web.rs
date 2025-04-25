@@ -45,13 +45,14 @@ async fn client_main() {
             );
     
             let main_player_id = systems.world.add_actor_to_world(
-                ActorWrapper::Player(main_player),
+                ActorWrapper::MainPlayer(main_player),
                 &mut systems.engine_handle,
             );
     
             systems.engine_handle.send_boardcast_message(
                 Message {
                     from: 0u128,
+                    remote_sender: false,
                     message: crate::actor::MessageType::SpecificActorMessage(
                         SpecificActorMessage::PlayerMessage(
                             PlayerMessage::SetNewTeam(

@@ -150,6 +150,7 @@ impl KinematicCollider {
                         my_id,
                         Message {
                             from: my_id,
+                            remote_sender: false,
                             message: crate::actor::MessageType::PhysicsMessages(
                                 crate::actor::PhysicsMessages::KinematicColliderMessage(
                                     KinematicColliderMessage::ColliderIsStuckInsideObject

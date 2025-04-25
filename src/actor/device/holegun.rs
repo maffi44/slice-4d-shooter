@@ -175,12 +175,7 @@ impl HoleGun {
                     if let Some(hited_team) = hit.hited_actors_team
                     {
                         if hited_team != player.team
-                        {
-                            screen_effects.player_projections.update_or_add_projection(
-                                hited_id,
-                                PLAYER_PROJECTION_DISPLAY_TIME
-                            );
-                            
+                        {                            
                             let dist_to_hited_point = {
                                 hit.hit_point.distance(position)
                             };
@@ -195,6 +190,7 @@ impl HoleGun {
                                 hited_id,
                                 Message {
                                     from: player_id,
+                                    remote_sender: false,
                                     message: MessageType::SpecificActorMessage(
                                         SpecificActorMessage::PlayerMessage(
                                             PlayerMessage::DealDamageAndAddForce(

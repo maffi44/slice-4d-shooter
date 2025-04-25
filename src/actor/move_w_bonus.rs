@@ -201,6 +201,7 @@ impl Actor for MoveWBonusSpot
         
         let Message {
             from,
+            remote_sender,
             message
         } = message;
 
@@ -306,6 +307,7 @@ impl Actor for MoveWBonusSpot
                                     id,
                                     Message {
                                         from: self.get_id().expect("move w bonus spot have not ActorId"),
+                                        remote_sender: false,
                                         message: MessageType::SpecificActorMessage(
                                             SpecificActorMessage::MoveWBonusSpotMessage(
                                                 MoveWBonusSpotMessage::YouTryingToGetMoveWBonus(self.index)
