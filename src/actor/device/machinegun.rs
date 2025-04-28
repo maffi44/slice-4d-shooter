@@ -1,4 +1,4 @@
-use glam::Vec4;
+use glam::{Mat4, Vec4};
 
 use crate::{
     actor::{
@@ -29,7 +29,7 @@ use crate::{
             UISystem
         }
     },
-    transform::Transform
+    transform::{Transform, FORWARD}
 };
 
 use client_server_protocol::{
@@ -41,19 +41,14 @@ use super::{Device, DeviceType};
 
 const FIRE_RATE: f32 = 0.11;
 const MAX_TEMPERTURE: f32 = 60.0;
-const MAX_SHOOTING_RANGE: f32 = 0.0023;
-const SHOOTING_RANGE_INCR_SPEED: f32 = 15.0;
-const SHOOTING_RANGE_DCR_SPEED: f32 = 15.0;
-// const self.machinegun_heat_add_on_shot: f32 = 4.15;
-// const self.machinegun_cooling_speed: f32 = 15.5;
-// const self.machinegun_damage: u32 = 5;
-// const self.machinegun_add_force: f32 = 0.8;
-
+const MAX_SHOOTING_SPREAD: f32 = 0.0023;
+const SHOOTING_SPREAD_INCR_SPEED: f32 = 15.0;
+const SHOOTING_SPREAD_DCR_SPEED: f32 = 15.0;
 const CROSSHAIR_INCREASE_ON_SHOOT: f32 = 0.2;
 
 pub struct MachineGun {
     temperature: f32,
-    shooting_range: f32,
+    shooting_spread: f32,
     time_from_prev_shot: f32,
     is_overheating: bool,
 
@@ -77,7 +72,7 @@ impl MachineGun {
 
         MachineGun {
             temperature: 0.0,
-            shooting_range: 0.0,
+            shooting_spread: 0.0,
             time_from_prev_shot: 0.0,
             is_overheating: false,
             shooted_from_pivot_point_dir,
@@ -136,10 +131,10 @@ impl MachineGun {
         }
 
                 
-        let random_dir_y = glam::Mat4::from_rotation_y((rnd_y - 0.5) as f32 * (self.shooting_range));
-        let random_dir_x = glam::Mat4::from_rotation_x((rnd_x - 0.5) as f32 * (self.shooting_range));
+        let random_dir_y = Mat4::from_rotation_y((rnd_y - 0.5) as f32 * (self.shooting_spread));
+        let random_dir_x = Mat4::from_rotation_x((rnd_x - 0.5) as f32 * (self.shooting_spread));
         
-        let forward_dir = random_dir_x * random_dir_y * Vec4::NEG_Z;
+        let forward_dir = random_dir_x * random_dir_y * FORWARD;
         
         let direction = player.transform.get_rotation().inverse() * forward_dir;
         // direction = random_dir_x * direction;
@@ -298,8 +293,8 @@ impl Device for MachineGun {
                 player.crosshair_target_size += CROSSHAIR_INCREASE_ON_SHOOT;
 
                 self.temperature += self.machinegun_heat_add_on_shot;
-                if self.shooting_range < MAX_SHOOTING_RANGE {
-                    self.shooting_range += MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_INCR_SPEED * 1.0/FIRE_RATE;
+                if self.shooting_spread < MAX_SHOOTING_SPREAD {
+                    self.shooting_spread += MAX_SHOOTING_SPREAD * delta * SHOOTING_SPREAD_INCR_SPEED * 1.0/FIRE_RATE;
                 }
                 self.time_from_prev_shot = 0.0;
             } else {
@@ -309,10 +304,10 @@ impl Device for MachineGun {
         } else {
             self.cool_machinegun(delta);
             self.time_from_prev_shot += delta;
-            if self.shooting_range > MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_DCR_SPEED {
-                self.shooting_range -= MAX_SHOOTING_RANGE * delta * SHOOTING_RANGE_DCR_SPEED;
+            if self.shooting_spread > MAX_SHOOTING_SPREAD * delta * SHOOTING_SPREAD_DCR_SPEED {
+                self.shooting_spread -= MAX_SHOOTING_SPREAD * delta * SHOOTING_SPREAD_DCR_SPEED;
             } else {
-                self.shooting_range = 0.0;
+                self.shooting_spread = 0.0;
             }
         }
 

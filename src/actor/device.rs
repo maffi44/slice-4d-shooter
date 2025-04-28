@@ -1,5 +1,6 @@
 pub mod holegun;
 pub mod machinegun;
+pub mod shotgun;
 
 use crate::{
     actor::{

@@ -16,9 +16,7 @@ use rand::{seq::SliceRandom, thread_rng};
 use crate::{
     actor::{
         device::{
-            holegun::HoleGun,
-            Device,
-            DeviceType
+            holegun::HoleGun, shotgun::Shotgun, Device, DeviceType
         },
         players_doll::PlayerDollInputState,
         Actor,
@@ -126,6 +124,12 @@ impl PlayersProjections
     }
 
 
+    pub fn clear(&mut self)
+    {
+        self.projections.clear();
+    }
+
+
     pub fn get_intersected_projection
     (
         &self,
@@ -177,6 +181,7 @@ impl PlayersProjections
             }
         }
     }
+
 
     pub fn update_or_add_projection(
         &mut self,
@@ -2646,6 +2651,7 @@ pub fn die
 
     w_scanner.restore_scanner_values(player_settings);
     inner_state.restore_w_shift_and_rotate_values();
+    screen_effects.player_projections.clear();
 
     if inner_state.is_alive {
 
@@ -3096,19 +3102,7 @@ impl MainPlayer {
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
 
-            hands_slot_0: Box::new(HoleGun::new(
-                player_settings.energy_gun_hole_size_mult, 
-                player_settings.energy_gun_add_force_mult, 
-                player_settings.energy_gun_damage_mult, 
-                player_settings.energy_gun_restoring_speed,
-                Vec4::new(
-                    1.0,
-                    -0.42,
-                    -1.0,
-                    0.0
-                ),
-            )),
-            hands_slot_1: Some(Box::new(MachineGun::new(
+            hands_slot_0: Box::new(MachineGun::new(
                 player_settings.machinegun_damage,
                 player_settings.machinegun_add_force, 
                 player_settings.machinegun_heat_add_on_shot, 
@@ -3119,8 +3113,27 @@ impl MainPlayer {
                     -1.0,
                     0.0
                 ),
+            )),
+            hands_slot_1: Some(Box::new(Shotgun::new(
+                Vec4::new(
+                    1.0,
+                    -0.42,
+                    -1.0,
+                    0.0
+                ),
             ))),
-            hands_slot_2: None,
+            hands_slot_2: Some(Box::new(HoleGun::new(
+                player_settings.energy_gun_hole_size_mult, 
+                player_settings.energy_gun_add_force_mult, 
+                player_settings.energy_gun_damage_mult, 
+                player_settings.energy_gun_restoring_speed,
+                Vec4::new(
+                    1.0,
+                    -0.42,
+                    -1.0,
+                    0.0
+                ),
+            ))),
             hands_slot_3: None,
 
             devices: [None, None, None, None],

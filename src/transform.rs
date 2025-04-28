@@ -48,7 +48,7 @@ impl Transform {
     }
 
     #[inline]
-    pub fn from_coords(x: f32, y: f32, z: f32, w: f32) -> Self {
+    pub fn from_position_coords(x: f32, y: f32, z: f32, w: f32) -> Self {
         Transform {
             position: Vec4::new(x, y, z, w),
             rotation: Mat4::IDENTITY,

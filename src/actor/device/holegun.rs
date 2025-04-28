@@ -12,7 +12,7 @@ use crate::{
         holegun_shot::HoleGunShot,
         main_player::{
             player_inner_state::PlayerInnerState,
-            PlayerMessage, PlayerScreenEffects, PLAYER_PROJECTION_DISPLAY_TIME
+            PlayerMessage, PlayerScreenEffects,
         },
         ActorID,
         ActorWrapper,
@@ -43,7 +43,7 @@ use crate::{
             VolumeArea
         }
     },
-    transform::Transform
+    transform::{Transform, FORWARD}
 };
 
 use client_server_protocol::{
@@ -74,9 +74,7 @@ pub const MAX_CHARGING_TIME: f32 = 3.4;
 
 pub const MAX_ENERGY: f32 = 60.0;
 pub const ENERGY_DECREASING_SPEED: f32 = 20.0;
-// pub const self.energy_gun_restoring_speed: f32 = 20.0;
 pub const ENERGY_SHOT_COST: f32 = 9.0;
-// pub const self.energy_gun_hole_size_mult: f32 = 0.1;
 
 impl HoleGun {
     pub fn new(
@@ -139,7 +137,7 @@ impl HoleGun {
 
         let from = player.get_eyes_position();
                 
-        let direction = player.transform.get_rotation().inverse() * Vec4::NEG_Z;
+        let direction = player.transform.get_rotation().inverse() * FORWARD;
     
         let weapon_offset = {
             player.get_eyes_offset() +
