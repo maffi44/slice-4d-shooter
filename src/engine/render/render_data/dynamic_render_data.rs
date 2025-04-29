@@ -34,7 +34,7 @@ use super::{static_render_data::StaticRenderData, BeamArea, BoundingBox, PlayerF
 pub struct DynamicRenderData {
     pub dynamic_shapes_data: ShapesArrays,
     pub spherical_areas_data: Box<[SphericalArea; 256]>,
-    pub beam_areas_data: Box<[BeamArea; 64]>,
+    pub beam_areas_data: Box<[BeamArea; 256]>,
     pub player_forms_data: Box<[PlayerForm; 16]>,
     pub other_dynamic_data: OtherDynamicData,
 
@@ -56,7 +56,7 @@ impl DynamicRenderData {
         DynamicRenderData {
             dynamic_shapes_data: ShapesArrays::default(),
             spherical_areas_data: {Box::new([SphericalArea::default(); 256])},
-            beam_areas_data: {Box::new([BeamArea::default(); 64])},
+            beam_areas_data: {Box::new([BeamArea::default(); 256])},
             player_forms_data: {Box::new([PlayerForm::default(); 16])},
             other_dynamic_data: OtherDynamicData::default(),
 
@@ -102,7 +102,7 @@ impl DynamicRenderData {
                             empty_bytes: [0,0],
                             roundness,
                         };
-                        frame_bounding_box.expand_by_shape(&shape);
+                        // frame_bounding_box.expand_by_shape(&shape);
     
                         let is_positive = static_object.collider.is_positive;
                         let is_stickiness = static_object.collider.stickiness;
@@ -1225,13 +1225,10 @@ impl OtherDynamicData {
             self.additional_data_2 = player.get_2d_slice_xz_rot().to_cols_array();
             self.splited_screen_in_2d_3d_example_or_zx_player_rotation = player.show_3d_example_current_value;
         }
-
-        if let ActorWrapper::MainPlayer(player) = main_actor
+        else if let ActorWrapper::MainPlayer(player) = main_actor
         {
             self.splited_screen_in_2d_3d_example_or_zx_player_rotation = player.get_xz_rotation();
         }
-        // self.explore_w_pos = explore_w_pos;
-        // self.explore_w_coef = explore_w_coef;
 
         self.camera_data = CameraUniform {
             cam_pos: camera.get_position().to_array(),

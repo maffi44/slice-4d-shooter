@@ -195,7 +195,8 @@ impl HoleGun {
                                                 damage as u32,
                                                 force,
                                                 hit.hit_point,
-                                                player.team
+                                                player.team,
+                                                player_id,
                                             )
                                         )
                                     )

@@ -575,6 +575,8 @@ pub enum PlayerMessage {
         Vec4,
         // team damage from
         Team,
+        // damage dealer's id
+        u128
     ),
     GiveMeDataForProjection,
     DataForProjection(
@@ -771,13 +773,14 @@ impl Actor for MainPlayer {
                                 damage,
                                 force,
                                 _,
-                                team
+                                team,
+                                damage_dealer_id
                             ) =>
                             {
                                 if team != self.inner_state.team
                                 {
                                     self.screen_effects.player_projections.update_or_add_projection(
-                                        from,
+                                        damage_dealer_id,
                                         PLAYER_PROJECTION_DISPLAY_TIME,
                                         GET_DAMAGE_PROJECTION_INTENSITY,
                                     );

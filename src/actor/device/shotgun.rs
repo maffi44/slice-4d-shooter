@@ -1,4 +1,4 @@
-use glam::Vec4;
+use glam::{Vec3, Vec4};
 
 use crate::{
     actor::{
@@ -40,6 +40,20 @@ const MAX_SHOOTING_RANGE: f32 = 0.0023;
 const SHOOTING_RANGE_INCR_SPEED: f32 = 15.0;
 const SHOOTING_RANGE_DCR_SPEED: f32 = 15.0;
 const CROSSHAIR_INCREASE_ON_SHOOT: f32 = 0.2;
+
+pub const SHOTGUN_LASER_SHOT_HOLE_REDUCTION_SPEED: f32 = 0.05;
+pub const SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED: f32 = 1.2;
+pub const SHOTGUN_LASER_SHOT_EXPLOSION_MAX_RADIUS: f32 = 0.4;
+pub const SHOTGUN_LASER_SHOT_MAX_DISTANCE: f32 = 200.0;
+pub const SHOTGUN_LASER_SHOT_DAMAGE: u32 = 10;
+pub const SHOTGUN_LASER_SHOT_ADD_FORCE_PER_HIT: f32 = 2.0;
+pub const SHOTGUN_LASER_SHOT_SPEED: f32 = 81.5;
+pub const SHOTGUN_LASER_SHOT_LENGTH: f32 = 2.1;
+pub const SHOTGUN_LASER_SHOT_BEAM_RADIUS: f32 = 0.08;
+pub const SHOTGUN_LASER_SHOT_COLOR: Vec3 = Vec3::new(1.0, 0.3, 0.0);
+
+pub const LASER_SHOTS_AMOUNT: u32 = 16;
+pub const SHOTS_SPREAD: f32 = 0.1;
 
 pub struct Shotgun {
     // temperature: f32,
@@ -108,6 +122,7 @@ impl Shotgun {
             rng_seed,
             false,
             player_id,
+            player.team,
             engine_handle,
             physic_system,
         );

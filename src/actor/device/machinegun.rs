@@ -172,7 +172,8 @@ impl MachineGun {
                                             self.machinegun_damage as u32,
                                             force,
                                             position,
-                                            player.team
+                                            player.team,
+                                            player_id,
                                         )
                                     )
                                 )

@@ -1049,7 +1049,8 @@ fn process_message(
                                         damage,
                                         Vec4::from_array(force),
                                         Vec4::from_array(impact_pos),
-                                        damage_by_team
+                                        damage_by_team,
+                                        message_from_peer_id,
                                     )
                                 )
                             )
@@ -1364,7 +1365,8 @@ fn process_message(
                                         damage,
                                         Vec4::from_array(force),
                                         Vec4::from_array(impact_pos),
-                                        damaged_by_team
+                                        damaged_by_team,
+                                        message_from_peer_id,
                                     )
                                 )
                             )

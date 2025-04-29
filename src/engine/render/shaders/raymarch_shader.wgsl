@@ -350,7 +350,7 @@ struct OtherStaticData {
 @group(0) @binding(5) var<uniform> dynamic_data: OtherDynamicData;
 
 @group(1) @binding(0) var<uniform> dyn_spherical_areas: array<SphericalArea, 256>;
-@group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 64>;
+@group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 256>;
 @group(1) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
 
 @group(1) @binding(3) var sky_box_sampler: sampler;

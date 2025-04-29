@@ -310,7 +310,8 @@ impl Actor for PlayerFor2d3dExample {
                                 damage,
                                 force,
                                 _,
-                                team
+                                team,
+                                _
                             ) =>
                             {
                                 if team != self.inner_state.team

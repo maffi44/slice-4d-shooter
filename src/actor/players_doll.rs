@@ -612,7 +612,13 @@ impl Actor for PlayersDoll {
                                 self.die_slowly(engine_handle);
                             }
 
-                            PlayerMessage::DealDamageAndAddForce(damage, force, impact_pos, team) =>
+                            PlayerMessage::DealDamageAndAddForce(
+                                damage,
+                                force,
+                                impact_pos,
+                                team,
+                                _
+                            ) =>
                             {
                                 if team != self.team && damage > 0
                                 {

@@ -1,5 +1,5 @@
+use client_server_protocol::Team;
 use glam::Vec4;
-// use rand_distr::{Normal, Distribution};
 use rand::{Rng,SeedableRng};
 use rand::rngs::StdRng;
 
@@ -7,12 +7,15 @@ use crate::engine::engine_handle::{Command, CommandType, EngineHandle};
 use crate::engine::physics::PhysicsSystem;
 use crate::transform::Transform;
 
+use super::device::shotgun::{
+    LASER_SHOTS_AMOUNT,
+    SHOTS_SPREAD
+};
 use super::shotgun_laser_shot::ShotgunLaserShot;
 use super::{Actor, ActorID};
 
 
-const LASER_SHOTS_AMOUNT: u32 = 16;
-const SHOTS_SPREAD: f32 = 0.1;
+
 
 pub struct ShotgunShotSource
 {
@@ -28,8 +31,9 @@ impl ShotgunShotSource
         visible_start_position: Vec4,
         mut direction: Vec4,
         rng_seed: u64,
-        is_replecated: bool,
+        is_replicated: bool,
         damage_dealer_id: ActorID,
+        damage_dealer_team: Team,
         engine_handle: &mut EngineHandle,
         physic_system: &PhysicsSystem,
     ) -> Self
@@ -43,7 +47,7 @@ impl ShotgunShotSource
                     (rng.random::<f32>()-0.5)*SHOTS_SPREAD,
                     (rng.random::<f32>()-0.5)*SHOTS_SPREAD,
                     (rng.random::<f32>()-0.5)*SHOTS_SPREAD,
-                    (rng.random::<f32>()-0.5)*SHOTS_SPREAD,
+                    0.0//(rng.random::<f32>()-0.5)*SHOTS_SPREAD,
                 )
             };
 
@@ -72,6 +76,8 @@ impl ShotgunShotSource
                 visible_start_position,
                 possible_destination,
                 damage_dealer_id,
+                damage_dealer_team,
+                is_replicated,
             );
 
             engine_handle.send_command(
