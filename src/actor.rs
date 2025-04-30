@@ -18,6 +18,8 @@ pub mod player_for_2d_3d_example;
 pub mod shotgun_shot_source;
 pub mod shotgun_laser_shot;
 
+use std::fmt::Display;
+
 use crate::{
     engine::{
         audio::AudioSystem,
@@ -154,6 +156,36 @@ pub enum ActorWrapper {
     ShotgunLaserShot(ShotgunLaserShot),
     Diamond,
     Exit,
+}
+
+impl Display for ActorWrapper
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let actor_type = match self
+        {
+            ActorWrapper::MainPlayer(_) => "MainPlayer",
+            ActorWrapper::PlayerFor2d3dExample(_) => "PlayerFor2d3dExample",
+            ActorWrapper::WonderingActor(_) => "WonderingActor",
+            ActorWrapper::HoleGunShot(_) => "HoleGunShot",
+            ActorWrapper::HoleGunMiss(_) => "HoleGunMiss",
+            ActorWrapper::PlayersDoll(_) => "PlayersDoll",
+            ActorWrapper::PlayersDeathExplosion(_) => "PlayersDeathExplosion",
+            ActorWrapper::MachinegunShot(_) => "MachinegunShot",
+            ActorWrapper::ShootingImpact(_) => "ShootingImpact",
+            ActorWrapper::Flag(_) => "Flag",
+            ActorWrapper::Hole(_) => "Hole",
+            ActorWrapper::MoveWBonusSpot(_) => "MoveWBonusSpot",
+            ActorWrapper::SessionController(_) => "SessionController",
+            ActorWrapper::Wave(_) => "Wave",
+            ActorWrapper::MoverW(_) => "MoverW",
+            ActorWrapper::ShotgunShotSource(_) => "ShotgunShotSource",
+            ActorWrapper::ShotgunLaserShot(_) => "ShotgunLaserShot",
+            ActorWrapper::Diamond => "Diamond",
+            ActorWrapper::Exit => "Exit",
+        };
+
+        write!(f, "Actor: {}", actor_type)
+    }
 }
 
 impl Actor for ActorWrapper {

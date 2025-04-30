@@ -442,8 +442,9 @@ impl World {
                 time_system,
                 effects_system,
                 delta
-            )
+            );
         }
+
     }
 
     fn get_new_random_uniq_id(&self) -> ActorID {

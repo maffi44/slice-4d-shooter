@@ -598,7 +598,7 @@ fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distan
         i++
     )
     {
-        color += ray_march_individual_volume_sphere(
+        color += get_individual_volume_sphere_color(
             dyn_spherical_areas[i],
             start_pos,
             direction, 
@@ -612,7 +612,7 @@ fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distan
         i++
     )
     {
-        color += ray_march_indicidual_volume_beam(
+        color += get_indicidual_volume_beam_color(
             dyn_beam_areas[i],
             start_pos,
             direction,
@@ -643,7 +643,7 @@ fn get_volume_areas_color(start_pos: vec4<f32>, direction: vec4<f32>, max_distan
     return output_color;
 }
 
-fn ray_march_individual_volume_sphere(sphere: SphericalArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
+fn get_individual_volume_sphere_color(sphere: SphericalArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
     var color = vec3(0.0);
 
     let intr = sph_intersection(
@@ -799,22 +799,6 @@ fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>,
 }
 
 fn get_sphere_normal(p: vec4<f32>, sphere_pos: vec4<f32>, sphere_radius: f32) -> vec4<f32> {
-    // var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
-    
-    // var a: vec4<f32> = p + h.yxxz;
-    // var b: vec4<f32> = p + h.xyxz;
-    // var c: vec4<f32> = p + h.xxyz;
-    // var d: vec4<f32> = p + h.yyyz;
-    // var e: vec4<f32> = p + h.zzzx;
-    // var f: vec4<f32> = p + h.zzzy;
-
-    // var fa: f32 = sd_sphere(a - sphere_pos, sphere_radius);
-    // var fb: f32 = sd_sphere(b - sphere_pos, sphere_radius);
-    // var fc: f32 = sd_sphere(c - sphere_pos, sphere_radius);
-    // var fd: f32 = sd_sphere(d - sphere_pos, sphere_radius);
-    // var fe: f32 = sd_sphere(e - sphere_pos, sphere_radius);
-    // var ff: f32 = sd_sphere(f - sphere_pos, sphere_radius);
-
     return normalize(
         p - sphere_pos
     );
@@ -848,45 +832,104 @@ fn get_capsule_normal(p: vec4<f32>, beam_pos1: vec4<f32>, beam_pos2: vec4<f32>, 
 }
 
 
-fn ray_march_indicidual_volume_beam(beam: BeamArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
+// fn get_indicidual_volume_beam_color(beam: BeamArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
+//     var color = vec3(0.0);
+
+//     var total_dist = 0.0;
+
+//     var p = start_pos;
+
+//     var prev_d = MAX_DIST;
+
+//     for (var i = 0; i < MAX_STEPS; i++) {
+
+//         if total_dist > max_distance {
+//             break;
+//         }
+
+//         let d = sd_capsule(p, beam.pos1, beam.pos2, beam.radius);
+        
+//         if d > prev_d {
+//             break;
+//         }
+
+//         prev_d = d;
+
+//         if d < MIN_DIST {
+//             let beam_normal = get_capsule_normal(p, beam.pos1, beam.pos2, beam.radius);
+
+//             let beam_dir = normalize(beam.pos1 - beam.pos2);
+
+//             let beam_perpendicular = normalize(direction - (dot(direction, beam_dir) * beam_dir));
+
+//             let color_coef = abs(dot(beam_normal, beam_perpendicular));
+
+//             color = mix(beam.color, vec3(1.0), pow(color_coef, 80.5)) * pow(color_coef, 20.0);
+
+//             break;
+//         }
+//         total_dist += d;
+
+//         p += direction * d;
+//     }
+
+//     return color;
+// }
+
+
+fn capsule_intersection(ro: vec4<f32>, rd: vec4<f32>, pa: vec4<f32>, pb: vec4<f32>, ra: f32) -> f32
+{
+    let  ba = pb - pa;
+    let  oa = ro - pa;
+    let baba = dot(ba,ba);
+    let bard = dot(ba,rd);
+    let baoa = dot(ba,oa);
+    let rdoa = dot(rd,oa);
+    let oaoa = dot(oa,oa);
+    let a = baba      - bard*bard;
+    var b = baba*rdoa - baoa*bard;
+    var c = baba*oaoa - baoa*baoa - ra*ra*baba;
+    var h = b*b - a*c;
+    if(h >= 0.0)
+    {
+        let t = (-b-sqrt(h))/a;
+        let y = baoa + t*bard;
+        
+        if (y>0.0 && y<baba) {return t;}
+        
+        var oc: vec4<f32> = oa;
+        if (y > 0.0)
+        {
+            oc = ro-pb;
+        }
+
+        b = dot(rd,oc);
+        c = dot(oc,oc) - ra*ra;
+        h = b*b - c;
+        if (h>0.0) {return -b - sqrt(h);}
+    }
+    return -1.0;
+}
+
+
+fn get_indicidual_volume_beam_color(beam: BeamArea, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec3<f32> {
+
     var color = vec3(0.0);
 
-    var total_dist = 0.0;
+    let d = capsule_intersection(start_pos, direction, beam.pos1, beam.pos2, beam.radius);
 
-    var p = start_pos;
-
-    var prev_d = MAX_DIST;
-
-    for (var i = 0; i < MAX_STEPS; i++) {
-
-        if total_dist > max_distance {
-            break;
-        }
-
-        let d = sd_capsule(p, beam.pos1, beam.pos2, beam.radius);
+    if d > 0.0 {
+        let p = start_pos + direction*d;
         
-        if d > prev_d {
-            break;
-        }
+        let beam_normal = get_capsule_normal(p, beam.pos1, beam.pos2, beam.radius);
 
-        prev_d = d;
+        let beam_dir = normalize(beam.pos1 - beam.pos2);
 
-        if d < MIN_DIST {
-            let beam_normal = get_capsule_normal(p, beam.pos1, beam.pos2, beam.radius);
+        let beam_perpendicular = normalize(direction - (dot(direction, beam_dir) * beam_dir));
 
-            let beam_dir = normalize(beam.pos1 - beam.pos2);
+        let color_coef = abs(dot(beam_normal, beam_perpendicular));
 
-            let beam_perpendicular = normalize(direction - (dot(direction, beam_dir) * beam_dir));
-
-            let color_coef = abs(dot(beam_normal, beam_perpendicular));
-
-            color = mix(beam.color, vec3(1.0), pow(color_coef, 80.5)) * pow(color_coef, 20.0);
-
-            break;
-        }
-        total_dist += d;
-
-        p += direction * d;
+        color = mix(beam.color, vec3(1.0), pow(color_coef, 80.5)) * pow(color_coef, 20.0);
     }
 
     return color;

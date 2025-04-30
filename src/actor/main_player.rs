@@ -3112,7 +3112,7 @@ impl MainPlayer {
                 player_settings.machinegun_cooling_speed,
                 Vec4::new(
                     1.0,
-                    -0.42,
+                    -0.3,
                     -1.0,
                     0.0
                 ),
@@ -3120,7 +3120,7 @@ impl MainPlayer {
             hands_slot_1: Some(Box::new(Shotgun::new(
                 Vec4::new(
                     1.0,
-                    -0.42,
+                    -0.3,
                     -1.0,
                     0.0
                 ),
@@ -3132,7 +3132,7 @@ impl MainPlayer {
                 player_settings.energy_gun_restoring_speed,
                 Vec4::new(
                     1.0,
-                    -0.42,
+                    -0.3,
                     -1.0,
                     0.0
                 ),

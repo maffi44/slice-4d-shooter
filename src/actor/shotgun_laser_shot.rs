@@ -20,7 +20,7 @@ use crate::{
 
 use super::{
     device::shotgun::{
-        SHOTGUN_LASER_SHOT_ADD_FORCE_PER_HIT, SHOTGUN_LASER_SHOT_BEAM_RADIUS, SHOTGUN_LASER_SHOT_COLOR, SHOTGUN_LASER_SHOT_DAMAGE, SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED, SHOTGUN_LASER_SHOT_EXPLOSION_MAX_RADIUS, SHOTGUN_LASER_SHOT_HOLE_REDUCTION_SPEED, SHOTGUN_LASER_SHOT_LENGTH, SHOTGUN_LASER_SHOT_MAX_DISTANCE, SHOTGUN_LASER_SHOT_SPEED
+        SHOTGUN_LASER_SHOT_ADD_FORCE_PER_HIT, SHOTGUN_LASER_SHOT_BEAM_RADIUS, SHOTGUN_LASER_SHOT_COLOR, SHOTGUN_LASER_SHOT_DAMAGE, SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED, SHOTGUN_LASER_SHOT_EXPLOSION_HOLE_MULT, SHOTGUN_LASER_SHOT_EXPLOSION_MAX_RADIUS, SHOTGUN_LASER_SHOT_HOLE_REDUCTION_SPEED, SHOTGUN_LASER_SHOT_LENGTH, SHOTGUN_LASER_SHOT_MAX_DISTANCE, SHOTGUN_LASER_SHOT_SPEED
     },
     main_player::PlayerMessage,
     Actor,
@@ -94,7 +94,7 @@ impl ShotgunLaserShot
 
         let laser = BeamVolumeArea {
             translation_pos_1: Vec4::ZERO,
-            translation_pos_2: Vec4::ZERO,
+            translation_pos_2: visible_shot_direction*0.01,
             radius: SHOTGUN_LASER_SHOT_BEAM_RADIUS,
             color: SHOTGUN_LASER_SHOT_COLOR,
         };
@@ -250,11 +250,27 @@ impl Actor for ShotgunLaserShot
 
             if self.explosion_max_size_reached
             {
+                let mut del_explosion = false;
+
+                if let Some(explosion) = self.get_explosion_volume_area()
+                {
+                    explosion.radius -= delta*SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED;
+
+                    if explosion.radius < 0.01
+                    {
+                        del_explosion = true;
+                    }
+                }
+
+                if del_explosion {self.remove_explode_volume_area();}
+
+
                 if self.static_objects.len() > 0
                 {
+                    
                     self.static_objects[0].collider.size.x -=
                         delta*SHOTGUN_LASER_SHOT_HOLE_REDUCTION_SPEED;
-                    
+
                     if self.static_objects[0].collider.size.x <= 0.01
                     {
                         self.static_objects.clear();
@@ -283,18 +299,16 @@ impl Actor for ShotgunLaserShot
                     }
                 }
 
-                if self.explosion_max_size_reached {self.remove_explode_volume_area();}
-
                 if self.static_objects.len() > 0
                 {
                     self.static_objects[0].collider.size.x +=
-                        delta*SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED;
+                        delta*SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED*SHOTGUN_LASER_SHOT_EXPLOSION_HOLE_MULT;
                 }
 
                 if self.coloring_areas.len() > 0
                 {
                     self.coloring_areas[0].radius +=
-                        delta*SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED;
+                        delta*SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED*SHOTGUN_LASER_SHOT_EXPLOSION_HOLE_MULT;
                 }
             }
 
@@ -361,6 +375,8 @@ impl Actor for ShotgunLaserShot
                     }
                 }
 
+                self.transform.set_position(hit.hit_point);
+
                 let explode = SphericalVolumeArea {
                     translation: Vec4::ZERO,
                     radius: 0.001,
@@ -389,7 +405,7 @@ impl Actor for ShotgunLaserShot
 
                 let coloring_area = ColoringArea {
                     translation: Vec4::ZERO,
-                    radius: 0.011,
+                    radius: 0.021,
                     color: SHOTGUN_LASER_SHOT_COLOR,
                 };
 

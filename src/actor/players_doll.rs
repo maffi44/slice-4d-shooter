@@ -25,7 +25,7 @@ use crate::{
             VolumeArea
         }
     },
-    transform::Transform,
+    transform::{Transform, BACKWARD, DOWN, FORWARD, LEFT, RIGHT, UP, W_DOWN},
 };
 
 use super::{
@@ -233,7 +233,7 @@ impl PlayersDoll {
 
         interpolated_model_target.set_id(id);
 
-        let weapon_shooting_point = weapon_offset + Vec4::NEG_Z * (player_sphere_radius * 0.49);
+        let weapon_shooting_point = weapon_offset + FORWARD * (player_sphere_radius * 0.49);
 
         let input_state = PlayerDollInputState {
             move_forward: false,
@@ -409,25 +409,25 @@ impl PlayersDoll {
         let mut movement_vec = Vec4::ZERO;
         
         if self.input_state.move_forward { 
-            movement_vec += Vec4::NEG_Z;
+            movement_vec += FORWARD;
         }
 
         if self.input_state.move_backward {
-            movement_vec += Vec4::Z;
+            movement_vec += BACKWARD;
         }
 
         if self.input_state.move_right {
-            movement_vec += Vec4::X;
+            movement_vec += RIGHT
         }
 
         if self.input_state.move_left {
-            movement_vec += Vec4::NEG_X;
+            movement_vec += LEFT;
         }
 
         if self.input_state.will_jump {
 
             if self.interpolating_model_target.is_on_y_ground {
-                self.interpolating_model_target.add_force(Vec4::Y * self.player_settings.jump_y_speed);
+                self.interpolating_model_target.add_force(UP * self.player_settings.jump_y_speed);
 
                 self.input_state.will_jump = false;
             }
@@ -444,9 +444,9 @@ impl PlayersDoll {
             None => movement_vec = Vec4::ZERO,
         }
 
-        self.interpolating_model_target.add_force(Vec4::NEG_Y * self.player_settings.gravity_y_speed * delta);
+        self.interpolating_model_target.add_force(DOWN * self.player_settings.gravity_y_speed * delta);
 
-        self.interpolating_model_target.add_force(Vec4::NEG_W * self.player_settings.gravity_w_speed * delta);
+        self.interpolating_model_target.add_force(W_DOWN * self.player_settings.gravity_w_speed * delta);
 
         if self.interpolating_model_target.is_on_y_ground {
             self.interpolating_model_target.set_wish_direction(

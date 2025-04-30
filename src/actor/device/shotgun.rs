@@ -41,19 +41,24 @@ const SHOOTING_RANGE_INCR_SPEED: f32 = 15.0;
 const SHOOTING_RANGE_DCR_SPEED: f32 = 15.0;
 const CROSSHAIR_INCREASE_ON_SHOOT: f32 = 0.2;
 
-pub const SHOTGUN_LASER_SHOT_HOLE_REDUCTION_SPEED: f32 = 0.05;
-pub const SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED: f32 = 1.2;
-pub const SHOTGUN_LASER_SHOT_EXPLOSION_MAX_RADIUS: f32 = 0.4;
+pub const SHOTGUN_LASER_SHOT_HOLE_REDUCTION_SPEED: f32 = 0.35;
+pub const SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED: f32 = 6.2;
+pub const SHOTGUN_LASER_SHOT_EXPLOSION_MAX_RADIUS: f32 = 0.25;
+pub const SHOTGUN_LASER_SHOT_EXPLOSION_HOLE_MULT: f32 = 0.4;
 pub const SHOTGUN_LASER_SHOT_MAX_DISTANCE: f32 = 200.0;
 pub const SHOTGUN_LASER_SHOT_DAMAGE: u32 = 10;
 pub const SHOTGUN_LASER_SHOT_ADD_FORCE_PER_HIT: f32 = 2.0;
-pub const SHOTGUN_LASER_SHOT_SPEED: f32 = 81.5;
-pub const SHOTGUN_LASER_SHOT_LENGTH: f32 = 2.1;
-pub const SHOTGUN_LASER_SHOT_BEAM_RADIUS: f32 = 0.08;
+pub const SHOTGUN_LASER_SHOT_SPEED: f32 = 155.5;
+pub const SHOTGUN_LASER_SHOT_LENGTH: f32 = 7.6;
+pub const SHOTGUN_LASER_SHOT_BEAM_RADIUS: f32 = 0.045;
 pub const SHOTGUN_LASER_SHOT_COLOR: Vec3 = Vec3::new(1.0, 0.3, 0.0);
+pub const SHOTGUN_SHOT_FLASH_EXPLAND_SPEED: f32 = 2.5;
+pub const SHOTGUN_SHOT_FLASH_MAX_RADIUS: f32 = 0.12;
+pub const SHOTGUN_SHOT_FLASH_FADE_SPEED: f32 = 2.5;
 
-pub const LASER_SHOTS_AMOUNT: u32 = 16;
-pub const SHOTS_SPREAD: f32 = 0.1;
+pub const SHOTGUN_LASER_SHOTS_AMOUNT: u32 = 18;
+pub const SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD: u32 = 4;
+pub const SHOTGUN_SHOTS_SPREAD: f32 = 0.175;
 
 pub struct Shotgun {
     // temperature: f32,
@@ -112,7 +117,7 @@ impl Shotgun {
         };
 
         let real_start_position = player.get_eyes_position();
-        let visible_start_position = real_start_position + weapon_offset;
+        let visible_start_position = player.transform.get_position() + weapon_offset;
         let direction = player.transform.get_rotation().inverse() * FORWARD;
 
         let shotgun_shot_source = ShotgunShotSource::new(

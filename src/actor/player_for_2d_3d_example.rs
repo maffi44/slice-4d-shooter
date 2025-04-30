@@ -45,7 +45,7 @@ use crate::{
             self, RectSize, UIElement, UIElementType, UISystem
         }, world::{level::Spawn, static_object::{BeamVolumeArea, VolumeArea}}
     },
-    transform::Transform,
+    transform::{Transform, BACKWARD, DOWN, FORWARD, UP},
 };
 
 use self::{
@@ -1032,13 +1032,13 @@ fn process_player_for_example_movement_input(
     let mut movement_vec = Vec4::ZERO;
 
     if input.move_right.is_action_pressed() {
-        movement_vec += Vec4::NEG_Z;
+        movement_vec += FORWARD;
         player_doll_input_state.move_forward = true;
 
     }
 
     if input.move_left.is_action_pressed() {
-        movement_vec += Vec4::Z;
+        movement_vec += BACKWARD;
         player_doll_input_state.move_backward = true;
     }
 
@@ -1064,7 +1064,7 @@ fn process_player_for_example_movement_input(
 
     inner_state.collider.add_force(Vec4::NEG_X * player_settings.gravity_w_speed * delta);
 
-    inner_state.collider.add_force(Vec4::NEG_Y * player_settings.gravity_y_speed * delta);
+    inner_state.collider.add_force(DOWN * player_settings.gravity_y_speed * delta);
 
     if inner_state.collider.is_on_y_ground {
         inner_state.collider.set_wish_direction(
@@ -1128,7 +1128,7 @@ impl PlayerFor2d3dExample {
                 false,
                 blue_map_w_level,
                 red_map_w_level,
-                Vec4::Y*0.6,
+                UP*0.6,
                 audio_system,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,

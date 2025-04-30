@@ -1,15 +1,16 @@
 use client_server_protocol::Team;
 use glam::Vec4;
-use rand::{Rng,SeedableRng};
-use rand::rngs::StdRng;
+use fyrox_core::rand::{Rng, RngCore, SeedableRng};
+use fyrox_core::rand::prelude::StdRng;
 
 use crate::engine::engine_handle::{Command, CommandType, EngineHandle};
 use crate::engine::physics::PhysicsSystem;
+use crate::engine::render::VisualElement;
+use crate::engine::world::static_object::{SphericalVolumeArea, VolumeArea};
 use crate::transform::Transform;
 
 use super::device::shotgun::{
-    LASER_SHOTS_AMOUNT,
-    SHOTS_SPREAD
+    SHOTGUN_LASER_SHOTS_AMOUNT, SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD, SHOTGUN_LASER_SHOT_COLOR, SHOTGUN_LASER_SHOT_MAX_DISTANCE, SHOTGUN_SHOT_FLASH_EXPLAND_SPEED, SHOTGUN_SHOT_FLASH_FADE_SPEED, SHOTGUN_SHOT_FLASH_MAX_RADIUS, SHOTGUN_SHOTS_SPREAD
 };
 use super::shotgun_laser_shot::ShotgunLaserShot;
 use super::{Actor, ActorID};
@@ -19,8 +20,10 @@ use super::{Actor, ActorID};
 
 pub struct ShotgunShotSource
 {
-    pub transform: Transform,
-    pub id: Option<ActorID>,
+    transform: Transform,
+    id: Option<ActorID>,
+    volume_areas: Vec<VolumeArea>,
+    flash_max_size_reached: bool,
 }
 
 
@@ -29,7 +32,7 @@ impl ShotgunShotSource
     pub fn new(
         real_start_position: Vec4,
         visible_start_position: Vec4,
-        mut direction: Vec4,
+        direction: Vec4,
         rng_seed: u64,
         is_replicated: bool,
         damage_dealer_id: ActorID,
@@ -40,14 +43,26 @@ impl ShotgunShotSource
     {
         let mut rng = StdRng::seed_from_u64(rng_seed);
 
-        for _ in 0..LASER_SHOTS_AMOUNT
+        for i in 0..SHOTGUN_LASER_SHOTS_AMOUNT
         {
-            let direction_deviation = {
+            let mut direction = direction;
+
+            let direction_deviation = if i <= SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD
+            {
                 Vec4::new(
-                    (rng.random::<f32>()-0.5)*SHOTS_SPREAD,
-                    (rng.random::<f32>()-0.5)*SHOTS_SPREAD,
-                    (rng.random::<f32>()-0.5)*SHOTS_SPREAD,
-                    0.0//(rng.random::<f32>()-0.5)*SHOTS_SPREAD,
+                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                    0.0,
+                )
+            }
+            else
+            {
+                Vec4::new(
+                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
                 )
             };
 
@@ -58,7 +73,7 @@ impl ShotgunShotSource
             let hit = physic_system.ray_cast(
                 real_start_position,
                 direction,
-                700.0,
+                SHOTGUN_LASER_SHOT_MAX_DISTANCE,
                 Some(damage_dealer_id),
             );
 
@@ -68,7 +83,7 @@ impl ShotgunShotSource
             }
             else
             {
-                real_start_position + (direction*700.0)
+                real_start_position + (direction*SHOTGUN_LASER_SHOT_MAX_DISTANCE)
             };
 
             let shotgun_laser_shot = ShotgunLaserShot::new(
@@ -90,11 +105,23 @@ impl ShotgunShotSource
             );
         }
 
+        let flash = VolumeArea::SphericalVolumeArea(
+            SphericalVolumeArea {
+                translation: Vec4::ZERO,
+                radius: 0.01,
+                color: SHOTGUN_LASER_SHOT_COLOR,
+            }
+        );
+
+        let mut volume_areas = Vec::with_capacity(1);
+        volume_areas.push(flash);
 
         ShotgunShotSource
         {
             transform: Transform::from_position(visible_start_position),
             id: None,
+            volume_areas,
+            flash_max_size_reached: false,
         }
     }
 }
@@ -117,6 +144,17 @@ impl Actor for ShotgunShotSource
         self.id = Some(id);
     }
 
+    fn get_visual_element(&self) -> Option<VisualElement> {
+        Some(VisualElement {
+            transform: &self.transform,
+            static_objects: None,
+            coloring_areas: None,
+            volume_areas: Some(&self.volume_areas),
+            waves: None,
+            player: None
+        })
+    }
+
     fn tick(
         &mut self,
         physic_system: &PhysicsSystem,
@@ -128,12 +166,38 @@ impl Actor for ShotgunShotSource
         delta: f32
     )
     {
-        let my_id = self.id.expect("Shotgun shot source havn't ActorID");
-        engine_handle.send_command(
-            Command {
-                sender: my_id,
-                command_type: CommandType::RemoveActor(my_id)
+        if self.flash_max_size_reached
+        {
+            if let VolumeArea::SphericalVolumeArea(flash) =
+                &mut self.volume_areas[0]
+            {
+                flash.radius -= delta*SHOTGUN_SHOT_FLASH_FADE_SPEED;
+
+                if flash.radius <= 0.01
+                {
+                    let my_id = self.id.expect("Shotgun shot source havn't ActorID");
+                    
+                    engine_handle.send_command(
+                        Command {
+                            sender: my_id,
+                            command_type: CommandType::RemoveActor(my_id)
+                        }
+                    );
+                }
             }
-        );    
+        }
+        else
+        {
+            if let VolumeArea::SphericalVolumeArea(flash) =
+                &mut self.volume_areas[0]
+            {
+                flash.radius += delta*SHOTGUN_SHOT_FLASH_EXPLAND_SPEED;
+
+                if flash.radius >= SHOTGUN_SHOT_FLASH_MAX_RADIUS
+                {
+                    self.flash_max_size_reached = true;
+                }
+            }
+        }  
     }
 }

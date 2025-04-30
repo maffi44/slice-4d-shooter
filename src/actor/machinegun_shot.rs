@@ -33,17 +33,17 @@ const SHOT_HOLE_FINAL_RADIUS: f32 = 0.11;
 const SHOT_HOLE_GROWING_SPEED: f32 = 1.5;
 const SHOT_HOLE_REDUCTION_SPEED: f32 = 0.5;
 
-const SHOT_EXPLODE_START_RADIUS: f32 = 0.34;
-const SHOT_EXPLODE_FINAL_RADIUS: f32 = 0.6;
-const SHOT_EXPLODE_GROWNIG_SPEED: f32 = 3.0;
+const SHOT_EXPLOSION_START_RADIUS: f32 = 0.34;
+const SHOT_EXPLOSION_FINAL_RADIUS: f32 = 0.6;
+const SHOT_EXPLOSION_GROWNIG_SPEED: f32 = 3.0;
 
-const GUN_EXPLODE_START_RADIUS: f32 = 0.11;
-const GUN_EXPLODE_FINAL_RADIUS: f32 = 0.15;
-const GUN_EXPLODE_GROWNIG_SPEED: f32 = 2.1;
+const GUN_FLASH_START_RADIUS: f32 = 0.05;
+const GUN_FLASH_FINAL_RADIUS: f32 = 0.10;
+const GUN_FLASH_GROWNIG_SPEED: f32 = 2.1;
 
 const BEAM_START_RADIUS: f32 = 0.007;
 const BEAM_FINAL_RADIUS: f32 = 0.06;
-const BEAM_GROWING_SPEED: f32 = 3.0;
+const BEAM_GROWING_SPEED: f32 = 1.5;
 
 const COLOR: Vec3 = Vec3::new(5.0, 0.8, 5.0);
 
@@ -79,7 +79,7 @@ impl MachinegunShot {
         let charging_volume_area = VolumeArea::SphericalVolumeArea(
             SphericalVolumeArea {
                 translation: shooted_from - position,
-                radius: GUN_EXPLODE_START_RADIUS * shot_explode_radius_mult,
+                radius: GUN_FLASH_START_RADIUS * shot_explode_radius_mult,
                 color: COLOR,
             }
         );
@@ -126,7 +126,7 @@ impl MachinegunShot {
             let explode = VolumeArea::SphericalVolumeArea(
                 SphericalVolumeArea {
                     translation: Vec4::ZERO,
-                    radius: SHOT_EXPLODE_START_RADIUS,
+                    radius: SHOT_EXPLOSION_START_RADIUS,
                     color: COLOR, 
                 }
             );
@@ -210,7 +210,6 @@ impl Actor for MachinegunShot {
 
             for area in self.coloring_areas.iter_mut() {
                 area.radius += delta * SHOT_HOLE_GROWING_SPEED;
-                area.radius = area.radius.abs();
             }
             
             for obj in self.static_objects.iter_mut() {
@@ -236,9 +235,9 @@ impl Actor for MachinegunShot {
 
             match &mut self.volume_areas[1] {
                 VolumeArea::SphericalVolumeArea(area) => {
-                    area.radius += delta * GUN_EXPLODE_GROWNIG_SPEED;
+                    area.radius += delta * GUN_FLASH_GROWNIG_SPEED;
 
-                    if area.radius >= GUN_EXPLODE_FINAL_RADIUS {
+                    if area.radius >= GUN_FLASH_FINAL_RADIUS {
                         size_reached = true;
                     }
                 }
@@ -249,7 +248,7 @@ impl Actor for MachinegunShot {
 
                 match &mut self.volume_areas[2] {
                     VolumeArea::SphericalVolumeArea(area) => {
-                        area.radius += delta*SHOT_EXPLODE_GROWNIG_SPEED;
+                        area.radius += delta*SHOT_EXPLOSION_GROWNIG_SPEED;
                         area.radius = area.radius.abs();
                     }
                     _ => {}

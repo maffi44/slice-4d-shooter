@@ -8,7 +8,7 @@ use crate::{
                 get_big_normal, get_bounce_and_friction, get_dist, get_normal
             }, physics_system_data::PhysicsState
         },
-    }, transform::Transform
+    }, transform::{Transform, UP, W_UP}
 };
 
 use glam::Vec4;
@@ -162,8 +162,8 @@ impl KinematicCollider {
             };
 
             //check if collider staying on the ground
-            let y_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * Vec4::Y);
-            let w_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * Vec4::W);
+            let y_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * UP);
+            let w_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * W_UP);
 
             if get_dist(
                 y_bottom_position,
