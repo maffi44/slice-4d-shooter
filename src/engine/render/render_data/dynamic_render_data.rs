@@ -1545,24 +1545,20 @@ pub fn get_view_clip_planes(
     screen_aspect: f32,
 ) -> (Vec4, Vec4, Vec4, Vec4, Vec4)
 {
-    let cam_zw_rot = camera.get_zw_rotation_matrix();
-    let cam_zy_rot = camera.get_zy_rotation_matrix();
-    let cam_zx_rot = camera.get_zx_rotation_matrix();
-
     let rotation = camera.get_rotation_matrix().inverse();
     
-    let up_clip_plane = Vec4::new(0.0, -1.428573, -1.0, 0.0).normalize();
+    let up_clip_plane = (Vec4::new(0.0, -1.428573, 0.0, 0.0)+FORWARD).normalize();
     let up_clip_plane = rotation * up_clip_plane;
 
-    let down_clip_plane = Vec4::new(0.0, 1.428573, -1.0, 0.0).normalize();
+    let down_clip_plane = (Vec4::new(0.0, 1.428573, 0.0, 0.0)+FORWARD).normalize();
     let down_clip_plane = rotation * down_clip_plane;
 
     let (left_clip_plane, right_clip_plane) = {
         let x = (90.0 - (0.7*screen_aspect).atan().to_degrees()).to_radians().tan();
 
         (
-            rotation * (Vec4::new(x, 0.0, -1.0, 0.0).normalize()),
-            rotation * (Vec4::new(-x, 0.0, -1.0, 0.0).normalize())
+            rotation * ((Vec4::new(x, 0.0, 0.0, 0.0)+FORWARD).normalize()),
+            rotation * ((Vec4::new(-x, 0.0, 0.0, 0.0)+FORWARD).normalize())
         )
     };
 
