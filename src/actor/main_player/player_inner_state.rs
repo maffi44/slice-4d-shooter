@@ -5,7 +5,7 @@ use glam::{FloatExt, Mat4, Vec4};
 
 use crate::{actor::session_controller::DEFAULT_TEAM, engine::{audio::{AudioSystem, Sound}, engine_handle::EngineHandle, physics::{dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, PhysicsSystem}, ui::{RectSize, UIElement, UIElementType, UISystem}}, transform::Transform};
 
-use super::{player_settings::PlayerSettings, PlayerMovingState, PlayerScreenEffects, BASE_EFFECT_HP_IMPACT_SPEED, CROSSHAIR_DECREASING_SPEED, CROSSHAIR_INCREASING_SPEED, CROSSHAIR_MAX_SIZE, CROSSHAIR_MIN_SIZE, DEFAULT_ZW_ROTATION_TARGET_IN_RADS, PLAYER_MAX_HP};
+use super::{player_settings::PlayerSettings, PlayerMovingState, PlayerScreenEffects, BASE_EFFECT_HP_IMPACT_SPEED, CROSSHAIR_DECREASING_SPEED, CROSSHAIR_INCREASING_SPEED, CROSSHAIR_MAX_SIZE, CROSSHAIR_MIN_SIZE, CROSSHAIR_ROTATION_SPEED, DEFAULT_ZW_ROTATION_TARGET_IN_RADS, PLAYER_MAX_HP};
 
 pub struct PlayerInnerState {
     pub team: Team,
@@ -17,6 +17,8 @@ pub struct PlayerInnerState {
     pub is_enable: bool,
     pub crosshair_target_size: f32,
     pub crosshair_size: f32,
+    pub crosshair_target_rotation: f32,
+    pub crosshair_rotation: f32,
     pub zw_rotation: Mat4,
     pub zy_rotation: Mat4,
     pub zx_rotation: Mat4,
@@ -111,6 +113,8 @@ impl PlayerInnerState {
             is_enable,
             crosshair_target_size: 0.04,
             crosshair_size: 0.04,
+            crosshair_rotation: 0.0,
+            crosshair_target_rotation: 0.0,
             show_crosshaier_hit_mark_timer: 0.0,
 
             zw_rotation: Mat4::IDENTITY,
@@ -195,11 +199,18 @@ impl PlayerInnerState {
 
     pub fn process_crosshair_size_and_ui(&mut self, ui_system: &mut UISystem, delta: f32)
     {
-        let crosshair = ui_system.get_mut_ui_element(&UIElementType::Crosshair);
-
-        if let UIElement::Image(crosshair) = crosshair {
-            crosshair.ui_data.rect.size = RectSize::LockedHeight(self.crosshair_size);
+        if self.crosshair_rotation <= self.crosshair_target_rotation
+        {
+            self.crosshair_rotation = 0.0;
+            self.crosshair_target_rotation = 0.0;
         }
+
+        self.crosshair_rotation += {
+            (delta*CROSSHAIR_ROTATION_SPEED).
+                max(
+                    (self.crosshair_target_rotation - self.crosshair_rotation)
+                )
+        };
 
         self.crosshair_target_size = self.crosshair_target_size
             .min(CROSSHAIR_MAX_SIZE); 
@@ -217,6 +228,13 @@ impl PlayerInnerState {
             self.crosshair_size =
                 (self.crosshair_size - CROSSHAIR_DECREASING_SPEED*delta)
                 .max(CROSSHAIR_MIN_SIZE);
+        }
+
+        let crosshair = ui_system.get_mut_ui_element(&UIElementType::Crosshair);
+
+        if let UIElement::Image(crosshair) = crosshair {
+            crosshair.ui_data.rect.size = RectSize::LockedHeight(self.crosshair_size);
+            crosshair.ui_data.rect.rotation_around_rect_center = self.crosshair_rotation;
         }
 
         if self.show_crosshaier_hit_mark_timer > 0.0

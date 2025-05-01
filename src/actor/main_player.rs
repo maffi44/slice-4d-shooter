@@ -538,6 +538,9 @@ const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
 
 pub const TIME_TO_DIE_SLOWLY: f32 = 0.5;
 
+const CROSSHAIR_ROTATION_SPEED: f32 = -12.0;
+const CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION: f32 = -PI*0.5;
+const CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE: f32 = 0.1;
 const CROSSHAIR_INCREASING_SPEED: f32 = 0.35f32;
 const CROSSHAIR_DECREASING_SPEED: f32 = 0.04f32;
 const CROSSHAIR_MAX_SIZE: f32 = 0.038;
@@ -2224,6 +2227,10 @@ pub fn process_switch_active_hand_slot_input
 )
 {
     if input.activate_hand_slot_0.is_action_just_pressed() {
+        
+        inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
+        inner_state.crosshair_target_size = CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE;
+
         deavctivate_previous_device(
             ActiveHandsSlot::Zero,
             active_hands_slot,
@@ -2252,6 +2259,10 @@ pub fn process_switch_active_hand_slot_input
     }
 
     if input.activate_hand_slot_1.is_action_just_pressed() {
+
+        inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
+        inner_state.crosshair_target_size = CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE;
+
         if hands_slot_1.is_some() {
             deavctivate_previous_device(
                 ActiveHandsSlot::First,
@@ -2282,6 +2293,10 @@ pub fn process_switch_active_hand_slot_input
     }
 
     if input.activate_hand_slot_2.is_action_just_pressed() {
+
+        inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
+        inner_state.crosshair_target_size = CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE;
+
         if hands_slot_2.is_some() {
             deavctivate_previous_device(
                 ActiveHandsSlot::Second,
@@ -2312,6 +2327,10 @@ pub fn process_switch_active_hand_slot_input
     }
 
     if input.activate_hand_slot_3.is_action_just_pressed() {
+
+        inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
+        inner_state.crosshair_target_size = CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE;
+
         if hands_slot_3.is_some() {
             deavctivate_previous_device(
                 ActiveHandsSlot::Third,
