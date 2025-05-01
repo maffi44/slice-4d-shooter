@@ -249,9 +249,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
                 let en_pos_2d = en_pos.zw;
 
-                let e = clamp((0.13 - length(uv_pos-en_pos_2d)) * 100.0, 0.0, 1.0);
+                let e = clamp((0.09 - length(uv_pos-en_pos_2d)) * 100.0, 0.0, 1.0);
 
-                let l = clamp((0.09 - sd_line(uv_pos, en_pos_2d, vec2(0.0))) * 12.0, 0.0, 1.0) *
+                let l = clamp((0.13 - sd_line(uv_pos, en_pos_2d, vec2(0.0))) * 12.0, 0.0, 1.0) *
                     clamp(dynamic_data.player_projections[i].damage_intensity*2.0,0.0,1.0);
 
                 en_a += (e+l)* clamp(dynamic_data.player_projections[i].intensity*2.0,0.0,1.0);

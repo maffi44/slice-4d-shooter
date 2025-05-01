@@ -242,7 +242,7 @@ impl DynamicRenderData {
                                 is_red: [1;4],
                                 color: [1.0, 0.0, 0.0],
                                 radius: player_sphere.radius,
-                                rotation: actor.get_transform().get_rotation().to_cols_array(),
+                                rotation: actor.get_transform().get_rotation().transpose().to_cols_array(),
                                 weapon_offset: player_sphere.weapon_offset.to_array()
                             }
                         }
@@ -253,7 +253,7 @@ impl DynamicRenderData {
                                 is_red: [0;4],
                                 color: [1.0, 0.0, 0.0],
                                 radius: player_sphere.radius,
-                                rotation: actor.get_transform().get_rotation().to_cols_array(),
+                                rotation: actor.get_transform().get_rotation().transpose().to_cols_array(),
                                 weapon_offset: player_sphere.weapon_offset.to_array()
                             }
                         }

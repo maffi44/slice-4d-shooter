@@ -117,6 +117,6 @@ impl Transform {
 
     #[inline]
     pub fn get_direction_for_audio_system(&self) -> Vec4 {
-        self.rotation * Vec4::Z
+        self.rotation * BACKWARD
     }
 }
