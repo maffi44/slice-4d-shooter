@@ -137,11 +137,11 @@ impl HoleGun {
 
         let from = player.get_eyes_position();
                 
-        let direction = player.transform.get_rotation().inverse() * FORWARD;
+        let direction = player.transform.get_rotation() * FORWARD;
     
         let weapon_offset = {
             player.get_eyes_offset() +
-            (player.transform.get_rotation().inverse() *
+            (player.transform.get_rotation() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
         
@@ -388,7 +388,7 @@ impl Device for HoleGun {
     
                     let shooted_from_offset = {
                         (player.get_eyes_offset()) +
-                        (player.transform.get_rotation().inverse() *
+                        (player.transform.get_rotation() *
                         (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
                     };
     
@@ -435,7 +435,7 @@ impl Device for HoleGun {
                     VolumeArea::SphericalVolumeArea(area) => {
                         let shooted_from_offset = {
                             (player.get_eyes_offset()) +
-                            (player.transform.get_rotation().inverse() *
+                            (player.transform.get_rotation() *
                             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
                         };
 

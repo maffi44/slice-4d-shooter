@@ -346,7 +346,7 @@ impl PlayersProjections
             let player_position = inner_state.get_position();
         
             let player_to_projection_vec = updated_projection_original_position - player_position;
-            let player_w_vertical_dir = inner_state.get_rotation_matrix().inverse() * W_UP;
+            let player_w_vertical_dir = inner_state.get_rotation_matrix() * W_UP;
     
             let rel_projection_w_offset = player_w_vertical_dir.dot(player_to_projection_vec.normalize());
     
@@ -1452,7 +1452,7 @@ pub fn process_projection_w_aim(
                 true;
         }
         
-        let view_vec = inner_state.get_rotation_matrix().inverse() * FORWARD;
+        let view_vec = inner_state.get_rotation_matrix() * FORWARD;
         let hited_projection = screen_effects
             .player_projections
             .get_intersected_projection
@@ -1568,15 +1568,15 @@ pub fn process_player_rotation(
         yz = (input.mouse_axis.y * player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
     }
 
-    let zy_rotation = Mat4::from_rotation_x(-yz);
+    let zy_rotation = Mat4::from_rotation_x(yz);
 
-    let zx_rotation = Mat4::from_rotation_y(-xz);
+    let zx_rotation = Mat4::from_rotation_y(xz);
 
     let zw_rotation = Mat4::from_cols_slice(&[
         1.0,    0.0,    0.0,        0.0,
         0.0,    1.0,    0.0,        0.0,
-        0.0,    0.0,    (zw).cos(),   (zw).sin(),
-        0.0,    0.0,    -(zw).sin(),   (zw).cos()
+        0.0,    0.0,    (-zw).cos(),   (-zw).sin(),
+        0.0,    0.0,    -(-zw).sin(),   (-zw).cos()
     ]);
 
     inner_state.saved_angle_of_rotation.x = xz;
@@ -1586,7 +1586,12 @@ pub fn process_player_rotation(
     inner_state.zw_rotation = zw_rotation;
     inner_state.zy_rotation = zy_rotation;
     inner_state.zx_rotation = zx_rotation;
-    inner_state.set_rotation_matrix( zw_rotation * zy_rotation * zx_rotation);
+
+    let mut rotation = zx_rotation;
+    rotation *= zy_rotation;
+    rotation *= zw_rotation;
+    
+    inner_state.set_rotation_matrix(rotation);
 }
 
 
@@ -1742,7 +1747,7 @@ pub fn process_player_movement_input(
         movement_vec = vec;
     }
 
-    movement_vec = inner_state.get_rotation_matrix().inverse() * movement_vec;
+    movement_vec = inner_state.get_rotation_matrix() * movement_vec;
     movement_vec.y = 0.0;
     movement_vec.w = 0.0;
 

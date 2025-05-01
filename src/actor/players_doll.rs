@@ -433,7 +433,7 @@ impl PlayersDoll {
             }
         }
 
-        movement_vec = self.target_transform.get_rotation().inverse() * movement_vec;
+        movement_vec = self.target_transform.get_rotation() * movement_vec;
 
         movement_vec.y = 0.0;
         movement_vec.w = 0.0;
@@ -724,7 +724,7 @@ impl Actor for PlayersDoll {
                                     let volume_area = VolumeArea::SphericalVolumeArea(
                                         SphericalVolumeArea {
                                             color,
-                                            translation: self.transform.get_rotation().inverse() * self.weapon_shooting_point,
+                                            translation: self.transform.get_rotation() * self.weapon_shooting_point,
                                             radius: 0.1 * VISUAL_FIRE_SHPERE_MULT,
                                         }
                                     );
@@ -792,7 +792,7 @@ impl Actor for PlayersDoll {
                                     50.0
                                 );
 
-                                let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
+                                let shooted_from = self.transform.get_position() + self.transform.get_rotation() * self.weapon_shooting_point;
 
                                 let charging_volume_area = VolumeArea::SphericalVolumeArea(
                                     SphericalVolumeArea {
@@ -846,7 +846,7 @@ impl Actor for PlayersDoll {
                                     50.0
                                 );
 
-                                let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
+                                let shooted_from = self.transform.get_position() + self.transform.get_rotation() * self.weapon_shooting_point;
 
                                 let charging_volume_area = VolumeArea::SphericalVolumeArea(
                                     SphericalVolumeArea {
@@ -874,7 +874,7 @@ impl Actor for PlayersDoll {
                             },
 
                             PlayersDollMessage::SpawnMachineGunShot(position, it_is_miss) => {
-                                let shooted_from = self.transform.get_position() + self.transform.get_rotation().inverse() * self.weapon_shooting_point;
+                                let shooted_from = self.transform.get_position() + self.transform.get_rotation() * self.weapon_shooting_point;
 
                                 audio_system.spawn_spatial_sound(
                                     Sound::MachinegunShot,
@@ -1102,7 +1102,7 @@ impl Actor for PlayersDoll {
                     VolumeArea::SphericalVolumeArea(area) => {
                         if self.charging_time < 4.4 {
                             area.radius = self.charging_time * 0.07 * VISUAL_FIRE_SHPERE_MULT;
-                            area.translation = self.transform.get_rotation().inverse() * self.weapon_shooting_point;
+                            area.translation = self.transform.get_rotation() * self.weapon_shooting_point;
                         }
                         else
                         {

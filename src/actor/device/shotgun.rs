@@ -112,13 +112,13 @@ impl Shotgun {
 
         let weapon_offset = {
             player.get_eyes_offset() +
-            (player.transform.get_rotation().inverse() *
+            (player.transform.get_rotation() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
 
         let real_start_position = player.get_eyes_position();
         let visible_start_position = player.transform.get_position() + weapon_offset;
-        let direction = player.transform.get_rotation().inverse() * FORWARD;
+        let direction = player.transform.get_rotation() * FORWARD;
 
         let shotgun_shot_source = ShotgunShotSource::new(
             real_start_position,

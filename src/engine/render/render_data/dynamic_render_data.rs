@@ -1232,9 +1232,9 @@ impl OtherDynamicData {
 
         self.camera_data = CameraUniform {
             cam_pos: camera.get_position().to_array(),
-            cam_zw_rot: camera.get_zw_rotation_matrix().to_cols_array(),
-            cam_zy_rot: camera.get_zy_rotation_matrix().to_cols_array(),
-            cam_zx_rot: camera.get_zx_rotation_matrix().to_cols_array(),
+            cam_zw_rot: camera.get_zw_rotation_matrix().transpose().to_cols_array(),
+            cam_zy_rot: camera.get_zy_rotation_matrix().transpose().to_cols_array(),
+            cam_zx_rot: camera.get_zx_rotation_matrix().transpose().to_cols_array(),
         };
 
         self.dynamic_shapes_arrays_metadata = shapes_arrays_metadata;
@@ -1545,7 +1545,7 @@ pub fn get_view_clip_planes(
     screen_aspect: f32,
 ) -> (Vec4, Vec4, Vec4, Vec4, Vec4)
 {
-    let rotation = camera.get_rotation_matrix().inverse();
+    let rotation = camera.get_rotation_matrix();
     
     let up_clip_plane = (Vec4::new(0.0, -1.428573, 0.0, 0.0)+FORWARD).normalize();
     let up_clip_plane = rotation * up_clip_plane;

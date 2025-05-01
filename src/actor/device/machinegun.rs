@@ -136,12 +136,12 @@ impl MachineGun {
         
         let forward_dir = random_dir_x * random_dir_y * FORWARD;
         
-        let direction = player.transform.get_rotation().inverse() * forward_dir;
+        let direction = player.transform.get_rotation() * forward_dir;
         // direction = random_dir_x * direction;
 
         let weapon_offset = {
             player.get_eyes_offset() +
-            (player.transform.get_rotation().inverse() *
+            (player.transform.get_rotation() *
             (self.shooted_from_pivot_point_dir.normalize() * player.collider.get_collider_radius()))
         };
 
