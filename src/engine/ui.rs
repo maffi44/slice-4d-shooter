@@ -102,6 +102,9 @@ pub enum UIElementType {
     MachinegunBarBlue,
     MachinegunBarRed,
     MachinegunImage,
+    ShotgunBarBlue,
+    ShotgunBarRed,
+    ShotgunImage,
     Crosshair,
     CrosshairHitMark,
     ScannerBlue,
@@ -142,6 +145,8 @@ pub enum TextureType {
     HeathBarMaskRed,
     EnergyGunBarTexture,
     EnergyGunImgTexture,
+    ShotgunBarTexture,
+    ShotgunImgTexture,
     MachinegunBarTexture,
     MachinegunImgTexture,
     GunBarMaskBlue,
@@ -322,6 +327,14 @@ impl UISystem {
         texture_sources.insert(
             TextureType::WAimFrame,
             include_bytes!("../assets/textures/w_aim_frame.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ShotgunBarTexture,
+            include_bytes!("../assets/textures/shotgun_bar_texture_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ShotgunImgTexture,
+            include_bytes!("../assets/textures/shotgun_image.png").as_slice()
         );
         
 
@@ -804,6 +817,85 @@ impl UISystem {
                         None,
                     ),
                     TextureType::MachinegunImgTexture
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ShotgunBarRed,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                        
+                    ),
+                    TextureType::ShotgunBarTexture,
+                    TextureType::GunBarMaskRed,
+                    0.95,
+                    0.17,
+                    ProgressBarDirection::RightLeft,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ShotgunBarBlue,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                        
+                    ),
+                    TextureType::ShotgunBarTexture,
+                    TextureType::GunBarMaskBlue,
+                    0.95,
+                    0.17,
+                    ProgressBarDirection::RightLeft,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ShotgunImage,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::ShotgunImgTexture
                 )
             )
         );

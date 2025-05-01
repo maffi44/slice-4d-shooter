@@ -1590,7 +1590,7 @@ pub fn process_player_rotation(
     let mut rotation = zx_rotation;
     rotation *= zy_rotation;
     rotation *= zw_rotation;
-    
+
     inner_state.set_rotation_matrix(rotation);
 }
 
@@ -2832,6 +2832,9 @@ pub fn make_hud_transparency_as_death_screen_effect(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunBarRed);
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::ShotgunBarRed);
+            hud_elem.get_ui_data_mut().rect.transparency = a;
+
             let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
@@ -2853,6 +2856,9 @@ pub fn make_hud_transparency_as_death_screen_effect(
             hud_elem.get_ui_data_mut().rect.transparency = a;
             
             let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunBarBlue);
+            hud_elem.get_ui_data_mut().rect.transparency = a;
+
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::ShotgunBarBlue);
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
