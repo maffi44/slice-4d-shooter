@@ -169,7 +169,16 @@ pub enum RemoteCommand {
 #[alkahest(Formula, Serialize, Deserialize)]
 #[derive(Clone)]
 pub enum RemoteMessage {
-    DealDamageAndAddForce(u32, [f32;4], [f32;4], Team),
+    DealDamageAndAddForce(
+        // damage
+        u32,
+        // force
+        [f32;4],
+        // impact position
+        [f32;4],
+        // damage dealer's team
+        Team
+    ),
     DieImmediately,
     DieSlowly,
     PlayerRespawn(
@@ -184,11 +193,60 @@ pub enum RemoteMessage {
     ),
     Enable(bool),
     SetTransform(SerializableTransform),
-    SetPlayerDollState(SerializableTransform, (bool,bool,bool,bool,bool), [f32;4], u128),
-    SpawnHoleGunShotActor([f32;4], [f32;4], f32, [f32;3], f32),
-    SpawHoleGunMissActor([f32;4], [f32;4], f32, [f32;3], f32),
+    SetPlayerDollState(
+        // Player's transform
+        SerializableTransform,
+        // simple input state (for extrapolation)
+        (bool,bool,bool,bool,bool),
+        // player's velocity
+        [f32;4],
+        // frame's server time
+        u128
+    ),
+    SpawnHoleGunShotActor(
+        // shot's impact position
+        [f32;4],
+        // shot's source position
+        [f32;4],
+        // hole radius
+        f32,
+        // hole color
+        [f32;3],
+        // shot's flash radius
+        f32
+    ),
+    SpawHoleGunMissActor(
+        // shot's impact position
+        [f32;4],
+        // shot's source position
+        [f32;4],
+        // hole radius
+        f32,
+        // hole color
+        [f32;3],
+        // shot's flash radius
+        f32
+    ),
+
     HoleGunStartCharging,
-    SpawnMachineGunShot([f32;4], bool),
+    SpawnMachineGunShot(
+        // shot's impact position
+        [f32;4],
+        // it is miss
+        bool
+    ),
+    SpawnShotgunShot(
+        // shot's start position
+        [f32;4],
+        // shot's main direction
+        [f32;4],
+        // random seed
+        u64,
+        //damage dealer's id
+        u128,
+        //damage dealer's team
+        Team,
+    ),
 
     SetFlagStatus(
         // Which team's flag status has changed
@@ -215,8 +273,7 @@ pub enum RemoteMessage {
         Team
     ),
 
-    TeamWin
-    (
+    TeamWin(
         Team
     ),
 }

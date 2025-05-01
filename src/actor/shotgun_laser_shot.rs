@@ -73,6 +73,7 @@ impl ShotgunLaserShot
         damage_dealer_id: ActorID,
         damage_dealer_team: Team,
         is_replicated: bool,
+        beam_and_flash_size_mult: f32,
 
     ) -> Self
     {
@@ -95,7 +96,7 @@ impl ShotgunLaserShot
         let laser = BeamVolumeArea {
             translation_pos_1: Vec4::ZERO,
             translation_pos_2: visible_shot_direction*0.01,
-            radius: SHOTGUN_LASER_SHOT_BEAM_RADIUS,
+            radius: SHOTGUN_LASER_SHOT_BEAM_RADIUS*beam_and_flash_size_mult,
             color: SHOTGUN_LASER_SHOT_COLOR,
         };
 
@@ -254,7 +255,8 @@ impl Actor for ShotgunLaserShot
 
                 if let Some(explosion) = self.get_explosion_volume_area()
                 {
-                    explosion.radius -= delta*SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED;
+                    explosion.radius -= delta*
+                        SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED;
 
                     if explosion.radius < 0.01
                     {

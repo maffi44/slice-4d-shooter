@@ -168,7 +168,6 @@ async fn handle_client_connection(
     state: GameServersState,
     config: Config,
     async_rutime: Arc<Runtime>,
-    game_servers_alive_checker_sender: tokio::sync::mpsc::Sender<u16>,
 ) {
 
     let ws_stream = accept_async(stream).await.unwrap();
@@ -268,8 +267,7 @@ async fn handle_client_connection(
                                             let server_info = spawn_game_server(
                                                 new_port,
                                                 &config,
-                                                async_rutime.clone(),
-                                                game_servers_alive_checker_sender.clone(),
+                                                async_rutime.clone()
                                             ).await.unwrap();
         
                                             println!("INFO: New game server is successfully created, send to the client server's addres");
@@ -349,7 +347,6 @@ async fn spawn_game_server(
     port: u16,
     config: &Config,
     async_rutime: Arc<Runtime>,
-    game_servers_alive_checker_sender: tokio::sync::mpsc::Sender<u16>,
 ) -> Result<GameServerInfo, Box<dyn std::error::Error>>
 {
     let mut server_proccess = Command::new("./game_server")
@@ -377,13 +374,6 @@ async fn spawn_game_server(
             async_rutime.spawn(
                 keep_server_process(
                     server_proccess,
-                    game_servers_alive_checker_sender,
-                    port
-                )
-            );
-
-            async_rutime.spawn(
-                read_server_stderr(
                     server_stdout_reader,
                     server_stderr,
                     port
@@ -413,41 +403,11 @@ async fn spawn_game_server(
 
 
 async fn keep_server_process(
-    mut server_proccess: Child,
-    game_servers_alive_checker_sender: tokio::sync::mpsc::Sender<u16>,
-    server_index: u16,
-) {
-    loop
-    {
-        match server_proccess.try_wait() {
-            Ok(status) =>
-            {
-                match status {
-                    None =>
-                    {
-                        tokio::time::sleep(Duration::from_secs(10)).await;
-                    }
-                    Some(_) =>
-                    {
-                        game_servers_alive_checker_sender.send(server_index).await.unwrap()
-                    }
-                }
-            }
-            Err(_) =>
-            {
-                game_servers_alive_checker_sender.send(server_index).await.unwrap()
-            }
-        }
-    }
-}
-
-
-async fn read_server_stderr(
+    server_proccess: Child,
     mut server_stdout_reader: Lines<BufReader<ChildStdout>>,
     mut server_stderr: ChildStderr,
     server_index: u16,
-)
-{
+) {
     while let Some(line) = server_stdout_reader.next_line().await.unwrap() {
         println!("INFO: [{}] server stdout is: {}", server_index, line);
         continue ;
@@ -459,6 +419,7 @@ async fn read_server_stderr(
 
     println!("{}", err);
 }
+
 
 async fn handle_server_message(
     stream: tokio::net::TcpStream,
@@ -619,29 +580,15 @@ async fn async_main(
         }
     });
 
-    // this is necessary to keep matchmaking server alive during long inactivity
-    async_runtime.spawn(async move {
-        loop
-        {
-            println!("ping");
+    // this is necessary to keep matchmaking server alive during long inactivity  
+    // async_runtime.spawn(async move {
+    //     loop
+    //     {
+    //         println!("ping");
 
-            tokio::time::sleep(Duration::from_secs(60*10)).await;
-        }
-    });
-
-
-    let (game_servers_alive_checker_sender, mut game_servers_alive_checker_rx) =
-        tokio::sync::mpsc::channel::<u16>(200);
-    
-    let cloned_state_3 = state.clone();
-
-    async_runtime.spawn( async move {
-        while let Some(game_server_index) = game_servers_alive_checker_rx.recv().await
-        {
-            cloned_state_3.lock().await.remove(&game_server_index);
-        }
-        panic!("ERROR: game servers alive checker channel is closed")
-    });
+    //         tokio::time::sleep(Duration::from_secs(60*10)).await;
+    //     }
+    // });
     
     loop
     {
@@ -654,7 +601,6 @@ async fn async_main(
                         state.clone(),
                         config.clone(),
                         async_runtime.clone(),
-                        game_servers_alive_checker_sender.clone(),
                     )
                 );
             }

@@ -918,7 +918,7 @@ fn get_indicidual_volume_beam_color(beam: BeamArea, start_pos: vec4<f32>, direct
 
     let d = capsule_intersection(start_pos, direction, beam.pos1, beam.pos2, beam.radius);
 
-    if d > 0.0 {
+    if d > 0.0 && d < max_distance {
         let p = start_pos + direction*d;
         
         let beam_normal = get_capsule_normal(p, beam.pos1, beam.pos2, beam.radius);

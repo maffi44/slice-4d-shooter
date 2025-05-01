@@ -29,9 +29,9 @@ use crate::{
 };
 
 use super::{
-    device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, mover_w::MoverWMessage, main_player::{
+    device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, main_player::{
         player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
-    }, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, Actor, ActorID, ActorWrapper, CommonActorsMessage, Component, Message, MessageType, SpecificActorMessage
+    }, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, shotgun_shot_source::ShotgunShotSource, Actor, ActorID, ActorWrapper, CommonActorsMessage, Component, Message, MessageType, SpecificActorMessage
 };
 
 #[derive(Clone)]
@@ -109,6 +109,18 @@ pub struct PlayersDoll {
 
 #[derive(Clone)]
 pub enum PlayersDollMessage{
+    SpawnShotgunShot(
+        // shot's start position
+        Vec4,
+        // shot's main direction
+        Vec4,
+        // random seed
+        u64,
+        //damage dealer's id
+        u128,
+        //damage dealer's team
+        Team,
+    ),
     SetInterploatedModelTargetState(
         // postition
         Transform,
@@ -692,6 +704,37 @@ impl Actor for PlayersDoll {
                     {
                         match message
                         {
+                            PlayersDollMessage::SpawnShotgunShot(
+                                start_pos,
+                                shot_dir ,
+                                rng_seed,
+                                damage_dealer_id,
+                                damage_dealer_team,
+                            ) =>
+                            {
+                                let shooted_from = self.transform.get_position() + self.transform.get_rotation() * self.weapon_shooting_point;
+                        
+                                let shotgun_shot_source = ShotgunShotSource::new(
+                                    start_pos,
+                                    shooted_from,
+                                    shot_dir,
+                                    rng_seed,
+                                    true,
+                                    damage_dealer_id,
+                                    damage_dealer_team,
+                                    1.3,
+                                    engine_handle,
+                                    physics_system,
+                                );
+
+                                engine_handle.send_command(Command {
+                                    sender: 0u128,
+                                    command_type: CommandType::SpawnActor(
+                                        ActorWrapper::ShotgunShotSource(shotgun_shot_source)
+                                    )
+                                })
+                            },
+
                             PlayersDollMessage::YouHitedMe(_,_,_) => {}
 
                             PlayersDollMessage::SetInterploatedModelTargetState(

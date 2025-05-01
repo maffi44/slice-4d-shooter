@@ -150,7 +150,7 @@ impl Renderer {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::PRIMARY,
+            backends: wgpu::Backends::all(),
             flags: InstanceFlags::empty(),
             backend_options: BackendOptions::from_env_or_default()
         });
@@ -195,15 +195,16 @@ impl Renderer {
                     // },
                     label: None,
                     required_features:
-                        wgpu::Features::all_native_mask() ^
-                        wgpu::Features::EXPERIMENTAL_RAY_TRACING_ACCELERATION_STRUCTURE ^
-                        wgpu::Features::TEXTURE_COMPRESSION_ASTC_HDR ^
-                        wgpu::Features::VULKAN_GOOGLE_DISPLAY_TIMING ^
-                        wgpu::Features::VULKAN_EXTERNAL_MEMORY_WIN32 ^
-                        wgpu::Features::SHADER_EARLY_DEPTH_TEST ^
-                        wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
-                        wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
-                        wgpu::Features::SHADER_FLOAT32_ATOMIC,
+                        wgpu::Features::empty(),
+                        // wgpu::Features::all_native_mask() ^
+                        // wgpu::Features::EXPERIMENTAL_RAY_TRACING_ACCELERATION_STRUCTURE ^
+                        // wgpu::Features::TEXTURE_COMPRESSION_ASTC_HDR ^
+                        // wgpu::Features::VULKAN_GOOGLE_DISPLAY_TIMING ^
+                        // wgpu::Features::VULKAN_EXTERNAL_MEMORY_WIN32 ^
+                        // wgpu::Features::SHADER_EARLY_DEPTH_TEST ^
+                        // wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
+                        // wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
+                        // wgpu::Features::SHADER_FLOAT32_ATOMIC,
                     required_limits: wgpu::Limits::default(),
                     memory_hints: wgpu::MemoryHints::Performance,
                 },

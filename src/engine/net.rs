@@ -744,6 +744,33 @@ fn process_message(
         NetMessageToPlayer::RemoteDirectMessage(actor_id, message) => {
             match message
             {
+                RemoteMessage::SpawnShotgunShot(
+                    start_pos,
+                    shot_dir ,
+                    rng_seed,
+                    damage_dealer_id,
+                    damage_dealer_team,
+                ) =>
+                {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: message_from_peer_id,
+                            remote_sender: true,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawnShotgunShot(
+                                        start_pos.into(),
+                                        shot_dir.into(),
+                                        rng_seed,
+                                        damage_dealer_id,
+                                        damage_dealer_team,
+                                    )
+                                )
+                            )
+                        }
+                    );
+                },
                 RemoteMessage::TeamWin(team) =>
                 {
                     engine_handle.send_direct_message(
@@ -1075,6 +1102,32 @@ fn process_message(
         NetMessageToPlayer::RemoteBoardCastMessage(message) => {
             match message
             {
+                RemoteMessage::SpawnShotgunShot(
+                    start_pos,
+                    shot_dir ,
+                    rng_seed,
+                    damage_dealer_id,
+                    damage_dealer_team,
+                ) =>
+                {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: message_from_peer_id,
+                            remote_sender: true,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawnShotgunShot(
+                                        start_pos.into(),
+                                        shot_dir.into(),
+                                        rng_seed,
+                                        damage_dealer_id,
+                                        damage_dealer_team,
+                                    )
+                                )
+                            )
+                        }
+                    );
+                },
                 RemoteMessage::TeamWin(team) =>
                 {
                     engine_handle.send_boardcast_message(

@@ -24,6 +24,7 @@ pub struct ShotgunShotSource
     id: Option<ActorID>,
     volume_areas: Vec<VolumeArea>,
     flash_max_size_reached: bool,
+    beam_and_flash_size_mult: f32,
 }
 
 
@@ -37,6 +38,7 @@ impl ShotgunShotSource
         is_replicated: bool,
         damage_dealer_id: ActorID,
         damage_dealer_team: Team,
+        beam_and_flash_size_mult: f32,
         engine_handle: &mut EngineHandle,
         physic_system: &PhysicsSystem,
     ) -> Self
@@ -93,6 +95,7 @@ impl ShotgunShotSource
                 damage_dealer_id,
                 damage_dealer_team,
                 is_replicated,
+                beam_and_flash_size_mult
             );
 
             engine_handle.send_command(
@@ -122,6 +125,7 @@ impl ShotgunShotSource
             id: None,
             volume_areas,
             flash_max_size_reached: false,
+            beam_and_flash_size_mult,
         }
     }
 }
@@ -171,7 +175,7 @@ impl Actor for ShotgunShotSource
             if let VolumeArea::SphericalVolumeArea(flash) =
                 &mut self.volume_areas[0]
             {
-                flash.radius -= delta*SHOTGUN_SHOT_FLASH_FADE_SPEED;
+                flash.radius -= delta*SHOTGUN_SHOT_FLASH_FADE_SPEED*self.beam_and_flash_size_mult;
 
                 if flash.radius <= 0.01
                 {
@@ -191,7 +195,7 @@ impl Actor for ShotgunShotSource
             if let VolumeArea::SphericalVolumeArea(flash) =
                 &mut self.volume_areas[0]
             {
-                flash.radius += delta*SHOTGUN_SHOT_FLASH_EXPLAND_SPEED;
+                flash.radius += delta*SHOTGUN_SHOT_FLASH_EXPLAND_SPEED*self.beam_and_flash_size_mult;
 
                 if flash.radius >= SHOTGUN_SHOT_FLASH_MAX_RADIUS
                 {

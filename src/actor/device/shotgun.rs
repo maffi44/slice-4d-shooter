@@ -46,8 +46,8 @@ pub const SHOTGUN_LASER_SHOT_EXPLOSION_EXPAND_SPEED: f32 = 6.2;
 pub const SHOTGUN_LASER_SHOT_EXPLOSION_MAX_RADIUS: f32 = 0.25;
 pub const SHOTGUN_LASER_SHOT_EXPLOSION_HOLE_MULT: f32 = 0.4;
 pub const SHOTGUN_LASER_SHOT_MAX_DISTANCE: f32 = 200.0;
-pub const SHOTGUN_LASER_SHOT_DAMAGE: u32 = 10;
-pub const SHOTGUN_LASER_SHOT_ADD_FORCE_PER_HIT: f32 = 2.0;
+pub const SHOTGUN_LASER_SHOT_DAMAGE: u32 = 5;
+pub const SHOTGUN_LASER_SHOT_ADD_FORCE_PER_HIT: f32 = 1.0;
 pub const SHOTGUN_LASER_SHOT_SPEED: f32 = 155.5;
 pub const SHOTGUN_LASER_SHOT_LENGTH: f32 = 7.6;
 pub const SHOTGUN_LASER_SHOT_BEAM_RADIUS: f32 = 0.045;
@@ -58,7 +58,7 @@ pub const SHOTGUN_SHOT_FLASH_FADE_SPEED: f32 = 2.5;
 
 pub const SHOTGUN_LASER_SHOTS_AMOUNT: u32 = 18;
 pub const SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD: u32 = 4;
-pub const SHOTGUN_SHOTS_SPREAD: f32 = 0.175;
+pub const SHOTGUN_SHOTS_SPREAD: f32 = 0.115;
 
 pub struct Shotgun {
     // temperature: f32,
@@ -128,6 +128,7 @@ impl Shotgun {
             false,
             player_id,
             player.team,
+            1.0,
             engine_handle,
             physic_system,
         );
@@ -142,22 +143,25 @@ impl Shotgun {
             }
         );
 
-        // engine_handle.send_command(
-        //     Command {
-        //         sender: player_id,
-        //         command_type: CommandType::NetCommand(
-        //             NetCommand::SendBoardcastNetMessageReliable(
-        //                 NetMessageToPlayer::RemoteDirectMessage(
-        //                     player_id,
-        //                     RemoteMessage::SpawnMachineGunShot(
-        //                         position.to_array(),
-        //                         false,
-        //                     )
-        //                 )
-        //             )
-        //         )
-        //     }
-        // )
+        engine_handle.send_command(
+            Command {
+                sender: player_id,
+                command_type: CommandType::NetCommand(
+                    NetCommand::SendBoardcastNetMessageReliable(
+                        NetMessageToPlayer::RemoteDirectMessage(
+                            player_id,
+                            RemoteMessage::SpawnShotgunShot(
+                                real_start_position.to_array(),
+                                direction.to_array(),
+                                rng_seed,
+                                player_id,
+                                player.team,
+                            )
+                        )
+                    )
+                )
+            }
+        )
     }
 }
 
