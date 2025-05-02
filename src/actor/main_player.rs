@@ -188,6 +188,10 @@ impl PlayersProjections
         projection_id: ActorID,
         projection_show_time: f32,
         damage_intensity: f32,
+        my_id: ActorID,
+        projection_by_scanner: bool,
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle,
     )
     {
         let player_projection = self.find_projection_mut(
@@ -202,6 +206,33 @@ impl PlayersProjections
             }
             None =>
             {
+                if projection_by_scanner
+                {
+                    engine_handle.send_command(
+                        Command {
+                            sender: my_id,
+                            command_type: CommandType::NetCommand(
+                                NetCommand::SendDirectNetMessageReliable(
+                                    NetMessageToPlayer::RemoteDirectMessage(
+                                        projection_id,
+                                        RemoteMessage::YouWasScanned
+                                    ),
+                                    projection_id
+                                )
+                            )
+                        }
+                    );
+                }
+
+                audio_system.spawn_non_spatial_sound(
+                    Sound::NewProjecion,
+                    0.7,
+                    1.0,
+                    false,
+                    true,
+                    Status::Playing
+                );
+
                 let projection = PlayerProjection::new(
                     projection_id,
                     projection_show_time,
@@ -569,6 +600,7 @@ pub const GET_DAMAGE_PROJECTION_INTENSITY: f32 = 1.2;
 
 #[derive(Clone)]
 pub enum PlayerMessage {
+    YouWasScanned,
     DealDamageAndAddForce(
         // damage
         u32,
@@ -688,6 +720,18 @@ impl Actor for MainPlayer {
                     SpecificActorMessage::PlayerMessage(message) =>
                     {
                         match message {
+                            PlayerMessage::YouWasScanned =>
+                            {
+                                audio_system.spawn_non_spatial_sound(
+                                    Sound::PlayerGetScanned,
+                                    0.45,
+                                    0.8,
+                                    false,
+                                    true,
+                                    Status::Playing,
+                                );
+                            }
+
                             PlayerMessage::DataForProjection(
                                 updated_projection_position,
                                 updated_projection_radius
@@ -786,6 +830,10 @@ impl Actor for MainPlayer {
                                         damage_dealer_id,
                                         PLAYER_PROJECTION_DISPLAY_TIME,
                                         GET_DAMAGE_PROJECTION_INTENSITY,
+                                        self.get_id().expect("Player have not ActorID"),
+                                        false,
+                                        audio_system,
+                                        engine_handle,
                                     );
 
                                     let my_id = self.get_id().expect("Player Have not ActorID");
@@ -1080,6 +1128,10 @@ impl Actor for MainPlayer {
                                     from,
                                     PLAYER_PROJECTION_DISPLAY_TIME,
                                     0.0,
+                                    self.get_id().expect("Main Player havn't ActorID"),
+                                    false,
+                                    audio_system,
+                                    engine_handle,
                                 );
                             }
 
@@ -1299,6 +1351,7 @@ impl Actor for MainPlayer {
                 &input,
                 &mut self.inner_state,
                 &self.player_settings,
+                audio_system,
                 W_UP,
             );
 
@@ -1310,6 +1363,8 @@ impl Actor for MainPlayer {
                 &mut self.w_scanner,
                 physic_system,
                 ui_system,
+                audio_system,
+                engine_handle,
                 my_id,
                 delta,
             );
@@ -1826,12 +1881,23 @@ pub fn process_player_second_jump_input(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
     player_settings: &PlayerSettings,
+    audio_system: &mut AudioSystem,
     mut axis: Vec4,
 )
 {
     axis = axis.normalize();
 
     if input.move_w_up.is_action_just_pressed() {
+        
+        audio_system.spawn_non_spatial_sound(
+            Sound::WJump,
+            1.0,
+            1.0,
+            false,
+            true,
+            Status::Playing
+        );
+
         inner_state.collider.add_force(axis * player_settings.jump_w_speed);
     }
 }
@@ -1847,6 +1913,8 @@ pub fn process_w_scanner(
     w_scanner: &mut WScanner,
     physic_system: &PhysicsSystem,
     ui_system: &mut UISystem,
+    audio_system: &mut AudioSystem,
+    engine_handle: &mut EngineHandle,
     my_id: ActorID,
     delta: f32,
 )
@@ -1854,6 +1922,15 @@ pub fn process_w_scanner(
     if input.w_scanner.is_action_just_pressed() {
         if !w_scanner.w_scanner_enable {
             if w_scanner.w_scanner_reloading_time >= player_settings.scanner_reloading_time {
+
+                audio_system.spawn_non_spatial_sound(
+                    crate::engine::audio::Sound::ScannerSound,
+                    0.9,
+                    1.0,
+                    false,
+                    true,
+                    fyrox_sound::source::Status::Playing,
+                );
 
                 w_scanner.w_scanner_reloading_time = 0.0;
                 
@@ -1922,6 +1999,11 @@ pub fn process_w_scanner(
                     projection_id,
                     PLAYER_PROJECTION_DISPLAY_TIME,
                     0.0,
+                    my_id,
+
+                    true,
+                    audio_system,
+                    engine_handle,
                 );
             }
         }
@@ -2227,136 +2309,192 @@ pub fn process_switch_active_hand_slot_input
 )
 {
     if input.activate_hand_slot_0.is_action_just_pressed() {
+
+        match active_hands_slot
+        {
+            ActiveHandsSlot::Zero => {},
+            _ => {
+                audio_system.spawn_non_spatial_sound(
+                    Sound::SwitchWeapon,
+                    0.35,
+                    1.0,
+                    false,
+                    true,
+                    Status::Playing
+                );
+
+                inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
+                
+                deavctivate_previous_device(
+                    ActiveHandsSlot::Zero,
+                    active_hands_slot,
+                    hands_slot_0,
+                    hands_slot_1,
+                    hands_slot_2,
+                    hands_slot_3,
+                    inner_state,
+                    screen_effects,
+                    my_id,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+                *active_hands_slot = ActiveHandsSlot::Zero;
         
-        inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
-        inner_state.crosshair_target_size = CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE;
-
-        deavctivate_previous_device(
-            ActiveHandsSlot::Zero,
-            active_hands_slot,
-            hands_slot_0,
-            hands_slot_1,
-            hands_slot_2,
-            hands_slot_3,
-            inner_state,
-            screen_effects,
-            my_id,
-            physic_system,
-            audio_system,
-            ui_system,
-            engine_handle,
-        );
-        *active_hands_slot = ActiveHandsSlot::Zero;
-
-        hands_slot_0.activate(
-            my_id,
-            inner_state,
-            physic_system,
-            audio_system,
-            ui_system,
-            engine_handle,
-        );
+                hands_slot_0.activate(
+                    my_id,
+                    inner_state,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+            }
+        }
     }
 
     if input.activate_hand_slot_1.is_action_just_pressed() {
 
-        inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
-        inner_state.crosshair_target_size = CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE;
+        match active_hands_slot
+        {
+            ActiveHandsSlot::First => {},
+            _ => {
+                audio_system.spawn_non_spatial_sound(
+                    Sound::SwitchWeapon,
+                    0.35,
+                    1.0,
+                    false,
+                    true,
+                    Status::Playing
+                );
 
-        if hands_slot_1.is_some() {
-            deavctivate_previous_device(
-                ActiveHandsSlot::First,
-                active_hands_slot,
-                hands_slot_0,
-                hands_slot_1,
-                hands_slot_2,
-                hands_slot_3,
-                inner_state,
-                screen_effects,
-                my_id,
-                physic_system,
-                audio_system,
-                ui_system,
-                engine_handle,
-            );
-            *active_hands_slot = ActiveHandsSlot::First;
-
-            hands_slot_1.as_mut().unwrap().activate(
-                my_id,
-                inner_state,
-                physic_system,
-                audio_system,
-                ui_system,
-                engine_handle,
-            );
+                inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
+        
+                if hands_slot_1.is_some() {
+                    deavctivate_previous_device(
+                        ActiveHandsSlot::First,
+                        active_hands_slot,
+                        hands_slot_0,
+                        hands_slot_1,
+                        hands_slot_2,
+                        hands_slot_3,
+                        inner_state,
+                        screen_effects,
+                        my_id,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                    *active_hands_slot = ActiveHandsSlot::First;
+        
+                    hands_slot_1.as_mut().unwrap().activate(
+                        my_id,
+                        inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                }
+            }
         }
     }
 
     if input.activate_hand_slot_2.is_action_just_pressed() {
 
-        inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
-        inner_state.crosshair_target_size = CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE;
+        match active_hands_slot
+        {
+            ActiveHandsSlot::Second => {},
+            _ => {
+                audio_system.spawn_non_spatial_sound(
+                    Sound::SwitchWeapon,
+                    0.35,
+                    1.0,
+                    false,
+                    true,
+                    Status::Playing
+                );
 
-        if hands_slot_2.is_some() {
-            deavctivate_previous_device(
-                ActiveHandsSlot::Second,
-                active_hands_slot,
-                hands_slot_0,
-                hands_slot_1,
-                hands_slot_2,
-                hands_slot_3,
-                inner_state,
-                screen_effects,
-                my_id,
-                physic_system,
-                audio_system,
-                ui_system,
-                engine_handle,
-            );
-            *active_hands_slot = ActiveHandsSlot::Second;
-
-            hands_slot_2.as_mut().unwrap().activate(
-                my_id,
-                inner_state,
-                physic_system,
-                audio_system,
-                ui_system,
-                engine_handle,
-            );
+                inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
+        
+                if hands_slot_2.is_some() {
+                    deavctivate_previous_device(
+                        ActiveHandsSlot::Second,
+                        active_hands_slot,
+                        hands_slot_0,
+                        hands_slot_1,
+                        hands_slot_2,
+                        hands_slot_3,
+                        inner_state,
+                        screen_effects,
+                        my_id,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                    *active_hands_slot = ActiveHandsSlot::Second;
+        
+                    hands_slot_2.as_mut().unwrap().activate(
+                        my_id,
+                        inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                }
+            }
         }
     }
 
     if input.activate_hand_slot_3.is_action_just_pressed() {
 
-        inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
-        inner_state.crosshair_target_size = CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE;
+        match active_hands_slot
+        {
+            ActiveHandsSlot::Third => {},
+            _ => {
+                audio_system.spawn_non_spatial_sound(
+                    Sound::SwitchWeapon,
+                    0.35,
+                    1.0,
+                    false,
+                    true,
+                    Status::Playing
+                );
 
-        if hands_slot_3.is_some() {
-            deavctivate_previous_device(
-                ActiveHandsSlot::Third,
-                active_hands_slot,
-                hands_slot_0,
-                hands_slot_1,
-                hands_slot_2,
-                hands_slot_3,
-                inner_state,
-                screen_effects,
-                my_id,
-                physic_system,
-                audio_system,
-                ui_system,
-                engine_handle,
-            );
-            *active_hands_slot = ActiveHandsSlot::Third;
-
-            hands_slot_3.as_mut().unwrap().activate(
-                my_id,
-                inner_state,
-                physic_system,
-                audio_system,
-                ui_system,
-                engine_handle,
-            );
+                inner_state.crosshair_target_rotation = CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION;
+        
+                if hands_slot_3.is_some() {
+                    deavctivate_previous_device(
+                        ActiveHandsSlot::Third,
+                        active_hands_slot,
+                        hands_slot_0,
+                        hands_slot_1,
+                        hands_slot_2,
+                        hands_slot_3,
+                        inner_state,
+                        screen_effects,
+                        my_id,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                    *active_hands_slot = ActiveHandsSlot::Third;
+        
+                    hands_slot_3.as_mut().unwrap().activate(
+                        my_id,
+                        inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                }
+            }
         }
     }
 }
@@ -2994,7 +3132,7 @@ pub fn get_damage_and_add_force(
 
     audio_system.spawn_non_spatial_sound(
         Sound::PlayerHited,
-        0.6.lerp(1.0, (damage as f32/PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
+        0.4.lerp(0.6, (damage as f32/PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
         1.0,
         false,
         true,

@@ -3,6 +3,7 @@ use glam::Vec4;
 use fyrox_core::rand::{Rng, RngCore, SeedableRng};
 use fyrox_core::rand::prelude::StdRng;
 
+use crate::engine::audio::AudioSystem;
 use crate::engine::engine_handle::{Command, CommandType, EngineHandle};
 use crate::engine::physics::PhysicsSystem;
 use crate::engine::render::VisualElement;
@@ -41,8 +42,37 @@ impl ShotgunShotSource
         beam_and_flash_size_mult: f32,
         engine_handle: &mut EngineHandle,
         physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
     ) -> Self
     {
+        if is_replicated
+        {
+            audio_system.spawn_spatial_sound(
+                crate::engine::audio::Sound::ShotgunShot,
+                0.25,
+                1.0,
+                false,
+                true,
+                fyrox_sound::source::Status::Playing,
+                visible_start_position,
+                1.0,
+                1.0,
+                50.0
+            );
+        }
+        else
+        {
+            audio_system.spawn_non_spatial_sound(
+                crate::engine::audio::Sound::ShotgunShot,
+                0.36,
+                1.0,
+                false,
+                true,
+                fyrox_sound::source::Status::Playing,
+            );
+        }
+
+
         let mut rng = StdRng::seed_from_u64(rng_seed);
 
         for i in 0..SHOTGUN_LASER_SHOTS_AMOUNT

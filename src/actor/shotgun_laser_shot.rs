@@ -356,6 +356,19 @@ impl Actor for ShotgunLaserShot
                 {
                     if !self.is_replicated
                     {
+                        audio_system.spawn_spatial_sound(
+                            crate::engine::audio::Sound::ShotgunShotImpact,
+                            0.1,
+                            1.0,
+                            false,
+                            true,
+                            fyrox_sound::source::Status::Playing,
+                            hit.hit_point,
+                            1.0,
+                            1.0,
+                            50.0
+                        );
+
                         engine_handle.send_direct_message(
                             hited_id,
                             Message {

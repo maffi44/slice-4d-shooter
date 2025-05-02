@@ -30,6 +30,8 @@ use glam::Vec4;
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Sound {
     MachinegunShot,
+    ShotgunShot,
+    ShotgunShotImpact,
     HolegunShot,
     HolegunCharging,
     RotatingAroundW,
@@ -50,6 +52,11 @@ pub enum Sound {
     FlagOnTheBase,
     FlagCuptured,
     PickUpBonus,
+    NewProjecion,
+    SwitchWeapon,
+    PlayerGetScanned,
+    ChargingWJump,
+    WJump,
 }
 pub struct AudioSystem {
     pub sound_engine: SoundEngine,
@@ -80,29 +87,6 @@ impl AudioSystem {
         );
         state.listener_mut().set_position(position);
     }
-
-    // pub fn set_listener_basis(&mut self, position: Vec4, look: Vec4) {
-    //     let st = self.sound_engine.state();
-    //     let mut state = st.contexts()[1].state();
-
-    //     let position = Vector3::<f32>::new(
-    //         position.x,
-    //         position.y + position.w,
-    //         position.z,
-    //     );
-
-    //     let look = Vector3::<f32>::new(
-    //         look.x,
-    //         look.y,
-    //         look.z
-    //     ).normalize();
-        
-    //     glam::Mat4::
-
-    //     let matrix: fyrox_core::algebra::Matrix<f32, fyrox_core::algebra::Const<3>, fyrox_core::algebra::Const<3>, fyrox_core::algebra::ArrayStorage<f32, 3, 3>> =
-
-    //     state.listener_mut().set_basis(matrix)
-    // }
 
     pub fn spawn_non_spatial_sound(
         &mut self,
@@ -410,16 +394,23 @@ impl AudioSystem {
         sound_engine.state().add_context(not_spatial_context);
         sound_engine.state().add_context(spatial_context);
 
-        let mut sounds = HashMap::with_capacity(20);
-
-        // #[cfg(not(target_arch="wasm32"))]
-        // let path = "/home/maffi/Dream/web-engine4d".to_string();
-        // #[cfg(target_arch="wasm32")]
-        // let path = "http://127.0.0.1:5500".to_string();
+        let mut sounds = HashMap::new();
 
         let machinegun_shot_sound_resource = SoundBufferResource::new_generic(
             DataSource::from_memory(
                 include_bytes!("../assets/sounds/machinegun_shot.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let shotgun_shot_sound_resource = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/shotgun_shot.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let shotgun_shot_impact_sound_resource = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/shotgun_shot_impact.wav").into(),
             )
         ).expect("can't create sound buffer resourse");
 
@@ -543,7 +534,39 @@ impl AudioSystem {
             )
         ).expect("can't create sound buffer resourse");
 
+        let new_projection = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/new_projection.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+        let switch_weapon = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/switch_weapon.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+        
+        let player_get_scanned = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/player_get_scanned.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+        
+        let charging_w_jump = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/charging_w_jump.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+        
+        let w_jump = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/w_jump.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
         sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
+        sounds.insert(Sound::ShotgunShot, shotgun_shot_sound_resource);
+        sounds.insert(Sound::ShotgunShotImpact, shotgun_shot_impact_sound_resource);
         sounds.insert(Sound::HolegunShot, holegun_shot_sound_resource);
         sounds.insert(Sound::HolegunCharging, holegun_charging_sound_resource);
         sounds.insert(Sound::RotatingAroundW, rotating_around_w_sound_resource);
@@ -564,6 +587,11 @@ impl AudioSystem {
         sounds.insert(Sound::WShiftStart, w_shift_start);
         sounds.insert(Sound::WShiftEnd, w_shift_end);
         sounds.insert(Sound::PickUpBonus, pick_up_bonus);
+        sounds.insert(Sound::NewProjecion, new_projection);
+        sounds.insert(Sound::SwitchWeapon, switch_weapon);
+        sounds.insert(Sound::PlayerGetScanned, player_get_scanned);
+        sounds.insert(Sound::ChargingWJump, charging_w_jump);
+        sounds.insert(Sound::WJump, w_jump);
 
         AudioSystem {
             sound_engine,

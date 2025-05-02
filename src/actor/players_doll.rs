@@ -571,6 +571,8 @@ impl Actor for PlayersDoll {
                     {
                         match message
                         {
+                            PlayerMessage::YouWasScanned => {},
+
                             PlayerMessage::GiveMeDataForProjection => {
                                 if self.is_alive
                                 {
@@ -722,9 +724,10 @@ impl Actor for PlayersDoll {
                                     true,
                                     damage_dealer_id,
                                     damage_dealer_team,
-                                    1.3,
+                                    1.25,
                                     engine_handle,
                                     physics_system,
+                                    audio_system,
                                 );
 
                                 engine_handle.send_command(Command {

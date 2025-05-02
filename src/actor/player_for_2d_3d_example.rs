@@ -222,6 +222,18 @@ impl Actor for PlayerFor2d3dExample {
                     SpecificActorMessage::PlayerMessage(message) =>
                     {
                         match message {
+                            PlayerMessage::YouWasScanned =>
+                            {
+                                audio_system.spawn_non_spatial_sound(
+                                    Sound::PlayerGetScanned,
+                                    0.45,
+                                    0.8,
+                                    false,
+                                    true,
+                                    Status::Playing,
+                                );
+                            }
+
                             PlayerMessage::DataForProjection(
                                 updated_projection_position,
                                 updated_projection_radius
@@ -320,6 +332,10 @@ impl Actor for PlayerFor2d3dExample {
                                         from,
                                         PLAYER_PROJECTION_DISPLAY_TIME,
                                         GET_DAMAGE_PROJECTION_INTENSITY,
+                                        self.get_id().expect("Player for Example have not ActorID"),
+                                        false,
+                                        audio_system,
+                                        engine_handle,
                                     );
 
                                     let my_id = self.get_id().expect("Player Have not ActorID");
@@ -614,6 +630,10 @@ impl Actor for PlayerFor2d3dExample {
                                     from,
                                     PLAYER_PROJECTION_DISPLAY_TIME,
                                     0.0,
+                                    self.get_id().expect("Player for Example have not ActorID"),
+                                    false,
+                                    audio_system,
+                                    engine_handle,
                                 );
                             }
 
@@ -845,6 +865,7 @@ impl Actor for PlayerFor2d3dExample {
                 &input,
                 &mut self.inner_state,
                 &self.player_settings,
+                audio_system,
                 Vec4::X,
             );
 
@@ -856,6 +877,8 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.w_scanner,
                 physic_system,
                 ui_system,
+                audio_system,
+                engine_handle,
                 my_id,
                 delta,
             );

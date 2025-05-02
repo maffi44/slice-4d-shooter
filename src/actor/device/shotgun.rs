@@ -114,6 +114,7 @@ impl Shotgun {
             1.0,
             engine_handle,
             physic_system,
+            audio_system,
         );
 
 
