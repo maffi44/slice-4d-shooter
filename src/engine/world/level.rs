@@ -32,6 +32,7 @@ pub struct DefaultStaticObjectSettings {
     roundness: f32,
     stickiness: bool,
     is_positive: bool,
+    undestroyable: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -918,13 +919,22 @@ fn parse_json_defaults(
         .expect("default visual material in defaults have wrong material name")
         .clone();
 
+    let undestroyable = {
+        json_settings
+            .get("undestroyable")
+            .expect("Wrong JSON map format. JSON defaults must have undestroyable property")
+            .as_bool()
+            .expect("Wrong JSON map format. undestroyable value must be boolean")
+    };
+
     DefaultStaticObjectSettings {
         friction,
         bounce_rate,
         default_material_index,
         roundness,
         stickiness,
-        is_positive
+        is_positive,
+        undestroyable
     }
 }
 
@@ -1019,6 +1029,10 @@ fn parse_json_specific_shape(
         json_shape, shape_name, materials_table
     ).unwrap_or(defaults.default_material_index);
 
+    let undestroyable = parse_json_into_undestroyable(
+        json_shape, shape_name
+    ).unwrap_or(defaults.undestroyable);
+
     let collider = StaticCollider {
         shape_type,
         position,
@@ -1028,7 +1042,8 @@ fn parse_json_specific_shape(
         roundness,
         bounce_rate,
         stickiness,
-        actors_id: None
+        actors_id: None,
+        undestroyable,
     };
 
     StaticObject {
@@ -1410,6 +1425,39 @@ fn parse_json_into_is_positive(json_shape: &Value, shape_name: &str) -> Option<b
     Some(is_positive)
 }
 
+
+
+fn parse_json_into_undestroyable(json_shape: &Value, shape_name: &str) -> Option<bool> {
+
+    let shape = json_shape
+        .as_object()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, all shape must be json objects in {}",
+                shape_name
+            )
+        );
+
+    let json_undestroyable = shape.get("undestroyable");
+
+    if json_undestroyable.is_none() {
+        return None
+    }
+
+    let undestroyable = json_undestroyable
+        .unwrap()
+        .as_bool()
+        .expect(
+            &format!
+            (
+                "Wrong JSON map format, undestroyable property is not boolean type in {}",
+                shape_name
+            )
+        );
+    
+    Some(undestroyable)
+}
 
 
 fn parse_json_into_friction(json_shape: &Value, shape_name: &str) -> Option<f32> {

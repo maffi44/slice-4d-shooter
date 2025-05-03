@@ -8,7 +8,8 @@
         "bounce_rate": 0.0,
         "visual_material": "standart",
         "roundness": 0,
-        "stickiness": false
+        "stickiness": false,
+        "undestroyable": false
     },
 
     "visual_settings_of_environment" : {
@@ -316,7 +317,7 @@
                 "position" : {
                     "x": 0.0,
                     "y": 0.5,
-                    "z": 0.0,
+                    "z": -4.0,
                     "w": 0.5
                 }
             },
@@ -330,7 +331,7 @@
                 "position" : {
                     "x": 0.0,
                     "y": 0.5,
-                    "z": 0.0,
+                    "z": 4.0,
                     "w": 0.5
                 }
             },
@@ -343,10 +344,6 @@
 
 
     "actors" : [
-    ],
-
-    "undestroyable_cubes": [
-        
     ],
     
     "static_objects": [
@@ -375,7 +372,8 @@
                     "z": 15,
                     "w": 1
                 },
-                "friction" : 0.0
+                "friction" : 0.0,
+                "undestroyable": true
             }
         },
         {
@@ -488,7 +486,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base back sma;; wall",
+                "comment" : "blue base back small wall",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -671,7 +669,7 @@
                     "x": 3,
                     "y": 0.9,
                     "z": 4,
-                    "w": 15
+                    "w": 4
                 },
                 "stickiness" : true
             }
@@ -699,7 +697,7 @@
                     "x": 3,
                     "y": 0.9,
                     "z": 4,
-                    "w": 15
+                    "w": 4
                 },
                 "stickiness" : true
             }
@@ -727,7 +725,7 @@
                     "x": 3,
                     "y": 0.9,
                     "z": 4,
-                    "w": 15
+                    "w": 4
                 },
                 "stickiness" : true
             }
@@ -755,7 +753,7 @@
                     "x": 3,
                     "y": 0.9,
                     "z": 4,
-                    "w": 15
+                    "w": 4
                 },
                 "stickiness" : true
             }

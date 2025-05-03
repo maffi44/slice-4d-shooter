@@ -40,6 +40,7 @@ impl PlayersDeathExplosion {
                 friction: 0.0,
                 bounce_rate: 0.0,
                 actors_id: None,
+                undestroyable: false,
             },
             material_index: -1,
         };

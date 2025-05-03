@@ -106,21 +106,29 @@ impl DynamicRenderData {
     
                         let is_positive = static_object.collider.is_positive;
                         let is_stickiness = static_object.collider.stickiness;
+                        let undestroyable = static_object.collider.undestroyable;
                         
                         match static_object.collider.shape_type {
     
                             ShapeType::Cube => {
-                                if is_positive {
-                                    if is_stickiness {
-                                        self.frame_cubes_buffer.stickiness.push(shape);
+                                if undestroyable
+                                {
+                                    self.frame_cubes_buffer.undestroyable.push(shape);
+                                }
+                                else
+                                {
+                                    if is_positive {
+                                        if is_stickiness {
+                                            self.frame_cubes_buffer.stickiness.push(shape);
+                                        } else {
+                                            self.frame_cubes_buffer.normal.push(shape);
+                                        }
                                     } else {
-                                        self.frame_cubes_buffer.normal.push(shape);
-                                    }
-                                } else {
-                                    if is_stickiness {
-                                        self.frame_cubes_buffer.neg_stickiness.push(shape);
-                                    } else {
-                                        self.frame_cubes_buffer.negative.push(shape);
+                                        if is_stickiness {
+                                            self.frame_cubes_buffer.neg_stickiness.push(shape);
+                                        } else {
+                                            self.frame_cubes_buffer.negative.push(shape);
+                                        }
                                     }
                                 }
                             },
@@ -832,6 +840,39 @@ impl DynamicRenderData {
         s_neg_inf_cubes_amount = index as u32 - s_neg_inf_cubes_start;
 
 
+        let mut index = 0;
+
+        for shape in &sd.undestroyable_cubes
+        {
+            if check_if_player_see_cube(
+                camera,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.undestroyable_cubes[index] = *shape;
+                index += 1;
+            }
+        }
+
+        while let Some(shape) = self.frame_cubes_buffer.undestroyable.pop()
+        {
+            if check_if_player_see_cube(
+                camera,
+                Vec4::from_array(shape.pos),
+                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.undestroyable_cubes[index] = shape;
+                index += 1;
+            }
+        }
+
+        self.dynamic_shapes_data.undestroyable_cubes_amount = index as u32;
+
+
         ShapesArraysMetadata {
             cubes_start,
             cubes_amount,
@@ -1028,7 +1069,7 @@ impl DynamicRenderData {
 
         let clip_planes = get_view_clip_planes(&main_camera, screen_aspect);
 
-        let dyn_bb = self.get_data_from_actors_visual_elements(world, static_bounding_box);
+        let _ = self.get_data_from_actors_visual_elements(world, static_bounding_box);
 
         let shapes_arrays_metadata = self.update_dynamic_shapes_buffers_and_get_metadata(
             static_data,
@@ -1066,7 +1107,8 @@ impl DynamicRenderData {
             beams_areas_amount,
             player_forms_amount,
             players_screen_effects,
-            dyn_bb,
+            *self.dynamic_shapes_data.undestroyable_cubes.clone(),
+            self.dynamic_shapes_data.undestroyable_cubes_amount,
         );
     }
 }
@@ -1179,6 +1221,13 @@ pub struct OtherDynamicData {
     w_scanner_max_radius: f32,
 
     death_screen_effect: f32,
+
+    undestroyable_cubes: [Shape; 64],
+    undestroyable_cubes_amount: u32,
+    padding_byte1: u32,
+    padding_byte2: u32,
+    padding_byte3: u32,
+
     getting_damage_screen_effect: f32,
     splited_screen_in_2d_3d_example_or_zx_player_rotation: f32,
     screen_aspect: f32,
@@ -1201,7 +1250,8 @@ impl OtherDynamicData {
         beams_areas_amount: u32,
         player_forms_amount: u32,
         players_screen_effects: &PlayerScreenEffects,
-        frame_bounding_box: BoundingBox,
+        undestroyable_cubes: [Shape; 64],
+        undestroyable_cubes_amount: u32,
     ) {
         // let explore_w_pos;
         // let explore_w_coef;
@@ -1272,6 +1322,9 @@ impl OtherDynamicData {
             players_screen_effects.w_scanner_enemies_intesity
         };
 
+        self.undestroyable_cubes = undestroyable_cubes;
+        self.undestroyable_cubes_amount = undestroyable_cubes_amount;
+
         self.death_screen_effect = players_screen_effects.death_screen_effect;
         self.getting_damage_screen_effect = players_screen_effects.getting_damage_screen_effect;
 
@@ -1299,6 +1352,13 @@ impl Default for OtherDynamicData {
             w_scanner_max_radius: 0.0,
 
             death_screen_effect: 0.0,
+
+            undestroyable_cubes: [Shape::default(); 64],
+            undestroyable_cubes_amount: 0,
+            padding_byte1: 0,
+            padding_byte2: 0,
+            padding_byte3: 0,
+
             getting_damage_screen_effect: 0.0,
             splited_screen_in_2d_3d_example_or_zx_player_rotation: 0.0,
             screen_aspect: 1.0,
@@ -1340,6 +1400,7 @@ pub struct SpecificShapeBuffers {
     pub negative: Vec<Shape>,
     pub stickiness: Vec<Shape>,
     pub neg_stickiness: Vec<Shape>,
+    pub undestroyable: Vec<Shape>,
 }
 
 impl Default for SpecificShapeBuffers {
@@ -1349,6 +1410,7 @@ impl Default for SpecificShapeBuffers {
             negative: Vec::new(),
             stickiness: Vec::new(),
             neg_stickiness: Vec::new(),
+            undestroyable: Vec::new(),
         }
     }
 }
@@ -1360,6 +1422,7 @@ impl SpecificShapeBuffers {
             negative: Vec::new(),
             stickiness: Vec::new(),
             neg_stickiness: Vec::new(),
+            undestroyable: Vec::new(),
         }
     }
 
@@ -1368,6 +1431,7 @@ impl SpecificShapeBuffers {
         self.negative.clear();
         self.stickiness.clear();
         self.neg_stickiness.clear();
+        self.undestroyable.clear();
     }
 }
 

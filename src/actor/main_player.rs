@@ -1889,14 +1889,14 @@ pub fn process_player_second_jump_input(
 
     if input.move_w_up.is_action_just_pressed() {
         
-        audio_system.spawn_non_spatial_sound(
-            Sound::WJump,
-            1.0,
-            1.0,
-            false,
-            true,
-            Status::Playing
-        );
+        // audio_system.spawn_non_spatial_sound(
+        //     Sound::WJump,
+        //     1.0,
+        //     1.0,
+        //     false,
+        //     true,
+        //     Status::Playing
+        // );
 
         inner_state.collider.add_force(axis * player_settings.jump_w_speed);
     }

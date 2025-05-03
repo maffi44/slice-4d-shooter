@@ -433,7 +433,9 @@ pub fn get_dist(
         );
     }
 
-    // d = d.max(-dd);
+    for collider in static_objects.cubes.iter_undestroyable() {
+        d = d.min(sd_box(p - collider.position.clone(), collider.size.clone()) - collider.roundness);
+    }
 
     match excluding_ids {
         Some(id) =>
@@ -625,6 +627,16 @@ pub fn get_bounce_and_friction(
         // );
 
         // d = dd;
+    }
+    for collider in static_objects.cubes.iter_undestroyable() {
+        let new_d = sd_box(position - collider.position.clone(), collider.size.clone()) - collider.roundness;
+
+        if new_d < d{//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+            bounce_coeficient = collider.bounce_rate;
+            friction = collider.friction;
+
+            d = new_d;
+        };
     }
 
     // for collider in static_objects.player_forms.iter() {

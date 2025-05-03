@@ -26,12 +26,14 @@ pub struct CollidersShapeTypeArrays {
     negative: Vec<StaticCollider>,
     stickiness: Vec<StaticCollider>,
     neg_stickiness: Vec<StaticCollider>,
+    undestroyable: Vec<StaticCollider>,
 
 
     constant_normal_len: usize,
     constant_negative_len: usize,
     constant_stickiness_len: usize,
     constant_neg_stickiness_len: usize,
+    constant_undestroyable_len: usize,
 }
 
 impl CollidersShapeTypeArrays {
@@ -40,22 +42,26 @@ impl CollidersShapeTypeArrays {
         let negative = Vec::new();
         let stickiness = Vec::new();
         let neg_stickiness = Vec::new();
+        let undestroyable = Vec::new();
 
         let constant_normal_len = 0;
         let constant_negative_len = 0;
         let constant_stickiness_len = 0;
         let constant_neg_stickiness_len = 0;
+        let constant_undestroyable_len = 0;
 
         CollidersShapeTypeArrays {
             normal,
             negative,
             stickiness,
             neg_stickiness,
+            undestroyable,
 
             constant_normal_len,
             constant_negative_len,
             constant_stickiness_len,
             constant_neg_stickiness_len,
+            constant_undestroyable_len,
         }
     }
 
@@ -81,6 +87,11 @@ impl CollidersShapeTypeArrays {
         self.neg_stickiness.iter()
     }
 
+    #[inline]
+    pub fn iter_undestroyable(&self) -> std::slice::Iter<'_, StaticCollider>{
+        self.undestroyable.iter()
+    }
+
 
 
     #[inline]
@@ -103,30 +114,43 @@ impl CollidersShapeTypeArrays {
         &self.neg_stickiness[index]
     }
 
+    #[inline]
+    pub fn get_undestroyable(&self, index: usize) -> &StaticCollider {
+        &self.undestroyable[index]
+    }
+
 
 
     #[inline]
     fn add_constant_static_collider(&mut self, static_collider: StaticCollider) {
 
-        if static_collider.is_positive {
-            if static_collider.stickiness{
-
-                self.stickiness.push(static_collider);
-                self.constant_stickiness_len += 1;
+        if static_collider.undestroyable
+        {
+            self.undestroyable.push(static_collider);
+            self.constant_undestroyable_len += 1;
+        }
+        else
+        {
+            if static_collider.is_positive {
+                if static_collider.stickiness{
+    
+                    self.stickiness.push(static_collider);
+                    self.constant_stickiness_len += 1;
+                } else {
+    
+                    self.normal.push(static_collider);
+                    self.constant_normal_len += 1;
+                }
             } else {
-
-                self.normal.push(static_collider);
-                self.constant_normal_len += 1;
-            }
-        } else {
-            if static_collider.stickiness{
-
-                self.neg_stickiness.push(static_collider);
-                self.constant_neg_stickiness_len += 1;
-            } else {
-
-                self.negative.push(static_collider);
-                self.constant_negative_len += 1;
+                if static_collider.stickiness{
+    
+                    self.neg_stickiness.push(static_collider);
+                    self.constant_neg_stickiness_len += 1;
+                } else {
+    
+                    self.negative.push(static_collider);
+                    self.constant_negative_len += 1;
+                }
             }
         }
 
@@ -136,21 +160,29 @@ impl CollidersShapeTypeArrays {
 
     #[inline]
     fn add_temporal_static_collider(&mut self, static_collider: StaticCollider) {
-        if static_collider.is_positive {
-            if static_collider.stickiness{
 
-                self.stickiness.push(static_collider);
+        if static_collider.undestroyable
+        {
+            self.undestroyable.push(static_collider);
+        }
+        else
+        {
+            if static_collider.is_positive {
+                if static_collider.stickiness{
+    
+                    self.stickiness.push(static_collider);
+                } else {
+    
+                    self.normal.push(static_collider);
+                }
             } else {
-
-                self.normal.push(static_collider);
-            }
-        } else {
-            if static_collider.stickiness{
-
-                self.neg_stickiness.push(static_collider);
-            } else {
-
-                self.negative.push(static_collider);
+                if static_collider.stickiness{
+    
+                    self.neg_stickiness.push(static_collider);
+                } else {
+    
+                    self.negative.push(static_collider);
+                }
             }
         }
     }
@@ -163,6 +195,7 @@ impl CollidersShapeTypeArrays {
         self.negative.truncate(self.constant_negative_len);
         self.stickiness.truncate(self.constant_stickiness_len);
         self.neg_stickiness.truncate(self.constant_neg_stickiness_len);
+        self.undestroyable.truncate(self.constant_undestroyable_len);
     }
 
 }

@@ -129,6 +129,8 @@ pub struct ShapesArrays {
     pub negative: Box<[Shape; 256]>,
     pub stickiness: Box<[Shape; 256]>,
     pub neg_stickiness: Box<[Shape; 256]>,
+    pub undestroyable_cubes: Box<[Shape; 64]>,
+    pub undestroyable_cubes_amount: u32,
 }
 
 impl Default for ShapesArrays {
@@ -137,12 +139,15 @@ impl Default for ShapesArrays {
         let negative = {Box::new([Shape::default(); 256])};
         let stickiness = {Box::new([Shape::default(); 256])};
         let neg_stickiness = {Box::new([Shape::default(); 256])};
+        let undestroyable_cubes = {Box::new([Shape::default(); 64])};
 
         ShapesArrays {
             normal,
             negative,
             stickiness,
             neg_stickiness,
+            undestroyable_cubes,
+            undestroyable_cubes_amount: 0,
         }   
     }
 }

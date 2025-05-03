@@ -25,6 +25,7 @@ pub struct StaticCollider {
     pub friction: f32,
     pub bounce_rate: f32,
     pub shape_type: ShapeType,
+    pub undestroyable: bool,
     pub actors_id: Option<ActorID>,
 }
 

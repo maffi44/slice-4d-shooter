@@ -27,6 +27,9 @@ pub struct StaticRenderData {
     pub s_sph_cubes: Vec<Shape>,
     pub neg_sph_cubes: Vec<Shape>,
     pub s_neg_sph_cubes: Vec<Shape>,
+
+    pub undestroyable_cubes: Vec<Shape>,
+
     pub inf_w_cubes: Vec<Shape>,
     pub s_inf_w_cubes: Vec<Shape>,
     pub neg_inf_w_cubes: Vec<Shape>,
@@ -261,70 +264,86 @@ impl StaticRenderData {
         let mut s_inf_w_cubes: Vec<Shape> = Vec::new();
         let mut neg_inf_w_cubes: Vec<Shape> = Vec::new();
         let mut s_neg_inf_w_cubes: Vec<Shape> = Vec::new();
+
+        let mut undestroyable_cubes: Vec<Shape> = Vec::new();
         
         let mut static_bounding_box = BoundingBox::new();
         
         for obj in &world.level.static_objects {
             
-            log::info!("static objects amount is {}", world.level.static_objects.len());
+            // log::info!("static objects amount is {}", world.level.static_objects.len());
 
             match obj.collider.shape_type {
                 ShapeType::Cube => {
 
-                    if obj.collider.is_positive {
-                        if !obj.collider.stickiness {
-
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            cubes.push(shape);
-
-                            cubes_amount += 1;
-
+                    if obj.collider.undestroyable
+                    {
+                        let shape = Shape {
+                            pos: obj.collider.position.to_array(),
+                            size: obj.collider.size.to_array(),
+                            material: obj.material_index,
+                            empty_bytes: [0,0],
+                            roundness: obj.collider.roundness,
+                        };
+                        undestroyable_cubes.push(shape);
+                    }
+                    else
+                    {
+                        if obj.collider.is_positive {
+                            if !obj.collider.stickiness {
+    
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                cubes.push(shape);
+    
+                                cubes_amount += 1;
+    
+                            } else {
+    
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                s_cubes.push(shape);
+    
+                                s_cubes_amount += 1;
+                            }
                         } else {
-
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            s_cubes.push(shape);
-
-                            s_cubes_amount += 1;
-                        }
-                    } else {
-                        if !obj.collider.stickiness {
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            neg_cubes.push(shape);
-
-                            neg_cubes_amount += 1;
-                        } else {
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            s_neg_cubes.push(shape);
-
-                            s_neg_cubes_amount += 1;
+                            if !obj.collider.stickiness {
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                neg_cubes.push(shape);
+    
+                                neg_cubes_amount += 1;
+                            } else {
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                s_neg_cubes.push(shape);
+    
+                                s_neg_cubes_amount += 1;
+                            }
                         }
                     }
                 }
@@ -720,6 +739,9 @@ impl StaticRenderData {
             s_sph_cubes,
             neg_sph_cubes,
             s_neg_sph_cubes,
+
+            undestroyable_cubes,
+
             inf_w_cubes,
             s_inf_w_cubes,
             neg_inf_w_cubes,
