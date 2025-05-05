@@ -173,6 +173,7 @@ impl Actor for HoleGunMiss {
                 volume_areas: Some(&self.volume_areas),
                 waves: None,
                 player: None,
+                child_visual_elem: None,
             }
         )
     }

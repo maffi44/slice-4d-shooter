@@ -138,7 +138,8 @@ impl Actor for Wave
             coloring_areas: None,
             volume_areas: None,
             waves: Some(&self.visual_waves),
-            player: None
+            player: None,
+            child_visual_elem: None,
         })
     }
 }

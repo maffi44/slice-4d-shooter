@@ -41,8 +41,16 @@ pub struct VisualElement<'a> {
     pub volume_areas: Option<&'a Vec<VolumeArea>>,
     pub waves: Option<&'a Vec<VisualWave>>,
     pub player: Option<(&'a PlayersDollCollider, Team)>,
+    pub child_visual_elem: Option<&'a ChildVisualElement>,
 }
 
+pub struct ChildVisualElement {
+    pub static_objects: Option<Vec<StaticObject>>,
+    pub coloring_areas: Option<Vec<ColoringArea>>,
+    pub volume_areas: Option<Vec<VolumeArea>>,
+    pub waves: Option<Vec<VisualWave>>,
+    pub player: Option<(PlayersDollCollider, Team)>,
+}
 
 
 pub struct RenderSystem {

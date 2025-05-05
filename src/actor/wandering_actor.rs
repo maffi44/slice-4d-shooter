@@ -102,6 +102,7 @@ impl Actor for WanderingActor {
             volume_areas: None,
             waves: None,
             player: None,
+            child_visual_elem: None,
         };
 
         Some(visual_element)

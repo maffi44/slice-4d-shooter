@@ -744,6 +744,22 @@ fn process_message(
         NetMessageToPlayer::RemoteDirectMessage(actor_id, message) => {
             match message
             {
+                RemoteMessage::ScannerTurnedOn =>
+                {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: message_from_peer_id,
+                            remote_sender: true,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::ScannerTurnedOn
+                                )
+                            )
+                        }
+                    );
+                }
+
                 RemoteMessage::YouWasScanned =>
                 {
                     engine_handle.send_direct_message(
@@ -1073,7 +1089,7 @@ fn process_message(
                     )
                 },
 
-                RemoteMessage::DealDamageAndAddForce(
+                RemoteMessage::DealDamageAndForce(
                     damage,
                     force,
                     impact_pos,
@@ -1087,7 +1103,7 @@ fn process_message(
                             remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
-                                    PlayerMessage::DealDamageAndAddForce(
+                                    PlayerMessage::GetDamageAndForce(
                                         damage,
                                         Vec4::from_array(force),
                                         Vec4::from_array(impact_pos),
@@ -1117,6 +1133,21 @@ fn process_message(
         NetMessageToPlayer::RemoteBoardCastMessage(message) => {
             match message
             {
+                RemoteMessage::ScannerTurnedOn =>
+                {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: message_from_peer_id,
+                            remote_sender: true,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::ScannerTurnedOn
+                                )
+                            )
+                        }
+                    );
+                }
+
                 RemoteMessage::YouWasScanned =>
                 {
                     engine_handle.send_boardcast_message(
@@ -1431,7 +1462,7 @@ fn process_message(
                     )
                 },
 
-                RemoteMessage::DealDamageAndAddForce(
+                RemoteMessage::DealDamageAndForce(
                     damage,
                     force,
                     impact_pos,
@@ -1444,7 +1475,7 @@ fn process_message(
                             remote_sender: true,
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayerMessage(
-                                    PlayerMessage::DealDamageAndAddForce(
+                                    PlayerMessage::GetDamageAndForce(
                                         damage,
                                         Vec4::from_array(force),
                                         Vec4::from_array(impact_pos),

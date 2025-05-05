@@ -176,6 +176,7 @@ impl Actor for MoveWBonusSpot
                         volume_areas: Some(&self.visual_areas),
                         waves: None,
                         player: None,
+                        child_visual_elem: None,
                     }
                 )
             }

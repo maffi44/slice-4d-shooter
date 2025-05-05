@@ -270,6 +270,7 @@ impl Actor for MachinegunShot {
                 volume_areas: Some(&self.volume_areas),
                 waves: None,
                 player: None,
+                child_visual_elem: None,
             }
         )
     }

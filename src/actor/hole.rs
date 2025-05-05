@@ -161,6 +161,7 @@ impl Actor for Hole
                 volume_areas: None,
                 player: None,
                 waves: None,
+                child_visual_elem: None,
             }
         )
     }

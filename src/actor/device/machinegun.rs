@@ -22,7 +22,7 @@ use crate::{
         },
         input::ActionsFrameState,
         physics::PhysicsSystem,
-        render::VisualElement,
+        render::{ChildVisualElement, VisualElement},
         ui::{
             UIElement,
             UIElementType,
@@ -168,7 +168,7 @@ impl MachineGun {
                                 remote_sender: false,
                                 message: MessageType::SpecificActorMessage(
                                     SpecificActorMessage::PlayerMessage(
-                                        PlayerMessage::DealDamageAndAddForce(
+                                        PlayerMessage::GetDamageAndForce(
                                             self.machinegun_damage as u32,
                                             force,
                                             position,
@@ -264,7 +264,7 @@ impl Device for MachineGun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
+    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
         None
     }
 

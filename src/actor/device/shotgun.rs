@@ -17,7 +17,7 @@ use crate::{
         },
         input::ActionsFrameState,
         physics::PhysicsSystem,
-        render::VisualElement,
+        render::{ChildVisualElement, VisualElement},
         ui::{
             UIElement,
             UIElementType,
@@ -162,7 +162,7 @@ impl Device for Shotgun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
+    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
         None
     }
 

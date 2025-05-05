@@ -206,7 +206,8 @@ impl Actor for ShotgunLaserShot
             coloring_areas: Some(&self.coloring_areas),
             volume_areas: Some(&self.volume_areas),
             waves: None,
-            player: None
+            player: None,
+            child_visual_elem: None,
         })
     }
 
@@ -376,7 +377,7 @@ impl Actor for ShotgunLaserShot
                                 remote_sender: false,
                                 message: MessageType::SpecificActorMessage(
                                     SpecificActorMessage::PlayerMessage(
-                                        PlayerMessage::DealDamageAndAddForce(
+                                        PlayerMessage::GetDamageAndForce(
                                             SHOTGUN_LASER_SHOT_DAMAGE,
                                             self.real_shot_direction*SHOTGUN_LASER_SHOT_ADD_FORCE_PER_HIT,
                                             hit.hit_point,

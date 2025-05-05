@@ -7,7 +7,7 @@ use crate::{
         main_player::player_inner_state::PlayerInnerState,
         ActorID,
     }, engine::{
-        audio::AudioSystem, engine_handle::EngineHandle, input::ActionsFrameState, physics::PhysicsSystem, render::VisualElement, ui::UISystem
+        audio::AudioSystem, engine_handle::EngineHandle, input::ActionsFrameState, physics::PhysicsSystem, render::{ChildVisualElement, VisualElement}, ui::UISystem
     }, transform::Transform
 };
 
@@ -76,7 +76,7 @@ pub trait Device {
 
     fn get_device_type(&self) -> DeviceType;
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
+    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
         None
     }
 

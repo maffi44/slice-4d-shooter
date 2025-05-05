@@ -107,7 +107,11 @@ struct OtherDynamicData {
 
     death_screen_effect: f32,
 
-
+    undestroyable_cubes: array<Shape, 64>,
+    undestroyable_cubes_amount: u32,
+    padding_byte1: u32,
+    padding_byte2: u32,
+    padding_byte3: u32,
 
     getting_damage_screen_effect: f32,
     zx_player_rotation: f32,

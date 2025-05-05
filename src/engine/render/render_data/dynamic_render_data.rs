@@ -5,7 +5,7 @@ use crate::{
         ActorWrapper
     },
     engine::{
-        physics::physics_system_data::ShapeType,
+        physics::{dynamic_collider::PlayersDollCollider, physics_system_data::ShapeType},
         render::{camera::Camera, render_data::{
             Shape,
             ShapesArrays,
@@ -15,10 +15,10 @@ use crate::{
         }},
         time::TimeSystem,
         world::{
-            static_object::{VisualWave, VolumeArea},
+            static_object::{ColoringArea, StaticObject, VisualWave, VolumeArea},
             World
         }
-    }, transform::{Transform, FORWARD}
+    }, transform::{self, Transform, FORWARD}
 };
 
 use std::f32::consts::PI;
@@ -73,14 +73,214 @@ impl DynamicRenderData {
         }
     }
 
+    fn store_static_object_into_frame_buffer(
+        &mut self,
+        transform: &Transform,
+        static_object: &StaticObject
+    )
+    {
+        let position = static_object.collider.position + transform.get_position();
+        let size = static_object.collider.size * transform.get_scale();
+        let material_index = static_object.material_index;
+        let roundness = static_object.collider.roundness;
+        
+        let shape = Shape {
+            pos: position.to_array(),
+            size: size.to_array(),
+            material: material_index,
+            empty_bytes: [0,0],
+            roundness,
+        };
+        // frame_bounding_box.expand_by_shape(&shape);
+
+        let is_positive = static_object.collider.is_positive;
+        let is_stickiness = static_object.collider.stickiness;
+        let undestroyable = static_object.collider.undestroyable;
+        
+        match static_object.collider.shape_type {
+
+            ShapeType::Cube => {
+                if undestroyable
+                {
+                    self.frame_cubes_buffer.undestroyable.push(shape);
+                }
+                else
+                {
+                    if is_positive {
+                        if is_stickiness {
+                            self.frame_cubes_buffer.stickiness.push(shape);
+                        } else {
+                            self.frame_cubes_buffer.normal.push(shape);
+                        }
+                    } else {
+                        if is_stickiness {
+                            self.frame_cubes_buffer.neg_stickiness.push(shape);
+                        } else {
+                            self.frame_cubes_buffer.negative.push(shape);
+                        }
+                    }
+                }
+            },
+            ShapeType::Sphere => {
+                if is_positive {
+                    if is_stickiness {
+                        self.frame_spheres_buffer.stickiness.push(shape);
+                    } else {
+                        self.frame_spheres_buffer.normal.push(shape);
+                    }
+                } else {
+                    if is_stickiness {
+                        self.frame_spheres_buffer.neg_stickiness.push(shape);
+                    } else {
+                        self.frame_spheres_buffer.negative.push(shape);
+                    }
+                }
+                
+            },
+            ShapeType::SphCube => {
+                if is_positive {
+                    if is_stickiness {
+                        self.frame_sph_cubes_buffer.stickiness.push(shape);
+                    } else {
+                        self.frame_sph_cubes_buffer.normal.push(shape);
+                    }
+                } else {
+                    if is_stickiness {
+                        self.frame_sph_cubes_buffer.neg_stickiness.push(shape);
+                    } else {
+                        self.frame_sph_cubes_buffer.negative.push(shape);
+                    }
+                }
+                
+            },
+            ShapeType::CubeInfW => {
+                if is_positive {
+                    if is_stickiness {
+                        self.frame_inf_w_cubes_buffer.stickiness.push(shape);
+                    } else {
+                        self.frame_inf_w_cubes_buffer.normal.push(shape);
+                    }
+                } else {
+                    if is_stickiness {
+                        self.frame_inf_w_cubes_buffer.neg_stickiness.push(shape);
+                    } else {
+                        self.frame_inf_w_cubes_buffer.negative.push(shape);
+                    }
+                }
+            }
+        }
+    }
+
+
+    fn store_volume_area_into_frame_buffer
+    (
+        &mut self,
+        transform: &Transform,
+        volume_area: &VolumeArea
+    )
+    {
+        match volume_area {
+            VolumeArea::SphericalVolumeArea(spherical_area) => {
+                let area = SphericalArea {
+                    pos: (spherical_area.translation + transform.get_position()).to_array(),
+                    radius: spherical_area.radius,
+                    color: spherical_area.color.to_array(),
+                };
+
+                self.frame_spherical_volume_areas_buffer.push(area)
+            },
+
+            VolumeArea::BeamVolumeArea(beam_area) => {
+                let area = BeamArea {
+                    pos1: (beam_area.translation_pos_1 + transform.get_position()).to_array(),
+                    pos2: (beam_area.translation_pos_2 + transform.get_position()).to_array(),
+                    radius: beam_area.radius,
+                    color: beam_area.color.to_array(),
+                };
+
+                self.frame_beam_volume_areas_buffer.push(area);
+            }
+        }
+    }
+
+
+    fn store_coloring_area_into_frame_buffer
+    (
+        &mut self,
+        transform: &Transform,
+        coloring_area: &ColoringArea
+    )
+    {
+        let area = SphericalArea {
+            pos: (coloring_area.translation + transform.get_position()).to_array(),
+            radius: coloring_area.radius,
+            color: coloring_area.color.to_array(),
+        };
+
+        self.frame_coloring_areas_buffer.push(area)
+    }
+
+
+    fn store_visual_wave_into_frame_buffer
+    (
+        &mut self,
+        transform: &Transform,
+        wave: &VisualWave
+    )
+    {
+        let area = SphericalArea {
+            pos: (wave.translation + transform.get_position()).to_array(),
+            radius: wave.radius,
+            color: wave.color.to_array(),
+        };
+
+        self.frame_waves_buffer.push(area);
+    }
+
+    fn store_player_form_into_frame_buffer
+    (
+        &mut self,
+        actor: &ActorWrapper,
+        transform: &Transform,
+        player_sphere: &PlayersDollCollider,
+        team: Team
+    )
+    {
+        let player_form = match team {
+            Team::Red =>
+            {
+                PlayerForm {
+                    pos: (player_sphere.position + transform.get_position()).to_array(),
+                    is_red: [1;4],
+                    color: [1.0, 0.0, 0.0],
+                    radius: player_sphere.radius,
+                    rotation: actor.get_transform().get_rotation().transpose().to_cols_array(),
+                    weapon_offset: player_sphere.weapon_offset.to_array()
+                }
+            }
+            Team::Blue =>
+            {
+                PlayerForm {
+                    pos: (player_sphere.position + transform.get_position()).to_array(),
+                    is_red: [0;4],
+                    color: [1.0, 0.0, 0.0],
+                    radius: player_sphere.radius,
+                    rotation: actor.get_transform().get_rotation().transpose().to_cols_array(),
+                    weapon_offset: player_sphere.weapon_offset.to_array()
+                }
+            }
+        };
+        
+        self.frame_player_forms_buffer.push(player_form);
+    }
+
+
     fn get_data_from_actors_visual_elements(
         &mut self,
         world: &World,
         static_bounding_box: &BoundingBox
-    ) -> BoundingBox {
-        
-        let mut frame_bounding_box = static_bounding_box.clone();
-        
+    )
+    {
         for (_, actor) in world.actors.iter() {
 
             if let Some(visual_element) = actor.get_visual_element() {
@@ -90,96 +290,11 @@ impl DynamicRenderData {
                 if let Some(static_objects) = visual_element.static_objects {
                     for static_object in static_objects {
                         
-                        let position = static_object.collider.position + transform.get_position();
-                        let size = static_object.collider.size * transform.get_scale();
-                        let material_index = static_object.material_index;
-                        let roundness = static_object.collider.roundness;
-                        
-                        let shape = Shape {
-                            pos: position.to_array(),
-                            size: size.to_array(),
-                            material: material_index,
-                            empty_bytes: [0,0],
-                            roundness,
-                        };
-                        // frame_bounding_box.expand_by_shape(&shape);
-    
-                        let is_positive = static_object.collider.is_positive;
-                        let is_stickiness = static_object.collider.stickiness;
-                        let undestroyable = static_object.collider.undestroyable;
-                        
-                        match static_object.collider.shape_type {
-    
-                            ShapeType::Cube => {
-                                if undestroyable
-                                {
-                                    self.frame_cubes_buffer.undestroyable.push(shape);
-                                }
-                                else
-                                {
-                                    if is_positive {
-                                        if is_stickiness {
-                                            self.frame_cubes_buffer.stickiness.push(shape);
-                                        } else {
-                                            self.frame_cubes_buffer.normal.push(shape);
-                                        }
-                                    } else {
-                                        if is_stickiness {
-                                            self.frame_cubes_buffer.neg_stickiness.push(shape);
-                                        } else {
-                                            self.frame_cubes_buffer.negative.push(shape);
-                                        }
-                                    }
-                                }
-                            },
-                            ShapeType::Sphere => {
-                                if is_positive {
-                                    if is_stickiness {
-                                        self.frame_spheres_buffer.stickiness.push(shape);
-                                    } else {
-                                        self.frame_spheres_buffer.normal.push(shape);
-                                    }
-                                } else {
-                                    if is_stickiness {
-                                        self.frame_spheres_buffer.neg_stickiness.push(shape);
-                                    } else {
-                                        self.frame_spheres_buffer.negative.push(shape);
-                                    }
-                                }
-                                
-                            },
-                            ShapeType::SphCube => {
-                                if is_positive {
-                                    if is_stickiness {
-                                        self.frame_sph_cubes_buffer.stickiness.push(shape);
-                                    } else {
-                                        self.frame_sph_cubes_buffer.normal.push(shape);
-                                    }
-                                } else {
-                                    if is_stickiness {
-                                        self.frame_sph_cubes_buffer.neg_stickiness.push(shape);
-                                    } else {
-                                        self.frame_sph_cubes_buffer.negative.push(shape);
-                                    }
-                                }
-                                
-                            },
-                            ShapeType::CubeInfW => {
-                                if is_positive {
-                                    if is_stickiness {
-                                        self.frame_inf_w_cubes_buffer.stickiness.push(shape);
-                                    } else {
-                                        self.frame_inf_w_cubes_buffer.normal.push(shape);
-                                    }
-                                } else {
-                                    if is_stickiness {
-                                        self.frame_inf_w_cubes_buffer.neg_stickiness.push(shape);
-                                    } else {
-                                        self.frame_inf_w_cubes_buffer.negative.push(shape);
-                                    }
-                                }
-                            }
-                        }
+                        self.store_static_object_into_frame_buffer
+                        (
+                            transform,
+                            static_object,
+                        );
                     }
                 }
 
@@ -187,42 +302,23 @@ impl DynamicRenderData {
                     
                     for volume_area in volume_areas {
 
-                        match volume_area {
-                            VolumeArea::SphericalVolumeArea(spherical_area) => {
-                                let area = SphericalArea {
-                                    pos: (spherical_area.translation + transform.get_position()).to_array(),
-                                    radius: spherical_area.radius,
-                                    color: spherical_area.color.to_array(),
-                                };
-        
-                                self.frame_spherical_volume_areas_buffer.push(area)
-                            },
-
-                            VolumeArea::BeamVolumeArea(beam_area) => {
-                                let area = BeamArea {
-                                    pos1: (beam_area.translation_pos_1 + transform.get_position()).to_array(),
-                                    pos2: (beam_area.translation_pos_2 + transform.get_position()).to_array(),
-                                    radius: beam_area.radius,
-                                    color: beam_area.color.to_array(),
-                                };
-        
-                                self.frame_beam_volume_areas_buffer.push(area);
-                            }
-                        }
-
+                        self.store_volume_area_into_frame_buffer
+                        (
+                            transform,
+                            volume_area,
+                        );
                     }
                 }
 
                 if let Some(coloring_areas) = visual_element.coloring_areas {
                     
                     for coloring_area in coloring_areas {
-                        let area = SphericalArea {
-                            pos: (coloring_area.translation + transform.get_position()).to_array(),
-                            radius: coloring_area.radius,
-                            color: coloring_area.color.to_array(),
-                        };
 
-                        self.frame_coloring_areas_buffer.push(area)
+                        self.store_coloring_area_into_frame_buffer
+                        (
+                            transform,
+                            coloring_area,
+                        );
                     }
                 }
 
@@ -230,51 +326,85 @@ impl DynamicRenderData {
                 {
                     for wave in visual_waves
                     {
-                        let area = SphericalArea {
-                            pos: (wave.translation + transform.get_position()).to_array(),
-                            radius: wave.radius,
-                            color: wave.color.to_array(),
-                        };
-
-                        self.frame_waves_buffer.push(area);
+                        self.store_visual_wave_into_frame_buffer
+                        (
+                            transform,
+                            wave,
+                        )
                     }
                 }
 
                 if let Some((player_sphere, team)) = visual_element.player {
 
-                    let player_form = match team {
-                        Team::Red =>
-                        {
-                            PlayerForm {
-                                pos: (player_sphere.position + transform.get_position()).to_array(),
-                                is_red: [1;4],
-                                color: [1.0, 0.0, 0.0],
-                                radius: player_sphere.radius,
-                                rotation: actor.get_transform().get_rotation().transpose().to_cols_array(),
-                                weapon_offset: player_sphere.weapon_offset.to_array()
-                            }
-                        }
-                        Team::Blue =>
-                        {
-                            PlayerForm {
-                                pos: (player_sphere.position + transform.get_position()).to_array(),
-                                is_red: [0;4],
-                                color: [1.0, 0.0, 0.0],
-                                radius: player_sphere.radius,
-                                rotation: actor.get_transform().get_rotation().transpose().to_cols_array(),
-                                weapon_offset: player_sphere.weapon_offset.to_array()
-                            }
-                        }
-                    };
-                    
-                    frame_bounding_box.expand_by_player_form(&player_form);
+                    self.store_player_form_into_frame_buffer(
+                        actor,
+                        transform,
+                        player_sphere,
+                        team,
+                    )
+                }
 
-                    self.frame_player_forms_buffer.push(player_form);
+                if let Some(child_visual_elem) = visual_element.child_visual_elem
+                {
+                    if let Some(static_objects) = &child_visual_elem.static_objects {
+                        for static_object in static_objects {
+                            
+                            self.store_static_object_into_frame_buffer
+                            (
+                                transform,
+                                static_object,
+                            );
+                        }
+                    }
+    
+                    if let Some(volume_areas) = &child_visual_elem.volume_areas {
+                        
+                        for volume_area in volume_areas {
+    
+                            self.store_volume_area_into_frame_buffer
+                            (
+                                transform,
+                                volume_area,
+                            );
+                        }
+                    }
+    
+                    if let Some(coloring_areas) = &child_visual_elem.coloring_areas {
+                        
+                        for coloring_area in coloring_areas {
+    
+                            self.store_coloring_area_into_frame_buffer
+                            (
+                                transform,
+                                coloring_area,
+                            );
+                        }
+                    }
+    
+                    if let Some(visual_waves) = &child_visual_elem.waves
+                    {
+                        for wave in visual_waves
+                        {
+                            self.store_visual_wave_into_frame_buffer
+                            (
+                                transform,
+                                wave,
+                            )
+                        }
+                    }
+    
+                    if let Some((player_sphere, team)) = &child_visual_elem.player {
+    
+                        self.store_player_form_into_frame_buffer(
+                            actor,
+                            transform,
+                            player_sphere,
+                            *team,
+                        )
+                    }
                 }
             }
         };
-
-        frame_bounding_box
     }
 
     fn clear_all_frame_buffers(&mut self) {

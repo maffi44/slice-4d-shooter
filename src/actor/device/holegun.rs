@@ -32,7 +32,7 @@ use crate::{
         },
         input::ActionsFrameState,
         physics::PhysicsSystem,
-        render::VisualElement,
+        render::{ChildVisualElement, VisualElement},
         ui::{
             UIElement,
             UIElementType,
@@ -54,7 +54,6 @@ pub struct HoleGun {
     shooted_on_this_charge: bool,
     is_charging: bool,
     // color: Vec3,
-    volume_area: Vec<VolumeArea>,
     shooted_from_pivot_point_dir: Vec4,
     charging_sound: Option<Handle<SoundSource>>,
 
@@ -65,6 +64,8 @@ pub struct HoleGun {
     energy_gun_add_force_mult: f32, 
     energy_gun_damage_mult: f32, 
     energy_gun_restoring_speed: f32,
+
+    visual_element: ChildVisualElement,
 }
 
 pub const HOLE_GUN_BLUE_COLOR: Vec3 = Vec3::new(0.05, 0.6, 1.6);
@@ -84,15 +85,19 @@ impl HoleGun {
         energy_gun_restoring_speed: f32,
         shooted_from_pivot_point_dir: Vec4,
     ) -> Self {
-        // let color = match team {
-        //     Team::Blue => HOLE_GUN_BLUE_COLOR,
-        //     Team::Red => HOLE_GUN_RED_COLOR,
-        // };
+
+        let visual_element = ChildVisualElement
+        {
+            static_objects: None,
+            coloring_areas: None,
+            volume_areas: Some(Vec::with_capacity(1)),
+            waves: None,
+            player: None,
+        };
 
         HoleGun {
             shooted_on_this_charge: false,
             // color,
-            volume_area: Vec::with_capacity(1),
             shooted_from_pivot_point_dir,
             is_charging: false,
             charging_sound: None,
@@ -104,6 +109,8 @@ impl HoleGun {
             energy_gun_add_force_mult, 
             energy_gun_damage_mult, 
             energy_gun_restoring_speed,
+
+            visual_element,
         }
     }
 
@@ -124,7 +131,12 @@ impl HoleGun {
             self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
         );
 
-        let volume_area = self.volume_area.pop().expect("Hole Gun doesn't have volume area on shoot");
+        let volume_area = self
+            .visual_element
+            .volume_areas
+            .as_mut()
+            .expect("Hole gun have not bolume areas in visual element")
+            .pop().expect("Hole Gun doesn't have volume area on shoot");
         
         audio_system.spawn_non_spatial_sound(
             Sound::HolegunShot,
@@ -191,7 +203,7 @@ impl HoleGun {
                                     remote_sender: false,
                                     message: MessageType::SpecificActorMessage(
                                         SpecificActorMessage::PlayerMessage(
-                                            PlayerMessage::DealDamageAndAddForce(
+                                            PlayerMessage::GetDamageAndForce(
                                                 damage as u32,
                                                 force,
                                                 hit.hit_point,
@@ -317,16 +329,9 @@ impl Device for HoleGun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<VisualElement<'a>> {
+    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
         Some(
-            VisualElement {
-                transform,
-                static_objects: None,
-                coloring_areas: None,
-                volume_areas: Some(&self.volume_area),
-                waves: None,
-                player: None,
-            }
+            &self.visual_element
         )
     }
 
@@ -400,7 +405,12 @@ impl Device for HoleGun {
                         }
                     );
     
-                    self.volume_area.push(volume_area);
+                    self
+                        .visual_element
+                        .volume_areas
+                        .as_mut()
+                        .expect("Hole gun have not bolume areas in visual element")
+                        .push(volume_area);
 
                     engine_handle.send_command(
                         Command {
@@ -430,7 +440,13 @@ impl Device for HoleGun {
                 //     0.4 + (self.charging_time*0.13),
                 // );
                 
-                match &mut self.volume_area[0] {
+                match &mut self
+                    .visual_element
+                    .volume_areas
+                    .as_mut()
+                    .expect("Hole gun have not bolume areas in visual element")
+                    [0]
+                {
                     
                     VolumeArea::SphericalVolumeArea(area) => {
                         let shooted_from_offset = {
@@ -503,7 +519,13 @@ impl Device for HoleGun {
                         self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
                     );
             
-                    let volume_area = self.volume_area.pop().expect("Hole Gun doesn't have volume area on shoot");
+                    let volume_area = self
+                        .visual_element
+                        .volume_areas
+                        .as_mut()
+                        .expect("Hole gun have not bolume areas in visual element")
+                        .pop()
+                        .expect("Hole Gun doesn't have volume area on shoot");
 
                     self.current_shot_charging_energy = 0.0;
 
@@ -582,7 +604,12 @@ impl Device for HoleGun {
             self.is_charging = false;
         }
 
-        self.volume_area.clear();
+        self
+            .visual_element
+            .volume_areas
+            .as_mut()
+            .expect("Hole gun have not bolume areas in visual element")
+            .clear();
 
 
         let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarRed);

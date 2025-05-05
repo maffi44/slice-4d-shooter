@@ -21,8 +21,7 @@ use crate::{
             kinematic_collider::KinematicCollider,
             PhysicsSystem
         }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
-            SphericalVolumeArea,
-            VolumeArea
+            SphericalVolumeArea, VisualWave, VolumeArea
         }
     },
     transform::{Transform, BACKWARD, DOWN, FORWARD, LEFT, RIGHT, UP, W_DOWN},
@@ -30,7 +29,7 @@ use crate::{
 
 use super::{
     device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, main_player::{
-        player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, PLAYER_MAX_HP, TIME_TO_DIE_SLOWLY
+        player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, BLUE_SCANNER_WAVE_COLOR, PLAYER_MAX_HP, RED_SCANNER_WAVE_COLOR, TIME_TO_DIE_SLOWLY, W_SCANNER_EXPANDING_SPEED, W_SCANNER_MAX_RADIUS
     }, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, shotgun_shot_source::ShotgunShotSource, Actor, ActorID, ActorWrapper, CommonActorsMessage, Component, Message, MessageType, SpecificActorMessage
 };
 
@@ -105,10 +104,16 @@ pub struct PlayersDoll {
     current_w_level_prev_frame: u32,
 
     friction_on_air: f32,
+
+    w_scanner_enable: bool,
+    w_scanner_radius: f32,
+    w_scanner_ring_intesity: f32,
+    visual_wave: Vec<VisualWave>,
 }
 
 #[derive(Clone)]
 pub enum PlayersDollMessage{
+    ScannerTurnedOn,
     SpawnShotgunShot(
         // shot's start position
         Vec4,
@@ -280,6 +285,10 @@ impl PlayersDoll {
             my_color,
             on_way_to_next_w_level: false,
             friction_on_air,
+            w_scanner_enable: false,
+            w_scanner_radius: 0.0,
+            w_scanner_ring_intesity: 0.0,
+            visual_wave: Vec::with_capacity(1),
         }
     }
 
@@ -287,6 +296,9 @@ impl PlayersDoll {
 
     fn die_immediately(&mut self, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
         if self.is_alive {
+
+            self.w_scanner_enable = false;
+            self.visual_wave.clear();
 
             self.volume_area.clear();
 
@@ -413,6 +425,10 @@ impl PlayersDoll {
         self.target_transform = transform;
         self.input_state = input_state;
         self.interpolating_model_target.current_velocity = velocity;
+        self.w_scanner_enable = false;
+        self.w_scanner_radius = 0.0;
+        self.w_scanner_ring_intesity = 0.0;
+        self.visual_wave.clear();
     }
 
 
@@ -484,6 +500,44 @@ impl PlayersDoll {
 
         self.transform.set_position(self.transform.get_position() + dist * (18_f32*delta));
         // self.transform.set_position(self.target_transform.get_position());
+    }
+
+    fn process_player_doll_w_scanner(
+        &mut self,
+        delta: f32,
+    )
+    {   
+        if self.w_scanner_enable {
+            self.w_scanner_radius += delta * W_SCANNER_EXPANDING_SPEED;
+
+            self.w_scanner_ring_intesity = {
+                let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
+        
+                intensity /= W_SCANNER_MAX_RADIUS/3.0;
+        
+                intensity.clamp(0.0, 1.0)
+            };
+    
+            self.visual_wave[0].radius = self.w_scanner_radius;
+    
+            self.visual_wave[0].color = match self.team
+            {
+                Team::Blue => {
+                    BLUE_SCANNER_WAVE_COLOR * self.w_scanner_ring_intesity
+                },
+                Team::Red =>
+                {
+                    RED_SCANNER_WAVE_COLOR * self.w_scanner_ring_intesity
+                }
+            };
+    
+            if self.w_scanner_radius >= W_SCANNER_MAX_RADIUS {
+    
+                self.visual_wave.clear();
+    
+                self.w_scanner_enable = false;
+            }
+        }
     }
 }
 
@@ -626,12 +680,12 @@ impl Actor for PlayersDoll {
                                 self.die_slowly(engine_handle);
                             }
 
-                            PlayerMessage::DealDamageAndAddForce(
+                            PlayerMessage::GetDamageAndForce(
                                 damage,
                                 force,
                                 impact_pos,
                                 team,
-                                _
+                                damage_dealer_id,
                             ) =>
                             {
                                 if team != self.team && damage > 0
@@ -643,7 +697,7 @@ impl Actor for PlayersDoll {
                                                 NetCommand::SendDirectNetMessageReliable(
                                                     NetMessageToPlayer::RemoteDirectMessage(
                                                         self.id.expect("Player's Doll have not Actor's ID"),
-                                                        RemoteMessage::DealDamageAndAddForce(
+                                                        RemoteMessage::DealDamageAndForce(
                                                             damage,
                                                             force.to_array(),
                                                             impact_pos.to_array(),
@@ -666,7 +720,7 @@ impl Actor for PlayersDoll {
                                     });
     
                                     engine_handle.send_direct_message(
-                                        from,
+                                        damage_dealer_id,
                                         Message {
                                             from: self.get_id().expect("Player Doll have not ActorID"),
                                             remote_sender: false,
@@ -706,6 +760,37 @@ impl Actor for PlayersDoll {
                     {
                         match message
                         {
+                            PlayersDollMessage::ScannerTurnedOn =>
+                            {
+                                self.w_scanner_enable = true;
+                
+                                self.w_scanner_radius = self.player_settings.collider_radius + 0.1;
+
+                                self.visual_wave.push(
+                                    VisualWave {
+                                        translation: Vec4::ZERO,
+                                        radius: 0.001,
+                                        color: match self.team {
+                                            Team::Blue => BLUE_SCANNER_WAVE_COLOR,
+                                            Team::Red => RED_SCANNER_WAVE_COLOR,
+                                        }
+                                    }
+                                );
+
+                                audio_system.spawn_spatial_sound(
+                                    crate::engine::audio::Sound::ScannerSound,
+                                    0.7,
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing,
+                                    self.transform.get_position(),
+                                    1.0,
+                                    1.0,
+                                    50.0
+                                );
+                            },
+
                             PlayersDollMessage::SpawnShotgunShot(
                                 start_pos,
                                 shot_dir ,
@@ -1109,8 +1194,9 @@ impl Actor for PlayersDoll {
                     static_objects: None,
                     coloring_areas: None,
                     volume_areas: Some(&self.volume_area),
-                    waves: None,
-                    player: Some((&self.interpolating_model[0], self.team))
+                    waves: Some(&self.visual_wave),
+                    player: Some((&self.interpolating_model[0], self.team)),
+                    child_visual_elem: None,
                 }
             )
         } else {
@@ -1129,6 +1215,8 @@ impl Actor for PlayersDoll {
         delta: f32
     ) {
         if self.is_alive {
+
+            self.process_player_doll_w_scanner(delta);
 
             if let Some(handle) = &self.holegun_charge_sound {
                 audio_system.sound_set_position(

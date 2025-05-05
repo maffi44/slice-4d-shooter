@@ -310,6 +310,7 @@ impl Actor for HoleGunShot {
                 volume_areas: Some(&self.volume_areas),
                 waves: Some(&self.waves),
                 player: None,
+                child_visual_elem: None,
             }
         )
     }

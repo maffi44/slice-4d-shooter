@@ -318,7 +318,7 @@ impl Actor for PlayerFor2d3dExample {
                                 );
                             }
 
-                            PlayerMessage::DealDamageAndAddForce(
+                            PlayerMessage::GetDamageAndForce(
                                 damage,
                                 force,
                                 _,
@@ -690,57 +690,58 @@ impl Actor for PlayerFor2d3dExample {
     }
 
     fn get_visual_element(&self) -> Option<VisualElement> {
-        if self.inner_state.is_enable {
-            let mut visual_elem: Option<VisualElement> = match self.active_hands_slot {
-                ActiveHandsSlot::Zero => {
-                    self.hands_slot_0.get_visual_element(self.get_transform())
-                },
-                ActiveHandsSlot::First => {
-                    if let Some(device) = &self.hands_slot_1 {
-                        device.get_visual_element(self.get_transform())
-                    } else {
-                        None
-                    }
-                },
-                ActiveHandsSlot::Second => {
-                    if let Some(device) = &self.hands_slot_2 {
-                        device.get_visual_element(self.get_transform())
-                    } else {
-                        None
-                    }
-                },
-                ActiveHandsSlot::Third => {
-                    if let Some(device) = &self.hands_slot_3 {
-                        device.get_visual_element(self.get_transform())
-                    } else {
-                        None
-                    }
-                }
-            };
+        // if self.inner_state.is_enable {
+        //     let mut visual_elem: Option<VisualElement> = match self.active_hands_slot {
+        //         ActiveHandsSlot::Zero => {
+        //             self.hands_slot_0.get_visual_element(self.get_transform())
+        //         },
+        //         ActiveHandsSlot::First => {
+        //             if let Some(device) = &self.hands_slot_1 {
+        //                 device.get_visual_element(self.get_transform())
+        //             } else {
+        //                 None
+        //             }
+        //         },
+        //         ActiveHandsSlot::Second => {
+        //             if let Some(device) = &self.hands_slot_2 {
+        //                 device.get_visual_element(self.get_transform())
+        //             } else {
+        //                 None
+        //             }
+        //         },
+        //         ActiveHandsSlot::Third => {
+        //             if let Some(device) = &self.hands_slot_3 {
+        //                 device.get_visual_element(self.get_transform())
+        //             } else {
+        //                 None
+        //             }
+        //         }
+        //     };
 
-            if let Some(vl) = visual_elem.as_mut()
-            {
-                vl.player = Some((&self.inner_state.collider_for_others[0], self.inner_state.team));
+        //     if let Some(vl) = visual_elem.as_mut()
+        //     {
+        //         vl.player = Some((&self.inner_state.collider_for_others[0], self.inner_state.team));
 
-                // vl.volume_areas = Some(&self.view_volume_beams);
-            }
-            else
-            {
-                visual_elem = Some(
-                    VisualElement {
-                        transform: self.get_transform(),
-                        static_objects: None,
-                        coloring_areas: None,
-                        volume_areas: None,//Some(&self.view_volume_beams),
-                        waves: None,
-                        player: Some((&self.inner_state.collider_for_others[0], self.inner_state.team))
-                    }
-                )
-            }
+        //         // vl.volume_areas = Some(&self.view_volume_beams);
+        //     }
+        //     else
+        //     {
+        //         visual_elem = Some(
+        //             VisualElement {
+        //                 transform: self.get_transform(),
+        //                 static_objects: None,
+        //                 coloring_areas: None,
+        //                 volume_areas: None,//Some(&self.view_volume_beams),
+        //                 waves: None,
+        //                 player: Some((&self.inner_state.collider_for_others[0], self.inner_state.team)),
+        //                 next_visual_elem: None,
+        //             }
+        //         )
+        //     }
 
-            return visual_elem;
+        //     return visual_elem;
 
-        }
+        // }
         None
     }
 
@@ -886,6 +887,7 @@ impl Actor for PlayerFor2d3dExample {
             self.screen_effects.player_projections.projections_tick(
                 my_id,
                 engine_handle,
+                audio_system,
                 delta
             );
             

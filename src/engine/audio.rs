@@ -57,6 +57,7 @@ pub enum Sound {
     PlayerGetScanned,
     ChargingWJump,
     WJump,
+    ProjectionCaptured,
 }
 pub struct AudioSystem {
     pub sound_engine: SoundEngine,
@@ -564,6 +565,13 @@ impl AudioSystem {
             )
         ).expect("can't create sound buffer resourse");
 
+        let projection_captured = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/projection_captured.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
+
         sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
         sounds.insert(Sound::ShotgunShot, shotgun_shot_sound_resource);
         sounds.insert(Sound::ShotgunShotImpact, shotgun_shot_impact_sound_resource);
@@ -592,6 +600,7 @@ impl AudioSystem {
         sounds.insert(Sound::PlayerGetScanned, player_get_scanned);
         sounds.insert(Sound::ChargingWJump, charging_w_jump);
         sounds.insert(Sound::WJump, w_jump);
+        sounds.insert(Sound::ProjectionCaptured, projection_captured);
 
         AudioSystem {
             sound_engine,

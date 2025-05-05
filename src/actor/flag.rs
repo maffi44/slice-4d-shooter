@@ -532,6 +532,7 @@ impl Actor for Flag
                 volume_areas: Some(&self.visual_areas),
                 waves: Some(&self.waves),
                 player: None,
+                child_visual_elem: None,
             }
         )
     }

@@ -244,7 +244,8 @@ impl Actor for MoverW
                 coloring_areas: None,
                 volume_areas: Some(&self.volume_areas),
                 waves: None,
-                player: None
+                player: None,
+                child_visual_elem: None,
             }
         )
     }

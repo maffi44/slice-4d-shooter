@@ -169,8 +169,9 @@ pub enum RemoteCommand {
 #[alkahest(Formula, Serialize, Deserialize)]
 #[derive(Clone)]
 pub enum RemoteMessage {
+    ScannerTurnedOn,
     YouWasScanned,
-    DealDamageAndAddForce(
+    DealDamageAndForce(
         // damage
         u32,
         // force

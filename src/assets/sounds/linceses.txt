@@ -28,3 +28,7 @@ charging_w_jump.waw
 w_jump.waw
     https://freesound.org/people/Funky_Audio/sounds/729389/
     (trimed, reverb, amplify, changed speed)
+
+projection_captured.waw
+    https://freesound.org/people/anthonychartier2020/sounds/560188/
+    (changed speed, changed pitch, fade in, fade out)

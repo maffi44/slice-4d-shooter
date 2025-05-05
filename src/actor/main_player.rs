@@ -45,7 +45,7 @@ use crate::{
             }, physics_system_data::{Hit, PhysicsState}, PhysicsSystem
         }, render::{camera::Camera, VisualElement}, time::TimeSystem, ui::{
             self, RectSize, UIElement, UIElementType, UISystem
-        }, world::level::Spawn
+        }, world::{level::Spawn, static_object::VisualWave}
     },
     transform::{Transform, BACKWARD, DOWN, FORWARD, LEFT, RIGHT, UP, W_DOWN, W_UP},
 };
@@ -111,6 +111,7 @@ pub struct PlayerScreenEffects {
 pub struct PlayersProjections
 {
     pub projections: Vec<PlayerProjection>,
+    pub current_active_projection: Option<ActorID>
 }
 
 impl PlayersProjections
@@ -120,6 +121,7 @@ impl PlayersProjections
         PlayersProjections
         {
             projections: Vec::with_capacity(10),
+            current_active_projection: None,
         }
     }
 
@@ -167,13 +169,42 @@ impl PlayersProjections
     pub fn set_projection_active(
         &mut self,
         projection_id: ActorID,
+        audio_system: &mut AudioSystem,
     )
     {
         for projection in &mut self.projections
         {
             if projection.id == projection_id
             {
+                if let Some(prev_pr_id) = self.current_active_projection
+                {
+                    if prev_pr_id != projection_id
+                    {
+                        audio_system.spawn_non_spatial_sound(
+                            Sound::ProjectionCaptured,
+                            0.7,
+                            0.7,
+                            false,
+                            true,
+                            Status::Playing,
+                        );
+                    }
+                }
+                else
+                {
+                    audio_system.spawn_non_spatial_sound(
+                        Sound::ProjectionCaptured,
+                        0.7,
+                        0.7,
+                        false,
+                        true,
+                        Status::Playing,
+                    );
+                }
+
                 projection.is_active_by_timer = PROJECTION_ACTIVE_TIME;
+
+                self.current_active_projection = Some(projection_id);
             }
             else
             {
@@ -248,6 +279,7 @@ impl PlayersProjections
         &mut self,
         my_id: ActorID,
         engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
         delta: f32,
     )
     {
@@ -271,6 +303,22 @@ impl PlayersProjections
             if projection.is_active_by_timer > 0.0
             {
                 projection.is_active_by_timer -= delta;
+
+                if projection.is_active_by_timer <= 0.0
+                {
+                    projection.is_active_by_timer = 0.0;
+
+                    self.current_active_projection = None;
+
+                    audio_system.spawn_non_spatial_sound(
+                        Sound::ProjectionCaptured,
+                        0.70,
+                        0.48,
+                        false,
+                        true,
+                        Status::Playing,
+                    );
+                }
 
                 projection.is_active_intensity = lerpf(
                     projection.is_active_intensity,
@@ -498,12 +546,20 @@ impl Default for PlayerScreenEffects
 }
 
 
+// pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.012, 0.1, 0.7);
+// pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.7, 0.1, 0.012);
+
+pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.18, 0.18, 0.18);
+pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.18, 0.18, 0.18);
+
 pub struct WScanner
 {
     pub w_scanner_enable: bool,
     pub w_scanner_radius: f32,
     pub w_scanner_reloading_time: f32,
     pub w_scanner_enemies_show_time: f32,
+
+    pub visual_wave: Vec<VisualWave>,
 }
 
 impl WScanner
@@ -520,6 +576,8 @@ impl WScanner
             w_scanner_radius: 0.0,
             w_scanner_reloading_time,
             w_scanner_enemies_show_time,
+
+            visual_wave: Vec::with_capacity(1),
         }
     }
 
@@ -564,8 +622,8 @@ const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
 
 // const self.player_settings.scanner_reloading_time: f32 = 6.5;
 // const self.player_settings.scanner_show_enemies_time: f32 = 5.5;
-const W_SCANNER_MAX_RADIUS: f32 = 21.0;
-const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
+pub const W_SCANNER_MAX_RADIUS: f32 = 21.0;
+pub const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
 
 pub const TIME_TO_DIE_SLOWLY: f32 = 0.5;
 
@@ -601,7 +659,7 @@ pub const GET_DAMAGE_PROJECTION_INTENSITY: f32 = 1.2;
 #[derive(Clone)]
 pub enum PlayerMessage {
     YouWasScanned,
-    DealDamageAndAddForce(
+    GetDamageAndForce(
         // damage
         u32,
         //force
@@ -816,7 +874,7 @@ impl Actor for MainPlayer {
                                 );
                             }
 
-                            PlayerMessage::DealDamageAndAddForce(
+                            PlayerMessage::GetDamageAndForce(
                                 damage,
                                 force,
                                 _,
@@ -1189,34 +1247,47 @@ impl Actor for MainPlayer {
 
     fn get_visual_element(&self) -> Option<VisualElement> {
         if self.inner_state.is_enable {
-            match self.active_hands_slot {
+            let device_visual_elem = match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
-                    return self.hands_slot_0.get_visual_element(self.get_transform());
+                    self.hands_slot_0.get_visual_element(self.get_transform())
                 },
                 ActiveHandsSlot::First => {
                     if let Some(device) = &self.hands_slot_1 {
-                        return device.get_visual_element(self.get_transform());
+                        device.get_visual_element(self.get_transform())
                     } else {
-                        return None;
+                        None
                     }
                 },
                 ActiveHandsSlot::Second => {
                     if let Some(device) = &self.hands_slot_2 {
-                        return device.get_visual_element(self.get_transform());
+                        device.get_visual_element(self.get_transform())
                     } else {
-                        return None;
+                        None
                     }
                 },
                 ActiveHandsSlot::Third => {
                     if let Some(device) = &self.hands_slot_3 {
-                        return device.get_visual_element(self.get_transform());
+                        device.get_visual_element(self.get_transform())
                     } else {
-                        return None;
+                        None
                     }
                 }
-            }
+            };
+
+            Some(VisualElement {
+                transform: self.get_transform(),
+                static_objects: None,
+                coloring_areas: None,
+                volume_areas: None,
+                waves: None,//Some(&self.w_scanner.visual_wave),
+                player: None,
+                child_visual_elem: device_visual_elem,
+            })
         }
-        None
+        else
+        {
+            None
+        }
     }
 
     fn tick(
@@ -1270,6 +1341,7 @@ impl Actor for MainPlayer {
                 &mut self.inner_state,
                 &mut self.screen_effects,
                 ui_system,
+                audio_system,
             );
 
             process_player_rotation(
@@ -1372,6 +1444,7 @@ impl Actor for MainPlayer {
             self.screen_effects.player_projections.projections_tick(
                 my_id,
                 engine_handle,
+                audio_system,
                 delta
             );
             
@@ -1491,6 +1564,7 @@ pub fn process_projection_w_aim(
     inner_state: &mut PlayerInnerState,
     screen_effects: &mut PlayerScreenEffects,
     ui_system: &mut UISystem,
+    audio_system: &mut AudioSystem,
 )
 {
     if input.w_aim.is_action_just_pressed()
@@ -1531,8 +1605,12 @@ pub fn process_projection_w_aim(
 
         if let Some(projection_id) = projection_id
         {
-            screen_effects.player_projections.set_projection_active(projection_id);
+            screen_effects.player_projections.set_projection_active(
+                projection_id,
+                audio_system
+            );
         }
+
     }
 }
 
@@ -1923,6 +2001,31 @@ pub fn process_w_scanner(
         if !w_scanner.w_scanner_enable {
             if w_scanner.w_scanner_reloading_time >= player_settings.scanner_reloading_time {
 
+                engine_handle.send_command(
+                    Command {
+                        sender: my_id,
+                        command_type: CommandType::NetCommand(
+                            NetCommand::SendBoardcastNetMessageReliable(
+                                NetMessageToPlayer::RemoteDirectMessage(
+                                    my_id,
+                                    RemoteMessage::ScannerTurnedOn
+                                ),
+                            )
+                        )
+                    }
+                );
+
+                w_scanner.visual_wave.push(
+                    VisualWave {
+                        translation: Vec4::ZERO,
+                        radius: 0.001,
+                        color: match inner_state.team {
+                            Team::Blue => BLUE_SCANNER_WAVE_COLOR,
+                            Team::Red => RED_SCANNER_WAVE_COLOR,
+                        }
+                    }
+                );
+
                 audio_system.spawn_non_spatial_sound(
                     crate::engine::audio::Sound::ScannerSound,
                     0.9,
@@ -1946,7 +2049,23 @@ pub fn process_w_scanner(
     if w_scanner.w_scanner_enable {
         w_scanner.w_scanner_radius += delta * W_SCANNER_EXPANDING_SPEED;
 
+        w_scanner.visual_wave[0].radius = w_scanner.w_scanner_radius;
+
+        w_scanner.visual_wave[0].color = match inner_state.team
+        {
+            Team::Blue => {
+                BLUE_SCANNER_WAVE_COLOR * screen_effects.w_scanner_ring_intesity
+            },
+            Team::Red =>
+            {
+                RED_SCANNER_WAVE_COLOR * screen_effects.w_scanner_ring_intesity
+            }
+        };
+
         if w_scanner.w_scanner_radius >= W_SCANNER_MAX_RADIUS {
+
+            w_scanner.visual_wave.clear();
+
             w_scanner.w_scanner_enable = false;
             w_scanner.w_scanner_reloading_time = 0.0;
         }
