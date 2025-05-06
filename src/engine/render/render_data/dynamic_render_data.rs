@@ -1354,12 +1354,12 @@ pub struct OtherDynamicData {
 
     undestroyable_cubes: [Shape; 64],
     undestroyable_cubes_amount: u32,
-    padding_byte1: u32,
+    splited_screen_in_2d_3d_example: f32,
     padding_byte2: u32,
     padding_byte3: u32,
 
     getting_damage_screen_effect: f32,
-    splited_screen_in_2d_3d_example_or_zx_player_rotation: f32,
+    zx_player_rotation: f32,
     screen_aspect: f32,
     time: f32,
 
@@ -1402,12 +1402,12 @@ impl OtherDynamicData {
         if let ActorWrapper::PlayerFor2d3dExample(player) = main_actor
         {
             self.additional_data = player.get_2d_slice_pos().to_array();
-            self.additional_data_2 = player.get_2d_slice_xz_rot().to_cols_array();
-            self.splited_screen_in_2d_3d_example_or_zx_player_rotation = player.show_3d_example_current_value;
+            self.additional_data_2 = player.get_2d_slice_xz_rot().transpose().to_cols_array();
+            self.splited_screen_in_2d_3d_example = player.show_3d_example_current_value;
         }
         else if let ActorWrapper::MainPlayer(player) = main_actor
         {
-            self.splited_screen_in_2d_3d_example_or_zx_player_rotation = player.get_xz_rotation();
+            self.zx_player_rotation = player.get_xz_rotation();
         }
 
         self.camera_data = CameraUniform {
@@ -1485,12 +1485,12 @@ impl Default for OtherDynamicData {
 
             undestroyable_cubes: [Shape::default(); 64],
             undestroyable_cubes_amount: 0,
-            padding_byte1: 0,
+            splited_screen_in_2d_3d_example: 0.0,
             padding_byte2: 0,
             padding_byte3: 0,
 
             getting_damage_screen_effect: 0.0,
-            splited_screen_in_2d_3d_example_or_zx_player_rotation: 0.0,
+            zx_player_rotation: 0.0,
             screen_aspect: 1.0,
             time: 0.0,
             additional_data: [0.0;4],

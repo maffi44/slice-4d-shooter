@@ -249,6 +249,20 @@ struct OutputMaterials {
     material_weights: array<f32, 16>,
 }
 
+struct PlayerProjection
+{
+    position: vec4<f32>,
+    original_position: vec4<f32>,
+    is_active_intensity: f32,
+    radius: f32,
+    zw_offset: f32,
+    rel_zw_offset: f32,
+    damage_intensity: f32,
+    padding_byte1: f32,
+    padding_byte2: f32,
+    intensity: f32
+}
+
 struct OtherDynamicData {
     shapes_arrays_metadata: ShapesMetadata,
     spherical_areas_meatadata: SphericalAreasMetadata,
@@ -258,13 +272,22 @@ struct OtherDynamicData {
     beam_areas_amount: u32,
     player_forms_amount: u32,
 
+    player_projections: array<PlayerProjection, 16>,
+
     w_scanner_radius: f32,
     w_scanner_ring_intesity: f32,
-    w_scanner_enemies_intesity: f32,
+    w_scanner_max_radius: f32,
 
     death_screen_effect: f32,
-    getting_damage_screen_effect: f32,
+
+    undestroyable_cubes: array<Shape, 64>,
+    undestroyable_cubes_amount: u32,
     splited_screen_in_2d_3d_example: f32,
+    padding_byte2: u32,
+    padding_byte3: u32,
+
+    getting_damage_screen_effect: f32,
+    zx_player_rotation: f32,
     screen_aspect: f32,
     time: f32,
     //all shapes bounding box sides
@@ -4366,34 +4389,57 @@ fn w_scanner_ring_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec4<f
 
 fn w_scanner_enemies_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec4<f32> {
     var scanner_color = vec4(1.0,0.0,0.0,0.0);
+
+    var closest_intr = vec2(999.0, -999.0);
     
+    for (var i = 0u; i < 16u; i++) {
+
+        if dynamic_data.player_projections[i].radius > 0.0
+        {
+            let current_intr = sph_intersection(
+                pos - dynamic_data.player_projections[i].position,
+                ray_dir,
+                dynamic_data.player_projections[i].radius
+            );
     
-    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-
-        let d = sd_sphere(pos - dyn_player_forms[i].pos, dyn_player_forms[i].radius);
-
-        let visible = clamp((dynamic_data.w_scanner_radius - d) * 5.0, 0.0, 1.0);
-
-        let vis_d = length(
-            (
-                (
-                    pos + ray_dir * min(
-                        dynamic_data.w_scanner_radius,
-                        length(pos.xyz - dyn_player_forms[i].pos.xyz)
-                    )
-                ) - dyn_player_forms[i].pos
-            ).xyz
-        ) - dyn_player_forms[i].radius;
-
-        var red = pow(clamp((1.0 - abs(vis_d*10.0)), 0.0, 1.0), 2.0) * visible;
-        red += pow((clamp(-vis_d * 2.5, 0.0, 1.0)), 2.0) * visible;
-        red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
-        
-        scanner_color.a += red;
+            if current_intr.x > 0.0
+            {
+                if current_intr.x < closest_intr.x
+                {
+                    closest_intr = vec2(current_intr.x, f32(i));
+                } 
+            }
+        }
     }
-    
+
+    if closest_intr.y > -1.0
+    {
+        let i = u32(closest_intr.y);
+
+        let n = get_sphere_normal(
+            pos+ray_dir*closest_intr.x,
+            dynamic_data.player_projections[i].position,
+            dynamic_data.player_projections[i].radius
+        );
+
+        let vis_d = dot(ray_dir,n);
+
+        var red = pow(clamp((1.0 - abs(vis_d*1.1)), 0.0, 1.0), 2.0);
+        
+        let rot_coef = abs(sin(dynamic_data.player_projections[i].zw_offset));
+        
+        red += pow((clamp(-vis_d * 1.3, 0.0, 1.0)), mix(25.0, 9.0, rot_coef)) * rot_coef;
+        // red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
+        
+        scanner_color.a += red * (dynamic_data.player_projections[i].intensity*0.3 + dynamic_data.player_projections[i].is_active_intensity*1.0);
+        scanner_color.a *= dynamic_data.player_projections[i].intensity;
+
+        // scanner_color.g -= 0.5 * dynamic_data.player_projections[i].is_active_intensity;
+        // scanner_color.b -= 0.5 * dynamic_data.player_projections[i].is_active_intensity;
+    }
+
     scanner_color.a = clamp(scanner_color.a, 0.0, 1.0);
-    
+
     return scanner_color;
 }
 

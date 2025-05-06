@@ -7,12 +7,12 @@
     "air_speed_mult" : 0.32,
 
     "player_jump_y_speed" : 9.0,
-    "player_jump_w_speed" : 6.0,
+    "player_jump_w_speed" : 9.0,
 
     "player_jetpack_w_speed" : 0.2,
 
     "gravity_y_speed" : 30.0,
-    "gravity_w_speed" : 10.0,
+    "gravity_w_speed" : 15.0,
     "friction_on_air" : 0.2,
 
     "rotation_along_w_standard_method" : true,

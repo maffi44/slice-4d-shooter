@@ -170,7 +170,7 @@ impl HoleGun {
 
             let position = hit.hit_point;
             let shooted_from = player.transform.get_position() + weapon_offset;
-            let radius = charging_energy*CHARGING_COEF;
+            let radius = charging_energy*CHARGING_COEF*0.87;
 
             let hited_players = physic_system.sphere_cast_on_dynamic_colliders(
                 position,
@@ -241,7 +241,7 @@ impl HoleGun {
             let hole = HoleGunShot::new(
                 position,
                 shooted_from,
-                radius.abs()*base_coef,
+                radius.abs(),//*base_coef,
                 color,
                 volume_area,
                 1.0,
@@ -266,7 +266,7 @@ impl HoleGun {
                                 RemoteMessage::SpawnHoleGunShotActor(
                                     position.to_array(),
                                     shooted_from.to_array(),
-                                    radius.abs()*base_coef,
+                                    radius.abs(),//*base_coef,
                                     color.to_array(),
                                     volume_area_radius.abs(),
                                 )

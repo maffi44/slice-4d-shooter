@@ -46,6 +46,9 @@ pub struct PlayerInnerState {
     pub base_effect_tick_timer: f32,
     pub w_aim_enabled: bool,
     pub w_aim_ui_frame_intensity: f32,
+    pub second_jump_is_charging: bool,
+    pub second_jump_charging_energy: f32,
+    pub charging_second_jump_sound_handle: Option<Handle<SoundSource>>,
 }
 
 
@@ -151,6 +154,9 @@ impl PlayerInnerState {
             base_effect_tick_timer: 0.0,
             w_aim_enabled: true,
             w_aim_ui_frame_intensity: 0.0,
+            second_jump_is_charging: false,
+            charging_second_jump_sound_handle: None,
+            second_jump_charging_energy: 0.0,
         }
     }
 

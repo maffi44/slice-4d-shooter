@@ -174,12 +174,15 @@ impl KinematicCollider {
                 
             }
 
-            if get_dist(
+            let dist = get_dist(
                 w_bottom_position,
                 static_objects,
                 Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+            );
 
-            ) < self.collider_radius * 0.95 {
+            println!("dist: {}", self.collider_radius * 0.99 - dist);
+
+            if dist < self.collider_radius * 0.99 {
                 self.is_on_w_ground = true;
             }
 
@@ -226,8 +229,8 @@ impl KinematicCollider {
     
         let mut friction: f32 = 0.0;
     
-        // pushing out the kinematic collider if it is stuck inside the object
-        // at beginning of physics frame.
+        // at beginning of physics frame pushing out the kinematic collider
+        // if it is stuck inside the object.
         // It is only possible if some static object moved in the previus frame
         // (unless the kinematic collider was disabled in previous frame),
         // and if this happaned, we will add the collision force to the kinematic collider 

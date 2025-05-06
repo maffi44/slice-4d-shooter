@@ -282,7 +282,7 @@ struct OtherDynamicData {
 
     undestroyable_cubes: array<Shape, 64>,
     undestroyable_cubes_amount: u32,
-    padding_byte1: u32,
+    splited_screen_in_2d_3d_example: f32,
     padding_byte2: u32,
     padding_byte3: u32,
 

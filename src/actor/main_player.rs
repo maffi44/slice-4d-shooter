@@ -656,6 +656,8 @@ pub const PLAYER_PROJECTION_DISPLAY_TIME: f32 = 3.4;
 
 pub const GET_DAMAGE_PROJECTION_INTENSITY: f32 = 1.2;
 
+const SECOND_JUMP_CHARGING_SPEED: f32 = 10.0;
+
 #[derive(Clone)]
 pub enum PlayerMessage {
     YouWasScanned,
@@ -1425,6 +1427,7 @@ impl Actor for MainPlayer {
                 &self.player_settings,
                 audio_system,
                 W_UP,
+                delta,
             );
 
             process_w_scanner(
@@ -1954,31 +1957,128 @@ pub fn process_player_primary_jump_input(
     }
 }
 
-
 pub fn process_player_second_jump_input(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
     player_settings: &PlayerSettings,
     audio_system: &mut AudioSystem,
     mut axis: Vec4,
+    delta: f32,
 )
 {
-    axis = axis.normalize();
-
     if input.move_w_up.is_action_just_pressed() {
-        
-        // audio_system.spawn_non_spatial_sound(
-        //     Sound::WJump,
-        //     1.0,
-        //     1.0,
-        //     false,
-        //     true,
-        //     Status::Playing
-        // );
 
-        inner_state.collider.add_force(axis * player_settings.jump_w_speed);
+        if inner_state.collider.is_on_w_ground
+        {
+            axis = axis.normalize();
+
+            inner_state.collider.add_force(axis * player_settings.jump_w_speed);
+        
+            audio_system.spawn_non_spatial_sound(
+                Sound::WJump,
+                0.7,
+                1.0,
+                false,
+                true,
+                Status::Playing
+            );
+        }
     }
 }
+
+// previous version of w jump 
+
+// pub fn process_player_second_jump_input(
+//     input: &ActionsFrameState,
+//     inner_state: &mut PlayerInnerState,
+//     player_settings: &PlayerSettings,
+//     audio_system: &mut AudioSystem,
+//     mut axis: Vec4,
+//     delta: f32,
+// )
+// {
+//     axis = axis.normalize();
+
+//     if input.move_w_up.is_action_just_pressed() {
+//         inner_state.second_jump_is_charging = true;
+
+//         inner_state.charging_second_jump_sound_handle = Some(
+//                 audio_system.spawn_non_spatial_sound(
+//                     Sound::ChargingWJump,
+//                     0.7,
+//                     1.0,
+//                     false,
+//                     true,
+//                     Status::Playing
+//             )
+//         );
+
+//         inner_state.second_jump_charging_energy = 0.0;
+//     }
+
+//     if input.move_w_up.is_action_pressed()
+//     {
+//         if inner_state.second_jump_is_charging
+//         {
+//             inner_state.second_jump_charging_energy += SECOND_JUMP_CHARGING_SPEED*delta;
+    
+//             if inner_state.second_jump_charging_energy >= player_settings.jump_w_speed
+//             {
+//                 inner_state.second_jump_is_charging = false;
+
+//                 inner_state.collider.add_force(axis * inner_state.second_jump_charging_energy);
+    
+//                 inner_state.second_jump_charging_energy = 0.0;
+                
+//                 audio_system.spawn_non_spatial_sound(
+//                     Sound::WJump,
+//                     0.7,
+//                     1.0,
+//                     false,
+//                     true,
+//                     Status::Playing
+//                 );
+    
+//                 audio_system.remove_sound(
+//                     inner_state
+//                         .charging_second_jump_sound_handle
+//                         .take()
+//                         .expect("Player have not charging second jump sound handle on release jump button")
+//                 );
+//             }
+//         }
+//     }
+//     else
+//     {
+//         if inner_state.second_jump_is_charging
+//         {
+//             if inner_state.second_jump_charging_energy > 0.0
+//             {
+//                 inner_state.second_jump_is_charging = false;
+
+//                 inner_state.collider.add_force(axis * inner_state.second_jump_charging_energy);
+    
+//                 inner_state.second_jump_charging_energy = 0.0;
+                
+//                 audio_system.spawn_non_spatial_sound(
+//                     Sound::WJump,
+//                     0.7,
+//                     1.0,
+//                     false,
+//                     true,
+//                     Status::Playing
+//                 );
+    
+//                 audio_system.remove_sound(
+//                     inner_state
+//                         .charging_second_jump_sound_handle
+//                         .take()
+//                         .expect("Player have not charging second jump sound handle on release jump button")
+//                 );
+//             }
+//         }
+//     }
+// }
 
 
 

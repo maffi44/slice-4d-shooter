@@ -1,3 +1,4 @@
+use bincode::de;
 use client_server_protocol::{
     NetCommand,
     NetMessageToPlayer,
@@ -690,59 +691,52 @@ impl Actor for PlayerFor2d3dExample {
     }
 
     fn get_visual_element(&self) -> Option<VisualElement> {
-        // if self.inner_state.is_enable {
-        //     let mut visual_elem: Option<VisualElement> = match self.active_hands_slot {
-        //         ActiveHandsSlot::Zero => {
-        //             self.hands_slot_0.get_visual_element(self.get_transform())
-        //         },
-        //         ActiveHandsSlot::First => {
-        //             if let Some(device) = &self.hands_slot_1 {
-        //                 device.get_visual_element(self.get_transform())
-        //             } else {
-        //                 None
-        //             }
-        //         },
-        //         ActiveHandsSlot::Second => {
-        //             if let Some(device) = &self.hands_slot_2 {
-        //                 device.get_visual_element(self.get_transform())
-        //             } else {
-        //                 None
-        //             }
-        //         },
-        //         ActiveHandsSlot::Third => {
-        //             if let Some(device) = &self.hands_slot_3 {
-        //                 device.get_visual_element(self.get_transform())
-        //             } else {
-        //                 None
-        //             }
-        //         }
-        //     };
+        if self.inner_state.is_enable {
+            let child_visual_elem = match self.active_hands_slot {
+                ActiveHandsSlot::Zero => {
+                    self.hands_slot_0.get_visual_element(self.get_transform())
+                },
+                ActiveHandsSlot::First => {
+                    if let Some(device) = &self.hands_slot_1 {
+                        device.get_visual_element(self.get_transform())
+                    } else {
+                        None
+                    }
+                },
+                ActiveHandsSlot::Second => {
+                    if let Some(device) = &self.hands_slot_2 {
+                        device.get_visual_element(self.get_transform())
+                    } else {
+                        None
+                    }
+                },
+                ActiveHandsSlot::Third => {
+                    if let Some(device) = &self.hands_slot_3 {
+                        device.get_visual_element(self.get_transform())
+                    } else {
+                        None
+                    }
+                }
+            };
 
-        //     if let Some(vl) = visual_elem.as_mut()
-        //     {
-        //         vl.player = Some((&self.inner_state.collider_for_others[0], self.inner_state.team));
+            Some(
+                VisualElement
+                {
+                    transform: self.get_transform(),
+                    static_objects: None,
+                    coloring_areas: None,
+                    volume_areas: None,
+                    waves: Some(&self.w_scanner.visual_wave),
+                    player: Some((&self.inner_state.collider_for_others[0], self.inner_state.team)),
+                    child_visual_elem,
+                }
+            )
 
-        //         // vl.volume_areas = Some(&self.view_volume_beams);
-        //     }
-        //     else
-        //     {
-        //         visual_elem = Some(
-        //             VisualElement {
-        //                 transform: self.get_transform(),
-        //                 static_objects: None,
-        //                 coloring_areas: None,
-        //                 volume_areas: None,//Some(&self.view_volume_beams),
-        //                 waves: None,
-        //                 player: Some((&self.inner_state.collider_for_others[0], self.inner_state.team)),
-        //                 next_visual_elem: None,
-        //             }
-        //         )
-        //     }
-
-        //     return visual_elem;
-
-        // }
-        None
+        }
+        else 
+        {
+            None
+        }
     }
 
     fn tick(
@@ -868,6 +862,7 @@ impl Actor for PlayerFor2d3dExample {
                 &self.player_settings,
                 audio_system,
                 Vec4::X,
+                delta,
             );
 
             main_player::process_w_scanner(
@@ -1024,16 +1019,20 @@ fn process_player_for_example_rotation(
         yz = (input.mouse_axis.y * player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
     }
 
-    let zy_rotation = Mat4::from_rotation_x(-yz);
+    let zy_rotation = Mat4::from_rotation_x(yz);
 
-    let zx_rotation = Mat4::from_rotation_y(-xz);
+    let zx_rotation = Mat4::from_rotation_y(xz);
 
     let zw_rotation = Mat4::from_cols_slice(&[
         1.0,    0.0,    0.0,        0.0,
         0.0,    1.0,    0.0,        0.0,
-        0.0,    0.0,    (zw).cos(),   (zw).sin(),
-        0.0,    0.0,    -(zw).sin(),   (zw).cos()
+        0.0,    0.0,    (-zw).cos(),   (-zw).sin(),
+        0.0,    0.0,    -(-zw).sin(),   (-zw).cos()
     ]);
+
+    let mut rotation = zx_rotation;
+    rotation *= zy_rotation;
+    rotation *= zw_rotation;
 
     inner_state.saved_angle_of_rotation.x = xz;
     inner_state.saved_angle_of_rotation.y = yz;
@@ -1136,11 +1135,14 @@ impl PlayerFor2d3dExample {
 
         let w_scanner = WScanner::new(&player_settings);
 
-        let camera3d_rotation_zy = Mat4::from_rotation_x(PI*0.1);
-        let camera3d_rotation_zx = Mat4::from_rotation_y(-PI*0.6);
+        let camera3d_rotation_zy = Mat4::from_rotation_x(-PI*0.1);
+        let camera3d_rotation_zx = Mat4::from_rotation_y(PI*0.6);
         let camera3d_rotation_zw = Mat4::IDENTITY;
 
-        let camera3d_rotation = camera3d_rotation_zw * camera3d_rotation_zy * camera3d_rotation_zx;
+        let mut camera3d_rotation = camera3d_rotation_zx;
+        camera3d_rotation *= camera3d_rotation_zy;
+        camera3d_rotation *= camera3d_rotation_zw;
+
         let camera3d_offset = Vec4::new(8.0, 3.0, -2.5, 0.0);
         
         PlayerFor2d3dExample {
