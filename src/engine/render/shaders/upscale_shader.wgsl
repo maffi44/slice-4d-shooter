@@ -2,6 +2,7 @@
 @group(0) @binding(1) var view_sampler: sampler;
 
 
+
 struct VertexInput {
     @location(0) @interpolate(perspective) position: vec3<f32>,
 };

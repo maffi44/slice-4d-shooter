@@ -779,6 +779,7 @@ impl Actor for PlayerFor2d3dExample {
             main_player::process_screen_effects_while_alive
             (
                 &mut self.screen_effects,
+                &self.inner_state,
                 delta,
             );
 
@@ -792,17 +793,6 @@ impl Actor for PlayerFor2d3dExample {
             main_player::process_w_scanner_ui(
                 ui_system,
                 &self.inner_state,
-            );
-
-            main_player::procces_w_rotation_sound(
-                audio_system,
-                &mut self.inner_state,
-                delta,
-            );
-
-            main_player::procces_w_shift_sound(
-                audio_system,
-                &mut self.inner_state,
             );
 
             main_player::process_active_devices_input
@@ -963,6 +953,17 @@ impl Actor for PlayerFor2d3dExample {
             );
         }
 
+        main_player::procces_w_rotation_sound(
+            audio_system,
+            &mut self.inner_state,
+            delta,
+        );
+
+        main_player::procces_w_shift_sound(
+            audio_system,
+            &mut self.inner_state,
+        );
+
         self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
 
         main_player::decrease_getting_damage_screen_effect
@@ -1041,7 +1042,7 @@ fn process_player_for_example_rotation(
     inner_state.zw_rotation = zw_rotation;
     inner_state.zy_rotation = zy_rotation;
     inner_state.zx_rotation = zx_rotation;
-    inner_state.set_rotation_matrix( zw_rotation * zy_rotation * zx_rotation);
+    inner_state.set_rotation_matrix(rotation);
 }
 
 
@@ -1130,6 +1131,8 @@ impl PlayerFor2d3dExample {
             w_scanner_enemies_intesity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
+            w_shift_coef: 0.0,
+            w_shift_intensity: 0.0,
             player_projections: PlayersProjections::new(),
         };
 

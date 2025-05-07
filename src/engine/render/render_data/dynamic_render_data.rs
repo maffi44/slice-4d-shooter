@@ -1355,8 +1355,8 @@ pub struct OtherDynamicData {
     undestroyable_cubes: [Shape; 64],
     undestroyable_cubes_amount: u32,
     splited_screen_in_2d_3d_example: f32,
-    padding_byte2: u32,
-    padding_byte3: u32,
+    w_shift_coef: f32,
+    w_shift_intensity: f32,
 
     getting_damage_screen_effect: f32,
     zx_player_rotation: f32,
@@ -1438,6 +1438,9 @@ impl OtherDynamicData {
             self.player_projections[i] = PlayerProjectionForShader::from(projection);
         }
 
+        self.w_shift_coef = players_screen_effects.w_shift_coef;
+        self.w_shift_intensity = players_screen_effects.w_shift_intensity;
+
         self.w_scanner_radius = {
             players_screen_effects.w_scanner_radius
         };
@@ -1486,8 +1489,8 @@ impl Default for OtherDynamicData {
             undestroyable_cubes: [Shape::default(); 64],
             undestroyable_cubes_amount: 0,
             splited_screen_in_2d_3d_example: 0.0,
-            padding_byte2: 0,
-            padding_byte3: 0,
+            w_shift_coef: 0.0,
+            w_shift_intensity: 0.0,
 
             getting_damage_screen_effect: 0.0,
             zx_player_rotation: 0.0,

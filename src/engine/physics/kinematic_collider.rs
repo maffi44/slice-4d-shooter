@@ -180,7 +180,7 @@ impl KinematicCollider {
                 Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
             );
 
-            println!("dist: {}", self.collider_radius * 0.99 - dist);
+            // println!("dist: {}", self.collider_radius * 0.99 - dist);
 
             if dist < self.collider_radius * 0.99 {
                 self.is_on_w_ground = true;

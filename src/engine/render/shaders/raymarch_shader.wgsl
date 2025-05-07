@@ -202,21 +202,6 @@ struct IntersectedShapesMetadata {
     player_forms_amount: u32,
 }
 
-// struct Intersections {
-//     ismd: IntersectedShapesMetadata,
-//     ish: array<u32, 16>,
-//     offset: f32,
-// }
-
-// struct Intersections {
-//     w_plane_intersected: bool,
-//     player_forms_intersected: bool,
-//     i_normal_shapes: array<Shape, 32>,
-//     i_negatives_shapes: array<Shape, 32>,
-//     i_stickiness_shapes: array<Shape, 32>,
-//     i_neg_stickiness_shapes: array<Shape, 32>,
-//     i_shapes_metadata: ShapesMetadata,
-// }
 
 struct SphericalAreasMetadata {
     holegun_colorized_areas_start: u32,
@@ -283,8 +268,8 @@ struct OtherDynamicData {
     undestroyable_cubes: array<Shape, 64>,
     undestroyable_cubes_amount: u32,
     splited_screen_in_2d_3d_example: f32,
-    padding_byte2: u32,
-    padding_byte3: u32,
+    w_shift_coef: f32,
+    w_shift_intensity: f32,
 
     getting_damage_screen_effect: f32,
     zx_player_rotation: f32,
@@ -2740,9 +2725,9 @@ fn map(p: vec4<f32>) -> f32 {
     // }
 
     
-    if w_plane_intersected {
-        d = min(d, p.w - static_data.w_floor);
-    }
+    // if w_plane_intersected {
+    //     d = min(d, p.w - static_data.w_floor);
+    // }
 
     // if static_data.is_w_roof_exist == 1 {
     //     if w_plane_intersected == 1 {
@@ -4148,6 +4133,16 @@ fn get_color_and_light_from_mats(
 
     // let w_height_coef = clamp(hited_pos.w - 10.0 / 20.0, 0.0 ,1.0);
     // base_diffuse *= pow((1.0-w_height_coef) * 2.0, 1.0);
+    if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 &&
+        mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2
+    {
+        base_diffuse = mix(
+            base_diffuse,
+            vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r),
+            clamp(hited_pos.w / 6.0, 0.0, 1.0)
+        );
+    }
+
     
     let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
@@ -4260,8 +4255,56 @@ fn gew_w_projection_color(uv: vec2<f32>) -> vec3<f32>
 }
 
 
+// modified code from https://www.shadertoy.com/view/stGXzy
+// V-------------------------------------------------------V
+fn rand_vec(p: vec2<f32>) -> vec2<f32> {
+    var r = fract(sin(dot(p, vec2(12.345, 741.85)))*4563.12);
+    r *= 2.0*PI;
+    return vec2(sin(r), cos(r));
+}
 
+fn fn_mod(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
+    return x-y*floor(x/y);
+}
 
+// Seamless tiled perlin noise
+fn perlin(p: vec2<f32>, t: vec2<f32>) -> f32 {
+    let f = fract(p);
+    let s = smoothstep(vec2(0.0), vec2(1.0), f);
+    let i = floor(p);
+
+    // Apply mod() to vertex position to make it tileable
+    let a = dot(rand_vec(fn_mod(i,t)), f);
+    let b = dot(rand_vec(fn_mod(i+vec2(1.0,0.0),t)), f-vec2(1.0,0.0));
+    let c = dot(rand_vec(fn_mod(i+vec2(0.0,1.0),t)), f-vec2(0.0,1.0));
+    let d = dot(rand_vec(fn_mod(i+vec2(1.0,1.0),t)), f-vec2(1.0,1.0));
+    return mix(mix(a, b, s.x), mix(c, d, s.x), s.y);
+}
+
+// Seamless tiled fractal noise
+fn fbm(pp: vec2<f32>, tt: vec2<f32>) -> f32 {
+    var a = 0.5;
+    var r = 0.0;
+    var p = pp;
+    var t = tt;
+    for (var i = 0; i < 6; i++) {
+        r += a*perlin(p, t);
+        a *= 0.5;
+        p *= 2.0;
+        t *= 2.0;
+    }
+    return r;
+}
+
+fn w_shift_effect(uv: vec2<f32>, shift_coef: f32, intensity: f32) -> f32
+{
+    let cuv = vec2((atan(uv.x / uv.y)+PI)/(2.0*PI), 0.005/length(uv)+0.03*shift_coef);
+
+    var v = clamp(pow(length(uv),14.0),0.0,1.0);
+
+    return clamp((pow(0.9+0.5*fbm(20.0*cuv, vec2(20)),40.0)),0.0,1.0)*intensity*v;
+}
+//^---------------------------------------------------------^
 
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
@@ -4320,6 +4363,12 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     // making vignetting effect
     let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
     color *= v;
+
+    color += 0.35*w_shift_effect(
+        uv,
+        dynamic_data.w_shift_coef,
+        dynamic_data.w_shift_intensity,
+    );
 
     let hurt_coef = max(
         clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),

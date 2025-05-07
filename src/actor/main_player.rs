@@ -102,6 +102,9 @@ pub struct PlayerScreenEffects {
     pub w_scanner_ring_intesity: f32,
     pub w_scanner_enemies_intesity: f32,
 
+    pub w_shift_coef: f32,
+    pub w_shift_intensity: f32,
+
     pub death_screen_effect: f32,
     pub getting_damage_screen_effect: f32,
 
@@ -538,6 +541,8 @@ impl Default for PlayerScreenEffects
             w_scanner_radius: 0.0,
             w_scanner_ring_intesity: 0.0,
             w_scanner_enemies_intesity: 0.0,
+            w_shift_coef: 0.0,
+            w_shift_intensity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
             player_projections: PlayersProjections::new(),
@@ -1335,6 +1340,7 @@ impl Actor for MainPlayer {
             process_screen_effects_while_alive
             (
                 &mut self.screen_effects,
+                &self.inner_state,
                 delta,
             );
 
@@ -1357,17 +1363,6 @@ impl Actor for MainPlayer {
             process_w_scanner_ui(
                 ui_system,
                 &self.inner_state,
-            );
-
-            procces_w_rotation_sound(
-                audio_system,
-                &mut self.inner_state,
-                delta,
-            );
-
-            procces_w_shift_sound(
-                audio_system,
-                &mut self.inner_state,
             );
 
             process_active_devices_input
@@ -1528,6 +1523,17 @@ impl Actor for MainPlayer {
                 my_id,
             );
         }
+
+        procces_w_rotation_sound(
+            audio_system,
+            &mut self.inner_state,
+            delta,
+        );
+
+        procces_w_shift_sound(
+            audio_system,
+            &mut self.inner_state,
+        );
 
         self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
 
@@ -1974,14 +1980,14 @@ pub fn process_player_second_jump_input(
 
             inner_state.collider.add_force(axis * player_settings.jump_w_speed);
         
-            audio_system.spawn_non_spatial_sound(
-                Sound::WJump,
-                0.7,
-                1.0,
-                false,
-                true,
-                Status::Playing
-            );
+            // audio_system.spawn_non_spatial_sound(
+            //     Sound::WJump,
+            //     0.7,
+            //     1.0,
+            //     false,
+            //     true,
+            //     Status::Playing
+            // );
         }
     }
 }
@@ -2265,17 +2271,27 @@ pub fn process_screen_effects_while_dead
 {
     screen_effects.death_screen_effect += delta*DEATH_EFFECT_COEF_INCREASE_SPEED;
     screen_effects.death_screen_effect = screen_effects.death_screen_effect.clamp(0.0, 1.0);
+    screen_effects.w_shift_coef = 0.0;
+    screen_effects.w_shift_intensity = 0.0;
 }
 
 
 pub fn process_screen_effects_while_alive
 (
     screen_effects: &mut PlayerScreenEffects,
+    inner_state: &PlayerInnerState,
     delta: f32,
 )
 {
     screen_effects.death_screen_effect -= delta*DEATH_EFFECT_COEF_DECREASE_SPEED;
     screen_effects.death_screen_effect = screen_effects.death_screen_effect.clamp(0.0, 1.0);
+
+    let p_w = inner_state.player_previous_w_position;
+    let c_w = inner_state.get_position().w;
+
+    let w_shif_coef = c_w - p_w;
+    screen_effects.w_shift_coef += w_shif_coef;
+    screen_effects.w_shift_intensity = (w_shif_coef*10.0).abs().clamp(0.0, 1.0);
 }
 
 
