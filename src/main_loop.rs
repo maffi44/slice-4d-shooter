@@ -157,11 +157,31 @@ impl MainLoop {
                                             );
                                         }
                                     },
-                                    _ => {}
+                                    KeyCode::Numpad1 => {
+                                        systems.settings.decrease_mouse_sensitivity(
+                                            systems.time.prev_frame_duration
+                                        );
+                                    },
+                                    KeyCode::Numpad2 => {
+                                        systems.settings.increase_mouse_sensitivity(
+                                            systems.time.prev_frame_duration
+                                        );
+                                    },
+                                    KeyCode::Numpad4 => {
+                                        systems.audio.decrease_sound_volume(
+                                            systems.time.prev_frame_duration
+                                        );
+                                    },
+                                    KeyCode::Numpad5 => {
+                                        systems.audio.increase_sound_volume(
+                                            systems.time.prev_frame_duration
+                                        );
+                                    },
+                                    _ => {
+                                        systems.input.set_keyboard_input(event);
+                                    }
                                 }
                             }
-
-                            systems.input.set_keyboard_input(event);
                         },
 
                         WindowEvent::MouseInput {button, state,..} => {

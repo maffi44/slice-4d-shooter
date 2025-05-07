@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read};
+use std::{fs::File, io::Read, sync::{Arc, Mutex}};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::JsFuture;
 use serde_json::Value;
@@ -26,7 +26,7 @@ pub struct PlayerSettings {
     pub rotation_along_w_standard_method: bool,
     pub shadows_enable: bool,
     
-    pub mouse_sensivity: f32,
+    pub mouse_sensivity: Arc<Mutex<f32>>,
     pub w_jump_time_reloading: f32,
     pub min_respawn_timer: f32,
     pub max_respawn_timer: f32,
@@ -464,7 +464,7 @@ fn parse_json_into_settings(json_settigs: Value, json_settigs2: Value) -> Player
         friction_on_air,
         rotation_along_w_standard_method,
         shadows_enable,
-        mouse_sensivity,
+        mouse_sensivity: Arc::new(Mutex::new(mouse_sensivity)),
         w_jump_time_reloading,
         min_respawn_timer,
         max_respawn_timer,

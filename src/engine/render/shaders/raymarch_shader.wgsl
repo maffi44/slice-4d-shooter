@@ -4300,7 +4300,7 @@ fn w_shift_effect(uv: vec2<f32>, shift_coef: f32, intensity: f32) -> f32
 {
     let cuv = vec2((atan(uv.x / uv.y)+PI)/(2.0*PI), 0.005/length(uv)+0.03*shift_coef);
 
-    var v = clamp(pow(length(uv),14.0),0.0,1.0);
+    var v = clamp(pow(length(uv),16.0),0.0,1.0);
 
     return clamp((pow(0.9+0.5*fbm(20.0*cuv, vec2(20)),40.0)),0.0,1.0)*intensity*v;
 }
@@ -4364,7 +4364,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
     color *= v;
 
-    color += 0.35*w_shift_effect(
+    color += 0.28*w_shift_effect(
         uv,
         dynamic_data.w_shift_coef,
         dynamic_data.w_shift_intensity,

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use bincode::de;
 use fyrox_core::{
     algebra::Vector3,
     pool::Handle
@@ -61,10 +62,21 @@ pub enum Sound {
 }
 pub struct AudioSystem {
     pub sound_engine: SoundEngine,
-    sounds: HashMap<Sound, Resource<SoundBuffer>>
+    sounds: HashMap<Sound, Resource<SoundBuffer>>,
+    pub master_volume: f32,
 }
 
 impl AudioSystem {
+
+    pub fn increase_sound_volume(&mut self, delta: f32)
+    {
+        self.master_volume = (self.master_volume + delta*0.9).clamp(0.0, 1.0);
+    }
+
+    pub fn decrease_sound_volume(&mut self, delta: f32)
+    {
+        self.master_volume = (self.master_volume - delta*0.9).clamp(0.0, 1.0);
+    }
 
     pub fn set_listener_position_and_look_vector(&mut self, position: Vec4, look: Vec4) {
         let st = self.sound_engine.state();
@@ -105,7 +117,7 @@ impl AudioSystem {
         let source = SoundSourceBuilder::new()
             .with_buffer(sound_buffer.clone())
             .with_status(status)
-            .with_gain(gain)
+            .with_gain(gain*self.master_volume)
             .with_play_once(is_play_once)
             .with_pitch(pitch)
             .with_looping(looping)
@@ -148,7 +160,7 @@ impl AudioSystem {
         let source = SoundSourceBuilder::new()
             .with_buffer(sound_buffer.clone())
             .with_status(status)
-            .with_gain(gain)
+            .with_gain(gain*self.master_volume)
             .with_play_once(is_play_once)
             .with_pitch(pitch)
             .with_looping(looping)
@@ -236,14 +248,14 @@ impl AudioSystem {
         if state.is_valid_handle(handle) {
             let sound = state.source_mut(handle);
 
-            sound.set_gain(gain);
+            sound.set_gain(gain*self.master_volume);
 
         } else {
             let mut state = st.contexts()[1].state();
             if state.is_valid_handle(handle) {
                 let sound = state.source_mut(handle);
 
-                sound.set_gain(gain);
+                sound.set_gain(gain*self.master_volume);
             }
         }
     }
@@ -276,7 +288,7 @@ impl AudioSystem {
             let sound = state.source_mut(handle);
 
             sound.set_pitch(pitch);
-            sound.set_gain(gain);
+            sound.set_gain(gain*self.master_volume);
 
         } else {
             let mut state = st.contexts()[1].state();
@@ -284,7 +296,7 @@ impl AudioSystem {
                 let sound = state.source_mut(handle);
 
                 sound.set_pitch(pitch);
-                sound.set_gain(gain);
+                sound.set_gain(gain*self.master_volume);
             }
         }
     }
@@ -604,7 +616,8 @@ impl AudioSystem {
 
         AudioSystem {
             sound_engine,
-            sounds
+            sounds,
+            master_volume: 0.7,
         }
     }
 }

@@ -46,12 +46,9 @@ pub struct ActionsFrameState {
     pub activate_hand_slot_1: Action,
     pub activate_hand_slot_2: Action,
     pub activate_hand_slot_3: Action,
-    // pub mode_1: Action,
-    // pub mode_2: Action,
-    // pub mode_3: Action,
+    pub show_hide_controls: Action,
     pub jump: Action,
-    pub move_w_up: Action,
-    pub move_w_down: Action,
+    pub jump_w: Action,
     pub first_mouse: Action,
     pub second_mouse: Action,
     pub w_aim: Action,
@@ -68,18 +65,15 @@ impl ActionsFrameState {
         let mut w_down = Action::new();
         let mut w_up = Action::new();
         let mut jump = Action::new();
-        let mut jump_wy = Action::new();
         let mut jump_w = Action::new();
         let mut first_mouse = Action::new();
         let mut second_mouse = Action::new();
-        let mut mode_1 = Action::new();
-        let mut mode_2 = Action::new();
-        let mut mode_3 = Action::new();
         let mut activate_hand_slot_0 = Action::new();
         let mut activate_hand_slot_1 = Action::new();
         let mut activate_hand_slot_2 = Action::new();
         let mut activate_hand_slot_3 = Action::new();
-        let mut hold_player_rotation = Action::new();
+        let mut enable_w_aim = Action::new();
+        let mut show_hide_controls = Action::new();
         let mouse_axis = mouse_axis;
         
         for (_, (button_action, action)) in actions_table.iter() {
@@ -90,7 +84,6 @@ impl ActionsFrameState {
                 ButtonActions::MoveLeft => move_left = action.clone(),
                 ButtonActions::WScaner => w_scanner = action.clone(),
                 ButtonActions::Jump => jump = action.clone(),
-                ButtonActions::JumpWY => jump_wy = action.clone(),
                 ButtonActions::JumpW => jump_w = action.clone(),
                 ButtonActions::HandSlot0 => activate_hand_slot_0 = action.clone(),
                 ButtonActions::HandSlot1=> activate_hand_slot_1 = action.clone(),
@@ -100,10 +93,8 @@ impl ActionsFrameState {
                 ButtonActions::SecondMouse => second_mouse = action.clone(),
                 ButtonActions::WDown => w_down = action.clone(),
                 ButtonActions::WUp => w_up = action.clone(),
-                ButtonActions::ModeOne => mode_1 = action.clone(),
-                ButtonActions::ModeTwo => mode_2 = action.clone(),
-                ButtonActions::ModeThree => mode_3 = action.clone(),
-                ButtonActions::HoldPlayerRotation => hold_player_rotation = action.clone(),
+                ButtonActions::EnableWAim => enable_w_aim = action.clone(),
+                ButtonActions::ShowHideControls => show_hide_controls = action.clone(),
             }
         }
 
@@ -120,15 +111,12 @@ impl ActionsFrameState {
             w_down,
             w_up,
             jump,
-            move_w_up: jump_wy,
-            move_w_down: jump_w,
+            jump_w,
             first_mouse,
             second_mouse,
-            // mode_1,
-            // mode_2,
-            // mode_3,
             mouse_axis,
-            w_aim: hold_player_rotation,
+            w_aim: enable_w_aim,
+            show_hide_controls,
         }
     }
 
@@ -141,18 +129,16 @@ impl ActionsFrameState {
         let w_down = Action::new();
         let w_up = Action::new();
         let jump = Action::new();
-        let move_w_up = Action::new();
+        let jump_w = Action::new();
         let move_w_down = Action::new();
         let first_mouse = Action::new();
         let second_mouse = Action::new();
-        // let mode_1 = Action::new();
-        // let mode_2 = Action::new();
-        // let mode_3 = Action::new();
         let activate_hand_slot_0 = Action::new();
         let activate_hand_slot_1 = Action::new();
         let activate_hand_slot_2 = Action::new();
         let activate_hand_slot_3 = Action::new();
-        let hold_player_rotation = Action::new();
+        let w_aim = Action::new();
+        let show_hide_controls = Action::new();
         let mouse_axis = Vec2::ZERO;
 
         ActionsFrameState {
@@ -168,14 +154,11 @@ impl ActionsFrameState {
             w_down,
             w_up,
             jump,
-            move_w_up,
-            move_w_down,
+            jump_w,
+            show_hide_controls,
             first_mouse,
             second_mouse,
-            w_aim: hold_player_rotation,
-            // mode_1,
-            // mode_2,
-            // mode_3,
+            w_aim,
             mouse_axis
         }
     }
@@ -202,17 +185,14 @@ enum ButtonActions {
     HandSlot2,
     HandSlot3,
     WScaner,
-    JumpWY,
     JumpW,
+    ShowHideControls,
     Jump,
     WUp,
     WDown,
-    ModeOne,
-    ModeTwo,
-    ModeThree,
     FirstMouse,
     SecondMouse,
-    HoldPlayerRotation,
+    EnableWAim,
 }
 
 // for future user's settings
@@ -255,12 +235,12 @@ impl InputSystem {
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::ShiftLeft),
-            (ButtonActions::JumpWY, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::ControlLeft),
             (ButtonActions::JumpW, Action::new())
         );
+        // actions_table.insert(
+        //     SomeButton::KeyCode(KeyCode::ControlLeft),
+        //     (ButtonActions::JumpW, Action::new())
+        // );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Space),
             (ButtonActions::Jump, Action::new())
@@ -294,16 +274,8 @@ impl InputSystem {
             (ButtonActions::HandSlot3, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Numpad1),
-            (ButtonActions::ModeOne, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Numpad2),
-            (ButtonActions::ModeTwo, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Numpad3),
-            (ButtonActions::ModeThree, Action::new())
+            SomeButton::KeyCode(KeyCode::KeyT),
+            (ButtonActions::ShowHideControls, Action::new())
         );
         actions_table.insert(
             SomeButton::MouseButton(MouseButton::Left),
@@ -314,8 +286,8 @@ impl InputSystem {
             (ButtonActions::SecondMouse, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyQ),
-            (ButtonActions::HoldPlayerRotation, Action::new())
+            SomeButton::KeyCode(KeyCode::KeyR),
+            (ButtonActions::EnableWAim, Action::new())
         );
         InputSystem {
             actions_table,

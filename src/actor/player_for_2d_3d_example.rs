@@ -1010,14 +1010,27 @@ fn process_player_for_example_rotation(
     inner_state.last_frame_zw_rotation = zw;
 
     if input.second_mouse.is_action_pressed() {
-        xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
-        yz = (input.mouse_axis.y * player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+        xz = 
+            input.mouse_axis.x *
+            *player_settings.mouse_sensivity.lock().unwrap() +
+            xz;
+        
+        yz = (
+            input.mouse_axis.y *
+            *player_settings.mouse_sensivity.lock().unwrap() +
+            yz
+        ).clamp(-PI/2.0, PI/2.0);
+        
     } else {
         xz *= 1.0 - delta * 2.8;
         if xz.abs() < 0.0001 {
             xz = 0.0;
         }
-        yz = (input.mouse_axis.y * player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+        yz = (
+            input.mouse_axis.y *
+            *player_settings.mouse_sensivity.lock().unwrap() +
+            yz
+        ).clamp(-PI/2.0, PI/2.0);
     }
 
     let zy_rotation = Mat4::from_rotation_x(yz);

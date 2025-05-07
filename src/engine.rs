@@ -8,6 +8,7 @@ pub mod world;
 pub mod engine_handle;
 pub mod audio;
 pub mod ui;
+pub mod settings;
 
 #[cfg(target_arch = "wasm32")]
 use std::{
@@ -40,6 +41,7 @@ use self::{
 use effects::EffectsSystem;
 // use winit::window::WindowBuilder;
 
+use settings::Settings;
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::WindowBuilderExtWebSys;
 #[cfg(target_arch = "wasm32")]
@@ -57,6 +59,7 @@ pub struct Engine {
     pub audio: AudioSystem,
     pub ui: UISystem,
     pub effects: EffectsSystem,
+    pub settings: Settings,
 
     #[cfg(not(target_arch = "wasm32"))]
     pub runtime: tokio::runtime::Runtime,
@@ -151,6 +154,8 @@ impl Engine {
         let global_players_settings = PlayerSettings::load_player_settings().await;
         log::info!("engine systems: global_players_settings init");
         
+        let settings = Settings::new(global_players_settings.clone());
+
         let world = World::new(
             &mut engine_handle,
             global_players_settings,
@@ -213,6 +218,7 @@ impl Engine {
             audio,
             ui: initialized_ui,
             effects,
+            settings,
             
             #[cfg(not(target_arch = "wasm32"))]
             runtime,

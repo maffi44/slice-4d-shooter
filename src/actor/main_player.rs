@@ -1662,8 +1662,16 @@ pub fn process_player_rotation(
     inner_state.w_aim_ui_frame_intensity = 0.20;
 
     if input.second_mouse.is_action_pressed() {
-        zw = (input.mouse_axis.y * player_settings.mouse_sensivity + zw).clamp(-PI/2.0, PI/2.0);
-        xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
+        zw = (
+            input.mouse_axis.y *
+            *player_settings.mouse_sensivity.lock().unwrap() +
+            zw
+        ).clamp(-PI/2.0, PI/2.0);
+        
+        xz = 
+            input.mouse_axis.x *
+            *player_settings.mouse_sensivity.lock().unwrap() +
+            xz;
         
     }
     else
@@ -1709,8 +1717,16 @@ pub fn process_player_rotation(
             zw = target_zw_angle;
         }
 
-        xz = input.mouse_axis.x * player_settings.mouse_sensivity + xz;
-        yz = (input.mouse_axis.y * player_settings.mouse_sensivity + yz).clamp(-PI/2.0, PI/2.0);
+        xz =
+            input.mouse_axis.x *
+            *player_settings.mouse_sensivity.lock().unwrap() +
+            xz;
+
+        yz = (
+            input.mouse_axis.y *
+            *player_settings.mouse_sensivity.lock().unwrap() +
+            yz
+        ).clamp(-PI/2.0, PI/2.0);
     }
 
     let zy_rotation = Mat4::from_rotation_x(yz);
@@ -1972,7 +1988,7 @@ pub fn process_player_second_jump_input(
     delta: f32,
 )
 {
-    if input.move_w_up.is_action_just_pressed() {
+    if input.jump_w.is_action_just_pressed() {
 
         if inner_state.collider.is_on_w_ground
         {
