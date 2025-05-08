@@ -49,7 +49,7 @@ use super::{
         Command,
         CommandType,
         EngineHandle
-    }
+    }, input::ActionsFrameState, ui::{UIElementType, UISystem}
 };
 
 use alkahest::{alkahest, Serialize};
@@ -67,6 +67,8 @@ enum ConnectionError {
 }
 
 enum ConnectionState {
+    WaitingForUsersRequest,
+    ConnectionFailure(u32, ConnectionError),
     ConnectingToMatchmakingServer(Option<JoinHandle<Result<String, ConnectionError>>>),
     ConnectingToGameServer(u64, Option<WebRtcSocket>),
     ConnectedToGameServer(WebRtcSocket, PeerId, Vec<u128>),
@@ -88,8 +90,7 @@ pub struct NetSystem {
     connection_state: Option<ConnectionState>,
 
     player_settings: PlayerSettings,
-    w_levels: Vec<f32>,
-    players_friction_on_air: f32,
+    current_visible_ui_elem: UIElementType,
 }
 
 impl NetSystem {
@@ -108,45 +109,63 @@ impl NetSystem {
             turn_server_credential: Some(settings.turn_server_credential.clone()),
         };
 
-        let game_server_url_promise = Some(
-            async_runtime.spawn(
-                get_game_server_url(
-                    connection_data.matchmaking_server_url.clone(),
-                    0_u64
-                )
-            )
-        );
+        
 
         NetSystem {
-            connection_state: Some(ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise)),
+            connection_state: Some(ConnectionState::WaitingForUsersRequest),
             connection_data,
 
             player_settings: settings.clone(),
-            w_levels: w_levels.clone(),
-            players_friction_on_air: settings.friction_on_air
+            current_visible_ui_elem: UIElementType::TitlePressPToPlayOnline
         }
     }
 
 
     pub fn tick(
         &mut self,
+        input: ActionsFrameState,
         engine_handle: &mut EngineHandle,
         #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime,
-        audio_system: &mut AudioSystem
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
     ) {
 
         match self.connection_state.take().expect("ERROR: connection state in Net system is None")
         {
+            ConnectionState::WaitingForUsersRequest =>
+            {
+                self.connection_state = Some(
+                    self.handle_waiting_for_user_input(
+                        input,
+                        async_runtime,
+                        ui_system
+                    )
+                )
+            }
+
+            ConnectionState::ConnectionFailure(timer, reason) =>
+            {
+                self.connection_state = Some(
+                    self.handle_connection_failure(
+                        timer,
+                        reason,
+                        ui_system
+                    )
+                )
+            }
+
             ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise) =>
             {
                 self.connection_state = Some(
                     self.handle_connecting_to_matchmaking_server_state(
                         game_server_url_promise,
                         async_runtime,
+                        ui_system
                     )
                 );
             }
+
             ConnectionState::ConnectingToGameServer(delay_counter, webrtc_socket) =>
             {
                 self.connection_state = Some(
@@ -155,9 +174,11 @@ impl NetSystem {
                         webrtc_socket,
                         async_runtime,
                         engine_handle,
+                        ui_system
                     )
                 );
             }
+
             ConnectionState::ConnectedToGameServer(webrtc_socket, server_id, players_id) =>
             {
                 self.connection_state = Some(
@@ -167,18 +188,176 @@ impl NetSystem {
                         players_id,
                         engine_handle,
                         audio_system,
+                        ui_system
                     )
                 );
             }
         }
     }
 
+
+    fn handle_connection_failure(
+        &mut self,
+        mut timer: u32,
+        reason: ConnectionError,
+        ui_system: &mut UISystem,
+    ) -> ConnectionState
+    {
+        *ui_system.get_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap() = false;
+
+        match &reason {
+            ConnectionError::WrongVersion(_) =>
+            {
+                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedOldVersion)
+                    .get_ui_data()
+                    .get_is_visible_cloned_arc()
+                    .lock()
+                    .unwrap() = true;
+                
+                self.current_visible_ui_elem = UIElementType::TitleConnectionFailedOldVersion;
+            },
+
+            ConnectionError::NoFreeServers =>
+            {
+                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedServerIsFull)
+                    .get_ui_data()
+                    .get_is_visible_cloned_arc()
+                    .lock()
+                    .unwrap() = true;
+                
+                self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerIsFull;
+            },
+
+            ConnectionError::MatchmakingServerClientProtocolError =>
+            {
+                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedServerError)
+                    .get_ui_data()
+                    .get_is_visible_cloned_arc()
+                    .lock()
+                    .unwrap() = true;
+                
+                self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerError;
+            },
+
+            ConnectionError::ConnectionLost(e) =>
+            {
+                match e
+                {
+                    Error::ConnectionClosed => 
+                    {
+                        *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedLostConnection)
+                            .get_ui_data()
+                            .get_is_visible_cloned_arc()
+                            .lock()
+                            .unwrap() = true;
+                        
+                        self.current_visible_ui_elem = UIElementType::TitleConnectionFailedLostConnection;
+                    },
+                    _ =>
+                    {
+                        *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedServerNotFound)
+                            .get_ui_data()
+                            .get_is_visible_cloned_arc()
+                            .lock()
+                            .unwrap() = true;
+                        
+                        self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerNotFound;
+                    }
+                }
+
+            },
+
+            ConnectionError::ConnectionClosedByServer =>
+            {
+                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedLostConnection)
+                    .get_ui_data()
+                    .get_is_visible_cloned_arc()
+                    .lock()
+                    .unwrap() = true;
+                
+                self.current_visible_ui_elem = UIElementType::TitleConnectionFailedLostConnection;
+            },
+        }
+
+        timer -= 1;
+
+        if timer == 0u32
+        {
+            ConnectionState::WaitingForUsersRequest
+        }
+        else
+        {
+            ConnectionState::ConnectionFailure(timer, reason)
+        }
+    }
+
+        
+    fn handle_waiting_for_user_input(
+        &mut self,
+        input: ActionsFrameState,
+        async_runtime: &Runtime,
+        ui_system: &mut UISystem,
+    ) -> ConnectionState
+    {
+        *ui_system.get_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap() = false;
+
+        *ui_system.get_ui_element(&UIElementType::TitlePressPToPlayOnline)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap() = true;
+        
+        self.current_visible_ui_elem = UIElementType::TitlePressPToPlayOnline;
+
+        if input.connect_to_server.is_action_just_pressed()
+        {
+            let game_server_url_promise = Some(
+                async_runtime.spawn(
+                    get_game_server_url(
+                        self.connection_data.matchmaking_server_url.clone(),
+                        0_u64
+                    )
+                )
+            );
+
+            ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise)
+        }
+        else
+        {
+            ConnectionState::WaitingForUsersRequest
+        }
+    }
+
+
     fn handle_connecting_to_matchmaking_server_state(
         &mut self,
         game_server_url_promise:  Option<JoinHandle<Result<String, ConnectionError>>>,
         async_runtime: &mut Runtime,
+        ui_system: &mut UISystem,
     ) -> ConnectionState
     {
+        *ui_system.get_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap() = false;
+
+        *ui_system.get_ui_element(&UIElementType::TitleConnectingToServer)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap() = true;
+        
+        self.current_visible_ui_elem = UIElementType::TitleConnectingToServer;
+
         match game_server_url_promise {
             Some(promise) =>
             {
@@ -199,7 +378,7 @@ impl NetSystem {
                                 Err(e) =>
                                 {
                                     println!("WARNING: Can't connect to game server: {:?}, trying to reconnect", e);
-                                    return ConnectionState::ConnectingToMatchmakingServer(None);
+                                    return ConnectionState::ConnectionFailure(300, e);
                                 }
                             }
                         }
@@ -231,17 +410,32 @@ impl NetSystem {
 
     fn handle_connecting_to_game_server_state(
         &mut self,
-        mut delay_counter: u64,
+        mut connection_delay_counter: u64,
         webrtc_socket: Option<WebRtcSocket>,
         async_runtime: &mut Runtime,
         engine_handle: &mut EngineHandle,
+        ui_system: &mut UISystem,
     ) -> ConnectionState
     {
-        if delay_counter > 0
-        {
-            delay_counter -= 1;
+        *ui_system.get_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap() = false;
 
-            return  ConnectionState::ConnectingToGameServer(delay_counter, webrtc_socket);
+        *ui_system.get_ui_element(&UIElementType::TitleConnectingToServer)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap() = true;
+        
+        self.current_visible_ui_elem = UIElementType::TitleConnectingToServer;
+
+        if connection_delay_counter > 0
+        {
+            connection_delay_counter -= 1;
+
+            return  ConnectionState::ConnectingToGameServer(connection_delay_counter, webrtc_socket);
         }
 
         match webrtc_socket {
@@ -249,8 +443,7 @@ impl NetSystem {
             {
                 if webrtc_socket.any_channel_closed() {
 
-                    println!("WARNING: WebRTC connection is closed, trying to reconnect");
-                    return ConnectionState::ConnectingToGameServer(90, None);
+                    return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
                 }
         
                 if let Ok(vec) = webrtc_socket.try_update_peers() {
@@ -280,7 +473,7 @@ impl NetSystem {
                             PeerState::Disconnected => {
 
                                 println!("WARNING: connection to game server is lost, trying to reconnect");
-                                return ConnectionState::ConnectingToGameServer(90, None);
+                                return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
                             }
                         }   
                     }
@@ -337,22 +530,35 @@ impl NetSystem {
         mut players_id: Vec<u128>,
         engine_handle: &mut EngineHandle,
         audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
     ) -> ConnectionState
     {
+        *ui_system.get_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap() = false;
+
+        *ui_system.get_ui_element(&UIElementType::TitleConnectedToServer)
+            .get_ui_data()
+            .get_is_visible_cloned_arc()
+            .lock()
+            .unwrap() = true;
+        
+        self.current_visible_ui_elem = UIElementType::TitleConnectedToServer;
+
         if webrtc_socket.any_channel_closed() {
-            println!("WARNING: WebRTC connection is closed, trying to reconnect");
-            return ConnectionState::ConnectingToGameServer(90, None);
+            return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
         }
 
-        if let Ok(vec) = webrtc_socket.try_update_peers() {
-            for (peer_id, peer_state) in vec {
+        if let Ok(peers) = webrtc_socket.try_update_peers() {
+            for (peer_id, peer_state) in peers {
                 match peer_state {
                     PeerState::Connected => {
-                        panic!("BUG: Catched host connsection during connected to game server state. This can't be happening in client-server net arch");
+                        panic!("BUG: Catched host connection during connected to game server state. This can't be happening in client-server net arch");
                     }
                     PeerState::Disconnected => {
-                        println!("WARNING: connection to game server is lost, trying to reconnect");
-                        return ConnectionState::ConnectingToGameServer(90, None);
+                        return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
                     }
                 }   
             }
@@ -442,8 +648,6 @@ impl NetSystem {
                             engine_handle,
                             audio_system,
                             &self.player_settings,
-                            &self.w_levels,
-                            self.players_friction_on_air,
                         );
                     }
 
@@ -452,12 +656,6 @@ impl NetSystem {
                         your_team,
                     ) =>
                     {
-                        // engine_handle.send_command(Command {
-                        //     sender: 0_u128,
-                        //     command_type: CommandType::NetCommand(
-                        //         NetCommand::SetServerTime(server_time)   
-                        //     )
-                        // });
                         engine_handle.send_command(Command {
                             sender: 0_u128,
                             command_type: CommandType::RemoveAllHolesAndEffects
@@ -485,22 +683,22 @@ impl NetSystem {
 
                     ServerMessage::NewSessionStarted(_,_) =>
                     {
-                        panic!("ERROR: recieved NewSessionStarted message from ureliable channel")
+                        panic!("ERROR: recieved NewSessionStarted message from unreliable channel")
                     }
 
                     ServerMessage::JoinTheMatch(_,_,_,_,_,_,_) =>
                     {
-                        panic!("ERROR: recieved JoinTheMatch message from ureliable channel")
+                        panic!("ERROR: recieved JoinTheMatch message from unreliable channel")
                     }
 
                     ServerMessage::PlayerConnected(player_id) =>
                     {
-                        panic!("ERROR: recieved PlayerConnected message from ureliable channel")
+                        panic!("ERROR: recieved PlayerConnected message from unreliable channel")
                     }
 
                     ServerMessage::PlayerDisconnected(player_id) =>
                     {
-                        panic!("ERROR: recieved PlayerDisconnected message from ureliable channel")
+                        panic!("ERROR: recieved PlayerDisconnected message from unreliable channel")
                     }
                     
                     ServerMessage::NetMessageToPlayer(from_player, message) => {
@@ -510,8 +708,6 @@ impl NetSystem {
                             engine_handle,
                             audio_system,
                             &self.player_settings,
-                            &self.w_levels,
-                            self.players_friction_on_air,
                         );
                     }
                 }
@@ -647,8 +843,6 @@ fn process_message(
     engine_handle: &mut EngineHandle,
     audio_system: &mut AudioSystem,
     player_settings: &PlayerSettings,
-    w_levels: &Vec<f32>,
-    players_friction_on_air: f32,
 ) {
     match message
     {
@@ -694,9 +888,7 @@ fn process_message(
                         is_alive,
                         audio_system,
                         player_settings.clone(),
-                        w_levels.clone(),
                         team,
-                        players_friction_on_air
                     );
 
                     let actor = ActorWrapper::PlayersDoll(players_doll);

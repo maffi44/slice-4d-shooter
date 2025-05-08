@@ -136,6 +136,15 @@ pub enum UIElementType {
     BlueFlagBacklight,
     RedFlagBacklight,
     WAimFrame,
+    TitlePressTForTutorial,
+    TitlePressPToPlayOnline,
+    TitleConnectingToServer,
+    TitleConnectedToServer,
+    TitleConnectionFailedServerNotFound,
+    TitleConnectionFailedServerIsFull,
+    TitleConnectionFailedServerError,
+    TitleConnectionFailedOldVersion,
+    TitleConnectionFailedLostConnection,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -176,6 +185,15 @@ pub enum TextureType {
     MoveWBonusImageFirst,
     MoveWBonusImageSecond,
     WAimFrame,
+    TitlePressTForTutorial,
+    TitlePressPToPlayOnline,
+    TitleConnectingToServer,
+    TitleConnectedToServer,
+    TitleConnectionFailedServerNotFound,
+    TitleConnectionFailedServerIsFull,
+    TitleConnectionFailedServerError,
+    TitleConnectionFailedOldVersion,
+    TitleConnectionFailedLostConnection,
 }
 
 
@@ -335,6 +353,42 @@ impl UISystem {
         texture_sources.insert(
             TextureType::ShotgunImgTexture,
             include_bytes!("../assets/textures/shotgun_image.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitlePressTForTutorial,
+            include_bytes!("../assets/textures/press_t_for_tutorial.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitlePressPToPlayOnline,
+            include_bytes!("../assets/textures/press_p_to_play_online.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitleConnectingToServer,
+            include_bytes!("../assets/textures/connecting_to_server.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitleConnectedToServer,
+            include_bytes!("../assets/textures/connected_to_server.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitleConnectionFailedServerNotFound,
+            include_bytes!("../assets/textures/connection_failed_server_not_found.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitleConnectionFailedServerIsFull,
+            include_bytes!("../assets/textures/connection_failed_server_is_full.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitleConnectionFailedServerError,
+            include_bytes!("../assets/textures/connection_failed_server_error.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitleConnectionFailedLostConnection,
+            include_bytes!("../assets/textures/connection_failed_lost_connection.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitleConnectionFailedOldVersion,
+            include_bytes!("../assets/textures/connection_failed_old_version.png").as_slice()
         );
         
 
@@ -1363,6 +1417,219 @@ impl UISystem {
                 )
             )
         );
+        ui_elements.insert(
+            UIElementType::TitlePressTForTutorial,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopLeft,
+                            position: Vec2::new(-1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        true,
+                        None,
+                    ),
+                    TextureType::TitlePressTForTutorial
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::TitlePressPToPlayOnline,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TitlePressPToPlayOnline
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::TitleConnectingToServer,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TitleConnectingToServer
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::TitleConnectedToServer,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TitleConnectedToServer
+                )
+            )
+        );
+
+        ui_elements.insert(
+            UIElementType::TitleConnectionFailedServerNotFound,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TitleConnectionFailedServerNotFound
+                )
+            )
+        );
+
+        ui_elements.insert(
+            UIElementType::TitleConnectionFailedServerIsFull,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TitleConnectionFailedServerIsFull
+                )
+            )
+        );
+
+        ui_elements.insert(
+            UIElementType::TitleConnectionFailedServerError,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TitleConnectionFailedServerError
+                )
+            )
+        );
+
+        ui_elements.insert(
+            UIElementType::TitleConnectionFailedLostConnection,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TitleConnectionFailedLostConnection
+                )
+            )
+        );
+
+        ui_elements.insert(
+            UIElementType::TitleConnectionFailedOldVersion,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TitleConnectionFailedOldVersion
+                )
+            )
+        );
+
 
         UISystem {
             ui_elements,

@@ -30,7 +30,7 @@ use client_server_protocol::Team;
 use tokio::runtime::Runtime;
 use winit::window::Window;
 
-use super::{physics::dynamic_collider::PlayersDollCollider, ui::UISystem, world::static_object::VisualWave};
+use super::{input::ActionsFrameState, physics::dynamic_collider::PlayersDollCollider, ui::UISystem, world::static_object::VisualWave};
 
 
 
@@ -58,6 +58,10 @@ pub struct RenderSystem {
     pub window: Window,
     renderer: Arc<Mutex<Renderer>>,
     outdated_signal_mutex: Arc<Mutex<bool>>,
+
+
+    increase_render_quality_action_is_pressed: bool,
+    decrease_render_quality_action_is_pressed: bool,
 }
 
 
@@ -131,9 +135,44 @@ impl RenderSystem {
 
             render_data,
             outdated_signal_mutex,
+
+            increase_render_quality_action_is_pressed: false,
+            decrease_render_quality_action_is_pressed: false,
         }
     }
 
+
+    pub fn increase_render_quality(&mut self)
+    {
+
+    }
+
+
+    pub fn decrease_render_quality(&mut self)
+    {
+
+    }
+
+    pub fn process_change_render_quality_input(
+        &mut self,
+        frame_input: ActionsFrameState,
+    )
+    {
+        if frame_input.increase_render_quality.is_action_just_pressed()
+        {
+            self.renderer
+                .lock()
+                .unwrap()
+                .increase_raymarch_target_texture_scale_factor();
+        }
+        else if frame_input.decrease_render_quality.is_action_just_pressed()
+        {
+            self.renderer
+            .lock()
+            .unwrap()
+            .decrease_raymarch_target_texture_scale_factor();
+        }
+    }
 
 
     pub fn send_data_to_renderer(
@@ -142,7 +181,6 @@ impl RenderSystem {
         time: &TimeSystem,
         ui: &UISystem,
     ) {
-
         if *self.outdated_signal_mutex.lock().unwrap() == true
         {
             *self.outdated_signal_mutex.lock().unwrap() = false;

@@ -110,6 +110,63 @@ impl Drop for Renderer {
 }
 
 impl Renderer {
+
+    pub fn increase_raymarch_target_texture_scale_factor(&mut self)
+    {
+        self.raymarch_target_texture_scale_factor = 
+        (
+            self.raymarch_target_texture_scale_factor + 
+            0.05
+        ).clamp(0.1, 1.0);
+
+        let (
+            raymarch_target_texture,
+            raymarch_target_texture_view,
+            upscale_render_bind_group,
+            upscale_sampler
+        ) = Renderer::create_scaled_texture(
+            self.raymarch_target_texture_scale_factor,
+            &self.config,
+            &self.device,
+            self.surface_format,
+            &self.upscale_render_bind_group_layout,
+        );
+
+        self.raymarch_target_texture = raymarch_target_texture;
+        self.raymarch_target_texture_view = raymarch_target_texture_view;
+        self.upscale_render_bind_group = upscale_render_bind_group;
+        self.upscale_sampler = upscale_sampler;
+    }
+
+
+    pub fn decrease_raymarch_target_texture_scale_factor(&mut self)
+    {
+        self.raymarch_target_texture_scale_factor = 
+        (
+            self.raymarch_target_texture_scale_factor -
+            0.05
+        ).clamp(0.1, 1.0);
+
+        let (
+            raymarch_target_texture,
+            raymarch_target_texture_view,
+            upscale_render_bind_group,
+            upscale_sampler
+        ) = Renderer::create_scaled_texture(
+            self.raymarch_target_texture_scale_factor,
+            &self.config,
+            &self.device,
+            self.surface_format,
+            &self.upscale_render_bind_group_layout,
+        );
+
+        self.raymarch_target_texture = raymarch_target_texture;
+        self.raymarch_target_texture_view = raymarch_target_texture_view;
+        self.upscale_render_bind_group = upscale_render_bind_group;
+        self.upscale_sampler = upscale_sampler;
+    }
+
+
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         // self.prev_surface_texture = None;
         if new_size.width > 0 && new_size.height > 0 {

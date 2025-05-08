@@ -250,12 +250,14 @@ fn main_loop_tick(
 
     #[cfg(not(target_arch= "wasm32"))]
     systems.net.tick(
+        systems.input.get_input(),
         &mut systems.engine_handle,
         &mut systems.runtime,
-        &mut systems.audio
+        &mut systems.audio,
+        &mut systems.ui,
     );
 
-    systems.input.get_input(&mut systems.world, &mut systems.net);
+    systems.input.set_input_to_controlled_actors(&mut systems.world, &mut systems.net);
 
     systems.world.tick(
         &systems.physic,
@@ -290,6 +292,10 @@ fn main_loop_tick(
         &mut systems.engine_handle,
         &mut systems.time,
         &mut systems.effects,
+    );
+
+    systems.render.process_change_render_quality_input(
+        systems.input.get_input(),
     );
 
     systems.render.send_data_to_renderer(

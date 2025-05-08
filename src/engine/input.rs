@@ -52,6 +52,9 @@ pub struct ActionsFrameState {
     pub first_mouse: Action,
     pub second_mouse: Action,
     pub w_aim: Action,
+    pub increase_render_quality: Action,
+    pub decrease_render_quality: Action,
+    pub connect_to_server: Action,
     pub mouse_axis: Vec2,
 }
 
@@ -74,6 +77,9 @@ impl ActionsFrameState {
         let mut activate_hand_slot_3 = Action::new();
         let mut enable_w_aim = Action::new();
         let mut show_hide_controls = Action::new();
+        let mut increase_render_quality = Action:: new();
+        let mut decrease_render_quality = Action:: new();
+        let mut connect_to_server = Action:: new();
         let mouse_axis = mouse_axis;
         
         for (_, (button_action, action)) in actions_table.iter() {
@@ -95,6 +101,9 @@ impl ActionsFrameState {
                 ButtonActions::WUp => w_up = action.clone(),
                 ButtonActions::EnableWAim => enable_w_aim = action.clone(),
                 ButtonActions::ShowHideControls => show_hide_controls = action.clone(),
+                ButtonActions::IncreaseRenderQuality => increase_render_quality = action.clone(),
+                ButtonActions::DecreaseRenderQuality => decrease_render_quality = action.clone(),
+                ButtonActions::ConnectToServer => connect_to_server = action.clone(),
             }
         }
 
@@ -116,7 +125,10 @@ impl ActionsFrameState {
             second_mouse,
             mouse_axis,
             w_aim: enable_w_aim,
+            increase_render_quality,
+            decrease_render_quality,
             show_hide_controls,
+            connect_to_server,
         }
     }
 
@@ -130,7 +142,6 @@ impl ActionsFrameState {
         let w_up = Action::new();
         let jump = Action::new();
         let jump_w = Action::new();
-        let move_w_down = Action::new();
         let first_mouse = Action::new();
         let second_mouse = Action::new();
         let activate_hand_slot_0 = Action::new();
@@ -139,6 +150,9 @@ impl ActionsFrameState {
         let activate_hand_slot_3 = Action::new();
         let w_aim = Action::new();
         let show_hide_controls = Action::new();
+        let increase_render_quality = Action:: new();
+        let decrease_render_quality = Action:: new();
+        let connect_to_server = Action::new();
         let mouse_axis = Vec2::ZERO;
 
         ActionsFrameState {
@@ -159,6 +173,9 @@ impl ActionsFrameState {
             first_mouse,
             second_mouse,
             w_aim,
+            increase_render_quality,
+            decrease_render_quality,
+            connect_to_server,
             mouse_axis
         }
     }
@@ -193,6 +210,9 @@ enum ButtonActions {
     FirstMouse,
     SecondMouse,
     EnableWAim,
+    IncreaseRenderQuality,
+    DecreaseRenderQuality,
+    ConnectToServer,
 }
 
 // for future user's settings
@@ -237,10 +257,6 @@ impl InputSystem {
             SomeButton::KeyCode(KeyCode::ShiftLeft),
             (ButtonActions::JumpW, Action::new())
         );
-        // actions_table.insert(
-        //     SomeButton::KeyCode(KeyCode::ControlLeft),
-        //     (ButtonActions::JumpW, Action::new())
-        // );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Space),
             (ButtonActions::Jump, Action::new())
@@ -289,13 +305,26 @@ impl InputSystem {
             SomeButton::KeyCode(KeyCode::KeyR),
             (ButtonActions::EnableWAim, Action::new())
         );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Numpad7),
+            (ButtonActions::DecreaseRenderQuality, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Numpad8),
+            (ButtonActions::IncreaseRenderQuality, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyP),
+            (ButtonActions::ConnectToServer, Action::new())
+        );
         InputSystem {
             actions_table,
             mouse_axis: Vec2::ZERO,
         }
     }
 
-    pub fn get_input(&mut self, world: &mut World ,net: &mut NetSystem) {
+
+    pub fn set_input_to_controlled_actors(&self, world: &mut World ,net: &mut NetSystem) {
 
         for (_, actor) in world.actors.iter_mut() {
 
@@ -303,12 +332,12 @@ impl InputSystem {
             {
                 match controlled_actor.get_input_master() {
                     LocalMaster(master) => {
+                        
                         master.current_input =
                             ActionsFrameState::current(
                                 &self.actions_table,
                                 self.mouse_axis
                             );
-                        // log::info!("current input is {:?}", master.current_input);
                     }
                     RemoteMaster(master) => {
                         unimplemented!("Remote input aster didn't implement yet")
@@ -319,6 +348,13 @@ impl InputSystem {
     }
 
 
+    pub fn get_input(&self) -> ActionsFrameState
+    {
+        ActionsFrameState::current(
+            &self.actions_table,
+            self.mouse_axis
+        )
+    }
 
 
     pub fn reset_input(&mut self) {
@@ -356,7 +392,6 @@ impl InputSystem {
                         action.is_action_pressed = false;
                     }
                 }
-                // action.already_captured = false;
             }
         }
     }

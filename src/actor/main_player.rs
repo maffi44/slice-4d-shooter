@@ -2306,7 +2306,7 @@ pub fn process_screen_effects_while_alive
     let c_w = inner_state.get_position().w;
 
     let w_shif_coef = c_w - p_w;
-    screen_effects.w_shift_coef += w_shif_coef;
+    screen_effects.w_shift_coef += w_shif_coef*0.6;
     screen_effects.w_shift_intensity = (w_shif_coef*10.0).abs().clamp(0.0, 1.0);
 }
 

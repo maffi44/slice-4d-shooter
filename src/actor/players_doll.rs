@@ -96,14 +96,11 @@ pub struct PlayersDoll {
     holegun_charge_sound: Option<Handle<SoundSource>>,
 
     player_settings: PlayerSettings,
-    w_levels_of_map: Vec<f32>,
     radius: f32,
     my_color: Vec3,
 
     on_way_to_next_w_level: bool,
     current_w_level_prev_frame: u32,
-
-    friction_on_air: f32,
 
     w_scanner_enable: bool,
     w_scanner_radius: f32,
@@ -200,9 +197,7 @@ impl PlayersDoll {
         is_alive: bool,
         audio_system: &mut AudioSystem,
         player_settings: PlayerSettings,
-        w_levels_of_map: Vec<f32>,
         team: Team,
-        friction_on_air: f32,
     ) -> Self {
 
         let my_color = match team {
@@ -279,12 +274,10 @@ impl PlayersDoll {
             die_slowly_timer: 0.0,
             holegun_charge_sound: None,
             player_settings,
-            w_levels_of_map,
             team,
             radius: player_sphere_radius,
             my_color,
             on_way_to_next_w_level: false,
-            friction_on_air,
             w_scanner_enable: false,
             w_scanner_radius: 0.0,
             w_scanner_ring_intesity: 0.0,
@@ -489,7 +482,7 @@ impl PlayersDoll {
         }
 
         self.interpolating_model_target.set_friction_on_air(
-            self.friction_on_air
+            self.player_settings.friction_on_air
         );
     }
 
