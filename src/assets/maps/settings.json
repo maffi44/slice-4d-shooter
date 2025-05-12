@@ -1,7 +1,7 @@
 {
     "mouse_sensivity" : 0.21,
 
-    "matchmaking_server_url" : "ws://localhost:49161/",
+    "matchmaking_server_url" : "ws://109.72.102.215:49161/",
 
     "bash_and_turn_servers" : [
         "stun:stun.l.google.com:19302",

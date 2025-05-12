@@ -1524,6 +1524,11 @@ impl Actor for MainPlayer {
             );
         }
 
+        process_ui_tutorial_window_input(
+            &input,
+            ui_system,
+        );
+
         procces_w_rotation_sound(
             audio_system,
             &mut self.inner_state,
@@ -1829,6 +1834,27 @@ pub fn procces_w_rotation_sound(
         base_pitch,//D + addition_pitch,
         gain
     );
+}
+
+
+pub fn process_ui_tutorial_window_input(
+    input: &ActionsFrameState,
+    ui: &mut UISystem,
+)
+{
+    if input.show_hide_controls.is_action_just_pressed()
+    {
+        let tutorial_window_visible_arc = ui
+            .get_ui_element(&UIElementType::TutorialWindow)
+            .get_ui_data()
+            .get_is_visible_cloned_arc();
+
+        let mut tutorial_window_visible = tutorial_window_visible_arc
+            .lock()
+            .unwrap();
+        
+        *tutorial_window_visible = !*tutorial_window_visible;
+    }
 }
 
 

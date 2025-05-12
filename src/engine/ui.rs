@@ -145,6 +145,7 @@ pub enum UIElementType {
     TitleConnectionFailedServerError,
     TitleConnectionFailedOldVersion,
     TitleConnectionFailedLostConnection,
+    TutorialWindow,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -194,6 +195,7 @@ pub enum TextureType {
     TitleConnectionFailedServerError,
     TitleConnectionFailedOldVersion,
     TitleConnectionFailedLostConnection,
+    TutorialWindow,
 }
 
 
@@ -389,6 +391,10 @@ impl UISystem {
         texture_sources.insert(
             TextureType::TitleConnectionFailedOldVersion,
             include_bytes!("../assets/textures/connection_failed_old_version.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TutorialWindow,
+            include_bytes!("../assets/textures/tutorial_window.png").as_slice()
         );
         
 
@@ -1629,6 +1635,31 @@ impl UISystem {
                 )
             )
         );
+
+        ui_elements.insert(
+            UIElementType::TutorialWindow,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedHeight(
+                                1.0,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 3,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TutorialWindow
+                )
+            )
+        );
+
 
 
         UISystem {
