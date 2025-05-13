@@ -30,7 +30,7 @@ use crate::{
 use super::{
     device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, main_player::{
         player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, BLUE_SCANNER_WAVE_COLOR, PLAYER_MAX_HP, RED_SCANNER_WAVE_COLOR, TIME_TO_DIE_SLOWLY, W_SCANNER_EXPANDING_SPEED, W_SCANNER_MAX_RADIUS
-    }, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, shotgun_shot_source::ShotgunShotSource, Actor, ActorID, ActorWrapper, CommonActorsMessage, Component, Message, MessageType, SpecificActorMessage
+    }, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, shotgun_shot_source::ShotgunShotSource, Actor, ActorID, ActorWrapper, CommonActorsMessage, Message, MessageType, SpecificActorMessage
 };
 
 #[derive(Clone)]
@@ -229,7 +229,7 @@ impl PlayersDoll {
                 radius: player_sphere_radius,
                 friction: 0.0,
                 bounce_rate: 0.0,
-                actors_id: Some(id),
+                actor_id: Some(id),
                 weapon_offset,
                 actors_team: team,
             });
@@ -242,8 +242,6 @@ impl PlayersDoll {
             player_sphere_radius,
             player_settings.friction_on_air
         );
-
-        interpolated_model_target.set_id(id);
 
         let weapon_shooting_point = weapon_offset + FORWARD * (player_sphere_radius * 0.49);
 
@@ -1150,10 +1148,6 @@ impl Actor for PlayersDoll {
 
     fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
-
-        self.interpolating_model[0].set_id(id);
-        self.interpolating_model_target.set_id(id);
-
     }
 
 

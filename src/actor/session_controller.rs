@@ -64,6 +64,8 @@ pub struct SessionController
 
     red_flag_base_position: Vec4,
     blue_flag_base_position: Vec4,
+
+    observer_mode: bool,
 }
 
 
@@ -73,6 +75,7 @@ impl SessionController
         ui_system: &mut UISystem,
         red_flag_base_position: Vec4,
         blue_flag_base_position: Vec4,
+        observer_mode: bool,
     ) -> Self
     {
         let session_controller = SessionController {
@@ -89,6 +92,7 @@ impl SessionController
             show_join_blue_team_title_timer: 0.0,
             red_flag_base_position,
             blue_flag_base_position,
+            observer_mode,
         };
 
         session_controller.set_score_ui(ui_system);
@@ -436,14 +440,28 @@ impl Actor for SessionController
                                         }
                                         Team::Blue =>
                                         {
-                                            audio_system.spawn_non_spatial_sound(
-                                                Sound::LooseScore,
-                                                1.0,
-                                                1.0,
-                                                false,
-                                                true,
-                                                Status::Playing
-                                            ); 
+                                            if self.observer_mode
+                                            {
+                                                audio_system.spawn_non_spatial_sound(
+                                                    Sound::GetScore,
+                                                    1.0,
+                                                    1.0,
+                                                    false,
+                                                    true,
+                                                    Status::Playing
+                                                );
+                                            }
+                                            else
+                                            {
+                                                audio_system.spawn_non_spatial_sound(
+                                                    Sound::LooseScore,
+                                                    1.0,
+                                                    1.0,
+                                                    false,
+                                                    true,
+                                                    Status::Playing
+                                                ); 
+                                            }
                                         }
                                     }
                                 }
@@ -473,14 +491,28 @@ impl Actor for SessionController
                                     match self.your_team {
                                         Team::Red =>
                                         {
-                                            audio_system.spawn_non_spatial_sound(
-                                                Sound::LooseScore,
-                                                1.0,
-                                                1.0,
-                                                false,
-                                                true,
-                                                Status::Playing
-                                            ); 
+                                            if self.observer_mode
+                                            {
+                                                audio_system.spawn_non_spatial_sound(
+                                                    Sound::GetScore,
+                                                    1.0,
+                                                    1.0,
+                                                    false,
+                                                    true,
+                                                    Status::Playing
+                                                );
+                                            }
+                                            else
+                                            {
+                                                audio_system.spawn_non_spatial_sound(
+                                                    Sound::LooseScore,
+                                                    1.0,
+                                                    1.0,
+                                                    false,
+                                                    true,
+                                                    Status::Playing
+                                                ); 
+                                            }
                                         }
                                         Team::Blue =>
                                         {
@@ -537,14 +569,28 @@ impl Actor for SessionController
                                             }
                                             Team::Blue =>
                                             {
-                                                audio_system.spawn_non_spatial_sound(
-                                                    Sound::TeamLoose,
-                                                    1.0,
-                                                    1.0,
-                                                    false,
-                                                    true,
-                                                    Status::Playing
-                                                );  
+                                                if self.observer_mode
+                                                {
+                                                    audio_system.spawn_non_spatial_sound(
+                                                        Sound::TeamWin,
+                                                        1.0,
+                                                        1.0,
+                                                        false,
+                                                        true,
+                                                        Status::Playing
+                                                    );
+                                                }
+                                                else
+                                                {
+                                                    audio_system.spawn_non_spatial_sound(
+                                                        Sound::TeamLoose,
+                                                        1.0,
+                                                        1.0,
+                                                        false,
+                                                        true,
+                                                        Status::Playing
+                                                    );
+                                                }
                                             }
                                         }
                                     }
@@ -562,14 +608,28 @@ impl Actor for SessionController
                                         match self.your_team {
                                             Team::Red =>
                                             {
-                                                audio_system.spawn_non_spatial_sound(
-                                                    Sound::TeamLoose,
-                                                    1.0,
-                                                    1.0,
-                                                    false,
-                                                    true,
-                                                    Status::Playing
-                                                );  
+                                                if self.observer_mode
+                                                {
+                                                    audio_system.spawn_non_spatial_sound(
+                                                        Sound::TeamWin,
+                                                        1.0,
+                                                        1.0,
+                                                        false,
+                                                        true,
+                                                        Status::Playing
+                                                    );
+                                                }
+                                                else
+                                                {
+                                                    audio_system.spawn_non_spatial_sound(
+                                                        Sound::TeamLoose,
+                                                        1.0,
+                                                        1.0,
+                                                        false,
+                                                        true,
+                                                        Status::Playing
+                                                    );
+                                                } 
                                             }
                                             Team::Blue =>
                                             {

@@ -21,7 +21,6 @@ use crate::{
         Actor,
         ActorID,
         CommonActorsMessage,
-        Component,
         Message,
         MessageType,
         SpecificActorMessage
@@ -63,7 +62,7 @@ use glam::{
 };
 
 use super::{
-    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner, GET_DAMAGE_PROJECTION_INTENSITY, PLAYER_PROJECTION_DISPLAY_TIME}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
+    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner, GET_DAMAGE_PROJECTION_INTENSITY, MAX_MOVE_W_BONUSES_I_CAN_HAVE, PLAYER_MAX_HP, PLAYER_PROJECTION_DISPLAY_TIME, SHOW_CROSSHAIER_HIT_MARK_TIME}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
 };
 
 
@@ -98,41 +97,6 @@ pub struct PlayerFor2d3dExample {
     pub show_3d_example_current_value: f32,
     show_3d_example_target_value: f32,
 }
-pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
-
-pub const PLAYER_MAX_HP: f32 = 100.0;
-
-const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
-const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
-
-const W_SCANNER_MAX_RADIUS: f32 = 21.0;
-const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
-
-pub const TIME_TO_DIE_SLOWLY: f32 = 0.5;
-
-const CROSSHAIR_INCREASING_SPEED: f32 = 0.35f32;
-const CROSSHAIR_DECREASING_SPEED: f32 = 0.04f32;
-const CROSSHAIR_MAX_SIZE: f32 = 0.038;
-const CROSSHAIR_MIN_SIZE: f32 = 0.028;
-
-const GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED: f32 = 5.0;
-const DEATH_EFFECT_COEF_INCREASE_SPEED: f32 = 10.0;
-const DEATH_EFFECT_COEF_DECREASE_SPEED: f32 = 3.0;
-
-const SHOW_CROSSHAIER_HIT_MARK_TIME: f32 = 0.3;
-
-pub const RED_TEAM_COLOR: Vec3 = Vec3::new(3.5, 0.7, 0.08);
-pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.08, 0.7, 3.5);
-
-pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 1;
-
-const HAVE_NOT_MOVE_W_BONUS_TRANSPARENCY_LEVEL: f32 = 0.2;
-
-const BASE_EFFECT_HP_IMPACT_SPEED: f32 = 2.6;
-
-const DURATION_OF_MOVING_FREE_BY_BONUS: f32 = 8.0;
-
-pub const PLAYER_FREE_MOVING_SPEED_MULT: f32 = 0.6;
 
 impl Actor for PlayerFor2d3dExample {
 
@@ -662,9 +626,6 @@ impl Actor for PlayerFor2d3dExample {
 
     fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
-
-        self.inner_state.collider.set_id(id);
-        self.inner_state.collider_for_others[0].set_id(id);
     }
 
 
@@ -944,7 +905,7 @@ impl Actor for PlayerFor2d3dExample {
                 delta,
             );
 
-            main_player::process_player_respawn(
+            main_player::process_player_auto_respawn(
                 engine_handle,
                 &self.player_settings,
                 &input,

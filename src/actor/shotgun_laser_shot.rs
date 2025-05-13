@@ -411,7 +411,7 @@ impl Actor for ShotgunLaserShot
                         friction: 0.0,
                         bounce_rate: 0.0,
                         shape_type: ShapeType::Sphere,
-                        actors_id: None,
+                        actor_id: None,
                         undestroyable: false,
                     },
                     material_index: 0

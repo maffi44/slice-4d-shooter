@@ -9,7 +9,7 @@ use crate::{
 
 use std::f32::consts::PI;
 
-use super::{Actor, ActorID, CommonActorsMessage, Component, Message, MessageType};
+use super::{Actor, ActorID, CommonActorsMessage, Message, MessageType};
 
 pub enum WanderingActorMovementType {
     Linear,
@@ -74,10 +74,6 @@ impl Actor for WanderingActor {
 
     fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
-
-        for static_object in self.static_objects.iter_mut() {
-            static_object.collider.set_id(id);
-        }
     }
 
     fn get_physical_element(&mut self) -> Option<PhysicalElement> {

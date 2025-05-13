@@ -94,7 +94,8 @@ async fn client_main() {
             let session_controller = SessionController::new(
                 &mut systems.ui,
                 systems.world.level.red_flag_base.get_position(),
-                systems.world.level.blue_flag_base.get_position()
+                systems.world.level.blue_flag_base.get_position(),
+                false,
             );
             
             systems.world.add_actor_to_world(

@@ -17,6 +17,7 @@ pub mod mover_w;
 pub mod player_for_2d_3d_example;
 pub mod shotgun_shot_source;
 pub mod shotgun_laser_shot;
+pub mod observer;
 
 use std::fmt::Display;
 
@@ -154,6 +155,7 @@ pub enum ActorWrapper {
     MoverW(MoverW),
     ShotgunShotSource(ShotgunShotSource),
     ShotgunLaserShot(ShotgunLaserShot),
+    Observer(Observer),
     Diamond,
     Exit,
 }
@@ -180,6 +182,7 @@ impl Display for ActorWrapper
             ActorWrapper::MoverW(_) => "MoverW",
             ActorWrapper::ShotgunShotSource(_) => "ShotgunShotSource",
             ActorWrapper::ShotgunLaserShot(_) => "ShotgunLaserShot",
+            ActorWrapper::Observer(_) => "Observer",
             ActorWrapper::Diamond => "Diamond",
             ActorWrapper::Exit => "Exit",
         };
@@ -243,6 +246,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShotgunLaserShot(actor) => {
                 actor.get_transform()
             }
+            ActorWrapper::Observer(actor) => {
+                actor.get_transform()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -299,6 +305,9 @@ impl Actor for ActorWrapper {
                 actor.get_mut_transform()
             }
             ActorWrapper::ShotgunLaserShot(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::Observer(actor) => {
                 actor.get_mut_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -368,6 +377,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShotgunLaserShot(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
+            ActorWrapper::Observer(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -435,6 +447,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShotgunLaserShot(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
+            ActorWrapper::Observer(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -491,6 +506,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             }
             ActorWrapper::ShotgunLaserShot(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::Observer(actor) => {
                 actor.get_physical_element()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -551,6 +569,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShotgunLaserShot(actor) => {
                 actor.get_visual_element()
             }
+            ActorWrapper::Observer(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -607,6 +628,9 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             }
             ActorWrapper::ShotgunLaserShot(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::Observer(actor) => {
                 actor.get_id()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -667,6 +691,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShotgunLaserShot(actor) => {
                 actor.change_id(id, engine_handle)
             }
+            ActorWrapper::Observer(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -723,6 +750,9 @@ impl Actor for ActorWrapper {
                 actor.set_id(id)
             }
             ActorWrapper::ShotgunLaserShot(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::Observer(actor) => {
                 actor.set_id(id)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -784,6 +814,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShotgunLaserShot(actor) => {
                 actor.get_actor_as_controlled()
             }
+            ActorWrapper::Observer(actor) => {
+                actor.get_actor_as_controlled()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -843,17 +876,13 @@ impl Actor for ActorWrapper {
             ActorWrapper::ShotgunLaserShot(actor) => {
                 actor.get_actor_as_controlled_mut()
             }
+            ActorWrapper::Observer(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
     }
-}
-
-
-pub trait Component {
-    fn set_id(&mut self, id: ActorID);
-
-    fn get_id(&self) -> Option<ActorID>;
 }
 
 #[derive(Clone)]
@@ -877,6 +906,7 @@ use hole::Hole;
 use move_w_bonus::{MoveWBonusSpot, MoveWBonusSpotMessage};
 use mover_w::{MoverW, MoverWMessage};
 use main_player::{player_input_master::InputMaster, PlayerScreenEffects};
+use observer::Observer;
 use player_for_2d_3d_example::PlayerFor2d3dExample;
 use session_controller::SessionController;
 use shotgun_laser_shot::ShotgunLaserShot;

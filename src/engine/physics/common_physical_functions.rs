@@ -6,7 +6,7 @@ use glam::{
     Vec4Swizzles,
 };
 
-use crate::actor::{ActorID, Component};
+use crate::actor::ActorID;
 
 use super::physics_system_data::PhysicsState;
 
@@ -441,7 +441,7 @@ pub fn get_dist(
         Some(id) =>
         {
             for collider in static_objects.player_forms.iter() {
-                if id != collider.actors_id.expect("Some PlayerDollCollider have not actor_id during physics tick")
+                if id != collider.actor_id.expect("Some PlayerDollCollider have not actor_id during physics tick")
                 {
                     d = d.min(sd_sphere(p - collider.position.clone(), collider.radius));
                 }

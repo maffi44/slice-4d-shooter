@@ -1042,7 +1042,7 @@ fn parse_json_specific_shape(
         roundness,
         bounce_rate,
         stickiness,
-        actors_id: None,
+        actor_id: None,
         undestroyable,
     };
 

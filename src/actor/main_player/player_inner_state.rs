@@ -73,7 +73,7 @@ impl PlayerInnerState {
                 radius: player_settings.collider_radius,
                 friction: 0_f32,
                 bounce_rate: 0_f32,
-                actors_id: None,
+                actor_id: None,
                 weapon_offset,
                 actors_team: DEFAULT_TEAM,
             });

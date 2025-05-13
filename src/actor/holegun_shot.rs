@@ -22,8 +22,6 @@ use crate::{
     transform::Transform,
 };
 
-use super::Component;
-
 const EXPLODE_TIME: f32 = 0.25;
 
 pub struct HoleGunShot {
@@ -63,7 +61,7 @@ impl HoleGunShot {
                 stickiness: false,
                 friction: 0.0,
                 bounce_rate: 0.0,
-                actors_id: None,
+                actor_id: None,
                 undestroyable: false,
             },
             material_index: -1,
@@ -158,10 +156,6 @@ impl Actor for HoleGunShot {
 
     fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
-
-        for static_object in self.static_objects.iter_mut() {
-            static_object.collider.set_id(id);
-        }
     }
 
     fn tick(

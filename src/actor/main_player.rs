@@ -22,7 +22,6 @@ use crate::{
         Actor,
         ActorID,
         CommonActorsMessage,
-        Component,
         Message,
         MessageType,
         SpecificActorMessage
@@ -619,49 +618,32 @@ pub struct MainPlayer {
 }
 
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
-
 pub const PLAYER_MAX_HP: f32 = 100.0;
-
-const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
-const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
-
-// const self.player_settings.scanner_reloading_time: f32 = 6.5;
-// const self.player_settings.scanner_show_enemies_time: f32 = 5.5;
+pub const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
+pub const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
 pub const W_SCANNER_MAX_RADIUS: f32 = 21.0;
 pub const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
-
 pub const TIME_TO_DIE_SLOWLY: f32 = 0.5;
-
-const CROSSHAIR_ROTATION_SPEED: f32 = -12.0;
-const CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION: f32 = -PI*0.5;
-const CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE: f32 = 0.1;
-const CROSSHAIR_INCREASING_SPEED: f32 = 0.35f32;
-const CROSSHAIR_DECREASING_SPEED: f32 = 0.04f32;
-const CROSSHAIR_MAX_SIZE: f32 = 0.038;
-const CROSSHAIR_MIN_SIZE: f32 = 0.028;
-
-const GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED: f32 = 5.0;
-const DEATH_EFFECT_COEF_INCREASE_SPEED: f32 = 10.0;
-const DEATH_EFFECT_COEF_DECREASE_SPEED: f32 = 3.0;
-
-const SHOW_CROSSHAIER_HIT_MARK_TIME: f32 = 0.3;
-
+pub const CROSSHAIR_ROTATION_SPEED: f32 = -12.0;
+pub const CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION: f32 = -PI*0.5;
+pub const CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE: f32 = 0.1;
+pub const CROSSHAIR_INCREASING_SPEED: f32 = 0.35f32;
+pub const CROSSHAIR_DECREASING_SPEED: f32 = 0.04f32;
+pub const CROSSHAIR_MAX_SIZE: f32 = 0.038;
+pub const CROSSHAIR_MIN_SIZE: f32 = 0.028;
+pub const GETTING_DAMAGE_EFFECT_COEF_DECREASE_SPEED: f32 = 5.0;
+pub const DEATH_EFFECT_COEF_INCREASE_SPEED: f32 = 10.0;
+pub const DEATH_EFFECT_COEF_DECREASE_SPEED: f32 = 3.0;
+pub const SHOW_CROSSHAIER_HIT_MARK_TIME: f32 = 0.3;
 pub const RED_TEAM_COLOR: Vec3 = Vec3::new(3.5, 0.7, 0.08);
 pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.08, 0.7, 3.5);
-
 pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 1;
-
-const BASE_EFFECT_HP_IMPACT_SPEED: f32 = 2.6;
-
-const PROJECTION_ACTIVE_TIME: f32 = 1.0;
-
+pub const BASE_EFFECT_HP_IMPACT_SPEED: f32 = 2.6;
+pub const PROJECTION_ACTIVE_TIME: f32 = 1.0;
 pub const DEFAULT_ZW_ROTATION_TARGET_IN_RADS: f32 = 0.0;
-
 pub const PLAYER_PROJECTION_DISPLAY_TIME: f32 = 3.4;
-
 pub const GET_DAMAGE_PROJECTION_INTENSITY: f32 = 1.2;
-
-const SECOND_JUMP_CHARGING_SPEED: f32 = 10.0;
+pub const SECOND_JUMP_CHARGING_SPEED: f32 = 10.0;
 
 #[derive(Clone)]
 pub enum PlayerMessage {
@@ -1224,9 +1206,6 @@ impl Actor for MainPlayer {
 
     fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
-
-        self.inner_state.collider.set_id(id);
-        self.inner_state.collider_for_others[0].set_id(id);
     }
 
 
@@ -1515,7 +1494,7 @@ impl Actor for MainPlayer {
                 delta,
             );
 
-            process_player_respawn(
+            process_player_auto_respawn(
                 engine_handle,
                 &self.player_settings,
                 &input,
@@ -2337,7 +2316,7 @@ pub fn process_screen_effects_while_alive
 }
 
 
-pub fn process_player_respawn(
+pub fn process_player_auto_respawn(
     engine_handle: &mut EngineHandle,
     player_settings: &PlayerSettings,
     input: &ActionsFrameState,
@@ -3323,6 +3302,9 @@ pub fn set_right_team_hud(
     *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrow);
+    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+
+    let hud_elem = ui.get_mut_ui_element(&UIElementType::TitlePressTForTutorial);
     *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
 
 

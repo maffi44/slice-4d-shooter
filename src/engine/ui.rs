@@ -1439,7 +1439,7 @@ impl UISystem {
                             drawing_order: 0,
                             transform_buffer: None,
                         },
-                        true,
+                        false,
                         None,
                     ),
                     TextureType::TitlePressTForTutorial

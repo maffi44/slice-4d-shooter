@@ -26,7 +26,7 @@ use crate::{
     transform::Transform,
 };
 
-use super::{CommonActorsMessage, Component, Message, MessageType};
+use super::{CommonActorsMessage, Message, MessageType};
 
 const SHOT_HOLE_START_RADIUS: f32 = 0.01;
 const SHOT_HOLE_FINAL_RADIUS: f32 = 0.11;
@@ -108,7 +108,7 @@ impl MachinegunShot {
                     stickiness: false,
                     friction: 0.0,
                     bounce_rate: 0.0,
-                    actors_id: None,
+                    actor_id: None,
                     undestroyable: false,
                 },
                 material_index: -1,
@@ -167,10 +167,6 @@ impl Actor for MachinegunShot {
 
     fn set_id(&mut self, id: ActorID) {
         self.id = Some(id);
-
-        for static_object in self.static_objects.iter_mut() {
-            static_object.collider.set_id(id);
-        }
     }
 
     fn tick(

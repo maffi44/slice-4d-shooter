@@ -2,7 +2,6 @@ use client_server_protocol::Team;
 use glam::Vec4;
 
 use crate::actor::{
-    Component,
     ActorID,
 };
 
@@ -18,28 +17,20 @@ pub struct PlayersDollCollider {
     pub radius: f32,
     pub friction: f32,
     pub bounce_rate: f32,
-    pub actors_id: Option<ActorID>,
+    pub actor_id: Option<ActorID>,
     pub actors_team: Team,
     pub weapon_offset: Vec4,
 }
 
-// impl DynamicCollider {
-//     pub fn new(radius: f32) -> Self {
-//         DynamicCollider {
-//             actors_id: None,
-//             radius,
-//         }
-//     }
-// }
-
-impl Component for PlayersDollCollider {
-    fn set_id(&mut self, id: ActorID) {
-        self.actors_id = Some(id);
+impl PlayersDollCollider
+{
+    pub fn set_id(&mut self, id: ActorID)
+    {
+        self.actor_id = Some(id);
     }
 
-    fn get_id(&self) -> Option<ActorID> {
-        let id = self.actors_id.expect("DynamicCollider is not initialized");
-
-        Some(id)
+    pub fn get_id(&self) -> Option<ActorID>
+    {
+        self.actor_id
     }
 }

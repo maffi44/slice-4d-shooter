@@ -10,7 +10,6 @@ use crate::{
     actor::{
         Actor,
         ActorID,
-        Component
     },
     engine::{
         engine_handle::EngineHandle,
@@ -45,7 +44,6 @@ const MAX_RAY_MARCHING_STEPS: usize = 150;
 
 pub struct PhysicsSystem {
     physics_state: PhysicsState,
-    frame_colliders_buffers: FrameCollidersBuffers,
 }
 
 
@@ -62,7 +60,6 @@ impl PhysicsSystem {
 
         PhysicsSystem {
             physics_state,
-            frame_colliders_buffers
         }
     }
 
@@ -75,26 +72,10 @@ impl PhysicsSystem {
 
         self.physics_state.clear_temporal_colliders();
 
-        self.frame_colliders_buffers.kinematic_colliders.clear();
-        self.frame_colliders_buffers.dynamic_colliders.clear();
-        self.frame_colliders_buffers.areas.clear();
 
-        // I use frame_colliders_buffers as a memory buffer in order
-        // not to allocate memory dynamically each call process_physics().
-        //
-        // TODO: Change this unsafe functionality to use a regular Vec<&mut 'SomeCollider'>::new()
-        //  with a custom allocator 
-
-        let mut kinematic_colliders: Vec<(&mut Transform, &mut KinematicCollider)> = unsafe {
-            std::mem::transmute_copy(&self.frame_colliders_buffers.kinematic_colliders)
-        };
-        let mut areas: Vec<&mut Area> = unsafe {
-            std::mem::transmute_copy(&self.frame_colliders_buffers.areas)
-        };
-        let dynamic_colliders: Vec<&mut PlayersDollCollider> = unsafe {
-            std::mem::transmute_copy(&self.frame_colliders_buffers.dynamic_colliders)
-        };
-
+        let mut kinematic_colliders: Vec<(&mut Transform, &mut KinematicCollider)> = Vec::new();
+        let mut areas: Vec<&mut Area> = Vec::new();
+        let dynamic_colliders: Vec<&mut PlayersDollCollider> = Vec::new();
 
         for (_, actor) in world.actors.iter_mut() {
 
@@ -191,14 +172,6 @@ impl PhysicsSystem {
         for area in areas.iter_mut() {
             area.physics_tick(&kinematic_colliders, engine_handle);
         }
-
-        std::mem::forget(kinematic_colliders);
-        std::mem::forget(areas);
-        std::mem::forget(dynamic_colliders);
-
-        self.frame_colliders_buffers.kinematic_colliders.clear();
-        self.frame_colliders_buffers.areas.clear();
-        self.frame_colliders_buffers.dynamic_colliders.clear();
     }
 
 

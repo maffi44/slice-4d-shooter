@@ -1,6 +1,5 @@
 use crate::{
     actor::{
-        Component,
         ActorID,
     },
     engine::physics::physics_system_data::ShapeType,
@@ -26,15 +25,18 @@ pub struct StaticCollider {
     pub bounce_rate: f32,
     pub shape_type: ShapeType,
     pub undestroyable: bool,
-    pub actors_id: Option<ActorID>,
+    pub actor_id: Option<ActorID>,
 }
 
-impl Component for StaticCollider {
-    fn set_id(&mut self, id: ActorID) {
-        self.actors_id = Some(id);
+impl StaticCollider
+{
+    pub fn set_id(&mut self, id: ActorID)
+    {
+        self.actor_id = Some(id);
     }
 
-    fn get_id(&self) -> Option<ActorID> {
-        self.actors_id
+    pub fn get_id(&self) -> Option<ActorID>
+    {
+        self.actor_id
     }
 }

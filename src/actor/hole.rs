@@ -41,7 +41,7 @@ impl Hole
                 stickiness: false,
                 friction: 0.0,
                 bounce_rate: 0.0,
-                actors_id: None,
+                actor_id: None,
                 undestroyable: false,
             },
             material_index: -1,

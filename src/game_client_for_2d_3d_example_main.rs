@@ -64,13 +64,6 @@ fn main() {
             }
         );
 
-        while let Some(mover_w) = systems.world.level.mover_w_list.pop()
-        {
-            systems.world.add_actor_to_world(
-                ActorWrapper::MoverW(mover_w),
-                &mut systems.engine_handle
-            );
-        } 
 
         let red_flag = Flag::new(
             Team::Red,
@@ -95,21 +88,12 @@ fn main() {
         let session_controller = SessionController::new(
             &mut systems.ui,
             systems.world.level.red_flag_base.get_position(),
-            systems.world.level.blue_flag_base.get_position()
+            systems.world.level.blue_flag_base.get_position(),
+            false,
         );
         
         systems.world.add_actor_to_world(
             ActorWrapper::SessionController(session_controller),
-            &mut systems.engine_handle,
-        );
-
-        let move_w_bonus = MoveWBonusSpot::new(
-            systems.world.level.move_w_bonus_spot,
-            0
-        );
-
-        systems.world.add_actor_to_world(
-            ActorWrapper::MoveWBonusSpot(move_w_bonus),
             &mut systems.engine_handle,
         );
 

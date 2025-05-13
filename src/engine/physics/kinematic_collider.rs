@@ -1,6 +1,6 @@
 use crate::{
     actor::{
-        ActorID, Component, Message
+        ActorID, Message
     }, engine::{
         engine_handle::EngineHandle,
         physics::{
@@ -36,19 +36,7 @@ pub struct KinematicCollider {
     pub forces: Vec<Vec4>,
     pub is_on_y_ground: bool,
     pub is_on_w_ground: bool,
-    actors_id: Option<ActorID>,
-}
-
-impl Component for KinematicCollider {
-    fn set_id(&mut self, id: ActorID) {
-        self.actors_id = Some(id);
-    }
-
-    fn get_id(&self) -> Option<ActorID> {
-        let id = self.actors_id.expect("Component was not initialised");
-
-        Some(id)
-    }
+    actor_id: Option<ActorID>,
 }
 
 static mut DEBUG_ITERATION_COUTER: u32 = 0u32;
@@ -75,8 +63,18 @@ impl KinematicCollider {
             forces: Vec::with_capacity(10),
             is_on_y_ground: false,
             is_on_w_ground: false,
-            actors_id: None,
+            actor_id: None,
         }
+    }
+
+    pub fn set_id(&mut self, id: ActorID)
+    {
+        self.actor_id = Some(id);
+    }
+
+    pub fn get_id(&self) -> Option<ActorID>
+    {
+        self.actor_id
     }
 
     pub fn get_collider_radius(&self) -> f32 {
@@ -168,7 +166,7 @@ impl KinematicCollider {
             if get_dist(
                 y_bottom_position,
                 static_objects,
-                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
             ) < self.collider_radius * 0.95 {
                 self.is_on_y_ground = true;
                 
@@ -177,7 +175,7 @@ impl KinematicCollider {
             let dist = get_dist(
                 w_bottom_position,
                 static_objects,
-                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
             );
 
             // println!("dist: {}", self.collider_radius * 0.99 - dist);
@@ -238,7 +236,7 @@ impl KinematicCollider {
             position,
             collider_radius,
             static_objects,
-            Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+            Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
         );
 
         let (new_pos, is_pushed) = match res {
@@ -280,7 +278,7 @@ impl KinematicCollider {
                 position,
                 collider_radius,
                 static_objects,
-                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
             );
 
             let (new_pos, is_pushed) = match res {
@@ -300,7 +298,7 @@ impl KinematicCollider {
             let mut distance_to_obj = get_dist(
                 position,
                 static_objects,
-                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
             ) - collider_radius;
 
             // bound if collide
@@ -313,7 +311,7 @@ impl KinematicCollider {
                 let normal = get_normal(
                     position,
                     static_objects,
-                    Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                    Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
                 );
                 
                 // log::info!("normal is {}", normal);
@@ -329,7 +327,7 @@ impl KinematicCollider {
                     let next_normal = get_normal(
                         position + probable_transltaion_dir * MIN_STEP,
                         static_objects,
-                        Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                        Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
                     );
     
                     // log::info!("next normal is {}", normal);
@@ -343,7 +341,7 @@ impl KinematicCollider {
                         let prev_normal = get_normal(
                             position - probable_transltaion_dir * MIN_STEP,
                             static_objects,
-                            Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                            Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
                         );
     
                         // log::info!("prev normal is {}", prev_normal);
@@ -470,7 +468,7 @@ impl KinematicCollider {
             let dist_on_try_move = get_dist(
                 position + translation.clamp_length_max(collider_radius - MIN_STEP),
                 static_objects,
-                Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
             );
     
             if dist_on_try_move - collider_radius > 0.0 {
@@ -529,7 +527,7 @@ impl KinematicCollider {
                 distance_to_obj = get_dist(
                     position,
                     static_objects,
-                    Some(self.actors_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+                    Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
                 ) - collider_radius;
     
                 translation = translation_dir * translation_length;

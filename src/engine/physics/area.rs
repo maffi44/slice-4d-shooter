@@ -1,7 +1,7 @@
 use crate::{
     transform::Transform,
     actor::{
-        ActorID, Component, Message, MessageType, PhysicsMessages
+        ActorID, Message, MessageType, PhysicsMessages
     },
     engine::{
         engine_handle::EngineHandle,
@@ -36,11 +36,21 @@ pub struct Area {
     pub size: Vec4,
     pub translation: Vec4,
     shape_type: ShapeType,
-    actors_id: Option<ActorID>,
+    actor_id: Option<ActorID>,
     intersected_actor_ids: Vec<ActorID>,
 }
 
 impl Area {
+
+    pub fn set_id(&mut self, id: ActorID)
+    {
+        self.actor_id = Some(id);
+    }
+
+    pub fn get_id(&self) -> Option<ActorID>
+    {
+        self.actor_id
+    }
 
     pub fn clear_containing_colliders_list(&mut self)
     {
@@ -63,7 +73,7 @@ impl Area {
             translation,
             shape_type,
             size,
-            actors_id: None,
+            actor_id: None,
             intersected_actor_ids: Vec::with_capacity(10),
         }
     }
@@ -97,13 +107,13 @@ impl Area {
                     );
 
                     let message = Message {
-                        from: self.actors_id.expect("Area was not initialized"),
+                        from: self.actor_id.expect("Area was not initialized"),
                         remote_sender: false,
                         message: message_content,
                     };
 
                     engine_handle.send_direct_message(
-                        self.actors_id.expect("Area was not initialized"),
+                        self.actor_id.expect("Area was not initialized"),
                         message
                     )
                 }
@@ -120,13 +130,13 @@ impl Area {
                     );
 
                     let message = Message {
-                        from: self.actors_id.expect("Area was not initialized"),
+                        from: self.actor_id.expect("Area was not initialized"),
                         remote_sender: false,
                         message: message_content,
                     };
 
                     engine_handle.send_direct_message(
-                        self.actors_id.expect("Area was not initialized"),
+                        self.actor_id.expect("Area was not initialized"),
                         message
                     )
                 }
@@ -144,13 +154,13 @@ impl Area {
             );
 
             let message = Message {
-                from: self.actors_id.expect("Area was not initialized"),
+                from: self.actor_id.expect("Area was not initialized"),
                 remote_sender: false,
                 message: message_content,
             };
 
             engine_handle.send_direct_message(
-                self.actors_id.expect("Area was not initialized"),
+                self.actor_id.expect("Area was not initialized"),
                 message
             )
         }
@@ -259,20 +269,5 @@ impl Area {
 
             self.intersected_actor_ids.remove(collider_index);
         }
-    }
-}
-
-
-
-
-impl Component for Area {
-    fn set_id(&mut self, id: ActorID) {
-        self.actors_id = Some(id);
-    }
-
-    fn get_id(&self) -> Option<ActorID> {
-        let id = self.actors_id.expect("Component was not initialised");
-
-        Some(id)
     }
 }
