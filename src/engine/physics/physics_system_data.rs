@@ -208,8 +208,8 @@ pub struct PhysicsState {
 
     pub player_forms: Vec<PlayersDollCollider>,
 
-    pub w_floor: Option<WFloor>,
-    pub w_roof: Option<WRoof>,
+    // pub w_floor: Option<WFloor>,
+    // pub w_roof: Option<WRoof>,
 
     pub stickiness: f32,
 }
@@ -263,8 +263,8 @@ impl PhysicsState {
 
             player_forms: Vec::with_capacity(4),
 
-            w_floor: world.level.w_floor.clone(),
-            w_roof: world.level.w_roof.clone(),
+            // w_floor: world.level.w_floor.clone(),
+            // w_roof: world.level.w_roof.clone(),
 
             stickiness: world.level.all_shapes_stickiness_radius
         }

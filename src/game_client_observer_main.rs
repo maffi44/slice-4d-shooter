@@ -42,7 +42,8 @@ fn main() {
             ),
             systems.world.players_settings.clone(),
             &mut systems.audio,
-            systems.world.level.w_levels.clone()
+            systems.world.level.blue_base_position,
+            systems.world.level.red_base_position,
         );
 
         let main_player_id = systems.world.add_actor_to_world(

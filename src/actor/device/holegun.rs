@@ -219,29 +219,10 @@ impl HoleGun {
                 }
             }
 
-            let base_coef = 
-            {
-                let mut coef = f32::clamp(
-                    (position.w - player.blue_map_w_level) /
-                    (player.red_map_w_level - player.blue_map_w_level),
-                     0.0,
-                     1.0
-                );
-
-                if player.team == Team::Blue
-                {
-                    coef = 1.0 - coef;
-                }
-
-                coef = (coef * 0.38) + 0.62;
-
-                coef
-            };
-
             let hole = HoleGunShot::new(
                 position,
                 shooted_from,
-                radius.abs(),//*base_coef,
+                radius.abs(),
                 color,
                 volume_area,
                 1.0,

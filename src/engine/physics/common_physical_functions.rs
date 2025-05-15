@@ -457,13 +457,13 @@ pub fn get_dist(
 
     
 
-    if let Some(w_floor) = &static_objects.w_floor {
-        d = d.min(p.w - w_floor.w_pos);
-    }
+    // if let Some(w_floor) = &static_objects.w_floor {
+    //     d = d.min(p.w - w_floor.w_pos);
+    // }
 
-    if let Some(w_roof) = &static_objects.w_roof {
-        d = d.min(w_roof.w_pos - p.w);
-    }
+    // if let Some(w_roof) = &static_objects.w_roof {
+    //     d = d.min(w_roof.w_pos - p.w);
+    // }
 
     return d;
 }

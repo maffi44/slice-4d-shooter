@@ -96,7 +96,6 @@ pub struct NetSystem {
 impl NetSystem {
     pub async fn new(
         settings: &PlayerSettings,
-        w_levels: &Vec<f32>,
         #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime
     ) -> Self {

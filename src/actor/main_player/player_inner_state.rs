@@ -24,8 +24,8 @@ pub struct PlayerInnerState {
     pub zx_rotation: Mat4,
     pub is_time_after_some_team_win: bool,
     pub amount_of_move_w_bonuses_do_i_have: u32,
-    pub blue_map_w_level: f32,
-    pub red_map_w_level: f32,
+    pub blue_base_position: Vec4,
+    pub red_base_position: Vec4,
     pub friction_on_air: f32,
     pub screen_effects: PlayerScreenEffects,
     pub show_crosshaier_hit_mark_timer: f32,
@@ -58,8 +58,8 @@ impl PlayerInnerState {
         player_settings: &PlayerSettings,
         is_alive: bool,
         is_enable: bool,
-        blue_map_w_level: f32,
-        red_map_w_level: f32,
+        blue_base_position: Vec4,
+        red_base_position: Vec4,
         weapon_offset: Vec4,
 
         audio_system: &mut AudioSystem,
@@ -128,8 +128,8 @@ impl PlayerInnerState {
             amount_of_move_w_bonuses_do_i_have: 0u32,
             // player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
 
-            blue_map_w_level,
-            red_map_w_level,
+            blue_base_position,
+            red_base_position,
             friction_on_air: player_settings.friction_on_air,
             last_frame_zw_rotation: 0.0,
 

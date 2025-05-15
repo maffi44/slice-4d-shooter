@@ -2856,11 +2856,12 @@ pub fn get_effected_by_base
 {
     let base_coef = 
     {
-        let w_pos = inner_state.get_position().w;
+        //temporary solution, I'll change it to projecting point onto a line approach
+        let pos = inner_state.get_position().z;
 
         let mut coef = f32::clamp(
-            (w_pos - inner_state.blue_map_w_level) /
-            (inner_state.red_map_w_level - inner_state.blue_map_w_level),
+            (pos - inner_state.blue_base_position.z) /
+            (inner_state.red_base_position.z - inner_state.blue_base_position.z),
                 0.0,
                 1.0
         );
@@ -3504,14 +3505,9 @@ impl MainPlayer {
         master: InputMaster,
         player_settings: PlayerSettings,
         audio_system: &mut AudioSystem,
-        w_levels_of_map: Vec<f32>
+        blue_base_position: Vec4,
+        red_base_position: Vec4,
     ) -> Self {
-
-        assert!(w_levels_of_map.len() > 1);
-
-        let blue_map_w_level = w_levels_of_map[0];
-
-        let red_map_w_level = *w_levels_of_map.last().unwrap();
         
         let screen_effects = PlayerScreenEffects::default();
 
@@ -3525,9 +3521,9 @@ impl MainPlayer {
                 &player_settings,
                 false,
                 false,
-                blue_map_w_level,
-                red_map_w_level,
-                Vec4::X*0.6,
+                blue_base_position,
+                red_base_position,
+                RIGHT*0.6,
                 audio_system,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,

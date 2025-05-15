@@ -302,11 +302,8 @@ struct OtherStaticData {
     w_cups_mat: i32,
     stickiness: f32,
 
-    red_base_w_level: f32,
-    blue_base_w_level: f32,
-
-    empty_byte1: u32,
-    empty_byte2: u32,
+    red_base_position: vec4<f32>,
+    blue_base_position: vec4<f32>,
     // empty_byte1: u32,
     // // empty_byte2: u32,
     // shadows_enabled: i32,
@@ -4092,7 +4089,7 @@ fn get_color_and_light_from_mats(
     var neon_wireframe_color = mix(
         static_data.blue_base_color,
         static_data.red_base_color,
-        clamp((hited_pos.w - static_data.blue_base_w_level) / (static_data.red_base_w_level - static_data.blue_base_w_level), 0.0, 1.0)
+        clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0)
     );
 
     if mats.materials[0] == static_data.blue_players_mat1 || mats.materials[0] == static_data.blue_players_mat2 {

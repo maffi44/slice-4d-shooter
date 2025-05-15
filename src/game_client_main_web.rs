@@ -41,7 +41,8 @@ async fn client_main() {
                 ),
                 systems.world.players_settings.clone(),
                 &mut systems.audio,
-                systems.world.level.w_levels.clone()
+                systems.world.level.blue_base_position,
+                systems.world.level.red_base_position,
             );
     
             let main_player_id = systems.world.add_actor_to_world(
@@ -63,13 +64,13 @@ async fn client_main() {
                 }
             );
     
-            while let Some(mover_w) = systems.world.level.mover_w_list.pop()
-            {
-                systems.world.add_actor_to_world(
-                    ActorWrapper::MoverW(mover_w),
-                    &mut systems.engine_handle
-                );
-            } 
+            // while let Some(mover_w) = systems.world.level.mover_w_list.pop()
+            // {
+            //     systems.world.add_actor_to_world(
+            //         ActorWrapper::MoverW(mover_w),
+            //         &mut systems.engine_handle
+            //     );
+            // } 
     
             let red_flag = Flag::new(
                 Team::Red,
@@ -103,15 +104,15 @@ async fn client_main() {
                 &mut systems.engine_handle,
             );
     
-            let move_w_bonus = MoveWBonusSpot::new(
-                systems.world.level.move_w_bonus_spot,
-                0
-            );
+            // let move_w_bonus = MoveWBonusSpot::new(
+            //     systems.world.level.move_w_bonus_spot,
+            //     0
+            // );
     
-            systems.world.add_actor_to_world(
-                ActorWrapper::MoveWBonusSpot(move_w_bonus),
-                &mut systems.engine_handle,
-            );
+            // systems.world.add_actor_to_world(
+            //     ActorWrapper::MoveWBonusSpot(move_w_bonus),
+            //     &mut systems.engine_handle,
+            // );
     
             systems.world.main_player_id = main_player_id;
     })).await;

@@ -1089,14 +1089,10 @@ impl PlayerFor2d3dExample {
         master: InputMaster,
         player_settings: PlayerSettings,
         audio_system: &mut AudioSystem,
-        w_levels_of_map: Vec<f32>
+        blue_base_position: Vec4,
+        red_base_position: Vec4,
+
     ) -> Self {
-
-        assert!(w_levels_of_map.len() > 1);
-
-        let blue_map_w_level = w_levels_of_map[0];
-
-        let red_map_w_level = *w_levels_of_map.last().unwrap();
         
         let screen_effects = PlayerScreenEffects {
             w_scanner_is_active: false,
@@ -1130,8 +1126,8 @@ impl PlayerFor2d3dExample {
                 &player_settings,
                 false,
                 false,
-                blue_map_w_level,
-                red_map_w_level,
+                blue_base_position,
+                red_base_position,
                 UP*0.6,
                 audio_system,
             ),

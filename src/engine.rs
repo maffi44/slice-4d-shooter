@@ -200,7 +200,6 @@ impl Engine {
 
         let net = NetSystem::new(
             &world.players_settings,
-            &world.level.w_levels,
             #[cfg(not(target_arch = "wasm32"))]
             &mut runtime
         ).await;

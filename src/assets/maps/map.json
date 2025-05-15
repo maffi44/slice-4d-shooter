@@ -196,8 +196,6 @@
 
     "all_shapes_stickiness_radius": 0.12,
 
-    "blue_base_w_level" : -20.0,
-    "red_base_w_level" : 20.0,
 
     "red_flag_base" :
     {
@@ -223,93 +221,29 @@
         }
     },
 
-    "move_w_bonus_spot" :
+    "red_base_position" :
     {
         "transform" : {
             "position" : {
                 "x": 0.0,
-                "y": 4,
-                "z": -15,
-                "w": 0
+                "y": 1.5,
+                "z": -6.0,
+                "w": 0.5
             }
         }
     },
 
-    "mover_w_list" : [
-        {
-            "direction" : 1.0,
-            "transform" : {
-                "position" : {
-                    "x": 10.0,
-                    "y": 11,
-                    "z": -15,
-                    "w": -20
-                }
-            }
-        },
-        {
-            "direction" : 1.0,
-            "transform" : {
-                "position" : {
-                    "x": -10.0,
-                    "y": 11,
-                    "z": -15,
-                    "w": 20
-                }
-            }
-        },
-
-        {
-            "direction" : 1.0,
-            "transform" : {
-                "position" : {
-                    "x": -7,
-                    "y": 3.6,
-                    "z": 26.0,
-                    "w": -20
-                }
-            }
-        },
-        {
-            "direction" : 1.0,
-            "transform" : {
-                "position" : {
-                    "x": 7,
-                    "y": 3.6,
-                    "z": 26.0,
-                    "w": 20
-                }
-            }
-        },
-
-        {
-            "direction" : 1.0,
-            "transform" : {
-                "position" : {
-                    "x": -18.5,
-                    "y": 4.8,
-                    "z": 26.0,
-                    "w": 0
-                }
-            }
-        },
-        {
-            "direction" : 1.0,
-            "transform" : {
-                "position" : {
-                    "x": 18.5,
-                    "y": 4.8,
-                    "z": 26.0,
-                    "w": 0
-                }
+    "blue_base_position" :
+    {
+        "transform" : {
+            "position" : {
+                "x": 0.0,
+                "y": 1.5,
+                "z": 6.0,
+                "w": 0.5
             }
         }
-    ],
-
-    "w_levels" : [
-        0.5,
-        3.5
-    ],
+    },
 
     "red_spawns" : [
         {

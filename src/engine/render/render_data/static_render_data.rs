@@ -64,11 +64,9 @@ pub struct OtherStaticData {
     w_cups_mat: i32,
     static_shapes_stickiness: f32,
     
-    red_base_w_level: f32,
-    blue_base_w_level: f32,
-
-    empty_byte1: u32,
-    empty_byte2: u32,
+    red_base_position: [f32;4],
+    blue_base_position: [f32;4],
+    
     // shadows_enabled: i32,
     materials: [VisualMaterial; 32],
 
@@ -92,16 +90,16 @@ impl OtherStaticData {
         stickiness: f32
     ) -> Self {
         
-        let mut w_floor = 0.0;
-        let is_w_floor_exist = {
-            if let Some(val) = &world.level.w_floor {
-                w_floor = val.w_pos;
+        // let mut w_floor = 0.0;
+        // let is_w_floor_exist = {
+        //     if let Some(val) = &world.level.w_floor {
+        //         w_floor = val.w_pos;
 
-                1_i32
-            } else {
-                0_i32
-            }
-        };
+        //         1_i32
+        //     } else {
+        //         0_i32
+        //     }
+        // };
     
         // let mut w_roof = 0.0;
         // let is_w_roof_exist = {
@@ -135,8 +133,8 @@ impl OtherStaticData {
         let (blue_players_mat1, blue_players_mat2) = world.level.blue_players_visual_materials;
         let (red_players_mat1, red_players_mat2) = world.level.red_players_visual_materials;
 
-        let blue_base_w_level = world.level.blue_base_w_level;
-        let red_base_w_level = world.level.red_base_w_level;
+        let blue_base_position = world.level.blue_base_position.to_array();
+        let red_base_position = world.level.red_base_position.to_array();
 
         let w_cups_mat = 0;
 
@@ -151,8 +149,8 @@ impl OtherStaticData {
         OtherStaticData {
             // shapes_arrays_metadata,
 
-            w_floor,
-            is_w_floor_exist,
+            w_floor: 0.0,
+            is_w_floor_exist: 0,
             // w_roof,
             // is_w_roof_exist,
 
@@ -162,17 +160,13 @@ impl OtherStaticData {
             red_players_mat1,
             red_players_mat2,
 
-            blue_base_w_level,
-            red_base_w_level,
+            blue_base_position,
+            red_base_position,
 
 
 
             w_cups_mat,
             static_shapes_stickiness: stickiness,
-
-            
-            empty_byte1: 0u32,
-            empty_byte2: 0u32,
             // shadows_enabled,
             materials,
 

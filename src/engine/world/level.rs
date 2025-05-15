@@ -59,26 +59,28 @@ pub struct Level {
     pub red_spawns: Vec<Spawn>,
     pub blue_spawns: Vec<Spawn>,
     pub all_shapes_stickiness_radius: f32,
-    pub w_floor: Option<WFloor>,
-    pub w_roof: Option<WRoof>,
+    // pub w_floor: Option<WFloor>,
+    // pub w_roof: Option<WRoof>,
     pub visual_materials: Vec<ObjectMaterial>,
     pub blue_players_visual_materials: (i32, i32),
     pub red_players_visual_materials: (i32, i32),
-    pub w_cups_visual_materials: i32,
+    // pub w_cups_visual_materials: i32,
     pub visual_settings_of_environment: EnvirnomentVisualSettings,
 
-    pub w_levels: Vec<f32>,
+    // pub w_levels: Vec<f32>,
 
-    pub blue_base_w_level: f32,
-    pub red_base_w_level: f32,
+    // pub blue_base_w_level: f32,
+    // pub red_base_w_level: f32,
 
     // pub blue_map_color_level: f32,
     // pub red_map_color_level: f32,
     pub red_flag_base: Transform,
     pub blue_flag_base: Transform,
-    pub move_w_bonus_spot: Transform,
+    pub red_base_position: Vec4,
+    pub blue_base_position: Vec4,
+    // pub move_w_bonus_spot: Transform,
 
-    pub mover_w_list: Vec<MoverW>,
+    // pub mover_w_list: Vec<MoverW>,
 }
 
 impl Level {
@@ -181,19 +183,22 @@ impl Level {
                                 .expect("Can't parse map.json file")
                         },
                         Err(e) => {
-                            println!(
-                                "ERROR: the map.json cannot be loaded, err: {}",
-                                e.to_string()
-                            );
-                            serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
-                                .expect("Can't parse map.json file")
+                            // println!(
+                            //     "ERROR: the map.json cannot be loaded, err: {}",
+                            //     e.to_string()
+                            // );
+                            panic!("ERROR: the map.json cannot be loaded, err: {}", e);
+                            // serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
+                            //     .expect("Can't parse map.json file")
                         }
                     }
                 }
                 else
                 {
-                    serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
-                        .expect("Can't parse map.json file")
+                    panic!("ERROR: the map.json cannot be loaded");
+
+                    // serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
+                    //     .expect("Can't parse map.json file")
                 }
             };
 
@@ -334,21 +339,21 @@ fn parse_json_level(
         parse_players_visual_materials(json_players_visual_materials, &materials_table)
     };
 
-    let w_cups_visual_materials = {
-        let json_players_visual_materials = json_level
-            .get("w_cups_visual_materials")
-            .expect("Wrong JSON map format. JSON level must have w_cups_visual_materials property");
+    // let w_cups_visual_materials = {
+    //     let json_players_visual_materials = json_level
+    //         .get("w_cups_visual_materials")
+    //         .expect("Wrong JSON map format. JSON level must have w_cups_visual_materials property");
 
-        parse_w_cups_visual_materials(json_players_visual_materials, &materials_table)
-    };
+    //     parse_w_cups_visual_materials(json_players_visual_materials, &materials_table)
+    // };
 
-    let (w_floor, w_roof) = {
-        let json_w_cups = json_level
-            .get("w_cups")
-            .expect("Wrong JSON map format. JSON level must have w_cups property");
+    // let (w_floor, w_roof) = {
+    //     let json_w_cups = json_level
+    //         .get("w_cups")
+    //         .expect("Wrong JSON map format. JSON level must have w_cups property");
 
-        parse_w_cups(json_w_cups)
-    };
+    //     parse_w_cups(json_w_cups)
+    // };
 
     let static_objects = {
         let json_static_objects = json_level
@@ -366,26 +371,26 @@ fn parse_json_level(
         parse_json_actors(json_actors, &default_settings, &materials_table)
     };
 
-    let w_levels = {
-        let mut w_levels = Vec::new();
+    // let w_levels = {
+    //     let mut w_levels = Vec::new();
 
-        let array = json_level
-            .get("w_levels")
-            .expect("Wrong JSON map format. JSON level must have w_levels property")
-            .as_array()
-            .expect("Wrong JSON map format. JSON's w_levels property must be an array");
+    //     let array = json_level
+    //         .get("w_levels")
+    //         .expect("Wrong JSON map format. JSON level must have w_levels property")
+    //         .as_array()
+    //         .expect("Wrong JSON map format. JSON's w_levels property must be an array");
 
-        for value in array {
-            let w_level = value
-                .as_f64()
-                .expect("Wrong JSON map format. JSON's w_levels array's value is not a number")
-                as f32;
+    //     for value in array {
+    //         let w_level = value
+    //             .as_f64()
+    //             .expect("Wrong JSON map format. JSON's w_levels array's value is not a number")
+    //             as f32;
             
-            w_levels.push(w_level);
-        }
+    //         w_levels.push(w_level);
+    //     }
 
-        w_levels
-    };
+    //     w_levels
+    // };
 
     let visual_settings_of_environment = {
         let json_visual_settings_of_environment = json_level
@@ -428,73 +433,91 @@ fn parse_json_level(
 
         parse_json_into_transform(blue_flag_base_json, "blue_flag_base")
     };
+
+    let red_base_position = {
+        let red_base_position_json = json_level
+            .get("red_base_position")
+            .expect("Wrong JSON map format. JSON level must have red_base_position property");
+
+        parse_json_into_transform(red_base_position_json, "red_base_position").get_position()
+    };
     
-    let move_w_bonus_spot = {
-        let move_w_bonus_spot_json = json_level
-            .get("move_w_bonus_spot")
-            .expect("Wrong JSON map format. JSON level must have move_w_bonus_spot property");
+    let blue_base_position = {
+        let blue_base_position_json = json_level
+            .get("blue_base_position")
+            .expect("Wrong JSON map format. JSON level must have blue_base_position property");
 
-        parse_json_into_transform(move_w_bonus_spot_json, "move_w_bonus_spot")
+        parse_json_into_transform(blue_base_position_json, "blue_base_position").get_position()
     };
+    
+    // let move_w_bonus_spot = {
+    //     let move_w_bonus_spot_json = json_level
+    //         .get("move_w_bonus_spot")
+    //         .expect("Wrong JSON map format. JSON level must have move_w_bonus_spot property");
 
-    let blue_base_w_level = {
-        json_level
-            .get("blue_base_w_level")
-            .expect("Wrong JSON map format. JSON level must have blue_base_w_level property")
-            .as_f64()
-            .expect("Wrong JSON map format. JSON's blue_base_w_level property must be an number")
-            as f32
-    };
-    let red_base_w_level = {
-        json_level
-            .get("red_base_w_level")
-            .expect("Wrong JSON map format. JSON level must have red_base_w_level property")
-            .as_f64()
-            .expect("Wrong JSON map format. JSON's red_base_w_level property must be an number")
-            as f32
-    };
+    //     parse_json_into_transform(move_w_bonus_spot_json, "move_w_bonus_spot")
+    // };
 
-    let mover_w_list = {
-        let array = json_level
-            .get("mover_w_list")
-            .expect("Wrong JSON map format. JSON level must have mover_w_list property")
-            .as_array()
-            .expect("Wrong JSON map format. JSON's mover_w_list property must be an array");
+    // let blue_base_w_level = {
+    //     json_level
+    //         .get("blue_base_w_level")
+    //         .expect("Wrong JSON map format. JSON level must have blue_base_w_level property")
+    //         .as_f64()
+    //         .expect("Wrong JSON map format. JSON's blue_base_w_level property must be an number")
+    //         as f32
+    // };
+    // let red_base_w_level = {
+    //     json_level
+    //         .get("red_base_w_level")
+    //         .expect("Wrong JSON map format. JSON level must have red_base_w_level property")
+    //         .as_f64()
+    //         .expect("Wrong JSON map format. JSON's red_base_w_level property must be an number")
+    //         as f32
+    // };
 
-        let mut list = Vec::new();
+    // let mover_w_list = {
+    //     let array = json_level
+    //         .get("mover_w_list")
+    //         .expect("Wrong JSON map format. JSON level must have mover_w_list property")
+    //         .as_array()
+    //         .expect("Wrong JSON map format. JSON's mover_w_list property must be an array");
 
-        for json_obj in array
-        {
-            let mover_w = parse_mover_w(json_obj, &w_levels);
+    //     let mut list = Vec::new();
 
-            list.push(mover_w);
-        };
+    //     for json_obj in array
+    //     {
+    //         let mover_w = parse_mover_w(json_obj, &w_levels);
 
-        list
-    };
+    //         list.push(mover_w);
+    //     };
+
+    //     list
+    // };
 
     let level = Level {
-        blue_base_w_level,
-        red_base_w_level,
+        // blue_base_w_level,
+        // red_base_w_level,
         level_name,
         static_objects,
         red_spawns,
         blue_spawns,
         all_shapes_stickiness_radius,
-        w_floor,
-        w_roof,
+        red_base_position,
+        blue_base_position,
+        // w_floor,
+        // w_roof,
         visual_materials,
         blue_players_visual_materials,
         red_players_visual_materials,
-        w_cups_visual_materials,
-        w_levels,
+        // w_cups_visual_materials,
+        // w_levels,
         visual_settings_of_environment,
         red_flag_base,
         blue_flag_base,
         // red_map_color_level,
         // blue_map_color_level,
-        move_w_bonus_spot,
-        mover_w_list,
+        // move_w_bonus_spot,
+        // mover_w_list,
     };
 
     (level, actors)
