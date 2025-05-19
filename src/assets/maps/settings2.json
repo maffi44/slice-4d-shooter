@@ -1,5 +1,5 @@
 {
-    "player_sphere_radius": 0.5,
+    "player_sphere_radius": 0.49,
 
     "player_max_speed" : 29.0,
     "player_max_accel" : 35.0,
@@ -20,7 +20,7 @@
     
     "w_jump_time_reloading" : 1.2,
     
-    "min_respawn_timer": 3.5,
+    "min_respawn_timer": 6,
     "max_respawn_timer": 9,
     
     "scanner_show_enemies_time" : 5.5,

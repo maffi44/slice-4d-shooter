@@ -905,7 +905,7 @@ impl Actor for PlayerFor2d3dExample {
                 delta,
             );
 
-            main_player::process_player_auto_respawn(
+            main_player::process_player_respawn(
                 engine_handle,
                 &self.player_settings,
                 &input,

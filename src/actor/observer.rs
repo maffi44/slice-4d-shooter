@@ -62,7 +62,7 @@ use glam::{
 };
 
 use super::{
-    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner, GET_DAMAGE_PROJECTION_INTENSITY, PLAYER_PROJECTION_DISPLAY_TIME}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
+    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner, GET_DAMAGE_PROJECTION_INTENSITY, PLAYER_PROJECTION_DISPLAY_TIME, Y_DEATH_PLANE_LEVEL}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
 };
 
 
@@ -398,6 +398,18 @@ impl Actor for Observer {
         //     &mut self.inner_state,
         // );
 
+        if self.inner_state.get_position().y < Y_DEATH_PLANE_LEVEL
+        {
+            engine_handle.send_command(
+                Command {
+                    sender: self.get_id().expect("Player have not ActorID"),
+                    command_type: CommandType::RespawnPlayer(
+                        self.get_id().expect("Player have not ActorID")
+                    )
+                }
+            );
+        }
+        
         main_player::set_audio_listener_position
         (
             audio_system,

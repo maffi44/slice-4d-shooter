@@ -1494,7 +1494,7 @@ impl Actor for MainPlayer {
                 delta,
             );
 
-            process_player_auto_respawn(
+            process_player_respawn(
                 engine_handle,
                 &self.player_settings,
                 &input,
@@ -1768,7 +1768,7 @@ pub fn process_w_scanner_ui(
 
     if let UIElement::Image(h_pointer) = h_pointer {
         let h = {
-            (((inner_state.get_position().w + 20.0) / 40.0) - 0.51)
+            (((inner_state.get_position().w - 1.5) / 4.1) - 0.51)
                 .clamp(-0.7, 0.8)
         };
         
@@ -2316,7 +2316,7 @@ pub fn process_screen_effects_while_alive
 }
 
 
-pub fn process_player_auto_respawn(
+pub fn process_player_respawn(
     engine_handle: &mut EngineHandle,
     player_settings: &PlayerSettings,
     input: &ActionsFrameState,
