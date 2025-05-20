@@ -38,7 +38,6 @@ pub struct DefaultStaticObjectSettings {
 #[derive(Clone, Copy)]
 pub struct Spawn {
     pub spawn_position: Vec4,
-    pub w_level: usize,
 }
 
 pub struct EnvirnomentVisualSettings {
@@ -245,23 +244,9 @@ fn parse_json_level(
 
         for value in spawns_array {
             let transform = parse_json_into_transform(value, "spawn_position");
-            let w_level = {
-                
-                let obj = value
-                    .as_object()
-                    .expect("Wrong JSON map format, type of spawn is not an object");
-            
-                obj
-                    .get("w_level")
-                    .expect("Wrong JSON map format, spawn have not w_level property")
-                    .as_u64()
-                    .expect("Wrong JSON map format, w_level of spawn is not number")
-                    as usize
-            };
 
             let spawn = Spawn {
                 spawn_position: transform.get_position(),
-                w_level,
             };
 
             spawns.push(spawn);
@@ -281,23 +266,9 @@ fn parse_json_level(
 
         for value in spawns_array {
             let transform = parse_json_into_transform(value, "spawn_position");
-            let w_level = {
-                
-                let obj = value
-                    .as_object()
-                    .expect("Wrong JSON map format, type of spawn is not an object");
-            
-                obj
-                    .get("w_level")
-                    .expect("Wrong JSON map format, spawn have not w_level property")
-                    .as_u64()
-                    .expect("Wrong JSON map format, w_level of spawn is not number")
-                    as usize
-            };
 
             let spawn = Spawn {
                 spawn_position: transform.get_position(),
-                w_level,
             };
 
             spawns.push(spawn);
