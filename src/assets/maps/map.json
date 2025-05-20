@@ -315,7 +315,7 @@
                 "transform" : {
                     "position" : {
                         "x": 4,
-                        "y": -5,
+                        "y": -0.7,
                         "z": 35,
                         "w": 0
                     },
@@ -330,11 +330,11 @@
                 },
                 "size" : {
                     "x": 13,
-                    "y": 4,
+                    "y": 0.1,
                     "z": 9,
                     "w": 15
                 },
-                "roundness" : 1.0
+                "roundness" : 0.6
             }
         },
         {
@@ -344,7 +344,7 @@
                     "position" : {
                         "x": 8,
                         "y": 1.7,
-                        "z": 26,
+                        "z": 27,
                         "w": 2.5
                     },
                     "rotation" : {
@@ -358,8 +358,8 @@
                 },
                 "size" : {
                     "x": 10,
-                    "y": 2.5,
-                    "z": 7,
+                    "y": 2.2,
+                    "z": 6,
                     "w": 1
                 },
                 "roundness" : 0.1,
@@ -403,10 +403,10 @@
                 "comment" : "blue base side long platform 2",
                 "transform" : {
                     "position" : {
-                        "x": 11,
-                        "y": 0.6,
-                        "z": 38,
-                        "w": 3
+                        "x": 11.5,
+                        "y": 1.2,
+                        "z": 37,
+                        "w": 0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -418,12 +418,12 @@
                     }
                 },
                 "size" : {
-                    "x": 2,
-                    "y": 0.6,
-                    "z": 2,
-                    "w": 0.001
+                    "x": 3.1,
+                    "y": 1.5,
+                    "z": 1.1,
+                    "w": 1.9
                 },
-                "roundness" : 1.0,
+                "roundness" : 0.01,
                 "stickiness" : true
             }
         },
@@ -450,7 +450,7 @@
                 },
                 "size" : {
                     "x": 1.4,
-                    "y": 1,
+                    "y": 1.2,
                     "z": 1.4,
                     "w": 5
                 },
@@ -459,7 +459,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base first cube hole",
+                "comment" : "blue base first cube hole 1",
                 "transform" : {
                     "position" : {
                         "x": 4,
@@ -488,13 +488,13 @@
         },
         {
             "cube" : {
-                "comment" : "blue base second cube",
+                "comment" : "blue base first cube hole 2",
                 "transform" : {
                     "position" : {
-                        "x": -1,
+                        "x": 3,
                         "y": 3,
-                        "z": 40,
-                        "w": 3
+                        "z": 37,
+                        "w": 3.5
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -506,12 +506,41 @@
                     }
                 },
                 "size" : {
-                    "x": 1,
-                    "y": 0.8,
-                    "z": 3.5,
-                    "w": 3
+                    "x": 1.9,
+                    "y": 1,
+                    "z": 1.9,
+                    "w": 1
                 },
-                "roundness" : 0.4
+                "stickiness" : false,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "blue base second cube",
+                "transform" : {
+                    "position" : {
+                        "x": -1,
+                        "y": 3.2,
+                        "z": 40,
+                        "w": 4.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.5,
+                    "y": 0.3,
+                    "z": 3.5,
+                    "w": 3.3
+                },
+                "roundness" : 0.7
             }
         },
         {
@@ -520,9 +549,9 @@
                 "transform" : {
                     "position" : {
                         "x": -1,
-                        "y": 5,
+                        "y": 5.2,
                         "z": 37,
-                        "w": 2.5
+                        "w": 4
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -576,12 +605,12 @@
 
         {
             "cube" : {
-                "comment" : "blue base next floating cube",
+                "comment" : "blue base floating tunnel",
                 "transform" : {
                     "position" : {
-                        "x": 3,
-                        "y": 1,
-                        "z": 15,
+                        "x": 8,
+                        "y": 0.5,
+                        "z": 19,
                         "w": 17
                     },
                     "rotation" : {
@@ -594,22 +623,22 @@
                     }
                 },
                 "size" : {
-                    "x": 2.2,
-                    "y": 2.2,
+                    "x": 1.2,
+                    "y": 1.2,
                     "z": 7,
-                    "w": 15
+                    "w": 14
                 },
-                "roundness" : 0.6
+                "roundness" : 1.6
             }
         },
         {
             "cube" : {
-                "comment" : "blue base next floating cube tunnel",
+                "comment" : "blue base floating tunnel hole",
                 "transform" : {
                     "position" : {
-                        "x": 3,
-                        "y": 1,
-                        "z": 15,
+                        "x": 8,
+                        "y": 0.5,
+                        "z": 19,
                         "w": 4
                     },
                     "rotation" : {
@@ -703,7 +732,7 @@
                     "position" : {
                         "x": -6,
                         "y": 4.9,
-                        "z": 37.5,
+                        "z": 38.5,
                         "w": 0
                     },
                     "rotation" : {
@@ -717,7 +746,7 @@
                 },
                 "size" : {
                     "x": 1.5,
-                    "y": 0.2,
+                    "y": 0.18,
                     "z": 15,
                     "w": 1
                 },
@@ -728,14 +757,45 @@
             }
         },
 
+
         {
             "cube" : {
-                "comment" : "central floating cube",
+                "comment" : "central big slick cube",
                 "transform" : {
                     "position" : {
-                        "x": 3,
-                        "y": 5,
+                        "x": -6,
+                        "y": 4.9,
                         "z": 0,
+                        "w": 8.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 4.2,
+                    "y": 4.2,
+                    "z": 4.2,
+                    "w": 4.0
+                },
+                "roundness" : 3.5,
+                "friction" : 0.0,
+                "visual_material" : "slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "central central platform blue wall",
+                "transform" : {
+                    "position" : {
+                        "x": 10,
+                        "y": 5,
+                        "z": 10,
                         "w": 0
                     },
                     "rotation" : {
@@ -748,9 +808,9 @@
                     }
                 },
                 "size" : {
-                    "x": 10.2,
-                    "y": 7.2,
-                    "z": 7,
+                    "x": 7.2,
+                    "y": 5.2,
+                    "z": 0.5,
                     "w": 15
                 },
                 "roundness" : 0.6
