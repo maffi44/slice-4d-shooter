@@ -4136,7 +4136,7 @@ fn get_color_and_light_from_mats(
         base_diffuse = mix(
             base_diffuse,
             vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r),
-            clamp(hited_pos.w / 6.0, 0.0, 1.0)
+            clamp((hited_pos.w - 0.3) / 4.5, 0.0, 1.0)
         );
     }
 
