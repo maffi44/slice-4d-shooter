@@ -75,6 +75,7 @@ impl RenderSystem {
         #[cfg(not(target_arch="wasm32"))]
         runtime: &mut Runtime,
         it_is_2d_3d_example: bool,
+        with_ui_renderer: bool,
     ) -> Self {
         
         let render_data = RenderData::new(world, time, &window);
@@ -90,6 +91,7 @@ impl RenderSystem {
                     world.players_settings.screen_resolution_scale,
                     &world.level.visual_settings_of_environment.sky_box_name,
                     it_is_2d_3d_example,
+                    with_ui_renderer,
                 ).await
             )
         );
@@ -122,7 +124,7 @@ impl RenderSystem {
                     Err(_) => {}
                 }
 
-                tokio::time::sleep(tokio::time::Duration::from_micros(2000)).await;
+                tokio::time::sleep(tokio::time::Duration::from_micros(2500)).await;
             }
         });
 

@@ -179,14 +179,14 @@ impl Level {
                     match file.unwrap().read_to_string(&mut file_content) {
                         Ok(_) => {
                             serde_json::from_str(&file_content)
-                                .expect("Can't parse map.json file")
+                                .expect("ERROR: Can't parse the map's JSON format")
                         },
                         Err(e) => {
                             // println!(
                             //     "ERROR: the map.json cannot be loaded, err: {}",
                             //     e.to_string()
                             // );
-                            panic!("ERROR: the map.json cannot be loaded, err: {}", e);
+                            panic!("ERROR: the {}.json cannot be loaded, err: {}", level_name, e);
                             // serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
                             //     .expect("Can't parse map.json file")
                         }
@@ -194,7 +194,7 @@ impl Level {
                 }
                 else
                 {
-                    panic!("ERROR: the map.json cannot be loaded");
+                    panic!("ERROR: the {}.json cannot be loaded", level_name);
 
                     // serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
                     //     .expect("Can't parse map.json file")

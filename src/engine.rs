@@ -99,8 +99,8 @@ impl<'a> Future for WindowReadyFuture<'a> {
 impl Engine {
     pub async fn new(
         cleint_main_loop: &MainLoop,
+        with_ui_renderer: bool,
         it_is_2d_3d_example: bool,
-        // async_runtime: &Runtime,
     ) -> Engine {
 
         let window;
@@ -189,6 +189,7 @@ impl Engine {
             #[cfg(not(target_arch = "wasm32"))]
             &mut runtime,
             it_is_2d_3d_example,
+            with_ui_renderer,
         ).await;
         log::info!("engine systems: render init");
 

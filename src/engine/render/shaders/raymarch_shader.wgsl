@@ -554,7 +554,7 @@ fn smax( a: f32, b: f32, k: f32 ) -> f32
 //     return color;
 // }
 
-fn get_coloring_areas_color(p: vec4<f32>) -> vec3<f32> {
+fn get_coloring_areas_color(p: vec4<f32>, dist: f32) -> vec3<f32> {
     var color = vec3<f32>(0.0);
 
     for (
@@ -565,9 +565,11 @@ fn get_coloring_areas_color(p: vec4<f32>) -> vec3<f32> {
     {
         let d = -sd_sphere(p - dyn_spherical_areas[i].pos, dyn_spherical_areas[i].radius);
 
-        color += dyn_spherical_areas[i].color * clamp(
+        let air_perspective = clamp(1.0 - ((dist)/50.0),0.14,1.0);
+
+        color += (dyn_spherical_areas[i].color * clamp(
             (d/dyn_spherical_areas[i].radius) * 10.0, 0.0, 1.0
-        );
+        )) * air_perspective;
     }
 
     return color;
@@ -755,8 +757,11 @@ fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>,
 
             if intr.x > 0.0
             {
-                color *= 2.0;
-                luminosity *= 2.0;
+                let air_perspective = clamp(1.0-(intr.x/50.0),0.01,1.0);
+
+                color *= 2.0*air_perspective;
+                luminosity *= 2.0*air_perspective;
+
             }
         }
     }
@@ -780,6 +785,7 @@ fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>,
     output_color.g = color.g;
     output_color.b = color.b;
     output_color.a = luminosity;
+
 
     return output_color;
 }
@@ -3085,6 +3091,23 @@ fn get_mats(
         //     }
         // }
 
+        for (var i = 0u; i < dynamic_data.undestroyable_cubes_amount; i++) {
+            let dd = min(d, sd_box(p - dynamic_data.undestroyable_cubes[i].pos, dynamic_data.undestroyable_cubes[i].size) - dynamic_data.undestroyable_cubes[i].roundness);
+
+            if  dd < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = dynamic_data.undestroyable_cubes[i].material;
+                return output;
+            }
+            
+            if dd < d {
+                d = dd;
+                output.materials[0] = dynamic_data.undestroyable_cubes[i].material;
+            }
+        }
+
+
         for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
             if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
                 let dd = sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness;
@@ -4155,7 +4178,7 @@ fn get_color_and_light_from_mats(
 
     color = clamp(color, vec3(0.0), vec3(1.0));
 
-    let air_perspective = clamp(1.0-exp(-0.00002*dist*dist*dist),0.2,1.0);
+    let air_perspective = clamp(1.0-exp(-0.000006*dist*dist*dist),0.2,1.0);
 
     color = mix(color, static_data.sky_color, air_perspective);
     return vec4(color, lightness);
@@ -4342,7 +4365,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     var lightness = color_and_light.a;
 
     if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {
-        color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
+        color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x, dist_and_depth.x);
     }
 
     let color_areas = 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);

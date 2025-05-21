@@ -30,7 +30,7 @@ async fn client_main() {
     
     log::info!("main: main_loop init");
 
-    let systems = Engine::new(&main_loop, false).await;
+    let systems = Engine::new(&main_loop, true, false).await;
     
     log::info!("main: Engine systems init");
 
@@ -103,16 +103,6 @@ async fn client_main() {
                 ActorWrapper::SessionController(session_controller),
                 &mut systems.engine_handle,
             );
-    
-            // let move_w_bonus = MoveWBonusSpot::new(
-            //     systems.world.level.move_w_bonus_spot,
-            //     0
-            // );
-    
-            // systems.world.add_actor_to_world(
-            //     ActorWrapper::MoveWBonusSpot(move_w_bonus),
-            //     &mut systems.engine_handle,
-            // );
     
             systems.world.main_player_id = main_player_id;
     })).await;

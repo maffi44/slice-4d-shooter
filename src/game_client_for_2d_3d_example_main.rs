@@ -28,6 +28,7 @@ fn main() {
     let systems = pollster::block_on(
         Engine::new(
             &main_loop,
+            false,
              true,
             )
         );

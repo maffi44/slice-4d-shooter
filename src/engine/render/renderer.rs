@@ -95,7 +95,7 @@ pub struct Renderer {
     sky_box_sampler: Sampler,
 
     ui_renderer: UIRenderer,
-    it_is_2d_3d_example: bool,
+    with_ui_renderer: bool,
 }
 
 impl Drop for Renderer {
@@ -203,6 +203,7 @@ impl Renderer {
         raymarch_target_texture_scale_factor: f32,
         sky_box_name: &str,
         it_is_2d_3d_example: bool,
+        with_ui_renderer: bool,
     ) -> Renderer {
         let size = window.inner_size();
 
@@ -946,7 +947,7 @@ impl Renderer {
             ui_renderer,
             // prev_surface_texture: None,
             // prev_frame_rendered: Arc::new(Mutex::new(true)),
-            it_is_2d_3d_example,
+            with_ui_renderer,
         }
     }
 
@@ -1128,7 +1129,7 @@ impl Renderer {
             render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
         }
 
-        if !self.it_is_2d_3d_example
+        if self.with_ui_renderer
         {
             self.ui_renderer.render_ui(&mut encoder, &view);
         }
