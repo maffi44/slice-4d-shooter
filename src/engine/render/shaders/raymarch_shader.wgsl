@@ -4086,10 +4086,12 @@ fn get_color_and_light_from_mats(
     //     sun_shadow_1 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_1);
     // }
 
+    let base_coef = clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
+
     var neon_wireframe_color = mix(
         static_data.blue_base_color,
         static_data.red_base_color,
-        clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0)
+        base_coef
     );
 
     if mats.materials[0] == static_data.blue_players_mat1 || mats.materials[0] == static_data.blue_players_mat2 {
@@ -4133,10 +4135,14 @@ fn get_color_and_light_from_mats(
     if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 &&
         mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2
     {
+        let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
+
+        let w_height_coef = clamp((hited_pos.w - 0.3) / 4.5, 0.0, 1.0);
+
         base_diffuse = mix(
-            base_diffuse,
-            vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r),
-            clamp((hited_pos.w - 0.3) / 4.5, 0.0, 1.0)
+            mix(base_diffuse, inverted_base_diffuse, base_coef),
+            mix(inverted_base_diffuse, base_diffuse, base_coef),
+            w_height_coef
         );
     }
 

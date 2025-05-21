@@ -70,20 +70,20 @@
         {
             "name" : "common",
             "color" : {
-                "red": 0.15,
+                "red": 0.2,
                 "green": 0.225,
-                "blue": 0.3
+                "blue": 0.25
             },
             "roughness" : 0.9
         },
         {
             "name" : "slick",
             "color" : {
-                "red": 3.1,
-                "green": 0.2,
-                "blue": 0.33
+                "red": 0.333,
+                "green": 0.3,
+                "blue": 1.877
             },
-            "roughness": 0.02
+            "roughness": 0.07
         },
         {
             "name" : "golden_slick",
@@ -115,9 +115,9 @@
         {
             "name" : "standart",
             "color" : {
-                "red": 1.01,
+                "red": 1.11,
                 "green": 1.81,
-                "blue": 4.9
+                "blue": 3.9
             },
             "roughness": 0.064
         },
@@ -211,7 +211,7 @@
             "position" : {
                 "x": 0.0,
                 "y": 1.5,
-                "z": 30.0,
+                "z": -30.0,
                 "w": 0.5
             }
         }
@@ -223,7 +223,7 @@
             "position" : {
                 "x": 0.0,
                 "y": 1.5,
-                "z": -30.0,
+                "z": 30.0,
                 "w": 0.5
             }
         }
@@ -350,7 +350,7 @@
                 "transform" : {
                     "position" : {
                         "x": 8,
-                        "y": 1.7,
+                        "y": 1.9,
                         "z": 27,
                         "w": 2.5
                     },
@@ -369,7 +369,7 @@
                     "z": 6,
                     "w": 1
                 },
-                "roundness" : 0.1,
+                "roundness" : 0.3,
                 "is_positive" : false,
                 "stickiness" : true
             }
@@ -690,7 +690,7 @@
                     }
                 },
                 "size" : {
-                    "x": 1.5,
+                    "x": 1.8,
                     "y": 0.2,
                     "z": 10,
                     "w": 15
@@ -721,7 +721,7 @@
                     }
                 },
                 "size" : {
-                    "x": 1.5,
+                    "x": 1.8,
                     "y": 2.5,
                     "z": 0.2,
                     "w": 15
@@ -752,9 +752,9 @@
                     }
                 },
                 "size" : {
-                    "x": 1.5,
+                    "x": 1.8,
                     "y": 0.18,
-                    "z": 15,
+                    "z": 15.5,
                     "w": 1
                 },
                 "roundness" : 0.08,
