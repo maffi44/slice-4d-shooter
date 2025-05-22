@@ -1127,6 +1127,64 @@
         },
         {
             "cube" : {
+                "comment" : "floating tunnel central platform",
+                "transform" : {
+                    "position" : {
+                        "x": 8,
+                        "y": -1.8,
+                        "z": 0,
+                        "w": 14
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6.9,
+                    "y": 0.1,
+                    "z": 3.0,
+                    "w": 14
+                },
+                "roundness" : 0.18
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "floating tunnel central exit",
+                "transform" : {
+                    "position" : {
+                        "x": 8,
+                        "y": 0.5,
+                        "z": 0,
+                        "w": 3
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.6,
+                    "y": 0.65,
+                    "z": 0.65,
+                    "w": 0.001
+                },
+                "roundness" : 1.0,
+                "stickiness" : false,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
                 "comment" : "floating tunnel long window",
                 "transform" : {
                     "position" : {
@@ -1332,36 +1390,6 @@
                     "w": 10
                 },
                 "roundness" : 0.08
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "central big slick cube side exit next platform hole to floating tunnel",
-                "transform" : {
-                    "position" : {
-                        "x": 8,
-                        "y": 3.5,
-                        "z": 0,
-                        "w": 3
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 0.4,
-                    "y": 2.7,
-                    "z": 0.4,
-                    "w": 0.001
-                },
-                "roundness" : 1.0,
-                "stickiness" : false,
-                "is_positive" : false
             }
         },
 
@@ -1598,6 +1626,63 @@
                     "w": 0.8
                 },
                 "roundness" : 0.19
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "blue central transit platform-stair cube",
+                "transform" : {
+                    "position" : {
+                        "x": 2.5,
+                        "y": 0.7,
+                        "z": 6,
+                        "w": 14
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.8,
+                    "y": 1.8,
+                    "z": 1.3,
+                    "w": 14
+                },
+                "roundness" : 0.18
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "blue central transit platform-stair cube first stair",
+                "transform" : {
+                    "position" : {
+                        "x": 2.5,
+                        "y": 1.8,
+                        "z": 4.9,
+                        "w": 16
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.6,
+                    "y": 2.0,
+                    "z": 1.6,
+                    "w": 14
+                },
+                "roundness" : 0.18,
+                "is_positive" : false
             }
         }
 

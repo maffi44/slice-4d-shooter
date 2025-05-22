@@ -4164,7 +4164,7 @@ fn get_color_and_light_from_mats(
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
-            mix(inverted_base_diffuse, base_diffuse, base_coef),
+            mix(inverted_base_diffuse+vec3(0.1,0.8,0.1), base_diffuse+vec3(0.1,0.8,0.1), base_coef),
             w_height_coef
         );
     }
@@ -4353,14 +4353,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
     var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats);
 
-    // for (var i = 1u; i < min(mats.materials_count,2u); i++) {
-    //     let new_color = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
-    //     color_and_light = mix(color_and_light, new_color, mats.material_weights[i]);
-    // }
-
     var color = color_and_light.rgb;
-
-    // color += gew_w_projection_color(uv);
 
     var lightness = color_and_light.a;
 
@@ -4400,19 +4393,11 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
         (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
     );
-    // color.g *= clamp(hurt_coef*1.4, 0.0, 1.0);
-    // color.b *= clamp(hurt_coef*1.5, 0.0, 1.0);
-    // color.r *= hurt_coef;
+
+
     color -= (1.0-hurt_coef)*0.2;
 
     color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
-
-    // making death effect
-    let death_eff_col = max(
-        clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
-        (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
-    );
-    color *= death_eff_col;
 
     // add w rotation effect
     let zw_dir = dynamic_data.camera_data.cam_zw_rot * vec4(0.0, 0.0, -1.0, 0.0);
@@ -4421,10 +4406,8 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     let line_width = 0.004;
     let n_uv = normalize(uv);
 
-    // let rot_c = clamp(clamp(0.03-(ring_r-length(uv)),0.0,1.0)*150.0,0.0,1.0);
+    // draw segment of circle to show angle of rotation along w axis
     let rot_c = clamp(clamp(line_width-abs(length(uv)-(ring_r-line_width)),0.0,1.0)*100.0,0.0,1.0);
-    // let rot_c = clamp(rot_c_outer*150.0,0.0,1.0);
-
 
     if zw_dir.w > 0.0
     {
@@ -4447,9 +4430,14 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         }
     }
 
+    // making death effect
+    let death_eff_col = max(
+        clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
+        (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
+    );
+    color *= death_eff_col;
 
-    // color = mix(vec3(tv_noise(uv*100.0, dynamic_data.time)),color, death_eff_col*0.7);
-
+    //making monochrome effect for death effect
     var bw_col = clamp(color, vec3(color.r), vec3(100.0));
     bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
     bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
@@ -4460,8 +4448,6 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         bw_col*(bw_col*1.4),
         clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
     );
-
-    // color.r += (dist_and_depth.y / f32(MAX_STEPS/2));
 
     return vec4<f32>(color, lightness);
 }

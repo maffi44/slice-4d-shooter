@@ -97,27 +97,47 @@ impl PlayerSettings {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let mut file = File::open("./src/assets/maps/settings.json")
-                .unwrap_or_else(|_| {
-                    File::open("/home/maffi/Dream/web-engine4d/src/assets/maps/settings.json").expect("Can't find settings.json file")
-                });
-    
-            let mut file_content = String::new();
-            match file.read_to_string(&mut file_content) {
-                Ok(_) => {
-                    let json_settings = serde_json::from_str(&file_content)
+            let mut file = File::open("./src/assets/maps/settings.json");
+
+            if file.is_err()
+            {
+                file = File::open("../../../src/assets/maps/settings.json");
+            }
+
+            match file {
+                Ok(mut file) =>
+                {
+                    let mut file_content = String::new();
+                    match file.read_to_string(&mut file_content) {
+                        Ok(_) => {
+                            let json_settings = serde_json::from_str(&file_content)
+                                .expect("Can't parse settings.json file");
+
+                            let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/maps/settings2.json"))
+                                .expect("Can't parse settings2.json file");
+
+                            return parse_json_into_settings(json_settings, json_settings2);
+                        },
+                        Err(_) => {
+                            let json_settings = serde_json::from_str(include_str!("../../../src/assets/maps/settings.json"))
+                                .expect("Can't parse settings.json file");
+        
+                            let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/maps/settings2.json"))
+                                .expect("Can't parse settings2.json file");
+        
+                            return parse_json_into_settings(json_settings, json_settings2);
+                        }
+                    }
+                }
+                Err(_) =>
+                {
+                    let json_settings = serde_json::from_str(include_str!("../../../src/assets/maps/settings.json"))
                         .expect("Can't parse settings.json file");
 
                     let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/maps/settings2.json"))
-                        .expect("Can't parse settings.json file");
+                        .expect("Can't parse settings2.json file");
 
                     return parse_json_into_settings(json_settings, json_settings2);
-                },
-                Err(e) => {
-                    panic!(
-                        "ERROR: the player_settings cannot be loaded, err: {}",
-                        e.to_string()
-                    );
                 }
             }
         }
