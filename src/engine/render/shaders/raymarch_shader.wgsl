@@ -4164,7 +4164,7 @@ fn get_color_and_light_from_mats(
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
-            mix(inverted_base_diffuse+vec3(0.1,0.8,0.1), base_diffuse+vec3(0.1,0.8,0.1), base_coef),
+            mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
             w_height_coef
         );
     }

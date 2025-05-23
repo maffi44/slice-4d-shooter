@@ -202,21 +202,6 @@ struct IntersectedShapesMetadata {
     player_forms_amount: u32,
 }
 
-// struct Intersections {
-//     ismd: IntersectedShapesMetadata,
-//     ish: array<u32, 16>,
-//     offset: f32,
-// }
-
-// struct Intersections {
-//     w_plane_intersected: bool,
-//     player_forms_intersected: bool,
-//     i_normal_shapes: array<Shape, 32>,
-//     i_negatives_shapes: array<Shape, 32>,
-//     i_stickiness_shapes: array<Shape, 32>,
-//     i_neg_stickiness_shapes: array<Shape, 32>,
-//     i_shapes_metadata: ShapesMetadata,
-// }
 
 struct SphericalAreasMetadata {
     holegun_colorized_areas_start: u32,
@@ -283,8 +268,8 @@ struct OtherDynamicData {
     undestroyable_cubes: array<Shape, 64>,
     undestroyable_cubes_amount: u32,
     splited_screen_in_2d_3d_example: f32,
-    padding_byte2: u32,
-    padding_byte3: u32,
+    w_shift_coef: f32,
+    w_shift_intensity: f32,
 
     getting_damage_screen_effect: f32,
     zx_player_rotation: f32,
@@ -317,11 +302,8 @@ struct OtherStaticData {
     w_cups_mat: i32,
     stickiness: f32,
 
-    red_base_w_level: f32,
-    blue_base_w_level: f32,
-
-    empty_byte1: u32,
-    empty_byte2: u32,
+    red_base_position: vec4<f32>,
+    blue_base_position: vec4<f32>,
     // empty_byte1: u32,
     // // empty_byte2: u32,
     // shadows_enabled: i32,
@@ -2501,6 +2483,21 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
     //     }
     // }
 
+    for (var i = 0u; i < dynamic_data.undestroyable_cubes_amount; i++) {
+        let intr = cube_intersection(
+            ro - dynamic_data.undestroyable_cubes[i].pos,
+            rd,
+            dynamic_data.undestroyable_cubes[i].size + dynamic_data.undestroyable_cubes[i].roundness
+        );
+        
+        if intr.y > 0.0 {
+
+            store_intersection_entrance_and_exit(intr);
+            // dyn_stickiness_intersected = true;
+            // offset = min(offset, intr.x);\
+        }
+    }
+
     // // player forms
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
         let intr = sph_intersection(
@@ -2961,6 +2958,9 @@ fn map_next(p: vec4<f32>) -> f32 {
     {
         d = smax(d, -(sd_sph_box(p - i_sphcubes_ns[i].pos, i_sphcubes_ns[i].size) - i_sphcubes_ns[i].roundness), static_data.stickiness);
     }
+
+
+    
         // for (var i = dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i < dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_inf_cubes_start; i++) {
         //     d = smax(d, -(sd_inf_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.xyz) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         // }
@@ -3244,6 +3244,9 @@ fn map(p: vec4<f32>) -> f32 {
         // }
         // d = max(d, -ddd);
     // }
+        for (var i = 0u; i < dynamic_data.undestroyable_cubes_amount; i++) {
+            d = min(d, sd_box(p - dynamic_data.undestroyable_cubes[i].pos, dynamic_data.undestroyable_cubes[i].size) - dynamic_data.undestroyable_cubes[i].roundness);
+        }
 
     // if player_forms_intersected {
         var dddd = MAX_DIST;
@@ -3694,6 +3697,21 @@ fn get_mats(
         //         output.materials[0] = shape.material;
         //     }
         // }
+        for (var i = 0u; i < dynamic_data.undestroyable_cubes_amount; i++) {
+            let dd = min(d, sd_box(p - dynamic_data.undestroyable_cubes[i].pos, dynamic_data.undestroyable_cubes[i].size) - dynamic_data.undestroyable_cubes[i].roundness);
+
+            if  dd < MIN_DIST*2.0 {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = dynamic_data.undestroyable_cubes[i].material;
+                return output;
+            }
+            
+            if dd < d {
+                d = dd;
+                output.materials[0] = dynamic_data.undestroyable_cubes[i].material;
+            }
+        }
 
         for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
             if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
@@ -4697,10 +4715,12 @@ fn get_color_and_light_from_mats(
     //     sun_shadow_1 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_1);
     // }
 
+    let base_coef = clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
+
     var neon_wireframe_color = mix(
         static_data.blue_base_color,
         static_data.red_base_color,
-        clamp((hited_pos.w - static_data.blue_base_w_level) / (static_data.red_base_w_level - static_data.blue_base_w_level), 0.0, 1.0)
+        base_coef
     );
 
     if mats.materials[0] == static_data.blue_players_mat1 || mats.materials[0] == static_data.blue_players_mat2 {
@@ -4742,14 +4762,17 @@ fn get_color_and_light_from_mats(
     if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 &&
         mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2
     {
+        let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
+
+        let x_height_coef = clamp((hited_pos.x - 0.3) / 4.5, 0.0, 1.0);
+
         base_diffuse = mix(
-            base_diffuse,
-            vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r),
-            clamp((hited_pos.x + 8.0) / 4.0, 0.0, 1.0)
+            mix(base_diffuse, inverted_base_diffuse, base_coef),
+            mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
+            x_height_coef
         );
     }
 
-    
     let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
     let ref_col = get_sky_color(ref_dir);
@@ -4758,7 +4781,7 @@ fn get_color_and_light_from_mats(
 
     color = clamp(color, vec3(0.0), vec3(1.0));
 
-    let air_perspective = clamp(1.0-exp(-0.00002*dist*dist*dist),0.2,1.0);
+    let air_perspective = clamp(1.0-exp(-0.000006*dist*dist*dist),0.2,1.0);
 
     color = mix(color, static_data.sky_color, air_perspective);
     return vec4(color, lightness);
@@ -4833,10 +4856,12 @@ fn get_color_and_light_from_mats_2d(
     //     sun_shadow_1 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_1);
     // }
 
+    let base_coef = clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
+
     var neon_wireframe_color = mix(
         static_data.blue_base_color,
         static_data.red_base_color,
-        clamp((hited_pos.w - static_data.blue_base_w_level) / (static_data.red_base_w_level - static_data.blue_base_w_level), 0.0, 1.0)
+        base_coef
     );
 
     if mats.materials[0] == static_data.blue_players_mat1 || mats.materials[0] == static_data.blue_players_mat2 {
@@ -4871,12 +4896,17 @@ fn get_color_and_light_from_mats_2d(
     if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 &&
         mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2
     {
+        let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
+
+        let x_height_coef = clamp((hited_pos.x - 0.3) / 4.5, 0.0, 1.0);
+
         base_diffuse = mix(
-            base_diffuse,
-            vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r),
-            clamp((hited_pos.x + 8.0) / 4.0, 0.0, 1.0)
+            mix(base_diffuse, inverted_base_diffuse, base_coef),
+            mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
+            x_height_coef
         );
     }
+
     let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
     let ref_col = get_sky_color(-ray_dir);

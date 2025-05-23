@@ -182,22 +182,46 @@ impl Level {
                                 .expect("ERROR: Can't parse the map's JSON format")
                         },
                         Err(e) => {
-                            // println!(
-                            //     "ERROR: the map.json cannot be loaded, err: {}",
-                            //     e.to_string()
-                            // );
-                            panic!("ERROR: the {}.json cannot be loaded, err: {}", level_name, e);
-                            // serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
-                            //     .expect("Can't parse map.json file")
+
+                            // panic!("ERROR: the {}.json cannot be loaded, err: {}", level_name, e);
+                            match level_name.as_str() {
+                                "map" => 
+                                {
+                                    serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
+                                        .expect("Can't parse map.json file")
+                                }
+                                "map_2d_3d" =>
+                                {
+                                    serde_json::from_str(include_str!("../../../src/assets/maps/map_2d_3d.json"))
+                                        .expect("Can't parse map.json file")
+                                }
+                                _ =>
+                                {
+                                    panic!("incorrect level name");
+                                }
+                            }
                         }
                     }
                 }
                 else
                 {
-                    panic!("ERROR: the {}.json cannot be loaded", level_name);
-
-                    // serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
-                    //     .expect("Can't parse map.json file")
+                    // panic!("ERROR: the {}.json cannot be loaded", level_name);
+                    match level_name.as_str() {
+                        "map" => 
+                        {
+                            serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
+                                .expect("Can't parse map.json file")
+                        }
+                        "map_2d_3d" =>
+                        {
+                            serde_json::from_str(include_str!("../../../src/assets/maps/map_2d_3d.json"))
+                                .expect("Can't parse map.json file")
+                        }
+                        _ =>
+                        {
+                            panic!("incorrect level name");
+                        }
+                    }
                 }
             };
 

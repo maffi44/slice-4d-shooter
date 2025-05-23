@@ -96,6 +96,8 @@ pub struct PlayerFor2d3dExample {
 
     pub show_3d_example_current_value: f32,
     show_3d_example_target_value: f32,
+
+    current_w_position_target: f32,
 }
 
 impl Actor for PlayerFor2d3dExample {
@@ -792,11 +794,24 @@ impl Actor for PlayerFor2d3dExample {
                 engine_handle,
             );
 
+            if input.show_hide_controls.is_action_just_pressed()
+            {
+                if self.current_w_position_target == 0.0
+                {
+                    self.current_w_position_target = 3.0
+                }
+                else
+                {
+                    self.current_w_position_target = 0.0
+                }
+            }
+
             process_player_for_example_movement_input(
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
                 &self.player_settings,
+                self.current_w_position_target,
                 delta,
             );
 
@@ -1025,6 +1040,7 @@ fn process_player_for_example_movement_input(
     player_doll_input_state: &mut PlayerDollInputState,
     inner_state: &mut PlayerInnerState,
     player_settings: &PlayerSettings,
+    current_w_position_target: f32,
     delta: f32,
 )
 {
@@ -1055,7 +1071,7 @@ fn process_player_for_example_movement_input(
     }
 
     // lock player on w axis 
-    let w_dif = 0.0 - inner_state.get_position().w;
+    let w_dif = current_w_position_target - inner_state.get_position().w;
     inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
         -player_settings.gravity_w_speed*25.0,
         player_settings.gravity_w_speed*25.0
@@ -1116,7 +1132,7 @@ impl PlayerFor2d3dExample {
         camera3d_rotation *= camera3d_rotation_zy;
         camera3d_rotation *= camera3d_rotation_zw;
 
-        let camera3d_offset = Vec4::new(8.0, 3.0, -2.5, 0.0);
+        let camera3d_offset = Vec4::new(12.0, 3.0, -4.5, 0.0);
         
         PlayerFor2d3dExample {
             id: None,
@@ -1176,8 +1192,10 @@ impl PlayerFor2d3dExample {
             camera3d_rotation,
             camera3d_offset,
 
-            show_3d_example_current_value: 0.0,
-            show_3d_example_target_value: 0.0,
+            show_3d_example_current_value: 1.0,
+            show_3d_example_target_value: 1.0,
+
+            current_w_position_target: 0.0
         }
     }
 

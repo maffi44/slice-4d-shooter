@@ -550,11 +550,11 @@ impl Default for PlayerScreenEffects
 }
 
 
-// pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.012, 0.1, 0.7);
-// pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.7, 0.1, 0.012);
+pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.012, 0.1, 0.7);
+pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.7, 0.1, 0.012);
 
-pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.18, 0.18, 0.18);
-pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.18, 0.18, 0.18);
+// pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.18, 0.18, 0.18);
+// pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.18, 0.18, 0.18);
 
 pub struct WScanner
 {
