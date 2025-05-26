@@ -22,6 +22,7 @@ use crate::{
     },
     engine::{
         audio::{
+            AudioSystemTrait,
             AudioSystem,
             Sound
         },
@@ -55,7 +56,7 @@ pub struct HoleGun {
     is_charging: bool,
     // color: Vec3,
     shooted_from_pivot_point_dir: Vec4,
-    charging_sound: Option<Handle<SoundSource>>,
+    charging_sound: Option<Option<Handle<SoundSource>>>,
 
     energy: f32,
     current_shot_charging_energy: f32,

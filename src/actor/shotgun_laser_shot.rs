@@ -7,7 +7,9 @@ use crate::{
             colliders_container::PhysicalElement,
             physics_system_data::ShapeType,
             static_collider::StaticCollider
-        }, render::VisualElement, world::static_object::{
+        },
+        audio::AudioSystemTrait,
+        render::VisualElement, world::static_object::{
             BeamVolumeArea,
             ColoringArea,
             SphericalVolumeArea,

@@ -11,7 +11,7 @@ use client_server_protocol::{
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{
+        audio::{AudioSystem, Sound, AudioSystemTrait}, effects::EffectsSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle
@@ -93,7 +93,7 @@ pub struct PlayersDoll {
     need_to_die_slowly: bool,
     die_slowly_timer: f32,
 
-    holegun_charge_sound: Option<Handle<SoundSource>>,
+    holegun_charge_sound: Option<Option<Handle<SoundSource>>>,
 
     player_settings: PlayerSettings,
     radius: f32,

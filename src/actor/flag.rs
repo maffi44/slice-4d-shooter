@@ -6,7 +6,7 @@ use rand::Rng;
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
+        audio::{AudioSystem, Sound, AudioSystemTrait}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
     },
     transform::Transform
 };

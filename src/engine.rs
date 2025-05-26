@@ -225,3 +225,84 @@ impl Engine {
         }
     }
 }
+
+
+pub struct HeadlessEngine
+{
+    pub input: InputSystem,
+    pub physic: PhysicsSystem,
+    pub time: TimeSystem,
+    pub world: World,
+    pub engine_handle: EngineHandle,
+    pub net: NetSystem,
+    pub audio: AudioSystem,
+    pub ui: UISystem,
+    pub effects: EffectsSystem,
+    pub settings: Settings,
+    pub runtime: tokio::runtime::Runtime,
+}
+
+impl HeadlessEngine
+{
+    pub async fn new() -> Self
+    {
+        #[cfg(not(target_arch = "wasm32"))]
+        let mut runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build()
+            .expect("Can't build tokio async runtime");
+
+        let mut engine_handle = EngineHandle::new();
+        log::info!("engine systems:engine_handle init");
+
+        let global_players_settings = PlayerSettings::load_player_settings().await;
+        log::info!("engine systems: global_players_settings init");
+        
+        let settings = Settings::new(global_players_settings.clone());
+
+        let world = World::new(
+            &mut engine_handle,
+            global_players_settings,
+            "map".to_string(),
+        ).await;
+        log::info!("engine systems: world init");
+        
+        let physic = PhysicsSystem::new(&world);
+        log::info!("engine systems: physic init");
+
+        let input = InputSystem::new();
+        log::info!("engine systems: input init");
+
+        let time = TimeSystem::new(60_u32);
+        log::info!("engine systems: time init");
+
+        let ui = UISystem::new(); 
+
+        let audio = AudioSystem::new().await;
+
+        let effects = EffectsSystem::new();
+
+        let net = NetSystem::new(
+            &world.players_settings,
+            #[cfg(not(target_arch = "wasm32"))]
+            &mut runtime
+        ).await;
+        log::info!("engine systems: net init");
+
+
+        HeadlessEngine {
+            physic,
+            input,
+            time,
+            world,
+            engine_handle,
+            net,
+            audio,
+            ui,
+            effects,
+            settings,
+            runtime,
+        }
+    }
+}

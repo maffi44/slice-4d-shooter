@@ -14,7 +14,7 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        audio::AudioSystem,
+        audio::{AudioSystemTrait, AudioSystem},
         engine_handle::{
             Command,
             CommandType,

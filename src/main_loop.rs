@@ -8,6 +8,7 @@ use crate::{
         }, session_controller::{self, SessionController}, Actor, ActorWrapper, Message, SpecificActorMessage
     },
     engine::{
+        audio::AudioSystemTrait,
         engine_handle::{
             Command,
             CommandType

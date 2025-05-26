@@ -3,7 +3,8 @@ use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Mat4, Vec4};
 
-use crate::{actor::{session_controller::DEFAULT_TEAM, ActorID}, engine::{audio::{AudioSystem, Sound}, engine_handle::EngineHandle, physics::{dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, PhysicsSystem}, ui::{RectSize, UIElement, UIElementType, UISystem}}, transform::Transform};
+
+use crate::{actor::{session_controller::DEFAULT_TEAM, ActorID}, engine::{audio::{AudioSystem, Sound, AudioSystemTrait}, engine_handle::EngineHandle, physics::{dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider, PhysicsSystem}, ui::{RectSize, UIElement, UIElementType, UISystem}}, transform::Transform};
 
 use super::{player_settings::PlayerSettings, PlayerMovingState, PlayerScreenEffects, BASE_EFFECT_HP_IMPACT_SPEED, CROSSHAIR_DECREASING_SPEED, CROSSHAIR_INCREASING_SPEED, CROSSHAIR_MAX_SIZE, CROSSHAIR_MIN_SIZE, CROSSHAIR_ROTATION_SPEED, DEFAULT_ZW_ROTATION_TARGET_IN_RADS, PLAYER_MAX_HP};
 
@@ -34,10 +35,10 @@ pub struct PlayerInnerState {
     pub player_previous_w_position: f32,
     pub after_death_timer: f32,
     pub saved_angle_of_rotation: Vec4,
-    pub rotating_around_w_sound_handle: Handle<SoundSource>,
+    pub rotating_around_w_sound_handle: Option<Handle<SoundSource>>,
     pub rotating_around_w_sound_pitch: f64,
     pub rotating_around_w_sound_gain: f32,
-    pub shifting_along_w_sound_handle: Handle<SoundSource>,
+    pub shifting_along_w_sound_handle: Option<Handle<SoundSource>>,
     pub shifting_along_w_sound_pitch: f64,
     pub shifting_along_w_sound_gain: f32,
     pub jumped_to_w_on_current_action: bool,
@@ -48,7 +49,7 @@ pub struct PlayerInnerState {
     pub w_aim_ui_frame_intensity: f32,
     pub second_jump_is_charging: bool,
     pub second_jump_charging_energy: f32,
-    pub charging_second_jump_sound_handle: Option<Handle<SoundSource>>,
+    pub charging_second_jump_sound_handle: Option<Option<Handle<SoundSource>>>,
 }
 
 
