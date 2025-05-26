@@ -263,7 +263,7 @@ impl Renderer {
                         // wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
                         // wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
                         // wgpu::Features::SHADER_FLOAT32_ATOMIC,
-                    required_limits: wgpu::Limits::default(),
+                    required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     memory_hints: wgpu::MemoryHints::Performance,
                 },
                 None, // Trace path

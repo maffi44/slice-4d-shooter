@@ -77,7 +77,8 @@ fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
     return Vec4::new(x, y, z, w);
 }
 
-pub const FLAG_AREA_RADIUS: f32 = 1.7;
+pub const FLAG_AREA_VISUAL_RADIUS: f32 = 1.0;
+pub const FLAG_AREA_PHYSICAL_RADIUS: f32 = 2.2;
 
 pub struct Flag
 {
@@ -118,7 +119,7 @@ impl Flag
             Vec4::ZERO,
             ShapeType::Sphere,
             Vec4::new(
-                FLAG_AREA_RADIUS,
+                FLAG_AREA_PHYSICAL_RADIUS,
                 0.0, 0.0, 0.0
             )
         );
@@ -151,15 +152,15 @@ impl Flag
             }
         };
 
-        let test_visual_area =  VolumeArea::SphericalVolumeArea(
+        let visual_area =  VolumeArea::SphericalVolumeArea(
             SphericalVolumeArea {
-                radius: FLAG_AREA_RADIUS,
+                radius: FLAG_AREA_VISUAL_RADIUS,
                 translation: Vec4::ZERO,
                 color: my_color,
             }
         );
 
-        visual_areas.push(test_visual_area);
+        visual_areas.push(visual_area);
 
         let waves = vec![
             VisualWave {
@@ -482,7 +483,7 @@ impl Actor for Flag
         {
             VolumeArea::SphericalVolumeArea(area) =>
             {
-                area.radius = FLAG_AREA_RADIUS * self.radius_mult;
+                area.radius = FLAG_AREA_VISUAL_RADIUS * self.radius_mult;
             }
             _ => {}
         }
