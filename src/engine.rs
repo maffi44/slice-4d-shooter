@@ -195,7 +195,7 @@ impl Engine {
 
         let initialized_ui = pre_initialized_ui;
 
-        let audio = AudioSystem::new().await;
+        let audio = AudioSystem::new(false).await;
 
         let effects = EffectsSystem::new();
 
@@ -239,13 +239,16 @@ pub struct HeadlessEngine
     pub ui: UISystem,
     pub effects: EffectsSystem,
     pub settings: Settings,
+
+    #[cfg(not(target_arch = "wasm32"))]
     pub runtime: tokio::runtime::Runtime,
 }
 
 impl HeadlessEngine
 {
-    pub async fn new() -> Self
-    {
+    pub async fn new(
+    ) -> HeadlessEngine {
+
         #[cfg(not(target_arch = "wasm32"))]
         let mut runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(1)
@@ -264,7 +267,7 @@ impl HeadlessEngine
         let world = World::new(
             &mut engine_handle,
             global_players_settings,
-            "map".to_string(),
+            "map".to_string()
         ).await;
         log::info!("engine systems: world init");
         
@@ -279,7 +282,7 @@ impl HeadlessEngine
 
         let ui = UISystem::new(); 
 
-        let audio = AudioSystem::new().await;
+        let audio = AudioSystem::new(true).await;
 
         let effects = EffectsSystem::new();
 
@@ -302,6 +305,8 @@ impl HeadlessEngine
             ui,
             effects,
             settings,
+            
+            #[cfg(not(target_arch = "wasm32"))]
             runtime,
         }
     }

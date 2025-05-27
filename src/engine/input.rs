@@ -88,7 +88,7 @@ impl ActionsFrameState {
                 ButtonActions::MoveBackward => move_backward = action.clone(),
                 ButtonActions::MoveRight => move_right = action.clone(),
                 ButtonActions::MoveLeft => move_left = action.clone(),
-                ButtonActions::WScaner => w_scanner = action.clone(),
+                ButtonActions::WScanner => w_scanner = action.clone(),
                 ButtonActions::Jump => jump = action.clone(),
                 ButtonActions::JumpW => jump_w = action.clone(),
                 ButtonActions::HandSlot0 => activate_hand_slot_0 = action.clone(),
@@ -186,13 +186,14 @@ pub enum MouseAxis {
     Y
 }
 
-#[derive(PartialEq, Eq, Hash)]
-enum SomeButton {
+#[derive(PartialEq, Eq, Hash, Copy, Clone)]
+pub enum SomeButton {
     MouseButton(MouseButton),
     KeyCode(KeyCode),
 }
 
-enum ButtonActions {
+#[derive(PartialEq, Eq, Hash, Copy, Clone)]
+pub enum ButtonActions {
     MoveForward,
     MoveBackward,
     MoveRight,
@@ -201,7 +202,7 @@ enum ButtonActions {
     HandSlot1,
     HandSlot2,
     HandSlot3,
-    WScaner,
+    WScanner,
     JumpW,
     ShowHideControls,
     Jump,
@@ -263,7 +264,7 @@ impl InputSystem {
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyE),
-            (ButtonActions::WScaner, Action::new())
+            (ButtonActions::WScanner, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyJ),
@@ -321,6 +322,12 @@ impl InputSystem {
             actions_table,
             mouse_axis: Vec2::ZERO,
         }
+    }
+
+
+    pub fn get_actions_table(&self) -> &HashMap<SomeButton, (ButtonActions, Action)>
+    {
+        &self.actions_table
     }
 
 
@@ -391,6 +398,29 @@ impl InputSystem {
                         action.is_action_just_pressed = false;
                         action.is_action_pressed = false;
                     }
+                }
+            }
+        }
+    }
+
+    pub fn set_keyboard_input_by_keycode(&mut self, keycode: KeyCode, state: ElementState) {
+    
+        if let Some((_, action)) =
+            self.actions_table.get_mut(&SomeButton::KeyCode(keycode)) {
+
+            match state {
+                ElementState::Pressed => {
+                    if action.is_action_pressed {
+                        action.is_action_just_pressed = false;
+                    } else {
+                        action.is_action_just_pressed = true;
+                    }
+                    
+                    action.is_action_pressed = true;
+                },
+                ElementState::Released => {
+                    action.is_action_just_pressed = false;
+                    action.is_action_pressed = false;
                 }
             }
         }

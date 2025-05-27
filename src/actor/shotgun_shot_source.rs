@@ -3,7 +3,7 @@ use glam::Vec4;
 use fyrox_core::rand::{Rng, RngCore, SeedableRng};
 use fyrox_core::rand::prelude::StdRng;
 
-use crate::engine::audio::{AudioSystem, AudioSystemTrait};
+use crate::engine::audio::AudioSystem;
 use crate::engine::engine_handle::{Command, CommandType, EngineHandle};
 use crate::engine::physics::PhysicsSystem;
 use crate::engine::render::VisualElement;

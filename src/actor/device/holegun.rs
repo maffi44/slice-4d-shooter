@@ -22,7 +22,6 @@ use crate::{
     },
     engine::{
         audio::{
-            AudioSystemTrait,
             AudioSystem,
             Sound
         },

@@ -9,6 +9,7 @@ pub struct TimeSystem {
     pub frame_counter: u64,
     timestamp_of_start_of_current_frame: web_time::Instant,
     pub timestamp_of_main_loop_start: web_time::Instant,
+    pub current_frame_duration: f64,
 
     server_time_in_millis: Option<u128>,
     joined_to_session_timestamp: Option<Instant>,
@@ -26,7 +27,8 @@ impl TimeSystem {
             timestamp_of_start_of_current_frame: Instant::now(),
             timestamp_of_main_loop_start: Instant::now(),
             server_time_in_millis: None,
-            joined_to_session_timestamp: None
+            joined_to_session_timestamp: None,
+            current_frame_duration: 0.0_f64,
         }
     }
 
@@ -64,7 +66,7 @@ impl TimeSystem {
         self.average_frame_duration =
             self.timestamp_of_main_loop_start.elapsed().as_secs_f64() / self.frame_counter as f64;
         
-        log::info!("avarange frame duration is {}", self.average_frame_duration);
+        // println!("avarange frame duration is {}", self.average_frame_duration);
         self.prev_frame_duration = self.timestamp_of_start_of_current_frame.elapsed().as_secs_f32();
         self.timestamp_of_start_of_current_frame = Instant::now();
     }
@@ -72,5 +74,6 @@ impl TimeSystem {
     #[inline]
     pub fn end_of_frame(&mut self) {
         self.frame_counter += 1_u64;
+        self.current_frame_duration = self.timestamp_of_start_of_current_frame.elapsed().as_secs_f64();
     }
 }

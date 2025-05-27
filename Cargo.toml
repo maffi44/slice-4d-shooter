@@ -67,5 +67,6 @@ name="game-client-observer"
 path="src/game_client_observer_main.rs"
 
 [[bin]]
-name="headless-game-client-main-for-net-test"
+name="headless-game-client-for-net-test"
 path="src/headless_game_client_main_for_net_test.rs"
+

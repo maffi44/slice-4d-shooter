@@ -60,110 +60,52 @@ pub enum Sound {
     WJump,
     ProjectionCaptured,
 }
-
-pub trait AudioSystemTrait
-{
-    fn increase_sound_volume(&mut self, delta: f32) {}
-
-    fn decrease_sound_volume(&mut self, delta: f32) {}
-
-    fn set_listener_position_and_look_vector(&mut self, position: Vec4, look: Vec4) {}
-
-    fn spawn_non_spatial_sound(
-        &mut self,
-        sound: Sound,
-        gain: f32,
-        pitch: f64,
-        looping: bool,
-        is_play_once: bool,
-        status: Status,
-    ) -> Option<Handle<SoundSource>> {
-        None
-    }
-
-    fn spawn_spatial_sound(
-        &mut self,
-        sound: Sound,
-        gain: f32,
-        pitch: f64,
-        looping: bool,
-        is_play_once: bool,
-        status: Status,
-        position: Vec4,
-        radius: f32,
-        rolloff_factor: f32,
-        max_distance: f32,
-    ) -> Option<Handle<SoundSource>> {
-        None
-    }
-
-
-    fn pause_sound(&mut self, handle: Option<Handle<SoundSource>>) {}
-
-    fn stop_sound(&mut self, handle: Option<Handle<SoundSource>>, pause: bool) {}
-
-    fn play_sound(&mut self, handle: Option<Handle<SoundSource>>) {}
-
-    fn sound_set_gain(&mut self, handle: Option<Handle<SoundSource>>, gain: f32) {}
-
-    fn sound_set_pitch(&mut self, handle: Option<Handle<SoundSource>>, pitch: f64) {}
-
-    fn sound_set_pitch_and_gain(&mut self, handle: Option<Handle<SoundSource>>, pitch: f64, gain: f32) {}
-
-    fn sound_set_looping(&mut self, handle: Option<Handle<SoundSource>>, looping: bool) {}
-
-    fn sound_set_position(&mut self, handle: Option<Handle<SoundSource>>, postion: Vec4) {}
-
-    fn sound_set_radius(&mut self, handle: Option<Handle<SoundSource>>, radius: f32) {}
-
-    fn sound_set_rolloff_factor(&mut self, handle: Option<Handle<SoundSource>>, rolloff_factor: f32) {}
-
-    fn sound_set_max_distance(&mut self, handle: Option<Handle<SoundSource>>, max_distance: f32) {}
-
-    fn remove_sound(&mut self, handle: Option<Handle<SoundSource>>) {}
-}
 pub struct AudioSystem {
-    pub sound_engine: SoundEngine,
+    pub sound_engine: Option<SoundEngine>,
     sounds: HashMap<Sound, Resource<SoundBuffer>>,
     pub master_volume: f32,
 }
 
-impl AudioSystemTrait for AudioSystem
-{
-    fn increase_sound_volume(&mut self, delta: f32)
+impl AudioSystem {
+
+    pub fn increase_sound_volume(&mut self, delta: f32)
     {
         self.master_volume = (self.master_volume + delta*0.9).clamp(0.0, 1.0);
     }
 
-    fn decrease_sound_volume(&mut self, delta: f32)
+    pub fn decrease_sound_volume(&mut self, delta: f32)
     {
         self.master_volume = (self.master_volume - delta*0.9).clamp(0.0, 1.0);
     }
 
-    fn set_listener_position_and_look_vector(&mut self, position: Vec4, look: Vec4) {
-        let st = self.sound_engine.state();
-        let mut state = st.contexts()[1].state();
-
-        let position = Vector3::<f32>::new(
-            position.x,
-            position.y + position.w,
-            position.z,
-        );
-
-        let look = Vector3::<f32>::new(
-            look.x,
-            look.y,
-            look.z
-        ).normalize();
-
-        state.listener_mut().set_orientation_rh(
-            look,
-            Vector3::<f32>::new(0.0, 1.0, 0.0)
-        );
-        state.listener_mut().set_position(position);
+    pub fn set_listener_position_and_look_vector(&mut self, position: Vec4, look: Vec4) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            let st = sound_engine.state();
+            let mut state = st.contexts()[1].state();
+    
+            let position = Vector3::<f32>::new(
+                position.x,
+                position.y + position.w,
+                position.z,
+            );
+    
+            let look = Vector3::<f32>::new(
+                look.x,
+                look.y,
+                look.z
+            ).normalize();
+    
+            state.listener_mut().set_orientation_rh(
+                look,
+                Vector3::<f32>::new(0.0, 1.0, 0.0)
+            );
+            state.listener_mut().set_position(position);
+        }
     }
 
-    fn spawn_non_spatial_sound(
+
+    pub fn spawn_non_spatial_sound(
         &mut self,
         sound: Sound,
         gain: f32,
@@ -172,31 +114,39 @@ impl AudioSystemTrait for AudioSystem
         is_play_once: bool,
         status: Status,
     ) -> Option<Handle<SoundSource>> {
-        let sound_buffer = self.sounds
-            .get(&sound)
-            .expect("Some sound is not exist");
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            let sound_buffer = self.sounds
+                .get(&sound)
+                .expect("Some sound is not exist");
+    
+            let source = SoundSourceBuilder::new()
+                .with_buffer(sound_buffer.clone())
+                .with_status(status)
+                .with_gain(gain*self.master_volume)
+                .with_play_once(is_play_once)
+                .with_pitch(pitch)
+                .with_looping(looping)
+                .build()
+                .unwrap();
+    
+            let engine_state = sound_engine.state();
+    
+            // getting not spatial sounds context
+            let mut context_state = engine_state.contexts()[0].state();
+    
+            let handle = context_state.add_source(source);
+    
+            Some(handle)
+        }
+        else
+        {
+            None    
+        }
 
-        let source = SoundSourceBuilder::new()
-            .with_buffer(sound_buffer.clone())
-            .with_status(status)
-            .with_gain(gain*self.master_volume)
-            .with_play_once(is_play_once)
-            .with_pitch(pitch)
-            .with_looping(looping)
-            .build()
-            .unwrap();
-
-        let engine_state = self.sound_engine.state();
-
-        // getting not spatial sounds context
-        let mut context_state = engine_state.contexts()[0].state();
-
-        let handle = context_state.add_source(source);
-
-        return Some(handle);
     }
 
-    fn spawn_spatial_sound(
+    pub fn spawn_spatial_sound(
         &mut self,
         sound: Sound,
         gain: f32,
@@ -209,305 +159,349 @@ impl AudioSystemTrait for AudioSystem
         rolloff_factor: f32,
         max_distance: f32,
     ) -> Option<Handle<SoundSource>> {
-        let sound_buffer = self.sounds
-            .get(&sound)
-            .expect("Some sound is not exist");
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            let sound_buffer = self.sounds
+                .get(&sound)
+                .expect("Some sound is not exist");
+    
+            let position = Vector3::<f32>::new(
+                position.x,
+                position.y + position.w,
+                position.z,
+            );
+    
+            let source = SoundSourceBuilder::new()
+                .with_buffer(sound_buffer.clone())
+                .with_status(status)
+                .with_gain(gain*self.master_volume)
+                .with_play_once(is_play_once)
+                .with_pitch(pitch)
+                .with_looping(looping)
+                .with_position(position)
+                .with_radius(radius)
+                .with_rolloff_factor(rolloff_factor)
+                .with_max_distance(max_distance)
+                .build()
+                .unwrap();
+    
+            let engine_state = sound_engine.state();
+    
+            // getting spatial sounds context
+            let mut context_state = engine_state.contexts()[1].state();
+    
+            let handle = context_state.add_source(source);
+    
+            Some(handle)
+        }
+        else
+        {
+            None    
+        }
 
-        let position = Vector3::<f32>::new(
-            position.x,
-            position.y + position.w,
-            position.z,
-        );
-
-        let source = SoundSourceBuilder::new()
-            .with_buffer(sound_buffer.clone())
-            .with_status(status)
-            .with_gain(gain*self.master_volume)
-            .with_play_once(is_play_once)
-            .with_pitch(pitch)
-            .with_looping(looping)
-            .with_position(position)
-            .with_radius(radius)
-            .with_rolloff_factor(rolloff_factor)
-            .with_max_distance(max_distance)
-            .build()
-            .unwrap();
-
-        let engine_state = self.sound_engine.state();
-
-        // getting spatial sounds context
-        let mut context_state = engine_state.contexts()[1].state();
-
-        let handle = context_state.add_source(source);
-
-        return Some(handle);
     }
 
 
-    fn pause_sound(&mut self, handle: Option<Handle<SoundSource>>) {
-
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            
-            let mut state = st.contexts()[0].state();
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.pause();
-    
-            } else {
-                let mut state = st.contexts()[1].state();
+    pub fn pause_sound(&mut self, handle: Option<Handle<SoundSource>>) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                
+                let mut state = st.contexts()[0].state();
                 if state.is_valid_handle(handle) {
                     let sound = state.source_mut(handle);
-    
+        
                     sound.pause();
+        
+                } else {
+                    let mut state = st.contexts()[1].state();
+                    if state.is_valid_handle(handle) {
+                        let sound = state.source_mut(handle);
+        
+                        sound.pause();
+                    }
                 }
             }
-
         }
     }
 
 
-    fn stop_sound(&mut self, handle: Option<Handle<SoundSource>>, pause: bool) {
-
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            
-            let mut state = st.contexts()[0].state();
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                let _ = sound.stop();
-    
-            } else {
-                let mut state = st.contexts()[1].state();
+    pub fn stop_sound(&mut self, handle: Option<Handle<SoundSource>>, pause: bool) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                
+                let mut state = st.contexts()[0].state();
                 if state.is_valid_handle(handle) {
                     let sound = state.source_mut(handle);
         
                     let _ = sound.stop();
+        
+                } else {
+                    let mut state = st.contexts()[1].state();
+                    if state.is_valid_handle(handle) {
+                        let sound = state.source_mut(handle);
+            
+                        let _ = sound.stop();
+                    }
                 }
             }
-            
         }
-
     }
 
-    fn play_sound(&mut self, handle: Option<Handle<SoundSource>>) {
-        if let Some(handle) = handle {
-            
-            let st = self.sound_engine.state();
-            
-            let mut state = st.contexts()[0].state();
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.play();
-    
-            } else {
-                let mut state = st.contexts()[1].state();
+    pub fn play_sound(&mut self, handle: Option<Handle<SoundSource>>) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                
+                let mut state = st.contexts()[0].state();
                 if state.is_valid_handle(handle) {
                     let sound = state.source_mut(handle);
-    
+        
                     sound.play();
+        
+                } else {
+                    let mut state = st.contexts()[1].state();
+                    if state.is_valid_handle(handle) {
+                        let sound = state.source_mut(handle);
+        
+                        sound.play();
+                    }
                 }
             }
         }
-
     }
 
 
-    fn sound_set_gain(&mut self, handle: Option<Handle<SoundSource>>, gain: f32) {
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            
-            let mut state = st.contexts()[0].state();
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.set_gain(gain*self.master_volume);
-    
-            } else {
-                let mut state = st.contexts()[1].state();
+    pub fn sound_set_gain(&mut self, handle: Option<Handle<SoundSource>>, gain: f32) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                
+                let mut state = st.contexts()[0].state();
                 if state.is_valid_handle(handle) {
                     let sound = state.source_mut(handle);
-    
+        
                     sound.set_gain(gain*self.master_volume);
+        
+                } else {
+                    let mut state = st.contexts()[1].state();
+                    if state.is_valid_handle(handle) {
+                        let sound = state.source_mut(handle);
+        
+                        sound.set_gain(gain*self.master_volume);
+                    }
                 }
             }
-            
         }
     }
 
 
-    fn sound_set_pitch(&mut self, handle: Option<Handle<SoundSource>>, pitch: f64) {
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            
-            let mut state = st.contexts()[0].state();
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.set_pitch(pitch);
-    
-            } else {
-                let mut state = st.contexts()[1].state();
+    pub fn sound_set_pitch(&mut self, handle: Option<Handle<SoundSource>>, pitch: f64) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                
+                let mut state = st.contexts()[0].state();
                 if state.is_valid_handle(handle) {
                     let sound = state.source_mut(handle);
-    
+        
                     sound.set_pitch(pitch);
+        
+                } else {
+                    let mut state = st.contexts()[1].state();
+                    if state.is_valid_handle(handle) {
+                        let sound = state.source_mut(handle);
+        
+                        sound.set_pitch(pitch);
+                    }
                 }
             }
-            
         }
     }
 
-    fn sound_set_pitch_and_gain(&mut self, handle: Option<Handle<SoundSource>>, pitch: f64, gain: f32) {
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            
-            let mut state = st.contexts()[0].state();
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.set_pitch(pitch);
-                sound.set_gain(gain*self.master_volume);
-    
-            } else {
-                let mut state = st.contexts()[1].state();
+    pub fn sound_set_pitch_and_gain(&mut self, handle: Option<Handle<SoundSource>>, pitch: f64, gain: f32) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                
+                let mut state = st.contexts()[0].state();
                 if state.is_valid_handle(handle) {
                     let sound = state.source_mut(handle);
-    
+        
                     sound.set_pitch(pitch);
                     sound.set_gain(gain*self.master_volume);
+        
+                } else {
+                    let mut state = st.contexts()[1].state();
+                    if state.is_valid_handle(handle) {
+                        let sound = state.source_mut(handle);
+        
+                        sound.set_pitch(pitch);
+                        sound.set_gain(gain*self.master_volume);
+                    }
                 }
             }
-            
         }
     }
 
 
-    fn sound_set_looping(&mut self, handle: Option<Handle<SoundSource>>, looping: bool) {
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            
-            let mut state = st.contexts()[0].state();
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.set_looping(looping);
-    
-            } else {
-                let mut state = st.contexts()[1].state();
+    pub fn sound_set_looping(&mut self, handle: Option<Handle<SoundSource>>, looping: bool) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                
+                let mut state = st.contexts()[0].state();
                 if state.is_valid_handle(handle) {
                     let sound = state.source_mut(handle);
         
                     sound.set_looping(looping);
+        
+                } else {
+                    let mut state = st.contexts()[1].state();
+                    if state.is_valid_handle(handle) {
+                        let sound = state.source_mut(handle);
+            
+                        sound.set_looping(looping);
+                    }
                 }
             }
-            
         }
-
     }
 
-    fn sound_set_position(&mut self, handle: Option<Handle<SoundSource>>, postion: Vec4) {
-        if let Some(handle) = handle {
-            
-            let position = Vector3::<f32>::new(
-                postion.x,
-                postion.y + postion.w,
-                postion.z,
-            );
-            
-            let st = self.sound_engine.state();
-            let mut state = st.contexts()[1].state();
-    
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.set_position(position);
-            }
-        }
+    pub fn sound_set_position(&mut self, handle: Option<Handle<SoundSource>>, postion: Vec4) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let position = Vector3::<f32>::new(
+                    postion.x,
+                    postion.y + postion.w,
+                    postion.z,
+                );
+                
+                let st = sound_engine.state();
+                let mut state = st.contexts()[1].state();
         
-    }
-
-    fn sound_set_radius(&mut self, handle: Option<Handle<SoundSource>>, radius: f32) {
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            
-            let mut state = st.contexts()[1].state();
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.set_radius(radius);
+                if state.is_valid_handle(handle) {
+                    let sound = state.source_mut(handle);
+        
+                    sound.set_position(position);
+                }
             }
-            
         }
     }
 
-    fn sound_set_rolloff_factor(&mut self, handle: Option<Handle<SoundSource>>, rolloff_factor: f32) {
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            let mut state = st.contexts()[1].state();
-    
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.set_rolloff_factor(rolloff_factor);
-            }
-            
-        }
-    }
-
-    fn sound_set_max_distance(&mut self, handle: Option<Handle<SoundSource>>, max_distance: f32) {
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            let mut state = st.contexts()[1].state();
-    
-            if state.is_valid_handle(handle) {
-                let sound = state.source_mut(handle);
-    
-                sound.set_max_distance(max_distance);
-            }
-            
-        }
-    }
-
-
-    fn remove_sound(&mut self, handle: Option<Handle<SoundSource>>) {
-        if let Some(handle) = handle {
-            let st = self.sound_engine.state();
-            
-            let mut state = st.contexts()[0].state();
-            if state.is_valid_handle(handle) {
-                state.remove_source(handle);
-    
-            } else {
+    pub fn sound_set_radius(&mut self, handle: Option<Handle<SoundSource>>, radius: f32) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                
                 let mut state = st.contexts()[1].state();
                 if state.is_valid_handle(handle) {
-                    state.remove_source(handle);
+                    let sound = state.source_mut(handle);
+        
+                    sound.set_radius(radius);
                 }
             }
         }
     }
-}
 
-impl AudioSystem {
-
-    pub async fn new() -> Self {
-
-        let sound_engine = SoundEngine::new().expect("Can't initialize sound engine");
-
-        let not_spatial_context = SoundContext::new();
-        not_spatial_context.state().set_distance_model(DistanceModel::None);
+    pub fn sound_set_rolloff_factor(&mut self, handle: Option<Handle<SoundSource>>, rolloff_factor: f32) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                let mut state = st.contexts()[1].state();
         
-        let spatial_context = SoundContext::new();
-        spatial_context.state().set_distance_model(DistanceModel::LinearDistance);
-
-
+                if state.is_valid_handle(handle) {
+                    let sound = state.source_mut(handle);
         
-        // index 0 is for not spatial sounds and 1 for spatial sounds
-        sound_engine.state().add_context(not_spatial_context);
-        sound_engine.state().add_context(spatial_context);
+                    sound.set_rolloff_factor(rolloff_factor);
+                }
+            }
+        }
+    }
+
+    pub fn sound_set_max_distance(&mut self, handle: Option<Handle<SoundSource>>, max_distance: f32) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                let mut state = st.contexts()[1].state();
+        
+                if state.is_valid_handle(handle) {
+                    let sound = state.source_mut(handle);
+        
+                    sound.set_max_distance(max_distance);
+                }
+            }
+        }
+    }
+
+
+    pub fn remove_sound(&mut self, handle: Option<Handle<SoundSource>>) {
+        if let Some(sound_engine) = self.sound_engine.as_mut()
+        {
+            if let Some(handle) = handle
+            {
+                let st = sound_engine.state();
+                
+                let mut state = st.contexts()[0].state();
+                if state.is_valid_handle(handle) {
+                    state.remove_source(handle);
+        
+                } else {
+                    let mut state = st.contexts()[1].state();
+                    if state.is_valid_handle(handle) {
+                        state.remove_source(handle);
+                    }
+                }
+            }
+        }
+    }
+
+
+    pub async fn new(headless: bool) -> Self {
+        
+        let sound_engine = if headless
+        {
+            None
+        }
+        else
+        {
+            let sound_engine = SoundEngine::new().expect("Can't initialize sound engine");
+
+            let not_spatial_context = SoundContext::new();
+            not_spatial_context.state().set_distance_model(DistanceModel::None);
+            
+            let spatial_context = SoundContext::new();
+            spatial_context.state().set_distance_model(DistanceModel::LinearDistance);
+            
+            // index 0 is for not spatial sounds and 1 for spatial sounds
+            sound_engine.state().add_context(not_spatial_context);
+            sound_engine.state().add_context(spatial_context);
+            
+            Some(sound_engine)
+        };
 
         let mut sounds = HashMap::new();
 

@@ -3,7 +3,7 @@ use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
 
 use crate::{
-    engine::{audio::{Sound, AudioSystemTrait}, effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{self, UIElement, UIElementType, UISystem}},
+    engine::{audio::Sound, effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{self, UIElement, UIElementType, UISystem}},
     transform::Transform
 };
 

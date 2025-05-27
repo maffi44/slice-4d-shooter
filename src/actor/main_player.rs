@@ -29,8 +29,7 @@ use crate::{
     engine::{
         audio::{
             AudioSystem,
-            Sound,
-            AudioSystemTrait
+            Sound
         },
         effects::EffectsSystem,
         engine_handle::{

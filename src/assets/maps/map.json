@@ -432,6 +432,7 @@
                 },
                 "roundness" : 0.3,
                 "is_positive" : false,
+                "friction" : 0.0,
                 "stickiness" : true
             }
         },
@@ -551,7 +552,8 @@
                     "w": 1
                 },
                 "stickiness" : true,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -580,7 +582,8 @@
                     "w": 1
                 },
                 "stickiness" : false,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -637,7 +640,8 @@
                     "w": 2
                 },
                 "stickiness" : true,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -822,6 +826,7 @@
                 },
                 "roundness" : 0.3,
                 "is_positive" : false,
+                "friction" : 0.0,
                 "stickiness" : true
             }
         },
@@ -941,7 +946,8 @@
                     "w": 1
                 },
                 "stickiness" : true,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -970,7 +976,8 @@
                     "w": 1
                 },
                 "stickiness" : false,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -1027,7 +1034,8 @@
                     "w": 2
                 },
                 "stickiness" : true,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -1211,7 +1219,8 @@
                     "w": 10
                 },
                 "roundness" : 0.45,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -1241,7 +1250,8 @@
                 },
                 "roundness" : 1.0,
                 "stickiness" : true,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
 
@@ -1267,10 +1277,10 @@
                     }
                 },
                 "size" : {
-                    "x": 6,
-                    "y": 6,
-                    "z": 6,
-                    "w": 4.0
+                    "x": 2,
+                    "y": 2,
+                    "z": 2,
+                    "w": 1.5
                 },
                 "roundness" : 3.5,
                 "friction" : 0.0,
@@ -1297,13 +1307,11 @@
                     }
                 },
                 "size" : {
-                    "x": 4.5,
-                    "y": 4.5,
-                    "z": 4.5,
-                    "w": 4.5
+                    "x": 3.5
                 },
                 "roundness" : 0.0,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -1333,6 +1341,7 @@
                 },
                 "roundness" : 0.6,
                 "is_positive" : false,
+                "friction" : 0.0,
                 "stickiness" : true
             }
         },
@@ -1359,11 +1368,12 @@
                     "x": 10.2,
                     "y": 0.2,
                     "z": 1.1,
-                    "w": 10
+                    "w": 8
                 },
                 "roundness" : 1.0,
                 "stickiness" : true,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -1371,8 +1381,8 @@
                 "comment" : "central big slick cube side exit next platform",
                 "transform" : {
                     "position" : {
-                        "x": 6.5,
-                        "y": 4.0,
+                        "x": 5.5,
+                        "y": 3.8,
                         "z": 0,
                         "w": 10
                     },
@@ -1386,9 +1396,9 @@
                     }
                 },
                 "size" : {
-                    "x": 5.6,
-                    "y": 0.4,
-                    "z": 2.9,
+                    "x": 6.5,
+                    "y": 0.2,
+                    "z": 2.2,
                     "w": 10
                 },
                 "roundness" : 0.08
@@ -1421,7 +1431,8 @@
                 },
                 "roundness" : 1.0,
                 "stickiness" : false,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
 
@@ -1483,6 +1494,7 @@
                 },
                 "roundness" : 0.4,
                 "is_positive" : false,
+                "friction" : 0.0,
                 "stickiness" : false
             }
         },
@@ -1572,7 +1584,8 @@
                     "w": 15
                 },
                 "roundness" : 0.5,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {
@@ -1601,7 +1614,8 @@
                     "w": 15
                 },
                 "roundness" : 0.5,
-                "is_positive" : false
+                "is_positive" : false,
+                "friction" : 0.0
             }
         },
         {

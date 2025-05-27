@@ -104,6 +104,11 @@ impl PlayerSettings {
                 file = File::open("../../../src/assets/maps/settings.json");
             }
 
+            if file.is_err()
+            {
+                file = File::open("./settings.json");
+            }
+
             match file {
                 Ok(mut file) =>
                 {

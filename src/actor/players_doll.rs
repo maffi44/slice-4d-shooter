@@ -11,7 +11,7 @@ use client_server_protocol::{
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound, AudioSystemTrait}, effects::EffectsSystem, engine_handle::{
+        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle

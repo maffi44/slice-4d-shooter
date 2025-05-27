@@ -158,7 +158,9 @@ impl Level {
         #[cfg(not(target_arch = "wasm32"))]
         {
             let json_map = {
-                let mut file = File::open("./map.json");
+                let mut file = File::open(
+                    format!("./{}.json", level_name)
+                );
 
                 if file.is_err()
                 {
@@ -166,10 +168,11 @@ impl Level {
                         format!("./src/assets/maps/{}.json", level_name)
                     )
                 }
+
                 if file.is_err()
                 {
                     file = File::open(
-                        format!("/home/maffi/Dream/web-engine4d/src/assets/maps/{}.json", level_name)
+                        format!("../../../src/assets/maps/{}.json", level_name)
                     );
                 }
 
@@ -183,45 +186,45 @@ impl Level {
                         },
                         Err(e) => {
 
-                            // panic!("ERROR: the {}.json cannot be loaded, err: {}", level_name, e);
-                            match level_name.as_str() {
-                                "map" => 
-                                {
-                                    serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
-                                        .expect("Can't parse map.json file")
-                                }
-                                "map_2d_3d" =>
-                                {
-                                    serde_json::from_str(include_str!("../../../src/assets/maps/map_2d_3d.json"))
-                                        .expect("Can't parse map.json file")
-                                }
-                                _ =>
-                                {
-                                    panic!("incorrect level name");
-                                }
-                            }
+                            panic!("ERROR: the {}.json cannot be loaded, err: {}", level_name, e);
+                            // match level_name.as_str() {
+                            //     "map" => 
+                            //     {
+                            //         serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
+                            //             .expect("Can't parse map.json file")
+                            //     }
+                            //     "map_2d_3d" =>
+                            //     {
+                            //         serde_json::from_str(include_str!("../../../src/assets/maps/map_2d_3d.json"))
+                            //             .expect("Can't parse map.json file")
+                            //     }
+                            //     _ =>
+                            //     {
+                            //         panic!("incorrect level name");
+                            //     }
+                            // }
                         }
                     }
                 }
                 else
                 {
-                    // panic!("ERROR: the {}.json cannot be loaded", level_name);
-                    match level_name.as_str() {
-                        "map" => 
-                        {
-                            serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
-                                .expect("Can't parse map.json file")
-                        }
-                        "map_2d_3d" =>
-                        {
-                            serde_json::from_str(include_str!("../../../src/assets/maps/map_2d_3d.json"))
-                                .expect("Can't parse map.json file")
-                        }
-                        _ =>
-                        {
-                            panic!("incorrect level name");
-                        }
-                    }
+                    panic!("ERROR: the {}.json cannot be loaded", level_name);
+                    // match level_name.as_str() {
+                    //     "map" => 
+                    //     {
+                    //         serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
+                    //             .expect("Can't parse map.json file")
+                    //     }
+                    //     "map_2d_3d" =>
+                    //     {
+                    //         serde_json::from_str(include_str!("../../../src/assets/maps/map_2d_3d.json"))
+                    //             .expect("Can't parse map.json file")
+                    //     }
+                    //     _ =>
+                    //     {
+                    //         panic!("incorrect level name");
+                    //     }
+                    // }
                 }
             };
 
