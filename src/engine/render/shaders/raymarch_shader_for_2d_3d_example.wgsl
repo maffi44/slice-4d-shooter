@@ -4449,6 +4449,58 @@ fn w_scanner_enemies_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec
     return scanner_color;
 }
 
+
+fn w_scanner_enemies_color_for_2d(pixel_pos: vec4<f32>) -> vec4<f32> {
+    var scanner_color = vec4(1.0,0.0,0.0,0.0);
+
+    var closest_projection = vec2(999.0);
+    
+    for (var i = 0u; i < 16u; i++) {
+
+        if dynamic_data.player_projections[i].radius > 0.0
+        {
+            let d = sd_sphere(pixel_pos - dynamic_data.player_projections[i].position, dynamic_data.player_projections[i].radius);
+
+            if d < 0.0
+            {
+                closest_projection = vec2(d, f32(i));
+
+                break;
+            }
+        }
+    }
+
+    if closest_projection.x < 0.0
+    {
+        let i = u32(closest_projection.y);
+
+        let n = get_sphere_normal(
+            pixel_pos,
+            dynamic_data.player_projections[i].position,
+            dynamic_data.player_projections[i].radius
+        );
+
+        let vis_d = abs(closest_projection.x*3.33);
+
+        var red = pow(clamp((1.0 - abs(vis_d*1.1)), 0.0, 1.0), 2.0);
+        
+        let rot_coef = abs(sin(dynamic_data.player_projections[i].zw_offset));
+        
+        red += pow((clamp(-vis_d * 1.3, 0.0, 1.0)), mix(25.0, 9.0, rot_coef)) * rot_coef;
+        // red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
+        
+        scanner_color.a += red * (dynamic_data.player_projections[i].intensity*0.3 + dynamic_data.player_projections[i].is_active_intensity*1.0);
+        scanner_color.a *= dynamic_data.player_projections[i].intensity;
+
+        // scanner_color.g -= 0.5 * dynamic_data.player_projections[i].is_active_intensity;
+        // scanner_color.b -= 0.5 * dynamic_data.player_projections[i].is_active_intensity;
+    }
+
+    scanner_color.a = clamp(scanner_color.a, 0.0, 1.0);
+
+    return scanner_color;
+}
+
 // fn get_soft_shadow( ro: vec4<f32>, rd: vec4<f32>) -> f32
 // {
 //     var res = 1.0;
@@ -5018,7 +5070,7 @@ fn plane_intersect( ro: vec4<f32>, rd: vec4<f32>, p: vec4<f32>, p_dist: f32 ) ->
     return -(dot(ro,p)+p_dist)/dot(rd,p);
 }
 
-fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec3<f32>
+fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec4<f32>
 {
     var slice_plane = vec4(1.0, 0.0, 0.0, 0.0);
 
@@ -5054,11 +5106,11 @@ fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec3<f32
 
         let dist_coef = clamp(1.0-(dist_to_slice/13.0), 0.0, 1.0);
         
-        return vec3(c*dist_coef);
+        return vec4(vec3(c*dist_coef), dist_to_slice);
     }
     else
     {
-        return vec3(0.0);
+        return vec4(0.0, 0.0, 0.0, -1.0);
     }
 
 }
@@ -5232,55 +5284,48 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         color += color_areas.rgb;
         lightness += color_areas.a;
 
-        // let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
-        // let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
-        // color = mix(color, sc_r_c.rgb, sc_r_c.a*0.3);
-        // color = mix(color, sc_e_c.rgb, sc_e_c.a*0.55);
-
-        // color correction
         color = pow(color, vec3(0.4545));
+        
+        let sc_e_c = w_scanner_enemies_color_for_2d(pixel_pos);
+        color = mix(color, sc_e_c.rgb, sc_e_c.a*0.85);
 
-        // let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
+        let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
         
         // making damage effect
-        // let q = (inn.position.xy+vec2(1.0))/2.0;
+        let q = (inn.position.xy+vec2(1.0))/2.0;
         
         // making vignetting effect
-        // let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
-        // color *= v;
-
-        // let hurt_coef = max(
-        //     clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
-        //     (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
-        // );
-        // color.g *= clamp(hurt_coef*1.4, 0.0, 1.0);
-        // color.b *= clamp(hurt_coef*1.5, 0.0, 1.0);
-        // color.r *= hurt_coef;
-        // color -= (1.0-hurt_coef)*0.2;
-
-        // color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
-
+        let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
+        color *= v;
+    
+        let hurt_coef = max(
+            clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
+            (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
+        );
+    
+    
+        color -= (1.0-hurt_coef)*0.2;
+    
+        color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
+    
         // making death effect
-        // let death_eff_col = max(
-        //     clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
-        //     (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
-        // );
-        // color *= death_eff_col;
-
-        // color = mix(vec3(tv_noise(uv*100.0, dynamic_data.time)),color, death_eff_col*0.7);
-
-        // var bw_col = clamp(color, vec3(color.r), vec3(100.0));
-        // bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
-        // bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
-        // bw_col += (tv_noise - 0.5)*(1.0-death_eff_col*0.5)*0.3;
-
-        // color = mix(
-        //     color,
-        //     bw_col*(bw_col*1.4),
-        //     clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
-        // ); 
-
-        // color.r += (dist_and_depth.y / f32(MAX_STEPS/2));
+        let death_eff_col = max(
+            clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
+            (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
+        );
+        color *= death_eff_col;
+    
+        //making monochrome effect for death effect
+        var bw_col = clamp(color, vec3(color.r), vec3(100.0));
+        bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
+        bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
+        bw_col += (tv_noise - 0.5)*(1.0-death_eff_col*0.5)*0.3;
+    
+        color = mix(
+            color,
+            bw_col*(bw_col*1.4),
+            clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
+        );
 
         return vec4<f32>(color, lightness);
 
@@ -5316,8 +5361,6 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
         var color = color_and_light.rgb;
 
-        color += get_2d_player_view_slice_color(uv, dist_and_depth.x);
-
         var lightness = color_and_light.a;
 
         if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {
@@ -5329,64 +5372,19 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         color += color_areas.rgb;
         lightness += color_areas.a;
 
-        // let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
-        let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
-        // color = mix(color, sc_r_c.rgb, sc_r_c.a*0.3);
-        color = mix(color, sc_e_c.rgb, sc_e_c.a*0.55);
-
-        // color correction
         color = pow(color, vec3(0.4545));
 
-        // let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
-        
-        // making damage effect
-        // let q = (inn.position.xy+vec2(1.0))/2.0;
-        
-        // making vignetting effect
-        // let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
-        // color *= v;
+        let slice_color_and_dist = get_2d_player_view_slice_color(uv, dist_and_depth.x);
+        color += slice_color_and_dist.rgb;
 
-        // let hurt_coef = max(
-        //     clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
-        //     (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
-        // );
-        // color.g *= clamp(hurt_coef*1.4, 0.0, 1.0);
-        // color.b *= clamp(hurt_coef*1.5, 0.0, 1.0);
-        // color.r *= hurt_coef;
-        // color -= (1.0-hurt_coef)*0.2;
+        if slice_color_and_dist.w > 0.0
+        {
+            let p = camera_position + ray_direction*slice_color_and_dist.w;
+            let sc_e_c = w_scanner_enemies_color_for_2d(p);
+            color = mix(color, sc_e_c.rgb, sc_e_c.a*0.85);
+        }
 
-        // color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
-
-        // making death effect
-        // let death_eff_col = max(
-        //     clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
-        //     (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
-        // );
-        // color *= death_eff_col;
-
-        // color = mix(vec3(tv_noise(uv*100.0, dynamic_data.time)),color, death_eff_col*0.7);
-
-        // var bw_col = clamp(color, vec3(color.r), vec3(100.0));
-        // bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
-        // bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
-        // bw_col += (tv_noise - 0.5)*(1.0-death_eff_col*0.5)*0.3;
-
-        // color = mix(
-        //     color,
-        //     bw_col*(bw_col*1.4),
-        //     clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
-        // ); 
-
-        // color.r += (dist_and_depth.y / f32(MAX_STEPS/2));
 
         return vec4<f32>(color, lightness);
-        // return color_and_light;
-        // for (var i = 1u; i < min(mats.materials_count,2u); i++) {
-        //     let new_color = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
-        //     color_and_light = mix(color_and_light, new_color, mats.material_weights[i]);
-        // }
     }
-
-
-    // return vec4<f32>(color, lightness);
 }

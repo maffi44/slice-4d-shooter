@@ -312,6 +312,8 @@ impl PlayersProjections
 
                     self.current_active_projection = None;
 
+                    //use the same sound for cuptured and lost 
+                    //projection, just with different pitch
                     audio_system.spawn_non_spatial_sound(
                         Sound::ProjectionCaptured,
                         0.70,
@@ -464,6 +466,67 @@ impl PlayersProjections
                 original_position: updated_projection_original_position,
                 radius: projection_updated_radius * 1.111,
                 abs_zw_rotation_offset,
+            };
+    
+            projection.body = Some(body);
+        }
+    }
+
+
+    pub fn update_projection_postiton_for_2d_3d_example(
+        &mut self,
+        projection_id: ActorID,
+        updated_projection_original_position: Vec4,
+        projection_updated_radius: f32,
+        inner_state: &PlayerInnerState
+    )
+    {
+        let projection = self.find_projection_mut(
+            projection_id,
+        );
+     
+        if let Some(projection) = projection
+        {
+            let player_position = inner_state.get_position();
+        
+            let player_to_projection_vec = updated_projection_original_position - player_position;
+            let player_x_vertical_dir = inner_state.get_rotation_matrix() * RIGHT;
+    
+            let rel_projection_x_offset = player_x_vertical_dir.dot(player_to_projection_vec.normalize());
+    
+            let mut rotated_player_to_projection_vec = player_to_projection_vec -
+                ((rel_projection_x_offset * player_to_projection_vec.length()) * player_x_vertical_dir);
+            
+            // it possible if the projected player is exactly above the player on the X axis
+            if rotated_player_to_projection_vec.length() == 0.0 ||
+                rotated_player_to_projection_vec.is_nan() ||
+                !rotated_player_to_projection_vec.is_finite()
+            {
+                return;
+            }
+    
+            rotated_player_to_projection_vec = {
+                (player_to_projection_vec.length() / rotated_player_to_projection_vec.length())
+                *
+                rotated_player_to_projection_vec
+            };
+            
+            let projected_position = {
+                player_position +
+                rotated_player_to_projection_vec
+            };
+    
+            let abs_zx_rotation_offset = RIGHT.dot(player_to_projection_vec.normalize()).asin();
+    
+    
+            if abs_zx_rotation_offset.is_nan() {panic!("Got NAN during update player projection")}
+        
+            let body = PlayerProjectionBody
+            {
+                projected_position,
+                original_position: updated_projection_original_position,
+                radius: projection_updated_radius * 1.111,
+                abs_zw_rotation_offset: abs_zx_rotation_offset,
             };
     
             projection.body = Some(body);

@@ -201,6 +201,7 @@ impl Engine {
 
         let net = NetSystem::new(
             &world.players_settings,
+            it_is_2d_3d_example,
             #[cfg(not(target_arch = "wasm32"))]
             &mut runtime
         ).await;
@@ -288,6 +289,7 @@ impl HeadlessEngine
 
         let net = NetSystem::new(
             &world.players_settings,
+            false,
             #[cfg(not(target_arch = "wasm32"))]
             &mut runtime
         ).await;

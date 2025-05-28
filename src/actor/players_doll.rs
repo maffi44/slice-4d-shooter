@@ -72,7 +72,7 @@ impl PlayerDollInputState {
 
 
 const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
-pub struct PlayersDoll {
+pub struct PlayerDoll {
     team: Team,
     id: Option<ActorID>,
     transform: Transform,
@@ -101,6 +101,8 @@ pub struct PlayersDoll {
 
     on_way_to_next_w_level: bool,
     current_w_level_prev_frame: u32,
+
+    player_doll_for_2d_3d_example: bool,
 
     w_scanner_enable: bool,
     w_scanner_radius: f32,
@@ -189,7 +191,7 @@ pub enum PlayersDollMessage{
 const VISUAL_BEAM_MULT: f32 = 2.0;
 const VISUAL_FIRE_SHPERE_MULT: f32 = 2.4;
 
-impl PlayersDoll {
+impl PlayerDoll {
     pub fn new(
         id: ActorID,
         player_sphere_radius: f32,
@@ -198,6 +200,7 @@ impl PlayersDoll {
         audio_system: &mut AudioSystem,
         player_settings: PlayerSettings,
         team: Team,
+        player_doll_for_2d_3d_example: bool,
     ) -> Self {
 
         let my_color = match team {
@@ -212,7 +215,17 @@ impl PlayersDoll {
             }
         };
 
-        let weapon_offset = {
+        let weapon_offset = if player_doll_for_2d_3d_example
+        {
+            Vec4::new(
+                0.0,
+                1.0,
+                0.0,
+                0.0
+            ).normalize() * (player_sphere_radius * 1.35)
+        }
+        else
+        {
             Vec4::new(
                 1.0,
                 0.26,
@@ -254,7 +267,7 @@ impl PlayersDoll {
             // player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
         };
 
-        PlayersDoll {
+        PlayerDoll {
             input_state,
             current_w_level_prev_frame: 0u32,
             weapon_shooting_point,
@@ -280,6 +293,7 @@ impl PlayersDoll {
             w_scanner_radius: 0.0,
             w_scanner_ring_intesity: 0.0,
             visual_wave: Vec::with_capacity(1),
+            player_doll_for_2d_3d_example,
         }
     }
 
@@ -425,47 +439,97 @@ impl PlayersDoll {
 
     fn extrapolate_interpolatating_model_target(&mut self, delta: f32, audio_system: &mut AudioSystem)
     {
-        let mut movement_vec = Vec4::ZERO;
-        
-        if self.input_state.move_forward { 
-            movement_vec += FORWARD;
-        }
-
-        if self.input_state.move_backward {
-            movement_vec += BACKWARD;
-        }
-
-        if self.input_state.move_right {
-            movement_vec += RIGHT
-        }
-
-        if self.input_state.move_left {
-            movement_vec += LEFT;
-        }
-
-        if self.input_state.will_jump {
-
-            if self.interpolating_model_target.is_on_y_ground {
-                self.interpolating_model_target.add_force(UP * self.player_settings.jump_y_speed);
-
-                self.input_state.will_jump = false;
-            }
-        }
-
-        movement_vec = self.target_transform.get_rotation() * movement_vec;
-
-        movement_vec.y = 0.0;
-        movement_vec.w = 0.0;
-
-        match movement_vec.try_normalize()
+        let movement_vec = if self.player_doll_for_2d_3d_example
         {
-            Some(vec) => movement_vec = vec,
-            None => movement_vec = Vec4::ZERO,
+            let mut movement_vec = Vec4::ZERO;
+
+            if self.input_state.move_right {
+                match self.team {
+                    Team::Blue => movement_vec += FORWARD,
+                    Team::Red => movement_vec += BACKWARD,
+                }
+            }
+        
+            if self.input_state.move_left {
+                match self.team {
+                    Team::Blue => movement_vec += BACKWARD,
+                    Team::Red => movement_vec += FORWARD,
+                }
+            }
+        
+            if let Some(vec) = movement_vec.try_normalize() {
+                movement_vec = vec;
+            }
+        
+            movement_vec.y = 0.0;
+            movement_vec.w = 0.0;
+        
+            match movement_vec.try_normalize()
+            {
+                Some(vec) => movement_vec = vec,
+                None => movement_vec = Vec4::ZERO,
+            }
+        
+            // lock player on w axis 
+            let w_dif = -self.target_transform.get_position().w;
+            self.interpolating_model_target.current_velocity.w = (w_dif*1.5).clamp(
+                -self.player_settings.gravity_w_speed*25.0,
+                self.player_settings.gravity_w_speed*25.0
+            );
+        
+            self.interpolating_model_target.add_force(Vec4::NEG_X * self.player_settings.gravity_w_speed * delta);
+        
+            self.interpolating_model_target.add_force(DOWN * self.player_settings.gravity_y_speed * delta);
+
+            movement_vec
         }
+        else
+        {
+            let mut movement_vec = Vec4::ZERO;
+        
+            if self.input_state.move_forward { 
+                movement_vec += FORWARD;
+            }
 
-        self.interpolating_model_target.add_force(DOWN * self.player_settings.gravity_y_speed * delta);
+            if self.input_state.move_backward {
+                movement_vec += BACKWARD;
+            }
 
-        self.interpolating_model_target.add_force(W_DOWN * self.player_settings.gravity_w_speed * delta);
+            if self.input_state.move_right {
+                movement_vec += RIGHT
+            }
+
+            if self.input_state.move_left {
+                movement_vec += LEFT;
+            }
+
+            if self.input_state.will_jump {
+
+                if self.interpolating_model_target.is_on_y_ground {
+                    self.interpolating_model_target.add_force(UP * self.player_settings.jump_y_speed);
+
+                    self.input_state.will_jump = false;
+                }
+            }
+
+            movement_vec = self.target_transform.get_rotation() * movement_vec;
+
+            movement_vec.y = 0.0;
+            movement_vec.w = 0.0;
+
+            match movement_vec.try_normalize()
+            {
+                Some(vec) => movement_vec = vec,
+                None => movement_vec = Vec4::ZERO,
+            }
+
+            self.interpolating_model_target.add_force(DOWN * self.player_settings.gravity_y_speed * delta);
+
+            self.interpolating_model_target.add_force(W_DOWN * self.player_settings.gravity_w_speed * delta);
+
+            movement_vec
+        };
+        
 
         if self.interpolating_model_target.is_on_y_ground {
             self.interpolating_model_target.set_wish_direction(
@@ -534,7 +598,7 @@ impl PlayersDoll {
 
 
 
-impl Actor for PlayersDoll {
+impl Actor for PlayerDoll {
     fn recieve_message(
         &mut self,
         message: Message,

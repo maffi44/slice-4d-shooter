@@ -38,7 +38,7 @@ use client_server_protocol::{
 use crate::{
     actor::{
         flag::{FlagMessage, FlagStatus}, hole::Hole, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, main_player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
-            PlayerDollInputState, PlayersDoll, PlayersDollMessage}, session_controller::SessionControllerMessage, ActorWrapper, CommonActorsMessage, Message, MessageType, SpecificActorMessage
+            PlayerDollInputState, PlayerDoll, PlayersDollMessage}, session_controller::SessionControllerMessage, ActorWrapper, CommonActorsMessage, Message, MessageType, SpecificActorMessage
     },
     transform::{self, Transform}
 };
@@ -90,12 +90,14 @@ pub struct NetSystem {
     connection_state: Option<ConnectionState>,
 
     player_settings: PlayerSettings,
+    it_is_2d_3d_example: bool,
     current_visible_ui_elem: UIElementType,
 }
 
 impl NetSystem {
     pub async fn new(
         settings: &PlayerSettings,
+        it_is_2d_3d_example: bool,
         #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime
     ) -> Self {
@@ -115,6 +117,7 @@ impl NetSystem {
             connection_data,
 
             player_settings: settings.clone(),
+            it_is_2d_3d_example,
             current_visible_ui_elem: UIElementType::TitlePressPToPlayOnline
         }
     }
@@ -559,6 +562,7 @@ impl NetSystem {
         self.current_visible_ui_elem = UIElementType::TitleConnectedToServer;
 
         if webrtc_socket.any_channel_closed() {
+
             engine_handle.send_boardcast_message(
                 Message {
                     from: 0u128,
@@ -568,7 +572,6 @@ impl NetSystem {
                     )
                 }
             );
-
             return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
         }
 
@@ -579,6 +582,7 @@ impl NetSystem {
                         panic!("BUG: Catched host connection during connected to game server state. This can't be happening in client-server net arch");
                     }
                     PeerState::Disconnected => {
+
                         engine_handle.send_boardcast_message(
                             Message {
                                 from: 0u128,
@@ -588,7 +592,6 @@ impl NetSystem {
                                 )
                             }
                         );
-
                         return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
                     }
                 }   
@@ -679,6 +682,7 @@ impl NetSystem {
                             engine_handle,
                             audio_system,
                             &self.player_settings,
+                            self.it_is_2d_3d_example,
                         );
                     }
 
@@ -739,6 +743,7 @@ impl NetSystem {
                             engine_handle,
                             audio_system,
                             &self.player_settings,
+                            self.it_is_2d_3d_example,
                         );
                     }
                 }
@@ -763,7 +768,7 @@ impl NetSystem {
                 webrtc_socket
                     .channel_mut(0)
                     .send(
-                        packet.clone(),
+                        packet,
                         *server_id
                     );
             }
@@ -787,7 +792,7 @@ impl NetSystem {
                 webrtc_socket
                     .channel_mut(0)
                     .send(
-                        packet.clone(),
+                        packet,
                         *server_id
                     );
             }
@@ -811,7 +816,7 @@ impl NetSystem {
                 webrtc_socket
                     .channel_mut(1)
                     .send(
-                        packet.clone(),
+                        packet,
                         *server_id
                     );
             }
@@ -835,7 +840,7 @@ impl NetSystem {
                 webrtc_socket
                     .channel_mut(0)
                     .send(
-                        packet.clone(),
+                        packet,
                         *server_id
                     );
             }
@@ -859,7 +864,7 @@ impl NetSystem {
                 webrtc_socket
                     .channel_mut(1)
                     .send(
-                        packet.clone(),
+                        packet,
                         *server_id
                     );
             }
@@ -874,6 +879,7 @@ fn process_message(
     engine_handle: &mut EngineHandle,
     audio_system: &mut AudioSystem,
     player_settings: &PlayerSettings,
+    it_is_2d_3d_example: bool,
 ) {
     match message
     {
@@ -912,7 +918,7 @@ fn process_message(
                 {
                     let transform = Transform::from_serializable_transform(tr);
 
-                    let players_doll = PlayersDoll::new(
+                    let players_doll = PlayerDoll::new(
                         message_from_peer_id,
                         player_sphere_radius,
                         transform,
@@ -920,6 +926,7 @@ fn process_message(
                         audio_system,
                         player_settings.clone(),
                         team,
+                        it_is_2d_3d_example
                     );
 
                     let actor = ActorWrapper::PlayersDoll(players_doll);

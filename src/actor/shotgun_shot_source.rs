@@ -104,17 +104,17 @@ impl ShotgunShotSource
                 {
                     Vec4::new(
                         0.0,
-                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
-                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD*2.0..=SHOTGUN_SHOTS_SPREAD*2.0),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD*2.0..=SHOTGUN_SHOTS_SPREAD*2.0),
                         0.0,
                     )
                 }
                 else
                 {
                     Vec4::new(
-                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD_ALONG_W..=SHOTGUN_SHOTS_SPREAD_ALONG_W),
-                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
-                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD_ALONG_W*2.0..=SHOTGUN_SHOTS_SPREAD_ALONG_W*2.0),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD*2.0..=SHOTGUN_SHOTS_SPREAD*2.0),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD*2.0..=SHOTGUN_SHOTS_SPREAD*2.0),
                         0.0,
                     )
                 }

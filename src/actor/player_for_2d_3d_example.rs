@@ -6,6 +6,7 @@ use client_server_protocol::{
     RemoteMessage,
     Team
 };
+use fyrox_core::math::lerpf;
 use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{
@@ -202,7 +203,7 @@ impl Actor for PlayerFor2d3dExample {
                                 updated_projection_radius
                             ) =>
                             {
-                                self.screen_effects.player_projections.update_projection_postiton(
+                                self.screen_effects.player_projections.update_projection_postiton_for_2d_3d_example(
                                     from,
                                     updated_projection_position,
                                     updated_projection_radius,
@@ -994,10 +995,22 @@ fn process_player_for_example_rotation(
         ).clamp(-PI/2.0, PI/2.0);
         
     } else {
-        xz *= 1.0 - delta * 2.8;
-        if xz.abs() < 0.0001 {
-            xz = 0.0;
+
+        let xz_rotation_target_angle = match inner_state.team
+        {
+            Team::Blue => 0.0,
+            Team::Red => PI,
+        };
+
+        xz = lerpf(
+            xz,
+            xz_rotation_target_angle,
+            delta * 4.8
+        );
+        if (xz - xz_rotation_target_angle).abs() < 0.001 {
+            xz = xz_rotation_target_angle;
         }
+
         yz = (
             input.mouse_axis.y *
             *player_settings.mouse_sensivity.lock().unwrap() +
@@ -1043,13 +1056,19 @@ fn process_player_for_example_movement_input(
     let mut movement_vec = Vec4::ZERO;
 
     if input.move_right.is_action_pressed() {
-        movement_vec += FORWARD;
+        match inner_state.team {
+            Team::Blue => movement_vec += FORWARD,
+            Team::Red => movement_vec += BACKWARD,
+        }
         player_doll_input_state.move_forward = true;
 
     }
 
     if input.move_left.is_action_pressed() {
-        movement_vec += BACKWARD;
+        match inner_state.team {
+            Team::Blue => movement_vec += BACKWARD,
+            Team::Red => movement_vec += FORWARD,
+        }
         player_doll_input_state.move_backward = true;
     }
 

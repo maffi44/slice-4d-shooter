@@ -51,7 +51,7 @@ use self::{
     },
     players_death_explosion::PlayersDeathExplosion,
     players_doll::{
-        PlayersDoll,
+        PlayerDoll,
         PlayersDollMessage
     },
     flag::FlagMessage,
@@ -143,7 +143,7 @@ pub enum ActorWrapper {
     WonderingActor(WanderingActor),
     HoleGunShot(HoleGunShot),
     HoleGunMiss(HoleGunMiss),
-    PlayersDoll(PlayersDoll),
+    PlayersDoll(PlayerDoll),
     PlayersDeathExplosion(PlayersDeathExplosion),
     MachinegunShot(MachinegunShot),
     ShootingImpact(ShootingImpact),
