@@ -1,4 +1,3 @@
-use bincode::de;
 use client_server_protocol::{
     NetCommand,
     NetMessageToPlayer,
@@ -14,9 +13,8 @@ use crate::{
         device::{
             holegun::HoleGun,
             Device,
-            DeviceType
         },
-        main_player::{player_inner_state::PlayerInnerState, player_input_master, player_settings, PlayerMessage, PlayerMovingState, PlayerScreenEffects, PlayersProjections},
+        main_player::{player_inner_state::PlayerInnerState, player_input_master, player_settings, PlayerMessage, PlayerScreenEffects, PlayersProjections},
         players_doll::PlayerDollInputState,
         Actor,
         ActorID,
@@ -35,15 +33,13 @@ use crate::{
             EngineHandle
         }, input::ActionsFrameState, physics::{
             colliders_container::PhysicalElement,
-            dynamic_collider::PlayersDollCollider,
             kinematic_collider::{
-                KinematicCollider,
                 KinematicColliderMessage
             },
             PhysicsSystem
         }, render::{camera::Camera, VisualElement}, time::TimeSystem, ui::{
-            self, RectSize, UIElement, UIElementType, UISystem
-        }, world::{level::Spawn, static_object::{BeamVolumeArea, VolumeArea}}
+            UIElement, UIElementType, UISystem
+        }, world::{level::Spawn,}
     },
     transform::{Transform, BACKWARD, DOWN, FORWARD, UP},
 };
@@ -54,15 +50,14 @@ use self::{
 };
 
 use core::panic;
-use std::{collections::btree_set::Difference, f32::consts::PI, usize};
-use fyrox_core::pool::Handle;
-use fyrox_sound::source::{SoundSource, Status};
+use std::f32::consts::PI;
+use fyrox_sound::source::Status;
 use glam::{
-    FloatExt, Mat2, Mat3, Mat4, Vec2, Vec3, Vec4
+    Mat2, Mat4, Vec2, Vec4
 };
 
 use super::{
-    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner, GET_DAMAGE_PROJECTION_INTENSITY, MAX_MOVE_W_BONUSES_I_CAN_HAVE, PLAYER_MAX_HP, PLAYER_PROJECTION_DISPLAY_TIME, SHOW_CROSSHAIER_HIT_MARK_TIME}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
+    device::{machinegun::MachineGun, shotgun::Shotgun}, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner, GET_DAMAGE_PROJECTION_INTENSITY, MAX_MOVE_W_BONUSES_I_CAN_HAVE, PLAYER_MAX_HP, PLAYER_PROJECTION_DISPLAY_TIME, SHOW_CROSSHAIER_HIT_MARK_TIME}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
 };
 
 
@@ -145,6 +140,7 @@ impl Actor for PlayerFor2d3dExample {
                         self.inner_state.transform.increment_position(increment);
                     },
                     CommonActorsMessage::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::ClientDisconnectedFromGameServer => {}
                 }
             }
 
@@ -1149,19 +1145,7 @@ impl PlayerFor2d3dExample {
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
 
-            hands_slot_0: Box::new(HoleGun::new(
-                player_settings.energy_gun_hole_size_mult, 
-                player_settings.energy_gun_add_force_mult, 
-                player_settings.energy_gun_damage_mult, 
-                player_settings.energy_gun_restoring_speed,
-                Vec4::new(
-                    0.0,
-                    1.0,
-                    0.0,
-                    0.0
-                ),
-            )),
-            hands_slot_1: Some(Box::new(MachineGun::new(
+            hands_slot_0: Box::new(MachineGun::new(
                 player_settings.machinegun_damage,
                 player_settings.machinegun_add_force, 
                 player_settings.machinegun_heat_add_on_shot, 
@@ -1172,8 +1156,28 @@ impl PlayerFor2d3dExample {
                     0.0,
                     0.0
                 ),
+            )),
+            hands_slot_1: Some(Box::new(Shotgun::new(
+                Vec4::new(
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0
+                ),
+                true,
             ))),
-            hands_slot_2: None,
+            hands_slot_2: Some(Box::new(HoleGun::new(
+                player_settings.energy_gun_hole_size_mult, 
+                player_settings.energy_gun_add_force_mult, 
+                player_settings.energy_gun_damage_mult, 
+                player_settings.energy_gun_restoring_speed,
+                Vec4::new(
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0
+                ),
+            ))),
             hands_slot_3: None,
 
             devices: [None, None, None, None],

@@ -797,6 +797,10 @@ impl Actor for Flag
                     {
                         self.transform = tr;
                     }
+                    CommonActorsMessage::ClientDisconnectedFromGameServer =>
+                    {
+                        self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
+                    }
                     _ => {}
                 }
             }

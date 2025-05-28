@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::{
-    flag::{self, FlagStatus}, move_w_bonus::BonusSpotStatus, main_player::{PlayerMessage, BLUE_TEAM_COLOR, RED_TEAM_COLOR}, Actor, ActorID, Message, MessageType, SpecificActorMessage
+    flag::{self, FlagStatus}, main_player::{PlayerMessage, BLUE_TEAM_COLOR, RED_TEAM_COLOR}, move_w_bonus::BonusSpotStatus, Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage
 };
 
 pub const DEFAULT_TEAM: Team = Team::Blue;
@@ -738,6 +738,25 @@ impl Actor for SessionController
 
                             _ => {}
                         }
+                    }
+                    _ => {}
+                }
+            }
+            MessageType::CommonActorsMessages(message) =>
+            {
+                match message
+                {
+                    CommonActorsMessage::ClientDisconnectedFromGameServer =>
+                    {
+                        self.show_blue_team_backlight_timer = 0.0;
+                        self.show_red_team_backlight_timer = 0.0;
+                        self.show_join_blue_team_title_timer = 0.0;
+                        self.show_join_red_team_title_timer = 0.0;
+                        self.show_blue_team_win_title_timer = 0.0;
+                        self.show_red_team_win_title_timer = 0.0;
+                        self.red_team_score = 4;
+                        self.blue_team_score = 4;
+                        self.set_score_ui(ui_system);
                     }
                     _ => {}
                 }

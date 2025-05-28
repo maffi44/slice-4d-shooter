@@ -563,6 +563,17 @@ impl Actor for PlayersDoll {
                         self.transform.increment_position(increment);
                     },
                     CommonActorsMessage::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::ClientDisconnectedFromGameServer =>
+                    {
+                        engine_handle.send_command(
+                            Command {
+                                sender: self.get_id().expect("Player Doll have not ActorID"),
+                                command_type: CommandType::RemoveActor(
+                                    self.get_id().expect("Player Doll have not ActorID")
+                                )
+                            }
+                        );
+                    }
                 }
             }
             MessageType::PhysicsMessages(message) => {
@@ -801,6 +812,7 @@ impl Actor for PlayersDoll {
                                     damage_dealer_id,
                                     damage_dealer_team,
                                     1.25,
+                                    false,
                                     engine_handle,
                                     physics_system,
                                     audio_system,

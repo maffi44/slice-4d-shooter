@@ -919,6 +919,7 @@ pub enum CommonActorsMessage {
     Enable(bool),
     IncrementPosition(Vec4),
     IWasChangedMyId(ActorID),
+    ClientDisconnectedFromGameServer,
 }
 
 #[derive(Clone)]

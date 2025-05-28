@@ -11,7 +11,7 @@ use crate::engine::world::static_object::{SphericalVolumeArea, VolumeArea};
 use crate::transform::Transform;
 
 use super::device::shotgun::{
-    SHOTGUN_LASER_SHOTS_AMOUNT, SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD, SHOTGUN_LASER_SHOT_COLOR, SHOTGUN_LASER_SHOT_MAX_DISTANCE, SHOTGUN_SHOT_FLASH_EXPLAND_SPEED, SHOTGUN_SHOT_FLASH_FADE_SPEED, SHOTGUN_SHOT_FLASH_MAX_RADIUS, SHOTGUN_SHOTS_SPREAD
+    SHOTGUN_LASER_SHOTS_AMOUNT, SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD, SHOTGUN_LASER_SHOT_COLOR, SHOTGUN_LASER_SHOT_MAX_DISTANCE, SHOTGUN_SHOTS_SPREAD, SHOTGUN_SHOTS_SPREAD_ALONG_W, SHOTGUN_SHOT_FLASH_EXPLAND_SPEED, SHOTGUN_SHOT_FLASH_FADE_SPEED, SHOTGUN_SHOT_FLASH_MAX_RADIUS
 };
 use super::shotgun_laser_shot::ShotgunLaserShot;
 use super::{Actor, ActorID};
@@ -40,6 +40,7 @@ impl ShotgunShotSource
         damage_dealer_id: ActorID,
         damage_dealer_team: Team,
         beam_and_flash_size_mult: f32,
+        it_is_for_2d_3d_example: bool,
         engine_handle: &mut EngineHandle,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
@@ -75,27 +76,69 @@ impl ShotgunShotSource
 
         let mut rng = StdRng::seed_from_u64(rng_seed);
 
-        for i in 0..SHOTGUN_LASER_SHOTS_AMOUNT
+        let shots_amount = if it_is_for_2d_3d_example
+        {
+            SHOTGUN_LASER_SHOTS_AMOUNT / 2
+        }
+        else
+        {
+            SHOTGUN_LASER_SHOTS_AMOUNT
+        };
+
+        let shots_amount_without_spread = if it_is_for_2d_3d_example
+        {
+            SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD / 2
+        }
+        else
+        {
+            SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD
+        };
+
+        for i in 0..shots_amount
         {
             let mut direction = direction;
 
-            let direction_deviation = if i <= SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD
+            let direction_deviation = if it_is_for_2d_3d_example
             {
-                Vec4::new(
-                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
-                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
-                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
-                    0.0,
-                )
+                if i <= shots_amount_without_spread
+                {
+                    Vec4::new(
+                        0.0,
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        0.0,
+                    )
+                }
+                else
+                {
+                    Vec4::new(
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD_ALONG_W..=SHOTGUN_SHOTS_SPREAD_ALONG_W),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        0.0,
+                    )
+                }
             }
             else
             {
-                Vec4::new(
-                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
-                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
-                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
-                    rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
-                )
+                if i <= SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD
+                {
+                    Vec4::new(
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        0.0,
+                    )
+                }
+                else
+                {
+                    Vec4::new(
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD..=SHOTGUN_SHOTS_SPREAD),
+                        rng.gen_range(-SHOTGUN_SHOTS_SPREAD_ALONG_W..=SHOTGUN_SHOTS_SPREAD_ALONG_W),
+                    )
+                }
             };
 
             direction = (direction + direction_deviation).normalize();

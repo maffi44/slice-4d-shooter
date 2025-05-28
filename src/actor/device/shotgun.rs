@@ -56,24 +56,28 @@ pub const SHOTGUN_SHOT_FLASH_FADE_SPEED: f32 = 2.5;
 
 pub const SHOTGUN_LASER_SHOTS_AMOUNT: u32 = 19;
 pub const SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD: u32 = 5;
-pub const SHOTGUN_SHOTS_SPREAD: f32 = 0.100;
+pub const SHOTGUN_SHOTS_SPREAD: f32 = 0.093;
+pub const SHOTGUN_SHOTS_SPREAD_ALONG_W: f32 = 0.175;
 
 const SHOTGUN_COOLING_SPEED: f32 = 40.0;
 
 pub struct Shotgun {
     temperature: f32,
     shooted_from_pivot_point_dir: Vec4,
+    this_is_shotgun_for_2d_3d_example: bool,
 }
 
 impl Shotgun {
     pub fn new(
         shooted_from_pivot_point_dir: Vec4,
+        this_is_shotgun_for_2d_3d_example: bool,
 
     ) -> Self {
 
         Shotgun {
             temperature: 0.0,
             shooted_from_pivot_point_dir,
+            this_is_shotgun_for_2d_3d_example
         }
     }
 
@@ -112,6 +116,7 @@ impl Shotgun {
             player_id,
             player.team,
             1.0,
+            self.this_is_shotgun_for_2d_3d_example,
             engine_handle,
             physic_system,
             audio_system,

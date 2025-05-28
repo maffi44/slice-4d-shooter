@@ -240,6 +240,8 @@ impl Actor for MoveWBonusSpot
                     {
 
                     }
+
+                    CommonActorsMessage::ClientDisconnectedFromGameServer => {}
                 }
             }
 

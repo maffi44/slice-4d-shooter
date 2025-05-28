@@ -624,7 +624,7 @@ pub const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
 pub const W_SCANNER_MAX_RADIUS: f32 = 21.0;
 pub const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
 pub const TIME_TO_DIE_SLOWLY: f32 = 0.5;
-pub const CROSSHAIR_ROTATION_SPEED: f32 = -12.0;
+pub const CROSSHAIR_ROTATION_SPEED: f32 = -19.0;
 pub const CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION: f32 = -PI*0.5;
 pub const CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE: f32 = 0.1;
 pub const CROSSHAIR_INCREASING_SPEED: f32 = 0.35f32;
@@ -723,6 +723,7 @@ impl Actor for MainPlayer {
                         self.inner_state.transform.increment_position(increment);
                     },
                     CommonActorsMessage::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::ClientDisconnectedFromGameServer => {}
                 }
             }
 
@@ -3547,6 +3548,7 @@ impl MainPlayer {
                     -1.0,
                     0.0
                 ),
+                false
             ))),
             hands_slot_2: Some(Box::new(HoleGun::new(
                 player_settings.energy_gun_hole_size_mult, 

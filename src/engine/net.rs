@@ -149,6 +149,7 @@ impl NetSystem {
                     self.handle_connection_failure(
                         timer,
                         reason,
+                        engine_handle,
                         ui_system
                     )
                 )
@@ -199,6 +200,7 @@ impl NetSystem {
         &mut self,
         mut timer: u32,
         reason: ConnectionError,
+        engine_handle: &mut EngineHandle,
         ui_system: &mut UISystem,
     ) -> ConnectionState
     {
@@ -286,6 +288,16 @@ impl NetSystem {
 
         if timer == 0u32
         {
+            engine_handle.send_boardcast_message(
+                Message {
+                    from: 0u128,
+                    remote_sender: false,
+                    message: MessageType::CommonActorsMessages(
+                        CommonActorsMessage::ClientDisconnectedFromGameServer
+                    )
+                }
+            );
+
             ConnectionState::WaitingForUsersRequest
         }
         else
@@ -547,6 +559,16 @@ impl NetSystem {
         self.current_visible_ui_elem = UIElementType::TitleConnectedToServer;
 
         if webrtc_socket.any_channel_closed() {
+            engine_handle.send_boardcast_message(
+                Message {
+                    from: 0u128,
+                    remote_sender: false,
+                    message: MessageType::CommonActorsMessages(
+                        CommonActorsMessage::ClientDisconnectedFromGameServer
+                    )
+                }
+            );
+
             return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
         }
 
@@ -557,6 +579,16 @@ impl NetSystem {
                         panic!("BUG: Catched host connection during connected to game server state. This can't be happening in client-server net arch");
                     }
                     PeerState::Disconnected => {
+                        engine_handle.send_boardcast_message(
+                            Message {
+                                from: 0u128,
+                                remote_sender: false,
+                                message: MessageType::CommonActorsMessages(
+                                    CommonActorsMessage::ClientDisconnectedFromGameServer
+                                )
+                            }
+                        );
+
                         return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
                     }
                 }   

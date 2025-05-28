@@ -121,6 +121,7 @@ impl Actor for Observer {
                         self.inner_state.transform.increment_position(increment);
                     },
                     CommonActorsMessage::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::ClientDisconnectedFromGameServer => {}
                 }
             }
 
