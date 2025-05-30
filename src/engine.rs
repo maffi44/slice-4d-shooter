@@ -123,6 +123,7 @@ impl Engine {
             
                 .with_canvas(Some(canvas))
                 .with_active(true)
+                .with_title("Slice: 4D Shooter")
                 // .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
                 // .with_inner_size(PhysicalSize::new(1200, 800))
                 .build(&cleint_main_loop.event_loop)
@@ -134,7 +135,7 @@ impl Engine {
                 WindowAttributes::default()
                 .with_active(true)
                 .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
-                .with_title("Just 4D Shooter")
+                .with_title("Slice: 4D Shooter")
             ).unwrap();
         }
         log::info!("engine systems: window init");

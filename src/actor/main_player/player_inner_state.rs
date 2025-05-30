@@ -49,6 +49,7 @@ pub struct PlayerInnerState {
     pub second_jump_is_charging: bool,
     pub second_jump_charging_energy: f32,
     pub charging_second_jump_sound_handle: Option<Option<Handle<SoundSource>>>,
+    pub eyes_offset: Vec4,
 }
 
 
@@ -61,6 +62,7 @@ impl PlayerInnerState {
         blue_base_position: Vec4,
         red_base_position: Vec4,
         weapon_offset: Vec4,
+        eyes_offset: Vec4,
 
         audio_system: &mut AudioSystem,
     ) -> Self {
@@ -157,12 +159,13 @@ impl PlayerInnerState {
             second_jump_is_charging: false,
             charging_second_jump_sound_handle: None,
             second_jump_charging_energy: 0.0,
+            eyes_offset,
         }
     }
 
     pub fn get_eyes_offset(&self) -> Vec4
     {
-        Vec4::Y * self.collider.get_collider_radius() * 0.2
+        self.eyes_offset
     }
 
     pub fn get_eyes_position(&self) -> Vec4

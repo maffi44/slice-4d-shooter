@@ -4816,7 +4816,7 @@ fn get_color_and_light_from_mats(
     {
         let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
 
-        let x_height_coef = clamp((hited_pos.x - 0.3) / 4.5, 0.0, 1.0);
+        let x_height_coef = clamp((hited_pos.x - 0.3) / 8.5, 0.0, 1.0);
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
@@ -4950,7 +4950,7 @@ fn get_color_and_light_from_mats_2d(
     {
         let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
 
-        let x_height_coef = clamp((hited_pos.x - 0.3) / 4.5, 0.0, 1.0);
+        let x_height_coef = clamp((hited_pos.x - 0.3) / 8.5, 0.0, 1.0);
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
@@ -5102,11 +5102,14 @@ fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec4<f32
     if dist_to_slice > 0.0 {
         let d = dist_to_slice - dist_to_scene;
 
-        let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0)*0.4 + clamp(-d*10.0,0.0,1.0)*0.03;
+        let slice_diffuse = vec3(1.68, 1.9, 3.5);
+        let edge_diffuse = vec3(1.68, 1.9, 3.5);
 
-        let dist_coef = clamp(1.0-(dist_to_slice/13.0), 0.0, 1.0);
+        let c = edge_diffuse*pow(1.0-clamp(abs(d),0.0,1.0),15.0)*0.4 + slice_diffuse*clamp(-d*10.0,0.0,1.0)*0.06;
+
+        let dist_coef = clamp(1.0-(dist_to_slice/33.0), 0.0, 1.0);
         
-        return vec4(vec3(c*dist_coef), dist_to_slice);
+        return vec4(c*dist_coef, dist_to_slice);
     }
     else
     {
@@ -5287,7 +5290,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         color = pow(color, vec3(0.4545));
         
         let sc_e_c = w_scanner_enemies_color_for_2d(pixel_pos);
-        color = mix(color, sc_e_c.rgb, sc_e_c.a*0.85);
+        color = mix(color, sc_e_c.rgb, sc_e_c.a*0.95);
 
         let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
         
@@ -5381,7 +5384,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         {
             let p = camera_position + ray_direction*slice_color_and_dist.w;
             let sc_e_c = w_scanner_enemies_color_for_2d(p);
-            color = mix(color, sc_e_c.rgb, sc_e_c.a*0.85);
+            color = mix(color, sc_e_c.rgb, sc_e_c.a*0.95);
         }
 
 

@@ -259,7 +259,7 @@
                 "position" : {
                     "x": 0.0,
                     "y": 1.5,
-                    "z": -35.0,
+                    "z": 33.0,
                     "w": 1.5
                 }
             }
@@ -338,7 +338,7 @@
                 },
                 "size" : {
                     "x": 1,
-                    "y": 30,
+                    "y": 7,
                     "z": 80,
                     "w": 30
                 },
@@ -352,9 +352,9 @@
                 "comment" : "blue base floor",
                 "transform" : {
                     "position" : {
-                        "x": 4,
+                        "x": 14,
                         "y": -0.7,
-                        "z": 35,
+                        "z": 31,
                         "w": 0
                     },
                     "rotation" : {
@@ -367,9 +367,9 @@
                     }
                 },
                 "size" : {
-                    "x": 13,
+                    "x": 14,
                     "y": 0.1,
-                    "z": 14,
+                    "z": 18,
                     "w": 15
                 },
                 "roundness" : 0.6
@@ -382,9 +382,9 @@
                 "comment" : "blue base down slick path",
                 "transform" : {
                     "position" : {
-                        "x": 0,
+                        "x": 6,
                         "y": 0,
-                        "z": 44,
+                        "z": 46,
                         "w": 0
                     },
                     "rotation" : {
@@ -397,9 +397,9 @@
                     }
                 },
                 "size" : {
-                    "x": 8.8,
+                    "x": 6,
                     "y": 0.2,
-                    "z": 6,
+                    "z": 4,
                     "w": 15
                 },
                 "roundness" : 0.08,
@@ -413,8 +413,8 @@
                 "comment" : "blue base slick kicker",
                 "transform" : {
                     "position" : {
-                        "x": 0,
-                        "y": 2.5,
+                        "x": 6,
+                        "y": 2,
                         "z": 50,
                         "w": 0
                     },
@@ -428,8 +428,8 @@
                     }
                 },
                 "size" : {
-                    "x": 8.8,
-                    "y": 2.5,
+                    "x": 6,
+                    "y": 2,
                     "z": 0.2,
                     "w": 15
                 },
@@ -444,8 +444,8 @@
                 "comment" : "blue base top slick path",
                 "transform" : {
                     "position" : {
-                        "x": 0,
-                        "y": 4.9,
+                        "x": 0.95,
+                        "y": 3.9,
                         "z": 46.5,
                         "w": 0
                     },
@@ -459,7 +459,7 @@
                     }
                 },
                 "size" : {
-                    "x": 1.9,
+                    "x": 0.95,
                     "y": 0.18,
                     "z": 7.5,
                     "w": 15
@@ -476,9 +476,9 @@
                 "comment" : "blue flagpole",
                 "transform" : {
                     "position" : {
-                        "x": 0,
+                        "x": 0.9,
                         "y": 1.6,
-                        "z": 30.0,
+                        "z": 25.0,
                         "w": 4.0
                     },
                     "rotation" : {
@@ -491,7 +491,7 @@
                     }
                 },
                 "size" : {
-                    "x": 1.8,
+                    "x": 0.9,
                     "y": 1.6,
                     "z": 0.1,
                     "w": 4.0
@@ -500,6 +500,37 @@
                 "roundness" : 0.2
             }
         },
+
+        {
+            "sphere" : {
+                "comment" : "blue random sphere",
+                "transform" : {
+                    "position" : {
+                        "x": 4.5,
+                        "y": 1.6,
+                        "z": 31.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0,
+                    "y": 2.0,
+                    "z": 2.0,
+                    "w": 1.0
+                },
+                "stickiness" : false,
+                "roundness" : 0.0
+            }
+        },
+
         {
             "cube" : {
                 "comment" : "blue base first cube",
@@ -507,7 +538,7 @@
                     "position" : {
                         "x": 0,
                         "y": 1,
-                        "z": 26,
+                        "z": 29,
                         "w": 0
                     },
                     "rotation" : {
@@ -525,7 +556,7 @@
                     "z": 1.4,
                     "w": 7
                 },
-                "stickiness" : true
+                "stickiness" : false
             }
         },
         {
@@ -535,7 +566,7 @@
                     "position" : {
                         "x": 3,
                         "y": 2,
-                        "z": 27,
+                        "z": 30,
                         "w": 0
                     },
                     "rotation" : {
@@ -579,7 +610,7 @@
                 "size" : {
                     "x": 1.5,
                     "y": 2.5,
-                    "z": 4.3,
+                    "z": 1.3,
                     "w": 5
                 },
                 "stickiness" : true,
@@ -593,8 +624,8 @@
                 "comment" : "floating tunnel",
                 "transform" : {
                     "position" : {
-                        "x": 3.5,
-                        "y": 2.5,
+                        "x": 2,
+                        "y": 2,
                         "z": 0,
                         "w": 15
                     },
@@ -608,12 +639,12 @@
                     }
                 },
                 "size" : {
-                    "x": 1.2,
-                    "y": 1.2,
-                    "z": 22,
+                    "x": 0.45,
+                    "y": 0.45,
+                    "z": 15,
                     "w": 15
                 },
-                "roundness" : 1.6
+                "roundness" : 1.2
             }
         },
         {
@@ -621,8 +652,8 @@
                 "comment" : "floating tunnel hole",
                 "transform" : {
                     "position" : {
-                        "x": 3.5,
-                        "y": 2.5,
+                        "x": 2,
+                        "y": 2,
                         "z": 0,
                         "w": 15
                     },
@@ -636,13 +667,43 @@
                     }
                 },
                 "size" : {
-                    "x": 0.6,
-                    "y": 0.6,
-                    "z": 24,
+                    "x": 0.2,
+                    "y": 0.2,
+                    "z": 17,
                     "w": 15
                 },
-                "roundness" : 1.2,
+                "roundness" : 1,
                 "stickiness" : true,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "floating tunnel window",
+                "transform" : {
+                    "position" : {
+                        "x": 3,
+                        "y": 2,
+                        "z": 0,
+                        "w": 15
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2,
+                    "y": 0.5,
+                    "z": 17,
+                    "w": 15
+                },
+                "roundness" : 0.0,
+                "stickiness" : false,
                 "is_positive" : false
             }
         },
@@ -651,7 +712,7 @@
 
         {
             "cube" : {
-                "comment" : "blue base floor",
+                "comment" : "red base floor",
                 "transform" : {
                     "position" : {
                         "x": 4,
@@ -681,7 +742,7 @@
 
         {
             "cube" : {
-                "comment" : "blue base down slick path",
+                "comment" : "red base down slick path",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -712,7 +773,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base slick kicker",
+                "comment" : "red base slick kicker",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -743,7 +804,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base top slick path",
+                "comment" : "red base top slick path",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -775,7 +836,7 @@
 
         {
             "cube" : {
-                "comment" : "blue flagpole",
+                "comment" : "red flagpole",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -804,7 +865,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base first cube",
+                "comment" : "red base first cube",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -832,7 +893,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base first cube hole 1",
+                "comment" : "red base first cube hole 1",
                 "transform" : {
                     "position" : {
                         "x": 3,
@@ -861,7 +922,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base first cube hole 2",
+                "comment" : "red base first cube hole 2",
                 "transform" : {
                     "position" : {
                         "x": 4,

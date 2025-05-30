@@ -34,13 +34,11 @@ use crate::{
             EngineHandle
         }, input::ActionsFrameState, physics::{
             colliders_container::PhysicalElement,
-            kinematic_collider::{
-                KinematicColliderMessage
-            },
+            kinematic_collider::KinematicColliderMessage,
             PhysicsSystem
         }, render::{camera::Camera, VisualElement}, time::TimeSystem, ui::{
             UIElement, UIElementType, UISystem
-        }, world::{level::Spawn,}
+        }, world::{level::Spawn, static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea},}
     },
     transform::{Transform, BACKWARD, DOWN, FORWARD, UP},
 };
@@ -51,10 +49,10 @@ use self::{
 };
 
 use core::panic;
-use std::f32::consts::PI;
+use std::{f32::consts::PI, hint};
 use fyrox_sound::source::Status;
 use glam::{
-    Mat2, Mat4, Vec2, Vec4
+    Mat2, Mat4, Vec2, Vec3, Vec4
 };
 
 use super::{
@@ -94,6 +92,8 @@ pub struct PlayerFor2d3dExample {
     show_3d_example_target_value: f32,
 
     current_w_position_target: f32,
+
+    volume_beam_pointer: Vec<VolumeArea>,
 }
 
 impl Actor for PlayerFor2d3dExample {
@@ -679,13 +679,22 @@ impl Actor for PlayerFor2d3dExample {
                 }
             };
 
+            let volume_areas = if self.inner_state.w_aim_enabled
+            {
+                Some(&self.volume_beam_pointer)
+            }
+            else
+            {
+                None
+            };
+
             Some(
                 VisualElement
                 {
                     transform: self.get_transform(),
                     static_objects: None,
                     coloring_areas: None,
-                    volume_areas: None,
+                    volume_areas,
                     waves: Some(&self.w_scanner.visual_wave),
                     player: Some((&self.inner_state.collider_for_others[0], self.inner_state.team)),
                     child_visual_elem,
@@ -743,10 +752,22 @@ impl Actor for PlayerFor2d3dExample {
                 delta,
             );
 
+            main_player::process_projection_w_aim(
+                &input,
+                &mut self.inner_state,
+                &mut self.screen_effects,
+                ui_system,
+                audio_system,
+            );
+
             process_player_for_example_rotation(
                 &input,
                 &self.player_settings,
                 &mut self.inner_state,
+                &self.screen_effects,
+                &mut self.volume_beam_pointer,
+                physic_system,
+                my_id,
                 delta
             );
 
@@ -791,17 +812,17 @@ impl Actor for PlayerFor2d3dExample {
                 engine_handle,
             );
 
-            if input.show_hide_controls.is_action_just_pressed()
-            {
-                if self.current_w_position_target == 0.0
-                {
-                    self.current_w_position_target = 3.0
-                }
-                else
-                {
-                    self.current_w_position_target = 0.0
-                }
-            }
+            // if input.show_hide_controls.is_action_just_pressed()
+            // {
+            //     if self.current_w_position_target == 0.0
+            //     {
+            //         self.current_w_position_target = 3.0
+            //     }
+            //     else
+            //     {
+            //         self.current_w_position_target = 0.0
+            //     }
+            // }
 
             process_player_for_example_movement_input(
                 &input,
@@ -973,12 +994,16 @@ fn process_player_for_example_rotation(
     input: &ActionsFrameState,
     player_settings: &PlayerSettings,
     inner_state: &mut PlayerInnerState,
+    screen_effects: &PlayerScreenEffects,
+    volume_beam_pointer: &mut Vec<VolumeArea>,
+    physic_system: &PhysicsSystem,
+    my_id: ActorID,
     delta: f32,
 )
 {
     let mut xz = inner_state.saved_angle_of_rotation.x;
     let mut yz = inner_state.saved_angle_of_rotation.y;
-    let mut zw = inner_state.saved_angle_of_rotation.w;
+    let zw = inner_state.saved_angle_of_rotation.w;
 
     inner_state.last_frame_zw_rotation = zw;
 
@@ -996,19 +1021,72 @@ fn process_player_for_example_rotation(
         
     } else {
 
-        let xz_rotation_target_angle = match inner_state.team
-        {
-            Team::Blue => 0.0,
-            Team::Red => PI,
+        let (target_zw_angle, rotation_speed) = {
+            if inner_state.w_aim_enabled
+            {
+                let active_projection = screen_effects
+                    .player_projections
+                    .get_active_projection();
+
+                if let Some(projection) = active_projection {
+                    if let Some(projection_body) = projection.body.as_ref()
+                    {
+                        inner_state.w_aim_ui_frame_intensity = 0.20 +
+                            (projection.is_active_intensity*4.0).clamp(0.0, 0.5);
+
+                        (
+                            match inner_state.team
+                            {
+                                Team::Blue => -projection_body.abs_zw_rotation_offset,
+                                Team::Red => PI + projection_body.abs_zw_rotation_offset,
+                            },
+                            2.1
+                        )
+                    }
+                    else
+                    {
+                        (
+                            match inner_state.team
+                            {
+                                Team::Blue => 0.0,
+                                Team::Red => PI,
+                            },
+                            1.0
+                        )
+                    }
+                }
+                else
+                {
+                    (
+                        match inner_state.team
+                        {
+                            Team::Blue => 0.0,
+                            Team::Red => PI,
+                        },
+                        1.0
+                    )
+                }
+            }
+            else
+            {
+                (
+                    match inner_state.team
+                    {
+                        Team::Blue => 0.0,
+                        Team::Red => PI,
+                    },
+                    1.0
+                )
+            }
         };
 
         xz = lerpf(
             xz,
-            xz_rotation_target_angle,
-            delta * 4.8
+            target_zw_angle,
+            delta * 4.8 * rotation_speed
         );
-        if (xz - xz_rotation_target_angle).abs() < 0.001 {
-            xz = xz_rotation_target_angle;
+        if (xz - target_zw_angle).abs() < 0.001 {
+            xz = target_zw_angle;
         }
 
         yz = (
@@ -1033,6 +1111,31 @@ fn process_player_for_example_rotation(
     rotation *= zy_rotation;
     rotation *= zw_rotation;
 
+    let hit = physic_system.ray_cast(
+        inner_state.get_position(),
+        rotation*FORWARD,
+        100.0,
+        Some(my_id)
+    );
+
+    let hit_position = if let Some(hit) = hit
+    {
+        hit.hit_point - inner_state.get_position()
+    }
+    else
+    {
+         rotation * (FORWARD*100.0)
+    };
+
+    if let VolumeArea::BeamVolumeArea(beam) = &mut volume_beam_pointer[0]
+    {
+        beam.translation_pos_2 = hit_position
+    }
+    if let VolumeArea::SphericalVolumeArea(sphere) = &mut volume_beam_pointer[1]
+    {
+        sphere.translation = hit_position
+    }
+
     inner_state.saved_angle_of_rotation.x = xz;
     inner_state.saved_angle_of_rotation.y = yz;
     inner_state.saved_angle_of_rotation.w = zw;
@@ -1041,6 +1144,7 @@ fn process_player_for_example_rotation(
     inner_state.zy_rotation = zy_rotation;
     inner_state.zx_rotation = zx_rotation;
     inner_state.set_rotation_matrix(rotation);
+
 }
 
 
@@ -1147,7 +1251,25 @@ impl PlayerFor2d3dExample {
         camera3d_rotation *= camera3d_rotation_zy;
         camera3d_rotation *= camera3d_rotation_zw;
 
-        let camera3d_offset = Vec4::new(12.0, 3.0, -4.5, 0.0);
+        let camera3d_offset = Vec4::new(10.0, 3.0, -4.5, 0.0);
+
+        let volume_beam_pointer = vec![
+            VolumeArea::BeamVolumeArea(
+                BeamVolumeArea {
+                    translation_pos_1: Vec4::ZERO,
+                    translation_pos_2: FORWARD*100.0,
+                    radius: 0.02,
+                    color: Vec3::new(0.68, 1.9, 3.5),
+                }
+            ),
+            VolumeArea::SphericalVolumeArea(
+                SphericalVolumeArea {
+                    translation: FORWARD*100.0,
+                    radius: 0.13,
+                    color: Vec3::new(0.68, 1.9, 3.5),
+                }
+            )
+        ];
         
         PlayerFor2d3dExample {
             id: None,
@@ -1160,6 +1282,7 @@ impl PlayerFor2d3dExample {
                 blue_base_position,
                 red_base_position,
                 UP*0.6,
+                Vec4::ZERO,
                 audio_system,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
@@ -1218,7 +1341,9 @@ impl PlayerFor2d3dExample {
             show_3d_example_current_value: 1.0,
             show_3d_example_target_value: 1.0,
 
-            current_w_position_target: 0.0
+            current_w_position_target: 0.0,
+            
+            volume_beam_pointer,
         }
     }
 
@@ -1245,15 +1370,15 @@ impl PlayerFor2d3dExample {
         delta: f32,
     )
     {
-        if input.w_aim.is_action_just_pressed()
+        if input.show_hide_controls.is_action_just_pressed()
         {
-            if self.show_3d_example_target_value == 0.0
+            if self.show_3d_example_target_value == 1.0
             {
-                self.show_3d_example_target_value = 1.0;
+                self.show_3d_example_target_value = 0.08;
             }
             else
             {
-                self.show_3d_example_target_value = 0.0;
+                self.show_3d_example_target_value = 1.0;
             }
         }
     

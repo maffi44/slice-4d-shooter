@@ -1646,7 +1646,7 @@ pub fn process_projection_w_aim(
             .player_projections
             .get_intersected_projection
             (
-                inner_state.get_position(),
+                inner_state.get_eyes_position(),
                 view_vec,
             );
 
@@ -3588,6 +3588,7 @@ impl MainPlayer {
                 blue_base_position,
                 red_base_position,
                 RIGHT*0.6,
+                UP * player_settings.collider_radius * 0.2,
                 audio_system,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
@@ -3636,6 +3637,7 @@ impl MainPlayer {
             screen_effects,
 
             w_scanner,
+            
         }
     }
 

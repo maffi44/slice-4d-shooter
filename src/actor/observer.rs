@@ -508,6 +508,7 @@ impl Observer {
                 blue_base_position,
                 red_base_position,
                 UP*0.6,
+                UP * player_settings.collider_radius * 0.2,
                 audio_system,
             ),
             
