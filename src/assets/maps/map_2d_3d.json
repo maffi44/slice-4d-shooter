@@ -372,7 +372,8 @@
                     "z": 18,
                     "w": 15
                 },
-                "roundness" : 0.6
+                "roundness" : 0.6,
+                "friction" : 4.5
             }
         },
 
