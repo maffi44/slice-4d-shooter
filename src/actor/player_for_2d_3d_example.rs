@@ -1243,15 +1243,19 @@ impl PlayerFor2d3dExample {
 
         let w_scanner = WScanner::new(&player_settings);
 
-        let camera3d_rotation_zy = Mat4::from_rotation_x(-PI*0.1);
-        let camera3d_rotation_zx = Mat4::from_rotation_y(PI*0.6);
+        // let camera3d_rotation_zy = Mat4::from_rotation_x(-PI*0.1);
+        // let camera3d_rotation_zx = Mat4::from_rotation_y(PI*0.6);
+        // let camera3d_rotation_zw = Mat4::IDENTITY;
+
+        let camera3d_rotation_zy = Mat4::from_rotation_x(-PI*0.085);
+        let camera3d_rotation_zx = Mat4::from_rotation_y(PI*0.5);
         let camera3d_rotation_zw = Mat4::IDENTITY;
 
         let mut camera3d_rotation = camera3d_rotation_zx;
         camera3d_rotation *= camera3d_rotation_zy;
         camera3d_rotation *= camera3d_rotation_zw;
 
-        let camera3d_offset = Vec4::new(10.0, 3.0, -4.5, 0.0);
+        let camera3d_offset = Vec4::new(15.4, 4.35, 0.0, 0.0);
 
         let volume_beam_pointer = vec![
             VolumeArea::BeamVolumeArea(
@@ -1259,14 +1263,14 @@ impl PlayerFor2d3dExample {
                     translation_pos_1: Vec4::ZERO,
                     translation_pos_2: FORWARD*100.0,
                     radius: 0.02,
-                    color: Vec3::new(0.68, 1.9, 3.5),
+                    color: Vec3::new(3.5, 1.9, 1.68),
                 }
             ),
             VolumeArea::SphericalVolumeArea(
                 SphericalVolumeArea {
                     translation: FORWARD*100.0,
                     radius: 0.13,
-                    color: Vec3::new(0.68, 1.9, 3.5),
+                    color: Vec3::new(3.5, 1.9, 1.68),
                 }
             )
         ];
@@ -1374,7 +1378,7 @@ impl PlayerFor2d3dExample {
         {
             if self.show_3d_example_target_value == 1.0
             {
-                self.show_3d_example_target_value = 0.08;
+                self.show_3d_example_target_value = 0.00;
             }
             else
             {

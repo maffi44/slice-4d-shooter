@@ -5087,7 +5087,7 @@ fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec4<f32
 
     let plane_dist = -dot(slice_plane, dynamic_data.additional_data);
 
-    var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
+    var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.5, 0.0));
     ray *= dynamic_data.camera_data.cam_zw_rot;
     ray *= dynamic_data.camera_data.cam_zy_rot;
     ray *= dynamic_data.camera_data.cam_zx_rot;
@@ -5102,12 +5102,31 @@ fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec4<f32
     if dist_to_slice > 0.0 {
         let d = dist_to_slice - dist_to_scene;
 
-        let slice_diffuse = vec3(1.68, 1.9, 3.5);
-        let edge_diffuse = vec3(1.68, 1.9, 3.5);
+        // orange
+        // let slice_diffuse = vec3(3.5, 1.9, 1.68)*1.0;
+        // let edge_diffuse = vec3(3.5, 1.9, 1.68)*4.0;
+
+        // green
+        // let slice_diffuse = vec3(1.68, 3.5, 1.9)*1.0;
+        // let edge_diffuse = vec3(1.68, 3.5, 1.9)*4.0;
+
+        // yellow
+        let base_coef = clamp(((dynamic_data.camera_data.cam_pos.z+uv.x) - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
+        let diffuse = mix(vec3(2.9, 3.5, 4.28), vec3(4.28, 3.5, 2.9),base_coef);
+        let slice_diffuse = diffuse*1.0;
+        let edge_diffuse = diffuse*3.1;
+
+        // blue
+        // let slice_diffuse = vec3(1.68, 1.9, 3.5)*1.0;
+        // let edge_diffuse = vec3(1.68, 1.9, 3.5)*4.0;
+
+        // white
+        // let slice_diffuse = vec3(3.5);
+        // let edge_diffuse = vec3(3.5);
 
         let c = edge_diffuse*pow(1.0-clamp(abs(d),0.0,1.0),15.0)*0.4 + slice_diffuse*clamp(-d*10.0,0.0,1.0)*0.06;
 
-        let dist_coef = clamp(1.0-(dist_to_slice/33.0), 0.0, 1.0);
+        let dist_coef = clamp(1.0-(dist_to_slice/23.0), 0.0, 1.0);
         
         return vec4(c*dist_coef, dist_to_slice);
     }
@@ -5347,7 +5366,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         uv *= 0.7;
         uv.x *= dynamic_data.screen_aspect;
 
-        var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
+        var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.5, 0.0));
 
         ray_direction *= dynamic_data.camera_data.cam_zw_rot;
         ray_direction *= dynamic_data.camera_data.cam_zy_rot;

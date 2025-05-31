@@ -640,7 +640,7 @@ pub fn get_bounce_and_friction(
     }
 
 
-    if d - collider_radius*0.1 > collider_radius {//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
+    if d - THRESHOLD*2.0 > collider_radius {//collider_radius + super::kinematic_collider::MIN_STEP*2.0 {
         bounce_coeficient = 0.0;
         friction = 0.0;
     };
