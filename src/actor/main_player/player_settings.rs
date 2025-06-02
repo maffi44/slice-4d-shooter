@@ -59,7 +59,7 @@ impl PlayerSettings {
         {
             let window = web_sys::window().unwrap();
     
-            let target = "http://127.0.0.1:5500/src/assets/maps/settings.json";
+            let target = "http://127.0.0.1:5500/src/assets/settings/settings.json";
             
             let promise = window.fetch_with_str(target);
         
@@ -97,11 +97,11 @@ impl PlayerSettings {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let mut file = File::open("./src/assets/maps/settings.json");
+            let mut file = File::open("./src/assets/settings/settings.json");
 
             if file.is_err()
             {
-                file = File::open("../../../src/assets/maps/settings.json");
+                file = File::open("../../../src/assets/settings/settings.json");
             }
 
             if file.is_err()
@@ -118,16 +118,16 @@ impl PlayerSettings {
                             let json_settings = serde_json::from_str(&file_content)
                                 .expect("Can't parse settings.json file");
 
-                            let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/maps/settings2.json"))
+                            let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/settings/settings2.json"))
                                 .expect("Can't parse settings2.json file");
 
                             return parse_json_into_settings(json_settings, json_settings2);
                         },
                         Err(_) => {
-                            let json_settings = serde_json::from_str(include_str!("../../../src/assets/maps/settings.json"))
+                            let json_settings = serde_json::from_str(include_str!("../../../src/assets/settings/settings.json"))
                                 .expect("Can't parse settings.json file");
         
-                            let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/maps/settings2.json"))
+                            let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/settings/settings2.json"))
                                 .expect("Can't parse settings2.json file");
         
                             return parse_json_into_settings(json_settings, json_settings2);
@@ -136,10 +136,10 @@ impl PlayerSettings {
                 }
                 Err(_) =>
                 {
-                    let json_settings = serde_json::from_str(include_str!("../../../src/assets/maps/settings.json"))
+                    let json_settings = serde_json::from_str(include_str!("../../../src/assets/settings/settings.json"))
                         .expect("Can't parse settings.json file");
 
-                    let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/maps/settings2.json"))
+                    let json_settings2: Value = serde_json::from_str(include_str!("../../../src/assets/settings/settings2.json"))
                         .expect("Can't parse settings2.json file");
 
                     return parse_json_into_settings(json_settings, json_settings2);

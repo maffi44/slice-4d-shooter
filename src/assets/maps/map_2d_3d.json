@@ -4,10 +4,10 @@
 
     "defaults" : {
         "is_positive": true,
-        "friction": 4.5,
+        "friction": 0.0,
         "bounce_rate": 0.0,
         "visual_material": "standart",
-        "roundness": 0.08,
+        "roundness": 0.05,
         "stickiness": false,
         "undestroyable": false
     },
@@ -42,7 +42,7 @@
             "red": 1.6,
             "green": 1.2,
             "blue": 0.8,
-            "multiplier": 1.5
+            "multiplier": 3.9
         },
         "red_map_color" :
         {
@@ -59,9 +59,9 @@
             "multiplier": 3.0
         },
         "sun_direction" : {
-            "x" : 1.0,
-            "y" : 1.4,
-            "z" : -2.3,
+            "x" : 1.2,
+            "y" : 4.4,
+            "z" : 10.3,
             "w" : 0.0
         }
     },
@@ -115,11 +115,11 @@
         {
             "name" : "standart",
             "color" : {
-                "red": 1.11,
-                "green": 1.81,
-                "blue": 3.9
+                "red": 0.15,
+                "green": 0.82,
+                "blue": 3.2
             },
-            "roughness": 0.064
+            "roughness": 0.13
         },
         {
             "name" : "gun_red",
@@ -211,7 +211,7 @@
             "position" : {
                 "x": 0.0,
                 "y": 1.5,
-                "z": -5.0,
+                "z": 5.0,
                 "w": 0.5
             }
         }
@@ -223,7 +223,7 @@
             "position" : {
                 "x": 0.0,
                 "y": 1.5,
-                "z": 5.0,
+                "z": -5.0,
                 "w": 0.5
             }
         }
@@ -234,8 +234,8 @@
         "transform" : {
             "position" : {
                 "x": 0.5,
-                "y": 4,
-                "z": -30.0,
+                "y": 3.75,
+                "z": 7.4,
                 "w": 0.5
             }
         }
@@ -246,9 +246,9 @@
         "transform" : {
             "position" : {
                 "x": 0.5,
-                "y": 4,
-                "z": 30.0,
-                "w": 0.5
+                "y": 0.5,
+                "z": 0.0,
+                "w": 20.9
             }
         }
     },
@@ -257,7 +257,7 @@
         {
             "transform" : {
                 "position" : {
-                    "x": 0.0,
+                    "x": 1.0,
                     "y": 1.5,
                     "z": -2.0,
                     "w": 1.5
@@ -272,7 +272,7 @@
                 "position" : {
                     "x": 1.0,
                     "y": 1.5,
-                    "z": 2.0,
+                    "z": 0.0,
                     "w": 1.5
                 }
             }
@@ -339,7 +339,7 @@
                 "size" : {
                     "x": 1,
                     "y": 4.5,
-                    "z": 80,
+                    "z": 13.25,
                     "w": 30
                 },
                 "friction" : 0.0,
@@ -349,11 +349,11 @@
         },
         {
             "cube" : {
-                "comment" : "blue base floor",
+                "comment" : "base floor",
                 "transform" : {
                     "position" : {
                         "x": 3,
-                        "y": -0.7,
+                        "y": -0.8,
                         "z": 0,
                         "w": 0
                     },
@@ -368,11 +368,10 @@
                 },
                 "size" : {
                     "x": 3,
-                    "y": 0.1,
-                    "z": 18,
+                    "y": 0.8,
+                    "z": 13.25,
                     "w": 15
                 },
-                "roundness" : 0.6,
                 "friction" : 4.5
             }
         },
@@ -383,8 +382,8 @@
                 "transform" : {
                     "position" : {
                         "x": 2,
-                        "y": 2.0,
-                        "z": 10,
+                        "y": 1.2,
+                        "z": 8.125,
                         "w": 0
                     },
                     "rotation" : {
@@ -398,13 +397,12 @@
                 },
                 "size" : {
                     "x": 2,
-                    "y": 3.5,
-                    "z": 7,
+                    "y": 1.2,
+                    "z": 5.125,
                     "w": 30
                 },
                 "friction" : 0.0,
-                "visual_material" :"standart",
-                "undestroyable": true
+                "visual_material" :"standart"
             }
         },
         {
@@ -412,9 +410,9 @@
                 "comment" : "right x-cube",
                 "transform" : {
                     "position" : {
-                        "x": 1,
-                        "y": 2.0,
-                        "z": -10,
+                        "x": 1.0,
+                        "y": 1.7,
+                        "z": -8.125,
                         "w": 0
                     },
                     "rotation" : {
@@ -427,16 +425,217 @@
                     }
                 },
                 "size" : {
-                    "x": 1,
-                    "y": 3.5,
-                    "z": 7,
+                    "x": 1.0,
+                    "y": 1.7,
+                    "z": 5.125,
                     "w": 30
                 },
                 "friction" : 0.0,
-                "visual_material" :"standart",
-                "undestroyable": true
+                "visual_material" :"standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right wall",
+                "transform" : {
+                    "position" : {
+                        "x": 1.0,
+                        "y": 2.3,
+                        "z": -3.3,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0,
+                    "y": 2.3,
+                    "z": 0.3,
+                    "w": 30
+                },
+                "visual_material" :"standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "left wall",
+                "transform" : {
+                    "position" : {
+                        "x": 1.0,
+                        "y": 2.3,
+                        "z": 3.3,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0,
+                    "y": 2.3,
+                    "z": 0.3,
+                    "w": 30
+                },
+                "visual_material" :"standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "roof",
+                "transform" : {
+                    "position" : {
+                        "x": 1.0,
+                        "y": 4.3,
+                        "z": 0,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0,
+                    "y": 0.3,
+                    "z": 3.5,
+                    "w": 30
+                },
+                "visual_material" :"standart"
+            }
+        },
+
+        {
+            "cube" : {
+                "comment" : "right x-cube first stair hole",
+                "transform" : {
+                    "position" : {
+                        "x": 3.45,
+                        "y": 3.25,
+                        "z": -6.5,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.0,
+                    "y": 2,
+                    "z": 1.5,
+                    "w": 30
+                },
+                "roundness" : 0.0,
+                "is_positive" : false,
+                "visual_material" :"standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right x-cube second stair hole",
+                "transform" : {
+                    "position" : {
+                        "x": 2.9,
+                        "y": 4.4,
+                        "z": -7,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.0,
+                    "y": 2,
+                    "z": 2,
+                    "w": 30
+                },
+                "roundness" : 0.0,
+                "is_positive" : false,
+                "visual_material" :"standart"
+            }
+        },
+
+
+        {
+            "cube" : {
+                "comment" : "right end wall",
+                "transform" : {
+                    "position" : {
+                        "x": 3,
+                        "y": 2.7,
+                        "z": -12.5,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 3.8,
+                    "z": 0.75,
+                    "w": 30
+                },
+                "visual_material" :"standart"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right end wall",
+                "transform" : {
+                    "position" : {
+                        "x": 3,
+                        "y": 2.7,
+                        "z": 12.5,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3,
+                    "y": 3.8,
+                    "z": 0.75,
+                    "w": 30
+                },
+                "visual_material" :"standart"
             }
         }
-
     ]
 }

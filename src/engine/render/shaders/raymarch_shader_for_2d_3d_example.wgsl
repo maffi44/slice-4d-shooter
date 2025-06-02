@@ -4816,11 +4816,17 @@ fn get_color_and_light_from_mats(
     {
         let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
 
-        let x_height_coef = clamp((hited_pos.x - 0.3) / 8.5, 0.0, 1.0);
+        let x_height_coef = clamp((hited_pos.x - 0.3) / 6.0, 0.0, 1.0);
+
+        // base_diffuse = mix(
+        //     mix(base_diffuse, inverted_base_diffuse, base_coef),
+        //     mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
+        //     x_height_coef
+        // );
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
-            mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
+            mix(base_diffuse*0.09, inverted_base_diffuse*0.09, pow(base_coef, 2.0)),
             x_height_coef
         );
     }
@@ -4950,11 +4956,17 @@ fn get_color_and_light_from_mats_2d(
     {
         let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
 
-        let x_height_coef = clamp((hited_pos.x - 0.3) / 8.5, 0.0, 1.0);
+        let x_height_coef = clamp((hited_pos.x - 0.3) / 6.0, 0.0, 1.0);
+
+        // base_diffuse = mix(
+        //     mix(base_diffuse, inverted_base_diffuse, base_coef),
+        //     mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
+        //     x_height_coef
+        // );
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
-            mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
+            mix(base_diffuse*0.09, inverted_base_diffuse*0.09, pow(base_coef, 2.0)),
             x_height_coef
         );
     }
@@ -5110,11 +5122,15 @@ fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec4<f32
         // let slice_diffuse = vec3(1.68, 3.5, 1.9)*1.0;
         // let edge_diffuse = vec3(1.68, 3.5, 1.9)*4.0;
 
-        // yellow
-        let base_coef = clamp(((dynamic_data.camera_data.cam_pos.z+uv.x) - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
-        let diffuse = mix(vec3(2.9, 3.5, 4.28), vec3(4.28, 3.5, 2.9),base_coef);
-        let slice_diffuse = diffuse*1.0;
-        let edge_diffuse = diffuse*3.1;
+        // base based
+        let slice_hit_pos = dynamic_data.camera_data.cam_pos + ray*dist_to_slice;
+        let base_coef = clamp((slice_hit_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
+        let diffuse = mix(vec3(3.08, 1.5, 1.9), vec3(1.9, 1.5, 3.08), base_coef);
+        // let diffuse = mix(vec3(0.0, 0.0, 4.28), vec3(4.28, 0.0, 0.0),base_coef);
+        let slice_diffuse = diffuse*2.5;
+        // let slice_diffuse = vec3(2.0)*1.6;
+        // let edge_diffuse = diffuse*3.1;
+        let edge_diffuse = vec3(3.0)*3.1;
 
         // blue
         // let slice_diffuse = vec3(1.68, 1.9, 3.5)*1.0;
@@ -5126,7 +5142,7 @@ fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec4<f32
 
         let c = edge_diffuse*pow(1.0-clamp(abs(d),0.0,1.0),15.0)*0.4 + slice_diffuse*clamp(-d*10.0,0.0,1.0)*0.06;
 
-        let dist_coef = clamp(1.0-(dist_to_slice/23.0), 0.0, 1.0);
+        let dist_coef = clamp(1.0-(dist_to_slice/22.5), 0.0, 1.0);
         
         return vec4(c*dist_coef, dist_to_slice);
     }
@@ -5285,7 +5301,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
         let mats = get_mats(pixel_pos, vec4(0.0), dist);
 
-        let fake_dir = rot_mat * normalize(vec4(uv.x,uv.y,1.0,0.0));
+        let fake_dir = normalize(vec4(uv.x,-uv.y,-3.0,0.0));
 
         var color_and_light = get_color_and_light_from_mats_2d(pixel_pos, fake_dir, dist, mats);
         
@@ -5356,7 +5372,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     {
         var uv: vec2<f32> = inn.position.xy;
 
-        if (uv.x - dynamic_data.splited_screen_in_2d_3d_example < 0.01)
+        if (uv.x - dynamic_data.splited_screen_in_2d_3d_example < 0.004)
         {
             return vec4(1.0);
         }
@@ -5394,7 +5410,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         color += color_areas.rgb;
         lightness += color_areas.a;
 
-        color = pow(color, vec3(0.4545));
+        color = pow(color, vec3(0.4845));
 
         let slice_color_and_dist = get_2d_player_view_slice_color(uv, dist_and_depth.x);
         color += slice_color_and_dist.rgb;
