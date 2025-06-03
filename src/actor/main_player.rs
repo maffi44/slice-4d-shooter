@@ -168,6 +168,34 @@ impl PlayersProjections
     }
 
 
+    pub fn deactivate_projections(
+        &mut self,
+        audio_system: &mut AudioSystem
+    )
+    {
+        if self.current_active_projection.is_some()
+        {
+            //use the same sound for cuptured and lost 
+            //projection, just with different pitch
+            audio_system.spawn_non_spatial_sound(
+                Sound::ProjectionCaptured,
+                0.70,
+                0.48,
+                false,
+                true,
+                Status::Playing,
+            );
+
+            self.current_active_projection = None;
+        }
+        
+        for projection in &mut self.projections
+        {
+            projection.is_active_by_timer = 0.0;
+        }
+    }
+
+
     pub fn set_projection_active(
         &mut self,
         projection_id: ActorID,
@@ -1569,7 +1597,11 @@ impl Actor for MainPlayer {
 
         process_ui_tutorial_window_input(
             &input,
+            &mut self.inner_state,
             ui_system,
+            engine_handle,
+            my_id,
+            delta,
         );
 
         procces_w_rotation_sound(
@@ -1880,13 +1912,64 @@ pub fn procces_w_rotation_sound(
 }
 
 
+const TITLE_PRESS_T_FOR_TUTRIAL_TOGGLE_TIME: f32 = 0.6;
+
+
 pub fn process_ui_tutorial_window_input(
     input: &ActionsFrameState,
+    inner_state: &mut PlayerInnerState,
     ui: &mut UISystem,
+    engine_handle: &mut EngineHandle,
+    my_id: ActorID,
+    delta: f32,
 )
 {
+    if !inner_state.tutrial_window_was_open
+    {
+        inner_state.title_press_t_for_tutorial_toggle_timer += delta;
+        
+        if inner_state.title_press_t_for_tutorial_toggle_timer >=
+            TITLE_PRESS_T_FOR_TUTRIAL_TOGGLE_TIME
+        {
+            inner_state.title_press_t_for_tutorial_toggle_timer = 0.0;
+
+            let is_visible_arc = ui
+                .get_mut_ui_element(&UIElementType::TitlePressTForTutorial)
+                .get_ui_data_mut()
+                .get_is_visible_cloned_arc();
+    
+            let mut is_visible_guard = is_visible_arc.lock().unwrap();
+            
+            *is_visible_guard = !*is_visible_guard;
+        }
+    }
+    
     if input.show_hide_controls.is_action_just_pressed()
     {
+        if inner_state.tutrial_window_was_open == false
+        {
+            engine_handle.send_command(
+                Command {
+                    sender: my_id,
+                    command_type: CommandType::ShowConnectionStatusUI,
+                }
+            );
+
+            inner_state.tutrial_window_was_open = true;
+    
+            let is_visible_arc = ui
+                .get_mut_ui_element(&UIElementType::TitlePressTForTutorial)
+                .get_ui_data_mut()
+                .get_is_visible_cloned_arc();
+            
+            let mut is_visible_guard = is_visible_arc.lock().unwrap();
+            
+            *is_visible_guard = true;
+        }
+        
+
+        
+
         let tutorial_window_visible_arc = ui
             .get_ui_element(&UIElementType::TutorialWindow)
             .get_ui_data()

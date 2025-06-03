@@ -444,17 +444,11 @@ impl PlayerDoll {
             let mut movement_vec = Vec4::ZERO;
 
             if self.input_state.move_right {
-                match self.team {
-                    Team::Blue => movement_vec += FORWARD,
-                    Team::Red => movement_vec += BACKWARD,
-                }
+                movement_vec += FORWARD;
             }
         
             if self.input_state.move_left {
-                match self.team {
-                    Team::Blue => movement_vec += BACKWARD,
-                    Team::Red => movement_vec += FORWARD,
-                }
+                movement_vec += BACKWARD;
             }
         
             if let Some(vec) = movement_vec.try_normalize() {

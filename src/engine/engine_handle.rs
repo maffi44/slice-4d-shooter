@@ -20,6 +20,7 @@ pub enum CommandType {
     NetCommand(NetCommand),
     RespawnPlayer(ActorID),
     RemoveAllHolesAndEffects,
+    ShowConnectionStatusUI,
 }
 
 pub struct EngineHandle {

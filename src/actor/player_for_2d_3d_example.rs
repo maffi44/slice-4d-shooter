@@ -94,6 +94,8 @@ pub struct PlayerFor2d3dExample {
     current_w_position_target: f32,
 
     volume_beam_pointer: Vec<VolumeArea>,
+
+    model_has_left_orientation: bool
 }
 
 impl Actor for PlayerFor2d3dExample {
@@ -752,23 +754,24 @@ impl Actor for PlayerFor2d3dExample {
                 delta,
             );
 
-            main_player::process_projection_w_aim(
-                &input,
-                &mut self.inner_state,
-                &mut self.screen_effects,
-                ui_system,
-                audio_system,
-            );
-
             process_player_for_example_rotation(
                 &input,
                 &self.player_settings,
                 &mut self.inner_state,
                 &self.screen_effects,
                 &mut self.volume_beam_pointer,
+                self.model_has_left_orientation,
                 physic_system,
                 my_id,
                 delta
+            );
+
+            main_player::process_projection_w_aim(
+                &input,
+                &mut self.inner_state,
+                &mut self.screen_effects,
+                ui_system,
+                audio_system,
             );
 
             main_player::process_w_scanner_ui(
@@ -830,6 +833,9 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.inner_state,
                 &self.player_settings,
                 self.current_w_position_target,
+                &mut self.model_has_left_orientation,
+                &mut self.screen_effects,
+                audio_system,
                 delta,
             );
 
@@ -996,6 +1002,7 @@ fn process_player_for_example_rotation(
     inner_state: &mut PlayerInnerState,
     screen_effects: &PlayerScreenEffects,
     volume_beam_pointer: &mut Vec<VolumeArea>,
+    model_has_left_orientation: bool,
     physic_system: &PhysicsSystem,
     my_id: ActorID,
     delta: f32,
@@ -1035,10 +1042,10 @@ fn process_player_for_example_rotation(
                             (projection.is_active_intensity*4.0).clamp(0.0, 0.5);
 
                         (
-                            match inner_state.team
+                            match model_has_left_orientation
                             {
-                                Team::Blue => -projection_body.abs_zw_rotation_offset,
-                                Team::Red => PI + projection_body.abs_zw_rotation_offset,
+                                true => -projection_body.abs_zw_rotation_offset,
+                                false => PI+projection_body.abs_zw_rotation_offset,
                             },
                             2.1
                         )
@@ -1046,10 +1053,10 @@ fn process_player_for_example_rotation(
                     else
                     {
                         (
-                            match inner_state.team
+                            match model_has_left_orientation
                             {
-                                Team::Blue => 0.0,
-                                Team::Red => PI,
+                                true => 0.0,
+                                false => PI,
                             },
                             1.0
                         )
@@ -1058,10 +1065,10 @@ fn process_player_for_example_rotation(
                 else
                 {
                     (
-                        match inner_state.team
+                        match model_has_left_orientation
                         {
-                            Team::Blue => 0.0,
-                            Team::Red => PI,
+                            true => 0.0,
+                            false => PI,
                         },
                         1.0
                     )
@@ -1070,10 +1077,10 @@ fn process_player_for_example_rotation(
             else
             {
                 (
-                    match inner_state.team
+                    match model_has_left_orientation
                     {
-                        Team::Blue => 0.0,
-                        Team::Red => PI,
+                        true => 0.0,
+                        false => PI,
                     },
                     1.0
                 )
@@ -1154,26 +1161,42 @@ fn process_player_for_example_movement_input(
     inner_state: &mut PlayerInnerState,
     player_settings: &PlayerSettings,
     current_w_position_target: f32,
+    model_has_left_orientation: &mut bool,
+    screen_effects: &mut PlayerScreenEffects,
+    audio_system: &mut AudioSystem,
     delta: f32,
 )
 {
+    let mut model_has_left_orientation_current = *model_has_left_orientation;
     let mut movement_vec = Vec4::ZERO;
 
     if input.move_right.is_action_pressed() {
-        match inner_state.team {
-            Team::Blue => movement_vec += FORWARD,
-            Team::Red => movement_vec += BACKWARD,
-        }
+        movement_vec += FORWARD;
         player_doll_input_state.move_forward = true;
+        model_has_left_orientation_current = true;
 
     }
 
     if input.move_left.is_action_pressed() {
-        match inner_state.team {
-            Team::Blue => movement_vec += BACKWARD,
-            Team::Red => movement_vec += FORWARD,
-        }
+        movement_vec += BACKWARD;
         player_doll_input_state.move_backward = true;
+        model_has_left_orientation_current = false;
+
+    }
+
+    if model_has_left_orientation_current != *model_has_left_orientation
+    {
+        match model_has_left_orientation_current
+        {
+            true => inner_state.saved_angle_of_rotation.x -= PI,
+            false => inner_state.saved_angle_of_rotation.x += PI,
+        }
+
+        *model_has_left_orientation = model_has_left_orientation_current;
+
+        screen_effects.player_projections.deactivate_projections(
+            audio_system
+        );
     }
 
     if let Some(vec) = movement_vec.try_normalize() {
@@ -1348,6 +1371,8 @@ impl PlayerFor2d3dExample {
             current_w_position_target: 0.0,
             
             volume_beam_pointer,
+
+            model_has_left_orientation: true,
         }
     }
 
@@ -1358,8 +1383,17 @@ impl PlayerFor2d3dExample {
 
     pub fn get_2d_slice_xz_rot(&self) -> Mat2
     {
-        let x_axis = self.inner_state.zx_rotation.x_axis;
-        let z_axis = self.inner_state.zx_rotation.z_axis;
+        let mut angle = self.inner_state.saved_angle_of_rotation.x;
+
+        if !self.model_has_left_orientation
+        {
+            angle -= PI;
+        }
+
+        let zx_rotation = Mat4::from_rotation_y(angle);
+
+        let x_axis = zx_rotation.x_axis;
+        let z_axis = zx_rotation.z_axis;
 
         Mat2::from_cols(
             Vec2::new(x_axis.x, x_axis.z),

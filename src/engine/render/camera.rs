@@ -9,26 +9,32 @@ pub struct Camera {
 }
 
 impl Camera {
+    
+    #[inline]
     pub fn get_rotation_matrix(&self) -> Mat4
     {
         self.rotation_matrix
     }
 
+    #[inline]
     pub fn get_zw_rotation_matrix(&self) -> Mat4
     {
         self.zw_rotation_matrix
     }
 
+    #[inline]
     pub fn get_zy_rotation_matrix(&self) -> Mat4
     {
         self.zy_rotation_matrix
     }
 
+    #[inline]
     pub fn get_zx_rotation_matrix(&self) -> Mat4
     {
         self.zx_rotation_matrix
     }
 
+    #[inline]
     pub fn get_position(&self) -> Vec4
     {
         self.position

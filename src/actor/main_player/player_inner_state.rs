@@ -50,6 +50,8 @@ pub struct PlayerInnerState {
     pub second_jump_charging_energy: f32,
     pub charging_second_jump_sound_handle: Option<Option<Handle<SoundSource>>>,
     pub eyes_offset: Vec4,
+    pub tutrial_window_was_open: bool,
+    pub title_press_t_for_tutorial_toggle_timer: f32,
 }
 
 
@@ -128,7 +130,6 @@ impl PlayerInnerState {
 
             is_time_after_some_team_win: false,
             amount_of_move_w_bonuses_do_i_have: 0u32,
-            // player_moving_state: PlayerMovingState::MovingPerpendicularW(0.0),
 
             blue_base_position,
             red_base_position,
@@ -160,6 +161,8 @@ impl PlayerInnerState {
             charging_second_jump_sound_handle: None,
             second_jump_charging_energy: 0.0,
             eyes_offset,
+            tutrial_window_was_open: false,
+            title_press_t_for_tutorial_toggle_timer: 0.0,
         }
     }
 

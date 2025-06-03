@@ -176,7 +176,9 @@ impl DynamicRenderData {
     (
         &mut self,
         transform: &Transform,
-        volume_area: &VolumeArea
+        volume_area: &VolumeArea,
+        camera: &Camera,
+        planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
     )
     {
         match volume_area {
@@ -187,7 +189,15 @@ impl DynamicRenderData {
                     color: spherical_area.color.to_array(),
                 };
 
-                self.frame_spherical_volume_areas_buffer.push(area)
+                if check_if_player_see_sphere(
+                    camera,
+                    area.pos.into(),
+                    area.radius,
+                    planes,
+                ) {
+                    self.frame_spherical_volume_areas_buffer.push(area)
+                }
+
             },
 
             VolumeArea::BeamVolumeArea(beam_area) => {
@@ -198,7 +208,15 @@ impl DynamicRenderData {
                     color: beam_area.color.to_array(),
                 };
 
-                self.frame_beam_volume_areas_buffer.push(area);
+                if check_if_player_see_capsule(
+                    camera,
+                    area.pos1.into(),
+                    area.pos2.into(),
+                    area.radius,
+                    planes,
+                ) {
+                    self.frame_beam_volume_areas_buffer.push(area);
+                }
             }
         }
     }
@@ -278,7 +296,9 @@ impl DynamicRenderData {
     fn get_data_from_actors_visual_elements(
         &mut self,
         world: &World,
-        static_bounding_box: &BoundingBox
+        static_bounding_box: &BoundingBox,
+        camera: &Camera,
+        clip_planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
     )
     {
         for (_, actor) in world.actors.iter() {
@@ -306,6 +326,8 @@ impl DynamicRenderData {
                         (
                             transform,
                             volume_area,
+                            camera,
+                            clip_planes,
                         );
                     }
                 }
@@ -365,6 +387,8 @@ impl DynamicRenderData {
                             (
                                 transform,
                                 volume_area,
+                                camera,
+                                clip_planes,
                             );
                         }
                     }
@@ -1199,7 +1223,12 @@ impl DynamicRenderData {
 
         let clip_planes = get_view_clip_planes(&main_camera, screen_aspect);
 
-        let _ = self.get_data_from_actors_visual_elements(world, static_bounding_box);
+        let _ = self.get_data_from_actors_visual_elements(
+            world,
+            static_bounding_box,
+            &main_camera,
+            clip_planes,
+        );
 
         let shapes_arrays_metadata = self.update_dynamic_shapes_buffers_and_get_metadata(
             static_data,
@@ -1569,6 +1598,7 @@ impl SpecificShapeBuffers {
 }
 
 
+#[inline]
 pub fn check_if_player_see_cube(
     camera: &Camera,
     cube_pos: Vec4,
@@ -1622,6 +1652,107 @@ pub fn check_if_player_see_cube(
 }
 
 
+#[inline]
+pub fn check_if_player_see_capsule
+(
+    camera: &Camera,
+    pos1: Vec4,
+    pos2: Vec4,
+    capsule_radius: f32,
+    planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
+) -> bool
+{
+    let (
+        up_plane,
+        down_plane,
+        left_plane,
+        right_plane,
+        forward_plane,
+    ) = planes;
+    
+    (
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos1 - camera.get_position(),
+            capsule_radius,
+            up_plane
+        )
+        ||
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos2 - camera.get_position(),
+            capsule_radius,
+            up_plane
+        )
+    )
+    &&
+    (
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos1 - camera.get_position(),
+            capsule_radius,
+            down_plane
+        )
+        ||
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos2 - camera.get_position(),
+            capsule_radius,
+            down_plane
+        )
+    )
+    &&
+    (
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos1 - camera.get_position(),
+            capsule_radius,
+            left_plane
+        )
+        ||
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos2 - camera.get_position(),
+            capsule_radius,
+            left_plane
+        )
+    )
+    &&
+    (
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos1 - camera.get_position(),
+            capsule_radius,
+            right_plane
+        )
+        ||
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos2 - camera.get_position(),
+            capsule_radius,
+            right_plane
+        )
+    )
+    &&
+    (
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos1 - camera.get_position(),
+            capsule_radius,
+            forward_plane
+        )
+        ||
+        sphere_is_above_or_intersect_the_plane
+        (
+            pos2 - camera.get_position(),
+            capsule_radius,
+            forward_plane
+        )
+    )
+}
+
+
+#[inline]
 pub fn check_if_player_see_sphere(
     camera: &Camera,
     sphere_pos: Vec4,
@@ -1674,6 +1805,7 @@ pub fn check_if_player_see_sphere(
 }
 
 
+#[inline]
 pub fn cube_is_above_or_intersect_the_plane
 (
     cube_pos: Vec4,
@@ -1722,6 +1854,7 @@ pub fn cube_is_above_or_intersect_the_plane
 }
 
 
+#[inline]
 pub fn sphere_is_above_or_intersect_the_plane
 (
     sphere_pos: Vec4,

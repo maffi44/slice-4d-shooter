@@ -140,6 +140,11 @@ impl World {
         let from = command.sender;
 
         match command.command_type {
+            CommandType::ShowConnectionStatusUI =>
+            {
+                net_system.set_is_visible_for_connection_status(true);
+            }
+
             CommandType::RemoveAllHolesAndEffects =>
             {
                 let mut keys_for_remove = Vec::new();
