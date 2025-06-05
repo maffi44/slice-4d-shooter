@@ -351,7 +351,6 @@ fn cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec4<f32>) -> vec2<f32
     return vec2( tN, tF );
 }
 
-
 fn inf_cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec3<f32>) -> vec2<f32> {
     let m = 1.0/rd;
     let n = m*ro;
@@ -1097,12 +1096,15 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
 
     for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
         if (i < dynamic_data.shapes_arrays_metadata.neg_spheres_start) {
+            
+            let r = dyn_negatives_shapes[i].roundness;
+
             let intr = cube_intersection(
                 ro - dyn_negatives_shapes[i].pos,
                 rd,
-                dyn_negatives_shapes[i].size// + dyn_negatives_shapes[i].roundness
+                dyn_negatives_shapes[i].size + r/1.414213562,
             );
-            
+
             if intr.y > 0.0 {
                 store_intersection_entrance_and_exit_for_neg(intr, intrs);
             }
@@ -1141,11 +1143,15 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
 
     for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
         if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
+
+            let r = dyn_neg_stickiness_shapes[i].roundness;
+
             let intr = cube_intersection(
                 ro - dyn_neg_stickiness_shapes[i].pos,
                 rd,
-                dyn_neg_stickiness_shapes[i].size// + dyn_neg_stickiness_shapes[i].roundness
+                dyn_neg_stickiness_shapes[i].size + r/1.414213562,
             );
+
             
             if intr.y > 0.0 {
                 store_intersection_entrance_and_exit_for_neg(intr, intrs);
