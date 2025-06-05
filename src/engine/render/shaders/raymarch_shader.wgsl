@@ -1,10 +1,4 @@
-struct Intersections
-{
-    intr_entrances: array<f32, 128>,
-    intr_entrances_size: u32,
-    intr_exites: array<f32, 128>,
-    intr_exites_size: u32,
-}
+
 
 struct CameraUniform {
     cam_pos: vec4<f32>,
@@ -768,62 +762,234 @@ fn plane_w_intersect( ro: vec4<f32>, rd: vec4<f32>, h: f32 ) -> f32
 }
 
 
-fn store_intersection_entrance_and_exit(intr: vec2<f32>, intrs: ptr<function,Intersections>) {
-    store_intersection_entrance(intr.x, intrs);
-    store_intersection_exit(intr.y, intrs);
+struct Intersections
+{
+    intr_normal: array<vec2<f32>, 32>,
+    intr_normal_size: u32,
+
+    intr_neg: array<vec2<f32>, 32>,
+    intr_neg_size: u32,
+
+    intr_unbreakables: array<vec2<f32>, 32>,
+    intr_unbreakables_size: u32,
 }
 
-fn store_intersection_entrance(val: f32, intrs: ptr<function,Intersections>) {
-    var i = (*intrs).intr_entrances_size;
+
+fn store_intersection_entrance_and_exit_for_neg(intr: vec2<f32>, intrs: ptr<function,Intersections>)
+{
+    store_value_in_array_in_order_of_first_elem_for_neg(intr, intrs);
+}
+
+
+fn store_intersection_entrance_and_exit(intr: vec2<f32>, intrs: ptr<function,Intersections>)
+{
+    store_value_in_array_in_order_of_first_elem_for_normal(intr, intrs);
+}
+
+
+fn store_intersection_entrance_and_exit_for_unbreakables(intr: vec2<f32>, intrs: ptr<function,Intersections>)
+{
+    store_value_in_array_in_order_of_first_elem_for_normal(intr, intrs);
+    store_value_in_array_in_order_of_first_elem_for_unbreakables(intr, intrs);
+}
+
+
+fn combine_interscted_entrances_and_exites_for_all_intrs(intrs: ptr<function,Intersections>)
+{
+    combine_interscted_entrances_and_exites_for_unbreakables(intrs);
+    combine_interscted_entrances_and_exites_for_normal(intrs);
+    combine_interscted_entrances_and_exites_for_neg(intrs);
+}
+
+
+fn combine_interscted_entrances_and_exites_for_normal(
+    intrs: ptr<function,Intersections>
+) {
+    var i = (*intrs).intr_normal_size;
+
+    if i > 1u
+    {
+        while i > 1u
+        {
+            i -= 1u;
+
+            if (*intrs).intr_normal[i].x < (*intrs).intr_normal[i-1].y
+            {
+                if (*intrs).intr_normal[i-1].y < (*intrs).intr_normal[i].y
+                {
+                    (*intrs).intr_normal[i-1].y = (*intrs).intr_normal[i].y;
+                }
+
+                let size = (*intrs).intr_normal_size - 1u;
+
+                while i < size
+                {
+                    (*intrs).intr_normal[i] = (*intrs).intr_normal[i+1u];
+                    i += 1u;
+                }
+
+                (*intrs).intr_normal_size -= 1u;
+            }
+        }
+    }
+}
+
+
+fn combine_interscted_entrances_and_exites_for_neg(
+    intrs: ptr<function,Intersections>
+) {
+    var i = (*intrs).intr_neg_size;
+
+    if i > 1u
+    {
+        while i > 1u
+        {
+            i -= 1u;
+
+            if (*intrs).intr_neg[i].x < (*intrs).intr_neg[i-1].y
+            {
+                if (*intrs).intr_neg[i-1].y < (*intrs).intr_neg[i].y
+                {
+                    (*intrs).intr_neg[i-1].y = (*intrs).intr_neg[i].y;
+                }
+
+                let size = (*intrs).intr_neg_size - 1u;
+
+                while i < size
+                {
+                    (*intrs).intr_neg[i] = (*intrs).intr_neg[i+1u];
+                    i += 1u;
+                }
+
+                (*intrs).intr_neg_size -= 1u;
+            }
+        }
+    }
+}
+
+
+fn combine_interscted_entrances_and_exites_for_unbreakables(
+    intrs: ptr<function,Intersections>
+) {
+    var i = (*intrs).intr_unbreakables_size;
+
+    if i > 1u
+    {
+        while i > 1u
+        {
+            i -= 1u;
+
+            if (*intrs).intr_unbreakables[i].x < (*intrs).intr_unbreakables[i-1].y
+            {
+                if (*intrs).intr_unbreakables[i-1].y < (*intrs).intr_unbreakables[i].y
+                {
+                    (*intrs).intr_unbreakables[i-1].y = (*intrs).intr_unbreakables[i].y;
+                }
+
+                let size = (*intrs).intr_unbreakables_size - 1u;
+
+                while i < size
+                {
+                    (*intrs).intr_unbreakables[i] = (*intrs).intr_unbreakables[i+1u];
+                    i += 1u;
+                }
+
+                (*intrs).intr_unbreakables_size -= 1u;
+            }
+        }
+    }
+}
+
+
+fn store_value_in_array_in_order_of_first_elem_for_normal(
+    val: vec2<f32>,
+    intrs: ptr<function,Intersections>
+) {
+    var i = (*intrs).intr_normal_size;
 
     if i > 0
     {
-        while (*intrs).intr_entrances[i-1] > val
+        while (*intrs).intr_normal[i-1].x > val.x
         {
             i -= 1;
 
             if i == 0 {break;}
         }
-    }
 
-    var j = (*intrs).intr_entrances_size;
-
-    while j > i
-    {
-        (*intrs).intr_entrances[j] = (*intrs).intr_entrances[j-1];
-        j -= 1;
-    }
-
-    (*intrs).intr_entrances[i] = val;
-
-    (*intrs).intr_entrances_size += 1u;
-}
-
-fn store_intersection_exit(val: f32, intrs: ptr<function,Intersections>) {
-    var i = (*intrs).intr_exites_size;
-
-    if i > 0
-    {
-        while (*intrs).intr_exites[i-1] > val
-        {
-            i -= 1;
-
-            if i == 0 {break;}
-        }
-    }
+        var j = (*intrs).intr_normal_size;
     
-    var j = (*intrs).intr_exites_size;
-
-    while j > i
-    {
-        (*intrs).intr_exites[j] = (*intrs).intr_exites[j-1];
-        j -= 1;
+        while j > i
+        {
+            (*intrs).intr_normal[j] = (*intrs).intr_normal[j-1];
+            j -= 1;
+        }
     }
 
-    (*intrs).intr_exites[i] = val;
+    (*intrs).intr_normal[i] = val;
 
-    (*intrs).intr_exites_size += 1u;
+    (*intrs).intr_normal_size += 1u;
 }
+
+
+fn store_value_in_array_in_order_of_first_elem_for_neg(
+    val: vec2<f32>,
+    intrs: ptr<function,Intersections>
+) {
+    var i = (*intrs).intr_neg_size;
+
+    if i > 0
+    {
+        while (*intrs).intr_neg[i-1].x > val.x
+        {
+            i -= 1;
+
+            if i == 0 {break;}
+        }
+
+        var j = (*intrs).intr_neg_size;
+    
+        while j > i
+        {
+            (*intrs).intr_neg[j] = (*intrs).intr_neg[j-1];
+            j -= 1;
+        }
+    }
+
+    (*intrs).intr_neg[i] = val;
+
+    (*intrs).intr_neg_size += 1u;
+}
+
+
+fn store_value_in_array_in_order_of_first_elem_for_unbreakables(
+    val: vec2<f32>,
+    intrs: ptr<function,Intersections>
+) {
+    var i = (*intrs).intr_unbreakables_size;
+
+    if i > 0
+    {
+        while (*intrs).intr_unbreakables[i-1].x > val.x
+        {
+            i -= 1;
+
+            if i == 0 {break;}
+        }
+
+        var j = (*intrs).intr_unbreakables_size;
+    
+        while j > i
+        {
+            (*intrs).intr_unbreakables[j] = (*intrs).intr_unbreakables[j-1];
+            j -= 1;
+        }
+    }
+
+    (*intrs).intr_unbreakables[i] = val;
+
+    (*intrs).intr_unbreakables_size += 1u;
+}
+
 
 fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Intersections>) {
 
@@ -929,6 +1095,94 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
         }
     }
 
+    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+        if (i < dynamic_data.shapes_arrays_metadata.neg_spheres_start) {
+            let intr = cube_intersection(
+                ro - dyn_negatives_shapes[i].pos,
+                rd,
+                dyn_negatives_shapes[i].size// + dyn_negatives_shapes[i].roundness
+            );
+            
+            if intr.y > 0.0 {
+                store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            }
+        } else if (i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start) {
+            let intr = sph_intersection(
+                ro - dyn_negatives_shapes[i].pos,
+                rd,
+                dyn_negatives_shapes[i].size.x + dyn_negatives_shapes[i].roundness
+            );
+            
+            if intr.y > 0.0 {
+                store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            }
+        }
+        // else {
+            // let s = dyn_negatives_shapes[i].size;
+
+            // let size = vec4(
+            //     min(min(s.y, s.z),s.w),    
+            //     min(min(s.x, s.z),s.w),    
+            //     min(min(s.y, s.x),s.w),
+            //     s.w
+            // );
+            
+            // let intr = cube_intersection(
+            //     ro - dyn_negatives_shapes[i].pos,
+            //     rd,
+            //     size + dyn_negatives_shapes[i].roundness
+            // );
+            
+            // if intr.y > 0.0 {
+            //     store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            // }
+        // }
+    }
+
+    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+        if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
+            let intr = cube_intersection(
+                ro - dyn_neg_stickiness_shapes[i].pos,
+                rd,
+                dyn_neg_stickiness_shapes[i].size// + dyn_neg_stickiness_shapes[i].roundness
+            );
+            
+            if intr.y > 0.0 {
+                store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            }
+        } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
+            let intr = sph_intersection(
+                ro - dyn_neg_stickiness_shapes[i].pos,
+                rd,
+                dyn_neg_stickiness_shapes[i].size.x + dyn_neg_stickiness_shapes[i].roundness
+            );
+            
+            if intr.y > 0.0 {
+                store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            }
+        }
+        // else {
+            // let s = dyn_neg_stickiness_shapes[i].size;
+
+            // let size = vec4(
+            //     min(min(s.y, s.z),s.w),    
+            //     min(min(s.x, s.z),s.w),    
+            //     min(min(s.y, s.x),s.w),
+            //     s.w
+            // );
+            
+            // let intr = cube_intersection(
+            //     ro - dyn_neg_stickiness_shapes[i].pos,
+            //     rd,
+            //     size + dyn_neg_stickiness_shapes[i].roundness
+            // );
+            
+            // if intr.y > 0.0 {
+            //     store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            // }
+        // }
+    }
+
     for (var i = 0u; i < dynamic_data.undestroyable_cubes_amount; i++) {
         let intr = cube_intersection(
             ro - dynamic_data.undestroyable_cubes[i].pos,
@@ -938,7 +1192,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
         
         if intr.y > 0.0 {
 
-            store_intersection_entrance_and_exit(intr, intrs);
+            store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
         }
     }
 
@@ -950,9 +1204,11 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
         );
         
         if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr, intrs);
+            store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
         }
     }
+
+    combine_interscted_entrances_and_exites_for_all_intrs(intrs);
 }
 
 
@@ -1512,86 +1768,147 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
     );
 }
 
-
 const MIN_STEP: f32 = 0.005;
 
-fn ray_march(ray_origin_base: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<function,Intersections>) -> vec2<f32>  {
+fn ray_march(ray_origin: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<function,Intersections>) -> vec2<f32>  {
     
-    if (*intrs).intr_entrances_size == 0u {
+    if (*intrs).intr_normal_size == 0u {
         return vec2(MAX_DIST*2.0, 0.0);
     }
-
-    var total_distance: f32 = 0.0;
     
-    var nesting_level = 0u;    
-    var next_entrance = 0u;
-    var next_exit = 0u;
+    var closest_normal_intrs_index = 0u;
+    var closest_normal_intrs = (*intrs).intr_normal[closest_normal_intrs_index];
 
-    while next_entrance < ((*intrs).intr_entrances_size) && (total_distance > (*intrs).intr_entrances[next_entrance])
+    var total_distance: f32 = max(closest_normal_intrs.x, 0.0);
+    
+    var closest_neg_intrs_index = 0u;
+    var closest_neg_intrs = vec2(MAX_DIST*2.0);
+    if (*intrs).intr_neg_size > 0u
     {
-        nesting_level += 1u;
-        next_entrance += 1u;
+        closest_neg_intrs = (*intrs).intr_neg[0u];
     }
 
-    if nesting_level == 0u
+    var closest_unbreakables_intrs_index = 0u;
+    var closest_unbreakables_intrs = vec2(MAX_DIST*2.0);
+    if (*intrs).intr_unbreakables_size > 0u
     {
-        if next_entrance < (*intrs).intr_entrances_size
-        {
-            total_distance = (*intrs).intr_entrances[next_entrance];
-            next_entrance += 1u;
-            nesting_level = 1u;
-        }
-        else
-        {
-            return vec2(MAX_DIST*2.0, 0.0);
-        }
+        closest_unbreakables_intrs = (*intrs).intr_unbreakables[0u];
     }
-    
-    var ray_origin = ray_origin_base + ray_direction*total_distance;
 
     var i: i32 = 0;
     for (; i < MAX_STEPS; i++)
     {
+        while true
+        {
+            // cheking if ray is out of area of positive (not negative) objects
+            // in this case go to next closest positve object or finish ray marching 
+            // if it was last area of positive objects
+            if total_distance > closest_normal_intrs.y
+            {
+                closest_normal_intrs_index += 1u;
+    
+                if closest_normal_intrs_index < (*intrs).intr_normal_size
+                {
+                    closest_normal_intrs = (*intrs).intr_normal[closest_normal_intrs_index];
+    
+                    total_distance = closest_normal_intrs.x;
+                }
+                else
+                {
+                    return vec2(MAX_DIST*2.0, f32(i));
+                }
+            }
 
-        var d: f32  = map(ray_origin);
+            // finding closet area of unbreakable objects
+            while total_distance > closest_unbreakables_intrs.y
+            {
+                closest_unbreakables_intrs_index += 1u;
+    
+                if closest_unbreakables_intrs_index < (*intrs).intr_unbreakables_size
+                {
+                    closest_unbreakables_intrs = (*intrs).intr_unbreakables[closest_unbreakables_intrs_index];
+                }
+                else
+                {
+                    closest_unbreakables_intrs = vec2(MAX_DIST*2.0);
+                }
+            }
+            
+            
+            // cheking if ray is entered in area of negative objects
+            // skip whole nagtive area if ray is not collided
+            // by area of unbreakable objects. if ray is not entered
+            // nagtive area stop the loop - it's means that ray is inside 
+            // area of positive objects
+            if total_distance > closest_neg_intrs.x && total_distance < closest_unbreakables_intrs.x
+            {
+                if total_distance > closest_neg_intrs.y
+                {
+                    closest_neg_intrs_index += 1u;
+    
+                    if closest_neg_intrs_index < (*intrs).intr_neg_size
+                    {
+                        closest_neg_intrs = (*intrs).intr_neg[closest_neg_intrs_index];
+                    }
+                    else
+                    {
+                        closest_neg_intrs = vec2(MAX_DIST*2.0);
+                    }
+    
+                    continue;
+                }
+                else
+                {
+                    if closest_unbreakables_intrs.x < closest_neg_intrs.y
+                    {
+                        total_distance = closest_unbreakables_intrs.x;
+    
+                        while total_distance > closest_normal_intrs.y
+                        {
+                            closest_normal_intrs_index += 1u;
+    
+                            if closest_normal_intrs_index < (*intrs).intr_normal_size
+                            {
+                                closest_normal_intrs = (*intrs).intr_normal[closest_normal_intrs_index];
+                            }
+                            else
+                            {
+                                closest_normal_intrs = vec2(MAX_DIST*2.0);
+                            }
+                        }
+    
+                        break;
+                    }
+                    else
+                    {
+                        total_distance = closest_neg_intrs.y;
+    
+                        closest_neg_intrs_index += 1u;
+    
+                        if closest_neg_intrs_index < (*intrs).intr_neg_size
+                        {
+                            closest_neg_intrs = (*intrs).intr_neg[closest_neg_intrs_index];
+                        }
+                        else
+                        {
+                            closest_neg_intrs = vec2(MAX_DIST*2.0);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        var d: f32  = map(ray_origin + ray_direction * total_distance);
         total_distance += d;
 
         if (d < MIN_DIST) {
 
             return vec2<f32>(total_distance, f32(i));
         }
-        
-        while next_entrance < ((*intrs).intr_entrances_size) && (total_distance > (*intrs).intr_entrances[next_entrance]) 
-        {
-            nesting_level += 1u;
-            next_entrance += 1u;
-        }
-
-        while total_distance > (*intrs).intr_exites[next_exit]
-        {
-            nesting_level -= 1u;
-            next_exit += 1u;
-
-            if next_exit == (*intrs).intr_exites_size
-            {
-                return vec2(MAX_DIST*2.0, f32(i));
-            }
-        }
-
-        if nesting_level == 0u
-        {
-            if next_entrance < (*intrs).intr_entrances_size
-            {
-                total_distance = (*intrs).intr_entrances[next_entrance];
-            }
-            else
-            {
-                return vec2(MAX_DIST*2.0, f32(i));
-            }
-        }
-        
-        ray_origin = ray_origin_base + ray_direction * total_distance;
-
     }
     return vec2<f32>(total_distance, f32(i));
 }
@@ -2060,8 +2377,9 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     let camera_position = dynamic_data.camera_data.cam_pos;
 
     var intrs: Intersections;
-    intrs.intr_exites_size = 0u;
-    intrs.intr_entrances_size = 0u;
+    intrs.intr_neg_size = 0u;
+    intrs.intr_normal_size = 0u;
+    intrs.intr_unbreakables_size = 0u;
 
     find_intersections(camera_position, ray_direction, &intrs);
 

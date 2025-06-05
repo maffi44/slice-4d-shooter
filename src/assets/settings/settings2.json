@@ -24,7 +24,7 @@
     "max_respawn_timer": 9,
     
     "scanner_show_enemies_time" : 5.5,
-    "scanner_reloading_time" : 10,
+    "scanner_reloading_time" : 7.5,
     
     "energy_gun_hole_size_mult" : 0.12,
     "energy_gun_add_force_mult" : 1.4, 

@@ -641,11 +641,7 @@ impl Default for PlayerScreenEffects
 }
 
 
-pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.012, 0.1, 0.7);
-pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.7, 0.1, 0.012);
 
-// pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.18, 0.18, 0.18);
-// pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.18, 0.18, 0.18);
 
 pub struct WScanner
 {
@@ -708,6 +704,8 @@ pub struct MainPlayer {
     w_scanner: WScanner,
 }
 
+pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.012, 0.1, 0.7);
+pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.7, 0.1, 0.012);
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 pub const PLAYER_MAX_HP: f32 = 100.0;
 pub const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
