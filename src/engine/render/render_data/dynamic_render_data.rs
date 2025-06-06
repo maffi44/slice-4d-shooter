@@ -829,60 +829,62 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-    
-            while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
-                if check_if_player_see_sphere(
-                    camera,
-                    Vec4::from_array(shape.pos),
-                    shape.size[0] + shape.roundness + stickiness_value*PI,
-                    clip_planes,
-                )
-                {
-                    self.dynamic_shapes_data.negative[index] = shape;
-                    index += 1;
-                }
+        }
+        
+        while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
+            if check_if_player_see_sphere(
+                camera,
+                Vec4::from_array(shape.pos),
+                shape.size[0] + shape.roundness + stickiness_value*PI,
+                clip_planes,
+            )
+            {
+                self.dynamic_shapes_data.negative[index] = shape;
+                index += 1;
             }
         }
-
 
         neg_spheres_amount = index as u32 - neg_spheres_start;
 
 
         neg_sph_cubes_start = index as u32;
 
-        for shape in &sd.neg_sph_cubes {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::new(
-                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
-                    shape.size[3]
-                ) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.negative[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.neg_sph_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.negative[index] = *shape;
+                    index += 1;
+                }
             }
-        }
 
-        while let Some(shape) = self.frame_sph_cubes_buffer.negative.pop() {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::new(
-                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
-                    shape.size[3]
-                ) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.negative[index] = shape;
-                index += 1;
+            while let Some(shape) = self.frame_sph_cubes_buffer.negative.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.negative[index] = shape;
+                    index += 1;
+                }
             }
         }
 
