@@ -1,4 +1,4 @@
-use crate::engine::{render::{render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
+use crate::engine::{render::{raymarch_shader_generator, render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
 use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
@@ -204,6 +204,7 @@ impl Renderer {
         sky_box_name: &str,
         it_is_2d_3d_example: bool,
         with_ui_renderer: bool,
+        with_generated_raymarch_shader: bool,
     ) -> Renderer {
         let size = window.inner_size();
 
@@ -226,7 +227,7 @@ impl Renderer {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::LowPower,
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -237,7 +238,6 @@ impl Renderer {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-
 
                     // required_features: if cfg!(target_arch = "wasm32") {
                     //     wgpu::Features::empty()
@@ -273,9 +273,7 @@ impl Renderer {
         log::info!("renderer: wgpu device and queue init");
 
         let surface_caps = surface.get_capabilities(&adapter);
-        // Shader code in this tutorial assumes an sRGB surface texture. Using a different
-        // one will result all the colors coming out darker. If you want to support non
-        // sRGB surfaces, you'll need to account for that when drawing to the frame.
+
         log::info!("renderer: gpu surface_caps init");
 
         let surface_format = surface_caps
@@ -308,11 +306,36 @@ impl Renderer {
                 {
                     if it_is_2d_3d_example
                     {
-                        wgpu::ShaderSource::Wgsl(include_str!("shaders/raymarch_shader_for_2d_3d_example.wgsl").into())
+                        if with_generated_raymarch_shader
+                        {
+                            unimplemented!()
+                        }
+                        else
+                        {
+                            wgpu::ShaderSource::Wgsl
+                            (
+                                include_str!("shaders/raymarch_shader_for_2d_3d_example.wgsl").into()
+                            )
+                        }
                     }
                     else
                     {
-                        wgpu::ShaderSource::Wgsl(include_str!("shaders/raymarch_shader.wgsl").into())
+                        if with_generated_raymarch_shader
+                        {
+                            wgpu::ShaderSource::Wgsl
+                            (
+                                raymarch_shader_generator::generate_raymarch_shader(
+                                    &render_data.static_data
+                                ).into()
+                            )
+                        }
+                        else
+                        {
+                            wgpu::ShaderSource::Wgsl
+                            (
+                                include_str!("shaders/raymarch_shader.wgsl").into()
+                            )
+                        }
                     }
                 }
             },
@@ -734,37 +757,34 @@ impl Renderer {
                 compilation_options: PipelineCompilationOptions::default(), 
                 buffers: &[
                     Vertex::desc(),
-                ], // 2.
+                ],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &raymarch_shader,
                 compilation_options: PipelineCompilationOptions::default(),
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { // 4.
+                targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw, // 2.
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
                 polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
                 unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            depth_stencil: None, // 1.
+            depth_stencil: None,
             multisample: wgpu::MultisampleState {
-                count: 1, // 2.
-                mask: !0, // 3.
-                alpha_to_coverage_enabled: false, // 4.
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
             },
-            multiview: None, // 5.
+            multiview: None,
             cache: None,
         });
 
@@ -808,41 +828,38 @@ impl Renderer {
             layout: Some(&upscale_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &upscale_shader,
-                entry_point: Some("vs_main"), // 1.
+                entry_point: Some("vs_main"),
                 buffers: &[
                     Vertex::desc(),
-                ], // 2.
+                ],
                 compilation_options: PipelineCompilationOptions::default(),
             },
-            fragment: Some(wgpu::FragmentState { // 3.
+            fragment: Some(wgpu::FragmentState {
                 module: &upscale_shader,
                 compilation_options: PipelineCompilationOptions::default(),
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { // 4.
+                targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw, // 2.
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
                 polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
                 unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            depth_stencil: None, // 1.
+            depth_stencil: None,
             multisample: wgpu::MultisampleState {
-                count: 1, // 2.
-                mask: !0, // 3.
-                alpha_to_coverage_enabled: false, // 4.
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
             },
-            multiview: None, // 5.
+            multiview: None,
             cache: None,
         });
 

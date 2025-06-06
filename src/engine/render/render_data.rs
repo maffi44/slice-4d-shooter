@@ -1,5 +1,5 @@
 mod dynamic_render_data;
-mod static_render_data;
+pub mod static_render_data;
 
 use crate::engine::{
     time::TimeSystem,
@@ -80,13 +80,15 @@ impl RenderData {
         time: &TimeSystem,
         window: &Window,
         static_bounding_box: &BoundingBox,
+        for_generated_raymarch_shader: bool,
     ) {
         self.dynamic_data.update(
             world,
             time,
             window,
             static_bounding_box,
-            &self.static_data
+            &self.static_data,
+            for_generated_raymarch_shader,
         );
     }
 }

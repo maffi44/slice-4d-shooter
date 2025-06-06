@@ -20,15 +20,11 @@ tokio-tungstenite = "*"
 web-time = "0.2.4"
 glam = "*"
 rand = "*"
-
 blink-alloc = "*"
-
 fyrox-sound = "*"
 fyrox-resource = "*"
 fyrox-core = "*"
-
 image = "*"
-
 log = "*"
 serde_json = "*"
 alkahest = { version = "*", features = [ "derive" ] }
@@ -57,6 +53,10 @@ crate-type = ["cdylib", "rlib"]
 [[bin]]
 name="game-client"
 path="src/game_client_main.rs"
+
+[[bin]]
+name="game-client-fast"
+path="src/game_client_generated_shader_main.rs"
 
 [[bin]]
 name="game-client-2d-3d-example"

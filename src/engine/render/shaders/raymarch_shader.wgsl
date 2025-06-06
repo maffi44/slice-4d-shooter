@@ -991,7 +991,7 @@ fn store_value_in_array_in_order_of_first_elem_for_unbreakables(
 
 
 fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Intersections>) {
-
+    //###find_intersections###
     var rd = rdd;
 
     if rd.x == 0 {
@@ -1102,7 +1102,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
             let intr = cube_intersection(
                 ro - dyn_negatives_shapes[i].pos,
                 rd,
-                dyn_negatives_shapes[i].size + r/1.414213562,
+                dyn_negatives_shapes[i].size + r*0.707106781,
             );
 
             if intr.y > 0.0 {
@@ -1149,7 +1149,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
             let intr = cube_intersection(
                 ro - dyn_neg_stickiness_shapes[i].pos,
                 rd,
-                dyn_neg_stickiness_shapes[i].size + r/1.414213562,
+                dyn_neg_stickiness_shapes[i].size + r*0.707106781,
             );
 
             
@@ -1215,10 +1215,12 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
     }
 
     combine_interscted_entrances_and_exites_for_all_intrs(intrs);
+    //###find_intersections###
 }
 
 
 fn map(p: vec4<f32>) -> f32 {
+    //###map###
     var d = MAX_DIST*2.0;
 
     for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
@@ -1362,6 +1364,7 @@ fn map(p: vec4<f32>) -> f32 {
     d = min(d, dddd);
 
     return d;
+    //###map###
 }
 
 fn get_mats_simple(
@@ -1390,6 +1393,7 @@ fn get_mats(
     ray_dir: vec4<f32>,
     dist: f32,
 ) -> OutputMaterials {
+    //###get_mats###
     var output: OutputMaterials;
 
     if dist > MAX_DIST-MIN_DIST {
@@ -1744,10 +1748,11 @@ fn get_mats(
     }
     
     return output;
+    //###get_mats###
 }
 
 
-fn get_normal(p: vec4<f32>) -> vec4<f32> {
+fn get_normal_prev(p: vec4<f32>) -> vec4<f32> {
     var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
     
     var a: vec4<f32> = p + h.yxxz;
@@ -1772,6 +1777,66 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
         h.zzzx * fe +
         h.zzzy * ff
     );
+}
+
+
+// for preventing inline func map
+fn get_normal(p: vec4<f32>) -> vec4<f32> {
+    var h: vec3<f32> = vec3<f32>(MIN_DIST, -MIN_DIST, 0.0);
+    
+    let a: vec4<f32> = h.yxxz;
+    let b: vec4<f32> = h.xyxz;
+    let c: vec4<f32> = h.xxyz;
+    let d: vec4<f32> = h.yyyz;
+    let e: vec4<f32> = h.zzzx;
+    let f: vec4<f32> = h.zzzy;
+
+    // let arr = array<vec4<f32>, 6>(
+    //     vec4(-MIN_DIST, MIN_DIST, MIN_DIST, 0.0),
+    //     vec4(MIN_DIST, -MIN_DIST, MIN_DIST, 0.0),
+    //     vec4(MIN_DIST, MIN_DIST, -MIN_DIST, 0.0),
+    //     vec4(-MIN_DIST, -MIN_DIST, -MIN_DIST, 0.0),
+    //     vec4(0.0, 0.0, 0.0, MIN_DIST),
+    //     vec4(0.0, 0.0, 0.0, -MIN_DIST),
+    // );
+
+    var n = vec4(0.0);
+
+    for( var i=(min(i32(dynamic_data.time), 0)); i<6; i += 1 )
+    {
+        var nn = vec4(0.0);
+
+        // after making const array I catched segmentation fault on
+        // (ubuntu 22.04, nvidia RTX 3070 (mobile) (driver 565.77), ryzen 9)
+        if i == 0
+        {
+            nn = a;
+        }
+        else if i == 1
+        {
+            nn = b;
+        }
+        else if i == 2
+        {
+            nn = c;
+        }
+        else if i == 3
+        {
+            nn = d;
+        }
+        else if i == 4
+        {
+            nn = e;
+        }
+        else
+        {
+            nn = f;
+        }
+
+        n += nn*map(p+nn);
+    }
+
+    return normalize(n);
 }
 
 const MIN_STEP: f32 = 0.005;

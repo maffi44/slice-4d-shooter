@@ -101,6 +101,7 @@ impl Engine {
         cleint_main_loop: &MainLoop,
         with_ui_renderer: bool,
         it_is_2d_3d_example: bool,
+        with_generated_raymarch_shader: bool,
     ) -> Engine {
 
         let window;
@@ -191,6 +192,7 @@ impl Engine {
             &mut runtime,
             it_is_2d_3d_example,
             with_ui_renderer,
+            with_generated_raymarch_shader,
         ).await;
         log::info!("engine systems: render init");
 

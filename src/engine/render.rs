@@ -2,6 +2,7 @@ pub mod render_data;
 pub mod camera;
 mod renderer;
 mod ui_renderer;
+mod raymarch_shader_generator;
 
 use std::sync::{Arc, Mutex};
 
@@ -59,9 +60,7 @@ pub struct RenderSystem {
     renderer: Arc<Mutex<Renderer>>,
     outdated_signal_mutex: Arc<Mutex<bool>>,
 
-
-    increase_render_quality_action_is_pressed: bool,
-    decrease_render_quality_action_is_pressed: bool,
+    generated_raymarch_shader: bool,
 }
 
 
@@ -76,6 +75,7 @@ impl RenderSystem {
         runtime: &mut Runtime,
         it_is_2d_3d_example: bool,
         with_ui_renderer: bool,
+        with_generated_raymarch_shader: bool,
     ) -> Self {
         
         let render_data = RenderData::new(world, time, &window);
@@ -92,6 +92,7 @@ impl RenderSystem {
                     &world.level.visual_settings_of_environment.sky_box_name,
                     it_is_2d_3d_example,
                     with_ui_renderer,
+                    with_generated_raymarch_shader,
                 ).await
             )
         );
@@ -138,21 +139,8 @@ impl RenderSystem {
             render_data,
             outdated_signal_mutex,
 
-            increase_render_quality_action_is_pressed: false,
-            decrease_render_quality_action_is_pressed: false,
+            generated_raymarch_shader: with_generated_raymarch_shader,
         }
-    }
-
-
-    pub fn increase_render_quality(&mut self)
-    {
-
-    }
-
-
-    pub fn decrease_render_quality(&mut self)
-    {
-
     }
 
     pub fn process_change_render_quality_input(
@@ -194,7 +182,8 @@ impl RenderSystem {
             world,
             time,
             &self.window,
-            &self.render_data.static_data.static_bounding_box.clone()
+            &self.render_data.static_data.static_bounding_box.clone(),
+            self.generated_raymarch_shader,
         );
 
         let mut renderer_lock = self.renderer.lock().unwrap();
@@ -212,29 +201,32 @@ impl RenderSystem {
         );
 
         renderer_lock.queue.write_buffer(
-            &renderer_lock.dynamic_normal_shapes_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
-        );
-
-        renderer_lock.queue.write_buffer(
             &renderer_lock.dynamic_negative_shapes_buffer,
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.negative.as_slice()),
         );
 
-        renderer_lock.queue.write_buffer(
-            &renderer_lock.dynamic_stickiness_shapes_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
-        );
-
-        renderer_lock.queue.write_buffer(
-            &renderer_lock.dynamic_neg_stickiness_shapes_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
-        );
-
+        if !self.generated_raymarch_shader
+        {
+            renderer_lock.queue.write_buffer(
+                &renderer_lock.dynamic_normal_shapes_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
+            );
+    
+            renderer_lock.queue.write_buffer(
+                &renderer_lock.dynamic_stickiness_shapes_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
+            );
+    
+            renderer_lock.queue.write_buffer(
+                &renderer_lock.dynamic_neg_stickiness_shapes_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
+            );
+        }
+        
         renderer_lock.queue.write_buffer(
             &renderer_lock.spherical_areas_data_buffer,
             0,

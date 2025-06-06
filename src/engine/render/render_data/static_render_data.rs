@@ -62,7 +62,7 @@ pub struct OtherStaticData {
 
     
     w_cups_mat: i32,
-    static_shapes_stickiness: f32,
+    pub static_shapes_stickiness: f32,
     
     red_base_position: [f32;4],
     blue_base_position: [f32;4],

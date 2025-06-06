@@ -452,6 +452,8 @@ impl DynamicRenderData {
         clip_planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
         stickiness_value: f32,
 
+        for_generated_raymarch_shader: bool,
+
     ) -> ShapesArraysMetadata
     {
         let mut cubes_start = 0u32;
@@ -511,31 +513,34 @@ impl DynamicRenderData {
         let mut index = 0;
         cubes_start = 0u32;
 
-        for shape in &sd.cubes
+        if !for_generated_raymarch_shader
         {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
+            for shape in &sd.cubes
             {
-                self.dynamic_shapes_data.normal[index] = *shape;
-                index += 1;
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.normal[index] = *shape;
+                    index += 1;
+                }
             }
-        }
-
-        while let Some(shape) = self.frame_cubes_buffer.normal.pop()
-        {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
+    
+            while let Some(shape) = self.frame_cubes_buffer.normal.pop()
             {
-                self.dynamic_shapes_data.normal[index] = shape;
-                index += 1;
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.normal[index] = shape;
+                    index += 1;
+                }
             }
         }
 
@@ -544,72 +549,80 @@ impl DynamicRenderData {
 
         spheres_start = index as u32;
 
-        for shape in &sd.spheres {
-            if check_if_player_see_sphere(
-                camera,
-                Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value*PI,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.normal[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.spheres {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.normal[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_spheres_buffer.normal.pop() {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.normal[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_spheres_buffer.normal.pop() {
-            if check_if_player_see_sphere(
-                camera,
-                Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value*PI,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.normal[index] = shape;
-                index += 1;
-            }
-        }
 
         spheres_amount = index as u32 - spheres_start;
 
 
         sph_cubes_start = index as u32;
 
-        for shape in &sd.sph_cubes {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::new(
-                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
-                    shape.size[3]
-                ) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.normal[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.sph_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.normal[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_sph_cubes_buffer.normal.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.normal[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_sph_cubes_buffer.normal.pop() {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::new(
-                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
-                    shape.size[3]
-                ) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.normal[index] = shape;
-                index += 1;
-            }
-        }
 
         sph_cubes_amount = index as u32 - sph_cubes_start;
 
@@ -633,103 +646,115 @@ impl DynamicRenderData {
         let mut index = 0;
         s_cubes_start = 0u32;
 
-        for shape in &sd.s_cubes {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.stickiness[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.s_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.stickiness[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_cubes_buffer.stickiness.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.stickiness[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_cubes_buffer.stickiness.pop() {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.stickiness[index] = shape;
-                index += 1;
-            }
-        }
 
         s_cubes_amount = index as u32;
 
 
         s_spheres_start = index as u32;
 
-        for shape in &sd.s_spheres {
-            if check_if_player_see_sphere(
-                camera,
-                Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value*PI,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.stickiness[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.s_spheres {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.stickiness[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_spheres_buffer.stickiness.pop() {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.stickiness[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_spheres_buffer.stickiness.pop() {
-            if check_if_player_see_sphere(
-                camera,
-                Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value*PI,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.stickiness[index] = shape;
-                index += 1;
-            }
-        }
 
         s_spheres_amount = index as u32 - s_spheres_start;
 
 
         s_sph_cubes_start = index as u32;
 
-        for shape in &sd.s_sph_cubes {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::new(
-                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
-                    shape.size[3]
-                ) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.stickiness[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.s_sph_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.stickiness[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_sph_cubes_buffer.stickiness.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.stickiness[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_sph_cubes_buffer.stickiness.pop() {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::new(
-                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
-                    shape.size[3]
-                ) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.stickiness[index] = shape;
-                index += 1;
-            }
-        }
 
         s_sph_cubes_amount = index as u32 - s_sph_cubes_start;
 
@@ -755,62 +780,70 @@ impl DynamicRenderData {
         let mut index = 0;
         neg_cubes_start = 0u32;
 
-        for shape in &sd.neg_cubes {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.negative[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.neg_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.negative[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_cubes_buffer.negative.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.negative[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_cubes_buffer.negative.pop() {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.negative[index] = shape;
-                index += 1;
-            }
-        }
 
         neg_cubes_amount = index as u32;
 
 
         neg_spheres_start = index as u32;
 
-        for shape in &sd.neg_spheres {
-            if check_if_player_see_sphere(
-                camera,
-                Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value*PI,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.negative[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.neg_spheres {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.negative[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.negative[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
-            if check_if_player_see_sphere(
-                camera,
-                Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value*PI,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.negative[index] = shape;
-                index += 1;
-            }
-        }
 
         neg_spheres_amount = index as u32 - neg_spheres_start;
 
@@ -871,109 +904,120 @@ impl DynamicRenderData {
 
         neg_inf_cubes_amount = index as u32 - neg_inf_cubes_start;
 
-
-
+        
         // packing negative and stickiness shapes
         let mut index = 0;
         s_neg_cubes_start = 0u32;
 
-        for shape in &sd.s_neg_cubes {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.neg_stickiness[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.s_neg_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.neg_stickiness[index] = *shape;
+                    index += 1;
+                }
             }
+    
+            while let Some(shape) = self.frame_cubes_buffer.neg_stickiness.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.neg_stickiness[index] = shape;
+                    index += 1;
+                }
+            }   
         }
 
-        while let Some(shape) = self.frame_cubes_buffer.neg_stickiness.pop() {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.neg_stickiness[index] = shape;
-                index += 1;
-            }
-        }
 
         s_neg_cubes_amount = index as u32;
 
 
         s_neg_spheres_start = index as u32;
 
-        for shape in &sd.s_neg_spheres {
-            if check_if_player_see_sphere(
-                camera,
-                Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value*PI,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.neg_stickiness[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.s_neg_spheres {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.neg_stickiness[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_spheres_buffer.neg_stickiness.pop() {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.neg_stickiness[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_spheres_buffer.neg_stickiness.pop() {
-            if check_if_player_see_sphere(
-                camera,
-                Vec4::from_array(shape.pos),
-                shape.size[0] + shape.roundness + stickiness_value*PI,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.neg_stickiness[index] = shape;
-                index += 1;
-            }
-        }
 
         s_neg_spheres_amount = index as u32 - s_neg_spheres_start;
 
 
         s_neg_sph_cubes_start = index as u32;
 
-        for shape in &sd.s_neg_sph_cubes {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::new(
-                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
-                    shape.size[3]
-                ) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.neg_stickiness[index] = *shape;
-                index += 1;
+        if !for_generated_raymarch_shader
+        {
+            for shape in &sd.s_neg_sph_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.neg_stickiness[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_sph_cubes_buffer.neg_stickiness.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.neg_stickiness[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_sph_cubes_buffer.neg_stickiness.pop() {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::new(
-                    (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
-                    (shape.size[1].min(shape.size[0])).min(shape.size[3]),
-                    shape.size[3]
-                ) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.neg_stickiness[index] = shape;
-                index += 1;
-            }
-        }
 
         s_neg_sph_cubes_amount = index as u32 - s_neg_sph_cubes_start;
 
@@ -996,33 +1040,37 @@ impl DynamicRenderData {
 
         let mut index = 0;
 
-        for shape in &sd.undestroyable_cubes
+        if !for_generated_raymarch_shader
         {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
+            for shape in &sd.undestroyable_cubes
             {
-                self.dynamic_shapes_data.undestroyable_cubes[index] = *shape;
-                index += 1;
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable_cubes[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_cubes_buffer.undestroyable.pop()
+            {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable_cubes[index] = shape;
+                    index += 1;
+                }
             }
         }
 
-        while let Some(shape) = self.frame_cubes_buffer.undestroyable.pop()
-        {
-            if check_if_player_see_cube(
-                camera,
-                Vec4::from_array(shape.pos),
-                Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
-                clip_planes,
-            )
-            {
-                self.dynamic_shapes_data.undestroyable_cubes[index] = shape;
-                index += 1;
-            }
-        }
 
         self.dynamic_shapes_data.undestroyable_cubes_amount = index as u32;
 
@@ -1060,11 +1108,6 @@ impl DynamicRenderData {
             s_neg_inf_cubes_amount,
             s_neg_sph_cubes_start,
             s_neg_sph_cubes_amount,
-
-            // padding_byte1: 0u32,
-            // padding_byte2: 0u32,
-            // undestroyable_cubes_start: 0u32,
-            // undestroyable_cubes_amount: 0u32,
         }
     }
 
@@ -1205,6 +1248,7 @@ impl DynamicRenderData {
         window: &Window,
         static_bounding_box: &BoundingBox,
         static_data: &StaticRenderData,
+        for_generated_raymarch_shader: bool,
     ) {
         self.clear_all_frame_buffers();
 
@@ -1235,7 +1279,8 @@ impl DynamicRenderData {
 
             &main_camera,
             clip_planes,
-            world.level.all_shapes_stickiness_radius
+            world.level.all_shapes_stickiness_radius,
+            for_generated_raymarch_shader,
         );
 
         let (spherical_areas_meatadata, waves_start, waves_amount) =

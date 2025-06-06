@@ -30,7 +30,7 @@ async fn client_main() {
     
     log::info!("main: main_loop init");
 
-    let systems = Engine::new(&main_loop, true, false).await;
+    let systems = Engine::new(&main_loop, true, false, false).await;
     
     log::info!("main: Engine systems init");
 
