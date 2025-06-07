@@ -1,4 +1,4 @@
-mod dynamic_render_data;
+pub mod dynamic_render_data;
 pub mod static_render_data;
 
 use crate::engine::{

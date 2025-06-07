@@ -1,14 +1,20 @@
-use std::{f32::consts::PI, fmt::format, ops::Add};
+use core::panic;
+use std::{cmp::Ordering, f32::consts::PI, fmt::format, ops::Add};
 
-use glam::Vec4;
+use glam::{Vec2, Vec4};
+
+use crate::engine::{physics::common_physical_functions::THRESHOLD, render::render_data::Shape};
 
 use super::render_data::static_render_data::StaticRenderData;
 
 
-pub fn generate_raymarch_shader(static_data: &StaticRenderData) -> String
+const MAX_TREE_DEPTH: usize = 8;
+const MIN_DIVISION_EFFICIENCY: usize = 1;
+
+pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &'static str, static_data: &StaticRenderData) -> String
 {
-    let original_shader = include_str!("shaders/raymarch_shader.wgsl");
-    
+    let bsp_tree = Box::new(BSPElement::create_binary_space_partition_tree(static_data));
+
     let shader_pieces: Vec<&str> = original_shader.split("//###map###").collect();
     
     let mut shader = String::new();
@@ -16,7 +22,7 @@ pub fn generate_raymarch_shader(static_data: &StaticRenderData) -> String
     if shader_pieces.len() == 3
     {
         shader += shader_pieces[0];
-        shader += &generate_map_function(static_data);
+        shader += &generate_map_function(bsp_tree);
         shader += shader_pieces[2];
     }
     else
@@ -381,201 +387,14 @@ fn generate_find_intersections_function(static_data: &StaticRenderData) -> Strin
 }
 
 
-fn generate_map_function(static_data: &StaticRenderData) -> String
+fn generate_map_function(bsp_tree: Box<BSPElement>) -> String
 {
-    let stickiness = static_data.other_static_data.static_shapes_stickiness;
     let mut func_body = String::new();
 
     func_body += "var d = MAX_DIST*2.0;";
 
-    // normal
-    for shape in &static_data.cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = min(d, sd_box(p - {}, {}) - {});\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-    }
-
-    for shape in &static_data.spheres
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = min(d, sd_sphere(p - {}, {}) - {});\n",
-            string_from_vec4(shape.pos),
-            shape.size[0],
-            shape.roundness,
-        );
-    }
-
-    for shape in &static_data.sph_cubes 
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = min(d, sd_sph_box(p - {}, {}) - {});\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-    }
-
-    // stickiness
-    for shape in &static_data.s_cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = smin(d, sd_box(p - {}, {}) - {}, {});\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-            stickiness,
-        );
-    }
-
-    for shape in &static_data.s_spheres
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = smin(d, sd_sphere(p - {}, {}) - {}, {});\n",
-            string_from_vec4(shape.pos),
-            shape.size[0],
-            shape.roundness,
-            stickiness,
-        );
-    }
-
-    for shape in &static_data.s_sph_cubes 
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = smin(d, sd_sph_box(p - {}, {}) - {}, {});\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-            stickiness,
-        );
-    }
-
-    // negative
-    for shape in &static_data.neg_cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = max(d, -(sd_box(p - {}, {}) - {}));\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-    }
-
-    for shape in &static_data.neg_spheres
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = max(d, -(sd_sphere(p - {}, {}) - {}));\n",
-            string_from_vec4(shape.pos),
-            shape.size[0],
-            shape.roundness,
-        );
-    }
-
-    for shape in &static_data.neg_sph_cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = max(d, -(sd_sph_box(p - {}, {}) - {}));\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-    }
-
-
-    func_body +=
-
-    "for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
-        d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
-    }\n";
-
-
-    // negative stickiness
-    for shape in &static_data.s_neg_cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = smax(d, -(sd_box(p - {}, {}) - {}), {});\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-            stickiness,
-        );
-    }
-
-    for shape in &static_data.s_neg_spheres
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = smax(d, -(sd_sphere(p - {}, {}) - {}), {});\n",
-            string_from_vec4(shape.pos),
-            shape.size[0],
-            shape.roundness,
-            stickiness,
-        );
-    }
-
-    for shape in &static_data.s_neg_sph_cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = smax(d, -(sd_sph_box(p - {}, {}) - {}), {});\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-            stickiness,
-        );
-    }
-
-    // undestroyable
-    for shape in &static_data.undestroyable_cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "d = min(d, sd_box(p - {}, {}) - {});\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-    }
-
+    write_bsp_tree_content_for_map_func(&mut func_body, bsp_tree);
+    
     func_body +=
 
     "var dddd = MAX_DIST;
@@ -1278,4 +1097,2472 @@ fn calc_size_for_sphcube(size: [f32; 4], roundness: f32) -> [f32; 4]
         (size[1].min(size[0])).min(size[3]) + roundness,
         size[3] + roundness
     ]
+}
+
+
+fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: Box<BSPElement>)
+{
+    match *bsp_elem {
+        BSPElement::Branches(slice, left_branch, right_branch) => 
+        {
+            let (axis, value) = match slice
+            {
+                Slice::X(value) => ("x", value),
+                Slice::Y(value) => ("y", value),
+                Slice::Z(value) => ("z", value),
+                Slice::W(value) => ("w", value),
+            };
+
+            func_body.push_str(
+                &format!
+                (
+                    "if p.{} > {} {}\n",
+                    axis,
+                    value,
+                    "{"
+                )
+            );
+
+            write_bsp_tree_content_for_map_func(func_body, right_branch);
+
+            func_body.push_str("}\nelse\n{");
+
+            write_bsp_tree_content_for_map_func(func_body, left_branch);
+
+            func_body.push_str("}");
+
+        },
+        BSPElement::Leaf(objects) =>
+        {
+            let stickiness = objects.stickiness;
+            
+            for obj in &objects.cubes
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = min(d, sd_box(p - {}, {}) - {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                    )
+                );
+
+            }
+
+            for obj in &objects.spheres
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = min(d, sd_sphere(p - {}, {}) - {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        obj.shape.size[0],
+                        obj.shape.roundness,
+                    )
+                );
+            }
+
+            for obj in &objects.sph_cubes 
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = min(d, sd_sph_box(p - {}, {}) - {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                    )
+                );
+            }
+
+            // stickiness
+            for obj in &objects.s_cubes
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = smin(d, sd_box(p - {}, {}) - {}, {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                        stickiness,
+                    )
+                );
+            }
+
+            for obj in &objects.s_spheres
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = smin(d, sd_sphere(p - {}, {}) - {}, {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        obj.shape.size[0],
+                        obj.shape.roundness,
+                        stickiness,
+                    )
+                );
+            }
+
+            for obj in &objects.s_sph_cubes 
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = smin(d, sd_sph_box(p - {}, {}) - {}, {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                        stickiness,
+                    )
+                );
+            }
+
+            // negative
+            for obj in &objects.neg_cubes
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = max(d, -(sd_box(p - {}, {}) - {}));\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                    )
+                );
+            }
+
+            for obj in &objects.neg_spheres
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = max(d, -(sd_sphere(p - {}, {}) - {}));\n",
+                        string_from_vec4(obj.shape.pos),
+                        obj.shape.size[0],
+                        obj.shape.roundness,
+                    )
+                );
+            }
+
+            for obj in &objects.neg_sph_cubes
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = max(d, -(sd_sph_box(p - {}, {}) - {}));\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                    )
+                );
+            }
+
+            func_body.push_str(
+                "for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
+                    d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+                }\n"
+            );
+
+            // negative stickiness
+            for obj in &objects.s_neg_cubes
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = smax(d, -(sd_box(p - {}, {}) - {}), {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                        stickiness,
+                    )
+                );
+            }
+
+            for obj in &objects.s_neg_spheres
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = smax(d, -(sd_sphere(p - {}, {}) - {}), {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        obj.shape.size[0],
+                        obj.shape.roundness,
+                        stickiness,
+                    )
+                );
+            }
+
+            for obj in &objects.s_neg_sph_cubes
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = smax(d, -(sd_sph_box(p - {}, {}) - {}), {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                        stickiness,
+                    )
+                );
+            }
+
+            // undestroyable
+            for obj in &objects.undestroyable_cubes
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = min(d, sd_box(p - {}, {}) - {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                    )
+                );
+            }
+        },
+    }
+}
+
+enum BSPElement
+{
+    Branches(Slice, Box<BSPElement>, Box<BSPElement>),
+    Leaf(Objects)
+}
+
+impl BSPElement
+{
+    pub fn create_binary_space_partition_tree(static_data: &StaticRenderData) -> Self
+    {
+        let objects = Objects::init(static_data);
+
+        if objects.len() == 0
+        {
+            BSPElement::Leaf(objects)
+        }
+        else
+        {
+            split_leaf(objects, 0)
+        }
+    }
+}
+
+fn split_leaf
+(
+    objects: Objects,
+    current_depth: usize
+) -> BSPElement
+{
+    if current_depth >= MAX_TREE_DEPTH
+    {
+        return BSPElement::Leaf(objects);
+    }
+    else
+    {
+        let silce_info = objects.find_best_dividing_slice();
+
+        if silce_info.original_amount_of_objects -
+            silce_info.left_branch_objects_amount
+            .max
+            (
+                silce_info.right_branch_objects_amount
+            )
+            <
+            MIN_DIVISION_EFFICIENCY
+        {
+            return BSPElement::Leaf(objects);
+        }
+        else
+        {
+            let (left_objects, right_object) = objects
+                .divide_by_slice(silce_info.slice);
+            
+
+            return BSPElement::Branches
+            (
+                silce_info.slice,
+                Box::new(split_leaf(left_objects, current_depth+1)),
+                Box::new(split_leaf(right_object, current_depth+1))
+            );
+        }
+    }
+}
+
+struct Objects
+{
+    pub stickiness: f32,
+
+    pub cubes: Vec<Object>,
+    pub s_cubes: Vec<Object>,
+    pub neg_cubes: Vec<Object>,
+    pub s_neg_cubes: Vec<Object>,
+    pub spheres: Vec<Object>,
+    pub s_spheres: Vec<Object>,
+    pub neg_spheres: Vec<Object>,
+    pub s_neg_spheres: Vec<Object>,
+    pub sph_cubes: Vec<Object>,
+    pub s_sph_cubes: Vec<Object>,
+    pub neg_sph_cubes: Vec<Object>,
+    pub s_neg_sph_cubes: Vec<Object>,
+    pub undestroyable_cubes: Vec<Object>,
+
+    pub object_edges_list_along_x: Vec<f32>,
+    pub object_edges_list_along_y: Vec<f32>,
+    pub object_edges_list_along_z: Vec<f32>,
+    pub object_edges_list_along_w: Vec<f32>,
+}
+
+
+pub struct SliceInfo
+{
+    pub slice: Slice,
+    pub original_amount_of_objects: usize,
+    pub left_branch_objects_amount: usize,
+    pub right_branch_objects_amount: usize,
+}
+
+#[derive(Clone, Copy)]
+enum Slice
+{
+    X(f32),
+    Y(f32),
+    Z(f32),
+    W(f32)
+}
+
+impl Slice
+{
+    pub fn set_slice_pos(&mut self, pos: f32)
+    {
+        match self
+        {
+            Slice::X(p) => *p = pos,
+            Slice::Y(p) => *p = pos,
+            Slice::Z(p) => *p = pos,
+            Slice::W(p) => *p = pos,
+        }
+    }
+}
+
+impl Objects
+{
+
+    pub fn len(&self) -> usize
+    {
+        let mut len = 0;
+
+        len += self.cubes.len();
+        len += self.s_cubes.len();
+        len += self.neg_cubes.len();
+        len += self.s_neg_cubes.len();
+        len += self.spheres.len();
+        len += self.s_spheres.len();
+        len += self.neg_spheres.len();
+        len += self.s_neg_spheres.len();
+        len += self.sph_cubes.len();
+        len += self.s_sph_cubes.len();
+        len += self.neg_sph_cubes.len();
+        len += self.s_neg_sph_cubes.len();
+        len += self.undestroyable_cubes.len();
+
+        len  
+    }
+    
+
+    pub fn find_best_dividing_slice(&self) -> SliceInfo
+    {
+        let z_slice_info = self.find_best_dividing_slice_along_axis(Slice::Z(0.0));
+
+        let z_dif = z_slice_info.original_amount_of_objects - z_slice_info.left_branch_objects_amount.max(z_slice_info.right_branch_objects_amount);
+
+        if z_slice_info.original_amount_of_objects - z_dif >= z_slice_info.original_amount_of_objects / 2 - 1
+        {
+            return z_slice_info;
+        }
+
+        let x_slice_info = self.find_best_dividing_slice_along_axis(Slice::X(0.0));
+
+        let x_dif = x_slice_info.original_amount_of_objects - x_slice_info.left_branch_objects_amount.max(x_slice_info.right_branch_objects_amount);
+
+        if x_slice_info.original_amount_of_objects - x_dif >= x_slice_info.original_amount_of_objects / 2 - 1
+        {
+            return x_slice_info;
+        }
+
+        let y_slice_info = self.find_best_dividing_slice_along_axis(Slice::Y(0.0));
+
+        let y_dif = y_slice_info.original_amount_of_objects - y_slice_info.left_branch_objects_amount.max(y_slice_info.right_branch_objects_amount);
+
+        if y_slice_info.original_amount_of_objects - y_dif >= y_slice_info.original_amount_of_objects / 2 - 1
+        {
+            return y_slice_info;
+        }
+
+        let w_slice_info = self.find_best_dividing_slice_along_axis(Slice::W(0.0));
+
+        let w_dif = w_slice_info.original_amount_of_objects - w_slice_info.left_branch_objects_amount.max(w_slice_info.right_branch_objects_amount);
+
+        if w_slice_info.original_amount_of_objects - w_dif >= w_slice_info.original_amount_of_objects / 2 - 1
+        {
+            return w_slice_info;
+        }
+
+
+        if w_dif >= x_dif &&
+            w_dif >= y_dif &&
+            w_dif >= z_dif
+        {
+            return w_slice_info;
+        }
+        else if x_dif >= y_dif &&
+            x_dif >= z_dif &&
+            x_dif >= w_dif
+        {
+            return x_slice_info;
+        }
+        else if y_dif >= x_dif &&
+            y_dif >= z_dif &&
+            y_dif >= w_dif
+        {
+            return y_slice_info;
+        }
+        else
+        {
+            return z_slice_info;
+        }
+    }
+
+
+    fn find_best_dividing_slice_along_axis(&self, mut slice: Slice) -> SliceInfo
+    {
+        let edges_list = match slice
+        {
+            Slice::X(_) => &self.object_edges_list_along_x,
+            Slice::Y(_) => &self.object_edges_list_along_y,
+            Slice::Z(_) => &self.object_edges_list_along_z,
+            Slice::W(_) => &self.object_edges_list_along_w,
+        };
+
+        let mut index = (edges_list.len() / 2) - 1;
+
+        let slice_pos = edges_list[index] + THRESHOLD;
+
+        slice.set_slice_pos(slice_pos);
+    
+        let slice_info = self.get_slice_info(slice);
+
+        if slice_info.left_branch_objects_amount == slice_info.right_branch_objects_amount
+        {
+            return slice_info;
+        }
+
+        let increasing = if slice_info.left_branch_objects_amount < slice_info.right_branch_objects_amount
+        {
+            index += 1;
+
+            true
+        }
+        else
+        {
+            index -= 1;
+
+            false    
+        };
+
+        while index < edges_list.len()
+        {
+            let slice_pos = edges_list[index] + THRESHOLD;
+    
+            slice.set_slice_pos(slice_pos);
+    
+            let slice_info = self.get_slice_info(slice);
+
+            if slice_info.left_branch_objects_amount == slice_info.right_branch_objects_amount
+            {
+                return slice_info;
+            }
+
+            if slice_info.left_branch_objects_amount < slice_info.right_branch_objects_amount
+            {
+                index += 1;
+
+                if !increasing
+                {
+                    panic!("In raymarch shader generator, in func find_best_dividing_slice_along_axis best slice searching algorithm changed direction")
+                }
+            }
+            else
+            {
+                index -= 1;
+
+                if increasing
+                {
+                    panic!("In raymarch shader generator, in func find_best_dividing_slice_along_axis best slice searching algorithm changed direction")
+                }
+            }
+        }
+
+        panic!("In raymarch shader generator, in func find_best_dividing_slice_along_axis best slice searching algorithm reached end of the loop")
+    }
+
+
+    pub fn get_slice_info(&self, slice: Slice) -> SliceInfo
+    {
+        let mut slice_info = SliceInfo {
+            slice,
+            original_amount_of_objects: self.len(),
+            left_branch_objects_amount: 0usize,
+            right_branch_objects_amount: 0usize
+        };
+
+        for obj in &self.cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+        for obj in &self.neg_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+        for obj in &self.s_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+        for obj in &self.s_neg_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+
+        for obj in &self.spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+        for obj in &self.neg_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+        for obj in &self.s_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+        for obj in &self.s_neg_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+
+        for obj in &self.sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+        for obj in &self.neg_sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+        for obj in &self.s_sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+        for obj in &self.s_neg_sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+
+        for obj in &self.undestroyable_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+
+        slice_info
+    }
+
+
+    pub fn divide_by_slice(self, slice: Slice) -> (Self, Self)
+    {
+        let mut left_objects = Objects::new_empty(self.stickiness);
+        let mut right_objects = Objects::new_empty(self.stickiness);
+
+        for obj in self.cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.cubes.push(obj.clone());
+                    right_objects.cubes.push(obj.clone());
+                },
+            }
+        }
+        for obj in self.neg_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.neg_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.neg_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.neg_cubes.push(obj.clone());
+                    right_objects.neg_cubes.push(obj.clone());
+                },
+            }
+        }
+        for obj in self.s_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.s_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.s_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.s_cubes.push(obj.clone());
+                    right_objects.s_cubes.push(obj.clone());
+                },
+            }
+        }
+        for obj in self.s_neg_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.s_neg_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.s_neg_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.s_neg_cubes.push(obj.clone());
+                    right_objects.s_neg_cubes.push(obj.clone());
+                },
+            }
+        }
+
+        for obj in self.spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.spheres.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.spheres.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.spheres.push(obj.clone());
+                    right_objects.spheres.push(obj.clone());
+                },
+            }
+        }
+        for obj in self.neg_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.neg_spheres.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.neg_spheres.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.neg_spheres.push(obj.clone());
+                    right_objects.neg_spheres.push(obj.clone());
+                },
+            }
+        }
+        for obj in self.s_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.s_spheres.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.s_spheres.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.s_spheres.push(obj.clone());
+                    right_objects.s_spheres.push(obj.clone());
+                },
+            }
+        }
+        for obj in self.s_neg_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.s_neg_spheres.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.s_neg_spheres.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.s_neg_spheres.push(obj.clone());
+                    right_objects.s_neg_spheres.push(obj.clone());
+                },
+            }
+        }
+
+        for obj in self.sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.sph_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.sph_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.sph_cubes.push(obj.clone());
+                    right_objects.sph_cubes.push(obj.clone());
+                },
+            }
+        }
+        for obj in self.neg_sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.neg_sph_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.neg_sph_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.neg_sph_cubes.push(obj.clone());
+                    right_objects.neg_sph_cubes.push(obj.clone());
+                },
+            }
+        }
+        for obj in self.s_sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.s_sph_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.s_sph_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.s_sph_cubes.push(obj.clone());
+                    right_objects.s_sph_cubes.push(obj.clone());
+                },
+            }
+        }
+        for obj in self.s_neg_sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.s_neg_sph_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.s_neg_sph_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.s_neg_sph_cubes.push(obj.clone());
+                    right_objects.s_neg_sph_cubes.push(obj.clone());
+                },
+            }
+        }
+
+        for obj in self.undestroyable_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.undestroyable_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.undestroyable_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.undestroyable_cubes.push(obj.clone());
+                    right_objects.undestroyable_cubes.push(obj.clone());
+                },
+            }
+        }
+
+        left_objects.calculate_object_edges_lists();
+        right_objects.calculate_object_edges_lists();
+
+        (left_objects, right_objects)
+    }
+
+
+    pub fn new_empty(stickiness: f32) -> Self
+    {
+        let cubes = Vec::new();
+        let s_cubes = Vec::new();
+        let neg_cubes = Vec::new();
+        let s_neg_cubes = Vec::new();
+        let spheres = Vec::new();
+        let s_spheres = Vec::new();
+        let neg_spheres = Vec::new();
+        let s_neg_spheres = Vec::new();
+        let sph_cubes = Vec::new();
+        let s_sph_cubes = Vec::new();
+        let neg_sph_cubes = Vec::new();
+        let s_neg_sph_cubes = Vec::new();
+        let undestroyable_cubes = Vec::new();
+        let object_edges_list_along_x = Vec::new();
+        let object_edges_list_along_y = Vec::new();
+        let object_edges_list_along_z = Vec::new();
+        let object_edges_list_along_w = Vec::new();
+
+        Objects {
+            stickiness,
+            cubes,
+            s_cubes,
+            neg_cubes,
+            s_neg_cubes,
+            spheres,
+            s_spheres,
+            neg_spheres,
+            s_neg_spheres,
+            sph_cubes,
+            s_sph_cubes,
+            neg_sph_cubes,
+            s_neg_sph_cubes,
+            undestroyable_cubes,
+            object_edges_list_along_x,
+            object_edges_list_along_y,
+            object_edges_list_along_z,
+            object_edges_list_along_w,
+        }
+    }
+
+    pub fn calculate_object_edges_lists(&mut self)
+    {
+        for obj in &self.cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+        for obj in &self.s_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.s_neg_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.neg_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.spheres
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.s_spheres
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.s_neg_spheres
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.neg_spheres
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.sph_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.s_sph_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.s_neg_sph_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.neg_sph_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.undestroyable_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        self.object_edges_list_along_x.sort_by(|a, b| {
+            if *a < *b
+            {
+                Ordering::Less
+            }
+            else if *a > *b
+            {
+                Ordering::Greater    
+            }
+            else
+            {
+                Ordering::Equal
+            }
+        });
+
+        for obj in &self.cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+        for obj in &self.s_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.s_neg_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.neg_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.spheres
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.s_spheres
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.s_neg_spheres
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.neg_spheres
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.sph_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.s_sph_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.s_neg_sph_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.neg_sph_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.undestroyable_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        self.object_edges_list_along_y.sort_by(|a, b| {
+            if *a < *b
+            {
+                Ordering::Less
+            }
+            else if *a > *b
+            {
+                Ordering::Greater    
+            }
+            else
+            {
+                Ordering::Equal
+            }
+        });
+
+        for obj in &self.cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+        for obj in &self.s_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.s_neg_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.neg_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.spheres
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.s_spheres
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.s_neg_spheres
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.neg_spheres
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.sph_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.s_sph_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.s_neg_sph_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.neg_sph_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.undestroyable_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+
+        self.object_edges_list_along_z.sort_by(|a, b| {
+            if *a < *b
+            {
+                Ordering::Less
+            }
+            else if *a > *b
+            {
+                Ordering::Greater    
+            }
+            else
+            {
+                Ordering::Equal
+            }
+        });
+
+        for obj in &self.cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+        for obj in &self.s_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.s_neg_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.neg_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.spheres
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.s_spheres
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.s_neg_spheres
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.neg_spheres
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.sph_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.s_sph_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.s_neg_sph_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.neg_sph_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.undestroyable_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        self.object_edges_list_along_w.sort_by(|a, b| {
+            if *a < *b
+            {
+                Ordering::Less
+            }
+            else if *a > *b
+            {
+                Ordering::Greater    
+            }
+            else
+            {
+                Ordering::Equal
+            }
+        });
+    }
+
+    pub fn init(static_data: &StaticRenderData) -> Self
+    {
+        let stickiness = static_data.other_static_data.static_shapes_stickiness;
+
+        let mut cubes = Vec::new();
+        for shape in &static_data.cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Cube,
+                obj_type: ObjectType::Normal
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            cubes.push(object);
+        }
+
+
+        let mut s_cubes = Vec::new();
+        for shape in &static_data.s_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Cube,
+                obj_type: ObjectType::NormalStickiness
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            s_cubes.push(object);
+        }
+
+
+        let mut neg_cubes = Vec::new();
+        for shape in &static_data.neg_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Cube,
+                obj_type: ObjectType::Negative
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            neg_cubes.push(object);
+        }
+
+
+        let mut s_neg_cubes = Vec::new();
+        for shape in &static_data.s_neg_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Cube,
+                obj_type: ObjectType::NegativeStickiness
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            s_neg_cubes.push(object);
+        }
+
+
+        let mut spheres = Vec::new();
+        for shape in &static_data.spheres
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Sphere,
+                obj_type: ObjectType::Normal
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            spheres.push(object);
+        }
+
+
+        let mut s_spheres = Vec::new();
+        for shape in &static_data.s_spheres
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Sphere,
+                obj_type: ObjectType::NormalStickiness
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            s_spheres.push(object);
+        }
+
+
+        let mut neg_spheres = Vec::new();
+        for shape in &static_data.neg_spheres
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Sphere,
+                obj_type: ObjectType::Negative
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            neg_spheres.push(object);
+        }
+
+
+        let mut s_neg_spheres = Vec::new();
+        for shape in &static_data.s_neg_spheres
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Sphere,
+                obj_type: ObjectType::NegativeStickiness
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            s_neg_spheres.push(object);
+        }
+
+
+        let mut sph_cubes = Vec::new();
+        for shape in &static_data.sph_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::SphCube,
+                obj_type: ObjectType::Normal
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            sph_cubes.push(object);
+        }
+
+
+        let mut s_sph_cubes = Vec::new();
+        for shape in &static_data.s_sph_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::SphCube,
+                obj_type: ObjectType::NegativeStickiness
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            s_sph_cubes.push(object);
+        }
+
+
+        let mut neg_sph_cubes = Vec::new();
+        for shape in &static_data.neg_sph_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::SphCube,
+                obj_type: ObjectType::Negative
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            neg_sph_cubes.push(object);
+        }
+
+
+        let mut s_neg_sph_cubes = Vec::new();
+        for shape in &static_data.s_neg_sph_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::SphCube,
+                obj_type: ObjectType::NegativeStickiness
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            s_neg_sph_cubes.push(object);
+        }
+
+
+        let mut undestroyable_cubes = Vec::new();
+        for shape in &static_data.undestroyable_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Cube,
+                obj_type: ObjectType::Unbreakable
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            undestroyable_cubes.push(object);
+        }
+
+        let mut object_edges_list_along_x = Vec::new();
+
+        for obj in &cubes
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+        for obj in &s_cubes
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &s_neg_cubes
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &neg_cubes
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &spheres
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &s_spheres
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &s_neg_spheres
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &neg_spheres
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &sph_cubes
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &s_sph_cubes
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &s_neg_sph_cubes
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &neg_sph_cubes
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &undestroyable_cubes
+        {
+            object_edges_list_along_x.push(obj.x_bounds.x);
+            object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        object_edges_list_along_x.sort_by(|a, b| {
+            if *a < *b
+            {
+                Ordering::Less
+            }
+            else if *a > *b
+            {
+                Ordering::Greater    
+            }
+            else
+            {
+                Ordering::Equal
+            }
+        });
+
+        let mut object_edges_list_along_y = Vec::new();
+
+        for obj in &cubes
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+        for obj in &s_cubes
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &s_neg_cubes
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &neg_cubes
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &spheres
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &s_spheres
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &s_neg_spheres
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &neg_spheres
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &sph_cubes
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &s_sph_cubes
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &s_neg_sph_cubes
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &neg_sph_cubes
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &undestroyable_cubes
+        {
+            object_edges_list_along_y.push(obj.y_bounds.x);
+            object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        object_edges_list_along_y.sort_by(|a, b| {
+            if *a < *b
+            {
+                Ordering::Less
+            }
+            else if *a > *b
+            {
+                Ordering::Greater    
+            }
+            else
+            {
+                Ordering::Equal
+            }
+        });
+
+        let mut object_edges_list_along_z = Vec::new();
+
+        for obj in &cubes
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+        for obj in &s_cubes
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &s_neg_cubes
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &neg_cubes
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &spheres
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &s_spheres
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &s_neg_spheres
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &neg_spheres
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &sph_cubes
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &s_sph_cubes
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &s_neg_sph_cubes
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &neg_sph_cubes
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &undestroyable_cubes
+        {
+            object_edges_list_along_z.push(obj.z_bounds.x);
+            object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+
+        object_edges_list_along_z.sort_by(|a, b| {
+            if *a < *b
+            {
+                Ordering::Less
+            }
+            else if *a > *b
+            {
+                Ordering::Greater    
+            }
+            else
+            {
+                Ordering::Equal
+            }
+        });
+
+        let mut object_edges_list_along_w = Vec::new();
+
+        for obj in &cubes
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+        for obj in &s_cubes
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &s_neg_cubes
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &neg_cubes
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &spheres
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &s_spheres
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &s_neg_spheres
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &neg_spheres
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &sph_cubes
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &s_sph_cubes
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &s_neg_sph_cubes
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &neg_sph_cubes
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &undestroyable_cubes
+        {
+            object_edges_list_along_w.push(obj.w_bounds.x);
+            object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        object_edges_list_along_w.sort_by(|a, b| {
+            if *a < *b
+            {
+                Ordering::Less
+            }
+            else if *a > *b
+            {
+                Ordering::Greater    
+            }
+            else
+            {
+                Ordering::Equal
+            }
+        });
+
+
+        Objects {
+            stickiness: static_data.other_static_data.static_shapes_stickiness,
+            cubes,
+            s_cubes,
+            neg_cubes,
+            s_neg_cubes,
+            spheres,
+            s_spheres,
+            neg_spheres,
+            s_neg_spheres,
+            sph_cubes,
+            s_sph_cubes,
+            neg_sph_cubes,
+            s_neg_sph_cubes,
+            undestroyable_cubes,
+
+            object_edges_list_along_x,
+            object_edges_list_along_y,
+            object_edges_list_along_z,
+            object_edges_list_along_w,
+        }
+    }
+}
+
+
+#[derive(Clone)]
+struct Object
+{
+    shape: Shape,
+    x_bounds: Vec2,
+    y_bounds: Vec2,
+    z_bounds: Vec2,
+    w_bounds: Vec2,
+}
+
+pub struct ObjectInfo
+{
+    shape_type: ShapeType,
+    obj_type: ObjectType,
+}
+enum ObjectType
+{
+    Normal,
+    NormalStickiness,
+    Negative,
+    NegativeStickiness,
+    Unbreakable,
+}
+
+enum ShapeType
+{
+    Cube,
+    Sphere,
+    SphCube,
+}
+
+enum SideAfterSlice
+{
+    Left,
+    Right,
+    Both
+}
+
+impl Object
+{
+    pub fn get_side_after_slice(&self, slice: Slice) -> SideAfterSlice
+    {
+        match slice {
+            Slice::X(p) => {
+                if self.x_bounds.x < p && self.x_bounds.y < p
+                {
+                    SideAfterSlice::Left
+                }
+                else if self.x_bounds.x > p && self.x_bounds.y > p
+                {
+                    SideAfterSlice::Right
+                }
+                else
+                {
+                    SideAfterSlice::Both
+                }
+            },
+            Slice::Y(p) => {
+                if self.y_bounds.x < p && self.y_bounds.y < p
+                {
+                    SideAfterSlice::Left
+                }
+                else if self.y_bounds.x > p && self.y_bounds.y > p
+                {
+                    SideAfterSlice::Right
+                }
+                else
+                {
+                    SideAfterSlice::Both
+                }
+            },
+            Slice::Z(p) => {
+                if self.z_bounds.x < p && self.z_bounds.y < p
+                {
+                    SideAfterSlice::Left
+                }
+                else if self.z_bounds.x > p && self.z_bounds.y > p
+                {
+                    SideAfterSlice::Right
+                }
+                else
+                {
+                    SideAfterSlice::Both
+                }
+            },
+            Slice::W(p) => {
+                if self.w_bounds.x < p && self.w_bounds.y < p
+                {
+                    SideAfterSlice::Left
+                }
+                else if self.w_bounds.x > p && self.w_bounds.y > p
+                {
+                    SideAfterSlice::Right
+                }
+                else
+                {
+                    SideAfterSlice::Both
+                }
+            },
+        }
+    }
+
+    pub fn new(shape: &Shape, obj_info: ObjectInfo, stickiness: f32) -> Self
+    {
+        let (x_bounds, y_bounds, z_bounds, w_bounds) = match obj_info.shape_type
+        {
+            ShapeType::Cube => {
+                match obj_info.obj_type {
+                    ObjectType::Normal => {
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (shape.size[0] + shape.roundness),
+                                shape.pos[0] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (shape.size[1] + shape.roundness),
+                                shape.pos[1] + (shape.size[1] + shape.roundness),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (shape.size[2] + shape.roundness),
+                                shape.pos[2] + (shape.size[2] + shape.roundness),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (shape.size[3] + shape.roundness),
+                                shape.pos[3] + (shape.size[3] + shape.roundness),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::NormalStickiness => {
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[0] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (shape.size[1] + shape.roundness + stickiness*PI),
+                                shape.pos[1] + (shape.size[1] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (shape.size[2] + shape.roundness + stickiness*PI),
+                                shape.pos[2] + (shape.size[2] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (shape.size[3] + shape.roundness + stickiness*PI),
+                                shape.pos[3] + (shape.size[3] + shape.roundness + stickiness*PI),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::Negative => {
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (shape.size[0] + shape.roundness),
+                                shape.pos[0] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (shape.size[1] + shape.roundness),
+                                shape.pos[1] + (shape.size[1] + shape.roundness),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (shape.size[2] + shape.roundness),
+                                shape.pos[2] + (shape.size[2] + shape.roundness),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (shape.size[3] + shape.roundness),
+                                shape.pos[3] + (shape.size[3] + shape.roundness),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::NegativeStickiness => {
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[0] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (shape.size[1] + shape.roundness + stickiness*PI),
+                                shape.pos[1] + (shape.size[1] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (shape.size[2] + shape.roundness + stickiness*PI),
+                                shape.pos[2] + (shape.size[2] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (shape.size[3] + shape.roundness + stickiness*PI),
+                                shape.pos[3] + (shape.size[3] + shape.roundness + stickiness*PI),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::Unbreakable => {
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (shape.size[0] + shape.roundness),
+                                shape.pos[0] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (shape.size[1] + shape.roundness),
+                                shape.pos[1] + (shape.size[1] + shape.roundness),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (shape.size[2] + shape.roundness),
+                                shape.pos[2] + (shape.size[2] + shape.roundness),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (shape.size[3] + shape.roundness),
+                                shape.pos[3] + (shape.size[3] + shape.roundness),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                }
+            },
+            ShapeType::Sphere => {
+                match obj_info.obj_type {
+                    ObjectType::Normal => {
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (shape.size[0] + shape.roundness),
+                                shape.pos[0] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (shape.size[0] + shape.roundness),
+                                shape.pos[1] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (shape.size[0] + shape.roundness),
+                                shape.pos[2] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (shape.size[0] + shape.roundness),
+                                shape.pos[3] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::NormalStickiness => {
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[0] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[1] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[2] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[3] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::Negative => {
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (shape.size[0] + shape.roundness),
+                                shape.pos[0] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (shape.size[0] + shape.roundness),
+                                shape.pos[1] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (shape.size[0] + shape.roundness),
+                                shape.pos[2] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (shape.size[0] + shape.roundness),
+                                shape.pos[3] + (shape.size[0] + shape.roundness),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::NegativeStickiness => {
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[0] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[1] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[2] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[3] + (shape.size[0] + shape.roundness + stickiness*PI),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::Unbreakable => {
+                        unimplemented!()
+                    },
+                }
+            },
+            ShapeType::SphCube => {
+                match obj_info.obj_type {
+                    ObjectType::Normal => {
+                        let size = calc_size_for_sphcube(shape.size, shape.roundness);
+
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (size[0]),
+                                shape.pos[0] + (size[0]),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (size[1]),
+                                shape.pos[1] + (size[1]),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (size[1]),
+                                shape.pos[2] + (size[1]),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (size[1]),
+                                shape.pos[3] + (size[1]),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::NormalStickiness => {
+                        let size = calc_size_for_sphcube(shape.size, shape.roundness);
+
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (size[0] + stickiness*PI),
+                                shape.pos[0] + (size[0] + stickiness*PI),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (size[1] + stickiness*PI),
+                                shape.pos[1] + (size[1] + stickiness*PI),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (size[1] + stickiness*PI),
+                                shape.pos[2] + (size[1] + stickiness*PI),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (size[1] + stickiness*PI),
+                                shape.pos[3] + (size[1] + stickiness*PI),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::Negative => {
+                        let size = calc_size_for_sphcube(shape.size, shape.roundness);
+
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (size[0]),
+                                shape.pos[0] + (size[0]),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (size[1]),
+                                shape.pos[1] + (size[1]),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (size[1]),
+                                shape.pos[2] + (size[1]),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (size[1]),
+                                shape.pos[3] + (size[1]),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::NegativeStickiness => {
+                        let size = calc_size_for_sphcube(shape.size, shape.roundness);
+
+                        let x_bounds = {
+                            Vec2::new(
+                                shape.pos[0] - (size[0] + stickiness*PI),
+                                shape.pos[0] + (size[0] + stickiness*PI),
+                            )
+                        };
+                        let y_bounds = {
+                            Vec2::new(
+                                shape.pos[1] - (size[1] + stickiness*PI),
+                                shape.pos[1] + (size[1] + stickiness*PI),
+                            )
+                        };
+                        let z_bounds = {
+                            Vec2::new(
+                                shape.pos[2] - (size[1] + stickiness*PI),
+                                shape.pos[2] + (size[1] + stickiness*PI),
+                            )
+                        };
+                        let w_bounds = {
+                            Vec2::new(
+                                shape.pos[3] - (size[1] + stickiness*PI),
+                                shape.pos[3] + (size[1] + stickiness*PI),
+                            )
+                        };
+
+                        (x_bounds, y_bounds, z_bounds, w_bounds)
+                    },
+                    ObjectType::Unbreakable => {
+                        unimplemented!()
+                    },
+                }
+            },
+        };
+
+        Object
+        {
+            shape: *shape,
+            x_bounds,
+            y_bounds,
+            z_bounds,
+            w_bounds,
+        }
+    }
 }

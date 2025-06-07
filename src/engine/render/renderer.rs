@@ -227,7 +227,7 @@ impl Renderer {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
+                power_preference: wgpu::PowerPreference::LowPower,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -324,9 +324,7 @@ impl Renderer {
                         {
                             wgpu::ShaderSource::Wgsl
                             (
-                                raymarch_shader_generator::generate_raymarch_shader(
-                                    &render_data.static_data
-                                ).into()
+                                include_str!("shaders/generated_raymarch_shader.wgsl").into()
                             )
                         }
                         else

@@ -30,10 +30,10 @@ pub struct StaticRenderData {
 
     pub undestroyable_cubes: Vec<Shape>,
 
-    pub inf_w_cubes: Vec<Shape>,
-    pub s_inf_w_cubes: Vec<Shape>,
-    pub neg_inf_w_cubes: Vec<Shape>,
-    pub s_neg_inf_w_cubes: Vec<Shape>,
+    // pub inf_w_cubes: Vec<Shape>,
+    // pub s_inf_w_cubes: Vec<Shape>,
+    // pub neg_inf_w_cubes: Vec<Shape>,
+    // pub s_neg_inf_w_cubes: Vec<Shape>,
     pub metadata: ShapesArraysMetadata,
 }
 
@@ -736,10 +736,10 @@ impl StaticRenderData {
 
             undestroyable_cubes,
 
-            inf_w_cubes,
-            s_inf_w_cubes,
-            neg_inf_w_cubes,
-            s_neg_inf_w_cubes,
+            // inf_w_cubes,
+            // s_inf_w_cubes,
+            // neg_inf_w_cubes,
+            // s_neg_inf_w_cubes,
             metadata,
         }
     }

@@ -1,8 +1,8 @@
 pub mod render_data;
 pub mod camera;
+pub mod raymarch_shader_generator;
 mod renderer;
 mod ui_renderer;
-mod raymarch_shader_generator;
 
 use std::sync::{Arc, Mutex};
 

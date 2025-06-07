@@ -56,7 +56,7 @@ path="src/game_client_main.rs"
 
 [[bin]]
 name="game-client-fast"
-path="src/game_client_generated_shader_main.rs"
+path="src/game_client_fast_main.rs"
 
 [[bin]]
 name="game-client-2d-3d-example"
@@ -69,4 +69,8 @@ path="src/game_client_observer_main.rs"
 [[bin]]
 name="headless-game-client-for-net-test"
 path="src/headless_game_client_main_for_net_test.rs"
+
+[[bin]]
+name="raymarch_shader_generator"
+path="src/raymarch_shader_generator.rs"
 

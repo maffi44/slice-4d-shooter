@@ -165,6 +165,13 @@ impl Level {
                 if file.is_err()
                 {
                     file = File::open(
+                        format!("./assets/maps/{}.json", level_name)
+                    )
+                }
+
+                if file.is_err()
+                {
+                    file = File::open(
                         format!("./src/assets/maps/{}.json", level_name)
                     )
                 }
