@@ -1,15 +1,15 @@
 use core::panic;
-use std::{cmp::Ordering, f32::consts::PI, fmt::format, ops::Add};
+use std::{cmp::Ordering, f32::consts::PI};
 
-use glam::{Vec2, Vec4};
+use glam::Vec2;
 
-use crate::engine::{physics::common_physical_functions::THRESHOLD, render::render_data::Shape};
+use crate::engine::render::render_data::Shape;
 
 use super::render_data::static_render_data::StaticRenderData;
 
 
-const MAX_TREE_DEPTH: usize = 8;
-const MIN_DIVISION_EFFICIENCY: usize = 1;
+const MAX_BSP_TREE_DEPTH: usize = 7;
+const MIN_BSP_DIVISION_EFFICIENCY: usize = 2;
 
 pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &'static str, static_data: &StaticRenderData) -> String
 {
@@ -22,7 +22,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &'static s
     if shader_pieces.len() == 3
     {
         shader += shader_pieces[0];
-        shader += &generate_map_function(bsp_tree);
+        shader += &generate_map_function_body(&bsp_tree);
         shader += shader_pieces[2];
     }
     else
@@ -37,7 +37,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &'static s
     if shader_pieces.len() == 3
     {
         shader += shader_pieces[0];
-        shader += &generate_find_intersections_function(static_data);
+        shader += &generate_find_intersections_function_body(static_data);
         shader += shader_pieces[2];
     }
     else
@@ -52,7 +52,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &'static s
     if shader_pieces.len() == 3
     {
         shader += shader_pieces[0];
-        shader += &generate_get_mats_function(static_data);
+        shader += &generate_get_mats_function_body(&bsp_tree);
         shader += shader_pieces[2];
     }
     else
@@ -64,7 +64,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &'static s
 }
 
 
-fn generate_find_intersections_function(static_data: &StaticRenderData) -> String
+fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> String
 {
     let stickiness = static_data.other_static_data.static_shapes_stickiness;
     let mut func_body = String::new();
@@ -355,15 +355,15 @@ fn generate_find_intersections_function(static_data: &StaticRenderData) -> Strin
 
     func_body +=
 
-    "for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.spheres_amount; i++) {
+    "for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
         let intr = sph_intersection(
-            ro - dyn_normal_shapes[i].pos,
+            ro - dyn_negatives_shapes[i].pos,
             rd,
-            dyn_normal_shapes[i].size.x + dyn_normal_shapes[i].roundness
+            dyn_negatives_shapes[i].size.x + dyn_negatives_shapes[i].roundness
         );
         
         if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr, intrs);
+            store_intersection_entrance_and_exit_for_neg(intr, intrs);
         }
     }\n";
 
@@ -387,7 +387,7 @@ fn generate_find_intersections_function(static_data: &StaticRenderData) -> Strin
 }
 
 
-fn generate_map_function(bsp_tree: Box<BSPElement>) -> String
+fn generate_map_function_body(bsp_tree: &Box<BSPElement>) -> String
 {
     let mut func_body = String::new();
 
@@ -499,7 +499,413 @@ fn generate_map_function(bsp_tree: Box<BSPElement>) -> String
 }
 
 
-fn generate_get_mats_function(static_data: &StaticRenderData) -> String
+fn generate_get_mats_function_body_simple_for_gebug(static_data: &StaticRenderData) -> String
+{
+    let mut func_body = String::new();
+
+    func_body +=
+
+    "var output: OutputMaterials;
+    
+    if dist > MAX_DIST-MIN_DIST {
+
+        output.materials_count = 1u;
+        output.material_weights[0] = 1.0;
+        output.materials[0] = -2;
+        return output;
+    }
+
+    output.materials_count = 1u;
+    output.material_weights[0] = 1.0;
+    output.materials[0] = 3;
+    return output;";
+
+    func_body
+}
+
+
+fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &Box<BSPElement>)
+{
+    match bsp_elem.as_ref() {
+        BSPElement::Branches(slice, left_branch, right_branch) => 
+        {
+            let (axis, value) = match slice
+            {
+                Slice::X(value) => ("x", value),
+                Slice::Y(value) => ("y", value),
+                Slice::Z(value) => ("z", value),
+                Slice::W(value) => ("w", value),
+            };
+
+            func_body.push_str(
+                &format!
+                (
+                    "if p.{} > {} {}\n",
+                    axis,
+                    value,
+                    "{"
+                )
+            );
+
+            write_bsp_tree_content_for_get_mats_func(func_body, right_branch);
+
+            func_body.push_str("}\nelse\n{");
+
+            write_bsp_tree_content_for_get_mats_func(func_body, left_branch);
+
+            func_body.push_str("}");
+
+        },
+        BSPElement::Leaf(objects) =>
+        {
+            let stickiness = objects.stickiness;
+            
+            for obj in &objects.undestroyable_cubes
+            {
+                func_body.push_str(&format!
+                (
+                    "{}let dd = min(d, sd_box(p - {}, {}) - {});\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    string_from_vec4(obj.shape.size),
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+                    
+                    if dd < d {}
+                        d = dd;
+                        output.materials[0] = {};
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    obj.shape.material,
+                    "}\n}\n",
+                ));
+            }
+
+            // normal
+            for obj in &objects.cubes
+            {
+
+                func_body.push_str(&format!
+                (
+                    "{}let dd = min(d, sd_box(p - {}, {}) - {});\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    string_from_vec4(obj.shape.size),
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+                    
+                    if dd < d {}
+                        d = dd;
+                        output.materials[0] = {};
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    obj.shape.material,
+                    "}\n}\n",
+                ));
+            }
+
+            for obj in &objects.spheres
+            {
+                func_body.push_str(&format!
+                (
+                    "{}let dd = min(d, sd_sphere(p - {}, {}) - {});\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    obj.shape.size[0],
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+                    
+                    if dd < d {}
+                        d = dd;
+                        output.materials[0] = {};
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    obj.shape.material,
+                    "}\n}\n",
+                ));
+            }
+
+            for obj in &objects.sph_cubes 
+            {
+
+                func_body.push_str(&format!
+                (
+                    "{}let dd = min(d, sd_sph_box(p - {}, {}) - {});\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    string_from_vec4(obj.shape.size),
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+                    
+                    if dd < d {}
+                        d = dd;
+                        output.materials[0] = {};
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    obj.shape.material,
+                    "}\n}\n",
+                ));
+            }
+
+            // stickiness
+            for obj in &objects.s_cubes
+            {
+                func_body.push_str(&format!
+                (
+                    "{}let dd = min(d, sd_box(p - {}, {}) - {});\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    string_from_vec4(obj.shape.size),
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
+                        if output.materials_count == 0u {}
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = {};
+                            d = dd;
+                        {} else {}
+                            var coef = 0.0;
+                            if d<dd {}
+                                coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                            {} else {}
+                                coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                            {}
+                            output.materials[output.materials_count] = {};
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {}
+                                output.material_weights[k] *= mult;
+                            {}
+
+                            output.materials_count += 1u;
+                            d = min(d,dd);
+                        {}
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    "}",
+                    "{",
+                    "}",
+                    obj.shape.material,
+                    "{",
+                    "}",
+                    "}",
+                    "}\n}\n",
+                ));
+            }
+
+            for obj in &objects.s_spheres
+            {
+                func_body.push_str(&format!
+                (
+                    "{}let dd = min(d, sd_sphere(p - {}, {}) - {});\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    obj.shape.size[0],
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
+                        if output.materials_count == 0u {}
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = {};
+                            d = dd;
+                        {} else {}
+                            var coef = 0.0;
+                            if d<dd {}
+                                coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                            {} else {}
+                                coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                            {}
+                            output.materials[output.materials_count] = {};
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {}
+                                output.material_weights[k] *= mult;
+                            {}
+
+                            output.materials_count += 1u;
+                            d = min(d,dd);
+                        {}
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    "}",
+                    "{",
+                    "}",
+                    obj.shape.material,
+                    "{",
+                    "}",
+                    "}",
+                    "}\n}\n",
+                ));
+            }
+
+            for obj in &objects.s_sph_cubes 
+            {
+                func_body.push_str(&format!
+                (
+                    "{}let dd = min(d, sd_sph_box(p - {}, {}) - {});\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    string_from_vec4(obj.shape.size),
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
+                        if output.materials_count == 0u {}
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = {};
+                            d = dd;
+                        {} else {}
+                            var coef = 0.0;
+                            if d<dd {}
+                                coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                            {} else {}
+                                coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                            {}
+                            output.materials[output.materials_count] = {};
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {}
+                                output.material_weights[k] *= mult;
+                            {}
+
+                            output.materials_count += 1u;
+                            d = min(d,dd);
+                        {}
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    "}",
+                    "{",
+                    "}",
+                    obj.shape.material,
+                    "{",
+                    "}",
+                    "}",
+                    "}\n}\n",
+                ));
+            }
+        },
+    }
+}
+
+
+fn generate_get_mats_function_body(bsp_tree: &Box<BSPElement>) -> String
 {
 
     let mut func_body = String::new();
@@ -686,374 +1092,7 @@ fn generate_get_mats_function(static_data: &StaticRenderData) -> String
     output.materials_count = 1u;
     output.material_weights[0] = 1.0;\n";
 
-    // undestroyable
-    for shape in &static_data.undestroyable_cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "{}let dd = min(d, sd_box(p - {}, {}) - {});\n",
-            "{\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-
-        func_body +=
-
-        &format!
-        (
-            "if dd < MIN_DIST*2.0 {}
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = {};
-                return output;
-            {}
-            
-            if dd < d {}
-                d = dd;
-                output.materials[0] = {};
-            {}",
-
-            "{",
-            shape.material,
-            "}",
-            "{",
-            shape.material,
-            "}\n}\n",
-        );
-    }
-
-    // normal
-    for shape in &static_data.cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "{}let dd = min(d, sd_box(p - {}, {}) - {});\n",
-            "{\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-
-        func_body +=
-
-        &format!
-        (
-            "if dd < MIN_DIST*2.0 {}
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = {};
-                return output;
-            {}
-            
-            if dd < d {}
-                d = dd;
-                output.materials[0] = {};
-            {}",
-
-            "{",
-            shape.material,
-            "}",
-            "{",
-            shape.material,
-            "}\n}\n",
-        );
-    }
-
-    for shape in &static_data.spheres
-    {
-        func_body +=
-
-        &format!
-        (
-            "{}let dd = min(d, sd_sphere(p - {}, {}) - {});\n",
-            "{\n",
-            string_from_vec4(shape.pos),
-            shape.size[0],
-            shape.roundness,
-        );
-
-        func_body +=
-
-        &format!
-        (
-            "if dd < MIN_DIST*2.0 {}
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = {};
-                return output;
-            {}
-            
-            if dd < d {}
-                d = dd;
-                output.materials[0] = {};
-            {}",
-
-            "{",
-            shape.material,
-            "}",
-            "{",
-            shape.material,
-            "}\n}\n",
-        );
-    }
-
-    for shape in &static_data.sph_cubes 
-    {
-        func_body +=
-
-        &format!
-        (
-            "{}let dd = min(d, sd_sph_box(p - {}, {}) - {});\n",
-            "{\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-
-        func_body +=
-
-        &format!
-        (
-            "if dd < MIN_DIST*2.0 {}
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = {};
-                return output;
-            {}
-            
-            if dd < d {}
-                d = dd;
-                output.materials[0] = {};
-            {}",
-
-            "{",
-            shape.material,
-            "}",
-            "{",
-            shape.material,
-            "}\n}\n",
-        );
-    }
-
-    // stickiness
-    for shape in &static_data.s_cubes
-    {
-        func_body +=
-
-        &format!
-        (
-            "{}let dd = min(d, sd_box(p - {}, {}) - {});\n",
-            "{\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-
-        func_body +=
-
-
-        &format!
-        (
-            "if dd < MIN_DIST*2.0 {}
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = {};
-                return output;
-            {}
-
-            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
-                if output.materials_count == 0u {}
-                    output.materials_count = 1u;
-                    output.material_weights[0] = 1.0;
-                    output.materials[0] = {};
-                    d = dd;
-                {} else {}
-                    var coef = 0.0;
-                    if d<dd {}
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                    {} else {}
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
-                    {}
-                    output.materials[output.materials_count] = {};
-                    output.material_weights[output.materials_count] = coef;
-
-                    let mult = 1.0 - coef;
-
-                    for (var k = 0u; k < output.materials_count; k++) {}
-                        output.material_weights[k] *= mult;
-                    {}
-
-                    output.materials_count += 1u;
-                    d = min(d,dd);
-                {}
-            {}",
-
-            "{",
-            shape.material,
-            "}",
-            "{",
-            "{",
-            shape.material,
-            "}",
-            "{",
-            "{",
-            "}",
-            "{",
-            "}",
-            shape.material,
-            "{",
-            "}",
-            "}",
-            "}\n}\n",
-        );
-    }
-
-    for shape in &static_data.s_spheres
-    {
-        func_body +=
-
-        &format!
-        (
-            "{}let dd = min(d, sd_sphere(p - {}, {}) - {});\n",
-            "{\n",
-            string_from_vec4(shape.pos),
-            shape.size[0],
-            shape.roundness,
-        );
-
-        func_body +=
-
-        &format!
-        (
-            "if dd < MIN_DIST*2.0 {}
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = {};
-                return output;
-            {}
-
-            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
-                if output.materials_count == 0u {}
-                    output.materials_count = 1u;
-                    output.material_weights[0] = 1.0;
-                    output.materials[0] = {};
-                    d = dd;
-                {} else {}
-                    var coef = 0.0;
-                    if d<dd {}
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                    {} else {}
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
-                    {}
-                    output.materials[output.materials_count] = {};
-                    output.material_weights[output.materials_count] = coef;
-
-                    let mult = 1.0 - coef;
-
-                    for (var k = 0u; k < output.materials_count; k++) {}
-                        output.material_weights[k] *= mult;
-                    {}
-
-                    output.materials_count += 1u;
-                    d = min(d,dd);
-                {}
-            {}",
-
-            "{",
-            shape.material,
-            "}",
-            "{",
-            "{",
-            shape.material,
-            "}",
-            "{",
-            "{",
-            "}",
-            "{",
-            "}",
-            shape.material,
-            "{",
-            "}",
-            "}",
-            "}\n}\n",
-        );
-    }
-
-    for shape in &static_data.s_sph_cubes 
-    {
-        func_body +=
-
-        &format!
-        (
-            "{}let dd = min(d, sd_sph_box(p - {}, {}) - {});\n",
-            "{\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(shape.size),
-            shape.roundness,
-        );
-
-        func_body +=
-
-        &format!
-        (
-            "if dd < MIN_DIST*2.0 {}
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = {};
-                return output;
-            {}
-
-            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
-                if output.materials_count == 0u {}
-                    output.materials_count = 1u;
-                    output.material_weights[0] = 1.0;
-                    output.materials[0] = {};
-                    d = dd;
-                {} else {}
-                    var coef = 0.0;
-                    if d<dd {}
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                    {} else {}
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
-                    {}
-                    output.materials[output.materials_count] = {};
-                    output.material_weights[output.materials_count] = coef;
-
-                    let mult = 1.0 - coef;
-
-                    for (var k = 0u; k < output.materials_count; k++) {}
-                        output.material_weights[k] *= mult;
-                    {}
-
-                    output.materials_count += 1u;
-                    d = min(d,dd);
-                {}
-            {}",
-
-            "{",
-            shape.material,
-            "}",
-            "{",
-            "{",
-            shape.material,
-            "}",
-            "{",
-            "{",
-            "}",
-            "{",
-            "}",
-            shape.material,
-            "{",
-            "}",
-            "}",
-            "}\n}\n",
-        );
-    }
+    write_bsp_tree_content_for_get_mats_func(&mut func_body, bsp_tree);
 
     func_body += "return output;\n";
 
@@ -1100,9 +1139,9 @@ fn calc_size_for_sphcube(size: [f32; 4], roundness: f32) -> [f32; 4]
 }
 
 
-fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: Box<BSPElement>)
+fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BSPElement>)
 {
-    match *bsp_elem {
+    match bsp_elem.as_ref() {
         BSPElement::Branches(slice, left_branch, right_branch) => 
         {
             let (axis, value) = match slice
@@ -1260,7 +1299,7 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: Box<BSP
             }
 
             func_body.push_str(
-                "for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
+                "for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }\n"
             );
@@ -1354,7 +1393,7 @@ fn split_leaf
     current_depth: usize
 ) -> BSPElement
 {
-    if current_depth >= MAX_TREE_DEPTH
+    if current_depth >= MAX_BSP_TREE_DEPTH
     {
         return BSPElement::Leaf(objects);
     }
@@ -1369,13 +1408,13 @@ fn split_leaf
                 silce_info.right_branch_objects_amount
             )
             <
-            MIN_DIVISION_EFFICIENCY
+            MIN_BSP_DIVISION_EFFICIENCY
         {
             return BSPElement::Leaf(objects);
         }
         else
         {
-            let (left_objects, right_object) = objects
+            let (left_objects, right_objects) = objects
                 .divide_by_slice(silce_info.slice);
             
 
@@ -1383,7 +1422,7 @@ fn split_leaf
             (
                 silce_info.slice,
                 Box::new(split_leaf(left_objects, current_depth+1)),
-                Box::new(split_leaf(right_object, current_depth+1))
+                Box::new(split_leaf(right_objects, current_depth+1))
             );
         }
     }
@@ -1414,6 +1453,7 @@ struct Objects
 }
 
 
+#[derive(Clone, Copy)]
 pub struct SliceInfo
 {
     pub slice: Slice,
@@ -1421,6 +1461,7 @@ pub struct SliceInfo
     pub left_branch_objects_amount: usize,
     pub right_branch_objects_amount: usize,
 }
+
 
 #[derive(Clone, Copy)]
 enum Slice
@@ -1430,6 +1471,7 @@ enum Slice
     Z(f32),
     W(f32)
 }
+
 
 impl Slice
 {
@@ -1472,65 +1514,31 @@ impl Objects
 
     pub fn find_best_dividing_slice(&self) -> SliceInfo
     {
-        let z_slice_info = self.find_best_dividing_slice_along_axis(Slice::Z(0.0));
+        let mut slices = Vec::new();
 
-        let z_dif = z_slice_info.original_amount_of_objects - z_slice_info.left_branch_objects_amount.max(z_slice_info.right_branch_objects_amount);
+        slices.push(self.find_best_dividing_slice_along_axis(Slice::X(0.0))); 
+        slices.push(self.find_best_dividing_slice_along_axis(Slice::Y(0.0))); 
+        slices.push(self.find_best_dividing_slice_along_axis(Slice::Z(0.0))); 
+        slices.push(self.find_best_dividing_slice_along_axis(Slice::W(0.0)));
 
-        if z_slice_info.original_amount_of_objects - z_dif >= z_slice_info.original_amount_of_objects / 2 - 1
-        {
-            return z_slice_info;
-        }
+        slices.sort_by(|a, b| {
+            if a.left_branch_objects_amount.max(a.right_branch_objects_amount) >
+                b.left_branch_objects_amount.max(b.right_branch_objects_amount)
+            {
+                Ordering::Greater
+            }
+            else if a.left_branch_objects_amount.max(a.right_branch_objects_amount) <
+                b.left_branch_objects_amount.max(b.right_branch_objects_amount)
+            {
+                Ordering::Less
+            }
+            else
+            {
+                Ordering::Equal
+            }
+        });
 
-        let x_slice_info = self.find_best_dividing_slice_along_axis(Slice::X(0.0));
-
-        let x_dif = x_slice_info.original_amount_of_objects - x_slice_info.left_branch_objects_amount.max(x_slice_info.right_branch_objects_amount);
-
-        if x_slice_info.original_amount_of_objects - x_dif >= x_slice_info.original_amount_of_objects / 2 - 1
-        {
-            return x_slice_info;
-        }
-
-        let y_slice_info = self.find_best_dividing_slice_along_axis(Slice::Y(0.0));
-
-        let y_dif = y_slice_info.original_amount_of_objects - y_slice_info.left_branch_objects_amount.max(y_slice_info.right_branch_objects_amount);
-
-        if y_slice_info.original_amount_of_objects - y_dif >= y_slice_info.original_amount_of_objects / 2 - 1
-        {
-            return y_slice_info;
-        }
-
-        let w_slice_info = self.find_best_dividing_slice_along_axis(Slice::W(0.0));
-
-        let w_dif = w_slice_info.original_amount_of_objects - w_slice_info.left_branch_objects_amount.max(w_slice_info.right_branch_objects_amount);
-
-        if w_slice_info.original_amount_of_objects - w_dif >= w_slice_info.original_amount_of_objects / 2 - 1
-        {
-            return w_slice_info;
-        }
-
-
-        if w_dif >= x_dif &&
-            w_dif >= y_dif &&
-            w_dif >= z_dif
-        {
-            return w_slice_info;
-        }
-        else if x_dif >= y_dif &&
-            x_dif >= z_dif &&
-            x_dif >= w_dif
-        {
-            return x_slice_info;
-        }
-        else if y_dif >= x_dif &&
-            y_dif >= z_dif &&
-            y_dif >= w_dif
-        {
-            return y_slice_info;
-        }
-        else
-        {
-            return z_slice_info;
-        }
+        slices[0]
     }
 
 
@@ -1544,66 +1552,39 @@ impl Objects
             Slice::W(_) => &self.object_edges_list_along_w,
         };
 
-        let mut index = (edges_list.len() / 2) - 1;
+        let mut index = 0;
 
-        let slice_pos = edges_list[index] + THRESHOLD;
+        let mut slices = Vec::new();
 
-        slice.set_slice_pos(slice_pos);
-    
-        let slice_info = self.get_slice_info(slice);
-
-        if slice_info.left_branch_objects_amount == slice_info.right_branch_objects_amount
+        while index < edges_list.len() - 1
         {
-            return slice_info;
-        }
-
-        let increasing = if slice_info.left_branch_objects_amount < slice_info.right_branch_objects_amount
-        {
-            index += 1;
-
-            true
-        }
-        else
-        {
-            index -= 1;
-
-            false    
-        };
-
-        while index < edges_list.len()
-        {
-            let slice_pos = edges_list[index] + THRESHOLD;
+            let slice_pos = (edges_list[index] + edges_list[index+1]) / 2.0;
     
             slice.set_slice_pos(slice_pos);
     
-            let slice_info = self.get_slice_info(slice);
+            slices.push(self.get_slice_info(slice));
 
-            if slice_info.left_branch_objects_amount == slice_info.right_branch_objects_amount
+            index += 1;
+        }
+
+        slices.sort_by(|a, b| {
+            if a.left_branch_objects_amount.max(a.right_branch_objects_amount) >
+                b.left_branch_objects_amount.max(b.right_branch_objects_amount)
             {
-                return slice_info;
+                Ordering::Greater
             }
-
-            if slice_info.left_branch_objects_amount < slice_info.right_branch_objects_amount
+            else if a.left_branch_objects_amount.max(a.right_branch_objects_amount) <
+                b.left_branch_objects_amount.max(b.right_branch_objects_amount)
             {
-                index += 1;
-
-                if !increasing
-                {
-                    panic!("In raymarch shader generator, in func find_best_dividing_slice_along_axis best slice searching algorithm changed direction")
-                }
+                Ordering::Less
             }
             else
             {
-                index -= 1;
-
-                if increasing
-                {
-                    panic!("In raymarch shader generator, in func find_best_dividing_slice_along_axis best slice searching algorithm changed direction")
-                }
+                Ordering::Equal
             }
-        }
+        });
 
-        panic!("In raymarch shader generator, in func find_best_dividing_slice_along_axis best slice searching algorithm reached end of the loop")
+        slices[0]
     }
 
 
@@ -2654,386 +2635,13 @@ impl Objects
 
             undestroyable_cubes.push(object);
         }
+        
+        let object_edges_list_along_x = Vec::new();
+        let object_edges_list_along_y = Vec::new();
+        let object_edges_list_along_z = Vec::new();
+        let object_edges_list_along_w = Vec::new();
 
-        let mut object_edges_list_along_x = Vec::new();
-
-        for obj in &cubes
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-        for obj in &s_cubes
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &s_neg_cubes
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &neg_cubes
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &spheres
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &s_spheres
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &s_neg_spheres
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &neg_spheres
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &sph_cubes
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &s_sph_cubes
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &s_neg_sph_cubes
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &neg_sph_cubes
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        for obj in &undestroyable_cubes
-        {
-            object_edges_list_along_x.push(obj.x_bounds.x);
-            object_edges_list_along_x.push(obj.x_bounds.y);
-        }
-
-        object_edges_list_along_x.sort_by(|a, b| {
-            if *a < *b
-            {
-                Ordering::Less
-            }
-            else if *a > *b
-            {
-                Ordering::Greater    
-            }
-            else
-            {
-                Ordering::Equal
-            }
-        });
-
-        let mut object_edges_list_along_y = Vec::new();
-
-        for obj in &cubes
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-        for obj in &s_cubes
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &s_neg_cubes
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &neg_cubes
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &spheres
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &s_spheres
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &s_neg_spheres
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &neg_spheres
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &sph_cubes
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &s_sph_cubes
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &s_neg_sph_cubes
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &neg_sph_cubes
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        for obj in &undestroyable_cubes
-        {
-            object_edges_list_along_y.push(obj.y_bounds.x);
-            object_edges_list_along_y.push(obj.y_bounds.y);
-        }
-
-        object_edges_list_along_y.sort_by(|a, b| {
-            if *a < *b
-            {
-                Ordering::Less
-            }
-            else if *a > *b
-            {
-                Ordering::Greater    
-            }
-            else
-            {
-                Ordering::Equal
-            }
-        });
-
-        let mut object_edges_list_along_z = Vec::new();
-
-        for obj in &cubes
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-        for obj in &s_cubes
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &s_neg_cubes
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &neg_cubes
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &spheres
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &s_spheres
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &s_neg_spheres
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &neg_spheres
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &sph_cubes
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &s_sph_cubes
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &s_neg_sph_cubes
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &neg_sph_cubes
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-        for obj in &undestroyable_cubes
-        {
-            object_edges_list_along_z.push(obj.z_bounds.x);
-            object_edges_list_along_z.push(obj.z_bounds.y);
-        }
-
-
-        object_edges_list_along_z.sort_by(|a, b| {
-            if *a < *b
-            {
-                Ordering::Less
-            }
-            else if *a > *b
-            {
-                Ordering::Greater    
-            }
-            else
-            {
-                Ordering::Equal
-            }
-        });
-
-        let mut object_edges_list_along_w = Vec::new();
-
-        for obj in &cubes
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-        for obj in &s_cubes
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &s_neg_cubes
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &neg_cubes
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &spheres
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &s_spheres
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &s_neg_spheres
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &neg_spheres
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &sph_cubes
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &s_sph_cubes
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &s_neg_sph_cubes
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &neg_sph_cubes
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        for obj in &undestroyable_cubes
-        {
-            object_edges_list_along_w.push(obj.w_bounds.x);
-            object_edges_list_along_w.push(obj.w_bounds.y);
-        }
-
-        object_edges_list_along_w.sort_by(|a, b| {
-            if *a < *b
-            {
-                Ordering::Less
-            }
-            else if *a > *b
-            {
-                Ordering::Greater    
-            }
-            else
-            {
-                Ordering::Equal
-            }
-        });
-
-
-        Objects {
+        let mut objects = Objects {
             stickiness: static_data.other_static_data.static_shapes_stickiness,
             cubes,
             s_cubes,
@@ -3053,7 +2661,11 @@ impl Objects
             object_edges_list_along_y,
             object_edges_list_along_z,
             object_edges_list_along_w,
-        }
+        };
+
+        objects.calculate_object_edges_lists();
+
+        objects
     }
 }
 

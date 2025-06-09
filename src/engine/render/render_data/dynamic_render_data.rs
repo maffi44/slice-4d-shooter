@@ -513,8 +513,6 @@ impl DynamicRenderData {
         let mut index = 0;
         cubes_start = 0u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.cubes
             {
                 if check_if_player_see_cube(
@@ -542,15 +540,12 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
         cubes_amount = index as u32;
 
 
         spheres_start = index as u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.spheres {
                 if check_if_player_see_sphere(
                     camera,
@@ -576,7 +571,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
 
         spheres_amount = index as u32 - spheres_start;
@@ -584,8 +578,6 @@ impl DynamicRenderData {
 
         sph_cubes_start = index as u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.sph_cubes {
                 if check_if_player_see_cube(
                     camera,
@@ -621,7 +613,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
 
         sph_cubes_amount = index as u32 - sph_cubes_start;
@@ -646,8 +637,6 @@ impl DynamicRenderData {
         let mut index = 0;
         s_cubes_start = 0u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.s_cubes {
                 if check_if_player_see_cube(
                     camera,
@@ -673,7 +662,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
 
         s_cubes_amount = index as u32;
@@ -681,8 +669,6 @@ impl DynamicRenderData {
 
         s_spheres_start = index as u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.s_spheres {
                 if check_if_player_see_sphere(
                     camera,
@@ -708,7 +694,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
 
         s_spheres_amount = index as u32 - s_spheres_start;
@@ -716,8 +701,6 @@ impl DynamicRenderData {
 
         s_sph_cubes_start = index as u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.s_sph_cubes {
                 if check_if_player_see_cube(
                     camera,
@@ -753,8 +736,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
-
 
         s_sph_cubes_amount = index as u32 - s_sph_cubes_start;
 
@@ -780,8 +761,6 @@ impl DynamicRenderData {
         let mut index = 0;
         neg_cubes_start = 0u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.neg_cubes {
                 if check_if_player_see_cube(
                     camera,
@@ -807,7 +786,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
 
         neg_cubes_amount = index as u32;
@@ -815,6 +793,13 @@ impl DynamicRenderData {
 
         neg_spheres_start = index as u32;
 
+
+        // it temporal solution only to speed up raymarch shader
+        // I added new raymarch shader with pre generated static BSP tree
+        // of static objects.
+        // On current version of the game I just don't using any dynamic 
+        // objects except negative spheres. it is why I don't collect static negative spheres
+        // for the shader.  
         if !for_generated_raymarch_shader
         {
             for shape in &sd.neg_spheres {
@@ -849,8 +834,6 @@ impl DynamicRenderData {
 
         neg_sph_cubes_start = index as u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.neg_sph_cubes {
                 if check_if_player_see_cube(
                     camera,
@@ -886,7 +869,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
         neg_sph_cubes_amount = index as u32 - neg_sph_cubes_start;
 
@@ -911,8 +893,6 @@ impl DynamicRenderData {
         let mut index = 0;
         s_neg_cubes_start = 0u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.s_neg_cubes {
                 if check_if_player_see_cube(
                     camera,
@@ -938,7 +918,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }   
-        }
 
 
         s_neg_cubes_amount = index as u32;
@@ -946,8 +925,6 @@ impl DynamicRenderData {
 
         s_neg_spheres_start = index as u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.s_neg_spheres {
                 if check_if_player_see_sphere(
                     camera,
@@ -973,7 +950,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
 
         s_neg_spheres_amount = index as u32 - s_neg_spheres_start;
@@ -981,8 +957,6 @@ impl DynamicRenderData {
 
         s_neg_sph_cubes_start = index as u32;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.s_neg_sph_cubes {
                 if check_if_player_see_cube(
                     camera,
@@ -1018,7 +992,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
 
         s_neg_sph_cubes_amount = index as u32 - s_neg_sph_cubes_start;
@@ -1042,8 +1015,6 @@ impl DynamicRenderData {
 
         let mut index = 0;
 
-        if !for_generated_raymarch_shader
-        {
             for shape in &sd.undestroyable_cubes
             {
                 if check_if_player_see_cube(
@@ -1071,7 +1042,6 @@ impl DynamicRenderData {
                     index += 1;
                 }
             }
-        }
 
 
         self.dynamic_shapes_data.undestroyable_cubes_amount = index as u32;

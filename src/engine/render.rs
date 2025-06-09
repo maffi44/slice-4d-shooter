@@ -206,26 +206,23 @@ impl RenderSystem {
             bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.negative.as_slice()),
         );
 
-        if !self.generated_raymarch_shader
-        {
-            renderer_lock.queue.write_buffer(
-                &renderer_lock.dynamic_normal_shapes_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
-            );
-    
-            renderer_lock.queue.write_buffer(
-                &renderer_lock.dynamic_stickiness_shapes_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
-            );
-    
-            renderer_lock.queue.write_buffer(
-                &renderer_lock.dynamic_neg_stickiness_shapes_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
-            );
-        }
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.dynamic_normal_shapes_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
+        );
+
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.dynamic_stickiness_shapes_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
+        );
+
+        renderer_lock.queue.write_buffer(
+            &renderer_lock.dynamic_neg_stickiness_shapes_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
+        );
         
         renderer_lock.queue.write_buffer(
             &renderer_lock.spherical_areas_data_buffer,

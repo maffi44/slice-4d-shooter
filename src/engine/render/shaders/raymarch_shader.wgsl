@@ -2481,7 +2481,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     color = pow(color, vec3(0.4545));
 
     // for debug
-    color = mix(color, vec3(1.0, 0.0, 0.0), dist_and_depth.y / f32(MAX_STEPS));
+    // color = mix(color, vec3(1.0, 0.0, 0.0), dist_and_depth.y / f32(MAX_STEPS));
 
     let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
     
