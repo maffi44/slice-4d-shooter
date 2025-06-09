@@ -78,7 +78,7 @@ fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
 }
 
 pub const FLAG_AREA_VISUAL_RADIUS: f32 = 1.0;
-pub const FLAG_AREA_PHYSICAL_RADIUS: f32 = 2.2;
+pub const FLAG_AREA_PHYSICAL_RADIUS: f32 = 1.5;
 
 pub struct Flag
 {

@@ -1102,7 +1102,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
             let intr = cube_intersection(
                 ro - dyn_negatives_shapes[i].pos,
                 rd,
-                dyn_negatives_shapes[i].size + r*0.707106781,
+                dyn_negatives_shapes[i].size + r*0.707106781*0.88,
             );
 
             if intr.y > 0.0 {
@@ -1149,7 +1149,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
             let intr = cube_intersection(
                 ro - dyn_neg_stickiness_shapes[i].pos,
                 rd,
-                dyn_neg_stickiness_shapes[i].size + r*0.707106781,
+                dyn_neg_stickiness_shapes[i].size + r*0.707106781*0.88,
             );
 
             
@@ -1841,7 +1841,12 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
 
 const MIN_STEP: f32 = 0.005;
 
-fn ray_march(ray_origin: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<function,Intersections>) -> vec2<f32>  {
+fn ray_march(
+    ray_origin: vec4<f32>,
+    ray_direction: vec4<f32>,
+    max_dist: f32,
+    intrs: ptr<function,Intersections>
+) -> vec2<f32>  {
     
     if (*intrs).intr_normal_size == 0u {
         return vec2(MAX_DIST*2.0, 0.0);
@@ -1975,6 +1980,11 @@ fn ray_march(ray_origin: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<functio
 
         var d: f32  = map(ray_origin + ray_direction * total_distance);
         total_distance += d;
+
+        if total_distance > max_dist
+        {
+            return vec2<f32>(total_distance, f32(i));
+        }
 
         if (d < MIN_DIST) {
 
@@ -2125,14 +2135,14 @@ fn noise2( x: vec4<f32> ) -> f32
 }
 
 
-fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
+fn get_sky_color(ray_dir: vec4<f32>, shadow: f32) -> vec3<f32> {
     let sun = pow(clamp(dot(normalize(static_data.sun_direction),ray_dir), 0.0, 1.0), 10.0);
 
-    var color = static_data.sun_color*pow(sun, 40.0);
+    var color = static_data.sun_color*pow(sun, 40.0)*shadow;
 
     color += pow(textureSample(sky_box, sky_box_sampler, normalize(ray_dir.xyz)).xyz, vec3(2.1));
 
-    return color;
+    return color*max(shadow,0.5);
 }
 
 
@@ -2141,11 +2151,12 @@ fn get_color_and_light_from_mats(
     ray_dir: vec4<f32>,
     dist: f32,
     mats: OutputMaterials,
+    intrs: ptr<function,Intersections>,
 ) -> vec4<f32> {
     var lightness = 0.0;
     
     if mats.materials[0] == -2 {
-        var color = get_sky_color(ray_dir);
+        var color = get_sky_color(ray_dir, 1.0);
         
         color = clamp(color, vec3(0.0), vec3(1.0));
 
@@ -2211,7 +2222,7 @@ fn get_color_and_light_from_mats(
     let sun_hal_1 = normalize(sun_dir_1-ray_dir);
     let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),45.0+(1.0-roughness)*40.0);
     
-    var sun_shadow_1 = 1.0;
+    let sun_shadow_1 = get_shadow(hited_pos+(normal*MIN_DIST*1.6), sun_dir_1, intrs);
 
     let base_coef = clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
 
@@ -2272,7 +2283,7 @@ fn get_color_and_light_from_mats(
 
     let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
-    let ref_col = get_sky_color(ref_dir);
+    let ref_col = get_sky_color(ref_dir, sun_shadow_1);
 
     var color = diffuse * mix(ref_col, light, clamp(roughness, 0.0, 1.0));
 
@@ -2433,6 +2444,24 @@ fn w_shift_effect(uv: vec2<f32>, shift_coef: f32, intensity: f32) -> f32
 }
 //^---------------------------------------------------------^
 
+
+fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<function,Intersections>) -> f32 {
+
+    (*intrs).intr_neg_size = 0u;
+    (*intrs).intr_normal_size = 0u;
+    (*intrs).intr_unbreakables_size = 0u;
+    
+    find_intersections(init_position, ray_direction, intrs);
+
+    let dist_and_depth: vec2<f32> = ray_march(init_position, ray_direction, 11.0, intrs);
+
+    let shadow_coef = pow((min(dist_and_depth.x, 11.0))/11.0, 1.3);
+
+    return shadow_coef;
+}
+
+
+
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
@@ -2454,10 +2483,10 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     find_intersections(camera_position, ray_direction, &intrs);
 
-    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, &intrs); 
+    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, MAX_DIST, &intrs); 
 
     var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
-    var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats);
+    var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats, &intrs);
 
     var color = color_and_light.rgb;
 

@@ -249,7 +249,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
             );\n",
             "{\n",
             string_from_vec4(shape.pos),
-            string_from_vec4(add_vec4_and_float(shape.size, shape.roundness*0.707106781)),
+            string_from_vec4(add_vec4_and_float(shape.size, shape.roundness*0.707106781*0.88)),
         );
 
         func_body +=
@@ -296,7 +296,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
             );\n",
             "{\n",
             string_from_vec4(shape.pos),
-            string_from_vec4(add_vec4_and_float(shape.size, shape.roundness*0.707106781)),
+            string_from_vec4(add_vec4_and_float(shape.size, shape.roundness*0.707106781*0.88)),
         );
 
         func_body +=

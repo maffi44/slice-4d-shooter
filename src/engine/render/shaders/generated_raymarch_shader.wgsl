@@ -1268,7 +1268,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(3, 4, 37, 3.35),
                 rd,
-                vec4<f32>(2.4565687, 2.0565686, 2.6565685, 1.0565685)
+                vec4<f32>(2.4497805, 2.0497804, 2.6497803, 1.0497804)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1278,7 +1278,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(3, 4, -37, 3.35),
                 rd,
-                vec4<f32>(2.4565687, 2.0565686, 2.6565685, 1.0565685)
+                vec4<f32>(2.4497805, 2.0497804, 2.6497803, 1.0497804)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1288,7 +1288,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(8, 0.5, 0, 12.5),
                 rd,
-                vec4<f32>(4.118198, 0.35819802, 16.918198, 10.318198)
+                vec4<f32>(4.080014, 0.32001424, 16.880014, 10.280014)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1298,7 +1298,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(8, 3.5, 0, 3),
                 rd,
-                vec4<f32>(1.1071068, 3.4071069, 1.1071068, 0.70810676)
+                vec4<f32>(1.022254, 3.322254, 1.022254, 0.62325394)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1308,7 +1308,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(14.2, 4.1, 0, 2),
                 rd,
-                vec4<f32>(0.93284273, 0.68284273, 14.282843, 0.68284273)
+                vec4<f32>(0.8989016, 0.6489016, 14.248901, 0.6489016)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1318,7 +1318,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(7.5, 4, 10, 15),
                 rd,
-                vec4<f32>(3.5535533, 0.36355338, 2.3535533, 15.353554)
+                vec4<f32>(3.511127, 0.32112697, 2.311127, 15.311127)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1328,7 +1328,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(7.5, 4, -10, 15),
                 rd,
-                vec4<f32>(3.5535533, 0.36355338, 2.3535533, 15.353554)
+                vec4<f32>(3.511127, 0.32112697, 2.311127, 15.311127)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1348,7 +1348,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(8, 1.9, 25, 11.5),
                 rd,
-                vec4<f32>(10.212132, 2.412132, 6.212132, 10.212132)
+                vec4<f32>(10.186676, 2.3866763, 6.186676, 10.186676)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1358,7 +1358,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(4, 2, 36, 2.5),
                 rd,
-                vec4<f32>(1.4565685, 1.0565685, 1.4565685, 1.0565685)
+                vec4<f32>(1.4497803, 1.0497804, 1.4497803, 1.0497804)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1368,7 +1368,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(-1, 5.2, 37, 4.35),
                 rd,
-                vec4<f32>(3.0565686, 2.0565686, 3.0565686, 2.0565686)
+                vec4<f32>(3.0497804, 2.0497804, 3.0497804, 2.0497804)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1378,7 +1378,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(8, 1.9, -25, 11.5),
                 rd,
-                vec4<f32>(10.212132, 2.412132, 6.212132, 10.212132)
+                vec4<f32>(10.186676, 2.3866763, 6.186676, 10.186676)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1388,7 +1388,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(4, 2, -36, 2.5),
                 rd,
-                vec4<f32>(1.4565685, 1.0565685, 1.4565685, 1.0565685)
+                vec4<f32>(1.4497803, 1.0497804, 1.4497803, 1.0497804)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1398,7 +1398,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(-1, 5.2, -37, 4.35),
                 rd,
-                vec4<f32>(3.0565686, 2.0565686, 3.0565686, 2.0565686)
+                vec4<f32>(3.0497804, 2.0497804, 3.0497804, 2.0497804)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1408,7 +1408,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(8, 0.5, 0, 3),
                 rd,
-                vec4<f32>(1.3071067, 1.3071067, 30.707108, 0.70810676)
+                vec4<f32>(1.222254, 1.222254, 30.622253, 0.62325394)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1418,7 +1418,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(-6, 5.3, 0, 3),
                 rd,
-                vec4<f32>(0.9242641, 0.9242641, 8.424264, 0.9242641)
+                vec4<f32>(0.8733524, 0.8733524, 8.373352, 0.8733524)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -1428,7 +1428,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(4.05, 5.3, 0, 10),
                 rd,
-                vec4<f32>(10.907106, 0.90710676, 1.8071067, 8.707107)
+                vec4<f32>(10.822254, 0.82225394, 1.722254, 8.622254)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -3840,7 +3840,12 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
 
 const MIN_STEP: f32 = 0.005;
 
-fn ray_march(ray_origin: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<function,Intersections>) -> vec2<f32>  {
+fn ray_march(
+    ray_origin: vec4<f32>,
+    ray_direction: vec4<f32>,
+    max_dist: f32,
+    intrs: ptr<function,Intersections>
+) -> vec2<f32>  {
     
     if (*intrs).intr_normal_size == 0u {
         return vec2(MAX_DIST*2.0, 0.0);
@@ -3974,6 +3979,11 @@ fn ray_march(ray_origin: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<functio
 
         var d: f32  = map(ray_origin + ray_direction * total_distance);
         total_distance += d;
+
+        if total_distance > max_dist
+        {
+            return vec2<f32>(total_distance, f32(i));
+        }
 
         if (d < MIN_DIST) {
 
@@ -4124,14 +4134,14 @@ fn noise2( x: vec4<f32> ) -> f32
 }
 
 
-fn get_sky_color(ray_dir: vec4<f32>) -> vec3<f32> {
+fn get_sky_color(ray_dir: vec4<f32>, shadow: f32) -> vec3<f32> {
     let sun = pow(clamp(dot(normalize(static_data.sun_direction),ray_dir), 0.0, 1.0), 10.0);
 
-    var color = static_data.sun_color*pow(sun, 40.0);
+    var color = static_data.sun_color*pow(sun, 40.0)*shadow;
 
     color += pow(textureSample(sky_box, sky_box_sampler, normalize(ray_dir.xyz)).xyz, vec3(2.1));
 
-    return color;
+    return color*max(shadow,0.5);
 }
 
 
@@ -4140,11 +4150,12 @@ fn get_color_and_light_from_mats(
     ray_dir: vec4<f32>,
     dist: f32,
     mats: OutputMaterials,
+    intrs: ptr<function,Intersections>,
 ) -> vec4<f32> {
     var lightness = 0.0;
     
     if mats.materials[0] == -2 {
-        var color = get_sky_color(ray_dir);
+        var color = get_sky_color(ray_dir, 1.0);
         
         color = clamp(color, vec3(0.0), vec3(1.0));
 
@@ -4210,7 +4221,7 @@ fn get_color_and_light_from_mats(
     let sun_hal_1 = normalize(sun_dir_1-ray_dir);
     let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),45.0+(1.0-roughness)*40.0);
     
-    var sun_shadow_1 = 1.0;
+    let sun_shadow_1 = get_shadow(hited_pos+(normal*MIN_DIST*1.6), sun_dir_1, intrs);
 
     let base_coef = clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
 
@@ -4271,7 +4282,7 @@ fn get_color_and_light_from_mats(
 
     let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
-    let ref_col = get_sky_color(ref_dir);
+    let ref_col = get_sky_color(ref_dir, sun_shadow_1);
 
     var color = diffuse * mix(ref_col, light, clamp(roughness, 0.0, 1.0));
 
@@ -4432,6 +4443,24 @@ fn w_shift_effect(uv: vec2<f32>, shift_coef: f32, intensity: f32) -> f32
 }
 //^---------------------------------------------------------^
 
+
+fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<function,Intersections>) -> f32 {
+
+    (*intrs).intr_neg_size = 0u;
+    (*intrs).intr_normal_size = 0u;
+    (*intrs).intr_unbreakables_size = 0u;
+    
+    find_intersections(init_position, ray_direction, intrs);
+
+    let dist_and_depth: vec2<f32> = ray_march(init_position, ray_direction, 11.0, intrs);
+
+    let shadow_coef = pow((min(dist_and_depth.x, 11.0))/11.0, 1.3);
+
+    return shadow_coef;
+}
+
+
+
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
@@ -4453,10 +4482,10 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     find_intersections(camera_position, ray_direction, &intrs);
 
-    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, &intrs); 
+    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, MAX_DIST, &intrs); 
 
     var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
-    var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats);
+    var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats, &intrs);
 
     var color = color_and_light.rgb;
 
