@@ -63,6 +63,10 @@ name="game-client-2d-3d-example"
 path="src/game_client_for_2d_3d_example_main.rs"
 
 [[bin]]
+name="game-client-2d-3d-example-fast"
+path="src/game_client_for_2d_3d_example_fast_main.rs"
+
+[[bin]]
 name="game-client-observer"
 path="src/game_client_observer_main.rs"
 

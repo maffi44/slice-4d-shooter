@@ -11,7 +11,7 @@ use crate::{actor::main_player::player_settings::PlayerSettings, engine::{engine
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let (mut original_shader_file, mut file_for_write) =
+    let (mut original_shader_file, mut file_for_write, map_name) =
         if let Some(shader_name) = args.get(1)
     {
         let original_shader_file = OpenOptions::new()
@@ -26,7 +26,16 @@ fn main() {
             .open(format!("./src/engine/render/shaders/{}_with_bsp_tree.wgsl", shader_name))
             .expect("can't open the file to write a new generated shader to it");
 
-        (original_shader_file, file_for_write)
+        let map_name = if shader_name == "raymarch_shader_for_2d_3d_example"
+        {
+            "map_2d_3d"
+        }
+        else
+        {
+            "map"
+        };
+
+        (original_shader_file, file_for_write, map_name)
     }
     else
     {
@@ -42,7 +51,7 @@ fn main() {
             .open("./src/engine/render/shaders/raymarch_shader_with_bsp_tree.wgsl")
             .expect("can't open the file to write a new generated shader to it");
 
-        (original_shader_file, file_for_write)
+        (original_shader_file, file_for_write, "map")
     };
 
     let mut original_shader = String::new();
@@ -62,7 +71,7 @@ fn main() {
         World::new(
             &mut engine_handle,
             players_settings,
-            "map".to_string()
+            map_name.to_string()
         )
     );
 

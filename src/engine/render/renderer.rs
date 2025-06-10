@@ -318,8 +318,10 @@ impl Renderer {
                     {
                         if with_generated_raymarch_shader
                         {
-                            unimplemented!()
-                            // include_str!("shaders/raymarch_shader_for_2d_3d_example_with_bsp_tree.wgsl").into()
+                            wgpu::ShaderSource::Wgsl
+                            (
+                                include_str!("shaders/raymarch_shader_for_2d_3d_example_with_bsp_tree.wgsl").into()
+                            )
 
                         }
                         else
@@ -1072,10 +1074,10 @@ impl Renderer {
             self.min_time = self.min_time.min(current_frame_time);
             self.max_time = self.max_time.max(current_frame_time);
 
-            println!(
-                "frame render duration: {}",
-                current_frame_time,
-            );
+            // println!(
+            //     "frame render duration: {}",
+            //     current_frame_time,
+            // );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());

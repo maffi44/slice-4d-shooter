@@ -997,9 +997,7 @@ fn store_value_in_array_in_order_of_first_elem_for_unbreakables(
 
 
 fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Intersections>) {
-    //###find_intersections###
     var rd = rdd;
-
     if rd.x == 0 {
         rd.x += 0.000001; 
     }
@@ -1012,207 +1010,142 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
     if rd.w == 0 {
         rd.w += 0.000001; 
     }
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.s_spheres_start) {
-            let intr = cube_intersection(
-                ro - dyn_stickiness_shapes[i].pos,
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(3, -0.8, 0, 0),
                 rd,
-                dyn_stickiness_shapes[i].size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+                vec4<f32>(3.05, 0.85, 13.3, 15.05)
             );
-            
-            if intr.y > 0.0 {
-
-                store_intersection_entrance_and_exit(intr, intrs);
-            }
-        } else if (i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_start) {
-            let intr = sph_intersection(
-                ro - dyn_stickiness_shapes[i].pos,
-                rd,
-                dyn_stickiness_shapes[i].size.x + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-            );
-            
-            if intr.y > 0.0 {
-                store_intersection_entrance_and_exit(intr, intrs);
-            }
-        } else {
-            let s = dyn_stickiness_shapes[i].size;
-
-            let size = vec4(
-                min(min(s.y, s.z),s.w),    
-                min(min(s.x, s.z),s.w),    
-                min(min(s.y, s.x),s.w),
-                s.w
-            );
-            
-            let intr = cube_intersection(
-                ro - dyn_stickiness_shapes[i].pos,
-                rd,
-                size + dyn_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-            );
-            
-            if intr.y > 0.0 {
-                store_intersection_entrance_and_exit(intr, intrs);
-            }
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit(intr, intrs);
         }
-    }
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
-            let intr = cube_intersection(
-                ro - dyn_normal_shapes[i].pos,
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(2, 1.2, 8.125, 0),
                 rd,
-                dyn_normal_shapes[i].size + dyn_normal_shapes[i].roundness
+                vec4<f32>(2.05, 1.25, 5.175, 30.05)
             );
-            
-            if intr.y > 0.0 {
-                store_intersection_entrance_and_exit(intr, intrs);
-            }
-        } else if (i < dynamic_data.shapes_arrays_metadata.sph_cubes_start) {
-            let intr = sph_intersection(
-                ro - dyn_normal_shapes[i].pos,
-                rd,
-                dyn_normal_shapes[i].size.x + dyn_normal_shapes[i].roundness
-            );
-            
-            if intr.y > 0.0 {
-                store_intersection_entrance_and_exit(intr, intrs);
-            }
-        } else {
-            let s = dyn_normal_shapes[i].size;
-
-            let size = vec4(
-                min(min(s.y, s.z),s.w),    
-                min(min(s.x, s.z),s.w),    
-                min(min(s.y, s.x),s.w),
-                s.w
-            );
-            
-            let intr = cube_intersection(
-                ro - dyn_normal_shapes[i].pos,
-                rd,
-                size + dyn_normal_shapes[i].roundness
-            );
-            
-            if intr.y > 0.0 {
-                store_intersection_entrance_and_exit(intr, intrs);
-            }
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit(intr, intrs);
         }
-    }
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.neg_spheres_start) {
-            
-            let r = dyn_negatives_shapes[i].roundness;
-
-            let intr = cube_intersection(
-                ro - dyn_negatives_shapes[i].pos,
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(1, 1.7, -8.125, 0),
                 rd,
-                dyn_negatives_shapes[i].size + r*0.707106781*0.88,
+                vec4<f32>(1.05, 1.75, 5.175, 30.05)
             );
-
-            if intr.y > 0.0 {
-                store_intersection_entrance_and_exit_for_neg(intr, intrs);
-            }
-        } else if (i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start) {
-            let intr = sph_intersection(
-                ro - dyn_negatives_shapes[i].pos,
-                rd,
-                dyn_negatives_shapes[i].size.x + dyn_negatives_shapes[i].roundness
-            );
-            
-            if intr.y > 0.0 {
-                store_intersection_entrance_and_exit_for_neg(intr, intrs);
-            }
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit(intr, intrs);
         }
-        // else {
-            // let s = dyn_negatives_shapes[i].size;
-
-            // let size = vec4(
-            //     min(min(s.y, s.z),s.w),    
-            //     min(min(s.x, s.z),s.w),    
-            //     min(min(s.y, s.x),s.w),
-            //     s.w
-            // );
-            
-            // let intr = cube_intersection(
-            //     ro - dyn_negatives_shapes[i].pos,
-            //     rd,
-            //     size + dyn_negatives_shapes[i].roundness
-            // );
-            
-            // if intr.y > 0.0 {
-            //     store_intersection_entrance_and_exit_for_neg(intr, intrs);
-            // }
-        // }
-    }
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
-
-            let r = dyn_neg_stickiness_shapes[i].roundness;
-
-            let intr = cube_intersection(
-                ro - dyn_neg_stickiness_shapes[i].pos,
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(1, 2.3, -3.3, 0),
                 rd,
-                dyn_neg_stickiness_shapes[i].size + r*0.707106781*0.88,
+                vec4<f32>(1.05, 2.35, 0.35000002, 30.05)
             );
-
-            
-            if intr.y > 0.0 {
-                store_intersection_entrance_and_exit_for_neg(intr, intrs);
-            }
-        } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
-            let intr = sph_intersection(
-                ro - dyn_neg_stickiness_shapes[i].pos,
-                rd,
-                dyn_neg_stickiness_shapes[i].size.x + dyn_neg_stickiness_shapes[i].roundness
-            );
-            
-            if intr.y > 0.0 {
-                store_intersection_entrance_and_exit_for_neg(intr, intrs);
-            }
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit(intr, intrs);
         }
-        // else {
-            // let s = dyn_neg_stickiness_shapes[i].size;
-
-            // let size = vec4(
-            //     min(min(s.y, s.z),s.w),    
-            //     min(min(s.x, s.z),s.w),    
-            //     min(min(s.y, s.x),s.w),
-            //     s.w
-            // );
-            
-            // let intr = cube_intersection(
-            //     ro - dyn_neg_stickiness_shapes[i].pos,
-            //     rd,
-            //     size + dyn_neg_stickiness_shapes[i].roundness
-            // );
-            
-            // if intr.y > 0.0 {
-            //     store_intersection_entrance_and_exit_for_neg(intr, intrs);
-            // }
-        // }
-    }
-
-    for (var i = 0u; i < dynamic_data.undestroyable_cubes_amount; i++) {
-        let intr = cube_intersection(
-            ro - dynamic_data.undestroyable_cubes[i].pos,
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(1, 2.3, 3.3, 0),
+                rd,
+                vec4<f32>(1.05, 2.35, 0.35000002, 30.05)
+            );
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit(intr, intrs);
+        }
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(1, 4.3, 0, 0),
+                rd,
+                vec4<f32>(1.05, 0.35000002, 3.55, 30.05)
+            );
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit(intr, intrs);
+        }
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(3, 2.7, -12.5, 0),
+                rd,
+                vec4<f32>(3.05, 3.85, 0.8, 30.05)
+            );
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit(intr, intrs);
+        }
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(3, 2.7, 12.5, 0),
+                rd,
+                vec4<f32>(3.05, 3.85, 0.8, 30.05)
+            );
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit(intr, intrs);
+        }
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(3.45, 3.25, -6.5, 0),
+                rd,
+                vec4<f32>(2, 2, 1.5, 30)
+            );
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_neg(intr, intrs);
+        }
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(2.9, 4.4, -7, 0),
+                rd,
+                vec4<f32>(2, 2, 2, 30)
+            );
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_neg(intr, intrs);
+        }
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(0, 0, 0, -1),
+                rd,
+                vec4<f32>(50.05, 50.05, 100.05, 1.05)
+            );
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
+        }
+}
+{
+let intr = cube_intersection(
+                ro - vec4<f32>(-1, 2, 0, 0),
+                rd,
+                vec4<f32>(1.05, 4.55, 13.3, 30.05)
+            );
+if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
+        }
+}
+for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
+        let intr = sph_intersection(
+            ro - dyn_negatives_shapes[i].pos,
             rd,
-            dynamic_data.undestroyable_cubes[i].size + dynamic_data.undestroyable_cubes[i].roundness
+            dyn_negatives_shapes[i].size.x + dyn_negatives_shapes[i].roundness
         );
         
         if intr.y > 0.0 {
-
-            store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
+            store_intersection_entrance_and_exit_for_neg(intr, intrs);
         }
     }
-
-    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
         let intr = sph_intersection(
             ro - dyn_player_forms[i].pos,
             rd,
-            dyn_player_forms[i].radius * 1.65
+            dyn_player_forms[i].radius * 1.7
         );
         
         if intr.y > 0.0 {
@@ -1220,61 +1153,48 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
             store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
         }
     }
+combine_interscted_entrances_and_exites_for_all_intrs(intrs);
 
-    combine_interscted_entrances_and_exites_for_all_intrs(intrs);
-    //###find_intersections###
 }
 
 
 fn map(p: vec4<f32>, intr_players: bool) -> f32 {
-    //###map###
-    var d = MAX_DIST*2.0;
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
-            d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
-        } else if (i < dynamic_data.shapes_arrays_metadata.sph_cubes_start) {
-            d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
-        } else {
-            d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
-        }
-    }
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.s_spheres_start) {
-            d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-        } else if (i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_start) {
-            d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-        } else {
-            d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-        }
-    }
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.neg_spheres_start) {
-            d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
-        } else if (i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start) {
-            d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
-        } else {
-            d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
-        }
-    }
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
-            d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
-        } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
-            d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
-        } else {
-            d = smax(d, -(sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
-        }
-    }
-
-    for (var i = 0u; i < dynamic_data.undestroyable_cubes_amount; i++) {
-        d = min(d, sd_box(p - dynamic_data.undestroyable_cubes[i].pos, dynamic_data.undestroyable_cubes[i].size) - dynamic_data.undestroyable_cubes[i].roundness);
-    }
-
-    //###map###
+    var d = MAX_DIST*2.0;if p.z > -4.325 {
+if p.z > 0 {
+d = min(d, sd_box(p - vec4<f32>(3, -0.8, 0, 0), vec4<f32>(3, 0.8, 13.25, 15)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(2, 1.2, 8.125, 0), vec4<f32>(2, 1.2, 5.125, 30)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(1, 2.3, 3.3, 0), vec4<f32>(1, 2.3, 0.3, 30)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(1, 4.3, 0, 0), vec4<f32>(1, 0.3, 3.5, 30)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(3, 2.7, 12.5, 0), vec4<f32>(3, 3.8, 0.75, 30)) - 0.05);
+for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
+                    d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+                }
+d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.5, 13.25, 30)) - 0.05);
+}
+else
+{d = min(d, sd_box(p - vec4<f32>(3, -0.8, 0, 0), vec4<f32>(3, 0.8, 13.25, 15)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(1, 1.7, -8.125, 0), vec4<f32>(1, 1.7, 5.125, 30)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(1, 2.3, -3.3, 0), vec4<f32>(1, 2.3, 0.3, 30)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(1, 4.3, 0, 0), vec4<f32>(1, 0.3, 3.5, 30)) - 0.05);
+for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
+                    d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+                }
+d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.5, 13.25, 30)) - 0.05);
+}}
+else
+{d = min(d, sd_box(p - vec4<f32>(3, -0.8, 0, 0), vec4<f32>(3, 0.8, 13.25, 15)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(1, 1.7, -8.125, 0), vec4<f32>(1, 1.7, 5.125, 30)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(3, 2.7, -12.5, 0), vec4<f32>(3, 3.8, 0.75, 30)) - 0.05);
+d = max(d, -(sd_box(p - vec4<f32>(3.45, 3.25, -6.5, 0), vec4<f32>(2, 2, 1.5, 30)) - 0));
+d = max(d, -(sd_box(p - vec4<f32>(2.9, 4.4, -7, 0), vec4<f32>(2, 2, 2, 30)) - 0));
+for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
+                    d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+                }
+d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.05);
+d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.5, 13.25, 30)) - 0.05);
+}
 
     if intr_players
     {
@@ -1287,8 +1207,8 @@ fn map(p: vec4<f32>, intr_players: bool) -> f32 {
             dddd = max(dddd, -sd_box(
                 rotated_p,
                 vec4(
-                    dyn_player_forms[i].radius * 0.18,
-                    dyn_player_forms[i].radius* 1.2,
+                    dyn_player_forms[i].radius * 1.2,
+                    dyn_player_forms[i].radius* 0.18,
                     dyn_player_forms[i].radius* 1.2,
                     dyn_player_forms[i].radius * 1.2
                 )));
@@ -1404,7 +1324,6 @@ fn get_mats(
     ray_dir: vec4<f32>,
     dist: f32,
 ) -> OutputMaterials {
-    //###get_mats###
     var output: OutputMaterials;
 
     if dist > MAX_DIST-MIN_DIST {
@@ -1578,188 +1497,269 @@ fn get_mats(
             return output;
         }
     }
-
-    var d = MAX_DIST * 2.0;
+var d = MAX_DIST * 2.0;
     output.materials_count = 1u;
     output.material_weights[0] = 1.0;
-
-    for (var i = 0u; i < dynamic_data.undestroyable_cubes_amount; i++) {
-        let dd = min(d, sd_box(p - dynamic_data.undestroyable_cubes[i].pos, dynamic_data.undestroyable_cubes[i].size) - dynamic_data.undestroyable_cubes[i].roundness);
-
-        if  dd < MIN_DIST*2.0 {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            output.materials[0] = dynamic_data.undestroyable_cubes[i].material;
-            return output;
-        }
-        
-        if dd < d {
-            d = dd;
-            output.materials[0] = dynamic_data.undestroyable_cubes[i].material;
-        }
-    }
-
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
-            let dd = sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness;
-
-            if  dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = dyn_normal_shapes[i].material;
-                return output;
-            }
-
-            if dd < d {
-                d = dd;
-                output.materials[0] = dyn_normal_shapes[i].material;
-            }
-        } else if (i < dynamic_data.shapes_arrays_metadata.sph_cubes_start) {
-            let dd = sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness;
-
-            if  dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = dyn_normal_shapes[i].material;
-                return output;
-            }
-
-            if dd < d {
-                d = dd;
-                output.materials[0] = dyn_normal_shapes[i].material;
-            }
-        } else {
-            let dd = sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness;
-
-            if  dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = dyn_normal_shapes[i].material;
-                return output;
-            }
-
-            if dd < d {
-                d = dd;
-                output.materials[0] = dyn_normal_shapes[i].material;
-            }
-        }
-    }
-
-    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-        if (i < dynamic_data.shapes_arrays_metadata.s_spheres_start) {
-            let dd = sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness;
-        
-            if dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = dyn_stickiness_shapes[i].material;
-                return output;
-            }
-
-            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                if output.materials_count == 0u {
-                    output.materials_count = 1u;
-                    output.material_weights[0] = 1.0;
-                    output.materials[0] = dyn_stickiness_shapes[i].material;
-                    d = dd;
-                } else {
-                    var coef = 0.0;
-                    if d<dd {
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                    } else {
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+if p.z > -4.325 {
+if p.z > 0 {
+{
+let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
                     }
-                    output.materials[output.materials_count] = dyn_stickiness_shapes[i].material;
-                    output.material_weights[output.materials_count] = coef;
-
-                    let mult = 1.0 - coef;
-
-                    for (var k = 0u; k < output.materials_count; k++) {
-                        output.material_weights[k] *= mult;
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
                     }
-
-                    output.materials_count += 1u;
-                    d = min(d,dd);
-                }
-            }
-        } else if (i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_start) {
-            let dd = sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness;
-        
-            if dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = dyn_stickiness_shapes[i].material;
-                return output;
-            }
-
-            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                if output.materials_count == 0u {
-                    output.materials_count = 1u;
-                    output.material_weights[0] = 1.0;
-                    output.materials[0] = dyn_stickiness_shapes[i].material;
-                    d = dd;
-                } else {
-                    var coef = 0.0;
-                    if d<dd {
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                    } else {
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.5, 13.25, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
                     }
-                    output.materials[output.materials_count] = dyn_stickiness_shapes[i].material;
-                    output.material_weights[output.materials_count] = coef;
-
-                    let mult = 1.0 - coef;
-
-                    for (var k = 0u; k < output.materials_count; k++) {
-                        output.material_weights[k] *= mult;
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
                     }
-
-                    output.materials_count += 1u;
-                    d = min(d,dd);
-                }
-            }
-        } else {
-            let dd = sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness;
-            
-            if dd < MIN_DIST*2.0 {
-                output.materials_count = 1u;
-                output.material_weights[0] = 1.0;
-                output.materials[0] = dyn_stickiness_shapes[i].material;
-                return output;
-            }
-
-            if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                if output.materials_count == 0u {
-                    output.materials_count = 1u;
-                    output.material_weights[0] = 1.0;
-                    output.materials[0] = dyn_stickiness_shapes[i].material;
-                    d = dd;
-                } else {
-                    var coef = 0.0;
-                    if d<dd {
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
-                    } else {
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(3, -0.8, 0, 0), vec4<f32>(3, 0.8, 13.25, 15)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
                     }
-                    output.materials[output.materials_count] = dyn_stickiness_shapes[i].material;
-                    output.material_weights[output.materials_count] = coef;
-
-                    let mult = 1.0 - coef;
-
-                    for (var k = 0u; k < output.materials_count; k++) {
-                        output.material_weights[k] *= mult;
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
                     }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(2, 1.2, 8.125, 0), vec4<f32>(2, 1.2, 5.125, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(1, 2.3, 3.3, 0), vec4<f32>(1, 2.3, 0.3, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(1, 4.3, 0, 0), vec4<f32>(1, 0.3, 3.5, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(3, 2.7, 12.5, 0), vec4<f32>(3, 3.8, 0.75, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+}
+else
+{{
+let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.5, 13.25, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(3, -0.8, 0, 0), vec4<f32>(3, 0.8, 13.25, 15)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(1, 1.7, -8.125, 0), vec4<f32>(1, 1.7, 5.125, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(1, 2.3, -3.3, 0), vec4<f32>(1, 2.3, 0.3, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(1, 4.3, 0, 0), vec4<f32>(1, 0.3, 3.5, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+}}
+else
+{{
+let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.5, 13.25, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(3, -0.8, 0, 0), vec4<f32>(3, 0.8, 13.25, 15)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(1, 1.7, -8.125, 0), vec4<f32>(1, 1.7, 5.125, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(3, 2.7, -12.5, 0), vec4<f32>(3, 3.8, 0.75, 30)) - 0.05);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                    }
+}
+}return output;
 
-                    output.materials_count += 1u;
-                    d = min(d,dd);
-                }
-            }
-        }
-    }
-    
-    return output;
-    //###get_mats###
 }
 
 
@@ -2332,6 +2332,257 @@ fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<fun
     return clamp(shadow_coef, 0.0, 1.0);
 }
 
+fn get_color_and_light_from_mats_2d(
+    hited_pos: vec4<f32>,
+    ray_dir: vec4<f32>,
+    dist: f32,
+    mats: OutputMaterials,
+) -> vec4<f32> {
+    var lightness = 0.0;
+    
+    if mats.materials[0] == -2 {
+        var color = get_sky_color(ray_dir, 1.0);
+        
+        color = clamp(color, vec3(0.0), vec3(1.0));
+
+        return vec4(color, lightness);
+    }
+
+    if mats.materials[0] == -3 {
+        var color = static_data.red_base_color*0.5;
+
+        return vec4(color, 20.0);
+    }
+
+    if mats.materials[0] == -4 {
+        var color = static_data.blue_base_color*0.5;
+
+        return vec4(color, 20.0);
+    }
+
+    var base_diffuse = static_data.materials[mats.materials[0]].color.xyz;
+    var roughness = static_data.materials[mats.materials[0]].color.w;
+
+    for (var i = 1u; i < mats.materials_count; i++) {
+        let new_roughness = static_data.materials[mats.materials[i]].color.w;
+        roughness = mix(roughness, new_roughness, mats.material_weights[i]);
+
+        let new_base_diffuse = static_data.materials[mats.materials[i]].color.xyz;
+        base_diffuse = mix(base_diffuse, new_base_diffuse, mats.material_weights[i]);
+    }
+
+    let normal = normalize(ray_dir);
+    
+    var lines_size = 5.8;
+
+    if mats.materials[0] == static_data.blue_players_mat1 ||
+        mats.materials[0] == static_data.blue_players_mat2 ||
+        mats.materials[0] == static_data.red_players_mat1 ||
+        mats.materials[0] == static_data.red_players_mat2
+    {
+        lines_size = 4.8;
+    }
+
+    let wireframe_fog = 1.0;
+    let wireframe_dif = pow(clamp(1.0-abs(dist*20.0),0.0,1.0),1.3);
+
+    
+    var sun_shadow_1 = 1.0;
+
+    let base_coef = clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
+
+    var neon_wireframe_color = mix(
+        static_data.blue_base_color,
+        static_data.red_base_color,
+        base_coef
+    );
+
+    if mats.materials[0] == static_data.blue_players_mat1 || mats.materials[0] == static_data.blue_players_mat2 {
+        neon_wireframe_color = static_data.blue_base_color * 0.8;
+    } else {
+        if mats.materials[0] == static_data.red_players_mat1 || mats.materials[0] == static_data.red_players_mat2 {
+            neon_wireframe_color = static_data.red_base_color * 0.8;
+        }
+    }
+
+    let sun_dir_1 = normalize(static_data.sun_direction);
+    let sun_dif_1 = clamp(dot(normal, sun_dir_1),0.0,1.0);
+    let sun_hal_1 = normalize(sun_dir_1-ray_dir);
+    let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),45.0+(1.0-roughness)*40.0);
+
+    let frenel = smoothstep(0.0, 2.0,clamp(1.0 + dot(normal, ray_dir), 0.0, 1.0));
+
+    // sky light    
+    let sky_dif = clamp(0.5 + 0.25,0.0,1.0);
+    let sky_hal = normalize(vec4(0.0,1.0,0.0,0.0)-ray_dir);
+    let sky_spe = pow(clamp(dot(normal,sky_hal),0.0,1.0),5.0);
+
+    var light = vec3(0.0);
+    light += static_data.sun_color  * sun_dif_1 * sun_shadow_1 * 0.13;// * aocc;
+    light += static_data.sun_color  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 3.0;// * aocc;
+    light += static_data.sky_color    * sky_dif   * 0.3 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
+    light += static_data.frenel_color * frenel    * 0.3 * (0.6+0.4*sun_dif_1);// * aocc;
+    light += neon_wireframe_color * wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1);// * (wireframe_fog*0.5+0.5);
+
+    lightness = wireframe_dif*30.0;
+
+    if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 &&
+        mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2
+    {
+        let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
+
+        let x_height_coef = clamp((hited_pos.x - 0.3) / 6.0, 0.0, 1.0);
+
+        base_diffuse = mix(
+            mix(base_diffuse, inverted_base_diffuse, base_coef),
+            mix(base_diffuse*0.09, inverted_base_diffuse*0.09, pow(base_coef, 2.0)),
+            x_height_coef
+        );
+    }
+
+    let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
+    
+    let ref_col = get_sky_color(-ray_dir, 1.0);
+
+    var color = diffuse * mix(ref_col, light, clamp(roughness, 0.0, 1.0));
+
+    color = clamp(color, vec3(0.0), vec3(1.0));
+
+    return vec4(color, lightness);
+}
+
+
+fn get_volume_areas_color_for_2d(p: vec4<f32>) -> vec4<f32> {
+    var color = vec3(0.0);
+
+    var ray_march_individual_wave_sphere_color = vec4(0.0);
+
+    for (
+        var i = dynamic_data.spherical_areas_meatadata.explode_areas_start;
+        i < dynamic_data.spherical_areas_meatadata.explode_areas_amount + dynamic_data.spherical_areas_meatadata.explode_areas_start;
+        i++
+    )
+    {
+        let d = sd_sphere(dyn_spherical_areas[i].pos - p, dyn_spherical_areas[i].radius*1.2);
+
+        if d < MIN_DIST
+        {
+            // let sphere_normal = get_sphere_normal(p, dyn_spherical_areas[i].pos, dyn_spherical_areas[i].radius);
+
+            // let color_coef = abs(dot(sphere_normal, vec4(1.0, 0.0, 0.0, 0.0)));
+            
+            let color_coef = clamp(abs(d/dyn_spherical_areas[i].radius*1.2), 0.0, 1.0);
+
+
+            color += mix(dyn_spherical_areas[i].color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00);
+        }
+    }
+
+    for (
+        var i = 0u;
+        i < dynamic_data.beam_areas_amount;
+        i++
+    )
+    {
+        let d = sd_capsule(p, dyn_beam_areas[i].pos1, dyn_beam_areas[i].pos2, dyn_beam_areas[i].radius*1.5);
+
+        if d < MIN_DIST {
+            let color_coef = clamp(abs(d/dyn_beam_areas[i].radius*1.5), 0.0, 1.0);
+
+            color += mix(dyn_beam_areas[i].color, vec3(1.0), pow(color_coef, 80.5)) * pow(color_coef, 20.0);
+            // color += dyn_beam_areas[i].color;
+        }
+    }
+
+    for (
+        var i = dynamic_data.waves_start;
+        i < dynamic_data.waves_amount + dynamic_data.waves_start;
+        i++
+    )
+    {
+        var c = vec3(0.0);
+
+        var luminosity = 0.0;
+
+        let dist_to_wave = sd_sphere(p - dyn_spherical_areas[i].pos, dyn_spherical_areas[i].radius);
+
+        let edge_intensity = clamp(pow(1.0 - abs(dist_to_wave), 5.0), 0.0, 1.0);
+        
+        c += dyn_spherical_areas[i].color*edge_intensity;
+        
+        c += vec3(0.5 * max(max(dyn_spherical_areas[i].color.r, dyn_spherical_areas[i].color.g), dyn_spherical_areas[i].color.b)*pow(edge_intensity,4.0));
+
+        luminosity += edge_intensity;
+
+        let target_max_v = max(max(dyn_spherical_areas[i].color.r, dyn_spherical_areas[i].color.g), dyn_spherical_areas[i].color.b);
+
+        c = clamp(c, vec3(0.0), vec3(target_max_v));
+        luminosity = clamp(luminosity, 0.0, 1.0);
+
+        ray_march_individual_wave_sphere_color += vec4(c, luminosity);
+    }
+
+    let output_color = vec4(
+        color.r + ray_march_individual_wave_sphere_color.r,
+        color.g + ray_march_individual_wave_sphere_color.g,
+        color.b + ray_march_individual_wave_sphere_color.b,
+        ray_march_individual_wave_sphere_color.a
+    );
+
+    return output_color;
+}
+
+
+fn w_scanner_enemies_color_for_2d(pixel_pos: vec4<f32>) -> vec4<f32> {
+    var scanner_color = vec4(1.0,0.0,0.0,0.0);
+
+    var closest_projection = vec2(999.0);
+    
+    for (var i = 0u; i < 16u; i++) {
+
+        if dynamic_data.player_projections[i].radius > 0.0
+        {
+            let d = sd_sphere(pixel_pos - dynamic_data.player_projections[i].position, dynamic_data.player_projections[i].radius);
+
+            if d < 0.0
+            {
+                closest_projection = vec2(d, f32(i));
+
+                break;
+            }
+        }
+    }
+
+    if closest_projection.x < 0.0
+    {
+        let i = u32(closest_projection.y);
+
+        let n = get_sphere_normal(
+            pixel_pos,
+            dynamic_data.player_projections[i].position,
+            dynamic_data.player_projections[i].radius
+        );
+
+        let vis_d = abs(closest_projection.x*3.33);
+
+        var red = pow(clamp((1.0 - abs(vis_d*1.1)), 0.0, 1.0), 2.0);
+        
+        let rot_coef = abs(sin(dynamic_data.player_projections[i].zw_offset));
+        
+        red += pow((clamp(-vis_d * 1.3, 0.0, 1.0)), mix(25.0, 9.0, rot_coef)) * rot_coef;
+        // red *= dynamic_data.w_scanner_enemies_intesity * 2.0;
+        
+        scanner_color.a += red * (dynamic_data.player_projections[i].intensity*0.3 + dynamic_data.player_projections[i].is_active_intensity*1.0);
+        scanner_color.a *= dynamic_data.player_projections[i].intensity;
+
+        // scanner_color.g -= 0.5 * dynamic_data.player_projections[i].is_active_intensity;
+        // scanner_color.b -= 0.5 * dynamic_data.player_projections[i].is_active_intensity;
+    }
+
+    scanner_color.a = clamp(scanner_color.a, 0.0, 1.0);
+
+    return scanner_color;
+}
 
 struct VertexInput {
     @location(0) @interpolate(perspective) position: vec3<f32>,
@@ -2361,192 +2612,237 @@ fn tv_hash(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+
 fn tv_noise(uv: vec2<f32>, time: f32) -> f32 {
     let scale = 10.0;
     let p = uv * scale + vec2<f32>(time);
     return tv_hash(p);
 }
 
-// modified code from https://www.shadertoy.com/view/stGXzy
-// V-------------------------------------------------------V
-fn rand_vec(p: vec2<f32>) -> vec2<f32> {
-    var r = fract(sin(dot(p, vec2(12.345, 741.85)))*4563.12);
-    r *= 2.0*PI;
-    return vec2(sin(r), cos(r));
-}
-
-fn fn_mod(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
-    return x-y*floor(x/y);
-}
-
-// Seamless tiled perlin noise
-fn perlin(p: vec2<f32>, t: vec2<f32>) -> f32 {
-    let f = fract(p);
-    let s = smoothstep(vec2(0.0), vec2(1.0), f);
-    let i = floor(p);
-
-    // Apply mod() to vertex position to make it tileable
-    let a = dot(rand_vec(fn_mod(i,t)), f);
-    let b = dot(rand_vec(fn_mod(i+vec2(1.0,0.0),t)), f-vec2(1.0,0.0));
-    let c = dot(rand_vec(fn_mod(i+vec2(0.0,1.0),t)), f-vec2(0.0,1.0));
-    let d = dot(rand_vec(fn_mod(i+vec2(1.0,1.0),t)), f-vec2(1.0,1.0));
-    return mix(mix(a, b, s.x), mix(c, d, s.x), s.y);
-}
-
-// Seamless tiled fractal noise
-fn fbm(pp: vec2<f32>, tt: vec2<f32>) -> f32 {
-    var a = 0.5;
-    var r = 0.0;
-    var p = pp;
-    var t = tt;
-    for (var i = 0; i < 6; i++) {
-        r += a*perlin(p, t);
-        a *= 0.5;
-        p *= 2.0;
-        t *= 2.0;
-    }
-    return r;
-}
-
-fn w_shift_effect(uv: vec2<f32>, shift_coef: f32, intensity: f32) -> f32
+fn plane_intersect( ro: vec4<f32>, rd: vec4<f32>, p: vec4<f32>, p_dist: f32 ) -> f32
 {
-    let cuv = vec2((atan(uv.x / uv.y)+PI)/(2.0*PI), 0.005/length(uv)+0.03*shift_coef);
-
-    var v = clamp(pow(length(uv),26.0),0.0,1.0);
-
-    return clamp((pow(0.9+0.5*fbm(20.0*cuv, vec2(20)),40.0)),0.0,1.0)*intensity*v;
+    return -(dot(ro,p)+p_dist)/dot(rd,p);
 }
-//^---------------------------------------------------------^
 
+fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec4<f32>
+{
+    var slice_plane = vec4(1.0, 0.0, 0.0, 0.0);
 
+    let m2 = dynamic_data.additional_data_2;
 
+    let rot_mat = mat4x4(
+        m2.x, 0.0, m2.z, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        m2.y, 0.0, m2.w, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    );
 
+    slice_plane = rot_mat * slice_plane;
+
+    let plane_dist = -dot(slice_plane, dynamic_data.additional_data);
+
+    var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.5, 0.0));
+    ray *= dynamic_data.camera_data.cam_zw_rot;
+    ray *= dynamic_data.camera_data.cam_zy_rot;
+    ray *= dynamic_data.camera_data.cam_zx_rot;
+
+    let dist_to_slice = plane_intersect(
+        dynamic_data.camera_data.cam_pos,
+        ray,
+        slice_plane,
+        plane_dist
+    );
+
+    if dist_to_slice > 0.0 {
+        let d = dist_to_slice - dist_to_scene;
+
+        let slice_hit_pos = dynamic_data.camera_data.cam_pos + ray*dist_to_slice;
+        let base_coef = clamp((slice_hit_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
+        let diffuse = mix(vec3(3.08, 1.5, 1.9), vec3(1.9, 1.5, 3.08), base_coef);
+
+        let slice_diffuse = diffuse*2.5;
+        let edge_diffuse = vec3(3.0)*3.1;
+
+        let c = edge_diffuse*pow(1.0-clamp(abs(d),0.0,1.0),15.0)*0.4 + slice_diffuse*clamp(-d*10.0,0.0,1.0)*0.06;
+
+        let dist_coef = clamp(1.0-(dist_to_slice/22.5), 0.0, 1.0);
+        
+        return vec4(c*dist_coef, dist_to_slice);
+    }
+    else
+    {
+        return vec4(0.0, 0.0, 0.0, -1.0);
+    }
+
+}
+
+const SCREEN_WIDTH_IN_2D: f32 = 7.0;
 
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
-    var uv: vec2<f32> = inn.position.xy * 0.7;
-    uv.x *= dynamic_data.screen_aspect;
-
-    var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
-
-    ray_direction *= dynamic_data.camera_data.cam_zw_rot;
-    ray_direction *= dynamic_data.camera_data.cam_zy_rot;
-    ray_direction *= dynamic_data.camera_data.cam_zx_rot;
-
-    let camera_position = dynamic_data.camera_data.cam_pos;
-
-    var intrs: Intersections;
-    intrs.intr_neg_size = 0u;
-    intrs.intr_normal_size = 0u;
-    intrs.intr_unbreakables_size = 0u;
-    intrs.intr_players = false;
-
-    find_intersections(camera_position, ray_direction, &intrs);
-
-    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, MAX_DIST, &intrs); 
-
-    var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
-    var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats, &intrs);
-
-    var color = color_and_light.rgb;
-
-    var lightness = color_and_light.a;
-
-    if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {
-        color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x, dist_and_depth.x);
-    }
-
-    let color_areas = 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
-
-    color += color_areas.rgb;
-    lightness += color_areas.a;
-
-    let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
-    let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
-    color = mix(color, sc_r_c.rgb, sc_r_c.a*0.3);
-    color = mix(color, sc_e_c.rgb, sc_e_c.a*0.55);
-
-    // color correction
-    color = pow(color, vec3(0.4545));
-
-    // for debug
-    // color = mix(color, vec3(1.0, 0.0, 0.0), dist_and_depth.y / f32(MAX_STEPS));
-
-    let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
-    
-    // making damage effect
-    let q = (inn.position.xy+vec2(1.0))/2.0;
-    
-    // making vignetting effect
-    let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
-    color *= v;
-
-    color += 0.28*w_shift_effect(
-        uv,
-        dynamic_data.w_shift_coef,
-        dynamic_data.w_shift_intensity,
-    );
-
-    let hurt_coef = max(
-        clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
-        (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
-    );
-
-
-    color -= (1.0-hurt_coef)*0.2;
-
-    color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
-
-    // add w rotation effect
-    let zw_dir = dynamic_data.camera_data.cam_zw_rot * vec4(0.0, 0.0, -1.0, 0.0);
-
-    let ring_r = 0.29;
-    let line_width = 0.004;
-    let n_uv = normalize(uv);
-
-    // draw segment of circle to show angle of rotation along w axis
-    let rot_c = clamp(clamp(line_width-abs(length(uv)-(ring_r-line_width)),0.0,1.0)*100.0,0.0,1.0);
-
-    if zw_dir.w > 0.0
+    if inn.position.x < dynamic_data.splited_screen_in_2d_3d_example
     {
-        if n_uv.x < 0.0 && n_uv.y < 0.0
-        {
-            if -n_uv.y < zw_dir.w
-            {
-                color = mix(color, vec3(2.0, 0.0, 0.0), rot_c);
-            } 
+        var uv: vec2<f32> = inn.position.xy;
+
+        let uv_center_shift = 1.0 - ((1.0 + dynamic_data.splited_screen_in_2d_3d_example) * 0.5);
+        uv.x += uv_center_shift;
+        uv.x *= -dynamic_data.screen_aspect;
+
+        var p_pos = uv*SCREEN_WIDTH_IN_2D;
+
+        var pixel_pos = vec4(0.0);
+        pixel_pos.z += p_pos.x;
+        pixel_pos.y += p_pos.y;
+
+        let m2 = dynamic_data.additional_data_2;
+
+        let rot_mat = mat4x4(
+            m2.x, 0.0, m2.z, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            m2.y, 0.0, m2.w, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        );
+
+        pixel_pos = rot_mat * pixel_pos;
+
+        pixel_pos += dynamic_data.additional_data;
+
+        var dist = map(pixel_pos, true);
+
+        if dist > MIN_DIST {
+            dist = MAX_DIST*2.0;
         }
+
+        let mats = get_mats(pixel_pos, vec4(0.0), dist);
+
+        let fake_dir = normalize(vec4(uv.x,-uv.y,-3.0,0.0));
+
+        var color_and_light = get_color_and_light_from_mats_2d(pixel_pos, fake_dir, dist, mats);
+        
+        var color = color_and_light.rgb;
+
+        var lightness = color_and_light.a;
+
+        if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {
+            
+            if dist < MIN_DIST
+            {
+                color += 0.145*get_coloring_areas_color(pixel_pos, 1.0);
+            }
+        }
+
+        let color_areas = 0.6*get_volume_areas_color_for_2d(pixel_pos);
+
+        color += color_areas.rgb;
+        lightness += color_areas.a;
+
+        color = pow(color, vec3(0.4545));
+        
+        let sc_e_c = w_scanner_enemies_color_for_2d(pixel_pos);
+        color = mix(color, sc_e_c.rgb, sc_e_c.a*0.95);
+
+        let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
+        
+        // making damage effect
+        let q = (inn.position.xy+vec2(1.0))/2.0;
+        
+        // making vignetting effect
+        let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
+        color *= v;
+    
+        let hurt_coef = max(
+            clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
+            (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
+        );
+    
+    
+        color -= (1.0-hurt_coef)*0.2;
+    
+        color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
+    
+        // making death effect
+        let death_eff_col = max(
+            clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
+            (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
+        );
+        color *= death_eff_col;
+    
+        //making monochrome effect for death effect
+        var bw_col = clamp(color, vec3(color.r), vec3(100.0));
+        bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
+        bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
+        bw_col += (tv_noise - 0.5)*(1.0-death_eff_col*0.5)*0.3;
+    
+        color = mix(
+            color,
+            bw_col*(bw_col*1.4),
+            clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
+        );
+
+        return vec4<f32>(color, lightness);
+
     }
     else
     {
-        if n_uv.x > 0.0 && n_uv.y > 0.0
+        var uv: vec2<f32> = inn.position.xy;
+
+        if (uv.x - dynamic_data.splited_screen_in_2d_3d_example < 0.004)
         {
-            if -n_uv.y > zw_dir.w
-            {
-                color = mix(color, vec3(2.0, 0.0, 0.0), rot_c);
-            }
+            return vec4(1.0);
         }
+
+        let uv_center_shift = 1.0 - ((1.0 + dynamic_data.splited_screen_in_2d_3d_example) * 0.5);
+        uv.x -= uv_center_shift;
+        uv *= 0.7;
+        uv.x *= dynamic_data.screen_aspect;
+
+        var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.5, 0.0));
+
+        ray_direction *= dynamic_data.camera_data.cam_zw_rot;
+        ray_direction *= dynamic_data.camera_data.cam_zy_rot;
+        ray_direction *= dynamic_data.camera_data.cam_zx_rot;
+
+        let camera_position = dynamic_data.camera_data.cam_pos;
+
+        var intrs: Intersections;
+        intrs.intr_neg_size = 0u;
+        intrs.intr_normal_size = 0u;
+        intrs.intr_unbreakables_size = 0u;
+        intrs.intr_players = false;
+
+        find_intersections(camera_position, ray_direction, &intrs);
+
+        let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, MAX_DIST, &intrs); 
+
+        var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
+        var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats, &intrs);
+
+        var color = color_and_light.rgb;
+
+        var lightness = color_and_light.a;
+
+        if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {
+            color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x, dist_and_depth.x);
+        }
+
+        let color_areas = 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
+
+        color += color_areas.rgb;
+        lightness += color_areas.a;
+
+        color = pow(color, vec3(0.4845));
+
+        let slice_color_and_dist = get_2d_player_view_slice_color(uv, dist_and_depth.x);
+        color += slice_color_and_dist.rgb;
+
+        if slice_color_and_dist.w > 0.0
+        {
+            let p = camera_position + ray_direction*slice_color_and_dist.w;
+            let sc_e_c = w_scanner_enemies_color_for_2d(p);
+            color = mix(color, sc_e_c.rgb, sc_e_c.a*0.95);
+        }
+
+        return vec4<f32>(color, lightness);
     }
-
-    // making death effect
-    let death_eff_col = max(
-        clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
-        (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
-    );
-    color *= death_eff_col;
-
-    //making monochrome effect for death effect
-    var bw_col = clamp(color, vec3(color.r), vec3(100.0));
-    bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
-    bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
-    bw_col += (tv_noise - 0.5)*(1.0-death_eff_col*0.5)*0.3;
-
-    color = mix(
-        color,
-        bw_col*(bw_col*1.4),
-        clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
-    );
-
-    return vec4<f32>(color, lightness);
 }
