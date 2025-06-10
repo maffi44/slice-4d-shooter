@@ -54,6 +54,7 @@ pub struct ActionsFrameState {
     pub w_aim: Action,
     pub increase_render_quality: Action,
     pub decrease_render_quality: Action,
+    pub shadows_toggle: Action,
     pub connect_to_server: Action,
     pub mouse_axis: Vec2,
 }
@@ -79,6 +80,7 @@ impl ActionsFrameState {
         let mut show_hide_controls = Action::new();
         let mut increase_render_quality = Action:: new();
         let mut decrease_render_quality = Action:: new();
+        let mut shadows_toggle = Action:: new();
         let mut connect_to_server = Action:: new();
         let mouse_axis = mouse_axis;
         
@@ -103,6 +105,7 @@ impl ActionsFrameState {
                 ButtonActions::ShowHideControls => show_hide_controls = action.clone(),
                 ButtonActions::IncreaseRenderQuality => increase_render_quality = action.clone(),
                 ButtonActions::DecreaseRenderQuality => decrease_render_quality = action.clone(),
+                ButtonActions::ShadowsToggle => shadows_toggle = action.clone(),
                 ButtonActions::ConnectToServer => connect_to_server = action.clone(),
             }
         }
@@ -127,6 +130,7 @@ impl ActionsFrameState {
             w_aim: enable_w_aim,
             increase_render_quality,
             decrease_render_quality,
+            shadows_toggle,
             show_hide_controls,
             connect_to_server,
         }
@@ -152,6 +156,7 @@ impl ActionsFrameState {
         let show_hide_controls = Action::new();
         let increase_render_quality = Action:: new();
         let decrease_render_quality = Action:: new();
+        let shadows_toggle = Action:: new();
         let connect_to_server = Action::new();
         let mouse_axis = Vec2::ZERO;
 
@@ -175,6 +180,7 @@ impl ActionsFrameState {
             w_aim,
             increase_render_quality,
             decrease_render_quality,
+            shadows_toggle,
             connect_to_server,
             mouse_axis
         }
@@ -214,6 +220,7 @@ pub enum ButtonActions {
     IncreaseRenderQuality,
     DecreaseRenderQuality,
     ConnectToServer,
+    ShadowsToggle,
 }
 
 // for future user's settings
@@ -313,6 +320,10 @@ impl InputSystem {
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Numpad8),
             (ButtonActions::IncreaseRenderQuality, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Numpad9),
+            (ButtonActions::ShadowsToggle, Action::new())
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyP),

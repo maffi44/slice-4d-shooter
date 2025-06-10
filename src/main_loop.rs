@@ -294,7 +294,7 @@ fn main_loop_tick(
         &mut systems.effects,
     );
 
-    systems.render.process_change_render_quality_input(
+    systems.render.process_player_input(
         systems.input.get_input(),
     );
 

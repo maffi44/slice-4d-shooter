@@ -113,6 +113,11 @@ impl Renderer {
 
     pub fn increase_raymarch_target_texture_scale_factor(&mut self)
     {
+        if self.raymarch_target_texture_scale_factor > 0.995
+        {
+            return;
+        }
+
         self.raymarch_target_texture_scale_factor = 
         (
             self.raymarch_target_texture_scale_factor + 
@@ -141,6 +146,11 @@ impl Renderer {
 
     pub fn decrease_raymarch_target_texture_scale_factor(&mut self)
     {
+        if self.raymarch_target_texture_scale_factor < 0.105
+        {
+            return;
+        }
+
         self.raymarch_target_texture_scale_factor = 
         (
             self.raymarch_target_texture_scale_factor -

@@ -2,8 +2,7 @@ pub mod dynamic_render_data;
 pub mod static_render_data;
 
 use crate::engine::{
-    time::TimeSystem,
-    world::World,
+    render::RenderQualityData, time::TimeSystem, world::World
 };
 
 use self::{
@@ -81,6 +80,7 @@ impl RenderData {
         window: &Window,
         static_bounding_box: &BoundingBox,
         for_generated_raymarch_shader: bool,
+        render_quality_data: &RenderQualityData,
     ) {
         self.dynamic_data.update(
             world,
@@ -89,6 +89,7 @@ impl RenderData {
             static_bounding_box,
             &self.static_data,
             for_generated_raymarch_shader,
+            render_quality_data,
         );
     }
 }

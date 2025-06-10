@@ -54,6 +54,11 @@ pub struct ChildVisualElement {
 }
 
 
+struct RenderQualityData
+{
+    shadows_enabled: bool
+}
+
 pub struct RenderSystem {
     render_data: RenderData,
     pub window: Window,
@@ -61,6 +66,8 @@ pub struct RenderSystem {
     outdated_signal_mutex: Arc<Mutex<bool>>,
 
     generated_raymarch_shader: bool,
+
+    render_quality_data: RenderQualityData,
 }
 
 
@@ -131,6 +138,10 @@ impl RenderSystem {
 
 
         log::info!("render system: renderer init");
+
+        let render_quality_data = RenderQualityData {
+            shadows_enabled: true,
+        };
         
         RenderSystem {
             window,
@@ -140,10 +151,12 @@ impl RenderSystem {
             outdated_signal_mutex,
 
             generated_raymarch_shader: with_generated_raymarch_shader,
+
+            render_quality_data,
         }
     }
 
-    pub fn process_change_render_quality_input(
+    pub fn process_player_input(
         &mut self,
         frame_input: ActionsFrameState,
     )
@@ -158,9 +171,14 @@ impl RenderSystem {
         else if frame_input.decrease_render_quality.is_action_just_pressed()
         {
             self.renderer
-            .lock()
-            .unwrap()
-            .decrease_raymarch_target_texture_scale_factor();
+                .lock()
+                .unwrap()
+                .decrease_raymarch_target_texture_scale_factor();
+        }
+
+        if frame_input.shadows_toggle.is_action_just_pressed()
+        {
+            self.render_quality_data.shadows_enabled = !self.render_quality_data.shadows_enabled;
         }
     }
 
@@ -184,6 +202,7 @@ impl RenderSystem {
             &self.window,
             &self.render_data.static_data.static_bounding_box.clone(),
             self.generated_raymarch_shader,
+            &self.render_quality_data,
         );
 
         let mut renderer_lock = self.renderer.lock().unwrap();

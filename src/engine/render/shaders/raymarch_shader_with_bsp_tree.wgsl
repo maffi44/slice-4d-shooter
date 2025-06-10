@@ -267,6 +267,10 @@ struct OtherDynamicData {
     zx_player_rotation: f32,
     screen_aspect: f32,
     time: f32,
+    shadows_enabled: i32,
+    padding_byte_1: i32,
+    padding_byte_2: i32,
+    padding_byte_3: i32,
     additional_data: vec4<f32>,
     additional_data_2: vec4<f32>,
 }
@@ -4231,7 +4235,11 @@ fn get_color_and_light_from_mats(
     let sun_hal_1 = normalize(sun_dir_1-ray_dir);
     let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),45.0+(1.0-roughness)*40.0);
     
-    let sun_shadow_1 = get_shadow(hited_pos+(normal*MIN_DIST*1.6), sun_dir_1, intrs);
+    var sun_shadow_1 = 1.0;
+    if dynamic_data.shadows_enabled == 1
+    {
+        sun_shadow_1 = get_shadow(hited_pos+(normal*MIN_DIST*1.6), sun_dir_1, intrs);
+    }
 
     let base_coef = clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
 

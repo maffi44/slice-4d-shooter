@@ -4896,23 +4896,11 @@ fn get_color_and_light_from_mats_2d(
         lines_size = 4.8;
     }
 
-    // let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*lines_size);
-    // let aocc = calc_ambient_occlusion(hited_pos, normal);
-
     let wireframe_fog = 1.0;
     let wireframe_dif = pow(clamp(1.0-abs(dist*20.0),0.0,1.0),1.3);
 
-
-    // sun light 1
-    // let sun_dir_1 = normalize(static_data.sun_direction);
-    // let sun_dif_1 = clamp(dot(normal, sun_dir_1),0.0,1.0);
-    // let sun_hal_1 = normalize(sun_dir_1-ray_dir);
-    // let sun_spe_1 = pow(clamp(dot(normal,sun_hal_1),0.0,1.0),45.0+(1.0-roughness)*40.0);
     
     var sun_shadow_1 = 1.0;
-    // if static_data.shadows_enabled == 1 {
-    //     sun_shadow_1 = get_shadow(hited_pos + normal*MIN_DIST*2.0, sun_dir_1);
-    // }
 
     let base_coef = clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
 
@@ -4957,12 +4945,6 @@ fn get_color_and_light_from_mats_2d(
         let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
 
         let x_height_coef = clamp((hited_pos.x - 0.3) / 6.0, 0.0, 1.0);
-
-        // base_diffuse = mix(
-        //     mix(base_diffuse, inverted_base_diffuse, base_coef),
-        //     mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
-        //     x_height_coef
-        // );
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
@@ -5017,66 +4999,6 @@ fn tv_noise(uv: vec2<f32>, time: f32) -> f32 {
     return tv_hash(p);
 }
 
-fn plane_x_intersect(rd: vec4<f32>, h: f32 ) -> f32
-{
-    return h/rd.x;
-}
-
-fn gew_w_projection_color(uv: vec2<f32>) -> vec3<f32>
-{
-    let offset = 1.5;
-
-
-    if uv.x < -0.00
-    {
-        var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
-
-        let dist = plane_x_intersect(ray, -offset);
-
-        ray *= dist;
-
-        ray *= dynamic_data.camera_data.cam_zw_rot;
-        ray *= dynamic_data.camera_data.cam_zy_rot;
-        ray *= dynamic_data.camera_data.cam_zx_rot;
-
-        let swap = ray.y;
-        ray.y = ray.w;
-        ray.w = swap;
-
-        let d = map(ray + dynamic_data.camera_data.cam_pos);
-
-        let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0) + clamp(-d*10.0,0.0,1.0)*0.2;
-
-        return vec3(0.0,c,0.0);
-    }
-    else if uv.x > 0.01
-    {
-        var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
-
-        let dist = plane_x_intersect(ray, offset);
-
-        ray *= dist;
-
-        ray *= dynamic_data.camera_data.cam_zw_rot;
-        ray *= dynamic_data.camera_data.cam_zy_rot;
-        ray *= dynamic_data.camera_data.cam_zx_rot;
-
-        let swap = ray.y;
-        ray.y = ray.w;
-        ray.w = swap;
-
-        let d = map(ray + dynamic_data.camera_data.cam_pos);
-
-        let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0) + clamp(-d*10.0,0.0,1.0)*0.2;
-
-        return vec3(0.0,c,0.0);
-    }
-    else
-    {
-        return vec3(0.0);
-    }
-}
-
 fn plane_intersect( ro: vec4<f32>, rd: vec4<f32>, p: vec4<f32>, p_dist: f32 ) -> f32
 {
     return -(dot(ro,p)+p_dist)/dot(rd,p);
@@ -5114,31 +5036,12 @@ fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec4<f32
     if dist_to_slice > 0.0 {
         let d = dist_to_slice - dist_to_scene;
 
-        // orange
-        // let slice_diffuse = vec3(3.5, 1.9, 1.68)*1.0;
-        // let edge_diffuse = vec3(3.5, 1.9, 1.68)*4.0;
-
-        // green
-        // let slice_diffuse = vec3(1.68, 3.5, 1.9)*1.0;
-        // let edge_diffuse = vec3(1.68, 3.5, 1.9)*4.0;
-
-        // base based
         let slice_hit_pos = dynamic_data.camera_data.cam_pos + ray*dist_to_slice;
         let base_coef = clamp((slice_hit_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
         let diffuse = mix(vec3(3.08, 1.5, 1.9), vec3(1.9, 1.5, 3.08), base_coef);
-        // let diffuse = mix(vec3(0.0, 0.0, 4.28), vec3(4.28, 0.0, 0.0),base_coef);
+
         let slice_diffuse = diffuse*2.5;
-        // let slice_diffuse = vec3(2.0)*1.6;
-        // let edge_diffuse = diffuse*3.1;
         let edge_diffuse = vec3(3.0)*3.1;
-
-        // blue
-        // let slice_diffuse = vec3(1.68, 1.9, 3.5)*1.0;
-        // let edge_diffuse = vec3(1.68, 1.9, 3.5)*4.0;
-
-        // white
-        // let slice_diffuse = vec3(3.5);
-        // let edge_diffuse = vec3(3.5);
 
         let c = edge_diffuse*pow(1.0-clamp(abs(d),0.0,1.0),15.0)*0.4 + slice_diffuse*clamp(-d*10.0,0.0,1.0)*0.06;
 
@@ -5152,102 +5055,6 @@ fn get_2d_player_view_slice_color(uv: vec2<f32>, dist_to_scene: f32) -> vec4<f32
     }
 
 }
-
-
-
-// @fragment
-// fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
-
-//     var uv: vec2<f32> = inn.position.xy * 0.7;
-//     uv.x *= dynamic_data.screen_aspect;
-
-//     var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
-
-//     ray_direction *= dynamic_data.camera_data.cam_zw_rot;
-//     ray_direction *= dynamic_data.camera_data.cam_zy_rot;
-//     ray_direction *= dynamic_data.camera_data.cam_zx_rot;
-
-//     let camera_position = dynamic_data.camera_data.cam_pos;
-
-//     find_intersections(camera_position, ray_direction);
-//     let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction); 
-
-
-//     var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
-//     var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats);
-
-//     // for (var i = 1u; i < min(mats.materials_count,2u); i++) {
-//     //     let new_color = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats.materials[i]);
-//     //     color_and_light = mix(color_and_light, new_color, mats.material_weights[i]);
-//     // }
-
-//     var color = color_and_light.rgb;
-
-//     // color += gew_w_projection_color(uv);
-
-//     var lightness = color_and_light.a;
-
-//     if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 && mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2 {
-//         color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x);
-//     }
-
-//     let color_areas = 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
-
-//     color += color_areas.rgb;
-//     lightness += color_areas.a;
-
-//     let sc_r_c = w_scanner_ring_color(camera_position, dist_and_depth.x, ray_direction);
-//     let sc_e_c = w_scanner_enemies_color(camera_position, dist_and_depth.x, ray_direction);
-//     color = mix(color, sc_r_c.rgb, sc_r_c.a*0.3);
-//     color = mix(color, sc_e_c.rgb, sc_e_c.a*0.55);
-
-//     // color correction
-//     color = pow(color, vec3(0.4545));
-
-//     let tv_noise = tv_noise(uv*100.0, dynamic_data.time);
-    
-//     // making damage effect
-//     let q = (inn.position.xy+vec2(1.0))/2.0;
-    
-//     // making vignetting effect
-//     let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
-//     color *= v;
-
-//     let hurt_coef = max(
-//         clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
-//         (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
-//     );
-//     // color.g *= clamp(hurt_coef*1.4, 0.0, 1.0);
-//     // color.b *= clamp(hurt_coef*1.5, 0.0, 1.0);
-//     // color.r *= hurt_coef;
-//     color -= (1.0-hurt_coef)*0.2;
-
-//     color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
-
-//     // making death effect
-//     let death_eff_col = max(
-//         clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
-//         (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
-//     );
-//     color *= death_eff_col;
-
-//     // color = mix(vec3(tv_noise(uv*100.0, dynamic_data.time)),color, death_eff_col*0.7);
-
-//     var bw_col = clamp(color, vec3(color.r), vec3(100.0));
-//     bw_col = clamp(bw_col, vec3(color.g), vec3(100.0));
-//     bw_col = clamp(bw_col, vec3(color.b), vec3(100.0));
-//     bw_col += (tv_noise - 0.5)*(1.0-death_eff_col*0.5)*0.3;
-
-//     color = mix(
-//         color,
-//         bw_col*(bw_col*1.4),
-//         clamp(dynamic_data.death_screen_effect, 0.0, 1.0)
-//     ); 
-
-//     // color.r += (dist_and_depth.y / f32(MAX_STEPS/2));
-
-//     return vec4<f32>(color, lightness);
-// }
 
 const SCREEN_WIDTH_IN_2D: f32 = 7.0;
 
@@ -5263,18 +5070,6 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         uv.x *= -dynamic_data.screen_aspect;
 
         var p_pos = uv*SCREEN_WIDTH_IN_2D;
-
-        // let m2 = dynamic_data.additional_data_2;
-
-        // let rot_mat = mat4x4(
-        //     m2.x, 0.0, m2.z, 0.0,
-        //     0.0, 1.0, 0.0, 0.0,
-        //     m2.y, 0.0, m2.w, 0.0,
-        //     0.0, 0.0, 0.0, 1.0,
-        // );
-
-        // p_pos = rot_mat * p_pos
-
 
         var pixel_pos = vec4(0.0);
         pixel_pos.z += p_pos.x;

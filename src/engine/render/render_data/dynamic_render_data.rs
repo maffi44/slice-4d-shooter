@@ -12,7 +12,7 @@ use crate::{
             ShapesArraysMetadata,
             SphericalArea,
             SphericalAreasMetadata
-        }},
+        }, RenderQualityData},
         time::TimeSystem,
         world::{
             static_object::{ColoringArea, StaticObject, VisualWave, VolumeArea},
@@ -1221,6 +1221,7 @@ impl DynamicRenderData {
         static_bounding_box: &BoundingBox,
         static_data: &StaticRenderData,
         for_generated_raymarch_shader: bool,
+        render_quality_data: &RenderQualityData,
     ) {
         self.clear_all_frame_buffers();
 
@@ -1285,6 +1286,7 @@ impl DynamicRenderData {
             players_screen_effects,
             *self.dynamic_shapes_data.undestroyable_cubes.clone(),
             self.dynamic_shapes_data.undestroyable_cubes_amount,
+            render_quality_data,
         );
     }
 }
@@ -1409,6 +1411,11 @@ pub struct OtherDynamicData {
     screen_aspect: f32,
     time: f32,
 
+    shadows_enabled: i32,
+    padding_byte_1: i32,
+    padding_byte_2: i32,
+    padding_byte_3: i32,
+
     additional_data: [f32;4],
     additional_data_2: [f32;4],
 }
@@ -1428,6 +1435,7 @@ impl OtherDynamicData {
         players_screen_effects: &PlayerScreenEffects,
         undestroyable_cubes: [Shape; 64],
         undestroyable_cubes_amount: u32,
+        render_quality_data: &RenderQualityData,
     ) {
         // let explore_w_pos;
         // let explore_w_coef;
@@ -1509,6 +1517,15 @@ impl OtherDynamicData {
 
         self.waves_start = waves_start;
         self.waves_amount = waves_amount;
+
+        if render_quality_data.shadows_enabled
+        {
+            self.shadows_enabled = 1;
+        }
+        else
+        {
+            self.shadows_enabled = 0;
+        }
     }
 }
 
@@ -1542,6 +1559,12 @@ impl Default for OtherDynamicData {
             zx_player_rotation: 0.0,
             screen_aspect: 1.0,
             time: 0.0,
+
+            shadows_enabled: 1,
+            padding_byte_1: 0,
+            padding_byte_2: 0,
+            padding_byte_3: 0,
+
             additional_data: [0.0;4],
             additional_data_2: [0.0;4],
         }
