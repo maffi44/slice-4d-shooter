@@ -771,6 +771,8 @@ struct Intersections
 
     intr_unbreakables: array<vec2<f32>, 32>,
     intr_unbreakables_size: u32,
+
+    intr_players: bool,
 }
 
 
@@ -1206,10 +1208,11 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
         let intr = sph_intersection(
             ro - dyn_player_forms[i].pos,
             rd,
-            dyn_player_forms[i].radius * 1.7
+            dyn_player_forms[i].radius * 1.65
         );
         
         if intr.y > 0.0 {
+            (*intrs).intr_players = true;
             store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
         }
     }
@@ -1219,7 +1222,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
 }
 
 
-fn map(p: vec4<f32>) -> f32 {
+fn map(p: vec4<f32>, intr_players: bool) -> f32 {
     //###map###
     var d = MAX_DIST*2.0;
 
@@ -1267,101 +1270,104 @@ fn map(p: vec4<f32>) -> f32 {
         d = min(d, sd_box(p - dynamic_data.undestroyable_cubes[i].pos, dynamic_data.undestroyable_cubes[i].size) - dynamic_data.undestroyable_cubes[i].roundness);
     }
 
-    var dddd = MAX_DIST;
-    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-        dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
-        dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
-        
-        let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
-        dddd = max(dddd, -sd_box(
-            rotated_p,
-            vec4(
-                dyn_player_forms[i].radius * 0.18,
-                dyn_player_forms[i].radius* 1.2,
-                dyn_player_forms[i].radius* 1.2,
-                dyn_player_forms[i].radius * 1.2
-            )));
-        
-        dddd = max(
-            dddd,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
-                dyn_player_forms[i].radius * 0.53
-            )
-        );
-
-        dddd = min(
-            dddd,
-            sd_sphere(
-                p - dyn_player_forms[i].pos,
-                dyn_player_forms[i].radius * 0.6
-            )
-        );
-        dddd = max(
-            dddd,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
-                dyn_player_forms[i].radius * 0.34
-            )
-        );
-
-        dddd = min(
-            dddd,
-            sd_sphere(
-                rotated_p - dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].radius * 0.286,
-            )
-        );
-
-        dddd = max(
-            dddd,
-            -sd_capsule(
+    if intr_players
+    {
+        var dddd = MAX_DIST;
+        for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+            dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
+            dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
+            
+            let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
+            dddd = max(dddd, -sd_box(
                 rotated_p,
-                dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].weapon_offset -
                 vec4(
-                    0.0,
-                    0.0,
-                    dyn_player_forms[i].radius* 0.49,
-                    0.0
-                ),
-                dyn_player_forms[i].radius* 0.18
-            )
-        );
-
-        dddd = min(
-            dddd,
-            sd_capsule(
-                rotated_p,
-                dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    dyn_player_forms[i].radius* 0.43,
-                    0.0
-                ),
-                dyn_player_forms[i].radius* 0.1
-            )
-        );
-
-        dddd = max(
-            dddd,
-            -sd_capsule(
-                rotated_p,
-                dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    dyn_player_forms[i].radius* 0.65,
-                    0.0
-                ),
-                dyn_player_forms[i].radius* 0.052
-            )
-        );
+                    dyn_player_forms[i].radius * 0.18,
+                    dyn_player_forms[i].radius* 1.2,
+                    dyn_player_forms[i].radius* 1.2,
+                    dyn_player_forms[i].radius * 1.2
+                )));
+            
+            dddd = max(
+                dddd,
+                -sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
+                    dyn_player_forms[i].radius * 0.53
+                )
+            );
+    
+            dddd = min(
+                dddd,
+                sd_sphere(
+                    p - dyn_player_forms[i].pos,
+                    dyn_player_forms[i].radius * 0.6
+                )
+            );
+            dddd = max(
+                dddd,
+                -sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
+                    dyn_player_forms[i].radius * 0.34
+                )
+            );
+    
+            dddd = min(
+                dddd,
+                sd_sphere(
+                    rotated_p - dyn_player_forms[i].weapon_offset,
+                    dyn_player_forms[i].radius * 0.286,
+                )
+            );
+    
+            dddd = max(
+                dddd,
+                -sd_capsule(
+                    rotated_p,
+                    dyn_player_forms[i].weapon_offset,
+                    dyn_player_forms[i].weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        dyn_player_forms[i].radius* 0.49,
+                        0.0
+                    ),
+                    dyn_player_forms[i].radius* 0.18
+                )
+            );
+    
+            dddd = min(
+                dddd,
+                sd_capsule(
+                    rotated_p,
+                    dyn_player_forms[i].weapon_offset,
+                    dyn_player_forms[i].weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        dyn_player_forms[i].radius* 0.43,
+                        0.0
+                    ),
+                    dyn_player_forms[i].radius* 0.1
+                )
+            );
+    
+            dddd = max(
+                dddd,
+                -sd_capsule(
+                    rotated_p,
+                    dyn_player_forms[i].weapon_offset,
+                    dyn_player_forms[i].weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        dyn_player_forms[i].radius* 0.65,
+                        0.0
+                    ),
+                    dyn_player_forms[i].radius* 0.052
+                )
+            );
+        }
+        d = min(d, dddd);
     }
-    d = min(d, dddd);
 
     return d;
     //###map###
@@ -1752,7 +1758,7 @@ fn get_mats(
 }
 
 
-fn get_normal_prev(p: vec4<f32>) -> vec4<f32> {
+fn get_normal_prev(p: vec4<f32>, intrs_players: bool) -> vec4<f32> {
     var h: vec3<f32> = vec3<f32>(0.001, -0.001, 0.0);
     
     var a: vec4<f32> = p + h.yxxz;
@@ -1762,12 +1768,12 @@ fn get_normal_prev(p: vec4<f32>) -> vec4<f32> {
     var e: vec4<f32> = p + h.zzzx;
     var f: vec4<f32> = p + h.zzzy;
 
-    var fa: f32 = map(a);
-    var fb: f32 = map(b);
-    var fc: f32 = map(c);
-    var fd: f32 = map(d);
-    var fe: f32 = map(e);
-    var ff: f32 = map(f);
+    var fa: f32 = map(a, intrs_players);
+    var fb: f32 = map(b, intrs_players);
+    var fc: f32 = map(c, intrs_players);
+    var fd: f32 = map(d, intrs_players);
+    var fe: f32 = map(e, intrs_players);
+    var ff: f32 = map(f, intrs_players);
 
     return normalize(
         h.yxxz * fa +
@@ -1781,7 +1787,7 @@ fn get_normal_prev(p: vec4<f32>) -> vec4<f32> {
 
 
 // for preventing inline func map
-fn get_normal(p: vec4<f32>) -> vec4<f32> {
+fn get_normal(p: vec4<f32>, intrs_players: bool) -> vec4<f32> {
     var h: vec3<f32> = vec3<f32>(MIN_DIST, -MIN_DIST, 0.0);
     
     let a: vec4<f32> = h.yxxz;
@@ -1790,6 +1796,10 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
     let d: vec4<f32> = h.yyyz;
     let e: vec4<f32> = h.zzzx;
     let f: vec4<f32> = h.zzzy;
+
+    // after making this const array I catched segmentation fault on
+    // (ubuntu 22.04, nvidia RTX 3070 mobile, driver 565.77, ryzen 9)
+    // segmentation fault probably occurred during the compilation of naga
 
     // let arr = array<vec4<f32>, 6>(
     //     vec4(-MIN_DIST, MIN_DIST, MIN_DIST, 0.0),
@@ -1804,10 +1814,10 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
 
     for( var i=(min(i32(dynamic_data.time), 0)); i<6; i += 1 )
     {
-        var nn = vec4(0.0);
+        //let nn = arr[i];
 
-        // after making const array I catched segmentation fault on
-        // (ubuntu 22.04, nvidia RTX 3070 (mobile) (driver 565.77), ryzen 9)
+        var nn = vec4(0.0);
+         
         if i == 0
         {
             nn = a;
@@ -1833,7 +1843,7 @@ fn get_normal(p: vec4<f32>) -> vec4<f32> {
             nn = f;
         }
 
-        n += nn*map(p+nn);
+        n += nn*map(p+nn, intrs_players);
     }
 
     return normalize(n);
@@ -1978,7 +1988,7 @@ fn ray_march(
             }
         }
 
-        var d: f32  = map(ray_origin + ray_direction * total_distance);
+        var d: f32  = map(ray_origin + ray_direction * total_distance, (*intrs).intr_players);
         total_distance += d;
 
         if total_distance > max_dist
@@ -2142,7 +2152,7 @@ fn get_sky_color(ray_dir: vec4<f32>, shadow: f32) -> vec3<f32> {
 
     color += pow(textureSample(sky_box, sky_box_sampler, normalize(ray_dir.xyz)).xyz, vec3(2.1));
 
-    return color*max(shadow,0.5);
+    return color;
 }
 
 
@@ -2167,7 +2177,7 @@ fn get_color_and_light_from_mats(
         var color = static_data.red_base_color*0.5;
         
         let hited_pos = pos + ray_dir * dist;
-        let normal = get_normal(hited_pos);
+        let normal = get_normal(hited_pos, (*intrs).intr_players);
         let c = pow(abs(dot(normal, ray_dir)),9.0);
 
         color = mix(vec3(0.5),color, c);
@@ -2179,7 +2189,7 @@ fn get_color_and_light_from_mats(
         var color = static_data.blue_base_color*0.5;
         
         let hited_pos = pos + ray_dir * dist;
-        let normal = get_normal(hited_pos);
+        let normal = get_normal(hited_pos, (*intrs).intr_players);
         let c = pow(abs(dot(normal, ray_dir)),9.0);
 
         color = mix(vec3(0.5),color, c);
@@ -2199,7 +2209,7 @@ fn get_color_and_light_from_mats(
     }
 
     let hited_pos = pos + ray_dir * dist;
-    let normal = get_normal(hited_pos);
+    let normal = get_normal(hited_pos, (*intrs).intr_players);
     
     var lines_size = 5.8;
 
@@ -2208,10 +2218,10 @@ fn get_color_and_light_from_mats(
         mats.materials[0] == static_data.red_players_mat1 ||
         mats.materials[0] == static_data.red_players_mat2
     {
-        lines_size = 2.8;
+        lines_size = 1.8;
     }
 
-    let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*lines_size);
+    let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*lines_size, (*intrs).intr_players);
 
     let wireframe_fog = exp(-0.007*dist*dist);
     let wireframe_dif = pow(clamp(1.0-abs(dot(normal, next_normal)),0.0,1.0),1.3);
@@ -2337,62 +2347,6 @@ fn plane_x_intersect(rd: vec4<f32>, h: f32 ) -> f32
 }
 
 
-fn gew_w_projection_color(uv: vec2<f32>) -> vec3<f32>
-{
-    let offset = 1.5;
-
-
-    if uv.x < -0.00
-    {
-        var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
-
-        let dist = plane_x_intersect(ray, -offset);
-
-        ray *= dist;
-
-        ray *= dynamic_data.camera_data.cam_zw_rot;
-        ray *= dynamic_data.camera_data.cam_zy_rot;
-        ray *= dynamic_data.camera_data.cam_zx_rot;
-
-        let swap = ray.y;
-        ray.y = ray.w;
-        ray.w = swap;
-
-        let d = map(ray + dynamic_data.camera_data.cam_pos);
-
-        let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0) + clamp(-d*10.0,0.0,1.0)*0.2;
-
-        return vec3(0.0,c,0.0);
-    }
-    else if uv.x > 0.01
-    {
-        var ray: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
-
-        let dist = plane_x_intersect(ray, offset);
-
-        ray *= dist;
-
-        ray *= dynamic_data.camera_data.cam_zw_rot;
-        ray *= dynamic_data.camera_data.cam_zy_rot;
-        ray *= dynamic_data.camera_data.cam_zx_rot;
-
-        let swap = ray.y;
-        ray.y = ray.w;
-        ray.w = swap;
-
-        let d = map(ray + dynamic_data.camera_data.cam_pos);
-
-        let c = pow(1.0-clamp(abs(d),0.0,1.0),25.0) + clamp(-d*10.0,0.0,1.0)*0.2;
-
-        return vec3(0.0,c,0.0);
-    }
-    else
-    {
-        return vec3(0.0);
-    }
-}
-
-
 // modified code from https://www.shadertoy.com/view/stGXzy
 // V-------------------------------------------------------V
 fn rand_vec(p: vec2<f32>) -> vec2<f32> {
@@ -2450,6 +2404,8 @@ fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<fun
     (*intrs).intr_neg_size = 0u;
     (*intrs).intr_normal_size = 0u;
     (*intrs).intr_unbreakables_size = 0u;
+    (*intrs).intr_players = false;
+
     
     find_intersections(init_position, ray_direction, intrs);
 
@@ -2457,7 +2413,7 @@ fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<fun
 
     let shadow_coef = pow((min(dist_and_depth.x, 11.0))/11.0, 1.3);
 
-    return shadow_coef;
+    return clamp(shadow_coef, 0.0, 1.0);
 }
 
 
@@ -2480,6 +2436,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     intrs.intr_neg_size = 0u;
     intrs.intr_normal_size = 0u;
     intrs.intr_unbreakables_size = 0u;
+    intrs.intr_players = false;
 
     find_intersections(camera_position, ray_direction, &intrs);
 

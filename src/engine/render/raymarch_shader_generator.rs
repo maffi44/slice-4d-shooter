@@ -8,10 +8,10 @@ use crate::engine::render::render_data::Shape;
 use super::render_data::static_render_data::StaticRenderData;
 
 
-const MAX_BSP_TREE_DEPTH: usize = 7;
+const MAX_BSP_TREE_DEPTH: usize = 8;
 const MIN_BSP_DIVISION_EFFICIENCY: usize = 2;
 
-pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &'static str, static_data: &StaticRenderData) -> String
+pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &str, static_data: &StaticRenderData) -> String
 {
     let bsp_tree = Box::new(BSPElement::create_binary_space_partition_tree(static_data));
 
@@ -377,6 +377,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         );
         
         if intr.y > 0.0 {
+            (*intrs).intr_players = true;
             store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
         }
     }\n";
@@ -397,101 +398,104 @@ fn generate_map_function_body(bsp_tree: &Box<BSPElement>) -> String
     
     func_body +=
 
-    "var dddd = MAX_DIST;
-    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-        dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
-        dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
-        
-        let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
-        dddd = max(dddd, -sd_box(
-            rotated_p,
-            vec4(
-                dyn_player_forms[i].radius * 0.18,
-                dyn_player_forms[i].radius* 1.2,
-                dyn_player_forms[i].radius* 1.2,
-                dyn_player_forms[i].radius * 1.2
-            )));
-        
-        dddd = max(
-            dddd,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
-                dyn_player_forms[i].radius * 0.53
-            )
-        );
-
-        dddd = min(
-            dddd,
-            sd_sphere(
-                p - dyn_player_forms[i].pos,
-                dyn_player_forms[i].radius * 0.6
-            )
-        );
-        dddd = max(
-            dddd,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
-                dyn_player_forms[i].radius * 0.34
-            )
-        );
-
-        dddd = min(
-            dddd,
-            sd_sphere(
-                rotated_p - dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].radius * 0.286,
-            )
-        );
-
-        dddd = max(
-            dddd,
-            -sd_capsule(
+    "if intr_players
+    {
+        var dddd = MAX_DIST;
+        for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+            dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
+            dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
+            
+            let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
+            dddd = max(dddd, -sd_box(
                 rotated_p,
-                dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].weapon_offset -
                 vec4(
-                    0.0,
-                    0.0,
-                    dyn_player_forms[i].radius* 0.49,
-                    0.0
-                ),
-                dyn_player_forms[i].radius* 0.18
-            )
-        );
-
-        dddd = min(
-            dddd,
-            sd_capsule(
-                rotated_p,
-                dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    dyn_player_forms[i].radius* 0.43,
-                    0.0
-                ),
-                dyn_player_forms[i].radius* 0.1
-            )
-        );
-
-        dddd = max(
-            dddd,
-            -sd_capsule(
-                rotated_p,
-                dyn_player_forms[i].weapon_offset,
-                dyn_player_forms[i].weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    dyn_player_forms[i].radius* 0.65,
-                    0.0
-                ),
-                dyn_player_forms[i].radius* 0.052
-            )
-        );
-    }
-    d = min(d, dddd);\n";
+                    dyn_player_forms[i].radius * 0.18,
+                    dyn_player_forms[i].radius* 1.2,
+                    dyn_player_forms[i].radius* 1.2,
+                    dyn_player_forms[i].radius * 1.2
+                )));
+            
+            dddd = max(
+                dddd,
+                -sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
+                    dyn_player_forms[i].radius * 0.53
+                )
+            );
+    
+            dddd = min(
+                dddd,
+                sd_sphere(
+                    p - dyn_player_forms[i].pos,
+                    dyn_player_forms[i].radius * 0.6
+                )
+            );
+            dddd = max(
+                dddd,
+                -sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
+                    dyn_player_forms[i].radius * 0.34
+                )
+            );
+    
+            dddd = min(
+                dddd,
+                sd_sphere(
+                    rotated_p - dyn_player_forms[i].weapon_offset,
+                    dyn_player_forms[i].radius * 0.286,
+                )
+            );
+    
+            dddd = max(
+                dddd,
+                -sd_capsule(
+                    rotated_p,
+                    dyn_player_forms[i].weapon_offset,
+                    dyn_player_forms[i].weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        dyn_player_forms[i].radius* 0.49,
+                        0.0
+                    ),
+                    dyn_player_forms[i].radius* 0.18
+                )
+            );
+    
+            dddd = min(
+                dddd,
+                sd_capsule(
+                    rotated_p,
+                    dyn_player_forms[i].weapon_offset,
+                    dyn_player_forms[i].weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        dyn_player_forms[i].radius* 0.43,
+                        0.0
+                    ),
+                    dyn_player_forms[i].radius* 0.1
+                )
+            );
+    
+            dddd = max(
+                dddd,
+                -sd_capsule(
+                    rotated_p,
+                    dyn_player_forms[i].weapon_offset,
+                    dyn_player_forms[i].weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        dyn_player_forms[i].radius* 0.65,
+                        0.0
+                    ),
+                    dyn_player_forms[i].radius* 0.052
+                )
+            );
+        }
+        d = min(d, dddd);
+    }\n";
 
     func_body += "return d;\n";
 

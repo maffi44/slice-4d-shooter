@@ -309,6 +309,8 @@ impl Renderer {
                         if with_generated_raymarch_shader
                         {
                             unimplemented!()
+                            // include_str!("shaders/raymarch_shader_for_2d_3d_example_with_bsp_tree.wgsl").into()
+
                         }
                         else
                         {
@@ -324,7 +326,7 @@ impl Renderer {
                         {
                             wgpu::ShaderSource::Wgsl
                             (
-                                include_str!("shaders/generated_raymarch_shader.wgsl").into()
+                                include_str!("shaders/raymarch_shader_with_bsp_tree.wgsl").into()
                             )
                         }
                         else
