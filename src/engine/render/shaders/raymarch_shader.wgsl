@@ -1894,7 +1894,7 @@ fn ray_march(
             // cheking if ray is out of area of positive (not negative) objects
             // in this case go to next closest positve object or finish ray marching 
             // if it was last area of positive objects
-            if total_distance > closest_normal_intrs.y
+            while total_distance > closest_normal_intrs.y
             {
                 closest_normal_intrs_index += 1u;
     

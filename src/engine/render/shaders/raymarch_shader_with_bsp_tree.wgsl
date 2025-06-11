@@ -1781,7 +1781,9 @@ for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.08);
-}}}}if intr_players
+}}}}
+
+    if intr_players
     {
         var dddd = MAX_DIST;
         for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
@@ -1879,8 +1881,8 @@ d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.08)
         }
         d = min(d, dddd);
     }
-return d;
 
+    return d;
 }
 
 fn get_mats_simple(
@@ -3892,7 +3894,7 @@ fn ray_march(
             // cheking if ray is out of area of positive (not negative) objects
             // in this case go to next closest positve object or finish ray marching 
             // if it was last area of positive objects
-            if total_distance > closest_normal_intrs.y
+            while total_distance > closest_normal_intrs.y
             {
                 closest_normal_intrs_index += 1u;
     
@@ -4313,6 +4315,24 @@ fn get_color_and_light_from_mats(
 }
 
 
+fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<function,Intersections>) -> f32 {
+
+    (*intrs).intr_neg_size = 0u;
+    (*intrs).intr_normal_size = 0u;
+    (*intrs).intr_unbreakables_size = 0u;
+    (*intrs).intr_players = false;
+
+    
+    find_intersections(init_position, ray_direction, intrs);
+
+    let dist_and_depth: vec2<f32> = ray_march(init_position, ray_direction, 11.0, intrs);
+
+    let shadow_coef = pow((min(dist_and_depth.x, 11.0))/11.0, 1.3);
+
+    return clamp(shadow_coef, 0.0, 1.0);
+}
+
+
 struct VertexInput {
     @location(0) @interpolate(perspective) position: vec3<f32>,
 };
@@ -4346,13 +4366,6 @@ fn tv_noise(uv: vec2<f32>, time: f32) -> f32 {
     let p = uv * scale + vec2<f32>(time);
     return tv_hash(p);
 }
-
-
-fn plane_x_intersect(rd: vec4<f32>, h: f32 ) -> f32
-{
-    return h/rd.x;
-}
-
 
 // modified code from https://www.shadertoy.com/view/stGXzy
 // V-------------------------------------------------------V
@@ -4406,22 +4419,6 @@ fn w_shift_effect(uv: vec2<f32>, shift_coef: f32, intensity: f32) -> f32
 //^---------------------------------------------------------^
 
 
-fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<function,Intersections>) -> f32 {
-
-    (*intrs).intr_neg_size = 0u;
-    (*intrs).intr_normal_size = 0u;
-    (*intrs).intr_unbreakables_size = 0u;
-    (*intrs).intr_players = false;
-
-    
-    find_intersections(init_position, ray_direction, intrs);
-
-    let dist_and_depth: vec2<f32> = ray_march(init_position, ray_direction, 11.0, intrs);
-
-    let shadow_coef = pow((min(dist_and_depth.x, 11.0))/11.0, 1.3);
-
-    return clamp(shadow_coef, 0.0, 1.0);
-}
 
 
 
