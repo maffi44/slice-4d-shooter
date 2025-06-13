@@ -8,8 +8,8 @@ use crate::engine::render::render_data::Shape;
 use super::render_data::static_render_data::StaticRenderData;
 
 
-const MAX_BSP_TREE_DEPTH: usize = 8;
-const MIN_BSP_DIVISION_EFFICIENCY: usize = 2;
+const MAX_BSP_TREE_DEPTH: usize = 5;
+const MIN_BSP_DIVISION_EFFICIENCY: usize = 1;
 
 pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &str, static_data: &StaticRenderData) -> String
 {
@@ -53,6 +53,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &str, stat
     {
         shader += shader_pieces[0];
         shader += &generate_get_mats_function_body(&bsp_tree);
+        // shader += &generate_get_mats_function_body_simple_for_gebug();
         shader += shader_pieces[2];
     }
     else
@@ -400,7 +401,7 @@ fn generate_map_function_body(bsp_tree: &Box<BSPElement>) -> String
 }
 
 
-fn generate_get_mats_function_body_simple_for_gebug(static_data: &StaticRenderData) -> String
+fn generate_get_mats_function_body_simple_for_gebug() -> String
 {
     let mut func_body = String::new();
 
@@ -2682,26 +2683,26 @@ impl Object
                     ObjectType::Normal => {
                         let x_bounds = {
                             Vec2::new(
-                                shape.pos[0] - (shape.size[0] + shape.roundness),
-                                shape.pos[0] + (shape.size[0] + shape.roundness),
+                                shape.pos[0] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[0] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
                         let y_bounds = {
                             Vec2::new(
-                                shape.pos[1] - (shape.size[1] + shape.roundness),
-                                shape.pos[1] + (shape.size[1] + shape.roundness),
+                                shape.pos[1] - (shape.size[1] + shape.roundness + stickiness*PI),
+                                shape.pos[1] + (shape.size[1] + shape.roundness + stickiness*PI),
                             )
                         };
                         let z_bounds = {
                             Vec2::new(
-                                shape.pos[2] - (shape.size[2] + shape.roundness),
-                                shape.pos[2] + (shape.size[2] + shape.roundness),
+                                shape.pos[2] - (shape.size[2] + shape.roundness + stickiness*PI),
+                                shape.pos[2] + (shape.size[2] + shape.roundness + stickiness*PI),
                             )
                         };
                         let w_bounds = {
                             Vec2::new(
-                                shape.pos[3] - (shape.size[3] + shape.roundness),
-                                shape.pos[3] + (shape.size[3] + shape.roundness),
+                                shape.pos[3] - (shape.size[3] + shape.roundness + stickiness*PI),
+                                shape.pos[3] + (shape.size[3] + shape.roundness + stickiness*PI),
                             )
                         };
 
@@ -2738,26 +2739,26 @@ impl Object
                     ObjectType::Negative => {
                         let x_bounds = {
                             Vec2::new(
-                                shape.pos[0] - (shape.size[0] + shape.roundness),
-                                shape.pos[0] + (shape.size[0] + shape.roundness),
+                                shape.pos[0] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[0] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
                         let y_bounds = {
                             Vec2::new(
-                                shape.pos[1] - (shape.size[1] + shape.roundness),
-                                shape.pos[1] + (shape.size[1] + shape.roundness),
+                                shape.pos[1] - (shape.size[1] + shape.roundness + stickiness*PI),
+                                shape.pos[1] + (shape.size[1] + shape.roundness + stickiness*PI),
                             )
                         };
                         let z_bounds = {
                             Vec2::new(
-                                shape.pos[2] - (shape.size[2] + shape.roundness),
-                                shape.pos[2] + (shape.size[2] + shape.roundness),
+                                shape.pos[2] - (shape.size[2] + shape.roundness + stickiness*PI),
+                                shape.pos[2] + (shape.size[2] + shape.roundness + stickiness*PI),
                             )
                         };
                         let w_bounds = {
                             Vec2::new(
-                                shape.pos[3] - (shape.size[3] + shape.roundness),
-                                shape.pos[3] + (shape.size[3] + shape.roundness),
+                                shape.pos[3] - (shape.size[3] + shape.roundness + stickiness*PI),
+                                shape.pos[3] + (shape.size[3] + shape.roundness + stickiness*PI),
                             )
                         };
 
@@ -2826,26 +2827,26 @@ impl Object
                     ObjectType::Normal => {
                         let x_bounds = {
                             Vec2::new(
-                                shape.pos[0] - (shape.size[0] + shape.roundness),
-                                shape.pos[0] + (shape.size[0] + shape.roundness),
+                                shape.pos[0] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[0] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
                         let y_bounds = {
                             Vec2::new(
-                                shape.pos[1] - (shape.size[0] + shape.roundness),
-                                shape.pos[1] + (shape.size[0] + shape.roundness),
+                                shape.pos[1] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[1] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
                         let z_bounds = {
                             Vec2::new(
-                                shape.pos[2] - (shape.size[0] + shape.roundness),
-                                shape.pos[2] + (shape.size[0] + shape.roundness),
+                                shape.pos[2] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[2] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
                         let w_bounds = {
                             Vec2::new(
-                                shape.pos[3] - (shape.size[0] + shape.roundness),
-                                shape.pos[3] + (shape.size[0] + shape.roundness),
+                                shape.pos[3] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[3] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
 
@@ -2882,26 +2883,26 @@ impl Object
                     ObjectType::Negative => {
                         let x_bounds = {
                             Vec2::new(
-                                shape.pos[0] - (shape.size[0] + shape.roundness),
-                                shape.pos[0] + (shape.size[0] + shape.roundness),
+                                shape.pos[0] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[0] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
                         let y_bounds = {
                             Vec2::new(
-                                shape.pos[1] - (shape.size[0] + shape.roundness),
-                                shape.pos[1] + (shape.size[0] + shape.roundness),
+                                shape.pos[1] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[1] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
                         let z_bounds = {
                             Vec2::new(
-                                shape.pos[2] - (shape.size[0] + shape.roundness),
-                                shape.pos[2] + (shape.size[0] + shape.roundness),
+                                shape.pos[2] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[2] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
                         let w_bounds = {
                             Vec2::new(
-                                shape.pos[3] - (shape.size[0] + shape.roundness),
-                                shape.pos[3] + (shape.size[0] + shape.roundness),
+                                shape.pos[3] - (shape.size[0] + shape.roundness + stickiness*PI),
+                                shape.pos[3] + (shape.size[0] + shape.roundness + stickiness*PI),
                             )
                         };
 
@@ -2947,26 +2948,26 @@ impl Object
 
                         let x_bounds = {
                             Vec2::new(
-                                shape.pos[0] - (size[0]),
-                                shape.pos[0] + (size[0]),
+                                shape.pos[0] - (size[0] + stickiness*PI),
+                                shape.pos[0] + (size[0] + stickiness*PI),
                             )
                         };
                         let y_bounds = {
                             Vec2::new(
-                                shape.pos[1] - (size[1]),
-                                shape.pos[1] + (size[1]),
+                                shape.pos[1] - (size[1] + stickiness*PI),
+                                shape.pos[1] + (size[1] + stickiness*PI),
                             )
                         };
                         let z_bounds = {
                             Vec2::new(
-                                shape.pos[2] - (size[1]),
-                                shape.pos[2] + (size[1]),
+                                shape.pos[2] - (size[1] + stickiness*PI),
+                                shape.pos[2] + (size[1] + stickiness*PI),
                             )
                         };
                         let w_bounds = {
                             Vec2::new(
-                                shape.pos[3] - (size[1]),
-                                shape.pos[3] + (size[1]),
+                                shape.pos[3] - (size[1] + stickiness*PI),
+                                shape.pos[3] + (size[1] + stickiness*PI),
                             )
                         };
 
@@ -3007,26 +3008,26 @@ impl Object
 
                         let x_bounds = {
                             Vec2::new(
-                                shape.pos[0] - (size[0]),
-                                shape.pos[0] + (size[0]),
+                                shape.pos[0] - (size[0] + stickiness*PI),
+                                shape.pos[0] + (size[0] + stickiness*PI),
                             )
                         };
                         let y_bounds = {
                             Vec2::new(
-                                shape.pos[1] - (size[1]),
-                                shape.pos[1] + (size[1]),
+                                shape.pos[1] - (size[1] + stickiness*PI),
+                                shape.pos[1] + (size[1] + stickiness*PI),
                             )
                         };
                         let z_bounds = {
                             Vec2::new(
-                                shape.pos[2] - (size[1]),
-                                shape.pos[2] + (size[1]),
+                                shape.pos[2] - (size[1] + stickiness*PI),
+                                shape.pos[2] + (size[1] + stickiness*PI),
                             )
                         };
                         let w_bounds = {
                             Vec2::new(
-                                shape.pos[3] - (size[1]),
-                                shape.pos[3] + (size[1]),
+                                shape.pos[3] - (size[1] + stickiness*PI),
+                                shape.pos[3] + (size[1] + stickiness*PI),
                             )
                         };
 
