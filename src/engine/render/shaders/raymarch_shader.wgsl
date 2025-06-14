@@ -2282,7 +2282,7 @@ fn get_color_and_light_from_mats(
     light += static_data.sun_color  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 3.0;// * aocc;
     light += static_data.sky_color    * sky_dif   * 0.3 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
     light += static_data.frenel_color * frenel    * 0.3 * (0.6+0.4*sun_dif_1);// * aocc;
-    light += neon_wireframe_color * wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
+    light += neon_wireframe_color * wireframe_dif*40.0 * (0.08+0.5*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
 
     lightness = wireframe_dif*30.0;
 
@@ -2327,7 +2327,7 @@ fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<fun
 
     let dist_and_depth: vec2<f32> = ray_march(init_position, ray_direction, 11.0, intrs);
 
-    let shadow_coef = pow((min(dist_and_depth.x, 11.0))/11.0, 1.3);
+    let shadow_coef = pow((min(dist_and_depth.x, 11.0))/11.0, 1.6);
 
     return clamp(shadow_coef, 0.0, 1.0);
 }
