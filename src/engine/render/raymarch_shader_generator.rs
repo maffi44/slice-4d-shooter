@@ -9,7 +9,7 @@ use super::render_data::static_render_data::StaticRenderData;
 
 
 const MAX_BSP_TREE_DEPTH: usize = 5;
-const MIN_BSP_DIVISION_EFFICIENCY: usize = 1;
+const MIN_BSP_DIVISION_EFFICIENCY: usize = 0;
 
 pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &str, static_data: &StaticRenderData) -> String
 {

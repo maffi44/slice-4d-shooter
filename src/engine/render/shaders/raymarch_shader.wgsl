@@ -1992,15 +1992,16 @@ fn ray_march(
                 break;
             }
         }
-
-        var d: f32  = map(ray_origin + ray_direction * total_distance, (*intrs).intr_players);
-        total_distance += d;
-
+        
         if total_distance > max_dist
         {
             return vec2<f32>(total_distance, f32(i));
         }
 
+        var d: f32  = map(ray_origin + ray_direction * total_distance, (*intrs).intr_players);
+        total_distance += d;
+
+        
         if (d < MIN_DIST) {
 
             return vec2<f32>(total_distance, f32(i));
