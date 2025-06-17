@@ -1074,10 +1074,10 @@ impl Renderer {
             self.min_time = self.min_time.min(current_frame_time);
             self.max_time = self.max_time.max(current_frame_time);
 
-            // println!(
-            //     "frame render duration: {}",
-            //     current_frame_time,
-            // );
+            println!(
+                "DT: {}",
+                current_frame_time,
+            );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());

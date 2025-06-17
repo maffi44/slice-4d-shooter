@@ -1889,7 +1889,7 @@ fn ray_march(
     var i: i32 = 0;
     for (; i < MAX_STEPS; i++)
     {
-        while true
+        while total_distance < max_dist
         {
             // cheking if ray is out of area of positive (not negative) objects
             // in this case go to next closest positve object or finish ray marching 
@@ -1902,7 +1902,7 @@ fn ray_march(
                 {
                     closest_normal_intrs = (*intrs).intr_normal[closest_normal_intrs_index];
     
-                    total_distance = closest_normal_intrs.x;
+                    total_distance = max(total_distance, closest_normal_intrs.x);
                 }
                 else
                 {
@@ -1924,19 +1924,42 @@ fn ray_march(
                     closest_unbreakables_intrs = vec2(MAX_DIST*2.0);
                 }
             }
+
+            // finding closet area of negative objects
+            while total_distance > closest_neg_intrs.y
+            {
+                closest_neg_intrs_index += 1u;
+
+                if closest_neg_intrs_index < (*intrs).intr_neg_size
+                {
+                    closest_neg_intrs = (*intrs).intr_neg[closest_neg_intrs_index];
+                }
+                else
+                {
+                    closest_neg_intrs = vec2(MAX_DIST*2.0);
+                }
+            }
             
             
             // cheking if ray is entered in area of negative objects
             // skip whole nagtive area if ray is not collided
-            // by area of unbreakable objects. if ray is not entered
-            // nagtive area stop the loop - it's means that ray is inside 
+            // by area of unbreakable objects. 
+            // if ray is not entered nagtive area - it's means that ray is inside 
             // area of positive objects
             if total_distance > closest_neg_intrs.x && total_distance < closest_unbreakables_intrs.x
             {
-                if total_distance > closest_neg_intrs.y
+                if closest_unbreakables_intrs.x < closest_neg_intrs.y
                 {
+                    total_distance = closest_unbreakables_intrs.x;
+
+                    break;
+                }
+                else
+                {
+                    total_distance = closest_neg_intrs.y;
+
                     closest_neg_intrs_index += 1u;
-    
+
                     if closest_neg_intrs_index < (*intrs).intr_neg_size
                     {
                         closest_neg_intrs = (*intrs).intr_neg[closest_neg_intrs_index];
@@ -1945,46 +1968,8 @@ fn ray_march(
                     {
                         closest_neg_intrs = vec2(MAX_DIST*2.0);
                     }
-    
+
                     continue;
-                }
-                else
-                {
-                    if closest_unbreakables_intrs.x < closest_neg_intrs.y
-                    {
-                        total_distance = closest_unbreakables_intrs.x;
-    
-                        while total_distance > closest_normal_intrs.y
-                        {
-                            closest_normal_intrs_index += 1u;
-    
-                            if closest_normal_intrs_index < (*intrs).intr_normal_size
-                            {
-                                closest_normal_intrs = (*intrs).intr_normal[closest_normal_intrs_index];
-                            }
-                            else
-                            {
-                                closest_normal_intrs = vec2(MAX_DIST*2.0);
-                            }
-                        }
-    
-                        break;
-                    }
-                    else
-                    {
-                        total_distance = closest_neg_intrs.y;
-    
-                        closest_neg_intrs_index += 1u;
-    
-                        if closest_neg_intrs_index < (*intrs).intr_neg_size
-                        {
-                            closest_neg_intrs = (*intrs).intr_neg[closest_neg_intrs_index];
-                        }
-                        else
-                        {
-                            closest_neg_intrs = vec2(MAX_DIST*2.0);
-                        }
-                    }
                 }
             }
             else
