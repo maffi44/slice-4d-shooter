@@ -2454,7 +2454,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     color = mix(color, sc_e_c.rgb, sc_e_c.a*0.55);
 
     // color correction
-    color = pow(color, vec3(0.4545));
+    color = pow(color, vec3(0.4645));
 
     // for debug
     // color = mix(color, vec3(1.0, 0.0, 0.0), dist_and_depth.y / f32(MAX_STEPS));

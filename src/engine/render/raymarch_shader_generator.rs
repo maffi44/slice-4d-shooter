@@ -8,7 +8,7 @@ use crate::engine::render::render_data::Shape;
 use super::render_data::static_render_data::StaticRenderData;
 
 
-const MAX_BSP_TREE_DEPTH: usize = 5;
+const MAX_BSP_TREE_DEPTH: usize = 4;
 const MIN_BSP_DIVISION_EFFICIENCY: usize = 0;
 
 pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &str, static_data: &StaticRenderData) -> String
@@ -53,7 +53,6 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &str, stat
     {
         shader += shader_pieces[0];
         shader += &generate_get_mats_function_body(&bsp_tree);
-        // shader += &generate_get_mats_function_body_simple_for_gebug();
         shader += shader_pieces[2];
     }
     else
