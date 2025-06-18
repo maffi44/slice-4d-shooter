@@ -1074,10 +1074,10 @@ impl Renderer {
             self.min_time = self.min_time.min(current_frame_time);
             self.max_time = self.max_time.max(current_frame_time);
 
-            println!(
-                "DT: {}",
-                current_frame_time,
-            );
+            // println!(
+            //     "DT: {}",
+            //     current_frame_time,
+            // );
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());
@@ -1202,14 +1202,16 @@ fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue, sky_box_name: &
                 ]
             }
             "blue_stars" => {
-                [
-                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_right1.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_left2.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_top3.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_bottom4.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_front5.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_back6.png").as_slice(),
-                ]
+                
+                unimplemented!()
+                // [
+                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_right1.png").as_slice(),
+                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_left2.png").as_slice(),
+                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_top3.png").as_slice(),
+                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_bottom4.png").as_slice(),
+                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_front5.png").as_slice(),
+                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_back6.png").as_slice(),
+                // ]
             }
             _ => panic!("sky box with this name is not exist")
         }

@@ -108,7 +108,7 @@ pub struct Flag
 
 impl Flag
 {
-    pub fn new(flag_owned_by_team: Team, transfrom_of_the_base: Transform) -> Self
+    pub fn new(flag_owned_by_team: Team, transform_of_the_base: Transform) -> Self
     {
         let target_flag_swing_position = get_random_vec4(
             -FLAG_SWING_RANGE,
@@ -177,11 +177,11 @@ impl Flag
         ];
 
         Flag {
-            transform: transfrom_of_the_base,
+            transform: transform_of_the_base,
             target_flag_swing_position,
             current_flag_swing_position: Vec4::ZERO,
-            target_position: transfrom_of_the_base.get_position(),
-            transfrom_of_the_base: transfrom_of_the_base,
+            target_position: transform_of_the_base.get_position(),
+            transfrom_of_the_base: transform_of_the_base,
             id: None,
             status:FlagStatus::OnTheBase,
             owned_by_team: flag_owned_by_team,

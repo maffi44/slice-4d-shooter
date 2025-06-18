@@ -9,6 +9,7 @@ pub mod players_death_explosion;
 pub mod machinegun_shot;
 pub mod shooting_impact;
 pub mod flag;
+pub mod flag_base;
 pub mod session_controller;
 pub mod move_w_bonus;
 pub mod hole;
@@ -22,7 +23,7 @@ pub mod observer;
 use std::fmt::Display;
 
 use crate::{
-    engine::{
+    actor::flag_base::{FlagBase, FlagBaseMessage}, engine::{
         audio::AudioSystem,
         effects::EffectsSystem,
         engine_handle::EngineHandle,
@@ -37,8 +38,7 @@ use crate::{
         render::{camera::Camera, VisualElement},
         time::TimeSystem,
         ui::UISystem, world::level::Spawn
-    },
-    transform::Transform,
+    }, transform::Transform
 };
 
 use self::{
@@ -148,6 +148,7 @@ pub enum ActorWrapper {
     MachinegunShot(MachinegunShot),
     ShootingImpact(ShootingImpact),
     Flag(Flag),
+    FlagBase(FlagBase),
     Hole(Hole),
     MoveWBonusSpot(MoveWBonusSpot),
     SessionController(SessionController),
@@ -175,6 +176,7 @@ impl Display for ActorWrapper
             ActorWrapper::MachinegunShot(_) => "MachinegunShot",
             ActorWrapper::ShootingImpact(_) => "ShootingImpact",
             ActorWrapper::Flag(_) => "Flag",
+            ActorWrapper::FlagBase(_) => "FlagBase",
             ActorWrapper::Hole(_) => "Hole",
             ActorWrapper::MoveWBonusSpot(_) => "MoveWBonusSpot",
             ActorWrapper::SessionController(_) => "SessionController",
@@ -249,6 +251,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::Observer(actor) => {
                 actor.get_transform()
             }
+            ActorWrapper::FlagBase(actor) => {
+                actor.get_transform()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -308,6 +313,9 @@ impl Actor for ActorWrapper {
                 actor.get_mut_transform()
             }
             ActorWrapper::Observer(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::FlagBase(actor) => {
                 actor.get_mut_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -380,6 +388,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::Observer(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
+            ActorWrapper::FlagBase(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -450,6 +461,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::Observer(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
+            ActorWrapper::FlagBase(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -509,6 +523,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             }
             ActorWrapper::Observer(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::FlagBase(actor) => {
                 actor.get_physical_element()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -572,6 +589,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::Observer(actor) => {
                 actor.get_visual_element()
             }
+            ActorWrapper::FlagBase(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -631,6 +651,9 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             }
             ActorWrapper::Observer(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::FlagBase(actor) => {
                 actor.get_id()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -694,6 +717,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::Observer(actor) => {
                 actor.change_id(id, engine_handle)
             }
+            ActorWrapper::FlagBase(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -753,6 +779,9 @@ impl Actor for ActorWrapper {
                 actor.set_id(id)
             }
             ActorWrapper::Observer(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::FlagBase(actor) => {
                 actor.set_id(id)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -817,6 +846,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::Observer(actor) => {
                 actor.get_actor_as_controlled()
             }
+            ActorWrapper::FlagBase(actor) => {
+                actor.get_actor_as_controlled()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -879,6 +911,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::Observer(actor) => {
                 actor.get_actor_as_controlled_mut()
             }
+            ActorWrapper::FlagBase(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -927,6 +962,7 @@ pub enum SpecificActorMessage {
     SessionControllerMessage(SessionControllerMessage),
     MoveWBonusSpotMessage(MoveWBonusSpotMessage),
     PlayersDollMessage(PlayersDollMessage),
+    FlagBaseMessage(FlagBaseMessage),
     PlayerMessage(PlayerMessage),
     FlagMessage(FlagMessage),
     MoverW(MoverWMessage)

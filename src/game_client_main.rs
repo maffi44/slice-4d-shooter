@@ -12,6 +12,8 @@ use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, main_player::{player_input
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
+use crate::actor::flag_base::FlagBase;
+
 
 #[global_allocator]
 static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
@@ -65,6 +67,26 @@ fn main() {
                     )
                 )
             }
+        );
+
+        let red_flag_base = FlagBase::new(
+            Team::Red,
+            systems.world.level.red_flag_base
+        );
+
+        let blue_flag_base = FlagBase::new(
+            Team::Blue,
+            systems.world.level.blue_flag_base
+        );
+
+        systems.world.add_actor_to_world(
+            ActorWrapper::FlagBase(red_flag_base),
+            &mut systems.engine_handle,
+        );
+
+        systems.world.add_actor_to_world(
+            ActorWrapper::FlagBase(blue_flag_base),
+            &mut systems.engine_handle,
         );
 
         let red_flag = Flag::new(

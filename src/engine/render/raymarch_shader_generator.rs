@@ -830,160 +830,163 @@ fn generate_get_mats_function_body(bsp_tree: &Box<BSPElement>) -> String
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
         
         let shape = dyn_player_forms[i];
-        
-        var d = sd_sphere(p - shape.pos, shape.radius);
-        d = max(d, -sd_sphere(p - shape.pos, shape.radius * 0.86));
-        
-        let rotated_p = shape.rotation * (p - shape.pos);
-        d = max(d, -sd_box(
-            rotated_p,
-            vec4(
-                shape.radius * 0.18,
-                shape.radius* 1.2,
-                shape.radius* 1.2,
-                shape.radius * 1.2
-            )));
-        
-        d = max(
-            d,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0),
-                shape.radius * 0.53
-            )
-        );
 
-        if d < MIN_DIST {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            if shape.is_red.x == 1
-            {
-                output.materials[0] = static_data.red_players_mat1;
-            } else {
-                output.materials[0] = static_data.blue_players_mat1;
-            }
-            return output;
-        }
-
-        d = sd_sphere(
-                p - shape.pos,
-                shape.radius * 0.6
+        if sd_sphere(p - shape.pos, shape.radius*1.7) < 0.0
+        {
+            var d = sd_sphere(p - shape.pos, shape.radius);
+            d = max(d, -sd_sphere(p - shape.pos, shape.radius * 0.86));
+            
+            let rotated_p = shape.rotation * (p - shape.pos);
+            d = max(d, -sd_box(
+                rotated_p,
+                vec4(
+                    shape.radius * 0.18,
+                    shape.radius* 1.2,
+                    shape.radius* 1.2,
+                    shape.radius * 1.2
+                )));
+            
+            d = max(
+                d,
+                -sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0),
+                    shape.radius * 0.53
+                )
             );
-
-        let dd = sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -shape.radius/2.0, 0.0)*0.6,
-                shape.radius * 0.24
-            );
-        
-        d = max(
-            d,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0)*0.6,
-                shape.radius * 0.34
-            )
-        );
-
-        if d < MIN_DIST {
-            if dd < 0.0 {
-                output.materials_count = 2u;
-                output.material_weights[0] = 0.26;
+    
+            if d < MIN_DIST {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
                 if shape.is_red.x == 1
                 {
-                    output.materials[0] = -3;
+                    output.materials[0] = static_data.red_players_mat1;
                 } else {
-                    output.materials[0] = -4;
-                }
-                output.material_weights[1] = 0.74;
-                if shape.is_red.x == 1
-                {
-                    output.materials[1] = static_data.red_players_mat2;
-                } else {
-                    output.materials[1] = static_data.blue_players_mat2;
+                    output.materials[0] = static_data.blue_players_mat1;
                 }
                 return output;
             }
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            if shape.is_red.x == 1
-            {
-                output.materials[0] = static_data.red_players_mat2;
-            } else {
-                output.materials[0] = static_data.blue_players_mat2;
-            }
-            return output;
-        }
-
-        d = sd_sphere(
-                rotated_p - shape.weapon_offset,
-                shape.radius * 0.286,
+    
+            d = sd_sphere(
+                    p - shape.pos,
+                    shape.radius * 0.6
+                );
+    
+            let dd = sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -shape.radius/2.0, 0.0)*0.6,
+                    shape.radius * 0.24
+                );
+            
+            d = max(
+                d,
+                -sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0)*0.6,
+                    shape.radius * 0.34
+                )
             );
-
-        d = max(
-            d,
-            -sd_capsule(
-                rotated_p,
-                shape.weapon_offset,
-                shape.weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    shape.radius* 0.49,
-                    0.0
-                ),
-                shape.radius* 0.18
-            )
-        );
-
-        if d < MIN_DIST {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            if shape.is_red.x == 1
-            {
-                output.materials[0] = static_data.red_players_mat1;
-            } else {
-                output.materials[0] = static_data.blue_players_mat1;
+    
+            if d < MIN_DIST {
+                if dd < 0.0 {
+                    output.materials_count = 2u;
+                    output.material_weights[0] = 0.26;
+                    if shape.is_red.x == 1
+                    {
+                        output.materials[0] = -3;
+                    } else {
+                        output.materials[0] = -4;
+                    }
+                    output.material_weights[1] = 0.74;
+                    if shape.is_red.x == 1
+                    {
+                        output.materials[1] = static_data.red_players_mat2;
+                    } else {
+                        output.materials[1] = static_data.blue_players_mat2;
+                    }
+                    return output;
+                }
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                if shape.is_red.x == 1
+                {
+                    output.materials[0] = static_data.red_players_mat2;
+                } else {
+                    output.materials[0] = static_data.blue_players_mat2;
+                }
+                return output;
             }
-            return output;
-        }
-
-        d = sd_capsule(
-                rotated_p,
-                shape.weapon_offset,
-                shape.weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    shape.radius* 0.43,
-                    0.0
-                ),
-                shape.radius* 0.1
+    
+            d = sd_sphere(
+                    rotated_p - shape.weapon_offset,
+                    shape.radius * 0.286,
+                );
+    
+            d = max(
+                d,
+                -sd_capsule(
+                    rotated_p,
+                    shape.weapon_offset,
+                    shape.weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        shape.radius* 0.49,
+                        0.0
+                    ),
+                    shape.radius* 0.18
+                )
             );
-
-        d = max(
-            d,
-            -sd_capsule(
-                rotated_p,
-                shape.weapon_offset,
-                shape.weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    shape.radius* 0.65,
-                    0.0
-                ),
-                shape.radius* 0.052
-            )
-        );
-
-        if d < MIN_DIST {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            if shape.is_red.x == 1
-            {
-                output.materials[0] = static_data.red_players_mat2;
-            } else {
-                output.materials[0] = static_data.blue_players_mat2;
+    
+            if d < MIN_DIST {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                if shape.is_red.x == 1
+                {
+                    output.materials[0] = static_data.red_players_mat1;
+                } else {
+                    output.materials[0] = static_data.blue_players_mat1;
+                }
+                return output;
             }
-            return output;
+    
+            d = sd_capsule(
+                    rotated_p,
+                    shape.weapon_offset,
+                    shape.weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        shape.radius* 0.43,
+                        0.0
+                    ),
+                    shape.radius* 0.1
+                );
+    
+            d = max(
+                d,
+                -sd_capsule(
+                    rotated_p,
+                    shape.weapon_offset,
+                    shape.weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        shape.radius* 0.65,
+                        0.0
+                    ),
+                    shape.radius* 0.052
+                )
+            );
+    
+            if d < MIN_DIST {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                if shape.is_red.x == 1
+                {
+                    output.materials[0] = static_data.red_players_mat2;
+                } else {
+                    output.materials[0] = static_data.blue_players_mat2;
+                }
+                return output;
+            }
         }
     }\n";
 

@@ -1144,6 +1144,8 @@ impl Actor for PlayerDoll {
                             _ => {}
                         }
                     }
+
+                    SpecificActorMessage::FlagBaseMessage(_) => {}
                     
                     SpecificActorMessage::SessionControllerMessage(message) =>
                     {

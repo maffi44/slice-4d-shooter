@@ -17,14 +17,7 @@ use crate::{
     actor::{
         device::{
             holegun::HoleGun, shotgun::Shotgun, Device, DeviceType
-        },
-        players_doll::PlayerDollInputState,
-        Actor,
-        ActorID,
-        CommonActorsMessage,
-        Message,
-        MessageType,
-        SpecificActorMessage
+        }, flag_base::FlagBaseMessage, players_doll::PlayerDollInputState, Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage
     },
     engine::{
         audio::{
@@ -641,8 +634,6 @@ impl Default for PlayerScreenEffects
 }
 
 
-
-
 pub struct WScanner
 {
     pub w_scanner_enable: bool,
@@ -1159,23 +1150,7 @@ impl Actor for MainPlayer {
                                             );   
                                         }
 
-                                        FlagStatus::OnTheBase =>
-                                        {
-                                            engine_handle.send_command(
-                                                Command {
-                                                    sender: self.get_id().expect("Player have not ActorID"),
-                                                    command_type: CommandType::NetCommand(
-                                                        NetCommand::SendMessageToServer(
-                                                            NetMessageToServer::TryToGetScore(
-                                                                time_system.get_server_time()
-                                                            )
-                                                        )
-                                                    )
-                                                }
-                                            ); 
-                                        }
-
-                                        FlagStatus::Captured(_) => {}
+                                        _ => {}
                                     }
                                 }
                                 else
@@ -1196,6 +1171,30 @@ impl Actor for MainPlayer {
                             }
 
                             _ => {}
+                        }
+                    }
+
+                    SpecificActorMessage::FlagBaseMessage(message) =>
+                    {
+                        match message {
+                            FlagBaseMessage::YouInteractingWithFlagBase(team_of_base) =>
+                            {
+                                if team_of_base == self.inner_state.team
+                                {
+                                    engine_handle.send_command(
+                                        Command {
+                                            sender: self.get_id().expect("Player have not ActorID"),
+                                            command_type: CommandType::NetCommand(
+                                                NetCommand::SendMessageToServer(
+                                                    NetMessageToServer::TryToGetScore(
+                                                        time_system.get_server_time()
+                                                    )
+                                                )
+                                            )
+                                        }
+                                    );
+                                }
+                            }
                         }
                     }
 

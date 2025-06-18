@@ -15,6 +15,8 @@ use engine::input::ActionsFrameState;
 use rand::{rngs::ThreadRng, Rng};
 use winit::event::{ElementState, KeyEvent};
 
+use crate::actor::flag_base::FlagBase;
+
 
 #[global_allocator]
 static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
@@ -75,6 +77,26 @@ fn spawn_actors(
                 )
             )
         }
+    );
+
+    let red_flag_base = FlagBase::new(
+        Team::Red,
+        systems.world.level.red_flag_base
+    );
+
+    let blue_flag_base = FlagBase::new(
+        Team::Blue,
+        systems.world.level.blue_flag_base
+    );
+
+    systems.world.add_actor_to_world(
+        ActorWrapper::FlagBase(red_flag_base),
+        &mut systems.engine_handle,
+    );
+
+    systems.world.add_actor_to_world(
+        ActorWrapper::FlagBase(blue_flag_base),
+        &mut systems.engine_handle,
     );
 
     let red_flag = Flag::new(

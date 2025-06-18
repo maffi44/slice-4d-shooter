@@ -1664,7 +1664,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(8, 0.5, 0, 12.5),
                 rd,
-                vec4<f32>(4.780014, 0.32001424, 17.580013, 10.280014)
+                vec4<f32>(4.8733525, 0.41335237, 17.673351, 10.373352)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr, intrs);
@@ -2224,7 +2224,7 @@ d = min(d, sd_box(p - vec4<f32>(4.87, 5, 0, 10), vec4<f32>(7.8, 0.2, 2.2, 10)) -
 d = min(d, sd_box(p - vec4<f32>(14.2, 5.3, 0, 2), vec4<f32>(1.1, 0.8, 12, 2)) - 0.5);
 d = min(d, sd_box(p - vec4<f32>(4.5, 3.79, 7.2, 0.8), vec4<f32>(3.2, 0.2, 3.3, 0.8)) - 0.1);
 d = smin(d, sd_box(p - vec4<f32>(8, 2.5, 10, 0), vec4<f32>(9.2, 5.2, 0.4, 15)) - 0.6, 0.15);
-d = max(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 12.5), vec4<f32>(4.5, 0.04, 17.3, 10)) - 0.45));
+d = max(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 12.5), vec4<f32>(4.5, 0.04, 17.3, 10)) - 0.6));
 d = max(d, -(sd_box(p - vec4<f32>(14.2, 5.3, 0, 2), vec4<f32>(0.65, 0.4, 14, 0.4)) - 0.4));
 d = max(d, -(sd_box(p - vec4<f32>(3.5, 5, 10, 15), vec4<f32>(6.2, 0.01, 2, 15)) - 0.9));
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
@@ -2278,7 +2278,7 @@ d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09)
 }}}}
 else
 {if p.z > -22.285 {
-if p.x > 2.075 {
+if p.x > 2 {
 if p.x > 19.02124 {
 d = min(d, sd_box(p - vec4<f32>(22.8, 1.4, -13.9, 6.2), vec4<f32>(0.001, 0.001, 3.9, 1.5)) - 1.7);
 d = min(d, sd_box(p - vec4<f32>(30, 0, -6.7, 4.2), vec4<f32>(2.8, 1.4, 2.8, 2.2)) - 0.35);
@@ -2304,7 +2304,7 @@ d = min(d, sd_box(p - vec4<f32>(4.87, 5, 0, 10), vec4<f32>(7.8, 0.2, 2.2, 10)) -
 d = min(d, sd_box(p - vec4<f32>(14.2, 5.3, 0, 2), vec4<f32>(1.1, 0.8, 12, 2)) - 0.5);
 d = min(d, sd_box(p - vec4<f32>(4.5, 3.79, -7.2, 0.8), vec4<f32>(3.2, 0.2, 3.3, 0.8)) - 0.1);
 d = smin(d, sd_box(p - vec4<f32>(8, 2.5, -10, 0), vec4<f32>(9.2, 5.2, 0.4, 15)) - 0.6, 0.15);
-d = max(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 12.5), vec4<f32>(4.5, 0.04, 17.3, 10)) - 0.45));
+d = max(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 12.5), vec4<f32>(4.5, 0.04, 17.3, 10)) - 0.6));
 d = max(d, -(sd_box(p - vec4<f32>(14.2, 5.3, 0, 2), vec4<f32>(0.65, 0.4, 14, 0.4)) - 0.4));
 d = max(d, -(sd_box(p - vec4<f32>(3.5, 5, -10, 15), vec4<f32>(6.2, 0.01, 2, 15)) - 0.9));
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
@@ -2558,6 +2558,7 @@ fn get_mats(
     ray_dir: vec4<f32>,
     dist: f32,
 ) -> OutputMaterials {
+
     var output: OutputMaterials;
 
     if dist > MAX_DIST-MIN_DIST {
@@ -2575,160 +2576,163 @@ fn get_mats(
     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
         
         let shape = dyn_player_forms[i];
-        
-        var d = sd_sphere(p - shape.pos, shape.radius);
-        d = max(d, -sd_sphere(p - shape.pos, shape.radius * 0.86));
-        
-        let rotated_p = shape.rotation * (p - shape.pos);
-        d = max(d, -sd_box(
-            rotated_p,
-            vec4(
-                shape.radius * 0.18,
-                shape.radius* 1.2,
-                shape.radius* 1.2,
-                shape.radius * 1.2
-            )));
-        
-        d = max(
-            d,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0),
-                shape.radius * 0.53
-            )
-        );
 
-        if d < MIN_DIST {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            if shape.is_red.x == 1
-            {
-                output.materials[0] = static_data.red_players_mat1;
-            } else {
-                output.materials[0] = static_data.blue_players_mat1;
-            }
-            return output;
-        }
-
-        d = sd_sphere(
-                p - shape.pos,
-                shape.radius * 0.6
+        if sd_sphere(p - shape.pos, shape.radius*1.7) < 0.0
+        {
+            var d = sd_sphere(p - shape.pos, shape.radius);
+            d = max(d, -sd_sphere(p - shape.pos, shape.radius * 0.86));
+            
+            let rotated_p = shape.rotation * (p - shape.pos);
+            d = max(d, -sd_box(
+                rotated_p,
+                vec4(
+                    shape.radius * 0.18,
+                    shape.radius* 1.2,
+                    shape.radius* 1.2,
+                    shape.radius * 1.2
+                )));
+            
+            d = max(
+                d,
+                -sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0),
+                    shape.radius * 0.53
+                )
             );
-
-        let dd = sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -shape.radius/2.0, 0.0)*0.6,
-                shape.radius * 0.24
-            );
-        
-        d = max(
-            d,
-            -sd_sphere(
-                rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0)*0.6,
-                shape.radius * 0.34
-            )
-        );
-
-        if d < MIN_DIST {
-            if dd < 0.0 {
-                output.materials_count = 2u;
-                output.material_weights[0] = 0.26;
+    
+            if d < MIN_DIST {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
                 if shape.is_red.x == 1
                 {
-                    output.materials[0] = -3;
+                    output.materials[0] = static_data.red_players_mat1;
                 } else {
-                    output.materials[0] = -4;
-                }
-                output.material_weights[1] = 0.74;
-                if shape.is_red.x == 1
-                {
-                    output.materials[1] = static_data.red_players_mat2;
-                } else {
-                    output.materials[1] = static_data.blue_players_mat2;
+                    output.materials[0] = static_data.blue_players_mat1;
                 }
                 return output;
             }
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            if shape.is_red.x == 1
-            {
-                output.materials[0] = static_data.red_players_mat2;
-            } else {
-                output.materials[0] = static_data.blue_players_mat2;
-            }
-            return output;
-        }
-
-        d = sd_sphere(
-                rotated_p - shape.weapon_offset,
-                shape.radius * 0.286,
+    
+            d = sd_sphere(
+                    p - shape.pos,
+                    shape.radius * 0.6
+                );
+    
+            let dd = sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -shape.radius/2.0, 0.0)*0.6,
+                    shape.radius * 0.24
+                );
+            
+            d = max(
+                d,
+                -sd_sphere(
+                    rotated_p - vec4(0.0, 0.0, -shape.radius, 0.0)*0.6,
+                    shape.radius * 0.34
+                )
             );
-
-        d = max(
-            d,
-            -sd_capsule(
-                rotated_p,
-                shape.weapon_offset,
-                shape.weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    shape.radius* 0.49,
-                    0.0
-                ),
-                shape.radius* 0.18
-            )
-        );
-
-        if d < MIN_DIST {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            if shape.is_red.x == 1
-            {
-                output.materials[0] = static_data.red_players_mat1;
-            } else {
-                output.materials[0] = static_data.blue_players_mat1;
+    
+            if d < MIN_DIST {
+                if dd < 0.0 {
+                    output.materials_count = 2u;
+                    output.material_weights[0] = 0.26;
+                    if shape.is_red.x == 1
+                    {
+                        output.materials[0] = -3;
+                    } else {
+                        output.materials[0] = -4;
+                    }
+                    output.material_weights[1] = 0.74;
+                    if shape.is_red.x == 1
+                    {
+                        output.materials[1] = static_data.red_players_mat2;
+                    } else {
+                        output.materials[1] = static_data.blue_players_mat2;
+                    }
+                    return output;
+                }
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                if shape.is_red.x == 1
+                {
+                    output.materials[0] = static_data.red_players_mat2;
+                } else {
+                    output.materials[0] = static_data.blue_players_mat2;
+                }
+                return output;
             }
-            return output;
-        }
-
-        d = sd_capsule(
-                rotated_p,
-                shape.weapon_offset,
-                shape.weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    shape.radius* 0.43,
-                    0.0
-                ),
-                shape.radius* 0.1
+    
+            d = sd_sphere(
+                    rotated_p - shape.weapon_offset,
+                    shape.radius * 0.286,
+                );
+    
+            d = max(
+                d,
+                -sd_capsule(
+                    rotated_p,
+                    shape.weapon_offset,
+                    shape.weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        shape.radius* 0.49,
+                        0.0
+                    ),
+                    shape.radius* 0.18
+                )
             );
-
-        d = max(
-            d,
-            -sd_capsule(
-                rotated_p,
-                shape.weapon_offset,
-                shape.weapon_offset -
-                vec4(
-                    0.0,
-                    0.0,
-                    shape.radius* 0.65,
-                    0.0
-                ),
-                shape.radius* 0.052
-            )
-        );
-
-        if d < MIN_DIST {
-            output.materials_count = 1u;
-            output.material_weights[0] = 1.0;
-            if shape.is_red.x == 1
-            {
-                output.materials[0] = static_data.red_players_mat2;
-            } else {
-                output.materials[0] = static_data.blue_players_mat2;
+    
+            if d < MIN_DIST {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                if shape.is_red.x == 1
+                {
+                    output.materials[0] = static_data.red_players_mat1;
+                } else {
+                    output.materials[0] = static_data.blue_players_mat1;
+                }
+                return output;
             }
-            return output;
+    
+            d = sd_capsule(
+                    rotated_p,
+                    shape.weapon_offset,
+                    shape.weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        shape.radius* 0.43,
+                        0.0
+                    ),
+                    shape.radius* 0.1
+                );
+    
+            d = max(
+                d,
+                -sd_capsule(
+                    rotated_p,
+                    shape.weapon_offset,
+                    shape.weapon_offset -
+                    vec4(
+                        0.0,
+                        0.0,
+                        shape.radius* 0.65,
+                        0.0
+                    ),
+                    shape.radius* 0.052
+                )
+            );
+    
+            if d < MIN_DIST {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                if shape.is_red.x == 1
+                {
+                    output.materials[0] = static_data.red_players_mat2;
+                } else {
+                    output.materials[0] = static_data.blue_players_mat2;
+                }
+                return output;
+            }
         }
     }
 var d = MAX_DIST * 2.0;
@@ -3923,7 +3927,7 @@ if dd < MIN_DIST*2.0 {
 }}}}
 else
 {if p.z > -22.285 {
-if p.x > 2.075 {
+if p.x > 2 {
 if p.x > 19.02124 {
 {
 let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);

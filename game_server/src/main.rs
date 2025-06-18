@@ -424,9 +424,9 @@ struct PlayerInfo
 }
 
 pub const MOVE_W_BONUS_RESPAWN_TIME: u128 = 30_000;
-pub const FLAG_RESPAWN_TIME: u128 = 30_000;
+pub const FLAG_RESPAWN_TIME: u128 = 3_000;
 pub const MAX_SCORE: u32 = 4;
-pub const TIME_IN_SESSION_AFTER_WIN: u128 = 15_000;
+pub const TIME_IN_SESSION_AFTER_WIN: u128 = 12_000;
 
 impl GameSessionState {
     pub fn new(config: &GameServerConfig) -> Self
@@ -436,12 +436,12 @@ impl GameSessionState {
         let blue_team = HashMap::with_capacity(config.max_players as usize);
         
         let red_flag = Flag {
-            get_previouse_status_time: 0u128,
+            get_previous_status_time: 0u128,
             status: FlagStatus::OnTheBase,
             team: Team::Red
         };
         let blue_flag = Flag {
-            get_previouse_status_time: 0u128,
+            get_previous_status_time: 0u128,
             status: FlagStatus::OnTheBase,
             team: Team::Blue
         };
@@ -528,7 +528,7 @@ impl GameSessionState {
         {
             FlagStatus::Droped(_) =>
             {
-                if current_time - self.red_flag.get_previouse_status_time
+                if current_time - self.red_flag.get_previous_status_time
                     >=
                     FLAG_RESPAWN_TIME
                 {
@@ -549,7 +549,7 @@ impl GameSessionState {
         {
             FlagStatus::Droped(_) =>
             {
-                if current_time - self.blue_flag.get_previouse_status_time
+                if current_time - self.blue_flag.get_previous_status_time
                     >=
                     FLAG_RESPAWN_TIME
                 {
@@ -626,7 +626,7 @@ impl GameSessionState {
             Team::Red =>
             {
                 self.red_flag
-                    .get_previouse_status_time =
+                    .get_previous_status_time =
                     server_start_time.elapsed().as_millis();
                 
                 self.red_flag.status = new_status;
@@ -634,7 +634,7 @@ impl GameSessionState {
             Team::Blue =>
             {
                 self.blue_flag
-                    .get_previouse_status_time =
+                    .get_previous_status_time =
                     server_start_time.elapsed().as_millis();
                 
                 self.blue_flag.status = new_status;
@@ -816,7 +816,7 @@ impl GameSessionState {
 
 struct Flag
 {
-    get_previouse_status_time: u128,
+    get_previous_status_time: u128,
     status: FlagStatus,
     team: Team,
 }
@@ -981,10 +981,10 @@ fn init_game_session(
     }
 
     game_session_state.blue_flag.status = FlagStatus::OnTheBase;
-    game_session_state.blue_flag.get_previouse_status_time = 0u128;
+    game_session_state.blue_flag.get_previous_status_time = 0u128;
 
     game_session_state.red_flag.status = FlagStatus::OnTheBase;
-    game_session_state.red_flag.get_previouse_status_time = 0u128;
+    game_session_state.red_flag.get_previous_status_time = 0u128;
 
     game_session_state.move_w_bonus.status = BonusSpotStatus::BonusOnTheSpot;
     game_session_state.move_w_bonus.get_previouse_status_time = 0u128;
@@ -1457,7 +1457,7 @@ fn process_player_message(
 
                                     _ =>
                                     {
-                                        if time_of_attempt > game_session_state.blue_flag.get_previouse_status_time
+                                        if time_of_attempt > game_session_state.blue_flag.get_previous_status_time
                                         {
                                             game_session_state.set_new_flag_status_and_send_update_to_players(
                                                 server_start_time,
@@ -1478,7 +1478,7 @@ fn process_player_message(
 
                                     _ =>
                                     {
-                                        if time_of_attempt > game_session_state.red_flag.get_previouse_status_time
+                                        if time_of_attempt > game_session_state.red_flag.get_previous_status_time
                                         {
                                             game_session_state.set_new_flag_status_and_send_update_to_players(
                                                 server_start_time,
@@ -1518,7 +1518,7 @@ fn process_player_message(
                         {
                             Team::Red =>
                             {
-                                if time_of_attempt > game_session_state.red_flag.get_previouse_status_time
+                                if time_of_attempt > game_session_state.red_flag.get_previous_status_time
                                 {
                                     match game_session_state.red_flag.status
                                     {
@@ -1538,7 +1538,7 @@ fn process_player_message(
 
                             Team::Blue =>
                             {
-                                if time_of_attempt > game_session_state.blue_flag.get_previouse_status_time
+                                if time_of_attempt > game_session_state.blue_flag.get_previous_status_time
                                 {
                                     match game_session_state.blue_flag.status
                                     {
@@ -1583,8 +1583,7 @@ fn process_player_message(
                         {
                             Team::Red =>
                             {
-                                if time_of_attempt > game_session_state.blue_flag.get_previouse_status_time &&
-                                    time_of_attempt > game_session_state.red_flag.get_previouse_status_time
+                                if time_of_attempt > game_session_state.blue_flag.get_previous_status_time
                                 {
                                     match game_session_state.blue_flag.status
                                     {
@@ -1592,27 +1591,19 @@ fn process_player_message(
                                         {
                                             if from_player.0.as_u128() == captured_by
                                             {
-                                                match game_session_state.red_flag.status {
-                                                    FlagStatus::OnTheBase =>
-                                                    {
-                                                        game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                            server_start_time,
-                                                            Team::Blue,
-                                                            FlagStatus::OnTheBase,
-                                                            channel,
-                                                        );
+                                                game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                    server_start_time,
+                                                    Team::Blue,
+                                                    FlagStatus::OnTheBase,
+                                                    channel,
+                                                );
 
-                                                        game_session_state.add_score_for_team_and_send_upadate_for_players(
-                                                            Team::Red,
-                                                            server_start_time,
-                                                            channel,
-                                                        );
-                                                    }
-
-                                                    _ => {}
-                                                }
+                                                game_session_state.add_score_for_team_and_send_upadate_for_players(
+                                                    Team::Red,
+                                                    server_start_time,
+                                                    channel,
+                                                );
                                             }
-
                                         }
                                         _ => {}
                                     }
@@ -1621,8 +1612,7 @@ fn process_player_message(
 
                             Team::Blue =>
                             {
-                                if time_of_attempt > game_session_state.blue_flag.get_previouse_status_time &&
-                                    time_of_attempt > game_session_state.red_flag.get_previouse_status_time
+                                if time_of_attempt > game_session_state.red_flag.get_previous_status_time
                                 {
                                     match game_session_state.red_flag.status
                                     {
@@ -1630,27 +1620,19 @@ fn process_player_message(
                                         {
                                             if from_player.0.as_u128() == captured_by
                                             {
-                                                match game_session_state.blue_flag.status {
-                                                    FlagStatus::OnTheBase =>
-                                                    {
-                                                        game_session_state.set_new_flag_status_and_send_update_to_players(
-                                                            server_start_time,
-                                                            Team::Red,
-                                                            FlagStatus::OnTheBase,
-                                                            channel,
-                                                        );
+                                                game_session_state.set_new_flag_status_and_send_update_to_players(
+                                                    server_start_time,
+                                                    Team::Red,
+                                                    FlagStatus::OnTheBase,
+                                                    channel,
+                                                );
 
-                                                        game_session_state.add_score_for_team_and_send_upadate_for_players(
-                                                            Team::Blue,
-                                                            server_start_time,
-                                                            channel,
-                                                        );
-                                                    }
-
-                                                    _ => {}
-                                                }
+                                                game_session_state.add_score_for_team_and_send_upadate_for_players(
+                                                    Team::Blue,
+                                                    server_start_time,
+                                                    channel,
+                                                );
                                             }
-
                                         }
                                         _ => {}
                                     }
