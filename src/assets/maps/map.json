@@ -591,7 +591,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base side cube 2 hole",
+                "comment" : "blue base side cube 2 hole 1",
                 "transform" : {
                     "position" : {
                         "x": 10.5,
@@ -616,6 +616,36 @@
                 },
                 "roundness" : 0.2,
                 "stickiness" : false,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "blue base side cube 2 hole 2",
+                "transform" : {
+                    "position" : {
+                        "x": 8.5,
+                        "y": 3,
+                        "z": 36,
+                        "w": 5.3
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.65,
+                    "y": 1.2,
+                    "z": 3.6,
+                    "w": 2.85
+                },
+                "roundness" : 0.0,
+                "stickiness" : true,
                 "is_positive" : false
             }
         },
@@ -1703,7 +1733,7 @@
         },
         {
             "cube" : {
-                "comment" : "red base side cube 2 hole",
+                "comment" : "red base side cube 2 hole 1",
                 "transform" : {
                     "position" : {
                         "x": 10.5,
@@ -1728,6 +1758,36 @@
                 },
                 "roundness" : 0.2,
                 "stickiness" : false,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "red base side cube 2 hole 2",
+                "transform" : {
+                    "position" : {
+                        "x": 8.5,
+                        "y": 3,
+                        "z": -36,
+                        "w": 5.3
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.65,
+                    "y": 1.2,
+                    "z": 3.6,
+                    "w": 2.85
+                },
+                "roundness" : 0.0,
+                "stickiness" : true,
                 "is_positive" : false
             }
         },
