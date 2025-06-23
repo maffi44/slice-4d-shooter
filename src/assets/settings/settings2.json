@@ -1,19 +1,19 @@
 {
     "player_sphere_radius": 0.49,
 
-    "player_max_speed" : 29.0,
-    "player_max_accel" : 35.0,
+    "player_max_speed" : 37.0,
+    "player_max_accel" : 47.0,
 
-    "air_speed_mult" : 0.32,
+    "air_speed_mult" : 0.243,
 
-    "player_jump_y_speed" : 9.0,
-    "player_jump_w_speed" : 9.0,
+    "player_jump_y_speed" : 9.75,
+    "player_jump_w_speed" : 10.1,
 
     "player_jetpack_w_speed" : 0.2,
 
     "gravity_y_speed" : 30.0,
-    "gravity_w_speed" : 15.0,
-    "friction_on_air" : 0.2,
+    "gravity_w_speed" : 18.0,
+    "friction_on_air" : 0.16,
 
     "rotation_along_w_standard_method" : true,
     "shadows_enable" : false,
@@ -28,10 +28,10 @@
     
     "energy_gun_hole_size_mult" : 0.12,
     "energy_gun_add_force_mult" : 1.4, 
-    "energy_gun_damage_mult" : 0.41,
+    "energy_gun_damage_mult" : 0.51,
     "energy_gun_restoring_speed" : 14,
 
-    "machinegun_damage" : 7,
+    "machinegun_damage" : 11,
     "machinegun_add_force" : 0.4, 
     "machinegun_heat_add_on_shot" : 5.15, 
     "machinegun_cooling_speed" : 15.5

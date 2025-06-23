@@ -851,7 +851,7 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.inner_state,
                 &self.player_settings,
                 audio_system,
-                Vec4::X,
+                false,
                 delta,
             );
 

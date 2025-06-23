@@ -368,7 +368,7 @@ impl Actor for Observer {
                 &mut self.inner_state,
                 &self.player_settings,
                 audio_system,
-                Vec4::W,
+                true,
                 delta,
             );
 

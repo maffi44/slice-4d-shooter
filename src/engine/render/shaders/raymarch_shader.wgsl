@@ -565,9 +565,9 @@ fn get_individual_volume_sphere_color(sphere: SphericalArea, start_pos: vec4<f32
 
             let color_coef = abs(dot(sphere_normal, direction));
 
-            let air_perspective = clamp(1.0 - ((intr.x)/50.0),0.14,1.0);
+            let air_perspective = clamp(1.0 - ((intr.x)/50.0),0.4,1.0);
 
-            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00) * air_perspective;
+            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) * air_perspective;
         }
     }
     else

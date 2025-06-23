@@ -36,6 +36,7 @@ pub struct KinematicCollider {
     pub forces: Vec<Vec4>,
     pub is_on_y_ground: bool,
     pub is_on_w_ground: bool,
+    pub is_on_x_ground: bool,
     actor_id: Option<ActorID>,
 }
 
@@ -63,8 +64,29 @@ impl KinematicCollider {
             forces: Vec::with_capacity(10),
             is_on_y_ground: false,
             is_on_w_ground: false,
+            is_on_x_ground: false,
             actor_id: None,
         }
+    }
+
+    fn get_position_for_checking_y_bottom(&self, position: Vec4) -> Vec4
+    {
+        position - ((self.collider_radius * 0.1) * UP)
+    }
+
+    fn get_radius_for_checking_y_bottom(&self) -> f32
+    {
+        self.collider_radius * 0.95
+    }
+
+    fn get_position_for_checking_w_bottom(&self, position: Vec4) -> Vec4
+    {
+        position - ((self.collider_radius * 0.1) * W_UP)
+    }
+
+    fn get_radius_for_checking_w_bottom(&self) -> f32
+    {
+        self.collider_radius * 0.99
     }
 
     pub fn set_id(&mut self, id: ActorID)
@@ -104,6 +126,7 @@ impl KinematicCollider {
     ) {
         self.is_on_y_ground = false;
         self.is_on_w_ground = false;
+        self.is_on_x_ground = false;
 
         while let Some(force) = self.forces.pop() {
             self.current_velocity += force;
@@ -116,7 +139,6 @@ impl KinematicCollider {
         if self.is_enable {
 
             if self.wish_direction.length().is_normal() {
-                // self.wish_direction = self.wish_direction.normalize();
     
                 let current_speed_in_wishdir = self.current_velocity.dot(self.wish_direction);
     
@@ -161,7 +183,6 @@ impl KinematicCollider {
 
             //check if collider staying on the ground
             let y_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * UP);
-            let w_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * W_UP);
 
             if get_dist(
                 y_bottom_position,
@@ -172,17 +193,30 @@ impl KinematicCollider {
                 
             }
 
+            let w_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * W_UP);
+
             let dist = get_dist(
                 w_bottom_position,
                 static_objects,
                 Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
             );
 
-            // println!("dist: {}", self.collider_radius * 0.99 - dist);
-
             if dist < self.collider_radius * 0.99 {
                 self.is_on_w_ground = true;
             }
+
+            let x_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * Vec4::X);
+
+            let dist = get_dist(
+                x_bottom_position,
+                static_objects,
+                Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+            );
+
+            if dist < self.collider_radius * 0.99 {
+                self.is_on_x_ground = true;
+            }
+
 
         } else {
 
@@ -231,7 +265,7 @@ impl KinematicCollider {
         // if it is stuck inside the object.
         // It is only possible if some static object moved in the previus frame
         // (unless the kinematic collider was disabled in previous frame),
-        // and if this happaned, we will add the collision force to the kinematic collider 
+        // and if this happaned, add the collision force to the kinematic collider 
         let res = move_collider_outside(
             position,
             collider_radius,
@@ -348,8 +382,8 @@ impl KinematicCollider {
     
                         if next_normal.dot(translation) < 0.0 {
                             let (bounce, new_friction) = get_bounce_and_friction(
-                                position + probable_transltaion_dir * MIN_STEP,
-                                collider_radius,
+                                self.get_position_for_checking_y_bottom(position) + probable_transltaion_dir * MIN_STEP,
+                                self.get_radius_for_checking_y_bottom(),
                                 static_objects
                             );
 
@@ -393,8 +427,8 @@ impl KinematicCollider {
                         if prev_normal.dot(translation) < 0.0 {
 
                             let (bounce, new_friction) = get_bounce_and_friction(
-                                position - probable_transltaion_dir * MIN_STEP,
-                                collider_radius,
+                                self.get_position_for_checking_y_bottom(position) - probable_transltaion_dir * MIN_STEP,
+                                self.get_radius_for_checking_y_bottom(),
                                 static_objects
                             );
 
@@ -429,8 +463,8 @@ impl KinematicCollider {
                     } else {
 
                         let (bounce, new_friction) = get_bounce_and_friction(
-                            position,
-                            collider_radius,
+                            self.get_position_for_checking_y_bottom(position),
+                            self.get_radius_for_checking_y_bottom(),
                             static_objects
                         );
 

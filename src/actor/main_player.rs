@@ -1489,7 +1489,7 @@ impl Actor for MainPlayer {
                 &mut self.inner_state,
                 &self.player_settings,
                 audio_system,
-                W_UP,
+                true,
                 delta,
             );
 
@@ -2105,6 +2105,9 @@ pub fn process_player_primary_jump_input(
         inner_state.jumped_to_y_on_current_action = false;
 
         if inner_state.collider.is_on_y_ground {
+
+            inner_state.collider.current_velocity.y = inner_state.collider.current_velocity.y.max(0.0);
+
             inner_state.collider.add_force(UP * player_settings.jump_y_speed);
 
             inner_state.jumped_to_y_on_current_action = true;
@@ -2116,6 +2119,9 @@ pub fn process_player_primary_jump_input(
     if input.jump.is_action_pressed() {
         if !inner_state.jumped_to_y_on_current_action {
             if inner_state.collider.is_on_y_ground {
+
+                inner_state.collider.current_velocity.y = inner_state.collider.current_velocity.y.max(0.0);
+
                 inner_state.collider.add_force(UP * player_settings.jump_y_speed);
 
                 inner_state.jumped_to_y_on_current_action = true;
@@ -2133,7 +2139,7 @@ pub fn process_player_second_jump_input(
     inner_state: &mut PlayerInnerState,
     player_settings: &PlayerSettings,
     audio_system: &mut AudioSystem,
-    mut axis: Vec4,
+    jump_along_w: bool,
     delta: f32,
 )
 {
@@ -2141,13 +2147,27 @@ pub fn process_player_second_jump_input(
 
         inner_state.jumped_to_w_on_current_action = false;
 
-        if inner_state.collider.is_on_w_ground
+        if jump_along_w
         {
-            axis = axis.normalize();
+            if inner_state.collider.is_on_w_ground
+            {
+                inner_state.collider.current_velocity.w = inner_state.collider.current_velocity.w.max(0.0);
 
-            inner_state.collider.add_force(axis * player_settings.jump_w_speed);
+                inner_state.collider.add_force(W_UP * player_settings.jump_w_speed);
+    
+                inner_state.jumped_to_w_on_current_action = true;
+            }
+        }
+        else
+        {
+            if inner_state.collider.is_on_w_ground
+            {
+                inner_state.collider.current_velocity.x = inner_state.collider.current_velocity.x.max(0.0);
 
-            inner_state.jumped_to_w_on_current_action = true;
+                inner_state.collider.add_force(Vec4::X * player_settings.jump_w_speed);
+    
+                inner_state.jumped_to_w_on_current_action = true;
+            }
         }
     }
 
@@ -2155,13 +2175,27 @@ pub fn process_player_second_jump_input(
 
         if !inner_state.jumped_to_w_on_current_action {
 
-            if inner_state.collider.is_on_w_ground {
-                
-                axis = axis.normalize();
+            if jump_along_w
+            {
+                if inner_state.collider.is_on_w_ground
+                {
+                    inner_state.collider.current_velocity.w = inner_state.collider.current_velocity.w.max(0.0);
 
-                inner_state.collider.add_force(axis * player_settings.jump_w_speed);
+                    inner_state.collider.add_force(W_UP * player_settings.jump_w_speed);
+        
+                    inner_state.jumped_to_w_on_current_action = true;
+                }
+            }
+            else
+            {
+                if inner_state.collider.is_on_w_ground
+                {
+                    inner_state.collider.current_velocity.x = inner_state.collider.current_velocity.x.max(0.0);
 
-                inner_state.jumped_to_w_on_current_action = true;
+                    inner_state.collider.add_force(Vec4::X * player_settings.jump_w_speed);
+        
+                    inner_state.jumped_to_w_on_current_action = true;
+                }
             }
         }
     }

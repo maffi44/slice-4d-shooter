@@ -1,12 +1,13 @@
 workspace = { members = [ "game_server", "matchmaking_server" ] }
 [package]
 name = "web-4d-shooter"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 # author = "maffi44"
 # wasm-opt = false
 
 [dependencies]
+
 matchmaking_server = { path = "./matchmaking_server" }
 game_server = { path = "./game_server" }
 env_logger = "*"
