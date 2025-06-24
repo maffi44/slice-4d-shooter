@@ -4,7 +4,7 @@
 
     "defaults" : {
         "is_positive": true,
-        "friction": 6.5,
+        "friction": 7.2,
         "bounce_rate": 0.0,
         "visual_material": "standart",
         "roundness": 0.09,
@@ -372,7 +372,7 @@
                     "z": 100,
                     "w": 1
                 },
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "undestroyable": true,
                 "visual_material": "slick"
             }
@@ -434,7 +434,7 @@
                 },
                 "roundness" : 0.3,
                 "is_positive" : false,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : true
             }
         },
@@ -619,36 +619,6 @@
                 "is_positive" : false
             }
         },
-        {
-            "cube" : {
-                "comment" : "blue base side cube 2 hole 2",
-                "transform" : {
-                    "position" : {
-                        "x": 8.5,
-                        "y": 3,
-                        "z": 36,
-                        "w": 5.3
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.65,
-                    "y": 1.2,
-                    "z": 3.6,
-                    "w": 2.85
-                },
-                "roundness" : 0.0,
-                "stickiness" : true,
-                "is_positive" : false
-            }
-        },
 
         {
             "cube" : {
@@ -686,7 +656,7 @@
                         "x": 2.5,
                         "y": 2.5,
                         "z": 36,
-                        "w": 2.5
+                        "w": 3.5
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -701,11 +671,11 @@
                     "x": 1.4,
                     "y": 1.5,
                     "z": 1.4,
-                    "w": 1
+                    "w": 2
                 },
                 "stickiness" : true,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -735,7 +705,7 @@
                 },
                 "stickiness" : false,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -768,6 +738,35 @@
         },
         {
             "cube" : {
+                "comment" : "blue base second main cube column",
+                "transform" : {
+                    "position" : {
+                        "x": -3.54,
+                        "y": 1.6,
+                        "z": 38,
+                        "w": 4.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.3,
+                    "y": 1.6,
+                    "z": 0.5,
+                    "w": 4.5
+                },
+                "roundness" : 0.2,
+                "stickiness" : true
+            }
+        },
+        {
+            "cube" : {
                 "comment" : "blue base second main cube hole",
                 "transform" : {
                     "position" : {
@@ -793,7 +792,7 @@
                 },
                 "stickiness" : true,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -824,7 +823,7 @@
                 "stickiness" : true,
                 "is_positive" : false,
                 "roundness": 0.3,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -884,7 +883,7 @@
                     "w": 15
                 },
                 "roundness" : 0.08,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : true,
                 "visual_material" : "slick" 
             }
@@ -915,7 +914,7 @@
                     "w": 15
                 },
                 "roundness" : 0.08,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : false,
                 "visual_material" : "slick" 
             }
@@ -946,7 +945,7 @@
                     "w": 1
                 },
                 "roundness" : 0.08,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : false,
                 "visual_material" : "slick" 
             }
@@ -1155,7 +1154,7 @@
                     "w": 1.5
                 },
                 "roundness" : 1.7,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "visual_material" : "slick"
             }
         },
@@ -1576,7 +1575,7 @@
                 },
                 "roundness" : 0.3,
                 "is_positive" : false,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : true
             }
         },
@@ -1761,36 +1760,6 @@
                 "is_positive" : false
             }
         },
-        {
-            "cube" : {
-                "comment" : "red base side cube 2 hole 2",
-                "transform" : {
-                    "position" : {
-                        "x": 8.5,
-                        "y": 3,
-                        "z": -36,
-                        "w": 5.3
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.65,
-                    "y": 1.2,
-                    "z": 3.6,
-                    "w": 2.85
-                },
-                "roundness" : 0.0,
-                "stickiness" : true,
-                "is_positive" : false
-            }
-        },
 
         {
             "cube" : {
@@ -1828,7 +1797,7 @@
                         "x": 2.5,
                         "y": 2.5,
                         "z": -36,
-                        "w": 2.5
+                        "w": 3.5
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -1843,11 +1812,11 @@
                     "x": 1.4,
                     "y": 1.5,
                     "z": 1.4,
-                    "w": 1
+                    "w": 2
                 },
                 "stickiness" : true,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -1877,7 +1846,7 @@
                 },
                 "stickiness" : false,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -1910,6 +1879,35 @@
         },
         {
             "cube" : {
+                "comment" : "red base second main cube column",
+                "transform" : {
+                    "position" : {
+                        "x": -3.54,
+                        "y": 1.6,
+                        "z": -38,
+                        "w": 4.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.3,
+                    "y": 1.6,
+                    "z": 0.5,
+                    "w": 4.5
+                },
+                "roundness" : 0.2,
+                "stickiness" : true
+            }
+        },
+        {
+            "cube" : {
                 "comment" : "red base second main cube hole",
                 "transform" : {
                     "position" : {
@@ -1935,7 +1933,7 @@
                 },
                 "stickiness" : true,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -1966,7 +1964,7 @@
                 "stickiness" : true,
                 "is_positive" : false,
                 "roundness": 0.3,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -2026,7 +2024,7 @@
                     "w": 15
                 },
                 "roundness" : 0.08,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : true,
                 "visual_material" : "slick" 
             }
@@ -2057,7 +2055,7 @@
                     "w": 15
                 },
                 "roundness" : 0.08,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : false,
                 "visual_material" : "slick" 
             }
@@ -2088,7 +2086,7 @@
                     "w": 1
                 },
                 "roundness" : 0.08,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : false,
                 "visual_material" : "slick" 
             }
@@ -2297,7 +2295,7 @@
                     "w": 1.5
                 },
                 "roundness" : 1.7,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "visual_material" : "slick"
             }
         },
@@ -2747,7 +2745,7 @@
                 },
                 "roundness" : 0.6,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -2778,7 +2776,7 @@
                 "roundness" : 1.0,
                 "stickiness" : true,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
 
@@ -2898,7 +2896,7 @@
                     "w": 2
                 },
                 "roundness" : 2.5,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "visual_material" : "slick"
             }
         },
@@ -2927,7 +2925,7 @@
                 },
                 "roundness" : 0.0,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -2957,7 +2955,7 @@
                 },
                 "roundness" : 0.6,
                 "is_positive" : false,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : true
             }
         },
@@ -2987,7 +2985,7 @@
                     "w": 1.5
                 },
                 "roundness" : 0.8,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "visual_material" : "slick",
                 "stickiness" : true
             }
@@ -3081,7 +3079,7 @@
                 "stickiness" : true,
                 "is_positive" : true,
                 "visual_material" : "slick",
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -3112,7 +3110,7 @@
                 "roundness" : 0.0,
                 "stickiness" : false,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -3143,7 +3141,7 @@
                 "roundness" : 1.0,
                 "stickiness" : true,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -3174,7 +3172,7 @@
                 "roundness" : 1.2,
                 "stickiness" : true,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
 
@@ -3263,7 +3261,7 @@
                     "w": 2
                 },
                 "roundness" : 0.5,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "visual_material" : "slick"
             }
         },
@@ -3275,7 +3273,7 @@
                         "x": 14.2,
                         "y": 5.3,
                         "z": 0,
-                        "w": 2
+                        "w": 3
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -3290,11 +3288,11 @@
                     "x": 0.65,
                     "y": 0.4,
                     "z": 14,
-                    "w": 0.4
+                    "w": 1.4
                 },
                 "roundness" : 0.4,
                 "is_positive" : false,
-                "friction" : 0.0,
+                "friction" : 0.44,
                 "stickiness" : false
             }
         },
@@ -3387,7 +3385,7 @@
                 },
                 "roundness" : 0.9,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
         {
@@ -3417,7 +3415,7 @@
                 },
                 "roundness" : 0.9,
                 "is_positive" : false,
-                "friction" : 0.0
+                "friction" : 0.44
             }
         },
 
@@ -3547,7 +3545,7 @@
                         "x": -0.2,
                         "y": 1.25,
                         "z": 5.1,
-                        "w": 2
+                        "w": 3
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -3562,7 +3560,7 @@
                     "x": 1.2,
                     "y": 1.4,
                     "z": 1.7,
-                    "w": 1
+                    "w": 2
                 },
                 "stickiness" : true,
                 "roundness" : 0.1,
@@ -3577,7 +3575,7 @@
                         "x": -0.2,
                         "y": 1.25,
                         "z": -5.1,
-                        "w": 2
+                        "w": 3
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -3592,7 +3590,7 @@
                     "x": 1.2,
                     "y": 1.4,
                     "z": 1.7,
-                    "w": 1
+                    "w": 2
                 },
                 "stickiness" : true,
                 "roundness" : 0.1,
@@ -3607,7 +3605,7 @@
                         "x": -2,
                         "y": 1.75,
                         "z": 0,
-                        "w": 2
+                        "w": 3
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -3622,7 +3620,7 @@
                     "x": 3,
                     "y": 1.0,
                     "z": 6,
-                    "w": 1
+                    "w": 2
                 },
                 "stickiness" : true,
                 "roundness" : 0.1,
@@ -3637,7 +3635,7 @@
                         "x": -2,
                         "y": 2.0,
                         "z": 0,
-                        "w": 3
+                        "w": 4
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -3652,7 +3650,7 @@
                     "x": 3,
                     "y": 0.7,
                     "z": 7,
-                    "w": 1
+                    "w": 2
                 },
                 "stickiness" : true,
                 "roundness" : 0.1,
