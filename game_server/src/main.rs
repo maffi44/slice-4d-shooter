@@ -424,7 +424,7 @@ struct PlayerInfo
 }
 
 pub const MOVE_W_BONUS_RESPAWN_TIME: u128 = 30_000;
-pub const FLAG_RESPAWN_TIME: u128 = 3_000;
+pub const FLAG_RESPAWN_TIME: u128 = 6_400;
 pub const MAX_SCORE: u32 = 4;
 pub const TIME_IN_SESSION_AFTER_WIN: u128 = 12_000;
 

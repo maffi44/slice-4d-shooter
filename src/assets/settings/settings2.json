@@ -28,10 +28,10 @@
     
     "energy_gun_hole_size_mult" : 0.12,
     "energy_gun_add_force_mult" : 1.4, 
-    "energy_gun_damage_mult" : 0.51,
+    "energy_gun_damage_mult" : 0.49,
     "energy_gun_restoring_speed" : 14,
 
-    "machinegun_damage" : 11,
+    "machinegun_damage" : 10,
     "machinegun_add_force" : 0.4, 
     "machinegun_heat_add_on_shot" : 5.15, 
     "machinegun_cooling_speed" : 15.5
