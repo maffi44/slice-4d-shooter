@@ -630,9 +630,9 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                         {} else {}
                             var coef = 0.0;
                             if d<dd {}
-                                coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                                coef = clamp(pow(abs(d/dd),1.9) * 0.5, 0.0, 1.0);
                             {} else {}
-                                coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                                coef = 1.0-clamp((pow(abs(dd/d),1.9) * 0.5), 0.0, 1.0);
                             {}
                             output.materials[output.materials_count] = {};
                             output.material_weights[output.materials_count] = coef;
@@ -697,9 +697,9 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                         {} else {}
                             var coef = 0.0;
                             if d<dd {}
-                                coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                                coef = clamp(pow(abs(d/dd),1.9) * 0.5, 0.0, 1.0);
                             {} else {}
-                                coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                                coef = 1.0-clamp((pow(abs(dd/d),1.9) * 0.5), 0.0, 1.0);
                             {}
                             output.materials[output.materials_count] = {};
                             output.material_weights[output.materials_count] = coef;
@@ -764,9 +764,9 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                         {} else {}
                             var coef = 0.0;
                             if d<dd {}
-                                coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                                coef = clamp(pow(abs(d/dd),1.9) * 0.5, 0.0, 1.0);
                             {} else {}
-                                coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                                coef = 1.0-clamp((pow(abs(dd/d),1.9) * 0.5), 0.0, 1.0);
                             {}
                             output.materials[output.materials_count] = {};
                             output.material_weights[output.materials_count] = coef;

@@ -334,7 +334,7 @@ impl PlayerDoll {
         audio_system.spawn_spatial_sound(
             Sound::PlayerDeathSignal,
             0.8,
-            1.3,
+            1.5,
             false,
             true,
             fyrox_sound::source::Status::Playing,
@@ -347,7 +347,7 @@ impl PlayerDoll {
         audio_system.spawn_non_spatial_sound(
             Sound::PlayerDeathSignal,
             1.0,
-            1.2,
+            1.3,
             false,
             true,
             fyrox_sound::source::Status::Playing,

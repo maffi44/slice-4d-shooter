@@ -237,7 +237,7 @@ impl Renderer {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
+                power_preference: wgpu::PowerPreference::LowPower,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -245,7 +245,7 @@ impl Renderer {
             .unwrap();
         log::info!("renderer: wgpu adapter init");
 
-        let (device, queue) = adapter
+        let mut res = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
 
@@ -273,13 +273,94 @@ impl Renderer {
                         // wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
                         // wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
                         // wgpu::Features::SHADER_FLOAT32_ATOMIC,
+                    // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    required_limits: wgpu::Limits::default(),
+                    memory_hints: wgpu::MemoryHints::Performance,
+                },
+                None, // Trace path
+            )
+            .await;
+
+        if res.is_err()
+        {
+            res = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+
+                    // required_features: if cfg!(target_arch = "wasm32") {
+                    //     wgpu::Features::empty()
+                    // } else {
+                    //     wgpu::Features::default()
+                    // },
+                    // // WebGL doesn't support all of wgpu's features, so if
+                    // // we're building for the web we'll have to disable some.
+                    // required_limits: if cfg!(target_arch = "wasm32") {
+                    //     wgpu::Limits::downlevel_webgl2_defaults()
+                    // } else {
+                    //     wgpu::Limits::default()
+                    // },
+                    label: None,
+                    required_features:
+                        wgpu::Features::empty(),
+                        // wgpu::Features::all_native_mask() ^
+                        // wgpu::Features::EXPERIMENTAL_RAY_TRACING_ACCELERATION_STRUCTURE ^
+                        // wgpu::Features::TEXTURE_COMPRESSION_ASTC_HDR ^
+                        // wgpu::Features::VULKAN_GOOGLE_DISPLAY_TIMING ^
+                        // wgpu::Features::VULKAN_EXTERNAL_MEMORY_WIN32 ^
+                        // wgpu::Features::SHADER_EARLY_DEPTH_TEST ^
+                        // wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
+                        // wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
+                        // wgpu::Features::SHADER_FLOAT32_ATOMIC,
+                    // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    required_limits: wgpu::Limits::downlevel_defaults(),
+                    memory_hints: wgpu::MemoryHints::Performance,
+                },
+                None, // Trace path
+            )
+            .await;
+        }
+
+        if res.is_err()
+        {
+            res = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+
+                    // required_features: if cfg!(target_arch = "wasm32") {
+                    //     wgpu::Features::empty()
+                    // } else {
+                    //     wgpu::Features::default()
+                    // },
+                    // // WebGL doesn't support all of wgpu's features, so if
+                    // // we're building for the web we'll have to disable some.
+                    // required_limits: if cfg!(target_arch = "wasm32") {
+                    //     wgpu::Limits::downlevel_webgl2_defaults()
+                    // } else {
+                    //     wgpu::Limits::default()
+                    // },
+                    label: None,
+                    required_features:
+                        wgpu::Features::empty(),
+                        // wgpu::Features::all_native_mask() ^
+                        // wgpu::Features::EXPERIMENTAL_RAY_TRACING_ACCELERATION_STRUCTURE ^
+                        // wgpu::Features::TEXTURE_COMPRESSION_ASTC_HDR ^
+                        // wgpu::Features::VULKAN_GOOGLE_DISPLAY_TIMING ^
+                        // wgpu::Features::VULKAN_EXTERNAL_MEMORY_WIN32 ^
+                        // wgpu::Features::SHADER_EARLY_DEPTH_TEST ^
+                        // wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
+                        // wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
+                        // wgpu::Features::SHADER_FLOAT32_ATOMIC,
+                    // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     memory_hints: wgpu::MemoryHints::Performance,
                 },
                 None, // Trace path
             )
-            .await
-            .unwrap();
+            .await;
+        }
+
+        let (device, queue) = res.unwrap();
+
         log::info!("renderer: wgpu device and queue init");
 
         let surface_caps = surface.get_capabilities(&adapter);

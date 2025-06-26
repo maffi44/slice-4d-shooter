@@ -645,7 +645,7 @@ fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>,
 
     let dist_to_wave = sd_sphere((start_pos + direction*max_distance) - sphere.pos, sphere.radius);
         
-    let edge_intensity = clamp(pow(1.0 - abs(dist_to_wave), 5.0), 0.0, 1.0);
+    let edge_intensity = clamp(pow(max(1.0 - abs(dist_to_wave),0.0), 5.0), 0.0, 1.0);
     
     color += sphere.color*edge_intensity;
     
@@ -1673,9 +1673,9 @@ fn get_mats(
                 } else {
                     var coef = 0.0;
                     if d<dd {
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                        coef = clamp(pow(abs(d/dd),1.9) * 0.5, 0.0, 1.0);
                     } else {
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                        coef = 1.0-clamp((pow(abs(dd/d),1.9) * 0.5), 0.0, 1.0);
                     }
                     output.materials[output.materials_count] = dyn_stickiness_shapes[i].material;
                     output.material_weights[output.materials_count] = coef;
@@ -1709,9 +1709,9 @@ fn get_mats(
                 } else {
                     var coef = 0.0;
                     if d<dd {
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                        coef = clamp(pow(abs(d/dd),1.9) * 0.5, 0.0, 1.0);
                     } else {
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                        coef = 1.0-clamp((pow(abs(dd/d),1.9) * 0.5), 0.0, 1.0);
                     }
                     output.materials[output.materials_count] = dyn_stickiness_shapes[i].material;
                     output.material_weights[output.materials_count] = coef;
@@ -1745,9 +1745,9 @@ fn get_mats(
                 } else {
                     var coef = 0.0;
                     if d<dd {
-                        coef = clamp(pow(d/dd,1.9) * 0.5, 0.0, 1.0);
+                        coef = clamp(pow(abs(d/dd),1.9) * 0.5, 0.0, 1.0);
                     } else {
-                        coef = 1.0-clamp((pow(dd/d,1.9) * 0.5), 0.0, 1.0);
+                        coef = 1.0-clamp((pow(abs(dd/d),1.9) * 0.5), 0.0, 1.0);
                     }
                     output.materials[output.materials_count] = dyn_stickiness_shapes[i].material;
                     output.material_weights[output.materials_count] = coef;
@@ -2012,8 +2012,8 @@ fn w_scanner_ring_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec4<f
 
             let view_dir = vec4(0.0, 0.0, -1.0, 0.0)*dynamic_data.camera_data.cam_zy_rot*dynamic_data.camera_data.cam_zx_rot*dynamic_data.camera_data.cam_zw_rot;
 
-            let y_coof = clamp(pow((1.0-dot(ray_dir, view_dir))*3.0,2.4), 0.0, 1.0);
-            let y_coof2 = clamp(pow(1.0-ray_dir.y , 6.0), 0.0, 1.0);
+            let y_coof = clamp(pow(max(1.0-dot(ray_dir, view_dir),0.0)*3.0,2.4), 0.0, 1.0);
+            let y_coof2 = clamp(pow(max(1.0-ray_dir.y,0.0) , 6.0), 0.0, 1.0);
 
             scanner_color.a = 0.13 * (y_coof+y_coof2);
             scanner_color.a += y_coof2*0.12;
@@ -2021,7 +2021,7 @@ fn w_scanner_ring_color(pos: vec4<f32>, dist: f32, ray_dir: vec4<f32>) -> vec4<f
             scanner_color.a *= clamp((33.0 - dynamic_data.w_scanner_radius)/33.0, 0.0, 0.9);
         }
 
-        let edge_intensity = clamp(pow(1.0 - abs(dist - dynamic_data.w_scanner_radius), 5.0), 0.0, 1.0);
+        let edge_intensity = clamp(pow(max(1.0 - abs(dist - dynamic_data.w_scanner_radius),0.0), 5.0), 0.0, 1.0);
         
         scanner_color.a += edge_intensity;
 
@@ -2320,7 +2320,7 @@ fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<fun
 
     let dist_and_depth: vec2<f32> = ray_march(init_position, ray_direction, 11.0, intrs);
 
-    let shadow_coef = pow((min(dist_and_depth.x, 11.0))/11.0, 1.6);
+    let shadow_coef = pow((min(max(dist_and_depth.x,0.0), 11.0))/11.0, 1.6);
 
     return clamp(shadow_coef, 0.0, 1.0);
 }
@@ -2407,7 +2407,7 @@ fn w_shift_effect(uv: vec2<f32>, shift_coef: f32, intensity: f32) -> f32
 
     var v = clamp(pow(length(uv),26.0),0.0,1.0);
 
-    return clamp((pow(0.9+0.5*fbm(20.0*cuv, vec2(20)),40.0)),0.0,1.0)*intensity*v;
+    return clamp((pow(max(0.9+0.5*fbm(20.0*cuv, vec2(20)),0.0),40.0)),0.0,1.0)*intensity*v;
 }
 //^---------------------------------------------------------^
 
@@ -2461,7 +2461,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     color = mix(color, sc_e_c.rgb, sc_e_c.a*0.55);
 
     // color correction
-    color = pow(color, vec3(0.4645));
+    color = pow(max(color,vec3(0.0)), vec3(0.4645));
 
     // for debug
     // color = mix(color, vec3(1.0, 0.0, 0.0), dist_and_depth.y / f32(MAX_STEPS));
@@ -2472,7 +2472,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     let q = (inn.position.xy+vec2(1.0))/2.0;
     
     // making vignetting effect
-    let v = 0.2+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.32 );
+    let v = 0.2+pow(max(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.0),0.32 );
     color *= v;
 
     color += 0.28*w_shift_effect(
@@ -2482,7 +2482,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     );
 
     let hurt_coef = max(
-        clamp(0.01+pow(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.2),0.0,1.0),
+        clamp(0.01+pow(max(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.0),0.2),0.0,1.0),
         (1.0-clamp(dynamic_data.getting_damage_screen_effect,0.0,1.0))
     );
 
@@ -2524,7 +2524,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     // making death effect
     let death_eff_col = max(
-        clamp(0.4+pow(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.4),0.0,1.0),
+        clamp(0.4+pow(max(10.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.0),0.4),0.0,1.0),
         (1.0-clamp(dynamic_data.death_screen_effect,0.0,1.0))
     );
     color *= death_eff_col;

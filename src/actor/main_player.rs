@@ -1097,18 +1097,18 @@ impl Actor for MainPlayer {
                         {
                             FlagMessage::GiveMeTargetPosition =>
                             {
-                                match self.inner_state.team {
-                                    Team::Red =>
-                                    {
-                                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::BlueFlagBacklight);
-                                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
-                                    }
-                                    Team::Blue =>
-                                    {
-                                        let ui_elem = ui_system.get_mut_ui_element(&UIElementType::RedFlagBacklight);
-                                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
-                                    }
-                                }
+                                // match self.inner_state.team {
+                                //     Team::Red =>
+                                //     {
+                                //         let ui_elem = ui_system.get_mut_ui_element(&UIElementType::BlueFlagBacklight);
+                                //         *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                //     }
+                                //     Team::Blue =>
+                                //     {
+                                //         let ui_elem = ui_system.get_mut_ui_element(&UIElementType::RedFlagBacklight);
+                                //         *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                //     }
+                                // }
 
                                 engine_handle.send_direct_message(
                                     from,
@@ -1766,7 +1766,7 @@ pub fn process_player_rotation(
                         inner_state.w_aim_ui_frame_intensity = 0.20 +
                             (projection.is_active_intensity*4.0).clamp(0.0, 0.5);
 
-                        (projection_body.abs_zw_rotation_offset, 2.1)
+                        (projection_body.abs_zw_rotation_offset, 3.4)
                     }
                     else
                     {
