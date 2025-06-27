@@ -112,6 +112,10 @@ impl RenderSystem {
         let async_renderer = renderer.clone();
         #[cfg(not(target_arch="wasm32"))]
         runtime.spawn(async move {
+
+            #[cfg(target_os = "windows")]
+            unsafe {windows_sys::Win32::Media::timeBeginPeriod(1);}
+
             loop {
                 match async_renderer.try_lock() {
                     Ok(mut renderer_lock) => {

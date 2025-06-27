@@ -9,7 +9,7 @@ use wgpu::{
     }, util::{
         BufferInitDescriptor,
         DeviceExt,
-    }, BackendOptions, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MaintainResult, PipelineCompilationOptions, Sampler, ShaderRuntimeChecks, Texture, TextureView, TextureViewDescriptor
+    }, BackendOptions, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, PipelineCompilationOptions, PollStatus, Sampler, ShaderRuntimeChecks, Texture, TextureView, TextureViewDescriptor
 };
 
 
@@ -237,7 +237,7 @@ impl Renderer {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::LowPower,
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -276,8 +276,8 @@ impl Renderer {
                     // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     required_limits: wgpu::Limits::default(),
                     memory_hints: wgpu::MemoryHints::Performance,
-                },
-                None, // Trace path
+                    trace: wgpu::Trace::Off,
+                }
             )
             .await;
 
@@ -314,8 +314,8 @@ impl Renderer {
                     // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     required_limits: wgpu::Limits::downlevel_defaults(),
                     memory_hints: wgpu::MemoryHints::Performance,
+                    trace: wgpu::Trace::Off,
                 },
-                None, // Trace path
             )
             .await;
         }
@@ -353,8 +353,8 @@ impl Renderer {
                     // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     memory_hints: wgpu::MemoryHints::Performance,
+                    trace: wgpu::Trace::Off,
                 },
-                None, // Trace path
             )
             .await;
         }
@@ -1139,8 +1139,20 @@ impl Renderer {
         // let instatnt_full = web_time::Instant::now();
 
         match self.device.poll(wgpu::MaintainBase::Poll) {
-            MaintainResult::Ok => {return Ok(());}
-            MaintainResult::SubmissionQueueEmpty => {},
+            Ok(poll_status) => {
+                match poll_status
+                {
+                    PollStatus::Poll => {
+                        return Ok(());
+                    }
+                    PollStatus::QueueEmpty => {}
+                    PollStatus::WaitSucceeded => {}
+                }
+            },
+            Err(e) => {
+                panic!("{}", e);
+            } 
+
         }
 
         if let Some(instant) = self.prev_time_instant {

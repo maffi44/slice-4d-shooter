@@ -79,9 +79,9 @@
         {
             "name" : "slick",
             "color" : {
-                "red": 0.4,
+                "red": 3.7333,
                 "green": 0.085,
-                "blue": 1.5
+                "blue": 1.0
             },
             "roughness": 0.0514
         },

@@ -12,6 +12,7 @@ matchmaking_server = { path = "./matchmaking_server" }
 game_server = { path = "./game_server" }
 env_logger = "*"
 winit = {version = "*", features = ["rwh_05"]}
+windows-sys = {version = "*", features = ["Win32", "Win32_Media"]}
 # wgpu = { version = "*", default-features = false, features = ["webgl", "glsl", "spirv", "wgsl", "naga"]}
 wgpu = { version = "*" }
 bytemuck = { version = "*", features = [ "derive" ] }
@@ -43,7 +44,7 @@ web-sys = { version = "*", features = [
     "Performance",
     "Response"
 ]}
-matchbox_socket = "*"
+matchbox_socket = { version = "*", features = [] }
 rustc-hash = "1.1.0"
 
 [lib]

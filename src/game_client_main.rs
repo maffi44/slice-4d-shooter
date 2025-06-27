@@ -14,6 +14,8 @@ use engine::input::ActionsFrameState;
 
 use crate::actor::flag_base::FlagBase;
 
+#[allow(unused_variables)]
+#[allow(unused)]
 
 #[global_allocator]
 static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {

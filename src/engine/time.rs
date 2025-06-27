@@ -18,6 +18,10 @@ pub struct TimeSystem {
 impl TimeSystem {
 
     pub fn new(target_frame_rate: u32) -> Self {
+
+        #[cfg(target_os = "windows")]
+        unsafe {windows_sys::Win32::Media::timeBeginPeriod(1);}
+        
         TimeSystem {
             target_frame_duration: Duration::from_secs_f64(1_f64 / target_frame_rate as f64),
             average_frame_duration_delta: 0.0_f64,

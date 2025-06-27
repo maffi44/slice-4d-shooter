@@ -105,7 +105,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr, intrs);
+            store_intersection_entrance_and_exit(intr);
         }\n}\n";
     }
 
@@ -128,7 +128,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr, intrs);
+            store_intersection_entrance_and_exit(intr);
         }\n}\n";
     }
 
@@ -151,7 +151,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr, intrs);
+            store_intersection_entrance_and_exit(intr);
         }\n}\n";
     }
 
@@ -180,7 +180,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr, intrs);
+            store_intersection_entrance_and_exit(intr);
         }\n}\n";
     }
 
@@ -203,7 +203,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr, intrs);
+            store_intersection_entrance_and_exit(intr);
         }\n}\n";
     }
 
@@ -231,7 +231,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr, intrs);
+            store_intersection_entrance_and_exit(intr);
         }\n}\n";
     }
 
@@ -255,7 +255,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            store_intersection_entrance_and_exit_for_neg(intr);
         }\n}\n";
     }
 
@@ -278,7 +278,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            store_intersection_entrance_and_exit_for_neg(intr);
         }\n}\n";
     }
 
@@ -302,7 +302,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            store_intersection_entrance_and_exit_for_neg(intr);
         }\n}\n";
     }
 
@@ -325,7 +325,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            store_intersection_entrance_and_exit_for_neg(intr);
         }\n}\n";
     }
 
@@ -349,7 +349,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         func_body +=
 
         "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
         }\n}\n";
     }
 
@@ -363,7 +363,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         );
         
         if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_neg(intr, intrs);
+            store_intersection_entrance_and_exit_for_neg(intr);
         }
     }\n";
 
@@ -377,12 +377,12 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         );
         
         if intr.y > 0.0 {
-            (*intrs).intr_players = true;
-            store_intersection_entrance_and_exit_for_unbreakables(intr, intrs);
+            intr_players = true; 
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
         }
     }\n";
 
-    func_body += "combine_interscted_entrances_and_exites_for_all_intrs(intrs);\n";
+    func_body += "combine_interscted_entrances_and_exites_for_all_intrs();\n";
 
     func_body
 }
@@ -460,40 +460,6 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
         BSPElement::Leaf(objects) =>
         {
             let stickiness = objects.stickiness;
-            
-            for obj in &objects.undestroyable_cubes
-            {
-                func_body.push_str(&format!
-                (
-                    "{}let dd = min(d, sd_box(p - {}, {}) - {});\n",
-                    "{\n",
-                    string_from_vec4(obj.shape.pos),
-                    string_from_vec4(obj.shape.size),
-                    obj.shape.roundness,
-                ));
-
-                func_body.push_str(&format!
-                (
-                    "if dd < MIN_DIST*2.0 {}
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = {};
-                        return output;
-                    {}
-                    
-                    if dd < d {}
-                        d = dd;
-                        output.materials[0] = {};
-                    {}",
-
-                    "{",
-                    obj.shape.material,
-                    "}",
-                    "{",
-                    obj.shape.material,
-                    "}\n}\n",
-                ));
-            }
 
             // normal
             for obj in &objects.cubes
@@ -520,6 +486,8 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                     if dd < d {}
                         d = dd;
                         output.materials[0] = {};
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
                     {}",
 
                     "{",
@@ -554,6 +522,8 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                     if dd < d {}
                         d = dd;
                         output.materials[0] = {};
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
                     {}",
 
                     "{",
@@ -589,6 +559,8 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                     if dd < d {}
                         d = dd;
                         output.materials[0] = {};
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
                     {}",
 
                     "{",
@@ -600,8 +572,236 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                 ));
             }
 
+            func_body.push_str(
+        "if d > static_data.stickiness * STICKINESS_EFFECT_COEF
+                {
+                    output.materials_count = 0u;
+                }\n"
+            );
+
+            
+
             // stickiness
             for obj in &objects.s_cubes
+            {
+                func_body.push_str(&format!
+                (
+                    "{}let dd = sd_box(p - {}, {}) - {};\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    string_from_vec4(obj.shape.size),
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
+                        if output.materials_count == 0u
+                        {}
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = {};
+                            d = dd;
+                        {}
+                        else
+                        {}
+                    
+                            var coef = 0.0;
+                            if d<dd {}
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            {} else {}
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            {}
+                            output.materials[output.materials_count] = {};
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {}
+                                output.material_weights[k] *= mult;
+                            {}
+
+                            output.materials_count += 1u;
+                            d = min(d,dd);
+                        {}
+                    {}
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    "}",
+                    "{",
+                    "}",
+                    obj.shape.material,
+                    "{",
+                    "}",
+                    "}",
+                    "}\n",
+                    "}\n",
+                ));
+            }
+
+            for obj in &objects.s_spheres
+            {
+                func_body.push_str(&format!
+                (
+                    "{}let dd = sd_sphere(p - {}, {}) - {};\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    obj.shape.size[0],
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
+                        if output.materials_count == 0u
+                        {}
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = {};
+                            d = dd;
+                        {}
+                        else
+                        {}
+                    
+                            var coef = 0.0;
+                            if d<dd {}
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            {} else {}
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            {}
+                            output.materials[output.materials_count] = {};
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {}
+                                output.material_weights[k] *= mult;
+                            {}
+
+                            output.materials_count += 1u;
+                            d = min(d,dd);
+                        {}
+                    {}
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    "}",
+                    "{",
+                    "}",
+                    obj.shape.material,
+                    "{",
+                    "}",
+                    "}",
+                    "}\n",
+                    "}\n",
+                ));
+            }
+
+            for obj in &objects.s_sph_cubes 
+            {
+                func_body.push_str(&format!
+                (
+                    "{}let dd = sd_sph_box(p - {}, {}) - {};\n",
+                    "{\n",
+                    string_from_vec4(obj.shape.pos),
+                    string_from_vec4(obj.shape.size),
+                    obj.shape.roundness,
+                ));
+
+                func_body.push_str(&format!
+                (
+                    "if dd < MIN_DIST*2.0 {}
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = {};
+                        return output;
+                    {}
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
+                        if output.materials_count == 0u
+                        {}
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = {};
+                            d = dd;
+                        {}
+                        else
+                        {}
+                    
+                            var coef = 0.0;
+                            if d<dd {}
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            {} else {}
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            {}
+                            output.materials[output.materials_count] = {};
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {}
+                                output.material_weights[k] *= mult;
+                            {}
+
+                            output.materials_count += 1u;
+                            d = min(d,dd);
+                        {}
+                    {}
+                    {}",
+
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    obj.shape.material,
+                    "}",
+                    "{",
+                    "{",
+                    "}",
+                    "{",
+                    "}",
+                    obj.shape.material,
+                    "{",
+                    "}",
+                    "}",
+                    "}\n",
+                    "}\n",
+                ));
+            }
+
+            for obj in &objects.undestroyable_cubes
             {
                 func_body.push_str(&format!
                 (
@@ -619,185 +819,9 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                         output.material_weights[0] = 1.0;
                         output.materials[0] = {};
                         return output;
-                    {}
-
-                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
-                        if output.materials_count == 0u {}
-                            output.materials_count = 1u;
-                            output.material_weights[0] = 1.0;
-                            output.materials[0] = {};
-                            d = dd;
-                        {} else {}
-                            var coef = 0.0;
-                            if d<dd {}
-                                coef = clamp(pow(abs(d/dd),1.9) * 0.5, 0.0, 1.0);
-                            {} else {}
-                                coef = 1.0-clamp((pow(abs(dd/d),1.9) * 0.5), 0.0, 1.0);
-                            {}
-                            output.materials[output.materials_count] = {};
-                            output.material_weights[output.materials_count] = coef;
-
-                            let mult = 1.0 - coef;
-
-                            for (var k = 0u; k < output.materials_count; k++) {}
-                                output.material_weights[k] *= mult;
-                            {}
-
-                            output.materials_count += 1u;
-                            d = min(d,dd);
-                        {}
                     {}",
-
                     "{",
                     obj.shape.material,
-                    "}",
-                    "{",
-                    "{",
-                    obj.shape.material,
-                    "}",
-                    "{",
-                    "{",
-                    "}",
-                    "{",
-                    "}",
-                    obj.shape.material,
-                    "{",
-                    "}",
-                    "}",
-                    "}\n}\n",
-                ));
-            }
-
-            for obj in &objects.s_spheres
-            {
-                func_body.push_str(&format!
-                (
-                    "{}let dd = min(d, sd_sphere(p - {}, {}) - {});\n",
-                    "{\n",
-                    string_from_vec4(obj.shape.pos),
-                    obj.shape.size[0],
-                    obj.shape.roundness,
-                ));
-
-                func_body.push_str(&format!
-                (
-                    "if dd < MIN_DIST*2.0 {}
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = {};
-                        return output;
-                    {}
-
-                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
-                        if output.materials_count == 0u {}
-                            output.materials_count = 1u;
-                            output.material_weights[0] = 1.0;
-                            output.materials[0] = {};
-                            d = dd;
-                        {} else {}
-                            var coef = 0.0;
-                            if d<dd {}
-                                coef = clamp(pow(abs(d/dd),1.9) * 0.5, 0.0, 1.0);
-                            {} else {}
-                                coef = 1.0-clamp((pow(abs(dd/d),1.9) * 0.5), 0.0, 1.0);
-                            {}
-                            output.materials[output.materials_count] = {};
-                            output.material_weights[output.materials_count] = coef;
-
-                            let mult = 1.0 - coef;
-
-                            for (var k = 0u; k < output.materials_count; k++) {}
-                                output.material_weights[k] *= mult;
-                            {}
-
-                            output.materials_count += 1u;
-                            d = min(d,dd);
-                        {}
-                    {}",
-
-                    "{",
-                    obj.shape.material,
-                    "}",
-                    "{",
-                    "{",
-                    obj.shape.material,
-                    "}",
-                    "{",
-                    "{",
-                    "}",
-                    "{",
-                    "}",
-                    obj.shape.material,
-                    "{",
-                    "}",
-                    "}",
-                    "}\n}\n",
-                ));
-            }
-
-            for obj in &objects.s_sph_cubes 
-            {
-                func_body.push_str(&format!
-                (
-                    "{}let dd = min(d, sd_sph_box(p - {}, {}) - {});\n",
-                    "{\n",
-                    string_from_vec4(obj.shape.pos),
-                    string_from_vec4(obj.shape.size),
-                    obj.shape.roundness,
-                ));
-
-                func_body.push_str(&format!
-                (
-                    "if dd < MIN_DIST*2.0 {}
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = {};
-                        return output;
-                    {}
-
-                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {}
-                        if output.materials_count == 0u {}
-                            output.materials_count = 1u;
-                            output.material_weights[0] = 1.0;
-                            output.materials[0] = {};
-                            d = dd;
-                        {} else {}
-                            var coef = 0.0;
-                            if d<dd {}
-                                coef = clamp(pow(abs(d/dd),1.9) * 0.5, 0.0, 1.0);
-                            {} else {}
-                                coef = 1.0-clamp((pow(abs(dd/d),1.9) * 0.5), 0.0, 1.0);
-                            {}
-                            output.materials[output.materials_count] = {};
-                            output.material_weights[output.materials_count] = coef;
-
-                            let mult = 1.0 - coef;
-
-                            for (var k = 0u; k < output.materials_count; k++) {}
-                                output.material_weights[k] *= mult;
-                            {}
-
-                            output.materials_count += 1u;
-                            d = min(d,dd);
-                        {}
-                    {}",
-
-                    "{",
-                    obj.shape.material,
-                    "}",
-                    "{",
-                    "{",
-                    obj.shape.material,
-                    "}",
-                    "{",
-                    "{",
-                    "}",
-                    "{",
-                    "}",
-                    obj.shape.material,
-                    "{",
-                    "}",
-                    "}",
                     "}\n}\n",
                 ));
             }
@@ -993,8 +1017,7 @@ fn generate_get_mats_function_body(bsp_tree: &Box<BSPElement>) -> String
     func_body +=
     
     "var d = MAX_DIST * 2.0;
-    output.materials_count = 1u;
-    output.material_weights[0] = 1.0;\n";
+    output.materials_count = 0u;\n";
 
     write_bsp_tree_content_for_get_mats_func(&mut func_body, bsp_tree);
 
