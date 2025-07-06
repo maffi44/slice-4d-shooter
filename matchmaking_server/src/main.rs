@@ -11,13 +11,7 @@ use matchmaking_server_protocol::{
 
 use core::panic;
 use std::{
-    fs::File,
-    io::{Read, Write},
-    net::Ipv4Addr,
-    process::Stdio,
-    str::FromStr,
-    sync::Arc,
-    time::Duration
+    fs::File, io::{Read, Write}, net::Ipv4Addr, os::linux::raw::stat, process::Stdio, str::FromStr, sync::Arc, time::Duration
 };
 use tokio::{
     io::{
@@ -159,6 +153,7 @@ struct GameServerInfo {
     game_server_port: u16,
     
     server_index: u16,
+    game_server_pid: u32,
 }
 
 type GameServersState = Arc<Mutex<HashMap<u16,GameServerInfo>>>;
@@ -169,6 +164,8 @@ async fn handle_client_connection(
     config: Config,
     async_rutime: Arc<Runtime>,
 ) {
+
+    let cloned_state = state.clone();
 
     let ws_stream = accept_async(stream).await.unwrap();
     let (mut sender_to_client, mut receiver_from_client) = ws_stream.split();
@@ -267,7 +264,8 @@ async fn handle_client_connection(
                                             let server_info = spawn_game_server(
                                                 new_port,
                                                 &config,
-                                                async_rutime.clone()
+                                                async_rutime.clone(),
+                                                state.clone(),
                                             ).await.unwrap();
         
                                             println!("INFO: New game server is successfully created, send to the client server's addres");
@@ -347,6 +345,7 @@ async fn spawn_game_server(
     port: u16,
     config: &Config,
     async_rutime: Arc<Runtime>,
+    state: GameServersState,
 ) -> Result<GameServerInfo, Box<dyn std::error::Error>>
 {
     let mut server_proccess = Command::new("./game_server")
@@ -363,6 +362,7 @@ async fn spawn_game_server(
 
     let server_stdout = server_proccess.stdout.take().unwrap();
     let mut server_stderr = server_proccess.stderr.take().unwrap();
+    let game_server_pid = server_proccess.id().unwrap();
 
     let mut server_stdout_reader = BufReader::new(server_stdout).lines();
 
@@ -376,7 +376,8 @@ async fn spawn_game_server(
                     server_proccess,
                     server_stdout_reader,
                     server_stderr,
-                    port
+                    port,
+                    state,
                 )
             );
 
@@ -386,6 +387,7 @@ async fn spawn_game_server(
                 players_amount_by_game_server: 0_u32,
                 game_server_port: port,
                 server_index: port,
+                game_server_pid,
             });
         } else {
 
@@ -407,11 +409,16 @@ async fn keep_server_process(
     mut server_stdout_reader: Lines<BufReader<ChildStdout>>,
     mut server_stderr: ChildStderr,
     server_index: u16,
+    state: GameServersState,
 ) {
     while let Some(line) = server_stdout_reader.next_line().await.unwrap() {
         println!("INFO: [{}] server stdout is: {}", server_index, line);
         continue ;
     }
+
+    let mut locked_state = state.lock().await;
+
+    locked_state.remove(&server_index);
 
     let mut err = String::new();
 

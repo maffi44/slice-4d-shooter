@@ -31,7 +31,11 @@ fn main() {
         Engine::new(
             &main_loop,
             false,
-             true,
+            true,
+            // If you made any changes to the game map, you should
+            // run raymarch_shader_generator binary to generate a 
+            // relevant raymarch shader with a BSP tree before creating the Engine.
+            // Unless you see the previous version of the map.
              true,
             )
         );

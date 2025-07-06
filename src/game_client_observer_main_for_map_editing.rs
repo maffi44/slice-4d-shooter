@@ -8,7 +8,7 @@ use main_loop::MainLoop;
 use pollster;
 use blink_alloc::UnsafeGlobalBlinkAlloc;
 
-use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
+use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, move_w_bonus::MoveWBonusSpot, observer::Observer, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
@@ -30,9 +30,9 @@ fn main() {
     let systems = pollster::block_on(
         Engine::new(
             &main_loop,
-            true,
-             false,
-             true,
+            false,
+            false,
+            false,
             )
         );
     
@@ -40,7 +40,7 @@ fn main() {
 
     pollster::block_on(main_loop.run(systems, Box::new(|systems| {
 
-        let mut main_player = MainPlayer::new(
+        let mut observer = Observer::new(
             InputMaster::LocalMaster(
                 LocalMaster::new(ActionsFrameState::empty())
             ),
@@ -51,7 +51,7 @@ fn main() {
         );
 
         let main_player_id = systems.world.add_actor_to_world(
-            ActorWrapper::MainPlayer(main_player),
+            ActorWrapper::Observer(observer),
             &mut systems.engine_handle,
         );
 
@@ -113,7 +113,7 @@ fn main() {
             &mut systems.ui,
             systems.world.level.red_flag_base.get_position(),
             systems.world.level.blue_flag_base.get_position(),
-            false,
+            true,
         );
         
         systems.world.add_actor_to_world(

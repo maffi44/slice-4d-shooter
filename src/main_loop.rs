@@ -308,9 +308,3 @@ fn main_loop_tick(
 
     systems.time.end_of_frame();
 }
-
-
-
-fn init(systems: &mut Engine) {
-
-}

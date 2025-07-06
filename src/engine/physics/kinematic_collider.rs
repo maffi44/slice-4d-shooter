@@ -132,9 +132,9 @@ impl KinematicCollider {
             self.current_velocity += force;
         }
 
-        if let Some(wd) = self.wish_direction.try_normalize() {
-            self.wish_direction = wd;
-        }
+        // if let Some(wd) = self.wish_direction.try_normalize() {
+        //     self.wish_direction = wd;
+        // }
 
         if self.is_enable {
 

@@ -1,16 +1,13 @@
 {
     "mouse_sensivity" : 0.21,
 
-    "matchmaking_server_url" : "ws://109.72.102.215:49161/",
+    "matchmaking_server_url" : "ws://10.8.0.6:49161/",
 
-    "bash_and_turn_servers" : [
-        "stun:stun.l.google.com:19302",
-        "stun:stun1.l.google.com:19302",
-        "turn:109.72.102.215:49160"
-    ],
+    "bash_and_turn_servers" : [],
 
     "turn_server_username" : "homeo",
     "turn_server_credential" : "homeo",
-    
+
     "screen_resolution_scale" : 1.0
 }
+

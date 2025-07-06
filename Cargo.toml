@@ -54,11 +54,11 @@ crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name="game-client"
-path="src/game_client_fast_main.rs"
+path="src/game_client_main.rs"
 
 [[bin]]
 name="game-client-for-map-editing"
-path="src/game_client_main.rs"
+path="src/game_client_main_for_map_editing.rs"
 
 [[bin]]
 name="game-client-2d-3d-example"
@@ -71,6 +71,10 @@ path="src/game_client_for_2d_3d_example_fast_main.rs"
 [[bin]]
 name="game-client-observer"
 path="src/game_client_observer_main.rs"
+
+[[bin]]
+name="game-client-observer-for-map-editing"
+path="src/game_client_observer_main_for_map_editing.rs"
 
 [[bin]]
 name="headless-game-client-for-net-test"

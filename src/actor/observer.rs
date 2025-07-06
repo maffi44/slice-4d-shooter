@@ -464,13 +464,16 @@ fn process_free_movement_input(
         None => movement_vec = Vec4::ZERO,
     }
 
+    movement_vec.w *= 0.21;
+
+
     inner_state.collider.set_wish_direction(
         movement_vec,
         1.0
     );
 
     inner_state.collider.set_friction_on_air(
-        inner_state.friction_on_air*17.0
+        inner_state.friction_on_air*33.0
     );
 }
 

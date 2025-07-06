@@ -8,12 +8,14 @@ use main_loop::MainLoop;
 use pollster;
 use blink_alloc::UnsafeGlobalBlinkAlloc;
 
-use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, move_w_bonus::MoveWBonusSpot, observer::Observer, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
+use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
 use crate::actor::flag_base::FlagBase;
 
+#[allow(unused_variables)]
+#[allow(unused)]
 
 #[global_allocator]
 static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
@@ -30,13 +32,9 @@ fn main() {
     let systems = pollster::block_on(
         Engine::new(
             &main_loop,
-            false,
-            false,
-            // If you made any changes to the game map, you should
-            // run raymarch_shader_generator binary to generate a 
-            // relevant raymarch shader with a BSP tree before creating the Engine.
-            // Unless you see the previous version of the map.
             true,
+             false,
+             false
             )
         );
     
@@ -44,7 +42,7 @@ fn main() {
 
     pollster::block_on(main_loop.run(systems, Box::new(|systems| {
 
-        let mut observer = Observer::new(
+        let mut main_player = MainPlayer::new(
             InputMaster::LocalMaster(
                 LocalMaster::new(ActionsFrameState::empty())
             ),
@@ -55,7 +53,7 @@ fn main() {
         );
 
         let main_player_id = systems.world.add_actor_to_world(
-            ActorWrapper::Observer(observer),
+            ActorWrapper::MainPlayer(main_player),
             &mut systems.engine_handle,
         );
 
@@ -117,7 +115,7 @@ fn main() {
             &mut systems.ui,
             systems.world.level.red_flag_base.get_position(),
             systems.world.level.blue_flag_base.get_position(),
-            true,
+            false,
         );
         
         systems.world.add_actor_to_world(

@@ -11,7 +11,7 @@ use std::{
         SocketAddrV4
     },
     process::exit,
-    str::FromStr, sync::Arc,
+    str::FromStr, sync::{Arc, Mutex},
     time::{
         Duration,
         Instant
@@ -73,7 +73,7 @@ impl GameServerConfig {
     fn new(args: Vec<String>) -> Result<Self, &'static str> {
         if args.len() < 5 {
             return Err(
-                "Usage: game_server <signaling_port> <matchmaking_server_ip> <matchmaking_server_port> <ice_servers_urls> <turn_server_username> <turn_server_credential>"
+                "Usage: game_server <signaling_port> <matchmaking_server_ip> <matchmaking_server_port> <max_players_per_game_session> <ice_servers_urls> <turn_server_username> <turn_server_credential>"
             );
         }
 
@@ -160,7 +160,7 @@ static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
 };
     
 
-fn main() {
+fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
 
     let config = match GameServerConfig::new(args) {
@@ -182,14 +182,14 @@ fn main() {
             .unwrap()
     );
 
-    runtime.block_on(async_main(runtime.clone(), config));
+    runtime.block_on(async_main(runtime.clone(), config))
 }
 
 
 async fn async_main(
     runtime: Arc<Runtime>,
     config: GameServerConfig
-) {
+) -> Result<(), ()> {
     
     let (sender_to_matchmaking_server, reciever) =
         channel::<GameServerMatchmakingServerProtocol>(10);
@@ -240,6 +240,8 @@ async fn async_main(
         if instant.elapsed().as_millis() > 3000 {
 
             println!("fail to connect to signaling server");
+            
+            return Err(());
         }
     }
 
@@ -259,6 +261,8 @@ async fn async_main(
         player_connected_event_reciever,
         player_disconnected_event_reciever,
     ).await;
+
+    Ok(())
 }
 
 async fn game_server_main_loop(
@@ -1783,10 +1787,10 @@ async fn run_signaling_server(
 ) {
 
     // let active_connections = Arc::new(Mutex::new(HashMap::new()));
-    // let players_amount = Arc::new(Mutex::new(0u32));
+    let players_amount = Arc::new(Mutex::new(0u32));
 
-    // let players_amount_1 = players_amount.clone();
-    // let players_amount_2 = players_amount.clone();
+    let players_amount_1 = players_amount.clone();
+    let players_amount_2 = players_amount.clone();
 
     let server = 
         SignalingServer::client_server_builder(
@@ -1810,13 +1814,13 @@ async fn run_signaling_server(
             //     active_connections.lock().unwrap().insert((ip,port), ());
             //     return Ok(false);
             // }
-            Ok(true)
+            // Ok(true)
 
-            // if *players_amount.lock().unwrap() >= max_players {
-            //     Ok(false)
-            // } else {
-            //     Ok(true)
-            // }
+            if *players_amount.lock().unwrap() >= max_players {
+                Ok(false)
+            } else {
+                Ok(true)
+            }
         })
 
         .on_host_connected(
@@ -1824,7 +1828,7 @@ async fn run_signaling_server(
         )
 
         .on_client_connected(move |id| {
-            // *players_amount_1.lock().unwrap() += 1;
+            *players_amount_1.lock().unwrap() += 1;
             // match player_connected_event_sender.send(id) {
             //     Ok(_) => {}
             //     Err(_) =>
@@ -1836,7 +1840,7 @@ async fn run_signaling_server(
         })
 
         .on_client_disconnected(move |id| {
-            // *players_amount_2.lock().unwrap() -= 1;
+            *players_amount_2.lock().unwrap() -= 1;
             // match player_disconnected_event_sender.send(id) {
             //     Ok(_) => {}
             //     Err(_) =>
