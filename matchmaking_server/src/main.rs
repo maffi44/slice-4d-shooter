@@ -15,23 +15,16 @@ use std::{
 };
 use tokio::{
     io::{
-        AsyncBufReadExt,
-        AsyncReadExt,
-        BufReader,
-        Lines
-    },
-    process::{
+        AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, Lines
+    }, net::{TcpListener, TcpSocket, TcpStream}, process::{
         Child,
         ChildStderr,
         ChildStdout,
         Command
-    },
-    sync::{
+    }, runtime::Runtime, sync::{
         Mutex,
         MutexGuard
-    },
-    net::TcpListener,
-    runtime::Runtime,
+    }
 };
 
 use fyrox_core::futures::{SinkExt, StreamExt};
@@ -52,8 +45,13 @@ struct Config
     pub current_game_version: GameVersion,
 
     pub game_severs_public_ip: Ipv4Addr,
-    pub game_severs_min_port: u16,
-    pub game_severs_max_port: u16,
+
+    pub game_severs_min_port_for_signaling_servers: u16,
+    pub game_severs_max_port_for_signaling_servers: u16,
+    
+    pub game_severs_min_port_for_tcp_listener: u16,
+    pub game_severs_max_port_for_tcp_listener: u16,
+
     pub game_servers_ice_config: GameServersIceConfig,
 
     pub max_game_sessions: u32,
@@ -140,21 +138,21 @@ impl GameServersIceConfig {
 }
 
 
-
-
-
-
 #[derive(Clone)]
 struct GameServerInfo {
     players_amount_by_matchmaking_server: u32,
     players_amount_by_game_server: u32,
+
     
     game_server_ip_address: Ipv4Addr,
-    game_server_port: u16,
+    game_server_main_port: u16,
+
+    matchmaking_server_listener_port: u16,
     
     server_index: u16,
     game_server_pid: u32,
 }
+
 
 type GameServersState = Arc<Mutex<HashMap<u16,GameServerInfo>>>;
 
@@ -163,10 +161,8 @@ async fn handle_client_connection(
     state: GameServersState,
     config: Config,
     async_rutime: Arc<Runtime>,
-) {
-
-    let cloned_state = state.clone();
-
+)
+{
     let ws_stream = accept_async(stream).await.unwrap();
     let (mut sender_to_client, mut receiver_from_client) = ws_stream.split();
 
@@ -233,7 +229,7 @@ async fn handle_client_connection(
                                     let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
                                         MatchmakingServerMessage::GameServerAddress((
                                             server_info.game_server_ip_address.octets(),
-                                            server_info.game_server_port
+                                            server_info.game_server_main_port
                                         ))
                                     );
 
@@ -254,8 +250,8 @@ async fn handle_client_connection(
                                     let free_port = get_free_server_port(
                                         &mut locked_state,
                                         config.max_game_sessions,
-                                        config.game_severs_min_port,
-                                        config.game_severs_max_port,
+                                        config.game_severs_min_port_for_signaling_servers,
+                                        config.game_severs_max_port_for_signaling_servers,
                                     );
 
                                     match free_port {
@@ -266,7 +262,27 @@ async fn handle_client_connection(
                                                 &config,
                                                 async_rutime.clone(),
                                                 state.clone(),
-                                            ).await.unwrap();
+                                            ).await;
+
+                                            if server_info.is_err()
+                                            {
+                                                println!("WARNING: Can not create new game server because is out of the limit");
+
+                                                let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
+                                                    MatchmakingServerMessage::NoFreeServers
+                                                );
+            
+                                                let message: Vec<u8> = message.to_packet();
+            
+                                                sender_to_client
+                                                    .send(tokio_tungstenite::tungstenite::Message::binary( message))
+                                                    .await
+                                                    .unwrap();
+            
+                                                return ;
+                                            }
+
+                                            let server_info = server_info.unwrap();
         
                                             println!("INFO: New game server is successfully created, send to the client server's addres");
         
@@ -275,7 +291,7 @@ async fn handle_client_connection(
                                             let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
                                                 MatchmakingServerMessage::GameServerAddress((
                                                     server_info.game_server_ip_address.octets(),
-                                                    server_info.game_server_port
+                                                    server_info.game_server_main_port
                                                 ))
                                             );
         
@@ -346,11 +362,15 @@ async fn spawn_game_server(
     config: &Config,
     async_rutime: Arc<Runtime>,
     state: GameServersState,
-) -> Result<GameServerInfo, Box<dyn std::error::Error>>
+) -> Result<GameServerInfo, ()>
 {
-    let mut server_proccess = Command::new("./game_server")
+    let server_process = Command::new("./game_server")
         .arg(port.to_string())
-        .arg("127.0.0.1") //here will be config.matchmaking_server_ip.to_string() 
+        .arg(config.game_severs_min_port_for_signaling_servers.to_string())
+        .arg(config.game_severs_max_port_for_signaling_servers.to_string())
+        .arg(config.game_severs_min_port_for_tcp_listener.to_string())
+        .arg(config.game_severs_max_port_for_tcp_listener.to_string())
+        .arg("127.0.0.1") //here will be config.matchmaking_server_ip.to_string()
         .arg(config.matchmaking_server_port_for_servers.to_string())
         .arg(config.max_players_per_game_session.to_string())
         .arg(config.game_servers_ice_config.urls.clone())
@@ -358,25 +378,35 @@ async fn spawn_game_server(
         .arg(config.game_servers_ice_config.credential.clone())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn()?;
+        .spawn();
 
-    let server_stdout = server_proccess.stdout.take().unwrap();
-    let mut server_stderr = server_proccess.stderr.take().unwrap();
-    let game_server_pid = server_proccess.id().unwrap();
+    let mut server_process = match server_process {
+        Ok(server_process) => server_process,
+        Err(e) => return Err(()), 
+    };
+
+    let server_stdout = server_process.stdout.take().unwrap();
+    let mut server_stderr = server_process.stderr.take().unwrap();
+    let game_server_pid = server_process.id().unwrap();
 
     let mut server_stdout_reader = BufReader::new(server_stdout).lines();
 
-    while let Some(line) = server_stdout_reader.next_line().await? {
-        if line.trim() == "ready" {
+    while let Ok(Some(line)) = server_stdout_reader.next_line().await {
+        if line.contains("game server is ready") {
 
-            println!("INFO: spawn new game server [{}] on {} port", port, port);
+            let lines: Vec<&str> = line.split("|").collect();
+
+            let game_server_main_port: u16 = lines[1].parse().unwrap();
+            let matchmaking_server_listener_port: u16 = lines[2].parse().unwrap();
+
+            println!("INFO: spawn new game server [{}] on {} port", game_server_main_port, game_server_main_port);
 
             async_rutime.spawn(
                 keep_server_process(
-                    server_proccess,
+                    server_process,
                     server_stdout_reader,
                     server_stderr,
-                    port,
+                    game_server_main_port,
                     state,
                 )
             );
@@ -385,13 +415,16 @@ async fn spawn_game_server(
                 game_server_ip_address: config.game_severs_public_ip,
                 players_amount_by_matchmaking_server: 1_u32,
                 players_amount_by_game_server: 0_u32,
-                game_server_port: port,
-                server_index: port,
+                game_server_main_port,
+                matchmaking_server_listener_port,
+                server_index: game_server_main_port,
                 game_server_pid,
             });
-        } else {
+        }
+        else
+        {
 
-            println!("INFO: [{}] server stdout is: {}", port, line);
+            println!("INFO: [{} (possible index)] server stdout is: {}", port, line);
             continue ;
         }
     }
@@ -405,7 +438,7 @@ async fn spawn_game_server(
 
 
 async fn keep_server_process(
-    server_proccess: Child,
+    server_process: Child,
     mut server_stdout_reader: Lines<BufReader<ChildStdout>>,
     mut server_stderr: ChildStderr,
     server_index: u16,
@@ -427,98 +460,6 @@ async fn keep_server_process(
     println!("{}", err);
 }
 
-
-async fn handle_server_message(
-    stream: tokio::net::TcpStream,
-    state: GameServersState,
-    _config: Config
-) {
-    let ws_stream = accept_async(stream).await.unwrap();
-
-    println!("INFO: websocket connection with game server is opened");
-
-    let (_, mut ws_receiver) = ws_stream.split();
-
-    while let Some(Ok(msg)) = ws_receiver.next().await {
-        let message =
-            alkahest::deserialize::<GameServerMatchmakingServerProtocol, GameServerMatchmakingServerProtocol>(&msg.into_data());
-
-        if message.is_ok()
-        {
-            match message.unwrap() {
-                GameServerMatchmakingServerProtocol::GameServerMessage(message) => {
-                    match message {
-                        GameServerMessage::PlayerConnected(game_server_index) => {
-                            match state.lock().await.get_mut(&game_server_index) {
-                                
-                                Some(server_info) => {
-                                    
-                                    println!("INFO: new player is connected to the {} server", &game_server_index);
-                                    
-                                    server_info.players_amount_by_game_server += 1;
-                                },
-                                None => {
-                                    println!(
-                                        "WARNING: get message from game server that is not exist in matchmaking server's game servers state"
-                                    );
-
-                                    return ;
-                                }
-                            }
-                        },
-                        GameServerMessage::PlayerDisconnected(game_server_index) => {
-                            match state.lock().await.get_mut(&game_server_index) {
-                                Some(server_info) => {
-
-                                    println!("INFO: player is disconnected from the {} server", &game_server_index);
-
-                                    if server_info.players_amount_by_game_server > 0 {
-                                        server_info.players_amount_by_game_server -= 1;
-                                    }
-                                },
-                                None => {
-                                    println!(
-                                        "WARNING: get message from game server that is not exist in matchmaking server's game servers state"
-                                    );
-
-                                    return ;
-                                }
-                            }
-                        },
-                        GameServerMessage::GameServerShutedDown(game_server_index) => {
-                            match state.lock().await.remove(&game_server_index) {
-                                Some(_) => {
-
-                                    println!("[{}] server is shouted down", &game_server_index);
-
-                                    return ;
-                                },
-                                None => {
-                                    println!(
-                                        "WARNING: get message from game server that is not exist in matchmaking server's game servers state"
-                                    );
-
-                                    return ;
-                                }
-                            }
-                        },
-                        GameServerMessage::ServerStarted(game_server_index) => {
-                            println!("[{}] server has started", &game_server_index);
-                        }
-                    }
-                }
-                // _ => {
-                //     println!("WARNING: Incorrect request to the matchmaking server on server's port");
-
-                //     return ;
-                // }
-            }
-        }
-    }
-
-    println!("INFO: websocket connection with game server is closed");
-}
-
 fn main() {
     let runtime = Arc::new(
         tokio::runtime::Builder::new_current_thread()
@@ -536,66 +477,13 @@ async fn async_main(
 ) {
     let config = load_config();
 
-    let state = Arc::new(Mutex::new(HashMap::new()));
+    let game_servers_state = Arc::new(Mutex::new(HashMap::<u16, GameServerInfo>::new()));
     
     let clients_listener = TcpListener::bind(
         &("0.0.0.0:".to_string() + &config.matchmaking_server_port_for_clients.to_string())
     ).await.unwrap();
 
-    let servers_listener = TcpListener::bind(
-        &("0.0.0.0:".to_string() + &config.matchmaking_server_port_for_servers.to_string())
-    ).await.unwrap();
-
-    let cloned_state = state.clone();
-    let config2 = config.clone();
-    
-    let runtime_2 = async_runtime.clone();
-    async_runtime.spawn(async move {
-        loop
-        {
-            match servers_listener.accept().await
-            {
-                Ok((stream, _)) => {
-                    runtime_2.spawn(
-                        handle_server_message(
-                            stream,
-                            cloned_state.clone(),
-                            config2.clone()
-                        )
-                    );
-                }
-                Err(e) => {
-                    panic!("ERROR: game servers listener error, err: {}", e)
-                }
-            }  
-        }
-    });
-
-    let another_cloned_state = state.clone();
-    async_runtime.spawn(async move {
-        loop
-        {
-            another_cloned_state
-                .lock()
-                .await
-                .values_mut()
-                .for_each(|server_info|{
-                    server_info.players_amount_by_matchmaking_server = server_info.players_amount_by_game_server;
-                });
-            
-            tokio::time::sleep(Duration::from_secs(1)).await;
-        }
-    });
-
-    // this is necessary to keep matchmaking server alive during long inactivity  
-    // async_runtime.spawn(async move {
-    //     loop
-    //     {
-    //         println!("ping");
-
-    //         tokio::time::sleep(Duration::from_secs(60*10)).await;
-    //     }
-    // });
+    async_runtime.spawn(check_game_servers_status(game_servers_state.clone()));
     
     loop
     {
@@ -605,7 +493,7 @@ async fn async_main(
                 async_runtime.spawn(
                     handle_client_connection(
                         stream,
-                        state.clone(),
+                        game_servers_state.clone(),
                         config.clone(),
                         async_runtime.clone(),
                     )
@@ -616,6 +504,149 @@ async fn async_main(
             }
         }  
     }
+}
+
+
+async fn check_game_servers_status(
+    game_servers_state: GameServersState,
+)
+{
+    loop
+    {
+        let mut locked_state = game_servers_state
+            .lock()
+            .await;
+
+        let mut game_servers_list_to_be_stopped = Vec::new();
+
+        for (game_server_index, game_server_info) in locked_state.iter_mut()
+        {
+            let mut stop_server = false;
+
+            let stream = match tokio::time::timeout(
+                Duration::from_millis(300),
+                TcpStream::connect(("127.0.0.1", game_server_info.matchmaking_server_listener_port))
+            ).await
+            {
+                Ok(Ok(mut stream)) => {
+                    Some(stream)
+                },
+                _ => None,
+            };
+
+            match stream {
+                Some(mut stream) =>
+                {
+                    let message = GameServerMatchmakingServerProtocol::MatchmakingServerMessageToGameServer(
+                        matchmaking_server_protocol::MatchmakingServerMessageToGameServer::GiveMePlayersAmount
+                    );
+
+                    match stream.write_all(&message.to_packet()).await
+                    {
+                        Ok(_) =>
+                        {
+                            let mut buf = Vec::new();
+
+                            match tokio::time::timeout(
+                                Duration::from_millis(300),
+                                stream.read_buf(&mut buf)
+                            ).await
+                            {
+                                Ok(Ok(_)) => {
+
+                                    let message = alkahest::deserialize::<GameServerMatchmakingServerProtocol, GameServerMatchmakingServerProtocol>(&buf);
+
+                                    match message
+                                    {
+                                        Ok(message) =>
+                                        {
+                                            match message
+                                            {
+                                                GameServerMatchmakingServerProtocol::GameServerMessage(message) =>
+                                                {
+                                                    match message {
+                                                        GameServerMessage::PlayersAmoutIs(players_amount) =>
+                                                        {
+                                                            game_server_info.players_amount_by_game_server = players_amount;
+
+                                                            println!("[{}] game server has {} players", game_server_info.server_index, players_amount);
+
+                                                        }
+                                                    }
+                                                }
+                                                GameServerMatchmakingServerProtocol::MatchmakingServerMessageToGameServer(_) =>
+                                                {
+                                                    println!("ERROR, matchmaking server recieved MatchmakingServerMessageToGameServer from [{}] game server, this server will be stoped", game_server_info.server_index);
+                                                    
+                                                    stop_server = true
+                                                }
+                                            }
+                                        }
+                                        Err(_) =>
+                                        {
+                                            println!("[{}] game server will stopped because of message deserialization error", game_server_index);
+                                            stop_server = true
+                                        }
+                                    }
+                                },
+
+                                _ => {
+                                    println!("[{}] game server will stopped because of answer timeout", game_server_index);
+                                    stop_server = true;
+                                }
+                            };
+                        }
+                        Err(_) =>
+                        {
+                            println!("[{}] game server will stopped because of send message to game server error", game_server_index);
+                            stop_server = true;
+
+                        }
+                    }
+                }
+                None =>
+                {
+                    println!("[{}] game server will stopped because of tcp connect to game server timeout", game_server_index);
+                    stop_server = true;
+                }
+            }
+            
+            if stop_server
+            {
+                game_servers_list_to_be_stopped.push((*game_server_index, game_server_info.game_server_pid));
+            }
+        }
+
+        while let Some((game_server_index, game_server_pid)) = game_servers_list_to_be_stopped.pop()
+        {
+            locked_state.remove(&game_server_index);
+            stop_game_server(game_server_pid);
+            println!("[{}] game server is stopped", game_server_index);
+        }
+
+        let mut total_players_amount = 0u32;
+
+        for (_, game_server_info) in locked_state.iter_mut()
+        {
+            game_server_info.players_amount_by_matchmaking_server = game_server_info.players_amount_by_game_server;
+
+            total_players_amount += game_server_info.players_amount_by_game_server;
+        }
+
+        println!("{} game servers is running with {} player in total", locked_state.len(), total_players_amount);
+        
+        tokio::time::sleep(Duration::from_secs(4)).await;
+    }
+}
+
+
+use nix::sys::signal::{kill, Signal};
+use nix::unistd::Pid;
+
+fn stop_game_server(pid: u32)
+{
+    kill(Pid::from_raw(pid as i32), Signal::SIGKILL)
+        .map_err(|e| println!("Failed to kill game server: {}", e));
 }
 
 
@@ -690,21 +721,39 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
     let matchmaking_server_ip = Ipv4Addr::from_str(&matchmaking_server_ip)
         .expect("ERROR: wrong matchmaking_server_ip ip address format");
 
-    let game_severs_min_port = {
+    let game_severs_min_port_for_signaling_servers = {
         object
-            .get("game_severs_min_port")
-            .expect("ERROR: Have not game_severs_min_port in matchmaking-server-config.json")
+            .get("game_severs_min_port_for_signaling_servers")
+            .expect("ERROR: Have not game_severs_min_port_for_signaling_servers in matchmaking-server-config.json")
             .as_i64()
-            .expect("ERROR: game_severs_min_port is not number value in matchmaking-server-config.json")
+            .expect("ERROR: game_severs_min_port_for_signaling_servers is not number value in matchmaking-server-config.json")
             as u16
     };
 
-    let game_severs_max_port = {
+    let game_severs_max_port_for_signaling_servers = {
         object
-            .get("game_severs_max_port")
-            .expect("ERROR: Have not game_severs_max_port in matchmaking-server-config.json")
+            .get("game_severs_max_port_for_signaling_servers")
+            .expect("ERROR: Have not game_severs_max_port_for_signaling_servers in matchmaking-server-config.json")
             .as_i64()
-            .expect("ERROR: game_severs_max_port is not number value in matchmaking-server-config.json")
+            .expect("ERROR: game_severs_max_port_for_signaling_servers is not number value in matchmaking-server-config.json")
+            as u16
+    };
+
+    let game_severs_min_port_for_tcp_listener = {
+        object
+            .get("game_severs_min_port_for_tcp_listener")
+            .expect("ERROR: Have not game_severs_min_port_for_tcp_listener in matchmaking-server-config.json")
+            .as_i64()
+            .expect("ERROR: game_severs_min_port_for_tcp_listener is not number value in matchmaking-server-config.json")
+            as u16
+    };
+
+    let game_severs_max_port_for_tcp_listener = {
+        object
+            .get("game_severs_max_port_for_tcp_listener")
+            .expect("ERROR: Have not game_severs_max_port_for_tcp_listener in matchmaking-server-config.json")
+            .as_i64()
+            .expect("ERROR: game_severs_max_port_for_tcp_listener is not number value in matchmaking-server-config.json")
             as u16
     };
 
@@ -744,8 +793,10 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         matchmaking_server_port_for_clients,
         matchmaking_server_port_for_servers,
         game_severs_public_ip,
-        game_severs_min_port,
-        game_severs_max_port,
+        game_severs_min_port_for_signaling_servers,
+        game_severs_max_port_for_signaling_servers,
+        game_severs_min_port_for_tcp_listener,
+        game_severs_max_port_for_tcp_listener,
         game_servers_ice_config,
         max_game_sessions,
         max_players_per_game_session,  

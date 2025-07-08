@@ -19,7 +19,7 @@ use std::{
 };
 use matchmaking_server_protocol::{
     GameServerMatchmakingServerProtocol,
-    GameServerMessage
+    GameServerMessage, MatchmakingServerMessageToGameServer
 };
 use client_server_protocol::{
     BonusSpotStatus, ClientMessage, FlagStatus, NetMessageToPlayer, NetMessageToServer, RemoteMessage, ServerMessage, Team
@@ -38,16 +38,14 @@ use matchbox_socket::{
     WebRtcSocket
 };
 use tokio::{
-    runtime::{
+    io::{AsyncReadExt, AsyncWriteExt}, net::TcpListener, runtime::{
         Builder,
         Runtime
-    },
-    sync::mpsc::{
+    }, sync::mpsc::{
         channel,
         Receiver,
         Sender
-    },
-    task::JoinHandle
+    }, task::JoinHandle
 };
 
 use glam::FloatExt;
@@ -59,6 +57,10 @@ use tokio_tungstenite::tungstenite::Message;
 #[derive(Clone, Debug)]
 struct GameServerConfig {
     signaling_port: u16,
+    game_severs_min_port_for_signaling_servers: u16,
+    game_severs_max_port_for_signaling_servers: u16,
+    game_severs_min_port_for_tcp_listener: u16,
+    game_severs_max_port_for_tcp_listener: u16,
     matchmaking_server_ip: Ipv4Addr,
     matchmaking_server_port: u16,
     max_players: u32,
@@ -73,28 +75,56 @@ impl GameServerConfig {
     fn new(args: Vec<String>) -> Result<Self, &'static str> {
         if args.len() < 5 {
             return Err(
-                "Usage: game_server <signaling_port> <matchmaking_server_ip> <matchmaking_server_port> <max_players_per_game_session> <ice_servers_urls> <turn_server_username> <turn_server_credential>"
+                "Usage: game_server
+    <signaling_port>
+    <game_severs_min_port_for_signaling_servers>
+    <game_severs_max_port_for_signaling_servers>
+    <game_severs_min_port_for_tcp_listener>
+    <game_severs_max_port_for_tcp_listener>
+    <matchmaking_server_ip>
+    <matchmaking_server_port>
+    <max_players_per_game_session>
+    <ice_servers_urls>
+    <turn_server_username>
+    <turn_server_credential>\n"
             );
         }
 
         let signaling_port = args[1]
             .parse()
             .map_err(|_| "Invalid signaling port")?;
+
+        let game_severs_min_port_for_signaling_servers = args[2]
+            .parse()
+            .map_err(|_| "Invalid game_severs_min_port_for_signaling_servers")?;
         
-        let matchmaking_server_ip = Ipv4Addr::from_str(&args[2])
+        let game_severs_max_port_for_signaling_servers = args[3]
+            .parse()
+            .map_err(|_| "Invalid game_severs_max_port_for_signaling_servers")?;
+        
+        let game_severs_min_port_for_tcp_listener = args[4]
+            .parse()
+            .map_err(|_| "Invalid game_severs_min_port_for_tcp_listener")?;
+        
+        let game_severs_max_port_for_tcp_listener = args[5]
+            .parse()
+            .map_err(|_| "Invalid game_severs_max_port_for_tcp_listener")?;
+
+        
+        let matchmaking_server_ip = Ipv4Addr::from_str(&args[6])
             .expect("Invalid matchmaking server ip address format");
         
-        let matchmaking_server_port = args[3]
+        let matchmaking_server_port = args[7]
             .parse()
             .map_err(|_| "Invalid matchmaking server port")?;
 
-        let max_players = args[4]
+        let max_players = args[8]
             .parse()
             .map_err(|_| "Invalid matchmaking server port")?;
 
-        let ice_urls: Vec<String> = if args.len() > 5
+        let ice_urls: Vec<String> = if args.len() > 9
         {
-            args[5]
+            args[9]
                 .split("|")
                 .into_iter()
                 .filter_map(|s|if s != "" {Some(s.to_string())} else {None})
@@ -105,15 +135,15 @@ impl GameServerConfig {
             Vec::with_capacity(0)
         };
 
-        let username = if args.len() > 6
+        let username = if args.len() > 10
         {
-            if args[6] == ""
+            if args[10] == ""
             {
                 None
             }
             else
             {
-                Some(args[6].clone())
+                Some(args[10].clone())
             }
         }
         else
@@ -121,15 +151,15 @@ impl GameServerConfig {
             None
         };
 
-        let credential = if args.len() > 7
+        let credential = if args.len() > 11
         {
-            if args[7] == ""
+            if args[11] == ""
             {
                 None
             }
             else
             {
-                Some(args[7].clone())
+                Some(args[11].clone())
             }
         }
         else
@@ -139,6 +169,10 @@ impl GameServerConfig {
 
         let config = GameServerConfig {
             signaling_port,
+            game_severs_min_port_for_signaling_servers,
+            game_severs_max_port_for_signaling_servers,
+            game_severs_min_port_for_tcp_listener,
+            game_severs_max_port_for_tcp_listener,
             matchmaking_server_ip,
             matchmaking_server_port,
             max_players,
@@ -177,7 +211,7 @@ fn main() -> Result<(), ()> {
     let runtime = Arc::new(
         Builder::new_current_thread()
             .enable_all()
-            .worker_threads(2)
+            .worker_threads(1)
             .build()
             .unwrap()
     );
@@ -191,27 +225,24 @@ async fn async_main(
     config: GameServerConfig
 ) -> Result<(), ()> {
     
-    let (sender_to_matchmaking_server, reciever) =
-        channel::<GameServerMatchmakingServerProtocol>(10);
+    let players_amount = Arc::new(Mutex::new(0u32));
 
-    let matchmaking_server_connect_handle =
-        runtime.spawn(connect_to_matchmaking_server(
-            config.matchmaking_server_ip.to_string(),
-            config.matchmaking_server_port,
-            reciever
-        ));
+    let (matchmaking_server_listener, matchmaking_server_listener_port) =
+        create_matchmaking_server_listener(config.clone())
+            .await
+            .unwrap();
 
-    let (player_connected_event_sender, player_connected_event_reciever) =
-        std::sync::mpsc::channel::<PeerId>();
-    
-    let (player_disconnected_event_sender, player_disconnected_event_reciever) =
-        std::sync::mpsc::channel::<PeerId>();
+    runtime.spawn(listening_to_matchmaking_server(
+        players_amount.clone(),
+        matchmaking_server_listener
+    ));
+
+    let actual_signaling_server_port = Arc::new(Mutex::new(0));
 
     runtime.spawn(run_signaling_server(
-        config.signaling_port,
-        config.max_players,
-        player_connected_event_sender,
-        player_disconnected_event_sender,
+        config.clone(),
+        players_amount.clone(),
+        actual_signaling_server_port.clone()
     ));
 
     let (mut webrtc_socket, socket_future) =
@@ -245,21 +276,15 @@ async fn async_main(
         }
     }
 
-    println!("ready");
-
-    sender_to_matchmaking_server.send(
-        GameServerMatchmakingServerProtocol::GameServerMessage(
-            GameServerMessage::ServerStarted(config.game_server_index)
-        )
-    ).await.unwrap();
+    println!(
+        "game server is ready|{}|{}",
+        *actual_signaling_server_port.lock().unwrap(),
+        matchmaking_server_listener_port,
+    );
 
     game_server_main_loop(
         webrtc_socket,
-        sender_to_matchmaking_server,
         config,
-        matchmaking_server_connect_handle,
-        player_connected_event_reciever,
-        player_disconnected_event_reciever,
     ).await;
 
     Ok(())
@@ -267,11 +292,7 @@ async fn async_main(
 
 async fn game_server_main_loop(
     mut webrtc_socket: WebRtcSocket,
-    mut sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>,
     config: GameServerConfig,
-    handle_to_matchmaking_server_connect: JoinHandle<()>,
-    player_connected_event_reciever: std::sync::mpsc::Receiver<PeerId>,
-    player_disconnected_event_reciever: std::sync::mpsc::Receiver<PeerId>,
 ) {
     let mut players_state = GameSessionState::new(&config); 
 
@@ -288,7 +309,6 @@ async fn game_server_main_loop(
     loop {
         let command = start_new_game_session(
             &mut webrtc_socket,
-            &mut sender_to_matchmaking_server,
             &config,
             &mut relaible_channel,
             &mut unrelaible_channel,
@@ -304,12 +324,7 @@ async fn game_server_main_loop(
             }
             Command::ShutDownServer(exit_code) =>
             {
-                shutdown_game_server(
-                    sender_to_matchmaking_server,
-                    config,
-                    handle_to_matchmaking_server_connect,
-                    exit_code
-                ).await;
+                exit(exit_code);
             }
         }
     }
@@ -833,7 +848,6 @@ struct MoveWBonusSpot
 
 async fn start_new_game_session(
     webrtc_socket: &mut WebRtcSocket,
-    sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
     relaible_channel: &mut WebRtcChannel,
     unrelaible_channel: &mut WebRtcChannel,
@@ -888,7 +902,6 @@ async fn start_new_game_session(
                 {
                     println!("player {} is connected to p2p network", id.0.as_u128());
                     handle_player_connection(
-                        sender_to_matchmaking_server,
                         config,
                         &server_start_time,
                         relaible_channel,
@@ -900,7 +913,6 @@ async fn start_new_game_session(
                 {
                     println!("player {} is disconnected to p2p network", id.0.as_u128());
                     handle_player_disconnection(
-                        sender_to_matchmaking_server,
                         config,
                         &server_start_time,
                         relaible_channel,
@@ -1097,7 +1109,6 @@ fn choose_team_for_new_player(
 
 
 async fn handle_player_connection(
-    sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
     server_start_time: &Instant,
     channel: &mut WebRtcChannel,
@@ -1164,12 +1175,6 @@ async fn handle_player_connection(
             captured_flag: false,
         }
     );
-
-    sender_to_matchmaking_server.send(
-        GameServerMatchmakingServerProtocol::GameServerMessage(
-            GameServerMessage::PlayerConnected(config.game_server_index)
-        )
-    ).await.unwrap();
 }
 
 
@@ -1286,7 +1291,6 @@ fn make_teams_equal(
 }
 
 async fn handle_player_disconnection(
-    sender_to_matchmaking_server: &mut Sender<GameServerMatchmakingServerProtocol>,
     config: &GameServerConfig,
     server_start_time: &Instant,
     relaible_channel: &mut WebRtcChannel,
@@ -1344,12 +1348,6 @@ async fn handle_player_disconnection(
                 player_id.peer_id
             );
         }
-
-        sender_to_matchmaking_server.send(
-            GameServerMatchmakingServerProtocol::GameServerMessage(
-                GameServerMessage::PlayerDisconnected(config.game_server_index)
-            )
-        ).await.unwrap();
     }
     else
     {
@@ -1746,32 +1744,6 @@ fn process_player_message(
     }
 }
 
-async fn shutdown_game_server(
-    sender_to_matchmaking_server: Sender<GameServerMatchmakingServerProtocol>,
-    config: GameServerConfig,
-    handle_to_matchmaking_server_connect: JoinHandle<()>,
-    exit_code: i32,
-) -> ! 
-{
-    sender_to_matchmaking_server.send(
-        GameServerMatchmakingServerProtocol::GameServerMessage(
-            GameServerMessage::GameServerShutedDown(
-                config.game_server_index
-            )
-        )
-    ).await.unwrap();
-
-    let timer = Instant::now();
-
-    while !handle_to_matchmaking_server_connect.is_finished() {
-        if timer.elapsed().as_secs() > 3 {
-            exit(1)
-        }
-        tokio::time::sleep(Duration::from_millis(10)).await;
-    }
-    exit(exit_code)
-}
-
 enum PlayerAmountChangedEvent
 {
     PlayerConnected(PeerId),
@@ -1779,44 +1751,95 @@ enum PlayerAmountChangedEvent
 }
 
 
-async fn run_signaling_server(
-    port: u16,
-    max_players: u32,
-    player_connected_event_sender: std::sync::mpsc::Sender<PeerId>,
-    player_disconnected_event_sender: std::sync::mpsc::Sender<PeerId>,
-) {
+async fn create_matchmaking_server_listener(config: GameServerConfig) -> Option<(TcpListener, u16)> {
+    for port in config.game_severs_min_port_for_tcp_listener..=config.game_severs_max_port_for_tcp_listener
+    {
+        match TcpListener::bind(("0.0.0.0", port)).await
+        {    
+            Ok(listener) => return Some((listener, port)),
+            Err(_) => continue,
+        }
+    }
 
-    // let active_connections = Arc::new(Mutex::new(HashMap::new()));
-    let players_amount = Arc::new(Mutex::new(0u32));
+    None
+}
+
+
+async fn listening_to_matchmaking_server(
+    players_amount: Arc<Mutex<u32>>,
+    tcp_listener: TcpListener,
+)
+{
+    while let Ok((mut stream, _)) = tcp_listener.accept().await
+    {
+        let mut buf = Vec::new();
+
+        stream.read_buf(&mut buf).await.unwrap();
+
+        let message = alkahest::deserialize::<GameServerMatchmakingServerProtocol, GameServerMatchmakingServerProtocol>(&buf);
+
+        match message
+        {
+            Ok(message) =>
+            {
+                match message {
+                    GameServerMatchmakingServerProtocol::MatchmakingServerMessageToGameServer(msg) =>
+                    {
+                        match msg {
+                            MatchmakingServerMessageToGameServer::GiveMePlayersAmount =>
+                            {
+                                let message = GameServerMatchmakingServerProtocol::GameServerMessage(
+                                    GameServerMessage::PlayersAmoutIs(*players_amount.lock().unwrap())
+                                );
+
+                                stream.write_all(&message.to_packet()).await.unwrap();
+                            }
+                        }
+                    }
+
+                    GameServerMatchmakingServerProtocol::GameServerMessage(_) =>
+                    {
+                        println!("ERROR: game server recieved GameServerMessage message by matchmaking server listener");
+
+                        continue;
+                    }
+                }
+            }
+            Err(_) =>
+            {
+                println!("ERROR: game server recieved unexpected message by matchmaking server listener");
+
+                continue;
+            }
+        }
+    }
+
+    exit(1);
+}
+
+async fn  run_signaling_server(
+    config: GameServerConfig,
+    players_amount: Arc<Mutex<u32>>,
+    actual_signaling_server_port: Arc<Mutex<u16>>,
+) {
 
     let players_amount_1 = players_amount.clone();
     let players_amount_2 = players_amount.clone();
+    let players_amount_3 = players_amount.clone();
+
+    let max_players = config.max_players;
+
+    *actual_signaling_server_port.lock().unwrap() = config.signaling_port;
 
     let server = 
         SignalingServer::client_server_builder(
             SocketAddr::V4(
-                SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)
+                SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, config.signaling_port)
             )
         )
 
         .on_connection_request(move |connection| {
-
-            // let ip = connection.origin.ip();
-            // let port = connection.origin.port();
-
-            // if ip == IpAddr::V4(Ipv4Addr::LOCALHOST) {
-            //     return Ok(true);
-            // }
-
-            // if active_connections.lock().unwrap().contains_key(&(ip, port)) {
-            //     return Ok(true);
-            // } else {
-            //     active_connections.lock().unwrap().insert((ip,port), ());
-            //     return Ok(false);
-            // }
-            // Ok(true)
-
-            if *players_amount.lock().unwrap() >= max_players {
+            if *players_amount_1.lock().unwrap() >= max_players {
                 Ok(false)
             } else {
                 Ok(true)
@@ -1828,87 +1851,67 @@ async fn run_signaling_server(
         )
 
         .on_client_connected(move |id| {
-            *players_amount_1.lock().unwrap() += 1;
-            // match player_connected_event_sender.send(id) {
-            //     Ok(_) => {}
-            //     Err(_) =>
-            //     {
-            //         println!("ERROR: player connection event channel error");
-            //         exit(1);
-            //     }
-            // }
+            *players_amount_2.lock().unwrap() += 1;
         })
 
         .on_client_disconnected(move |id| {
-            *players_amount_2.lock().unwrap() -= 1;
-            // match player_disconnected_event_sender.send(id) {
-            //     Ok(_) => {}
-            //     Err(_) =>
-            //     {
-            //         println!("ERROR: player connection event channel error");
-            //         exit(1);
-            //     }
-            // }
+            *players_amount_3.lock().unwrap() -= 1;
         })
-
-        // .on_id_assignment(|(_socket, _id)| {})
-        // .on_host_connected(|_id| {})
-        // .on_host_disconnected(|_id| {})
-        .cors()
-        .trace()
 
         .build();
     
     println!("start signaling server");
 
-    server.serve().await.unwrap()
-}
+    if server.serve().await.is_err()
+    {
+        for port in (config.game_severs_min_port_for_signaling_servers..=config.game_severs_max_port_for_signaling_servers)
+        {
+            *actual_signaling_server_port.lock().unwrap() = port;
 
+            let players_amount_1 = players_amount.clone();
+            let players_amount_2 = players_amount.clone();
+            let players_amount_3 = players_amount.clone();
 
-async fn connect_to_matchmaking_server(
-    matchmaking_server_ip: String,
-    matchmaking_server_port: u16,
-    mut reciever: Receiver<GameServerMatchmakingServerProtocol>
-) {
-    
-    let server_url = format!("ws://{}:{}/", matchmaking_server_ip, matchmaking_server_port);
+            let server = 
+                SignalingServer::client_server_builder(
+                    SocketAddr::V4(
+                        SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port)
+                    )
+                )
 
-    println!("game server is connecting to matchaking server on {} addres", server_url);
-    
-    let (mut ws_stream, _) =
-        connect_async(server_url)
-        .await
-        .expect("Failed to connect to matchmaking server");
-
-    println!("game server is sucessfully connected to the matchmaking server");
-
-    while let Some(message) = reciever.recv().await {
-
-        let mut shutdown = false;
-
-        match &message {
-            GameServerMatchmakingServerProtocol::GameServerMessage(
-                message
-            ) => {
-                match message {
-                    GameServerMessage::GameServerShutedDown(index) => {
-                        shutdown = true;
-                    },
-                    _ => {
-                        shutdown = false;
+                .on_connection_request(move |connection| {
+                    if *players_amount_1.lock().unwrap() >= max_players {
+                        Ok(false)
+                    } else {
+                        Ok(true)
                     }
-                }
+                })
+
+                .on_host_connected(
+                    |_| println!("host connected")
+                )
+
+                .on_client_connected(move |id| {
+                    *players_amount_2.lock().unwrap() += 1;
+                })
+
+                .on_client_disconnected(move |id| {
+                    *players_amount_3.lock().unwrap() -= 1;
+                })
+
+                .build();
+
+            if server.serve().await.is_err()
+            {
+                continue;
+            }
+            else
+            {
+                exit(0);
+  
             }
         }
-        
-        ws_stream.send(Message::Binary(message.to_packet().into()))
-            .await
-            .unwrap();
 
-        if shutdown {
-            return ;
-        }
-        
-        continue ;
+        exit(1);
     }
 }

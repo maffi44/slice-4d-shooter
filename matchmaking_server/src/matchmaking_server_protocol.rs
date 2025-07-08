@@ -149,6 +149,7 @@ pub enum ClientMatchmakingServerProtocol
 pub enum GameServerMatchmakingServerProtocol
 {
     GameServerMessage(GameServerMessage),
+    MatchmakingServerMessageToGameServer(MatchmakingServerMessageToGameServer),
 }
 
 impl GameServerMatchmakingServerProtocol
@@ -175,10 +176,14 @@ impl GameServerMatchmakingServerProtocol
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum GameServerMessage
 {
-    GameServerShutedDown(u16),
-    ServerStarted(u16),
-    PlayerConnected(u16),
-    PlayerDisconnected(u16),
+    PlayersAmoutIs(u32),
+}
+
+#[repr(C)]
+#[alkahest(Formula, Serialize, Deserialize)]
+pub enum MatchmakingServerMessageToGameServer
+{
+    GiveMePlayersAmount
 }
 
 
