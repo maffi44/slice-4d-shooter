@@ -9,7 +9,6 @@ tokio-tungstenite = "*"
 fyrox-core = "*"
 alkahest = { version = "*", features = [ "derive" ] }
 serde_json = "*"
-nix = "*"
 
 [lib]
 name = "matchmaking_server_protocol"

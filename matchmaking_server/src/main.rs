@@ -483,7 +483,10 @@ async fn async_main(
         &("0.0.0.0:".to_string() + &config.matchmaking_server_port_for_clients.to_string())
     ).await.unwrap();
 
-    async_runtime.spawn(check_game_servers_status(game_servers_state.clone()));
+    async_runtime.spawn(check_game_servers_status(
+        game_servers_state.clone(),
+        async_runtime.clone(),
+    ));
     
     loop
     {
@@ -509,6 +512,7 @@ async fn async_main(
 
 async fn check_game_servers_status(
     game_servers_state: GameServersState,
+    async_runtime: Arc<Runtime>,
 )
 {
     loop
@@ -620,8 +624,9 @@ async fn check_game_servers_status(
         while let Some((game_server_index, game_server_pid)) = game_servers_list_to_be_stopped.pop()
         {
             locked_state.remove(&game_server_index);
-            stop_game_server(game_server_pid);
             println!("[{}] game server is stopped", game_server_index);
+            
+            async_runtime.spawn(stop_game_server(game_server_pid));
         }
 
         let mut total_players_amount = 0u32;
@@ -640,13 +645,20 @@ async fn check_game_servers_status(
 }
 
 
-use nix::sys::signal::{kill, Signal};
-use nix::unistd::Pid;
-
-fn stop_game_server(pid: u32)
+async fn stop_game_server(pid: u32)
 {
-    kill(Pid::from_raw(pid as i32), Signal::SIGKILL)
-        .map_err(|e| println!("Failed to kill game server: {}", e));
+    let kill_cmd = Command::new("kill")
+        .arg("-s")
+        .arg("SIGKILL")
+        .arg(pid.to_string())
+        .spawn();
+
+    if kill_cmd.is_err()
+    {
+        return;
+    }
+
+    let _ = kill_cmd.unwrap().wait().await;
 }
 
 
