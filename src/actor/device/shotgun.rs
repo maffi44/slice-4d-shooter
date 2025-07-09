@@ -34,9 +34,9 @@ use client_server_protocol::{
 use super::{Device, DeviceType};
 
 
-const MAX_TEMPERTURE: f32 = 52.1;
+const MAX_TEMPERTURE: f32 = 39.1;
 const MAX_TEMPERTURE_FOR_SHOOT: f32 = 0.0;
-const ADD_TEMPERTURE_ON_SHHOT: f32 = 52.1;
+const ADD_TEMPERTURE_ON_SHHOT: f32 = 39.1;
 const CROSSHAIR_INCREASE_ON_SHOOT: f32 = 1.0;
 
 pub const SHOTGUN_LASER_SHOT_HOLE_REDUCTION_SPEED: f32 = 0.35;

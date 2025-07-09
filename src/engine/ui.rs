@@ -1711,6 +1711,12 @@ impl UISystem {
                     if elem.ui_data.parent_ui_elem.is_none() {
                         continue;
                     }
+
+                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    {
+                        true => 1.0_f32,
+                        false => 0.0_f32,
+                    };
                     
                     let parent_transform = {
                         match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
@@ -1719,6 +1725,7 @@ impl UISystem {
                                     elem.texture_aspect.unwrap(),
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                                 )
                             },
                             UIElement::ProgressBar(elem) => {
@@ -1726,6 +1733,7 @@ impl UISystem {
                                     elem.texture_aspect.unwrap(),
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                                 )
                             },
                             UIElement::ScannerDisplay(elem) => {
@@ -1733,6 +1741,7 @@ impl UISystem {
                                     1.0,
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                                 )
                             }
                         }
@@ -1751,6 +1760,7 @@ impl UISystem {
                                         .expect("UI Image have not texture aspect"),
                                     screen_aspect,
                                     Some(parent_transform),
+                                    is_visible_coef,
                         )]),
                     );
                 }
@@ -1759,6 +1769,12 @@ impl UISystem {
                         continue;
                     }
 
+                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    {
+                        true => 1.0_f32,
+                        false => 0.0_f32,
+                    };
+
                     let parent_transform = {
                         match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
                             UIElement::Image(elem) => {
@@ -1766,6 +1782,7 @@ impl UISystem {
                                     elem.texture_aspect.unwrap(),
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                                 )
                             },
                             UIElement::ProgressBar(elem) => {
@@ -1773,6 +1790,7 @@ impl UISystem {
                                     elem.texture_aspect.unwrap(),
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                                 )
                             },
                             UIElement::ScannerDisplay(elem) => {
@@ -1780,6 +1798,7 @@ impl UISystem {
                                     1.0,
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                                 )
                             }
                         }
@@ -1798,6 +1817,7 @@ impl UISystem {
                                         .expect("UI Progress bar have not texture aspect"),
                                     screen_aspect,
                                     Some(parent_transform),
+                                    is_visible_coef,
                         )]),
                     );
                     queue.write_buffer(
@@ -1814,6 +1834,12 @@ impl UISystem {
                     if elem.ui_data.parent_ui_elem.is_none() {
                         continue;
                     }
+
+                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    {
+                        true => 1.0_f32,
+                        false => 0.0_f32,
+                    };
                     
                     let parent_transform = {
                         match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
@@ -1822,6 +1848,7 @@ impl UISystem {
                                     elem.texture_aspect.unwrap(),
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                                 )
                             },
                             UIElement::ProgressBar(elem) => {
@@ -1829,6 +1856,7 @@ impl UISystem {
                                     elem.texture_aspect.unwrap(),
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                                 )
                             },
                             UIElement::ScannerDisplay(elem) => {
@@ -1836,6 +1864,7 @@ impl UISystem {
                                     1.0,
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                                 )
                             }
                         }
@@ -1852,6 +1881,7 @@ impl UISystem {
                                     1.0,
                                     screen_aspect,
                                     Some(parent_transform),
+                                    is_visible_coef,
                         )]),
                     );
                 }
@@ -1864,6 +1894,13 @@ impl UISystem {
                     if elem.ui_data.parent_ui_elem.is_some() {
                         continue;
                     }
+
+                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    {
+                        true => 1.0_f32,
+                        false => 0.0_f32,
+                    };
+
                     queue.write_buffer(
                         elem.ui_data.rect.transform_buffer
                             .as_ref()
@@ -1877,6 +1914,7 @@ impl UISystem {
                                         .expect("UI Image have not texture aspect"),
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                         )]),
                     );
                 }
@@ -1884,6 +1922,13 @@ impl UISystem {
                     if elem.ui_data.parent_ui_elem.is_some() {
                         continue;
                     }
+
+                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    {
+                        true => 1.0_f32,
+                        false => 0.0_f32,
+                    };
+
                     queue.write_buffer(
                         elem.ui_data.rect.transform_buffer
                             .as_ref()
@@ -1897,6 +1942,7 @@ impl UISystem {
                                         .expect("UI Progress bar have not texture aspect"),
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                         )]),
                     );
                     queue.write_buffer(
@@ -1913,6 +1959,13 @@ impl UISystem {
                     if elem.ui_data.parent_ui_elem.is_some() {
                         continue;
                     }
+
+                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    {
+                        true => 1.0_f32,
+                        false => 0.0_f32,
+                    };
+
                     queue.write_buffer(
                         &elem.ui_data.rect.transform_buffer
                             .as_ref()
@@ -1924,6 +1977,7 @@ impl UISystem {
                                     1.0,
                                     screen_aspect,
                                     None,
+                                    is_visible_coef,
                         )]),
                     );
                 }
@@ -1976,6 +2030,7 @@ impl UIRect {
         texture_aspect: f32,
         screen_aspect: f32,
         parent_transform: Option<RectTransformUniform>,
+        is_visible_coef: f32,
     ) -> RectTransformUniform {
 
         if let Some(parent) = parent_transform {
@@ -2101,11 +2156,11 @@ impl UIRect {
                     }
                 }
             };
-            
+
             return RectTransformUniform {
                 rotation_around_rect_center: self.rotation_around_rect_center,
                 rotation_around_screen_center: self.rotation_around_rect_center,
-                transparency: self.transparency,
+                transparency: self.transparency * is_visible_coef,
                 empty_bytes: 0.0,
                 scale,
                 translation,

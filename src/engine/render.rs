@@ -29,7 +29,7 @@ use self::{
 use client_server_protocol::Team;
 #[cfg(not(target_arch="wasm32"))]
 use tokio::runtime::Runtime;
-use winit::window::Window;
+use winit::{monitor::{MonitorHandle, VideoModeHandle}, window::Window};
 
 use super::{input::ActionsFrameState, physics::dynamic_collider::PlayersDollCollider, ui::UISystem, world::static_object::VisualWave};
 
@@ -63,7 +63,7 @@ pub struct RenderSystem {
     render_data: RenderData,
     pub window: Window,
     renderer: Arc<Mutex<Renderer>>,
-    outdated_signal_mutex: Arc<Mutex<bool>>,
+    resize_buffers_signal: Arc<Mutex<bool>>,
 
     generated_raymarch_shader: bool,
 
@@ -106,7 +106,7 @@ impl RenderSystem {
 
         let outdated_signal_mutex = Arc::new(Mutex::new(false));
 
-        let outdated_signal_mutex_cloned = outdated_signal_mutex.clone();
+        let resize_buffers_signal = outdated_signal_mutex.clone();
         // spawn async tusk for renderer
         #[cfg(not(target_arch="wasm32"))]
         let async_renderer = renderer.clone();
@@ -121,14 +121,13 @@ impl RenderSystem {
                     Ok(mut renderer_lock) => {
                         if let Err(err) = renderer_lock.render(/*&self.window*/) {
                             match err {
-                                // wgpu::SurfaceError::Lost => renderer_lock.resize(self.window.inner_size()),
+                                wgpu::SurfaceError::Lost => *resize_buffers_signal.lock().unwrap() = true,
                 
+                                wgpu::SurfaceError::Outdated => *resize_buffers_signal.lock().unwrap() = true,
+                                
                                 // The system is out of memory, we should probably quit
                                 wgpu::SurfaceError::OutOfMemory => panic!("Out of GPU memory"),
-                
-                                wgpu::SurfaceError::Outdated => *outdated_signal_mutex_cloned.lock().unwrap() = true,
-                                
-                                // All other errors (Timeout, ..) should be resolved by the next frame
+
                                 _ => log::error!("{:?}", err),
                             }
                         }
@@ -152,7 +151,7 @@ impl RenderSystem {
             renderer,
 
             render_data,
-            outdated_signal_mutex,
+            resize_buffers_signal: outdated_signal_mutex,
 
             generated_raymarch_shader: with_generated_raymarch_shader,
 
@@ -193,11 +192,11 @@ impl RenderSystem {
         time: &TimeSystem,
         ui: &UISystem,
     ) {
-        if *self.outdated_signal_mutex.lock().unwrap() == true
+        if *self.resize_buffers_signal.lock().unwrap() == true
         {
-            *self.outdated_signal_mutex.lock().unwrap() = false;
+            *self.resize_buffers_signal.lock().unwrap() = false;
 
-            self.window.set_fullscreen(None);
+            self.resize_frame_buffer();
         }
 
         self.render_data.update_dynamic_render_data(
@@ -277,9 +276,6 @@ impl RenderSystem {
                 _ => log::error!("{:?}", err),
             }
         }
-        
-
-        
     }
 
 

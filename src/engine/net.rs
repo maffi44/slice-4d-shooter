@@ -12,7 +12,7 @@ use wasm_bindgen::JsValue;
 
 use tokio_tungstenite::{
     connect_async,
-    tungstenite::error::Error
+    tungstenite::error::{Error, UrlError}
 };
 
 use matchbox_socket::{
@@ -64,6 +64,7 @@ enum ConnectionError {
     MatchmakingServerClientProtocolError,
     ConnectionLost(Error),
     ConnectionClosedByServer,
+    ConnectionTimeout,
 }
 
 enum ConnectionState {
@@ -258,6 +259,17 @@ impl NetSystem {
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerError;
             },
 
+            ConnectionError::ConnectionTimeout =>
+            {
+                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedServerNotFound)
+                    .get_ui_data()
+                    .get_is_visible_cloned_arc()
+                    .lock()
+                    .unwrap() = true && self.connection_status_visible;
+                
+                self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerNotFound;
+            }
+
             ConnectionError::ConnectionLost(e) =>
             {
                 match e
@@ -344,16 +356,7 @@ impl NetSystem {
 
         if input.connect_to_server.is_action_just_pressed()
         {
-            let game_server_url_promise = Some(
-                async_runtime.spawn(
-                    get_game_server_url(
-                        self.connection_data.matchmaking_server_url.clone(),
-                        0_u64
-                    )
-                )
-            );
-
-            ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise)
+            ConnectionState::ConnectingToMatchmakingServer(None)
         }
         else
         {
@@ -413,7 +416,9 @@ impl NetSystem {
                         }
                     }
 
-                } else {
+                }
+                else
+                {
                     return ConnectionState::ConnectingToMatchmakingServer(Some(promise));
                 }
             }
@@ -421,9 +426,9 @@ impl NetSystem {
             {
                 let game_server_url_promise =
                     Some(async_runtime.spawn(
+
                         get_game_server_url(
                             self.connection_data.matchmaking_server_url.clone(),
-                            1_u64
                         )
                     ));
                 
@@ -1748,90 +1753,96 @@ fn process_message(
 
 async fn get_game_server_url(
     matchmaking_server_url: String,
-    wait_time_in_secs: u64,
 ) -> Result<String, ConnectionError>
 {
-    if wait_time_in_secs > 0_u64
-    {
-        tokio::time::sleep(Duration::from_secs(wait_time_in_secs)).await
-    }
 
-    let connection_result =
+    let connection_result = tokio::time::timeout(
+        Duration::from_secs(3),
         connect_async(matchmaking_server_url)
-        .await;
+    ).await;
 
     match connection_result
     {
-        Ok((mut ws_stream, _)) =>
+        Ok(connection_result) =>
         {
-            let version = GameVersion::from(VERSION);
-
-            let message = ClientMatchmakingServerProtocol::ClientMessage(
-                matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
-                    version.into()
-                )
-            ).to_packet();
-
-            let sending_result = ws_stream
-                .send(tokio_tungstenite::tungstenite::Message::binary(message.clone()))
-                .await;
-            
-            match sending_result
+            match connection_result
             {
-                Ok(_) =>
+                Ok((mut ws_stream, _)) =>
                 {
-                    let recieving_result = ws_stream.next().await;
-
-                    if recieving_result.is_none()
+                    let version = GameVersion::from(VERSION);
+        
+                    let message = ClientMatchmakingServerProtocol::ClientMessage(
+                        matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
+                            version.into()
+                        )
+                    ).to_packet();
+        
+                    let sending_result = ws_stream
+                        .send(tokio_tungstenite::tungstenite::Message::binary(message.clone()))
+                        .await;
+                    
+                    match sending_result
                     {
-                        return Err(ConnectionError::ConnectionClosedByServer);
-                    }
-
-                    match recieving_result.unwrap()
-                    {
-                        Ok(message) =>
+                        Ok(_) =>
                         {
-                            let deserializeing_result =
-                                alkahest::deserialize::<ClientMatchmakingServerProtocol, ClientMatchmakingServerProtocol>(&message.into_data());
-                            
-                            match deserializeing_result
+                            let recieving_result = ws_stream.next().await;
+        
+                            if recieving_result.is_none()
+                            {
+                                return Err(ConnectionError::ConnectionClosedByServer);
+                            }
+        
+                            match recieving_result.unwrap()
                             {
                                 Ok(message) =>
                                 {
-                                    match message
+                                    let deserializeing_result =
+                                        alkahest::deserialize::<ClientMatchmakingServerProtocol, ClientMatchmakingServerProtocol>(&message.into_data());
+                                    
+                                    match deserializeing_result
                                     {
-                                        ClientMatchmakingServerProtocol::MatchmakingServerMessage(message) =>
+                                        Ok(message) =>
                                         {
                                             match message
                                             {
-                                                MatchmakingServerMessage::GameServerAddress((ip, port)) =>
+                                                ClientMatchmakingServerProtocol::MatchmakingServerMessage(message) =>
                                                 {
-                                                    let url = format!(
-                                                        "ws://{}.{}.{}.{}:{}/",
-                                                        ip[0], ip[1], ip[2], ip[3], port
-                                                    );
-            
-                                                    return Ok(url);
+                                                    match message
+                                                    {
+                                                        MatchmakingServerMessage::GameServerAddress((ip, port)) =>
+                                                        {
+                                                            let url = format!(
+                                                                "ws://{}.{}.{}.{}:{}/",
+                                                                ip[0], ip[1], ip[2], ip[3], port
+                                                            );
+                    
+                                                            return Ok(url);
+                                                        }
+                                                        MatchmakingServerMessage::NoFreeServers =>
+                                                        {
+                                                            return Err(ConnectionError::NoFreeServers);
+                                                        }
+                                                        MatchmakingServerMessage::WrongGameVersionCorrectIs(correct_game_version) =>
+                                                        {
+                                                            return Err(ConnectionError::WrongVersion(correct_game_version.into()));
+                                                        }
+                                                    }
                                                 }
-                                                MatchmakingServerMessage::NoFreeServers =>
+                                                _ =>
                                                 {
-                                                    return Err(ConnectionError::NoFreeServers);
-                                                }
-                                                MatchmakingServerMessage::WrongGameVersionCorrectIs(correct_game_version) =>
-                                                {
-                                                    return Err(ConnectionError::WrongVersion(correct_game_version.into()));
+                                                    return Err(ConnectionError::MatchmakingServerClientProtocolError)
                                                 }
                                             }
                                         }
-                                        _ =>
+                                        Err(_) =>
                                         {
-                                            return Err(ConnectionError::MatchmakingServerClientProtocolError)
+                                            return Err(ConnectionError::MatchmakingServerClientProtocolError);
                                         }
                                     }
                                 }
-                                Err(_) =>
+                                Err(e) =>
                                 {
-                                    return Err(ConnectionError::MatchmakingServerClientProtocolError);
+                                    return Err(ConnectionError::ConnectionLost(e));
                                 }
                             }
                         }
@@ -1847,9 +1858,9 @@ async fn get_game_server_url(
                 }
             }
         }
-        Err(e) =>
+        Err(_) =>
         {
-            return Err(ConnectionError::ConnectionLost(e));
+            return Err(ConnectionError::ConnectionTimeout);
         }
     }
 }

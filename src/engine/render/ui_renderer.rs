@@ -519,6 +519,7 @@ impl UIRenderer {
                                         texture_aspect,
                                         screen_aspect,
                                         None,
+                                        0.0
                                     )
                             ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
@@ -609,6 +610,7 @@ impl UIRenderer {
                                         texture_aspect,
                                         screen_aspect,
                                         None,
+                                        0.0,
                                     )
                                 ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
@@ -685,6 +687,7 @@ impl UIRenderer {
                                         1.0,
                                         screen_aspect,
                                         None,
+                                        0.0
                                     )
                             ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
@@ -792,7 +795,7 @@ impl UIRenderer {
 
             for (bindgroup, is_visible) in image_bgs {
     
-                if *is_visible.lock().unwrap() {
+                // if *is_visible.lock().unwrap() {
     
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Render Pass"),
@@ -815,12 +818,12 @@ impl UIRenderer {
                     render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
                     render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
         
-                }
+                // }
             }
     
             for (bindgroup, is_visible) in progerss_bar_bgs {
     
-                if *is_visible.lock().unwrap() {
+                // if *is_visible.lock().unwrap() {
     
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Render Pass"),
@@ -843,12 +846,12 @@ impl UIRenderer {
                     render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
                     render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
         
-                }
+                // }
             }
 
             for (bindgroup, is_visible) in scanner_bgs {
     
-                if *is_visible.lock().unwrap() {
+                // if *is_visible.lock().unwrap() {
     
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Render Pass"),
@@ -871,7 +874,7 @@ impl UIRenderer {
                     render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
                     render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
         
-                }
+                // }
             }
         }
 
