@@ -283,7 +283,7 @@
     "static_objects": [
         {
             "cube" : {
-                "comment" : "blue base w-floor",
+                "comment" : "middle base w-floor",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -312,7 +312,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base floor",
+                "comment" : "middle base floor",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -339,7 +339,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base forward wall",
+                "comment" : "middle base forward wall",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -366,7 +366,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base forward small wall",
+                "comment" : "middle base forward small wall",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -393,7 +393,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base forward outer cube",
+                "comment" : "middle base forward outer cube",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -420,7 +420,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base forward outer cube hole 1",
+                "comment" : "middle base forward outer cube hole 1",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -450,7 +450,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base forward outer cube hole 2",
+                "comment" : "middle base forward outer cube hole 2",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -480,7 +480,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base forward outer cube hole 3",
+                "comment" : "middle base forward outer cube hole 3",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -510,7 +510,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base back wall",
+                "comment" : "middle base back wall",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -537,7 +537,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base back small wall",
+                "comment" : "middle base back small wall",
                 "transform" : {
                     "position" : {
                         "x": 0,
@@ -564,7 +564,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base right wall",
+                "comment" : "middle base right wall",
                 "transform" : {
                     "position" : {
                         "x": 10,
@@ -591,7 +591,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base left wall",
+                "comment" : "middle base left wall",
                 "transform" : {
                     "position" : {
                         "x": -10,
@@ -618,7 +618,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base roof 1",
+                "comment" : "middle base roof 1",
                 "transform" : {
                     "position" : {
                         "x": 7.5,
@@ -645,7 +645,7 @@
         },
         {
             "cube" : {
-                "comment" : "blue base roof 2",
+                "comment" : "middle base roof 2",
                 "transform" : {
                     "position" : {
                         "x": -7.5,

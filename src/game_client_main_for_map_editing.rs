@@ -2,6 +2,7 @@ mod engine;
 mod actor;
 mod main_loop;
 mod transform;
+mod read_args;
 
 use engine::Engine;
 use main_loop::MainLoop;
@@ -12,7 +13,7 @@ use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, main_player::{player_input
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
-use crate::actor::flag_base::FlagBase;
+use crate::{actor::flag_base::FlagBase, read_args::read_args};
 
 #[allow(unused_variables)]
 #[allow(unused)]
@@ -25,6 +26,8 @@ static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
 fn main() {
     env_logger::init();
 
+    let specific_backend = read_args();
+
     let main_loop = MainLoop::new();
     
     log::info!("main: main_loop init");
@@ -34,7 +37,8 @@ fn main() {
             &main_loop,
             true,
              false,
-             false
+             false,
+             specific_backend,
             )
         );
     

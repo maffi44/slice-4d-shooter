@@ -8,6 +8,8 @@ use std::{env, fs::{File, OpenOptions}, io::{Read, Write}};
 
 use crate::{actor::main_player::player_settings::PlayerSettings, engine::{engine_handle::EngineHandle, render::{raymarch_shader_generator, render_data::static_render_data::StaticRenderData}, world::World}};
 
+// This is used for generate raymarch shader with a Static BSP Tree
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -86,6 +88,6 @@ fn main() {
 
     match res {
         Ok(_) => println!("succes! Raymarch shader generated!"),
-        Err(e) => panic!("Raymarch shader generator failture: {}", e),
+        Err(e) => panic!("Raymarch shader generator failure: {}", e),
     }
 }

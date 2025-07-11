@@ -9,7 +9,7 @@ use wgpu::{
     }, util::{
         BufferInitDescriptor,
         DeviceExt,
-    }, BackendOptions, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, PipelineCompilationOptions, PollStatus, Sampler, ShaderRuntimeChecks, Texture, TextureView, TextureViewDescriptor
+    }, Backend, BackendOptions, Backends, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions, PollStatus, Sampler, ShaderRuntimeChecks, TexelCopyBufferLayout, TexelCopyTextureInfoBase, Texture, TextureView, TextureViewDescriptor
 };
 
 
@@ -215,14 +215,28 @@ impl Renderer {
         it_is_2d_3d_example: bool,
         with_ui_renderer: bool,
         with_generated_raymarch_shader: bool,
+        specific_backend: Option<Backend>
     ) -> Renderer {
         let size = window.inner_size();
 
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::all(),
-            flags: InstanceFlags::empty(),
-            backend_options: BackendOptions::from_env_or_default()
-        });
+        let instance = if let Some(backend) = specific_backend
+        {
+            wgpu::Instance::new(&wgpu::InstanceDescriptor {
+                backends: wgpu::Backends::from(backend),
+                flags: InstanceFlags::empty(),
+                backend_options: BackendOptions::from_env_or_default(),
+                memory_budget_thresholds: MemoryBudgetThresholds::default(),
+            })
+        }
+        else
+        {
+            wgpu::Instance::new(&wgpu::InstanceDescriptor {
+                backends: wgpu::Backends::all(),
+                flags: InstanceFlags::empty(),
+                backend_options: BackendOptions::from_env_or_default(),
+                memory_budget_thresholds: MemoryBudgetThresholds::default(),
+            })
+        };
 
         log::info!("renderer: wgpu instance init");
 
@@ -1138,7 +1152,7 @@ impl Renderer {
 
         // let instatnt_full = web_time::Instant::now();
 
-        match self.device.poll(wgpu::MaintainBase::Poll) {
+        match self.device.poll(wgpu::wgt::PollType::Poll) {
             Ok(poll_status) => {
                 match poll_status
                 {
@@ -1191,6 +1205,7 @@ impl Renderer {
                 label: Some("raymarch shader render pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &self.raymarch_target_texture_view,
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(
@@ -1223,6 +1238,7 @@ impl Renderer {
                 label: Some("upscale shader render pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(
@@ -1319,7 +1335,6 @@ fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue, sky_box_name: &
         dimensions = dims;
     }
 
-    // Создание массива текстур для куба
     let cube_texture = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("Cube Texture"),
         view_formats: &[],
@@ -1344,7 +1359,7 @@ fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue, sky_box_name: &
     for (i, data) in textures_data.iter().enumerate() {
         
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            TexelCopyTextureInfoBase {
                 texture: &cube_texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d {
@@ -1355,7 +1370,7 @@ fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue, sky_box_name: &
                 aspect: wgpu::TextureAspect::All,
             },
             &data,
-            wgpu::ImageDataLayout {
+            TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * dimensions.0),
                 rows_per_image: Some(dimensions.1),

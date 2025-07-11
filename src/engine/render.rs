@@ -29,6 +29,7 @@ use self::{
 use client_server_protocol::Team;
 #[cfg(not(target_arch="wasm32"))]
 use tokio::runtime::Runtime;
+use wgpu::Backend;
 use winit::{monitor::{MonitorHandle, VideoModeHandle}, window::Window};
 
 use super::{input::ActionsFrameState, physics::dynamic_collider::PlayersDollCollider, ui::UISystem, world::static_object::VisualWave};
@@ -83,6 +84,7 @@ impl RenderSystem {
         it_is_2d_3d_example: bool,
         with_ui_renderer: bool,
         with_generated_raymarch_shader: bool,
+        specific_backend: Option<Backend>,
     ) -> Self {
         
         let render_data = RenderData::new(world, time, &window);
@@ -100,6 +102,7 @@ impl RenderSystem {
                     it_is_2d_3d_example,
                     with_ui_renderer,
                     with_generated_raymarch_shader,
+                    specific_backend,
                 ).await
             )
         );

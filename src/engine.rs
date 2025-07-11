@@ -42,6 +42,7 @@ use effects::EffectsSystem;
 // use winit::window::WindowBuilder;
 
 use settings::Settings;
+use wgpu::Backend;
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::WindowBuilderExtWebSys;
 #[cfg(target_arch = "wasm32")]
@@ -102,6 +103,7 @@ impl Engine {
         with_ui_renderer: bool,
         it_is_2d_3d_example: bool,
         with_generated_raymarch_shader: bool,
+        specific_backend: Option<Backend>,
     ) -> Engine {
 
         let window;
@@ -193,6 +195,7 @@ impl Engine {
             it_is_2d_3d_example,
             with_ui_renderer,
             with_generated_raymarch_shader,
+            specific_backend,
         ).await;
         log::info!("engine systems: render init");
 

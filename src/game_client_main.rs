@@ -2,6 +2,7 @@ mod engine;
 mod actor;
 mod main_loop;
 mod transform;
+mod read_args;
 
 use engine::Engine;
 use main_loop::MainLoop;
@@ -12,7 +13,7 @@ use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, main_player::{player_input
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
-use crate::actor::flag_base::FlagBase;
+use crate::{actor::flag_base::FlagBase, read_args::read_args};
 
 
 #[global_allocator]
@@ -20,8 +21,12 @@ static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
     UnsafeGlobalBlinkAlloc::new()
 };
 
+// This is pre-alpha demo version
+
 fn main() {
     env_logger::init();
+
+    let specific_backend = read_args();
 
     let main_loop = MainLoop::new();
     
@@ -32,7 +37,12 @@ fn main() {
             &main_loop,
             true,
              false,
+             // If you made any changes to the game map, you should
+             // run raymarch_shader_generator binary to generate a 
+             // relevant raymarch shader with a BSP tree before creating the Engine.
+             // Unless you see the previous version of the map.
              true,
+             specific_backend,
             )
         );
     

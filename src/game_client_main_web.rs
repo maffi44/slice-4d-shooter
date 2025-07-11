@@ -11,6 +11,8 @@ use main_loop::MainLoop;
 use wasm_bindgen::prelude::*;
 use log;
 
+use crate::actor::flag_base::FlagBase;
+
 // The web version is currently not working.
 // Some times ago I stopped supporting the web version because it took too much time.
 // Later, when I choose the final sdf render approach (and graphics backend along with it)
@@ -30,7 +32,7 @@ async fn client_main() {
     
     log::info!("main: main_loop init");
 
-    let systems = Engine::new(&main_loop, true, false, false).await;
+    let systems = Engine::new(&main_loop, true, false, false, None).await;
     
     log::info!("main: Engine systems init");
 
@@ -64,13 +66,25 @@ async fn client_main() {
                 }
             );
     
-            // while let Some(mover_w) = systems.world.level.mover_w_list.pop()
-            // {
-            //     systems.world.add_actor_to_world(
-            //         ActorWrapper::MoverW(mover_w),
-            //         &mut systems.engine_handle
-            //     );
-            // } 
+            let red_flag_base = FlagBase::new(
+                Team::Red,
+                systems.world.level.red_flag_base
+            );
+    
+            let blue_flag_base = FlagBase::new(
+                Team::Blue,
+                systems.world.level.blue_flag_base
+            );
+    
+            systems.world.add_actor_to_world(
+                ActorWrapper::FlagBase(red_flag_base),
+                &mut systems.engine_handle,
+            );
+    
+            systems.world.add_actor_to_world(
+                ActorWrapper::FlagBase(blue_flag_base),
+                &mut systems.engine_handle,
+            );
     
             let red_flag = Flag::new(
                 Team::Red,

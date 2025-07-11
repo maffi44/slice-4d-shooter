@@ -14,7 +14,7 @@ use wgpu::{
     util::{
         BufferInitDescriptor,
         DeviceExt,
-    }, BindGroup, Buffer, BufferUsages, CommandEncoder, Device, PipelineCompilationOptions, Queue, ShaderStages, SurfaceConfiguration, TextureView
+    }, BindGroup, Buffer, BufferUsages, CommandEncoder, Device, PipelineCompilationOptions, Queue, ShaderStages, SurfaceConfiguration, TexelCopyBufferLayout, TexelCopyTextureInfoBase, TextureView
 };
 
 
@@ -801,6 +801,7 @@ impl UIRenderer {
                         label: Some("Render Pass"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                             view: &view,
+                            depth_slice: None,
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Load,
@@ -829,6 +830,7 @@ impl UIRenderer {
                         label: Some("Render Pass"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                             view: &view,
+                            depth_slice: None,
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Load,
@@ -857,6 +859,7 @@ impl UIRenderer {
                         label: Some("Render Pass"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                             view: &view,
+                            depth_slice: None,
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Load,
@@ -920,14 +923,14 @@ pub fn make_texture_view(
     );
 
     queue.write_texture(
-        wgpu::ImageCopyTexture {
+        TexelCopyTextureInfoBase{
             texture: &diffuse_texture,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
         &diffuse_rgba,
-        wgpu::ImageDataLayout {
+        TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(4 * dimensions.0),
             rows_per_image: Some(dimensions.1),

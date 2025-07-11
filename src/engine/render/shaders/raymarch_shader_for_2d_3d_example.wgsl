@@ -1108,7 +1108,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
             let intr = cube_intersection(
                 ro - dyn_negatives_shapes[i].pos,
                 rd,
-                dyn_negatives_shapes[i].size + r*0.707106781*0.88,
+                dyn_negatives_shapes[i].size + r*0.707106781*0.80,
             );
 
             if intr.y > 0.0 {
@@ -1155,7 +1155,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Interse
             let intr = cube_intersection(
                 ro - dyn_neg_stickiness_shapes[i].pos,
                 rd,
-                dyn_neg_stickiness_shapes[i].size + r*0.707106781*0.88,
+                dyn_neg_stickiness_shapes[i].size + r*0.707106781*0.80,
             );
 
             
