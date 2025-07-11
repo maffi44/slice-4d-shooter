@@ -37,8 +37,26 @@ use client_server_protocol::{
 
 use crate::{
     actor::{
-        flag::{FlagMessage, FlagStatus}, hole::Hole, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, main_player::{player_settings::PlayerSettings, PlayerMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::{
-            PlayerDollInputState, PlayerDoll, PlayersDollMessage}, session_controller::SessionControllerMessage, ActorWrapper, CommonActorsMessage, Message, MessageType, SpecificActorMessage
+        flag::{
+            FlagMessage, FlagStatus
+        },
+        hole::Hole,
+        move_w_bonus::{
+            BonusSpotStatus, MoveWBonusSpotMessage
+        },
+        main_player::{
+            player_settings::PlayerSettings, PlayerMessage
+        },
+        players_death_explosion::PlayersDeathExplosion,
+        players_doll::{
+            PlayerDollInputState, PlayerDoll, PlayersDollMessage
+        },
+        session_controller::SessionControllerMessage,
+        ActorWrapper,
+        CommonActorsMessage,
+        Message,
+        MessageType,
+        SpecificActorMessage
     },
     transform::{self, Transform}
 };
@@ -49,7 +67,12 @@ use super::{
         Command,
         CommandType,
         EngineHandle
-    }, input::ActionsFrameState, ui::{UIElementType, UISystem}
+    },
+    input::ActionsFrameState,
+    ui::{
+        UIElementType,
+        UISystem
+    }
 };
 
 use alkahest::{alkahest, Serialize};

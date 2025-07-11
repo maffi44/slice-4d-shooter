@@ -3,7 +3,7 @@ use web_time::Instant;
 
 pub struct TimeSystem {
     pub target_frame_duration: Duration,
-    pub prev_frame_duration: f32,
+    prev_frame_duration: f32,
     pub average_frame_duration: f64,
     average_frame_duration_delta: f64,
     pub frame_counter: u64,
@@ -19,8 +19,8 @@ impl TimeSystem {
 
     pub fn new(target_frame_rate: u32) -> Self {
 
-        #[cfg(target_os = "windows")]
-        unsafe {windows_sys::Win32::Media::timeBeginPeriod(1);}
+        // #[cfg(target_os = "windows")]
+        // unsafe {windows_sys::Win32::Media::timeBeginPeriod(1);}
         
         TimeSystem {
             target_frame_duration: Duration::from_secs_f64(1_f64 / target_frame_rate as f64),
@@ -59,6 +59,7 @@ impl TimeSystem {
         }
     }
 
+    #[inline]
     pub fn set_server_time(&mut self, start_time: u128)
     {
         self.joined_to_session_timestamp = Some(Instant::now());
@@ -73,6 +74,18 @@ impl TimeSystem {
         // println!("avarange frame duration is {}", self.average_frame_duration);
         self.prev_frame_duration = self.timestamp_of_start_of_current_frame.elapsed().as_secs_f32();
         self.timestamp_of_start_of_current_frame = Instant::now();
+    }
+
+    pub fn get_prev_frame_duration(&self) -> f32
+    {
+        if self.prev_frame_duration > 0.35
+        {
+            0.0166666
+        }
+        else
+        {
+            self.prev_frame_duration
+        }
     }
 
     #[inline]

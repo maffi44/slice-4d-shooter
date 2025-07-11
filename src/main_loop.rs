@@ -159,22 +159,22 @@ impl MainLoop {
                                     },
                                     KeyCode::Numpad1 => {
                                         systems.settings.decrease_mouse_sensitivity(
-                                            systems.time.prev_frame_duration
+                                            systems.time.get_prev_frame_duration()
                                         );
                                     },
                                     KeyCode::Numpad2 => {
                                         systems.settings.increase_mouse_sensitivity(
-                                            systems.time.prev_frame_duration
+                                            systems.time.get_prev_frame_duration()
                                         );
                                     },
                                     KeyCode::Numpad4 => {
                                         systems.audio.decrease_sound_volume(
-                                            systems.time.prev_frame_duration
+                                            systems.time.get_prev_frame_duration()
                                         );
                                     },
                                     KeyCode::Numpad5 => {
                                         systems.audio.increase_sound_volume(
-                                            systems.time.prev_frame_duration
+                                            systems.time.get_prev_frame_duration()
                                         );
                                     },
                                     _ => {
@@ -280,7 +280,7 @@ fn main_loop_tick(
 
     systems.physic.process_physics(
         &mut systems.world, 
-        systems.time.prev_frame_duration,
+        systems.time.get_prev_frame_duration(),
         &mut systems.engine_handle
     );
 

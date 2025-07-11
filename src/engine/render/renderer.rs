@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::engine::{render::{raymarch_shader_generator, render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
 use image::{GenericImageView, ImageBuffer, Rgba};
@@ -44,12 +46,23 @@ const VERTICES: &[Vertex] = &[
 
 const INDICES: &[u16] = &[0, 2, 1];
 
+pub struct RendererBuffers
+{
+    pub other_dynamic_data_buffer: Buffer,
+    pub dynamic_negative_shapes_buffer: Buffer,
+    pub dynamic_normal_shapes_buffer: Buffer,
+    pub dynamic_stickiness_shapes_buffer: Buffer,
+    pub dynamic_neg_stickiness_shapes_buffer: Buffer,
+    pub spherical_areas_data_buffer: Buffer,
+    pub beam_areas_data_buffer: Buffer,
+    pub player_forms_data_buffer: Buffer,
+}
 
 pub struct Renderer {
     surface: wgpu::Surface<'static>,
     
     pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
+    pub queue: Arc<wgpu::Queue>,
 
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
@@ -71,15 +84,6 @@ pub struct Renderer {
     num_indices: u32,
     uniform_bind_group_0: BindGroup,
     uniform_bind_group_1: BindGroup,
-
-    pub dynamic_normal_shapes_buffer: Buffer,
-    pub dynamic_stickiness_shapes_buffer: Buffer,
-    pub dynamic_negative_shapes_buffer: Buffer,
-    pub dynamic_neg_stickiness_shapes_buffer: Buffer,
-    pub other_dynamic_data_buffer: Buffer,
-    pub spherical_areas_data_buffer: Buffer,
-    pub beam_areas_data_buffer: Buffer,
-    pub player_forms_data_buffer: Buffer,
 
     total_time: f64,
     prev_time_instant: Option<web_time::Instant>,
@@ -216,7 +220,8 @@ impl Renderer {
         with_ui_renderer: bool,
         with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>
-    ) -> Renderer {
+    ) -> (Renderer, RendererBuffers)
+    {
         let size = window.inner_size();
 
         let instance = if let Some(backend) = specific_backend
@@ -262,32 +267,8 @@ impl Renderer {
         let mut res = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-
-                    // required_features: if cfg!(target_arch = "wasm32") {
-                    //     wgpu::Features::empty()
-                    // } else {
-                    //     wgpu::Features::default()
-                    // },
-                    // // WebGL doesn't support all of wgpu's features, so if
-                    // // we're building for the web we'll have to disable some.
-                    // required_limits: if cfg!(target_arch = "wasm32") {
-                    //     wgpu::Limits::downlevel_webgl2_defaults()
-                    // } else {
-                    //     wgpu::Limits::default()
-                    // },
                     label: None,
-                    required_features:
-                        wgpu::Features::empty(),
-                        // wgpu::Features::all_native_mask() ^
-                        // wgpu::Features::EXPERIMENTAL_RAY_TRACING_ACCELERATION_STRUCTURE ^
-                        // wgpu::Features::TEXTURE_COMPRESSION_ASTC_HDR ^
-                        // wgpu::Features::VULKAN_GOOGLE_DISPLAY_TIMING ^
-                        // wgpu::Features::VULKAN_EXTERNAL_MEMORY_WIN32 ^
-                        // wgpu::Features::SHADER_EARLY_DEPTH_TEST ^
-                        // wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
-                        // wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
-                        // wgpu::Features::SHADER_FLOAT32_ATOMIC,
-                    // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    required_features: wgpu::Features::default(),
                     required_limits: wgpu::Limits::default(),
                     memory_hints: wgpu::MemoryHints::Performance,
                     trace: wgpu::Trace::Off,
@@ -300,32 +281,8 @@ impl Renderer {
             res = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-
-                    // required_features: if cfg!(target_arch = "wasm32") {
-                    //     wgpu::Features::empty()
-                    // } else {
-                    //     wgpu::Features::default()
-                    // },
-                    // // WebGL doesn't support all of wgpu's features, so if
-                    // // we're building for the web we'll have to disable some.
-                    // required_limits: if cfg!(target_arch = "wasm32") {
-                    //     wgpu::Limits::downlevel_webgl2_defaults()
-                    // } else {
-                    //     wgpu::Limits::default()
-                    // },
                     label: None,
-                    required_features:
-                        wgpu::Features::empty(),
-                        // wgpu::Features::all_native_mask() ^
-                        // wgpu::Features::EXPERIMENTAL_RAY_TRACING_ACCELERATION_STRUCTURE ^
-                        // wgpu::Features::TEXTURE_COMPRESSION_ASTC_HDR ^
-                        // wgpu::Features::VULKAN_GOOGLE_DISPLAY_TIMING ^
-                        // wgpu::Features::VULKAN_EXTERNAL_MEMORY_WIN32 ^
-                        // wgpu::Features::SHADER_EARLY_DEPTH_TEST ^
-                        // wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
-                        // wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
-                        // wgpu::Features::SHADER_FLOAT32_ATOMIC,
-                    // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::downlevel_defaults(),
                     memory_hints: wgpu::MemoryHints::Performance,
                     trace: wgpu::Trace::Off,
@@ -339,32 +296,8 @@ impl Renderer {
             res = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-
-                    // required_features: if cfg!(target_arch = "wasm32") {
-                    //     wgpu::Features::empty()
-                    // } else {
-                    //     wgpu::Features::default()
-                    // },
-                    // // WebGL doesn't support all of wgpu's features, so if
-                    // // we're building for the web we'll have to disable some.
-                    // required_limits: if cfg!(target_arch = "wasm32") {
-                    //     wgpu::Limits::downlevel_webgl2_defaults()
-                    // } else {
-                    //     wgpu::Limits::default()
-                    // },
                     label: None,
-                    required_features:
-                        wgpu::Features::empty(),
-                        // wgpu::Features::all_native_mask() ^
-                        // wgpu::Features::EXPERIMENTAL_RAY_TRACING_ACCELERATION_STRUCTURE ^
-                        // wgpu::Features::TEXTURE_COMPRESSION_ASTC_HDR ^
-                        // wgpu::Features::VULKAN_GOOGLE_DISPLAY_TIMING ^
-                        // wgpu::Features::VULKAN_EXTERNAL_MEMORY_WIN32 ^
-                        // wgpu::Features::SHADER_EARLY_DEPTH_TEST ^
-                        // wgpu::Features::VERTEX_ATTRIBUTE_64BIT ^
-                        // wgpu::Features::EXPERIMENTAL_RAY_QUERY ^
-                        // wgpu::Features::SHADER_FLOAT32_ATOMIC,
-                    // required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     memory_hints: wgpu::MemoryHints::Performance,
                     trace: wgpu::Trace::Off,
@@ -457,81 +390,7 @@ impl Renderer {
             ShaderRuntimeChecks::unchecked()
         )};
 
-
-        // // temp
-        // let raymarch_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        //     label: Some("Vertex Shader"),
-        //     source: wgpu::ShaderSource::Wgsl(
-        //         std::str::from_utf8(
-        //             &load_file("/home/maffi/Dream/web-engine4d/src/engine/render/shaders/raymarch_shader.wgsl").await.unwrap()
-        //         ).unwrap().into()
-        //     )
-        // });
-        // // temp
-        // let upscale_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        //     label: Some("Vertex Shader"),
-        //     source: wgpu::ShaderSource::Wgsl(
-        //         std::str::from_utf8(
-        //             &load_file("/home/maffi/Dream/web-engine4d/src/engine/render/shaders/upscale_shader.wgsl").await.unwrap()
-        //         ).unwrap().into()
-        //     )
-        // });
-        
-        // for GLSL shaders
-        // let vert_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        //     label: Some("Vertex Shader"),
-
-        //     source: wgpu::ShaderSource::Glsl {
-        //         shader: include_str!("shaders/shader_optimized_2.vert").into(),
-        //         stage: wgpu::naga::ShaderStage::Vertex,
-        //         defines: HashMap::<String,String,BuildHasherDefault<rustc_hash::FxHasher>>::with_hasher(
-        //             BuildHasherDefault::default() 
-        //         ),
-
-        //     },
-        // });
-        // let frag_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        //     label: Some("Fragment Shader"),
-
-        //     source: wgpu::ShaderSource::Glsl {
-        //         shader: include_str!("shaders/shader_optimized_2.frag").into(),
-        //         stage: wgpu::naga::ShaderStage::Fragment,
-        //         defines: HashMap::<String,String,BuildHasherDefault<rustc_hash::FxHasher>>::with_hasher(
-        //             BuildHasherDefault::default() 
-        //         ),
-                
-        //     },
-        // });
-
-        //for Spir-V shaders
-        // let vert_shader = unsafe {device.create_shader_module_unchecked(include_spirv!("shaders/vert_2.spv"))};
-        // let frag_shader = unsafe {device.create_shader_module_unchecked(include_spirv!("shaders/frag_2.spv"))};
-
         log::info!("renderer: wgpu shaders init");
-
-        // let static_normal_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-        //     label: Some("static_normal_shapes_buffer"),
-        //     contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.normal.as_slice()),
-        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        // });
-
-        // let static_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-        //     label: Some("static_stickiness_shapes_buffer"),
-        //     contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.stickiness.as_slice()),
-        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        // });
-
-        // let static_negative_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-        //     label: Some("static_negative_shapes_buffer"),
-        //     contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.negative.as_slice()),
-        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        // });
-
-        // let static_neg_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
-        //     label: Some("static_neg_stickiness_shapes_buffer"),
-        //     contents: bytemuck::cast_slice(render_data.static_data.static_shapes_data.neg_stickiness.as_slice()),
-        //     usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        // });
 
         let other_static_data = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("other_static_data"),
@@ -592,46 +451,6 @@ impl Renderer {
         let uniform_bind_group_layout_0 =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
-                    // wgpu::BindGroupLayoutEntry {
-                    //     binding: 0,
-                    //     visibility: wgpu::ShaderStages::FRAGMENT,
-                    //     ty: wgpu::BindingType::Buffer {
-                    //         ty: wgpu::BufferBindingType::Uniform,
-                    //         has_dynamic_offset: false,
-                    //         min_binding_size: None,
-                    //     },
-                    //     count: None,
-                    // },
-                    // wgpu::BindGroupLayoutEntry {
-                    //     binding: 1,
-                    //     visibility: wgpu::ShaderStages::FRAGMENT,
-                    //     ty: wgpu::BindingType::Buffer {
-                    //         ty: wgpu::BufferBindingType::Uniform,
-                    //         has_dynamic_offset: false,
-                    //         min_binding_size: None,
-                    //     },
-                    //     count: None,
-                    // },
-                    // wgpu::BindGroupLayoutEntry {
-                    //     binding: 2,
-                    //     visibility: wgpu::ShaderStages::FRAGMENT,
-                    //     ty: wgpu::BindingType::Buffer {
-                    //         ty: wgpu::BufferBindingType::Uniform,
-                    //         has_dynamic_offset: false,
-                    //         min_binding_size: None,
-                    //     },
-                    //     count: None,
-                    // },
-                    // wgpu::BindGroupLayoutEntry {
-                    //     binding: 3,
-                    //     visibility: wgpu::ShaderStages::FRAGMENT,
-                    //     ty: wgpu::BindingType::Buffer {
-                    //         ty: wgpu::BufferBindingType::Uniform,
-                    //         has_dynamic_offset: false,
-                    //         min_binding_size: None,
-                    //     },
-                    //     count: None,
-                    // },
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
                         visibility: wgpu::ShaderStages::FRAGMENT,
@@ -771,22 +590,6 @@ impl Renderer {
         let uniform_bind_group_0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout_0,
             entries: &[
-                // wgpu::BindGroupEntry {
-                //     binding: 0,
-                //     resource: static_normal_shapes_buffer.as_entire_binding(),
-                // },
-                // wgpu::BindGroupEntry {
-                //     binding: 1,
-                //     resource: static_negative_shapes_buffer.as_entire_binding(),
-                // },
-                // wgpu::BindGroupEntry {
-                //     binding: 2,
-                //     resource: static_stickiness_shapes_buffer.as_entire_binding(),
-                // },
-                // wgpu::BindGroupEntry {
-                //     binding: 3,
-                //     resource: static_neg_stickiness_shapes_buffer.as_entire_binding(),
-                // },
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: other_static_data.as_entire_binding(),
@@ -1024,55 +827,59 @@ impl Renderer {
                 &upscale_render_bind_group_layout,
             );
 
-        Renderer {
-            surface,
-            device,
-            queue,
-            config, 
-            size,
+        (
+            Renderer {
+                surface,
+                device,
+                queue: Arc::new(queue),
+                config, 
+                size,
 
-            raymarch_render_pipeline,
-            upscale_render_pipeline,
-            upscale_render_bind_group_layout,
-            upscale_render_bind_group,
-            upscale_sampler,
-            raymarch_target_texture,
-            raymarch_target_texture_view,
+                raymarch_render_pipeline,
+                upscale_render_pipeline,
+                upscale_render_bind_group_layout,
+                upscale_render_bind_group,
+                upscale_sampler,
+                raymarch_target_texture,
+                raymarch_target_texture_view,
 
-            raymarch_target_texture_scale_factor,
-            surface_format,
+                raymarch_target_texture_scale_factor,
+                surface_format,
 
-            num_indices,
-            vertex_buffer,
-            index_buffer,
-            uniform_bind_group_0,
-            uniform_bind_group_1,
+                num_indices,
+                vertex_buffer,
+                index_buffer,
+                uniform_bind_group_0,
+                uniform_bind_group_1,
 
-            dynamic_normal_shapes_buffer,
-            dynamic_stickiness_shapes_buffer,
-            dynamic_negative_shapes_buffer,
-            dynamic_neg_stickiness_shapes_buffer,
-            other_dynamic_data_buffer,
-            spherical_areas_data_buffer,
-            beam_areas_data_buffer,
-            player_forms_data_buffer,
+                
 
-            total_frames_count: 0u64,
-            total_time: 0.0,
-            prev_time_instant: None,
-            target_frame_duration,
-            min_time: 99999.0,
-            max_time: 0.0,
+                total_frames_count: 0u64,
+                total_time: 0.0,
+                prev_time_instant: None,
+                target_frame_duration,
+                min_time: 99999.0,
+                max_time: 0.0,
 
-            sky_box_texture,
-            sky_box_texture_view,
-            sky_box_sampler,
+                sky_box_texture,
+                sky_box_texture_view,
+                sky_box_sampler,
 
-            ui_renderer,
-            // prev_surface_texture: None,
-            // prev_frame_rendered: Arc::new(Mutex::new(true)),
-            with_ui_renderer,
-        }
+                ui_renderer,
+                with_ui_renderer,
+            },
+            
+            RendererBuffers {
+                dynamic_normal_shapes_buffer,
+                dynamic_stickiness_shapes_buffer,
+                dynamic_negative_shapes_buffer,
+                dynamic_neg_stickiness_shapes_buffer,
+                other_dynamic_data_buffer,
+                spherical_areas_data_buffer,
+                beam_areas_data_buffer,
+                player_forms_data_buffer,
+            }
+        )
     }
 
 
@@ -1148,7 +955,7 @@ impl Renderer {
     }
 
 
-    pub fn render(&mut self, /*window: &Window*/) -> Result<(), wgpu::SurfaceError> {
+    pub fn render(&mut self, window: Arc<Window>) -> Result<(), wgpu::SurfaceError> {
 
         // let instatnt_full = web_time::Instant::now();
 
@@ -1273,7 +1080,7 @@ impl Renderer {
         self.queue.submit(std::iter::once(encoder.finish()));
         // println!("submit time: {}",istts.elapsed().as_secs_f64());
 
-        // window.pre_present_notify();
+        window.pre_present_notify();
         
         // let istts = web_time::Instant::now();
         output.present();

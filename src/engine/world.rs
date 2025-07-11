@@ -435,7 +435,7 @@ impl World {
         time_system: &mut TimeSystem,
         effects_system: &mut EffectsSystem,
     ) {
-        let delta = time_system.prev_frame_duration;
+        let delta = time_system.get_prev_frame_duration();
 
         for (_, actor) in self.actors.iter_mut()
         {

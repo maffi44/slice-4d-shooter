@@ -1703,7 +1703,7 @@ impl UISystem {
     }
 
 
-    pub fn write_buffers_ui(&self, queue: &Queue, screen_aspect: f32) {
+    pub fn write_buffers_ui(&self, queue: Arc<Queue>, screen_aspect: f32) {
 
         for (_, ui_elem) in &self.ui_elements {
             match ui_elem {

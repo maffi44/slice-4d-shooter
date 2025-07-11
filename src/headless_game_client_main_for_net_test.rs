@@ -145,7 +145,7 @@ fn game_loop_tick
 
     imitated_input_state.imitate_user_input(
         &mut systems.input,
-        systems.time.prev_frame_duration
+        systems.time.get_prev_frame_duration()
     );
 
     #[cfg(target_arch= "wasm32")]
@@ -186,7 +186,7 @@ fn game_loop_tick
 
     systems.physic.process_physics(
         &mut systems.world, 
-        systems.time.prev_frame_duration,
+        systems.time.get_prev_frame_duration(),
         &mut systems.engine_handle
     );
 
