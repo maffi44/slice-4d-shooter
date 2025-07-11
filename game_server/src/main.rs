@@ -1038,12 +1038,12 @@ fn update_states_for_players(
     }
 }
 
-use rand::{rng, Rng};
+use rand::{thread_rng, Rng};
 
 fn shuffle_teams(players_state: &mut GameSessionState)
 {
     players_state.red_team.clear();    
-    players_state.blue_team.clear();
+    players_state.blue_team.clear(); 
 
     let mut keys = Vec::with_capacity(players_state.players.len());
 
@@ -1094,9 +1094,9 @@ fn choose_team_for_new_player(
     {
         return Team::Blue;
     }
-    let mut rng = rng();
+    let mut rng = thread_rng();
 
-    if rng.random_bool(0.5)
+    if rng.gen_bool(0.5)
     {
         return Team::Red;
     }

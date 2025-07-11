@@ -4,17 +4,17 @@ version = "0.1.2"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "*", features = [ "process", "sync", "time", "rt" ] }
-tokio-tungstenite = "*"
-fyrox-core = "*"
-alkahest = { version = "*", features = [ "derive" ] }
-serde_json = "*"
+tokio = { version = "1.46.1", features = [ "process", "sync", "time", "rt" ] }
+tokio-tungstenite = "0.26.2"
+fyrox-core = "0.36.2"
+alkahest = { version = "0.3.0", features = [ "derive" ] }
+serde_json = "1.0.140"
 matchmaking_server = { path = "../matchmaking_server" }
-matchbox_signaling = "*"
-matchbox_socket = "*"
-rand = "*"
-glam = "*"
-blink-alloc = "*"
+matchbox_signaling = "0.12.0"
+matchbox_socket = "0.12.0"
+rand = "0.8.5"
+glam = "0.30.4"
+blink-alloc = "0.3.1"
 
 [lib]
 name = "client_server_protocol"
