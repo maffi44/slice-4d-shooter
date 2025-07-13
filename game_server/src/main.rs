@@ -1802,7 +1802,7 @@ async fn listening_to_matchmaking_server(
 
                     GameServerMatchmakingServerProtocol::GameServerMessage(_) =>
                     {
-                        println!("ERROR: game server recieved GameServerMessage message by matchmaking server listener");
+                        // println!("ERROR: game server recieved GameServerMessage message by matchmaking server listener");
 
                         continue;
                     }
@@ -1810,7 +1810,7 @@ async fn listening_to_matchmaking_server(
             }
             Err(_) =>
             {
-                println!("ERROR: game server recieved unexpected message by matchmaking server listener");
+                // println!("ERROR: game server recieved unexpected message by matchmaking server listener");
 
                 continue;
             }
