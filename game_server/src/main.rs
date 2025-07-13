@@ -245,9 +245,12 @@ async fn async_main(
         actual_signaling_server_port.clone()
     ));
 
+    // waiting for initializtion of the singnaling server to get the actual signaling server port
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
     let (mut webrtc_socket, socket_future) =
         matchbox_socket::WebRtcSocketBuilder::new(
-            format!("ws://localhost:{}/", config.signaling_port)
+            format!("ws://localhost:{}/", *actual_signaling_server_port.lock().unwrap())
         )
         .ice_server(RtcIceServerConfig {
             urls: config.ice_urls.clone(),
@@ -1829,7 +1832,9 @@ async fn  run_signaling_server(
 
     let max_players = config.max_players;
 
-    *actual_signaling_server_port.lock().unwrap() = config.signaling_port;
+    {
+        *actual_signaling_server_port.lock().unwrap() = config.signaling_port;
+    }
 
     let server = 
         SignalingServer::client_server_builder(
@@ -1864,9 +1869,11 @@ async fn  run_signaling_server(
 
     if server.serve().await.is_err()
     {
-        for port in (config.game_severs_min_port_for_signaling_servers..=config.game_severs_max_port_for_signaling_servers)
+        for port in config.game_severs_min_port_for_signaling_servers..=config.game_severs_max_port_for_signaling_servers
         {
-            *actual_signaling_server_port.lock().unwrap() = port;
+            {
+                *actual_signaling_server_port.lock().unwrap() = port;
+            }
 
             let players_amount_1 = players_amount.clone();
             let players_amount_2 = players_amount.clone();

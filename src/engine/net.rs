@@ -255,7 +255,7 @@ impl NetSystem {
                     .get_ui_data()
                     .get_is_visible_cloned_arc()
                     .lock()
-                    .unwrap() = true && self.connection_status_visible;
+                    .unwrap() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedOldVersion;
             },
@@ -266,7 +266,7 @@ impl NetSystem {
                     .get_ui_data()
                     .get_is_visible_cloned_arc()
                     .lock()
-                    .unwrap() = true && self.connection_status_visible;
+                    .unwrap() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerIsFull;
             },
@@ -277,7 +277,7 @@ impl NetSystem {
                     .get_ui_data()
                     .get_is_visible_cloned_arc()
                     .lock()
-                    .unwrap() = true && self.connection_status_visible;
+                    .unwrap() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerError;
             },
@@ -288,7 +288,7 @@ impl NetSystem {
                     .get_ui_data()
                     .get_is_visible_cloned_arc()
                     .lock()
-                    .unwrap() = true && self.connection_status_visible;
+                    .unwrap() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerNotFound;
             }
@@ -303,7 +303,7 @@ impl NetSystem {
                             .get_ui_data()
                             .get_is_visible_cloned_arc()
                             .lock()
-                            .unwrap() = true && self.connection_status_visible;
+                            .unwrap() = true;
                         
                         self.current_visible_ui_elem = UIElementType::TitleConnectionFailedLostConnection;
                     },
@@ -313,7 +313,7 @@ impl NetSystem {
                             .get_ui_data()
                             .get_is_visible_cloned_arc()
                             .lock()
-                            .unwrap() = true && self.connection_status_visible;
+                            .unwrap() = true;
                         
                         self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerNotFound;
                     }
@@ -327,7 +327,7 @@ impl NetSystem {
                     .get_ui_data()
                     .get_is_visible_cloned_arc()
                     .lock()
-                    .unwrap() = true && self.connection_status_visible;
+                    .unwrap() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedLostConnection;
             },
@@ -405,7 +405,7 @@ impl NetSystem {
             .get_ui_data()
             .get_is_visible_cloned_arc()
             .lock()
-            .unwrap() = true && self.connection_status_visible;
+            .unwrap() = true;
         
         self.current_visible_ui_elem = UIElementType::TitleConnectingToServer;
 
@@ -480,7 +480,7 @@ impl NetSystem {
             .get_ui_data()
             .get_is_visible_cloned_arc()
             .lock()
-            .unwrap() = true && self.connection_status_visible;
+            .unwrap() = true;
         
         self.current_visible_ui_elem = UIElementType::TitleConnectingToServer;
 
@@ -596,7 +596,7 @@ impl NetSystem {
             .get_ui_data()
             .get_is_visible_cloned_arc()
             .lock()
-            .unwrap() = true && self.connection_status_visible;
+            .unwrap() = true;
         
         self.current_visible_ui_elem = UIElementType::TitleConnectedToServer;
 

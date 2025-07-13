@@ -488,19 +488,29 @@ impl AudioSystem {
         }
         else
         {
-            let sound_engine = SoundEngine::new().expect("Can't initialize sound engine");
+            match SoundEngine::new()
+            {
+                Ok(sound_engine) =>
+                {
+                    let not_spatial_context = SoundContext::new();
+                    not_spatial_context.state().set_distance_model(DistanceModel::None);
+                    
+                    let spatial_context = SoundContext::new();
+                    spatial_context.state().set_distance_model(DistanceModel::LinearDistance);
+                    
+                    // index 0 is for not spatial sounds and 1 for spatial sounds
+                    sound_engine.state().add_context(not_spatial_context);
+                    sound_engine.state().add_context(spatial_context);
+                    
+                    Some(sound_engine)
+                }
+                Err(e) =>
+                {
+                    eprintln!("Can't initialize sound engine with error: {}, game will be initialized without sound engine", e);
 
-            let not_spatial_context = SoundContext::new();
-            not_spatial_context.state().set_distance_model(DistanceModel::None);
-            
-            let spatial_context = SoundContext::new();
-            spatial_context.state().set_distance_model(DistanceModel::LinearDistance);
-            
-            // index 0 is for not spatial sounds and 1 for spatial sounds
-            sound_engine.state().add_context(not_spatial_context);
-            sound_engine.state().add_context(spatial_context);
-            
-            Some(sound_engine)
+                    None
+                }
+            }
         };
 
         let mut sounds = HashMap::new();

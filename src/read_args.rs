@@ -47,6 +47,14 @@ pub fn read_args() -> Option<Backend>
                 show_help = true;
             }
 
+            "-v" | "--v" | "-version" | "--version" =>
+            {
+                println!("Slice: 4D Shooter version: {}", env!("CARGO_PKG_VERSION"));
+                
+                std::process::exit(0);
+
+            }
+
             _ =>
             {
                 eprintln!("Unknown argument: {}", args[i]);

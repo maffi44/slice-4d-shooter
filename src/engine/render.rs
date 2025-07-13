@@ -114,8 +114,8 @@ impl RenderSystem {
 
         runtime.spawn(async move {
 
-            #[cfg(target_os = "windows")]
-            unsafe {windows_sys::Win32::Media::timeBeginPeriod(1);}
+            // #[cfg(target_os = "windows")]
+            // unsafe {windows_sys::Win32::Media::timeBeginPeriod(1);}
 
             loop
             {
@@ -130,9 +130,15 @@ impl RenderSystem {
                                     async_renderer.resize(window_for_renderer.inner_size());
                                 },
                 
-                                wgpu::SurfaceError::Outdated => {
+                                wgpu::SurfaceError::Outdated =>
+                                {
                                     async_renderer.resize(window_for_renderer.inner_size());
                                 },
+
+                                wgpu::SurfaceError::Other =>
+                                {
+                                    async_renderer.resize(window_for_renderer.inner_size());
+                                }
                                 
                                 // The system is out of memory, we should probably quit
                                 wgpu::SurfaceError::OutOfMemory => panic!("Out of GPU memory"),
