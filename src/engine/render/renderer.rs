@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use crate::engine::{render::{raymarch_shader_generator, render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
+use crate::engine::{render::{raymarch_shader_generator, render_data::{DataForUniformBuffers, RenderData}, ui_renderer::UIRenderer}, ui::UISystem};
 
 use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
@@ -60,6 +60,8 @@ pub struct RendererBuffers
 
 pub struct Renderer {
     surface: wgpu::Surface<'static>,
+
+    buffers: RendererBuffers,
     
     pub device: wgpu::Device,
     pub queue: Arc<wgpu::Queue>,
@@ -220,7 +222,7 @@ impl Renderer {
         with_ui_renderer: bool,
         with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>
-    ) -> (Renderer, RendererBuffers)
+    ) -> Renderer
     {
         let size = window.inner_size();
 
@@ -327,7 +329,7 @@ impl Renderer {
             format: surface_format,
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::AutoVsync,
+            present_mode: wgpu::PresentMode::AutoNoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::default(),
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
@@ -827,59 +829,60 @@ impl Renderer {
                 &upscale_render_bind_group_layout,
             );
 
-        (
-            Renderer {
-                surface,
-                device,
-                queue: Arc::new(queue),
-                config, 
-                size,
+        let buffers = RendererBuffers
+        {
+            dynamic_normal_shapes_buffer,
+            dynamic_stickiness_shapes_buffer,
+            dynamic_negative_shapes_buffer,
+            dynamic_neg_stickiness_shapes_buffer,
+            other_dynamic_data_buffer,
+            spherical_areas_data_buffer,
+            beam_areas_data_buffer,
+            player_forms_data_buffer,
+        };
 
-                raymarch_render_pipeline,
-                upscale_render_pipeline,
-                upscale_render_bind_group_layout,
-                upscale_render_bind_group,
-                upscale_sampler,
-                raymarch_target_texture,
-                raymarch_target_texture_view,
+        Renderer {
+            surface,
+            device,
+            queue: Arc::new(queue),
+            config, 
+            size,
 
-                raymarch_target_texture_scale_factor,
-                surface_format,
+            buffers,
 
-                num_indices,
-                vertex_buffer,
-                index_buffer,
-                uniform_bind_group_0,
-                uniform_bind_group_1,
+            raymarch_render_pipeline,
+            upscale_render_pipeline,
+            upscale_render_bind_group_layout,
+            upscale_render_bind_group,
+            upscale_sampler,
+            raymarch_target_texture,
+            raymarch_target_texture_view,
 
-                
+            raymarch_target_texture_scale_factor,
+            surface_format,
 
-                total_frames_count: 0u64,
-                total_time: 0.0,
-                prev_time_instant: None,
-                target_frame_duration,
-                min_time: 99999.0,
-                max_time: 0.0,
+            num_indices,
+            vertex_buffer,
+            index_buffer,
+            uniform_bind_group_0,
+            uniform_bind_group_1,
 
-                sky_box_texture,
-                sky_box_texture_view,
-                sky_box_sampler,
-
-                ui_renderer,
-                with_ui_renderer,
-            },
             
-            RendererBuffers {
-                dynamic_normal_shapes_buffer,
-                dynamic_stickiness_shapes_buffer,
-                dynamic_negative_shapes_buffer,
-                dynamic_neg_stickiness_shapes_buffer,
-                other_dynamic_data_buffer,
-                spherical_areas_data_buffer,
-                beam_areas_data_buffer,
-                player_forms_data_buffer,
-            }
-        )
+
+            total_frames_count: 0u64,
+            total_time: 0.0,
+            prev_time_instant: None,
+            target_frame_duration,
+            min_time: 99999.0,
+            max_time: 0.0,
+
+            sky_box_texture,
+            sky_box_texture_view,
+            sky_box_sampler,
+
+            ui_renderer,
+            with_ui_renderer,
+        }
     }
 
 
@@ -955,7 +958,70 @@ impl Renderer {
     }
 
 
-    pub fn render(&mut self, window: Arc<Window>) -> Result<(), wgpu::SurfaceError> {
+    fn write_buffers(
+        &self,
+        data_for_uniform_buffers: Arc<Mutex<DataForUniformBuffers>>
+    )
+    {
+        self.ui_renderer.write_buffers(&self.queue);
+        
+        let data = data_for_uniform_buffers.lock().unwrap();
+            
+        self.queue.write_buffer(
+            &self.buffers.other_dynamic_data_buffer,
+            0,
+            bytemuck::cast_slice(&[data.other_dynamic_data]),
+        );
+
+        self.queue.write_buffer(
+            &self.buffers.dynamic_negative_shapes_buffer,
+            0,
+            bytemuck::cast_slice(data.dynamic_shapes_data.negative.as_slice()),
+        );
+
+        self.queue.write_buffer(
+            &self.buffers.dynamic_normal_shapes_buffer,
+            0,
+            bytemuck::cast_slice(data.dynamic_shapes_data.normal.as_slice()),
+        );
+
+        self.queue.write_buffer(
+            &self.buffers.dynamic_stickiness_shapes_buffer,
+            0,
+            bytemuck::cast_slice(data.dynamic_shapes_data.stickiness.as_slice()),
+        );
+
+        self.queue.write_buffer(
+            &self.buffers.dynamic_neg_stickiness_shapes_buffer,
+            0,
+            bytemuck::cast_slice(data.dynamic_shapes_data.neg_stickiness.as_slice()),
+        );
+        
+        self.queue.write_buffer(
+            &self.buffers.spherical_areas_data_buffer,
+            0,
+            bytemuck::cast_slice(data.spherical_areas_data.as_slice()),
+        );
+
+        self.queue.write_buffer(
+            &self.buffers.beam_areas_data_buffer,
+            0,
+            bytemuck::cast_slice(data.beam_areas_data.as_slice()),
+        );
+
+        self.queue.write_buffer(
+            &self.buffers.player_forms_data_buffer,
+            0,
+            bytemuck::cast_slice(data.player_forms_data.as_slice()),
+        );
+    }
+
+
+    pub fn render(
+        &mut self,
+        window: Arc<Window>,
+        data_for_uniform_buffers: Arc<Mutex<DataForUniformBuffers>>,
+    ) -> Result<(), wgpu::SurfaceError> {
 
         // let instatnt_full = web_time::Instant::now();
 
@@ -995,6 +1061,8 @@ impl Renderer {
         }
 
         self.prev_time_instant = Some(web_time::Instant::now());
+
+        self.write_buffers(data_for_uniform_buffers);
         
         let output = self.surface.get_current_texture()?;
         let view = output

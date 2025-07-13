@@ -1,14 +1,14 @@
 pub mod render_data;
 pub mod camera;
 pub mod raymarch_shader_generator;
+pub mod ui_renderer;
 mod renderer;
-mod ui_renderer;
 
 use std::sync::{Arc, Mutex};
 
 use crate::{
     engine::{
-        render::renderer::RendererBuffers, time::TimeSystem, world::{
+        render::{render_data::DataForUniformBuffers, renderer::RendererBuffers}, time::TimeSystem, world::{
             static_object::{
                 ColoringArea, StaticObject, VolumeArea
             },
@@ -26,7 +26,7 @@ use client_server_protocol::Team;
 #[cfg(not(target_arch="wasm32"))]
 use tokio::runtime::Runtime;
 use wgpu::{Backend, Buffer, Queue};
-use winit::{monitor::{MonitorHandle, VideoModeHandle}, window::Window};
+use winit::{dpi::PhysicalSize, monitor::{MonitorHandle, VideoModeHandle}, window::Window};
 
 use super::{input::ActionsFrameState, physics::dynamic_collider::PlayersDollCollider, ui::UISystem, world::static_object::VisualWave};
 
@@ -56,18 +56,19 @@ pub struct RenderQualityData
     shadows_enabled: bool
 }
 
+
+
 pub struct RenderSystem {
     render_data: RenderData,
+    data_for_uniform_buffers: Arc<Mutex<DataForUniformBuffers>>,
     pub window: Arc<Window>,
     renderer: Arc<Mutex<Renderer>>,
-    renderer_queue: Arc<Queue>,
-    buffers: RendererBuffers,
 
     generated_raymarch_shader: bool,
 
     render_quality_data: RenderQualityData,
 
-    ready_to_write_buffers: Arc<Mutex<bool>>,
+    window_size: PhysicalSize<u32>,
 }
 
 
@@ -88,21 +89,22 @@ impl RenderSystem {
         
         let render_data = RenderData::new(world, time, &window);
         
-        let (renderer, buffers) = Renderer::new(
-                &window,
-                &render_data,
-                ui,
-                0.008,
-                // time.target_frame_duration.as_secs_f64(),
-                world.players_settings.screen_resolution_scale,
-                &world.level.visual_settings_of_environment.sky_box_name,
-                it_is_2d_3d_example,
-                with_ui_renderer,
-                with_generated_raymarch_shader,
-                specific_backend,
-            ).await;
+        let renderer = Renderer::new(
+            &window,
+            &render_data,
+            ui,
+            0.008,
+            // time.target_frame_duration.as_secs_f64(),
+            world.players_settings.screen_resolution_scale,
+            &world.level.visual_settings_of_environment.sky_box_name,
+            it_is_2d_3d_example,
+            with_ui_renderer,
+            with_generated_raymarch_shader,
+            specific_backend,
+        ).await;
 
-        let renderer_queue = renderer.queue.clone();
+        let data_for_uniform_buffers = Arc::new(Mutex::new(DataForUniformBuffers::default()));
+        let data_for_uniform_buffers_for_renderer = data_for_uniform_buffers.clone();
 
         let renderer = Arc::new(Mutex::new(renderer));
         // spawn async tusk for renderer
@@ -116,8 +118,8 @@ impl RenderSystem {
 
         runtime.spawn(async move {
 
-            // #[cfg(target_os = "windows")]
-            // unsafe {windows_sys::Win32::Media::timeBeginPeriod(1);}
+            #[cfg(target_os = "windows")]
+            unsafe {windows_sys::Win32::Media::timeBeginPeriod(1);}
 
             loop
             {
@@ -127,7 +129,11 @@ impl RenderSystem {
                 {
                     Ok(mut async_renderer) =>
                     {
-                        if let Err(err) = async_renderer.render(window_for_renderer.clone()) {
+                        if let Err(err) = async_renderer.render(
+                            window_for_renderer.clone(),
+                            data_for_uniform_buffers_for_renderer.clone()
+                        )
+                        {
                             match err {
                                 wgpu::SurfaceError::Lost => 
                                 {
@@ -173,19 +179,19 @@ impl RenderSystem {
             shadows_enabled: true,
         };
         
+        let window_size = window.inner_size();
+
         RenderSystem {
             window,
             renderer,
-            renderer_queue,
-            buffers,
 
             render_data,
+            data_for_uniform_buffers,
 
             generated_raymarch_shader: with_generated_raymarch_shader,
 
             render_quality_data,
-
-            ready_to_write_buffers: Arc::new(Mutex::new(true)),
+            window_size,
         }
     }
 
@@ -223,82 +229,32 @@ impl RenderSystem {
         ui: &UISystem,
     )
     {
-        // let t = std::time::Instant::now();
 
-        if *self.ready_to_write_buffers.lock().unwrap() == true
-        {
-            self.render_data.update_dynamic_render_data(
-                world,
-                time,
-                &self.window,
-                &self.render_data.static_data.static_bounding_box.clone(),
-                self.generated_raymarch_shader,
-                &self.render_quality_data,
-            );
-    
-            ui.write_buffers_ui(
-                self.renderer_queue.clone(),
-                self.window.inner_size().width as f32 /
-                self.window.inner_size().height as f32
-            );
-            
-    
-            self.renderer_queue.write_buffer(
-                &self.buffers.other_dynamic_data_buffer,
-                0,
-                bytemuck::cast_slice(&[self.render_data.dynamic_data.other_dynamic_data]),
-            );
-    
-            self.renderer_queue.write_buffer(
-                &self.buffers.dynamic_negative_shapes_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.negative.as_slice()),
-            );
-    
-            self.renderer_queue.write_buffer(
-                &self.buffers.dynamic_normal_shapes_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
-            );
-    
-            self.renderer_queue.write_buffer(
-                &self.buffers.dynamic_stickiness_shapes_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
-            );
-    
-            self.renderer_queue.write_buffer(
-                &self.buffers.dynamic_neg_stickiness_shapes_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
-            );
-            
-            self.renderer_queue.write_buffer(
-                &self.buffers.spherical_areas_data_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.spherical_areas_data.as_slice()),
-            );
-    
-            self.renderer_queue.write_buffer(
-                &self.buffers.beam_areas_data_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.beam_areas_data.as_slice()),
-            );
-    
-            self.renderer_queue.write_buffer(
-                &self.buffers.player_forms_data_buffer,
-                0,
-                bytemuck::cast_slice(self.render_data.dynamic_data.player_forms_data.as_slice()),
-            );
-    
-            *self.ready_to_write_buffers.lock().unwrap() = false;
-    
-            let ready_to_write_buffers_clone = self.ready_to_write_buffers.clone();
-    
-            self.renderer_queue.on_submitted_work_done(move || {
-                *ready_to_write_buffers_clone.lock().unwrap() = true;
-            });
-        }
+
+        self.render_data.update_dynamic_render_data(
+            world,
+            time,
+            self.window_size,
+            &self.render_data.static_data.static_bounding_box.clone(),
+            self.generated_raymarch_shader,
+            &self.render_quality_data,
+        );
+
+        ui.write_buffers_ui(
+            self.window_size.width as f32 / self.window_size.height as f32
+        );
+
+        let mut data = self.data_for_uniform_buffers.lock().unwrap();
+
+        data.beam_areas_data = self.render_data.dynamic_data.beam_areas_data.clone();
+        data.dynamic_shapes_data = self.render_data.dynamic_data.dynamic_shapes_data.clone();
+        data.other_dynamic_data = self.render_data.dynamic_data.other_dynamic_data.clone();
+        data.player_forms_data = self.render_data.dynamic_data.player_forms_data.clone();
+        data.spherical_areas_data = self.render_data.dynamic_data.spherical_areas_data.clone();
+
+        drop(data);
+
+
 
         #[cfg(target_arch="wasm32")]
         if let Err(err) = renderer_lock.render(/*&self.window*/) {
@@ -313,16 +269,20 @@ impl RenderSystem {
             }
         }
 
-        // println!("send data to renderer fn exec time {}", t.elapsed().as_secs_f32());
+        
+
+
     }
 
 
 
     pub fn resize_frame_buffer(&mut self) {
+        self.window_size = self.window.inner_size();
+
         self.renderer
             .lock()
             .unwrap()
-            .resize(self.window.inner_size());
+            .resize(self.window_size);
     }
 }
 

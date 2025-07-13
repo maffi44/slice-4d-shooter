@@ -12,6 +12,8 @@ use std::{
 use glam::Vec2;
 use wgpu::{Buffer, Queue};
 
+use crate::engine::render::ui_renderer::DataForUIUniformBuffer;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ProgressBarUniform {
@@ -92,7 +94,7 @@ impl UIElement
     }
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum UIElementType {
     HeathBarBlue,
     HeathBarRed,
@@ -204,6 +206,7 @@ pub struct UISystem {
     pub texture_sources: HashMap<TextureType, &'static [u8]>,
 
     pub ui_elements: HashMap<UIElementType, UIElement>,
+    pub ui_elements_uniform_data: Arc<Mutex<HashMap<UIElementType, DataForUIUniformBuffer>>>,
 }
 
 impl UISystem {
@@ -414,7 +417,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -437,7 +440,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -460,7 +463,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -487,7 +490,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -515,7 +518,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         Some(UIElementType::ScannerBlue),
@@ -539,7 +542,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         Some(UIElementType::ScannerRed),
@@ -563,7 +566,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 1,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         Some(UIElementType::ScannerRed),
@@ -587,7 +590,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 2,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         Some(UIElementType::ScannerRed),
@@ -611,7 +614,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 2,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         Some(UIElementType::ScannerBlue),
@@ -635,7 +638,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 2,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         Some(UIElementType::ScannerRed),
@@ -659,7 +662,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 2,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         Some(UIElementType::ScannerBlue),
@@ -682,7 +685,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -709,7 +712,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -736,7 +739,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -764,7 +767,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -792,7 +795,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -815,7 +818,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -843,7 +846,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -871,7 +874,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -894,7 +897,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -922,7 +925,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -950,7 +953,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -973,7 +976,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -996,7 +999,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1019,7 +1022,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1042,7 +1045,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1065,7 +1068,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1088,7 +1091,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1111,7 +1114,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1134,7 +1137,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1157,7 +1160,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1180,7 +1183,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1203,7 +1206,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1227,7 +1230,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1251,7 +1254,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1274,7 +1277,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1297,7 +1300,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1320,7 +1323,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1343,7 +1346,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1367,7 +1370,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1391,7 +1394,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1414,7 +1417,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1437,7 +1440,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1460,7 +1463,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1483,7 +1486,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1506,7 +1509,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1530,7 +1533,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1554,7 +1557,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1578,7 +1581,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1602,7 +1605,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1626,7 +1629,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 0,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1650,7 +1653,7 @@ impl UISystem {
                             rotation_around_rect_center: 0.0,
                             transparency: 1.0,
                             drawing_order: 3,
-                            transform_buffer: None,
+                            //transform_buffer: None,
                         },
                         false,
                         None,
@@ -1660,11 +1663,12 @@ impl UISystem {
             )
         );
 
-
+        let ui_elements_uniform_data = Arc::new(Mutex::new(HashMap::new()));
 
         UISystem {
             ui_elements,
             texture_sources,
+            ui_elements_uniform_data,
         }
 
     }
@@ -1703,9 +1707,11 @@ impl UISystem {
     }
 
 
-    pub fn write_buffers_ui(&self, queue: Arc<Queue>, screen_aspect: f32) {
+    pub fn write_buffers_ui(&self, screen_aspect: f32) {
 
-        for (_, ui_elem) in &self.ui_elements {
+        let mut data_for_ui_uniform_buffers = self.ui_elements_uniform_data.lock().unwrap();
+
+        for (ui_type, ui_elem) in &self.ui_elements {
             match ui_elem {
                 UIElement::Image(elem) => {
                     if elem.ui_data.parent_ui_elem.is_none() {
@@ -1747,21 +1753,18 @@ impl UISystem {
                         }
                     };
 
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("UI Image have not rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    elem
-                                        .texture_aspect
-                                        .expect("UI Image have not texture aspect"),
-                                    screen_aspect,
-                                    Some(parent_transform),
-                                    is_visible_coef,
-                        )]),
+                    let data = data_for_ui_uniform_buffers.get_mut(ui_type).unwrap();
+
+                    *data = DataForUIUniformBuffer::OtherElems(
+                        elem.ui_data.rect
+                            .get_rect_transform_uniform(
+                                elem
+                                    .texture_aspect
+                                    .expect("UI Image have not texture aspect"),
+                                screen_aspect,
+                                Some(parent_transform),
+                                is_visible_coef,
+                            )
                     );
                 }
                 UIElement::ProgressBar(elem) => {
@@ -1804,30 +1807,19 @@ impl UISystem {
                         }
                     };
 
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("UI Progress bar have not rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    elem
-                                        .texture_aspect
-                                        .expect("UI Progress bar have not texture aspect"),
-                                    screen_aspect,
-                                    Some(parent_transform),
-                                    is_visible_coef,
-                        )]),
-                    );
-                    queue.write_buffer(
-                        &elem.progress_bar_value_buffer
-                            .as_ref()
-                            .expect("UI Progress bar have not value buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.get_progress_bar_uniform()
-                        ]),
+                    let data = data_for_ui_uniform_buffers.get_mut(ui_type).unwrap();
+
+                    *data = DataForUIUniformBuffer::ProgressBarElem(
+                        elem.get_progress_bar_uniform(),
+                        elem.ui_data.rect
+                            .get_rect_transform_uniform(
+                                elem
+                                    .texture_aspect
+                                    .expect("UI Image have not texture aspect"),
+                                screen_aspect,
+                                Some(parent_transform),
+                                is_visible_coef,
+                            ),
                     );
                 },
                 UIElement::ScannerDisplay(elem) => {
@@ -1870,25 +1862,22 @@ impl UISystem {
                         }
                     };
 
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("UI Image have not rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    1.0,
-                                    screen_aspect,
-                                    Some(parent_transform),
-                                    is_visible_coef,
-                        )]),
+                    let data = data_for_ui_uniform_buffers.get_mut(ui_type).unwrap();
+
+                    *data = DataForUIUniformBuffer::OtherElems(
+                        elem.ui_data.rect
+                            .get_rect_transform_uniform(
+                                1.0,
+                                screen_aspect,
+                                Some(parent_transform),
+                                is_visible_coef,
+                            )
                     );
                 }
             }
         }
 
-        for (_, ui_elem) in &self.ui_elements {
+        for (ui_type, ui_elem) in &self.ui_elements {
             match ui_elem {
                 UIElement::Image(elem) => {
                     if elem.ui_data.parent_ui_elem.is_some() {
@@ -1901,12 +1890,9 @@ impl UISystem {
                         false => 0.0_f32,
                     };
 
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("UI Image have not rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
+                    let data = data_for_ui_uniform_buffers.get_mut(ui_type).unwrap();
+
+                    *data = DataForUIUniformBuffer::OtherElems(
                             elem.ui_data.rect
                                 .get_rect_transform_uniform(
                                     elem
@@ -1915,7 +1901,7 @@ impl UISystem {
                                     screen_aspect,
                                     None,
                                     is_visible_coef,
-                        )]),
+                        )
                     );
                 }
                 UIElement::ProgressBar(elem) => {
@@ -1929,30 +1915,19 @@ impl UISystem {
                         false => 0.0_f32,
                     };
 
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("UI Progress bar have not rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    elem
-                                        .texture_aspect
-                                        .expect("UI Progress bar have not texture aspect"),
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                        )]),
-                    );
-                    queue.write_buffer(
-                        &elem.progress_bar_value_buffer
-                            .as_ref()
-                            .expect("UI Progress bar have not value buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.get_progress_bar_uniform()
-                        ]),
+                    let data = data_for_ui_uniform_buffers.get_mut(ui_type).unwrap();
+
+                    *data = DataForUIUniformBuffer::ProgressBarElem(
+                        elem.get_progress_bar_uniform(),
+                        elem.ui_data.rect
+                            .get_rect_transform_uniform(
+                                elem
+                                    .texture_aspect
+                                    .expect("UI Image have not texture aspect"),
+                                screen_aspect,
+                                None,
+                                is_visible_coef,
+                            ),
                     );
                 },
                 UIElement::ScannerDisplay(elem) => {
@@ -1966,19 +1941,16 @@ impl UISystem {
                         false => 0.0_f32,
                     };
 
-                    queue.write_buffer(
-                        &elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("UI Image have not rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    1.0,
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                        )]),
+                    let data = data_for_ui_uniform_buffers.get_mut(ui_type).unwrap();
+
+                    *data = DataForUIUniformBuffer::OtherElems(
+                        elem.ui_data.rect
+                            .get_rect_transform_uniform(
+                                1.0,
+                                screen_aspect,
+                                None,
+                                is_visible_coef,
+                            )
                     );
                 }
             }
@@ -2021,7 +1993,7 @@ pub struct UIRect {
     pub transparency: f32,
     pub drawing_order: usize,
 
-    pub transform_buffer: Option<Buffer>,
+    // pub transform_buffer: Option<Buffer>,
 }
 
 impl UIRect {
@@ -2194,9 +2166,9 @@ impl UIData {
         }
     }
 
-    pub fn initialize(&mut self, rect_transform_buffer: Buffer) {
-        self.rect.transform_buffer = Some(rect_transform_buffer);
-    }
+    // pub fn initialize(&mut self, rect_transform_buffer: Buffer) {
+    //     self.rect.transform_buffer = Some(rect_transform_buffer);
+    // }
 
     pub fn set_is_visible(&mut self, is_visible: bool) {
         *self.is_visible.lock().unwrap() = is_visible;
@@ -2262,12 +2234,12 @@ impl UIImage {
         &mut self,
         texture_size: Vec2,
         texture_aspect: f32,
-        rect_transform_buffer: Buffer,
+        // rect_transform_buffer: Buffer,
     ) {
         self.texture_aspect = Some(texture_aspect);
         self.texture_size = Some(texture_size);
 
-        self.ui_data.initialize(rect_transform_buffer);
+        // self.ui_data.initialize(rect_transform_buffer);
     }
 
     pub fn set_is_visible(&mut self, is_visible: bool) {
@@ -2321,7 +2293,7 @@ pub struct UIProgressBar {
     texture_aspect: Option<f32>,
     mask_texture_size: Option<Vec2>,
     mask_texture_aspect: Option<f32>,
-    progress_bar_value_buffer: Option<Buffer>,
+    // progress_bar_value_buffer: Option<Buffer>,
 }
 
 impl UIProgressBar {
@@ -2349,7 +2321,7 @@ impl UIProgressBar {
             texture_aspect: None,
             mask_texture_size: None,
             mask_texture_aspect: None,
-            progress_bar_value_buffer: None,
+            // progress_bar_value_buffer: None,
         }
     }
 
@@ -2375,16 +2347,16 @@ impl UIProgressBar {
         texture_aspect: f32,
         mask_texture_size: Vec2,
         mask_texture_aspect: f32,
-        rect_transform_buffer: Buffer,
-        progress_bar_value_buffer: Buffer,
+        // rect_transform_buffer: Buffer,
+        // progress_bar_value_buffer: Buffer,
     ) {
         self.texture_size = Some(texture_size);
         self.texture_aspect = Some(texture_aspect);
         self.mask_texture_size = Some(mask_texture_size);
         self.mask_texture_aspect = Some(mask_texture_aspect);
-        self.progress_bar_value_buffer = Some(progress_bar_value_buffer);
+        // self.progress_bar_value_buffer = Some(progress_bar_value_buffer);
 
-        self.ui_data.initialize(rect_transform_buffer);
+        // self.ui_data.initialize(rect_transform_buffer);
     }
 
     pub fn get_progress_bar_uniform(&self) -> ProgressBarUniform {
@@ -2438,15 +2410,15 @@ impl UIScannerDisplay {
         }
     }
 
-    pub fn initialize(
-        &mut self,
-        rect_transform_buffer: Buffer,
-        scanner_data_buffer: Buffer
-    ) {
-        self.ui_data.initialize(rect_transform_buffer);
+    // pub fn initialize(
+    //     &mut self,
+    //     rect_transform_buffer: Buffer,
+    //     scanner_data_buffer: Buffer
+    // ) {
+    //     // self.ui_data.initialize(rect_transform_buffer);
 
-        self.scanner_data_buffer = Some(scanner_data_buffer);
-    }
+    //     self.scanner_data_buffer = Some(scanner_data_buffer);
+    // }
 
     pub fn get_scanner_data_uniform(&self) -> ScannerDataUniform {
         match self.orientation {

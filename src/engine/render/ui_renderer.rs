@@ -4,9 +4,7 @@ use std::{
 };
 
 use crate::engine::ui::{
-    TextureType,
-    UIElement,
-    UISystem
+    ProgressBarUniform, RectTransformUniform, TextureType, UIElement, UIElementType, UISystem
 };
 
 use glam::Vec2;
@@ -17,6 +15,27 @@ use wgpu::{
     }, BindGroup, Buffer, BufferUsages, CommandEncoder, Device, PipelineCompilationOptions, Queue, ShaderStages, SurfaceConfiguration, TexelCopyBufferLayout, TexelCopyTextureInfoBase, TextureView
 };
 
+
+#[derive(Copy, Clone)]
+pub enum DataForUIUniformBuffer
+{
+    ProgressBarElem(ProgressBarUniform, RectTransformUniform),
+    OtherElems(RectTransformUniform)
+}
+
+pub enum UIBuffers
+{
+    ProgressBarElem(
+        //progress bar buffer
+        Buffer,
+        //rect transform buffer
+        Buffer
+    ),
+    OtherElems(
+        //rect transform buffer
+        Buffer
+    )
+}
 
 
 #[repr(C)]
@@ -68,6 +87,9 @@ pub struct UIRenderer {
     rect_num_indices: u32,
 
     ui_sampler: wgpu::Sampler,
+
+    ui_elements_uniform_data: Arc<Mutex<HashMap<UIElementType, DataForUIUniformBuffer>>>,
+    ui_elements_uniform_buffers: HashMap<UIElementType, UIBuffers>,
 }
 
 impl UIRenderer {
@@ -188,38 +210,38 @@ impl UIRenderer {
             layout: Some(&progress_bar_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &progress_bar_shader,
-                entry_point: Some("vs_main"), // 1.
+                entry_point: Some("vs_main"),
                 buffers: &[
                     Vertex::desc(),
-                ], // 2.
+                ],
                 compilation_options: PipelineCompilationOptions::default(),
             },
-            fragment: Some(wgpu::FragmentState { // 3.
+            fragment: Some(wgpu::FragmentState {
                 module: &progress_bar_shader,
                 compilation_options: PipelineCompilationOptions::default(),
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { // 4.
+                targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw, // 2.
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,
             },
-            depth_stencil: None, // 1.
+            depth_stencil: None,
             multisample: wgpu::MultisampleState {
-                count: 1, // 2.
-                mask: !0, // 3.
-                alpha_to_coverage_enabled: false, // 4.
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
             },
-            multiview: None, // 5.
+            multiview: None,
             cache: None,
         });
 
@@ -281,41 +303,41 @@ impl UIRenderer {
             layout: Some(&image_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &image_shader,
-                entry_point: Some("vs_main"), // 1.
+                entry_point: Some("vs_main"),
                 buffers: &[
                     Vertex::desc(),
-                ], // 2.
+                ],
                 compilation_options: PipelineCompilationOptions::default(),
             },
-            fragment: Some(wgpu::FragmentState { // 3.
+            fragment: Some(wgpu::FragmentState {
                 module: &image_shader,
                 compilation_options: PipelineCompilationOptions::default(),
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { // 4.
+                targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw, // 2.
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+
                 polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
+
                 unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
+
                 conservative: false,
             },
-            depth_stencil: None, // 1.
+            depth_stencil: None,
             multisample: wgpu::MultisampleState {
-                count: 1, // 2.
-                mask: !0, // 3.
-                alpha_to_coverage_enabled: false, // 4.
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
             },
-            multiview: None, // 5.
+            multiview: None,
             cache: None,
         });
 
@@ -429,41 +451,41 @@ impl UIRenderer {
             layout: Some(&scanner_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &scanner_shader,
-                entry_point: Some("vs_main"), // 1.
+                entry_point: Some("vs_main"),
                 buffers: &[
                     Vertex::desc(),
-                ], // 2.
+                ],
                 compilation_options: PipelineCompilationOptions::default(),
             },
-            fragment: Some(wgpu::FragmentState { // 3.
+            fragment: Some(wgpu::FragmentState {
                 module: &scanner_shader,
                 compilation_options: PipelineCompilationOptions::default(),
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { // 4.
+                targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw, // 2.
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+
                 polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
+
                 unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
+
                 conservative: false,
             },
-            depth_stencil: None, // 1.
+            depth_stencil: None,
             multisample: wgpu::MultisampleState {
-                count: 1, // 2.
-                mask: !0, // 3.
-                alpha_to_coverage_enabled: false, // 4.
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
             },
-            multiview: None, // 5.
+            multiview: None,
             cache: None
         });
 
@@ -488,7 +510,13 @@ impl UIRenderer {
 
         let mut textures_views: HashMap<TextureType, (TextureView, (u32,u32))> = HashMap::new();
 
-        for (_, ui_elem) in &mut ui_system.ui_elements {
+        let mut ui_elements_uniform_data = ui_system.ui_elements_uniform_data.clone();
+
+        let mut ui_elements_uniform_buffers = HashMap::<UIElementType, UIBuffers>::new();
+
+        let mut data_for_buffers = ui_elements_uniform_data.lock().unwrap();
+
+        for (ui_type, ui_elem) in &mut ui_system.ui_elements {
             match ui_elem {
                 UIElement::Image(ui_image) => {
                     
@@ -508,19 +536,21 @@ impl UIRenderer {
 
                     let texture_size = Vec2::new(*tex_width as f32, *tex_height as f32);
                     
+                    let buffer_data = ui_image
+                        .ui_data
+                        .rect
+                        .get_rect_transform_uniform(
+                            texture_aspect,
+                            screen_aspect,
+                            None,
+                            0.0
+                        );
+
                     let rect_transform_buffer = device.create_buffer_init(
                         &BufferInitDescriptor {
                             label: Some("rect transform buffer"),
                             contents: bytemuck::cast_slice(&[
-                                ui_image
-                                    .ui_data
-                                    .rect
-                                    .get_rect_transform_uniform(
-                                        texture_aspect,
-                                        screen_aspect,
-                                        None,
-                                        0.0
-                                    )
+                                buffer_data
                             ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
                         }
@@ -547,10 +577,14 @@ impl UIRenderer {
                         }
                     );
 
+                    ui_elements_uniform_buffers.insert(*ui_type, UIBuffers::OtherElems(rect_transform_buffer));
+
+                    data_for_buffers.insert(*ui_type, DataForUIUniformBuffer::OtherElems(buffer_data));
+                        
                     ui_image.initialize(
                         texture_size,
                         texture_aspect,
-                        rect_transform_buffer
+                        // rect_transform_buffer
                     );
 
                     while bind_groups_in_drawing_order.len() <= ui_image.ui_data.rect.drawing_order {
@@ -599,28 +633,32 @@ impl UIRenderer {
 
                     let mask_texture_size = Vec2::new(*mask_width as f32, *mask_height as f32);
                     
+                    let buffer_data = ui_progress_bar
+                        .ui_data
+                        .rect
+                        .get_rect_transform_uniform(
+                            texture_aspect,
+                            screen_aspect,
+                            None,
+                            0.0,
+                        );
+                    
                     let rect_transform_buffer = device.create_buffer_init(
                         &BufferInitDescriptor {
                             label: Some("rect transform buffer"),
                             contents: bytemuck::cast_slice(&[
-                                ui_progress_bar
-                                    .ui_data
-                                    .rect
-                                    .get_rect_transform_uniform(
-                                        texture_aspect,
-                                        screen_aspect,
-                                        None,
-                                        0.0,
-                                    )
-                                ]),
+                                buffer_data
+                            ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
                         }
                     );
+                    
+                    let progress_bar_buffer_data = ui_progress_bar.get_progress_bar_uniform();
 
                     let progress_bar_value_buffer = device.create_buffer_init(
                         &BufferInitDescriptor {
                             label: Some("progress_bar_value_buffer"),
-                            contents: bytemuck::cast_slice(&[ui_progress_bar.get_progress_bar_uniform()]),
+                            contents: bytemuck::cast_slice(&[progress_bar_buffer_data]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
                         }
                     );
@@ -654,13 +692,17 @@ impl UIRenderer {
                         }
                     );
 
+                    ui_elements_uniform_buffers.insert(*ui_type, UIBuffers::ProgressBarElem(progress_bar_value_buffer, rect_transform_buffer));
+
+                    data_for_buffers.insert(*ui_type, DataForUIUniformBuffer::ProgressBarElem(progress_bar_buffer_data, buffer_data));
+
                     ui_progress_bar.initialize(
                         texture_size,
                         texture_aspect,
                         mask_texture_size,
                         mask_texture_aspect,
-                        rect_transform_buffer,
-                        progress_bar_value_buffer,
+                        // rect_transform_buffer,
+                        // progress_bar_value_buffer,
                     );
 
                     while bind_groups_in_drawing_order.len() <= ui_progress_bar.ui_data.rect.drawing_order {
@@ -676,19 +718,21 @@ impl UIRenderer {
                 },
                 UIElement::ScannerDisplay(scanner) => {
                     
+                    let buffer_data = scanner
+                        .ui_data
+                        .rect
+                        .get_rect_transform_uniform(
+                            1.0,
+                            screen_aspect,
+                            None,
+                            0.0
+                        );
+                    
                     let rect_transform_buffer = device.create_buffer_init(
                         &BufferInitDescriptor {
                             label: Some("rect transform buffer"),
                             contents: bytemuck::cast_slice(&[
-                                scanner
-                                    .ui_data
-                                    .rect
-                                    .get_rect_transform_uniform(
-                                        1.0,
-                                        screen_aspect,
-                                        None,
-                                        0.0
-                                    )
+                                buffer_data
                             ]),
                             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
                         }
@@ -746,10 +790,14 @@ impl UIRenderer {
                         }
                     );
 
-                    scanner.initialize(
-                        rect_transform_buffer,
-                        scanner_data_buffer,
-                    );
+                    ui_elements_uniform_buffers.insert(*ui_type, UIBuffers::OtherElems(rect_transform_buffer));
+
+                    data_for_buffers.insert(*ui_type, DataForUIUniformBuffer::OtherElems(buffer_data));
+
+                    // scanner.initialize(
+                    //     rect_transform_buffer,
+                    //     scanner_data_buffer,
+                    // );
 
                     while bind_groups_in_drawing_order.len() <= scanner.ui_data.rect.drawing_order {
                         bind_groups_in_drawing_order.push((Vec::new(), Vec::new(), Vec::new()))
@@ -765,6 +813,11 @@ impl UIRenderer {
             }
         }
 
+        data_for_buffers.shrink_to_fit();
+        ui_elements_uniform_buffers.shrink_to_fit();
+
+        drop(data_for_buffers);
+
         UIRenderer {
             image_render_pipeline,
             progress_bar_render_pipeline,
@@ -778,11 +831,70 @@ impl UIRenderer {
 
             ui_sampler,
 
+            ui_elements_uniform_buffers,
+            ui_elements_uniform_data,
+
         }
     }
 
-
     
+    pub fn write_buffers(&self, queue: &Queue)
+    {
+        let data_for_buffers = self.ui_elements_uniform_data.lock().unwrap();
+
+        // let mut data_for_buffers = HashMap::with_capacity(locked_data_for_buffers.len());
+        
+        // for (ui_elem_type, data) in locked_data_for_buffers.iter()
+        // {
+        //     data_for_buffers.insert(*ui_elem_type, *data);
+        // }
+
+        // drop(locked_data_for_buffers);
+
+        for (ui_elem, data_for_buffer) in data_for_buffers.iter()
+        {
+            let buffers = self.ui_elements_uniform_buffers.get(ui_elem).unwrap();
+
+            match data_for_buffer {
+                DataForUIUniformBuffer::ProgressBarElem(progress_bar_uniform, rect_transform_uniform) => 
+                {
+                    match buffers {
+                        UIBuffers::ProgressBarElem(progress_bar_buffer, rect_trancform_buffer ) =>
+                        {
+                            queue.write_buffer(
+                                progress_bar_buffer,
+                                0,
+                                bytemuck::cast_slice(&[*progress_bar_uniform]),
+                            );
+
+                            queue.write_buffer(
+                                rect_trancform_buffer,
+                                0,
+                                bytemuck::cast_slice(&[*rect_transform_uniform]),
+                            );
+                        }
+                        _ => panic!("UIBuffers for progress bar ui elem is not UIBuffers::ProgressBarElem")
+                    }
+
+                }
+                DataForUIUniformBuffer::OtherElems(rect_transform_uniform) =>
+                {
+                    match buffers {
+                        UIBuffers::OtherElems(rect_trancform_buffer ) =>
+                        {
+                            queue.write_buffer(
+                                rect_trancform_buffer,
+                                0,
+                                bytemuck::cast_slice(&[*rect_transform_uniform]),
+                            );
+                        }
+                        _ => panic!("UIBuffers for others ui elems is not UIBuffers::OtherElems")
+                    }
+                }
+            }
+        } 
+    }
+
 
     pub fn render_ui(
         &mut self,
