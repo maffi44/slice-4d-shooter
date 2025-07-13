@@ -327,7 +327,7 @@ impl Renderer {
             format: surface_format,
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::AutoNoVsync,
+            present_mode: wgpu::PresentMode::AutoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::default(),
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
@@ -1085,7 +1085,6 @@ impl Renderer {
         // let istts = web_time::Instant::now();
         output.present();
         // println!("output time: {}",istts.elapsed().as_secs_f64());
-
 
         // println!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
         Ok(())

@@ -66,6 +66,8 @@ pub struct RenderSystem {
     generated_raymarch_shader: bool,
 
     render_quality_data: RenderQualityData,
+
+    ready_to_write_buffers: Arc<Mutex<bool>>,
 }
 
 
@@ -119,6 +121,8 @@ impl RenderSystem {
 
             loop
             {
+                let timestamp = std::time::Instant::now();
+
                 match async_renderer.try_lock()
                 {
                     Ok(mut async_renderer) =>
@@ -153,7 +157,12 @@ impl RenderSystem {
                     }
                 }
 
-                tokio::time::sleep(tokio::time::Duration::from_micros(4166)).await;
+                if timestamp.elapsed().as_millis() < 3
+                {
+                    tokio::time::sleep(tokio::time::Duration::from_micros(3122)).await;
+                }
+                
+                println!("render loop time {}", timestamp.elapsed().as_secs_f32());
             }
         });
 
@@ -175,6 +184,8 @@ impl RenderSystem {
             generated_raymarch_shader: with_generated_raymarch_shader,
 
             render_quality_data,
+
+            ready_to_write_buffers: Arc::new(Mutex::new(true)),
         }
     }
 
@@ -212,68 +223,82 @@ impl RenderSystem {
         ui: &UISystem,
     )
     {
-        self.render_data.update_dynamic_render_data(
-            world,
-            time,
-            &self.window,
-            &self.render_data.static_data.static_bounding_box.clone(),
-            self.generated_raymarch_shader,
-            &self.render_quality_data,
-        );
+        // let t = std::time::Instant::now();
 
-        ui.write_buffers_ui(
-            self.renderer_queue.clone(),
-            self.window.inner_size().width as f32 /
-            self.window.inner_size().height as f32
-        );
-
-        self.renderer_queue.write_buffer(
-            &self.buffers.other_dynamic_data_buffer,
-            0,
-            bytemuck::cast_slice(&[self.render_data.dynamic_data.other_dynamic_data]),
-        );
-
-        self.renderer_queue.write_buffer(
-            &self.buffers.dynamic_negative_shapes_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.negative.as_slice()),
-        );
-
-        self.renderer_queue.write_buffer(
-            &self.buffers.dynamic_normal_shapes_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
-        );
-
-        self.renderer_queue.write_buffer(
-            &self.buffers.dynamic_stickiness_shapes_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
-        );
-
-        self.renderer_queue.write_buffer(
-            &self.buffers.dynamic_neg_stickiness_shapes_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
-        );
-        
-        self.renderer_queue.write_buffer(
-            &self.buffers.spherical_areas_data_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.spherical_areas_data.as_slice()),
-        );
-
-        self.renderer_queue.write_buffer(
-            &self.buffers.beam_areas_data_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.beam_areas_data.as_slice()),
-        );
-
-        self.renderer_queue.write_buffer(
-            &self.buffers.player_forms_data_buffer,
-            0,
-            bytemuck::cast_slice(self.render_data.dynamic_data.player_forms_data.as_slice()),
-        );
+        if *self.ready_to_write_buffers.lock().unwrap() == true
+        {
+            self.render_data.update_dynamic_render_data(
+                world,
+                time,
+                &self.window,
+                &self.render_data.static_data.static_bounding_box.clone(),
+                self.generated_raymarch_shader,
+                &self.render_quality_data,
+            );
+    
+            ui.write_buffers_ui(
+                self.renderer_queue.clone(),
+                self.window.inner_size().width as f32 /
+                self.window.inner_size().height as f32
+            );
+            
+    
+            self.renderer_queue.write_buffer(
+                &self.buffers.other_dynamic_data_buffer,
+                0,
+                bytemuck::cast_slice(&[self.render_data.dynamic_data.other_dynamic_data]),
+            );
+    
+            self.renderer_queue.write_buffer(
+                &self.buffers.dynamic_negative_shapes_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.negative.as_slice()),
+            );
+    
+            self.renderer_queue.write_buffer(
+                &self.buffers.dynamic_normal_shapes_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.normal.as_slice()),
+            );
+    
+            self.renderer_queue.write_buffer(
+                &self.buffers.dynamic_stickiness_shapes_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.stickiness.as_slice()),
+            );
+    
+            self.renderer_queue.write_buffer(
+                &self.buffers.dynamic_neg_stickiness_shapes_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
+            );
+            
+            self.renderer_queue.write_buffer(
+                &self.buffers.spherical_areas_data_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.spherical_areas_data.as_slice()),
+            );
+    
+            self.renderer_queue.write_buffer(
+                &self.buffers.beam_areas_data_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.beam_areas_data.as_slice()),
+            );
+    
+            self.renderer_queue.write_buffer(
+                &self.buffers.player_forms_data_buffer,
+                0,
+                bytemuck::cast_slice(self.render_data.dynamic_data.player_forms_data.as_slice()),
+            );
+    
+            *self.ready_to_write_buffers.lock().unwrap() = false;
+    
+            let ready_to_write_buffers_clone = self.ready_to_write_buffers.clone();
+    
+            self.renderer_queue.on_submitted_work_done(move || {
+                *ready_to_write_buffers_clone.lock().unwrap() = true;
+            });
+        }
 
         #[cfg(target_arch="wasm32")]
         if let Err(err) = renderer_lock.render(/*&self.window*/) {
@@ -287,6 +312,8 @@ impl RenderSystem {
                 _ => log::error!("{:?}", err),
             }
         }
+
+        // println!("send data to renderer fn exec time {}", t.elapsed().as_secs_f32());
     }
 
 

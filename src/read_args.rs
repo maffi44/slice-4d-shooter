@@ -71,8 +71,9 @@ pub fn read_args() -> Option<Backend>
         println!("Usage: ./game-client [OPTIONS]");
         println!();
         println!("Options:");
-        println!("  -b, --backend BACKEND  Set graphics backend (gl, dx12, vulkan, metal)");
-        println!("  --help, -help, -h     Show this help message");
+        println!("  -b, --backend BACKEND        Set graphics backend (gl, dx12, vulkan, metal)");
+        println!("  --help, -help, -h            Show this help message");
+        println!("  -v --v -version, --version,  Show current game version");
         println!();
         println!("If no backend is specified, the graphics backend will be selected automatically");
 
