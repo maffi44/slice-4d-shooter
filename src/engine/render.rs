@@ -162,7 +162,7 @@ impl RenderSystem {
                     tokio::time::sleep(tokio::time::Duration::from_micros(3122)).await;
                 }
                 
-                println!("render loop time {}", timestamp.elapsed().as_secs_f32());
+                // println!("render loop time {}", timestamp.elapsed().as_secs_f32());
             }
         });
 
