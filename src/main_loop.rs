@@ -138,8 +138,6 @@ impl MainLoop {
                                             // #[cfg(target_arch="wasm32")]
                                             systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
                                             systems.render.window.set_fullscreen(None);
-                                            systems.render.window.reset_dead_keys();
-
                                         }
                                     },
                                     KeyCode::Enter => {
@@ -158,9 +156,6 @@ impl MainLoop {
                                                 )
                                             );
                                         }
-
-                                        systems.render.window.reset_dead_keys();
-
                                     },
                                     KeyCode::Numpad1 => {
                                         systems.settings.decrease_mouse_sensitivity(

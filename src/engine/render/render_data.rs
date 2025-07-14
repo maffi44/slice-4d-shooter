@@ -2,7 +2,7 @@ pub mod dynamic_render_data;
 pub mod static_render_data;
 
 use crate::engine::{
-    render::{render_data::dynamic_render_data::OtherDynamicData, RenderQualityData}, time::TimeSystem, world::World
+    render::RenderQualityData, time::TimeSystem, world::World
 };
 
 use self::{
@@ -12,30 +12,6 @@ use self::{
 
 use glam::Vec4;
 use winit::{dpi::PhysicalSize, window::Window};
-
-
-pub struct  DataForUniformBuffers
-{
-    pub dynamic_shapes_data: ShapesArrays,
-    pub spherical_areas_data: Box<[SphericalArea; 256]>,
-    pub beam_areas_data: Box<[BeamArea; 256]>,
-    pub player_forms_data: Box<[PlayerForm; 16]>,
-    pub other_dynamic_data: OtherDynamicData,
-}
-
-impl Default for DataForUniformBuffers
-{
-    fn default() -> Self {
-        Self {
-            dynamic_shapes_data: ShapesArrays::default(),
-            spherical_areas_data: {Box::new([SphericalArea::default(); 256])},
-            beam_areas_data: {Box::new([BeamArea::default(); 256])},
-            player_forms_data: {Box::new([PlayerForm::default(); 16])},
-            other_dynamic_data: OtherDynamicData::default(),
-        }
-    }
-}
-
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {
@@ -151,7 +127,6 @@ impl Default for Shape {
     }
 }
 
-#[derive(Clone)]
 pub struct ShapesArrays {
     pub normal: Box<[Shape; 256]>,
     pub negative: Box<[Shape; 256]>,

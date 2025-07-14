@@ -1234,6 +1234,7 @@ impl DynamicRenderData {
 
         let screen_aspect = window_size.width as f32 / window_size.height as f32;
 
+
         let clip_planes = get_view_clip_planes(&main_camera, screen_aspect);
 
         let _ = self.get_data_from_actors_visual_elements(
@@ -1470,7 +1471,9 @@ impl OtherDynamicData {
         self.dynamic_shapes_arrays_metadata = shapes_arrays_metadata;
         self.spherical_areas_metadata = spherical_areas_meatadata;
 
-        self.screen_aspect = window_size.width as f32 / window_size.height as f32;
+        self.screen_aspect = {
+            window_size.width as f32 / window_size.height as f32
+        };
 
         self.beam_areas_amount = beams_areas_amount;
 
