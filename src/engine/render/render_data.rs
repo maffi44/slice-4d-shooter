@@ -11,7 +11,7 @@ use self::{
 };
 
 use glam::Vec4;
-use winit::window::Window;
+use winit::{dpi::PhysicalSize, window::Window};
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {
@@ -77,7 +77,7 @@ impl RenderData {
         &mut self,
         world: &World,
         time: &TimeSystem,
-        window: &Window,
+        window_size: PhysicalSize<u32>,
         static_bounding_box: &BoundingBox,
         for_generated_raymarch_shader: bool,
         render_quality_data: &RenderQualityData,
@@ -85,7 +85,7 @@ impl RenderData {
         self.dynamic_data.update(
             world,
             time,
-            window,
+            window_size,
             static_bounding_box,
             &self.static_data,
             for_generated_raymarch_shader,

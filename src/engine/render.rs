@@ -26,7 +26,7 @@ use client_server_protocol::Team;
 #[cfg(not(target_arch="wasm32"))]
 use tokio::runtime::Runtime;
 use wgpu::{Backend, Buffer, Queue};
-use winit::{monitor::{MonitorHandle, VideoModeHandle}, window::Window};
+use winit::{dpi::PhysicalSize, monitor::{MonitorHandle, VideoModeHandle}, window::Window};
 
 use super::{input::ActionsFrameState, physics::dynamic_collider::PlayersDollCollider, ui::UISystem, world::static_object::VisualWave};
 
@@ -68,6 +68,8 @@ pub struct RenderSystem {
     render_quality_data: RenderQualityData,
 
     ready_to_write_buffers: Arc<Mutex<bool>>,
+
+    window_size: PhysicalSize<u32>,
 }
 
 
@@ -172,6 +174,8 @@ impl RenderSystem {
         let render_quality_data = RenderQualityData {
             shadows_enabled: true,
         };
+
+        let window_size = window.inner_size();
         
         RenderSystem {
             window,
@@ -186,6 +190,8 @@ impl RenderSystem {
             render_quality_data,
 
             ready_to_write_buffers: Arc::new(Mutex::new(true)),
+
+            window_size,
         }
     }
 
@@ -225,12 +231,12 @@ impl RenderSystem {
     {
         // let t = std::time::Instant::now();
 
-        if *self.ready_to_write_buffers.lock().unwrap() == true
-        {
+        // if *self.ready_to_write_buffers.lock().unwrap() == true
+        // {
             self.render_data.update_dynamic_render_data(
                 world,
                 time,
-                &self.window,
+                self.window_size,
                 &self.render_data.static_data.static_bounding_box.clone(),
                 self.generated_raymarch_shader,
                 &self.render_quality_data,
@@ -238,8 +244,8 @@ impl RenderSystem {
     
             ui.write_buffers_ui(
                 self.renderer_queue.clone(),
-                self.window.inner_size().width as f32 /
-                self.window.inner_size().height as f32
+                self.window_size.width as f32 /
+                self.window_size.height as f32
             );
             
     
@@ -291,14 +297,14 @@ impl RenderSystem {
                 bytemuck::cast_slice(self.render_data.dynamic_data.player_forms_data.as_slice()),
             );
     
-            *self.ready_to_write_buffers.lock().unwrap() = false;
+        //     *self.ready_to_write_buffers.lock().unwrap() = false;
     
-            let ready_to_write_buffers_clone = self.ready_to_write_buffers.clone();
+        //     let ready_to_write_buffers_clone = self.ready_to_write_buffers.clone();
     
-            self.renderer_queue.on_submitted_work_done(move || {
-                *ready_to_write_buffers_clone.lock().unwrap() = true;
-            });
-        }
+        //     self.renderer_queue.on_submitted_work_done(move || {
+        //         *ready_to_write_buffers_clone.lock().unwrap() = true;
+        //     });
+        // }
 
         #[cfg(target_arch="wasm32")]
         if let Err(err) = renderer_lock.render(/*&self.window*/) {
@@ -318,11 +324,14 @@ impl RenderSystem {
 
 
 
-    pub fn resize_frame_buffer(&mut self) {
+    pub fn resize_frame_buffer(&mut self)
+    {    
+        self.window_size = self.window.inner_size();
+        
         self.renderer
             .lock()
             .unwrap()
-            .resize(self.window.inner_size());
+            .resize(self.window_size);
     }
 }
 

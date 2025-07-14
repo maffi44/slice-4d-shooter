@@ -25,7 +25,7 @@ use std::f32::consts::PI;
 
 use client_server_protocol::Team;
 use glam::{Mat4, Vec4};
-use winit::window::Window;
+use winit::{dpi::PhysicalSize, window::Window};
 
 use super::{static_render_data::StaticRenderData, BeamArea, BoundingBox, PlayerForm};
 
@@ -1217,7 +1217,7 @@ impl DynamicRenderData {
         &mut self,
         world: &World,
         time: &TimeSystem,
-        window: &Window,
+        window_size: PhysicalSize<u32>,
         static_bounding_box: &BoundingBox,
         static_data: &StaticRenderData,
         for_generated_raymarch_shader: bool,
@@ -1232,10 +1232,7 @@ impl DynamicRenderData {
             .expect("Main actor is not ControlledActor")
             .get_camera();
 
-        let screen_aspect = {
-            let size = window.inner_size();
-            size.width as f32 / size.height as f32
-        };
+        let screen_aspect = window_size.width as f32 / window_size.height as f32;
 
 
         let clip_planes = get_view_clip_planes(&main_camera, screen_aspect);
@@ -1276,7 +1273,7 @@ impl DynamicRenderData {
         self.other_dynamic_data.update(
             world,
             time,
-            window,
+            window_size,
             shapes_arrays_metadata,
             spherical_areas_meatadata,
             waves_start,
@@ -1425,7 +1422,7 @@ impl OtherDynamicData {
         &mut self,
         world: &World,
         time: &TimeSystem,
-        window: &Window,
+        window_size: PhysicalSize<u32>,
         shapes_arrays_metadata: ShapesArraysMetadata,
         spherical_areas_meatadata: SphericalAreasMetadata,
         waves_start: u32,
@@ -1475,8 +1472,7 @@ impl OtherDynamicData {
         self.spherical_areas_metadata = spherical_areas_meatadata;
 
         self.screen_aspect = {
-            let size = window.inner_size();
-            size.width as f32 / size.height as f32
+            window_size.width as f32 / window_size.height as f32
         };
 
         self.beam_areas_amount = beams_areas_amount;
