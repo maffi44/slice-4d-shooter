@@ -12,7 +12,7 @@ use wasm_bindgen::JsValue;
 
 use tokio_tungstenite::{
     connect_async,
-    tungstenite::error::{Error, UrlError}
+    tungstenite::error::Error
 };
 
 use matchbox_socket::{
@@ -58,7 +58,7 @@ use crate::{
         MessageType,
         SpecificActorMessage
     },
-    transform::{self, Transform}
+    transform::Transform
 };
 
 use super::{
@@ -75,7 +75,6 @@ use super::{
     }
 };
 
-use alkahest::{alkahest, Serialize};
 
 type Packet = Box<[u8]>;
 

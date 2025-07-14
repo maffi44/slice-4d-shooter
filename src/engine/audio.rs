@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use bincode::de;
 use fyrox_core::{
     algebra::Vector3,
     pool::Handle

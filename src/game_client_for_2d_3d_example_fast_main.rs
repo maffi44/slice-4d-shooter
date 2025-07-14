@@ -4,12 +4,11 @@ mod main_loop;
 mod transform;
 mod read_args;
 
-use engine::Engine;
 use main_loop::MainLoop;
 use pollster;
 use blink_alloc::UnsafeGlobalBlinkAlloc;
 
-use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, player_for_2d_3d_example::PlayerFor2d3dExample, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
+use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, PlayerMessage}, player_for_2d_3d_example::PlayerFor2d3dExample, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 

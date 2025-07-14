@@ -21,10 +21,7 @@ use std::{
     }
 };
 
-use crate::{
-    actor::main_player::player_settings::PlayerSettings,
-    main_loop::{self, MainLoop}
-};
+use crate::actor::main_player::player_settings::PlayerSettings;
 
 use self::{
     render::RenderSystem,
@@ -47,7 +44,7 @@ use wgpu::Backend;
 use winit::platform::web::WindowBuilderExtWebSys;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::{closure::Closure, JsCast, JsValue};
-use winit::{event_loop::ActiveEventLoop, monitor::MonitorHandle, window::{Cursor, Fullscreen, Window, WindowAttributes, WindowButtons}};
+use winit::window::Window;
 
 pub struct Engine {
     pub render: RenderSystem,

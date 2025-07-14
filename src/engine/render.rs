@@ -25,8 +25,8 @@ use self::{
 use client_server_protocol::Team;
 #[cfg(not(target_arch="wasm32"))]
 use tokio::runtime::Runtime;
-use wgpu::{Backend, Buffer, Queue};
-use winit::{dpi::PhysicalSize, monitor::{MonitorHandle, VideoModeHandle}, window::Window};
+use wgpu::{Backend, Queue};
+use winit::{dpi::PhysicalSize, window::Window};
 
 use super::{input::ActionsFrameState, physics::dynamic_collider::PlayersDollCollider, ui::UISystem, world::static_object::VisualWave};
 

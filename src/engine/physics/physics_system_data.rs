@@ -2,7 +2,7 @@ use crate::{
     engine::{
         physics::{
             area::Area, kinematic_collider::KinematicCollider, static_collider::StaticCollider
-        }, world::{static_object::{WFloor, WRoof}, World}
+        }, world::World
     }, transform::Transform
 };
 

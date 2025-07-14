@@ -5,7 +5,6 @@ use glam::{
     Vec4,
     Vec4Swizzles,
 };
-use web_sys::js_sys::Math::max;
 
 use crate::actor::ActorID;
 

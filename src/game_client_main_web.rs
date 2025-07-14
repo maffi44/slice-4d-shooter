@@ -3,9 +3,9 @@ mod actor;
 mod main_loop;
 mod transform;
 
-use actor::{flag::Flag, move_w_bonus::MoveWBonusSpot, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
+use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
-use engine::{input::ActionsFrameState, Engine};
+use engine::input::ActionsFrameState;
 use main_loop::MainLoop;
 
 use wasm_bindgen::prelude::*;
@@ -28,7 +28,7 @@ async fn client_main() {
     #[cfg(not(debug_assertions))]
     console_log::init_with_level(log::Level::Warn).expect("Could't initialize logger");
 
-    let mut main_loop = MainLoop::new();
+    let main_loop = MainLoop::new();
     
     log::info!("main: main_loop init");
 

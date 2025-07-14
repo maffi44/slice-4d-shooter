@@ -14,7 +14,7 @@ use blink_alloc::UnsafeGlobalBlinkAlloc;
 use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
 
-use winit::event::{ElementState, KeyEvent};
+use winit::event::ElementState;
 
 use crate::{actor::flag_base::FlagBase, engine::input::ActionsFrameState};
 

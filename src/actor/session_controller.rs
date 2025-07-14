@@ -3,12 +3,12 @@ use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
 
 use crate::{
-    engine::{audio::Sound, effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{self, UIElement, UIElementType, UISystem}},
+    engine::{audio::Sound, effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{UIElementType, UISystem}},
     transform::Transform
 };
 
 use super::{
-    flag::{self, FlagStatus}, main_player::{PlayerMessage, BLUE_TEAM_COLOR, RED_TEAM_COLOR}, move_w_bonus::BonusSpotStatus, Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage
+    flag::FlagStatus, main_player::{PlayerMessage, BLUE_TEAM_COLOR, RED_TEAM_COLOR}, move_w_bonus::BonusSpotStatus, Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage
 };
 
 pub const DEFAULT_TEAM: Team = Team::Blue;

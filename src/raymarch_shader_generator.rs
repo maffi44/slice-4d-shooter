@@ -4,7 +4,7 @@ mod main_loop;
 mod transform;
 
 
-use std::{env, fs::{File, OpenOptions}, io::{Read, Write}};
+use std::{env, fs::OpenOptions, io::{Read, Write}};
 
 use crate::{actor::main_player::player_settings::PlayerSettings, engine::{engine_handle::EngineHandle, render::{raymarch_shader_generator, render_data::static_render_data::StaticRenderData}, world::World}};
 

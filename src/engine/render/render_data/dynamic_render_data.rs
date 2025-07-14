@@ -1,6 +1,6 @@
 use crate::{
     actor::{
-        main_player::{MainPlayer, PlayerProjection, PlayerScreenEffects},
+        main_player::{PlayerProjection, PlayerScreenEffects},
         Actor,
         ActorWrapper
     },
@@ -18,14 +18,14 @@ use crate::{
             static_object::{ColoringArea, StaticObject, VisualWave, VolumeArea},
             World
         }
-    }, transform::{self, Transform, FORWARD}
+    }, transform::{Transform, FORWARD}
 };
 
 use std::f32::consts::PI;
 
 use client_server_protocol::Team;
 use glam::{Mat4, Vec4};
-use winit::{dpi::PhysicalSize, window::Window};
+use winit::dpi::PhysicalSize;
 
 use super::{static_render_data::StaticRenderData, BeamArea, BoundingBox, PlayerForm};
 

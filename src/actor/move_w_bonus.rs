@@ -2,7 +2,7 @@ use glam::{Vec3, Vec4};
 
 use crate::{
     engine::{
-        effects::EffectsSystem, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, world::static_object::{SphericalVolumeArea, StaticObject, VolumeArea}
+        effects::EffectsSystem, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, world::static_object::{SphericalVolumeArea, VolumeArea}
     },
     transform::Transform
 };

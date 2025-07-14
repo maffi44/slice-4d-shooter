@@ -1,22 +1,8 @@
-use bincode::de;
-use client_server_protocol::{
-    NetCommand,
-    NetMessageToPlayer,
-    NetMessageToServer,
-    RemoteCommand,
-    RemoteMessage,
-    Team
-};
-use rand::{seq::SliceRandom, thread_rng};
+use client_server_protocol::Team;
 
 use crate::{
     actor::{
-        device::{
-            holegun::HoleGun,
-            Device,
-            DeviceType
-        },
-        main_player::{player_inner_state::PlayerInnerState, player_input_master, player_settings, PlayerMessage, PlayerMovingState, PlayerScreenEffects, PlayersProjections},
+        main_player::{player_inner_state::PlayerInnerState, player_input_master, player_settings, PlayerMessage, PlayerScreenEffects, PlayersProjections},
         players_doll::PlayerDollInputState,
         Actor,
         ActorID,
@@ -35,17 +21,11 @@ use crate::{
             EngineHandle
         }, input::ActionsFrameState, physics::{
             colliders_container::PhysicalElement,
-            dynamic_collider::PlayersDollCollider,
-            kinematic_collider::{
-                KinematicCollider,
-                KinematicColliderMessage
-            },
+            kinematic_collider::KinematicColliderMessage,
             PhysicsSystem
-        }, render::{camera::Camera, VisualElement}, time::TimeSystem, ui::{
-            self, RectSize, UIElement, UIElementType, UISystem
-        }, world::{level::Spawn, static_object::{BeamVolumeArea, VolumeArea}}
+        }, render::camera::Camera, time::TimeSystem, ui::UISystem, world::level::Spawn
     },
-    transform::{Transform, BACKWARD, DOWN, FORWARD, LEFT, RIGHT, UP, W_DOWN, W_UP},
+    transform::{Transform, BACKWARD, FORWARD, LEFT, RIGHT, UP, W_DOWN, W_UP},
 };
 
 use self::{
@@ -53,16 +33,10 @@ use self::{
     player_settings::PlayerSettings,
 };
 
-use core::panic;
-use std::{collections::btree_set::Difference, f32::consts::PI, usize};
-use fyrox_core::pool::Handle;
-use fyrox_sound::source::{SoundSource, Status};
-use glam::{
-    FloatExt, Mat2, Mat3, Mat4, Vec2, Vec3, Vec4
-};
+use glam::Vec4;
 
 use super::{
-    device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, main_player::{self, ActiveHandsSlot, WScanner, GET_DAMAGE_PROJECTION_INTENSITY, PLAYER_PROJECTION_DISPLAY_TIME, Y_DEATH_PLANE_LEVEL}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::{SessionControllerMessage, DEFAULT_TEAM}, ControlledActor, PhysicsMessages
+    main_player::{self, Y_DEATH_PLANE_LEVEL}, move_w_bonus::MoveWBonusSpotMessage, session_controller::SessionControllerMessage, ControlledActor, PhysicsMessages
 };
 
 

@@ -4,12 +4,11 @@ mod main_loop;
 mod transform;
 mod read_args;
 
-use engine::Engine;
 use main_loop::MainLoop;
 use pollster;
 use blink_alloc::UnsafeGlobalBlinkAlloc;
 
-use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, move_w_bonus::MoveWBonusSpot, observer::Observer, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
+use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, PlayerMessage}, observer::Observer, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
@@ -26,7 +25,7 @@ fn main() {
     
     let specific_backend = read_args();
 
-    let mut main_loop = MainLoop::new();
+    let main_loop = MainLoop::new();
     
     log::info!("main: main_loop init");
 
@@ -37,7 +36,7 @@ fn main() {
         specific_backend,
         Box::new(|systems| {
 
-            let mut observer = Observer::new(
+            let observer = Observer::new(
                 InputMaster::LocalMaster(
                     LocalMaster::new(ActionsFrameState::empty())
                 ),

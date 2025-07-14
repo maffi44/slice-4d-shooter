@@ -5,7 +5,7 @@ use crate::{
         main_player::player_input_master::InputMaster::{
             LocalMaster,
             RemoteMaster,
-        }, Actor, ActorWrapper
+        }, Actor
     }, engine::{
         net::NetSystem,
         world::World,

@@ -26,7 +26,6 @@ use crate::{
     transform::Transform,
 };
 
-use super::{CommonActorsMessage, Message, MessageType};
 
 const SHOT_HOLE_START_RADIUS: f32 = 0.01;
 const SHOT_HOLE_FINAL_RADIUS: f32 = 0.11;

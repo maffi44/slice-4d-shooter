@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::format, fs::File, io::Read};
+use std::{collections::HashMap, fs::File, io::Read};
 
 use crate::{
     actor::{

@@ -1,21 +1,8 @@
 use crate::{
-    actor::{
-        flag::Flag, move_w_bonus::{self, MoveWBonusSpot}, main_player::{
-            self, player_input_master::{
-                InputMaster,
-                LocalMaster
-            }, MainPlayer, PlayerMessage
-        }, session_controller::{self, SessionController}, Actor, ActorWrapper, Message, SpecificActorMessage
-    },
-    engine::{
-        engine_handle::{
-            Command,
-            CommandType
-        }, input::ActionsFrameState, world, Engine
-    },
+    actor::Actor,
+    engine::Engine,
 };
 
-use client_server_protocol::Team;
 use web_time::Instant;
 use glam::Vec2;
 
@@ -27,7 +14,7 @@ use winit::{
     }, keyboard::{
         KeyCode,
         PhysicalKey
-    }, window::{Fullscreen, Window, WindowAttributes}
+    }, window::{Fullscreen, WindowAttributes}
 };
 
 pub struct 
@@ -174,7 +161,7 @@ impl ApplicationHandler for Slice4DShooter
                 systems.render.resize_frame_buffer();
             },
             
-            WindowEvent::KeyboardInput {event,is_synthetic, ..} => {
+            WindowEvent::KeyboardInput {event, ..} => {
 
                 if let PhysicalKey::Code(code) = event.physical_key {
                     match code {

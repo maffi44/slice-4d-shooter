@@ -1,5 +1,5 @@
 use fyrox_core::pool::Handle;
-use fyrox_sound::source::{SoundSource, Status};
+use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Vec3, Vec4};
 
 use client_server_protocol::{
@@ -29,7 +29,7 @@ use crate::{
 
 use super::{
     device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, main_player::{
-        player_settings::PlayerSettings, PlayerMessage, PlayerMovingState, BLUE_SCANNER_WAVE_COLOR, PLAYER_MAX_HP, RED_SCANNER_WAVE_COLOR, TIME_TO_DIE_SLOWLY, W_SCANNER_EXPANDING_SPEED, W_SCANNER_MAX_RADIUS
+        player_settings::PlayerSettings, PlayerMessage, BLUE_SCANNER_WAVE_COLOR, PLAYER_MAX_HP, RED_SCANNER_WAVE_COLOR, TIME_TO_DIE_SLOWLY, W_SCANNER_EXPANDING_SPEED, W_SCANNER_MAX_RADIUS
     }, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, shotgun_shot_source::ShotgunShotSource, Actor, ActorID, ActorWrapper, CommonActorsMessage, Message, MessageType, SpecificActorMessage
 };
 
@@ -249,7 +249,7 @@ impl PlayerDoll {
             vec
         };
 
-        let mut interpolated_model_target = KinematicCollider::new(
+        let interpolated_model_target = KinematicCollider::new(
             player_settings.max_speed,
             player_settings.max_accel,
             player_sphere_radius,

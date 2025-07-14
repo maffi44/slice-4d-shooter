@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use crate::actor::main_player::player_settings::PlayerSettings;
 
 pub struct Settings

@@ -2,11 +2,10 @@ use glam::{Vec3, Vec4};
 
 use crate::{
     actor::{
-        machinegun_shot::MachinegunShot, main_player::{
+        main_player::{
             player_inner_state::PlayerInnerState,
-            PlayerMessage,
             PlayerScreenEffects,
-        }, shotgun_shot_source::ShotgunShotSource, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage
+        }, shotgun_shot_source::ShotgunShotSource, ActorID, ActorWrapper
     },
     engine::{
         audio::AudioSystem,
@@ -17,7 +16,7 @@ use crate::{
         },
         input::ActionsFrameState,
         physics::PhysicsSystem,
-        render::{ChildVisualElement, VisualElement},
+        render::ChildVisualElement,
         ui::{
             UIElement,
             UIElementType,

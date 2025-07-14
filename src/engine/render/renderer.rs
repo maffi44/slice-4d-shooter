@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::engine::{render::{raymarch_shader_generator, render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
+use crate::engine::{render::{render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
 use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
@@ -11,7 +11,7 @@ use wgpu::{
     }, util::{
         BufferInitDescriptor,
         DeviceExt,
-    }, Backend, BackendOptions, Backends, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions, PollStatus, Sampler, ShaderRuntimeChecks, TexelCopyBufferLayout, TexelCopyTextureInfoBase, Texture, TextureView, TextureViewDescriptor
+    }, Backend, BackendOptions, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions, PollStatus, Sampler, ShaderRuntimeChecks, TexelCopyBufferLayout, TexelCopyTextureInfoBase, Texture, TextureView
 };
 
 

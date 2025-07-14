@@ -32,7 +32,7 @@ use crate::{
         },
         input::ActionsFrameState,
         physics::PhysicsSystem,
-        render::{ChildVisualElement, VisualElement},
+        render::ChildVisualElement,
         ui::{
             UIElement,
             UIElementType,

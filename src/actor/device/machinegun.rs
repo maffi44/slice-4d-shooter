@@ -5,7 +5,7 @@ use crate::{
         machinegun_shot::MachinegunShot,
         main_player::{
             player_inner_state::PlayerInnerState,
-            PlayerMessage, PlayerScreenEffects, PLAYER_PROJECTION_DISPLAY_TIME
+            PlayerMessage, PlayerScreenEffects
         },
         ActorID,
         ActorWrapper,
@@ -22,7 +22,7 @@ use crate::{
         },
         input::ActionsFrameState,
         physics::PhysicsSystem,
-        render::{ChildVisualElement, VisualElement},
+        render::ChildVisualElement,
         ui::{
             UIElement,
             UIElementType,
