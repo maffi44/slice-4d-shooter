@@ -28,15 +28,11 @@ async fn client_main() {
     #[cfg(not(debug_assertions))]
     console_log::init_with_level(log::Level::Warn).expect("Could't initialize logger");
 
-    let main_loop = MainLoop::new();
+    let mut main_loop = MainLoop::new();
     
     log::info!("main: main_loop init");
 
-    let systems = Engine::new(&main_loop, true, false, false, None).await;
-    
-    log::info!("main: Engine systems init");
-
-    main_loop.run(systems, Box::new(|systems| {
+    main_loop.run(true, false, false, None, Box::new(|systems| {
             let main_player = MainPlayer::new(
                 InputMaster::LocalMaster(
                     LocalMaster::new(ActionsFrameState::empty())

@@ -99,15 +99,13 @@ impl<'a> Future for WindowReadyFuture<'a> {
 
 impl Engine {
     pub async fn new(
-        cleint_main_loop: &MainLoop,
+        window: Window,
         with_ui_renderer: bool,
         it_is_2d_3d_example: bool,
         with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>,
-    ) -> Engine {
-
-        let window;
-
+    ) -> Engine
+    {
         #[cfg(not(target_arch = "wasm32"))]
         let mut runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(2)
@@ -129,27 +127,8 @@ impl Engine {
                 .with_title("Slice: 4D Shooter")
                 // .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
                 // .with_inner_size(PhysicalSize::new(1200, 800))
-                .build(&cleint_main_loop.event_loop)
+                .build(&client_main_loop.event_loop)
                 .unwrap();
-        }
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            window = cleint_main_loop.event_loop.create_window(
-                WindowAttributes::default()
-                .with_active(true)
-                .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
-                .with_title("Slice: 4D Shooter")
-            ).unwrap();
-        }
-        log::info!("engine systems: window init");
-
-        #[cfg(target_arch = "wasm32")]
-        {
-            // it is necessary because immidiatly after creating the window the inner size of the this window
-            // is zero. It will make an error when creating the wgpu surface when initializing the render system
-            let window_ready_future = WindowReadyFuture {window: &window};
-            window_ready_future.await;
-            log::info!("window is ready");
         }
 
         let mut engine_handle = EngineHandle::new();
