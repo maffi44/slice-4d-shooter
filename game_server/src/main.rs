@@ -1862,14 +1862,7 @@ async fn  run_signaling_server(
         .on_client_disconnected(move |id| {
             *players_amount_3.lock().unwrap() -= 1;
         })
-
-        .cors()
-
-        .trace()
-
-        .mutate_router(|r| {
-            r.route(path, method_router)
-        })
+        
         .build();
     
     println!("start signaling server");
@@ -1931,7 +1924,6 @@ async fn  run_signaling_server(
             config.game_severs_min_port_for_signaling_servers,
             config.game_severs_max_port_for_signaling_servers
         );
-        
         exit(1);
     }
 }
