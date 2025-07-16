@@ -1863,6 +1863,13 @@ async fn  run_signaling_server(
             *players_amount_3.lock().unwrap() -= 1;
         })
 
+        .cors()
+
+        .trace()
+
+        .mutate_router(|r| {
+            r.route(path, method_router)
+        })
         .build();
     
     println!("start signaling server");
@@ -1919,6 +1926,12 @@ async fn  run_signaling_server(
             }
         }
 
+        eprintln!(
+            "ERROR: no free ports for signaling server in {} to {} ports range",
+            config.game_severs_min_port_for_signaling_servers,
+            config.game_severs_max_port_for_signaling_servers
+        );
+        
         exit(1);
     }
 }
