@@ -933,11 +933,11 @@ fn process_message(
                     })
                 },
 
-                RemoteCommand::SpawnPlayerDeathExplode(pos) =>
+                RemoteCommand::SpawnPlayerDeathExplode(pos, team) =>
                 {
                     let position = Vec4::from_array(pos);
 
-                    let player_death_explode = PlayersDeathExplosion::new(position);
+                    let player_death_explode = PlayersDeathExplosion::new(position, team);
 
                     engine_handle.send_command(Command {
                         sender: 0u128,

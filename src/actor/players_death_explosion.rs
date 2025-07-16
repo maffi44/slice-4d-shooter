@@ -1,6 +1,7 @@
+use client_server_protocol::Team;
 use glam::{Vec3, Vec4};
 
-use crate::{engine::{audio::AudioSystem, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{physics_system_data::ShapeType, static_collider::StaticCollider}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}}, transform::Transform};
+use crate::{actor::device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, engine::{audio::AudioSystem, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{physics_system_data::ShapeType, static_collider::StaticCollider}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}}, transform::Transform};
 
 use super::{Actor, ActorID};
 
@@ -16,14 +17,19 @@ pub struct PlayersDeathExplosion {
 }
 
 impl PlayersDeathExplosion {
-    pub fn new(position: Vec4) -> Self {
+    pub fn new(position: Vec4, team: Team) -> Self {
         let mut volume_areas = Vec::with_capacity(1);
+
+        let color = match team {
+            Team::Red => HOLE_GUN_RED_COLOR,
+            Team::Blue => HOLE_GUN_BLUE_COLOR,
+        };
 
         let volume_area = VolumeArea::SphericalVolumeArea(
             SphericalVolumeArea {
                 translation: Vec4::ZERO,
                 radius: 0.6,
-                color: Vec3::new(13.0, 3.0, 0.0),
+                color,
             }
         );
 
@@ -52,7 +58,7 @@ impl PlayersDeathExplosion {
         let coloring_area = ColoringArea {
             translation: Vec4::ZERO,
             radius: 0.15,
-            color: Vec3::new(5.0, 1.0, 0.0)
+            color
         };
 
         let mut coloring_areas = Vec::with_capacity(1);

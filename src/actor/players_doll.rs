@@ -319,7 +319,8 @@ impl PlayerDoll {
 
     fn play_die_effects(&mut self, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
         let players_death_explode = PlayersDeathExplosion::new(
-            self.get_transform().get_position()
+            self.get_transform().get_position(),
+            self.team
         );
         
         engine_handle.send_command(

@@ -266,7 +266,7 @@ impl Actor for HoleGunShot {
             {
                 wave.radius = f32::lerp(
                     0.0,
-                    self.target_size*1.1,
+                    self.target_size,
                     explode_coeff.clamp(0.0, 1.0)
                 );
                 wave.radius = wave.radius.abs();

@@ -3180,7 +3180,8 @@ pub fn die
         );
 
         let players_death_explode = PlayersDeathExplosion::new(
-            inner_state.transform.get_position()
+            inner_state.transform.get_position(),
+            inner_state.team
         );
 
         inner_state.screen_effects.death_screen_effect = 0.0;

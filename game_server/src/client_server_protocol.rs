@@ -145,7 +145,7 @@ pub enum RemoteCommand {
         //team
         Team
     ),
-    SpawnPlayerDeathExplode([f32;4]),
+    SpawnPlayerDeathExplode([f32;4], Team),
     RemoveActor(ActorID),
     SpawnHole(
         // position
