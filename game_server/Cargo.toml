@@ -10,11 +10,18 @@ fyrox-core = "0.36.2"
 alkahest = { version = "0.3.0", features = [ "derive" ] }
 serde_json = "1.0.140"
 matchmaking_server = { path = "../matchmaking_server" }
-matchbox_signaling = "0.12.0"
+matchbox_signaling = { path = "../matchbox_signaling_modified" }
 matchbox_socket = "0.12.0"
 rand = "0.8.5"
 glam = "0.30.4"
 blink-alloc = "0.3.1"
+
+async-trait = "*"
+axum = "*"
+futures = "*"
+futures-timer = "*"
+matchbox_protocol = "*"
+tracing = "*"
 
 [lib]
 name = "client_server_protocol"

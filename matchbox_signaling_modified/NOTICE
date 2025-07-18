@@ -1,0 +1,18 @@
+NOTICE
+
+Modified Code Attribution
+
+This project includes modified code from the original library. The following changes were made to address specific issues:
+Modification: Client Connection Timeout
+
+    Description:
+    Disconnects a client if no packet is received from them for 3 seconds.
+
+    Reason for Change:
+    A bug was discovered during testing where a client process crashing or losing connection abruptly (without sending a proper WebSocket close signal) would leave the signaling server in a "connected" state indefinitely—until the server itself shuts down.
+
+    Impact:
+    Modifications were required in crate matchbox_signaling to enforce cleanup of stale connections and prevent "ghost clients."
+
+    Note:
+    This is particularly important for unstable networks or clients that may terminate unexpectedly (e.g., mobile apps, crashed processes).

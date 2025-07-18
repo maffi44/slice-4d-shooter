@@ -544,7 +544,7 @@ impl NetSystem {
                             .clone()
                     )
                     .reconnect_attempts(Some(3))
-                    .signaling_keep_alive_interval(Some(Duration::from_secs(10)))
+                    .signaling_keep_alive_interval(Some(Duration::from_secs(1)))
                     .ice_server(RtcIceServerConfig {
                         urls: self.connection_data.bash_and_turn_servers.clone(),
                         username: self.connection_data.turn_server_username.clone(),

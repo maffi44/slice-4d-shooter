@@ -97,16 +97,16 @@ impl PlayerSettings {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let mut file = File::open("./src/assets/settings/settings.json");
+            let mut file = File::open("./settings.json");
 
             if file.is_err()
             {
-                file = File::open("../../../src/assets/settings/settings.json");
+                file = File::open("./src/assets/settings/settings.json");
             }
 
             if file.is_err()
             {
-                file = File::open("./settings.json");
+                file = File::open("../../../src/assets/settings/settings.json");
             }
 
             match file {

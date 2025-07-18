@@ -197,6 +197,8 @@ static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();
 
+    read_args(&args);
+
     let config = match GameServerConfig::new(args) {
         Ok(cfg) => cfg,
         Err(e) => {
@@ -258,7 +260,7 @@ async fn async_main(
             credential: config.credential.clone(),
         })
         .reconnect_attempts(Some(3))
-        .signaling_keep_alive_interval(Some(Duration::from_secs(3)))
+        .signaling_keep_alive_interval(Some(Duration::from_secs(1)))
         .add_reliable_channel()
         .add_unreliable_channel()
         .build();
@@ -1925,5 +1927,35 @@ async fn  run_signaling_server(
             config.game_severs_max_port_for_signaling_servers
         );
         exit(1);
+    }
+}
+
+
+pub fn read_args(args: &Vec<String>)
+{
+    for arg in args
+    {
+        match arg.as_str()
+        {
+
+            "--help" | "-help" | "help" | "-h" | "--usage" | "-usage" | "usage" =>
+            {
+                println!("Usage: ./game_server [OPTIONS]");
+                println!();
+                println!("  -v --v -version, --version,  Show current game server version");
+
+                std::process::exit(0);
+            }
+
+            "-v" | "--v" | "-version" | "--version" =>
+            {
+                println!("Slice: 4D Shooter game server version: {}", env!("CARGO_PKG_VERSION"));
+                
+                std::process::exit(0);
+
+            }
+
+            _ => {}
+        }
     }
 }

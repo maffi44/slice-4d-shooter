@@ -1,4 +1,4 @@
-workspace = { members = [ "game_server", "matchmaking_server" ] }
+workspace = { members = [ "game_server", "matchmaking_server", "matchbox_signaling_modified"] }
 [package]
 name = "web-4d-shooter"
 version = "0.4.3"
@@ -43,7 +43,7 @@ web-sys = { version = "0.3.77", features = [
     "Performance",
     "Response"
 ]}
-matchbox_socket = { version = "0.12.0", features = [] }
+matchbox_socket = "0.12.0"
 rustc-hash = "1.1.0"
 
 [lib]
@@ -83,3 +83,4 @@ path="src/headless_game_client_main_for_net_test.rs"
 name="raymarch_shader_generator"
 path="src/raymarch_shader_generator.rs"
 
+resolver = "2"

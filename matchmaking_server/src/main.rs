@@ -11,7 +11,7 @@ use matchmaking_server_protocol::{
 
 use core::panic;
 use std::{
-    fs::File, io::{Read, Write}, net::Ipv4Addr, os::linux::raw::stat, process::Stdio, str::FromStr, sync::Arc, time::Duration
+    env, fs::File, io::{Read, Write}, net::Ipv4Addr, os::linux::raw::stat, process::Stdio, str::FromStr, sync::Arc, time::Duration
 };
 use tokio::{
     io::{
@@ -159,7 +159,7 @@ type GameServersState = Arc<Mutex<HashMap<u16,GameServerInfo>>>;
 async fn handle_client_connection(
     stream: tokio::net::TcpStream,
     state: GameServersState,
-    config: Config,
+    mut config: Config,
     async_rutime: Arc<Runtime>,
 )
 {
@@ -180,6 +180,9 @@ async fn handle_client_connection(
                 {
                     match client_message {
                         ClientMessage::RequestToConnectToGameServer(clients_game_version) => {
+
+                            // uodate current game version and max game sessions amount
+                            config = load_config();
 
                             println!("INFO: Client is requesting to connect to a game server");
 
@@ -461,6 +464,9 @@ async fn keep_server_process(
 }
 
 fn main() {
+    let args = std::env::args().collect();
+    read_args(&args);
+
     let runtime = Arc::new(
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -668,12 +674,12 @@ fn load_config() -> Config
         .expect("ERROR: matchmaking-server-config.json file expected");
 
     let mut file_content = String::new();
-    match file.read_to_string(&mut file_content) {
+    let config = match file.read_to_string(&mut file_content) {
         Ok(_) => {
             let json_config = serde_json::from_str(&file_content)
                 .expect("ERROR: can't parse matchmaking-server-config.json file");
 
-            return parse_json_matchmaking_config(json_config);
+            parse_json_matchmaking_config(json_config)
         },
         Err(e) => {
             panic!(
@@ -681,7 +687,9 @@ fn load_config() -> Config
                 e.to_string()
             );
         }
-    }
+    };
+
+    return config;
 }
 
 
@@ -812,5 +820,35 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         game_servers_ice_config,
         max_game_sessions,
         max_players_per_game_session,  
+    }
+}
+
+
+pub fn read_args(args: &Vec<String>)
+{
+    for arg in args
+    {
+        match arg.as_str()
+        {
+
+            "--help" | "-help" | "help" | "-h" | "--usage" | "-usage" | "usage" =>
+            {
+                println!("Usage: ./matchmaking_server [OPTIONS]");
+                println!();
+                println!("  -v --v -version, --version,  Show current matchmaking server version");
+
+                std::process::exit(0);
+            }
+
+            "-v" | "--v" | "-version" | "--version" =>
+            {
+                println!("Slice: 4D Shooter matchmaking server version: {}", env!("CARGO_PKG_VERSION"));
+                
+                std::process::exit(0);
+
+            }
+
+            _ => {}
+        }
     }
 }
