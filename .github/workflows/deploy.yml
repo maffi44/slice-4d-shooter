@@ -1,0 +1,44 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Build and Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Set up SSH access to EC2
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+    - name: SSH into EC2 and deploy
+      run: |
+        ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          set -e
+
+          # Navigate to project directory
+          cd /opt/4dShooter/slice-4d-shooter
+
+          # Pull the latest code from GitHub using deploy key
+          git pull origin main
+
+          # Build Rust binaries
+          cargo build --release -p matchmaking_server
+          cargo build --release -p game_server
+
+          # Stop the systemd service
+          sudo systemctl stop matchmaking.service
+
+          # Replace old binaries with new ones
+          cp /opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/matchmaking_server /opt/4dShooter
+          cp /opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/matchmaking_server /opt/4dShooter
+
+          # Restart the systemd service
+          sudo systemctl start matchmaking.service
+        EOF
