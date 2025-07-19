@@ -47,13 +47,36 @@ jobs:
           jq '.current_game_version = "${{ env.VERSION }}"' /opt/4dShooter/matchmaking-server-config.json > /tmp/config.tmp
           sudo mv /tmp/config.tmp /opt/4dShooter/matchmaking-server-config.json
 
-          # Stop the systemd service
-          sudo systemctl stop matchmaking.service
+          # Define paths
+          NEW_MATCHMAKING="./target/x86_64-unknown-linux-gnu/release/matchmaking_server"
+          OLD_MATCHMAKING="/opt/4dShooter/matchmaking_server"
 
-          # Replace old binaries with new ones
-          cp /opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/matchmaking_server /opt/4dShooter
-          cp /opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/matchmaking_server /opt/4dShooter
+          NEW_GAME="./target/x86_64-unknown-linux-gnu/release/game_server"
+          OLD_GAME="/opt/4dShooter/game_server"
 
-          # Restart the systemd service
-          sudo systemctl start matchmaking.service
+          # Compare binaries
+          RESTART_NEEDED=0
+
+          if ! cmp -s "\$NEW_MATCHMAKING" "\$OLD_MATCHMAKING"; then
+            echo "matchmaking_server has changed"
+            RESTART_NEEDED=1
+          fi
+
+          if ! cmp -s "\$NEW_GAME" "\$OLD_GAME"; then
+            echo "game_server has changed"
+            RESTART_NEEDED=1
+          fi
+
+          if [ "\$RESTART_NEEDED" -eq 1 ]; then
+            echo "Restarting matchmaking.service due to binary changes..."
+            sudo systemctl stop matchmaking.service
+
+            cp "\$NEW_MATCHMAKING" "\$OLD_MATCHMAKING"
+            cp "\$NEW_GAME" "\$OLD_GAME"
+
+            sudo systemctl start matchmaking.service
+          else
+            echo "No changes in binaries. Skipping restart."
+          fi
         EOF
+
