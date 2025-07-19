@@ -68,7 +68,7 @@ pub fn read_args() -> Option<Backend>
 
     if show_help
     {
-        println!("Usage: ./game-client [OPTIONS]");
+        println!("Usage: {} [OPTIONS]", "{}");
         println!();
         println!("Options:");
         println!("  -b, --backend BACKEND        Set graphics backend (gl, dx12, vulkan, metal)");

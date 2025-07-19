@@ -2,6 +2,7 @@ mod engine;
 mod actor;
 mod main_loop;
 mod transform;
+mod read_args;
 
 use fyrox_core::rand::{rngs::ThreadRng, Rng};
 
@@ -16,7 +17,7 @@ use client_server_protocol::Team;
 
 use winit::event::ElementState;
 
-use crate::{actor::flag_base::FlagBase, engine::input::ActionsFrameState};
+use crate::{actor::flag_base::FlagBase, engine::input::ActionsFrameState, read_args::read_args};
 
 
 #[global_allocator]
@@ -25,6 +26,8 @@ static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
 };
 
 fn main() {
+    let _ = read_args();
+
     let mut systems = pollster::block_on(
         HeadlessEngine::new()
     );
