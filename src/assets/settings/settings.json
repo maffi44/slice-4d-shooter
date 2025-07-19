@@ -1,12 +1,12 @@
 {
     "mouse_sensivity" : 0.21,
 
-    "matchmaking_server_url" : "ws://localhost:49161/",
+    "matchmaking_server_url" : "ws://matchmaking.slice4d.info:45123/",
 
     "bash_and_turn_servers" : [],
 
-    "turn_server_username" : "homeo",
-    "turn_server_credential" : "homeo",
+    "turn_server_username" : "",
+    "turn_server_credential" : "",
     
     "screen_resolution_scale" : 1.0
 }

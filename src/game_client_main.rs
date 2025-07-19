@@ -12,7 +12,7 @@ use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMa
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
-use crate::{actor::flag_base::FlagBase, read_args::read_args};
+use crate::{actor::{flag_base::FlagBase, session_controller::SessionControllerMessage, MessageType}, read_args::read_args};
 
 
 #[global_allocator]
@@ -61,9 +61,9 @@ fn main() {
                 Message {
                     from: 0u128,
                     remote_sender: false,
-                    message: crate::actor::MessageType::SpecificActorMessage(
-                        SpecificActorMessage::PlayerMessage(
-                            PlayerMessage::SetNewTeam(
+                    message: MessageType::SpecificActorMessage(
+                        SpecificActorMessage::SessionControllerMessage(
+                            SessionControllerMessage::NewSessionStarted(
                                 session_controller::DEFAULT_TEAM
                             )
                         )

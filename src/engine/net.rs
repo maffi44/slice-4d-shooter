@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use fyrox_core::futures::{SinkExt, StreamExt};
 use glam::{Vec3, Vec4};
-use client_server_protocol::{ClientMessage, NetMessageToServer, ServerMessage};
+use client_server_protocol::{ClientMessage, NetMessageToServer, ServerMessage, Team};
 
 #[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
@@ -39,24 +39,13 @@ use crate::{
     actor::{
         flag::{
             FlagMessage, FlagStatus
-        },
-        hole::Hole,
-        move_w_bonus::{
-            BonusSpotStatus, MoveWBonusSpotMessage
-        },
-        main_player::{
+        }, hole::Hole, main_player::{
             player_settings::PlayerSettings, PlayerMessage
-        },
-        players_death_explosion::PlayersDeathExplosion,
-        players_doll::{
-            PlayerDollInputState, PlayerDoll, PlayersDollMessage
-        },
-        session_controller::SessionControllerMessage,
-        ActorWrapper,
-        CommonActorsMessage,
-        Message,
-        MessageType,
-        SpecificActorMessage
+        }, move_w_bonus::{
+            BonusSpotStatus, MoveWBonusSpotMessage
+        }, players_death_explosion::PlayersDeathExplosion, players_doll::{
+            PlayerDoll, PlayerDollInputState, PlayersDollMessage
+        }, session_controller::{self, SessionControllerMessage}, ActorWrapper, CommonActorsMessage, Message, MessageType, SpecificActorMessage
     },
     transform::Transform
 };
@@ -605,12 +594,27 @@ impl NetSystem {
                 Message {
                     from: 0u128,
                     remote_sender: false,
+                    message: MessageType::SpecificActorMessage(
+                        SpecificActorMessage::SessionControllerMessage(
+                            SessionControllerMessage::NewSessionStarted(
+                                session_controller::DEFAULT_TEAM
+                            )
+                        )
+                    )
+                }
+            );
+
+            engine_handle.send_boardcast_message(
+                Message {
+                    from: 0u128,
+                    remote_sender: false,
                     message: MessageType::CommonActorsMessages(
                         CommonActorsMessage::ClientDisconnectedFromGameServer
                     )
                 }
             );
-            return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
+
+            return ConnectionState::ConnectionFailure(820, ConnectionError::ConnectionClosedByServer);
         }
 
         if let Ok(peers) = webrtc_socket.try_update_peers() {
@@ -625,12 +629,27 @@ impl NetSystem {
                             Message {
                                 from: 0u128,
                                 remote_sender: false,
+                                message: MessageType::SpecificActorMessage(
+                                    SpecificActorMessage::SessionControllerMessage(
+                                        SessionControllerMessage::NewSessionStarted(
+                                            session_controller::DEFAULT_TEAM
+                                        )
+                                    )
+                                )
+                            }
+                        );
+
+                        engine_handle.send_boardcast_message(
+                            Message {
+                                from: 0u128,
+                                remote_sender: false,
                                 message: MessageType::CommonActorsMessages(
                                     CommonActorsMessage::ClientDisconnectedFromGameServer
                                 )
                             }
                         );
-                        return ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer);
+
+                        return ConnectionState::ConnectionFailure(820, ConnectionError::ConnectionClosedByServer);
                     }
                 }   
             }
@@ -756,22 +775,22 @@ impl NetSystem {
 
                     ServerMessage::NewSessionStarted(_,_) =>
                     {
-                        panic!("ERROR: recieved NewSessionStarted message from unreliable channel")
+                        eprintln!("ERROR: recieved NewSessionStarted message from unreliable channel")
                     }
 
                     ServerMessage::JoinTheMatch(_,_,_,_,_,_,_) =>
                     {
-                        panic!("ERROR: recieved JoinTheMatch message from unreliable channel")
+                        eprintln!("ERROR: recieved JoinTheMatch message from unreliable channel")
                     }
 
                     ServerMessage::PlayerConnected(player_id) =>
                     {
-                        panic!("ERROR: recieved PlayerConnected message from unreliable channel")
+                        eprintln!("ERROR: recieved PlayerConnected message from unreliable channel")
                     }
 
                     ServerMessage::PlayerDisconnected(player_id) =>
                     {
-                        panic!("ERROR: recieved PlayerDisconnected message from unreliable channel")
+                        eprintln!("ERROR: recieved PlayerDisconnected message from unreliable channel")
                     }
                     
                     ServerMessage::NetMessageToPlayer(from_player, message) => {
