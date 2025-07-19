@@ -4,7 +4,7 @@ version = "0.1.2"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.46.1", features = [ "process", "sync", "time", "rt" ] }
+tokio = { version = "1.46.1", features = [ "process", "sync", "time", "rt", "fs" ] }
 tokio-tungstenite = "0.26.2"
 fyrox-core = "0.36.2"
 alkahest = { version = "0.3.0", features = [ "derive" ] }

@@ -16,13 +16,6 @@ rand = "0.8.5"
 glam = "0.30.4"
 blink-alloc = "0.3.1"
 
-async-trait = "*"
-axum = "*"
-futures = "*"
-futures-timer = "*"
-matchbox_protocol = "*"
-tracing = "*"
-
 [lib]
 name = "client_server_protocol"
 path = "src/client_server_protocol.rs"

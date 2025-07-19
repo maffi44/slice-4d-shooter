@@ -11,10 +11,10 @@ use matchmaking_server_protocol::{
 
 use core::panic;
 use std::{
-    env, fs::File, io::{Read, Write}, net::Ipv4Addr, os::linux::raw::stat, process::Stdio, str::FromStr, sync::Arc, time::Duration
+    env, io::{Read, Write}, net::Ipv4Addr, os::linux::raw::stat, process::Stdio, str::FromStr, sync::Arc, time::Duration
 };
 use tokio::{
-    io::{
+    fs::File, io::{
         AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, Lines
     }, net::{TcpListener, TcpSocket, TcpStream}, process::{
         Child,
@@ -53,8 +53,6 @@ struct Config
     pub game_severs_max_port_for_tcp_listener: u16,
 
     pub game_servers_ice_config: GameServersIceConfig,
-
-    pub max_game_sessions: u32,
 
     pub max_players_per_game_session: u32,
 }
@@ -159,7 +157,7 @@ type GameServersState = Arc<Mutex<HashMap<u16,GameServerInfo>>>;
 async fn handle_client_connection(
     stream: tokio::net::TcpStream,
     state: GameServersState,
-    mut config: Config,
+    config: Config,
     async_rutime: Arc<Runtime>,
 )
 {
@@ -182,7 +180,6 @@ async fn handle_client_connection(
                         ClientMessage::RequestToConnectToGameServer(clients_game_version) => {
 
                             // uodate current game version and max game sessions amount
-                            config = load_config();
 
                             println!("INFO: Client is requesting to connect to a game server");
 
@@ -250,9 +247,11 @@ async fn handle_client_connection(
 
                                     println!("INFO: Free game server is not finded, creating new one");
 
+                                    let max_game_sessions = load_max_game_sessions_config().await;
+
                                     let free_port = get_free_server_port(
                                         &mut locked_state,
-                                        config.max_game_sessions,
+                                        max_game_sessions,
                                         config.game_severs_min_port_for_signaling_servers,
                                         config.game_severs_max_port_for_signaling_servers,
                                     );
@@ -481,7 +480,7 @@ fn main() {
 async fn async_main(
     async_runtime: Arc<Runtime>
 ) {
-    let config = load_config();
+    let config = load_config().await;
 
     let game_servers_state = Arc::new(Mutex::new(HashMap::<u16, GameServerInfo>::new()));
     
@@ -668,13 +667,14 @@ async fn stop_game_server(pid: u32)
 }
 
 
-fn load_config() -> Config 
+async fn load_config() -> Config 
 {
     let mut file = File::open("./matchmaking-server-config.json")
+        .await
         .expect("ERROR: matchmaking-server-config.json file expected");
 
     let mut file_content = String::new();
-    let config = match file.read_to_string(&mut file_content) {
+    let config = match file.read_to_string(&mut file_content).await {
         Ok(_) => {
             let json_config = serde_json::from_str(&file_content)
                 .expect("ERROR: can't parse matchmaking-server-config.json file");
@@ -777,15 +777,6 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
             as u16
     };
 
-    let max_game_sessions = {
-        object
-            .get("max_game_sessions")
-            .expect("ERROR: Have not max_game_sessions in matchmaking-server-config.json")
-            .as_i64()
-            .expect("ERROR: max_game_sessions is not number value in matchmaking-server-config.json")
-            as u32
-    };
-
     let max_players_per_game_session = {
         object
             .get("max_players_per_game_session")
@@ -818,11 +809,52 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         game_severs_min_port_for_tcp_listener,
         game_severs_max_port_for_tcp_listener,
         game_servers_ice_config,
-        max_game_sessions,
         max_players_per_game_session,  
     }
 }
 
+async fn load_max_game_sessions_config() -> u32 
+{
+    let mut file = File::open("./max-game-sessions-dynamic-config.json")
+        .await
+        .expect("ERROR: max-game-sessions-dynamic-config.json file expected");
+
+    let mut file_content = String::new();
+    let max_game_sessions = match file.read_to_string(&mut file_content).await {
+        Ok(_) => {
+            let json_config = serde_json::from_str(&file_content)
+                .expect("ERROR: can't parse max-game-sessions-dynamic-config.json file");
+
+            parse_json_max_game_sessions_config(json_config)
+        },
+        Err(e) => {
+            panic!(
+                "ERROR: the max-game-sessions-dynamic-config.json cannot be loaded, err: {}",
+                e.to_string()
+            );
+        }
+    };
+
+    max_game_sessions
+}
+
+fn parse_json_max_game_sessions_config(json_config: Value) -> u32
+{
+    let object = json_config
+        .as_object()
+        .expect("ERROR: Wrong max game sessions JSON config format");
+
+    let max_game_sessions = {
+        object
+            .get("max_game_sessions")
+            .expect("ERROR: Have not max_game_sessions in max-game-sessions-dynamic-config.json")
+            .as_i64()
+            .expect("ERROR: max_game_sessions is not number value in max-game-sessions-dynamic-config.json")
+            as u32
+    };
+
+    max_game_sessions
+}
 
 pub fn read_args(args: &Vec<String>)
 {

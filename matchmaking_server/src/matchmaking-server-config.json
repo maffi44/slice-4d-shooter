@@ -23,7 +23,6 @@
         "username" : "homeo",
         "credential" : "homeo" 
     },
-
-    "max_game_sessions" : 1,
+    
     "max_players_per_game_session" : 6
 }
