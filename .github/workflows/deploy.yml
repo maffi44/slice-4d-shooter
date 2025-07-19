@@ -17,20 +17,28 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
+    - name: Extract version from Cargo.toml
+      id: cargo_version
+      run: |
+        version=$(tomlq -r '.package.version' Cargo.toml)
+        echo "VERSION=$version" >> $GITHUB_ENV
+
     - name: SSH into EC2 and deploy
       run: |
-        ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+        ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
           set -e
 
-          # Navigate to project directory
           cd /opt/4dShooter/slice-4d-shooter
 
-          # Pull the latest code from GitHub using deploy key
           git pull origin main
 
           # Build Rust binaries
           cargo build --release -p matchmaking_server
           cargo build --release -p game_server
+
+          # Update matchmaking-server-config.json version
+          jq '.current_game_version = "${{ env.VERSION }}"' /opt/4dShooter/matchmaking-server-config.json > /tmp/config.tmp
+          sudo mv /tmp/config.tmp /opt/4dShooter/matchmaking-server-config.json
 
           # Stop the systemd service
           sudo systemctl stop matchmaking.service
