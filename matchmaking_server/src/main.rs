@@ -54,6 +54,8 @@ struct Config
 
     pub game_servers_ice_config: GameServersIceConfig,
 
+    pub max_game_sessions: u32,
+
     pub max_players_per_game_session: u32,
 }
 
@@ -140,7 +142,8 @@ impl GameServersIceConfig {
 struct GameServerInfo {
     players_amount_by_matchmaking_server: u32,
     players_amount_by_game_server: u32,
-
+    max_amount_of_players: u32,
+    game_server_game_version: GameVersion,
     
     game_server_ip_address: Ipv4Addr,
     game_server_main_port: u16,
@@ -157,7 +160,7 @@ type GameServersState = Arc<Mutex<HashMap<u16,GameServerInfo>>>;
 async fn handle_client_connection(
     stream: tokio::net::TcpStream,
     state: GameServersState,
-    config: Config,
+    mut config: Config,
     async_rutime: Arc<Runtime>,
 )
 {
@@ -185,25 +188,6 @@ async fn handle_client_connection(
 
                             let clients_game_version = GameVersion::from(clients_game_version);
 
-                            if clients_game_version != config.current_game_version
-                            {
-                                println!("WARNING: Client's game version is not correct");
-
-                                let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
-                                    MatchmakingServerMessage::WrongGameVersionCorrectIs(config.current_game_version.clone().into())
-                                );
-
-                                let message: Vec<u8> = message.to_packet();
-
-                                sender_to_client
-                                    .send(tokio_tungstenite::tungstenite::Message::binary(message))
-                                    .await
-                                    .unwrap();
-
-                                return ;
-                            }
-                            println!("INFO: Client's game version is correct");
-
                             let mut locked_state = state.lock().await;
                             
                             let finded_server = locked_state.values_mut().find(
@@ -212,9 +196,12 @@ async fn handle_client_connection(
                                         "[{}] server has {} players by matchmaking server, max players per server is {}",
                                         server_info.server_index,
                                         server_info.players_amount_by_matchmaking_server,
-                                        config.max_players_per_game_session
+                                        server_info.max_amount_of_players
                                     );
-                                    server_info.players_amount_by_matchmaking_server < config.max_players_per_game_session
+
+                                    server_info.players_amount_by_matchmaking_server < server_info.max_amount_of_players
+                                    &&
+                                    clients_game_version == server_info.game_server_game_version
                                 }
                             );
 
@@ -247,11 +234,31 @@ async fn handle_client_connection(
 
                                     println!("INFO: Free game server is not finded, creating new one");
 
-                                    let max_game_sessions = load_max_game_sessions_config().await;
+                                    // update config to change max_game_sessions, max_players_per_session and current_game_version dynamically
+                                    config = load_config().await;
+
+                                    if clients_game_version != config.current_game_version
+                                    {
+                                        println!("WARNING: Client's game version is not correct");
+
+                                        let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
+                                            MatchmakingServerMessage::WrongGameVersionCorrectIs(config.current_game_version.clone().into())
+                                        );
+
+                                        let message: Vec<u8> = message.to_packet();
+
+                                        sender_to_client
+                                            .send(tokio_tungstenite::tungstenite::Message::binary(message))
+                                            .await
+                                            .unwrap();
+
+                                        return ;
+                                    }
+                                    println!("INFO: Client's game version is correct");
 
                                     let free_port = get_free_server_port(
                                         &mut locked_state,
-                                        max_game_sessions,
+                                        config.max_game_sessions,
                                         config.game_severs_min_port_for_signaling_servers,
                                         config.game_severs_max_port_for_signaling_servers,
                                     );
@@ -417,6 +424,8 @@ async fn spawn_game_server(
                 game_server_ip_address: config.game_severs_public_ip,
                 players_amount_by_matchmaking_server: 1_u32,
                 players_amount_by_game_server: 0_u32,
+                max_amount_of_players: config.max_players_per_game_session,
+                game_server_game_version: config.current_game_version,
                 game_server_main_port,
                 matchmaking_server_listener_port,
                 server_index: game_server_main_port,
@@ -578,7 +587,7 @@ async fn check_game_servers_status(
                                                         {
                                                             game_server_info.players_amount_by_game_server = players_amount;
 
-                                                            println!("[{}] game server has {} players", game_server_info.server_index, players_amount);
+                                                            println!("[{}] game server has {} of {} players", game_server_info.server_index, players_amount, game_server_info.max_amount_of_players);
 
                                                         }
                                                     }
@@ -777,6 +786,15 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
             as u16
     };
 
+    let max_game_sessions = {
+        object
+            .get("max_game_sessions")
+            .expect("ERROR: Have not max_game_sessions in matchmaking-server-config.json")
+            .as_i64()
+            .expect("ERROR: max_game_sessions is not number value in matchmaking-server-config.json")
+            as u32
+    };
+
     let max_players_per_game_session = {
         object
             .get("max_players_per_game_session")
@@ -809,52 +827,11 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         game_severs_min_port_for_tcp_listener,
         game_severs_max_port_for_tcp_listener,
         game_servers_ice_config,
+        max_game_sessions,
         max_players_per_game_session,  
     }
 }
 
-async fn load_max_game_sessions_config() -> u32 
-{
-    let mut file = File::open("./max-game-sessions-dynamic-config.json")
-        .await
-        .expect("ERROR: max-game-sessions-dynamic-config.json file expected");
-
-    let mut file_content = String::new();
-    let max_game_sessions = match file.read_to_string(&mut file_content).await {
-        Ok(_) => {
-            let json_config = serde_json::from_str(&file_content)
-                .expect("ERROR: can't parse max-game-sessions-dynamic-config.json file");
-
-            parse_json_max_game_sessions_config(json_config)
-        },
-        Err(e) => {
-            panic!(
-                "ERROR: the max-game-sessions-dynamic-config.json cannot be loaded, err: {}",
-                e.to_string()
-            );
-        }
-    };
-
-    max_game_sessions
-}
-
-fn parse_json_max_game_sessions_config(json_config: Value) -> u32
-{
-    let object = json_config
-        .as_object()
-        .expect("ERROR: Wrong max game sessions JSON config format");
-
-    let max_game_sessions = {
-        object
-            .get("max_game_sessions")
-            .expect("ERROR: Have not max_game_sessions in max-game-sessions-dynamic-config.json")
-            .as_i64()
-            .expect("ERROR: max_game_sessions is not number value in max-game-sessions-dynamic-config.json")
-            as u32
-    };
-
-    max_game_sessions
-}
 
 pub fn read_args(args: &Vec<String>)
 {

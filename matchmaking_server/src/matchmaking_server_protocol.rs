@@ -1,6 +1,6 @@
 use alkahest::{alkahest, Serialize};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct GameVersion {
     pub major: u32,
     pub minor: u32,

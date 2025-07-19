@@ -103,6 +103,7 @@ impl SignalingTopology<ClientServerCallbacks, ClientServerState> for ClientServe
             host.is_some() && host.unwrap() == peer_id
         };
 
+        // Modified by Timofei Molokov Jul 2025
         // Disconnects a client if no packet is received from them for 3 seconds.  
         //  
         // This change was introduced due to a bug discovered during testing:  

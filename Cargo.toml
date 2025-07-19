@@ -1,10 +1,8 @@
 workspace = { members = [ "game_server", "matchmaking_server", "matchbox_signaling_modified"] }
 [package]
 name = "web-4d-shooter"
-version = "0.4.3"
+version = "0.4.4"
 edition = "2021"
-# author = "maffi44"
-# wasm-opt = false
 
 [dependencies]
 
