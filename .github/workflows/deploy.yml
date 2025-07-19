@@ -17,6 +17,10 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
+    - name: Install tomlq
+      run: |
+        pip install tomlq
+
     - name: Extract version from Cargo.toml
       id: cargo_version
       run: |
