@@ -51,7 +51,7 @@ const RECT_VERTICES: &[Vertex] = &[
 
 const INDICES: &[u16] = &[0, 1, 2, 0, 3, 1];
 
-type BindGroupsVector = Vec<(BindGroup, Arc<Mutex<bool>>)>;
+type BindGroupsVector = Vec<BindGroup>;
 
 
 pub struct UIRenderer {
@@ -560,9 +560,7 @@ impl UIRenderer {
                     let (im, pb, sc) =
                         &mut bind_groups_in_drawing_order[ui_image.ui_data.rect.drawing_order];
 
-                    im.push(
-                        (image_bind_group, ui_image.ui_data.get_is_visible_cloned_arc())
-                    )
+                    im.push(image_bind_group)
                 },
                 UIElement::ProgressBar(ui_progress_bar) => {
 
@@ -670,9 +668,7 @@ impl UIRenderer {
                     let (im, pb, sc) =
                         &mut bind_groups_in_drawing_order[ui_progress_bar.ui_data.rect.drawing_order];
 
-                    pb.push(
-                        (progress_bar_bind_group, ui_progress_bar.ui_data.get_is_visible_cloned_arc())
-                    );
+                    pb.push(progress_bar_bind_group);
                 },
                 UIElement::ScannerDisplay(scanner) => {
                     
@@ -758,9 +754,7 @@ impl UIRenderer {
                     let (im, pb, sc) =
                         &mut bind_groups_in_drawing_order[scanner.ui_data.rect.drawing_order];
 
-                    sc.push(
-                        (scanner_bind_group, scanner.ui_data.get_is_visible_cloned_arc())
-                    )
+                    sc.push(scanner_bind_group)
                 }
             }
         }
@@ -793,91 +787,80 @@ impl UIRenderer {
 
         for (image_bgs, progerss_bar_bgs, scanner_bgs) in &self.bind_groups_in_drawing_order {
 
-            for (bindgroup, is_visible) in image_bgs {
+            for bindgroup in image_bgs {
     
-                // if *is_visible.lock().unwrap() {
-    
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Render Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &view,
-                            depth_slice: None,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Load,
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
-            
-                    render_pass.set_pipeline(&self.image_render_pipeline);
-                    render_pass.set_bind_group(0, bindgroup, &[]);
-                    render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
-                    render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                    render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
         
-                // }
+                render_pass.set_pipeline(&self.image_render_pipeline);
+                render_pass.set_bind_group(0, bindgroup, &[]);
+                render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
+                render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
+
             }
     
-            for (bindgroup, is_visible) in progerss_bar_bgs {
+            for bindgroup in progerss_bar_bgs {
     
-                // if *is_visible.lock().unwrap() {
-    
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Render Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &view,
-                            depth_slice: None,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Load,
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
-            
-                    render_pass.set_pipeline(&self.progress_bar_render_pipeline);
-                    render_pass.set_bind_group(0, bindgroup, &[]);
-                    render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
-                    render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                    render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
         
-                // }
+                render_pass.set_pipeline(&self.progress_bar_render_pipeline);
+                render_pass.set_bind_group(0, bindgroup, &[]);
+                render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
+                render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
             }
 
-            for (bindgroup, is_visible) in scanner_bgs {
-    
-                // if *is_visible.lock().unwrap() {
-    
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Render Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &view,
-                            depth_slice: None,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Load,
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
-            
-                    render_pass.set_pipeline(&self.scanner_render_pipeline);
-                    render_pass.set_bind_group(0, bindgroup, &[]);
-                    render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
-                    render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                    render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
+            for bindgroup in scanner_bgs {
+
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
         
-                // }
+                render_pass.set_pipeline(&self.scanner_render_pipeline);
+                render_pass.set_bind_group(0, bindgroup, &[]);
+                render_pass.set_vertex_buffer(0, self.rect_vertex_buffer.slice(..));
+                render_pass.set_index_buffer(self.rect_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.rect_num_indices, 0, 0..1);
             }
         }
 

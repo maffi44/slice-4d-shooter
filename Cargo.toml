@@ -33,6 +33,9 @@ console_log = "1.0.0"
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"
 getrandom = { version = "0.2.16", features = [ "js" ] }
+matchbox_socket = "0.12.0"
+rustc-hash = "1.1.0"
+opener = "*"
 web-sys = { version = "0.3.77", features = [
     "Document",
     "Window",
@@ -41,8 +44,7 @@ web-sys = { version = "0.3.77", features = [
     "Performance",
     "Response"
 ]}
-matchbox_socket = "0.12.0"
-rustc-hash = "1.1.0"
+
 
 [lib]
 name="game_client_main_web"

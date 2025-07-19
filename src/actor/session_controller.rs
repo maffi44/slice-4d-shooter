@@ -107,76 +107,76 @@ impl SessionController
             0 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
             }
 
             1 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
             }
 
             2 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
             }
 
             3 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
             }
 
             4 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkRed);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
             }
 
             _ => {panic!("ERROR: red team score > 4")}
@@ -187,76 +187,76 @@ impl SessionController
             0 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
             }
 
             1 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
             }
 
             2 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
             }
 
             3 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = false;
             }
 
             4 =>
             {
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FirstScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::SecondScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::ThirdScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
                 let score_mark = ui.get_mut_ui_element(&UIElementType::FinalScoreMarkBlue);
-                *score_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                *score_mark.get_ui_data_mut().get_is_visible_mut() = true;
             }
 
             _ => {panic!("ERROR: blue team score > 4")}
@@ -374,10 +374,10 @@ impl Actor for SessionController
                                     Team::Red =>
                                     {
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
                                         
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::JoinRedTeamTitle);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
 
                                         self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
@@ -387,10 +387,10 @@ impl Actor for SessionController
                                     Team::Blue =>
                                     {
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
                                         
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::JoinBlueTeamTitle);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
 
                                         self.show_blue_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_blue_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
@@ -422,7 +422,7 @@ impl Actor for SessionController
                                     );
 
                                     let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
-                                    *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                    *elem.get_ui_data_mut().get_is_visible_mut() = true;
 
                                     self.show_red_team_backlight_timer = SHOW_TEAM_BACKLIGHT_TIME;
 
@@ -484,7 +484,7 @@ impl Actor for SessionController
                                     );
 
                                     let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
-                                    *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                    *elem.get_ui_data_mut().get_is_visible_mut() = true;
 
                                     self.show_blue_team_backlight_timer = SHOW_TEAM_BACKLIGHT_TIME;
 
@@ -547,10 +547,10 @@ impl Actor for SessionController
                                     Team::Red =>
                                     {
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
                                         
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamWinTitle);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
 
                                         self.show_red_team_backlight_timer = SHOW_TEAM_WIN_TITLE_TIME;
                                         self.show_red_team_win_title_timer = SHOW_TEAM_WIN_TITLE_TIME;
@@ -597,10 +597,10 @@ impl Actor for SessionController
                                     Team::Blue =>
                                     {
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
                                         
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamWinTitle);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
 
                                         self.show_blue_team_backlight_timer = SHOW_TEAM_WIN_TITLE_TIME;
                                         self.show_blue_team_win_title_timer = SHOW_TEAM_WIN_TITLE_TIME;
@@ -674,10 +674,10 @@ impl Actor for SessionController
                                     Team::Red =>
                                     {
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
                                         
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::JoinRedTeamTitle);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
                                         
                                         self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
@@ -687,10 +687,10 @@ impl Actor for SessionController
                                     Team::Blue =>
                                     {
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
                                         
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::JoinBlueTeamTitle);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
 
                                         self.show_blue_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_blue_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
@@ -714,10 +714,10 @@ impl Actor for SessionController
                                     Team::Red =>
                                     {
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::RedTeamBacklight);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
                                         
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::JoinRedTeamTitle);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
 
                                         self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
@@ -725,10 +725,10 @@ impl Actor for SessionController
                                     Team::Blue =>
                                     {
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::BlueTeamBacklight);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
                                         
                                         let elem = ui_system.get_mut_ui_element(&UIElementType::JoinBlueTeamTitle);
-                                        *elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *elem.get_ui_data_mut().get_is_visible_mut() = true;
 
                                         self.show_red_team_backlight_timer = SHOW_TEAM_JOIN_TITLE_TIME;
                                         self.show_join_red_team_title_timer = SHOW_TEAM_JOIN_TITLE_TIME;
@@ -812,7 +812,7 @@ fn process_ui_animation(
                     0.0
                 );
 
-                *ui_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+                *ui_elem.get_ui_data_mut().get_is_visible_mut() = false;
             }
         }
 }

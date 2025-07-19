@@ -1097,12 +1097,12 @@ impl Actor for MainPlayer {
                                 //     Team::Red =>
                                 //     {
                                 //         let ui_elem = ui_system.get_mut_ui_element(&UIElementType::BlueFlagBacklight);
-                                //         *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                //         *ui_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
                                 //     }
                                 //     Team::Blue =>
                                 //     {
                                 //         let ui_elem = ui_system.get_mut_ui_element(&UIElementType::RedFlagBacklight);
-                                //         *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                //         *ui_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
                                 //     }
                                 // }
 
@@ -1389,13 +1389,9 @@ impl Actor for MainPlayer {
             will_jump: false,
         };
 
-        *ui_system.get_ui_element(&UIElementType::WAimFrame)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap()
-            =
-            false;
+        *ui_system.get_mut_ui_element(&UIElementType::WAimFrame)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = false;
 
         let my_id = self.get_id().expect("Player have not ActorID");
         
@@ -1657,13 +1653,9 @@ pub fn process_projection_w_aim(
     if inner_state.w_aim_enabled
     {
         {
-            *ui_system.get_ui_element(&UIElementType::WAimFrame)
-                .get_ui_data()
-                .get_is_visible_cloned_arc()
-                .lock()
-                .unwrap()
-                =
-                true;
+            *ui_system.get_mut_ui_element(&UIElementType::WAimFrame)
+                .get_ui_data_mut()
+                .get_is_visible_mut() = true;
         }
         
         let view_vec = inner_state.get_rotation_matrix() * FORWARD;
@@ -1917,24 +1909,38 @@ pub fn process_ui_tutorial_window_input(
     delta: f32,
 )
 {
+    if input.connect_to_server.is_action_just_pressed()
+    {
+        inner_state.tutrial_window_was_open = true;
+
+        *ui.get_mut_ui_element(&UIElementType::TitlePressTForTutorial)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = true;
+    }
+
+    let press_t_for_tutorial = ui
+            .get_mut_ui_element(&UIElementType::TitlePressTForTutorial)
+            .get_ui_data_mut();
+    
     if !inner_state.tutrial_window_was_open
     {
         inner_state.title_press_t_for_tutorial_toggle_timer += delta;
-        
+
         if inner_state.title_press_t_for_tutorial_toggle_timer >=
             TITLE_PRESS_T_FOR_TUTRIAL_TOGGLE_TIME
         {
             inner_state.title_press_t_for_tutorial_toggle_timer = 0.0;
 
-            let is_visible_arc = ui
-                .get_mut_ui_element(&UIElementType::TitlePressTForTutorial)
-                .get_ui_data_mut()
-                .get_is_visible_cloned_arc();
-    
-            let mut is_visible_guard = is_visible_arc.lock().unwrap();
+            let is_visible = press_t_for_tutorial.get_is_visible_mut();
             
-            *is_visible_guard = !*is_visible_guard;
+            *is_visible = !*is_visible;
         }
+
+        press_t_for_tutorial.set_position(Vec2::new(-0.13, 0.03));
+    }
+    else
+    {
+        press_t_for_tutorial.set_position(Vec2::new(-1.0, 1.0));
     }
     
     if input.show_hide_controls.is_action_just_pressed()
@@ -1950,27 +1956,18 @@ pub fn process_ui_tutorial_window_input(
 
             inner_state.tutrial_window_was_open = true;
     
-            let is_visible_arc = ui
-                .get_mut_ui_element(&UIElementType::TitlePressTForTutorial)
+            *ui.get_mut_ui_element(&UIElementType::TitlePressTForTutorial)
                 .get_ui_data_mut()
-                .get_is_visible_cloned_arc();
-            
-            let mut is_visible_guard = is_visible_arc.lock().unwrap();
-            
-            *is_visible_guard = true;
+                .get_is_visible_mut() = true;
         }
         
 
         
 
-        let tutorial_window_visible_arc = ui
-            .get_ui_element(&UIElementType::TutorialWindow)
-            .get_ui_data()
-            .get_is_visible_cloned_arc();
-
-        let mut tutorial_window_visible = tutorial_window_visible_arc
-            .lock()
-            .unwrap();
+        let tutorial_window_visible = ui
+            .get_mut_ui_element(&UIElementType::TutorialWindow)
+            .get_ui_data_mut()
+            .get_is_visible_mut();
         
         *tutorial_window_visible = !*tutorial_window_visible;
     }
@@ -3265,6 +3262,8 @@ pub fn make_hud_transparency_as_death_screen_effect(
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
     hud_elem.get_ui_data_mut().rect.transparency = a;
+    // Hide crosshair until user opens tutorial or connects to game server
+    hud_elem.get_ui_data_mut().is_visible = inner_state.tutrial_window_was_open;
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::MachinegunImage);
     hud_elem.get_ui_data_mut().rect.transparency = a;
@@ -3381,22 +3380,22 @@ pub fn set_right_team_hud(
 )
 {
     let hud_elem = ui.get_mut_ui_element(&UIElementType::Crosshair);
-    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+    *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
-    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+    *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointer);
-    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+    *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrow);
-    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+    *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrow);
-    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+    *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
     let hud_elem = ui.get_mut_ui_element(&UIElementType::TitlePressTForTutorial);
-    *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+    *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
 
     match inner_state.team
@@ -3404,57 +3403,57 @@ pub fn set_right_team_hud(
         Team::Red =>
         {
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
         }
 
         Team::Blue =>
         {
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
         }
     }
 }

@@ -441,12 +441,12 @@ impl Actor for PlayerFor2d3dExample {
                                     Team::Red =>
                                     {
                                         let ui_elem = ui_system.get_mut_ui_element(&UIElementType::BlueFlagBacklight);
-                                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *ui_elem.get_ui_data_mut().get_is_visible_mut() = true;
                                     }
                                     Team::Blue =>
                                     {
                                         let ui_elem = ui_system.get_mut_ui_element(&UIElementType::RedFlagBacklight);
-                                        *ui_elem.get_ui_data().get_is_visible_cloned_arc().lock().unwrap() = true;
+                                        *ui_elem.get_ui_data_mut().get_is_visible_mut() = true;
                                     }
                                 }
 

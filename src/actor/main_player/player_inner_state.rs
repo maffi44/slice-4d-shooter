@@ -253,7 +253,7 @@ impl PlayerInnerState {
         {
             let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
     
-            *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = true;
+            *crosshair_hit_mark.get_ui_data_mut().get_is_visible_mut() = true;
 
             self.show_crosshaier_hit_mark_timer -= delta;
         }
@@ -261,7 +261,7 @@ impl PlayerInnerState {
         {
             let crosshair_hit_mark = ui_system.get_mut_ui_element(&UIElementType::CrosshairHitMark);
     
-            *crosshair_hit_mark.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = false;
+            *crosshair_hit_mark.get_ui_data_mut().get_is_visible_mut() = false;
         }
     }
 

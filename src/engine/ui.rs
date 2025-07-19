@@ -1712,7 +1712,7 @@ impl UISystem {
                         continue;
                     }
 
-                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    let is_visible_coef = match elem.ui_data.is_visible
                     {
                         true => 1.0_f32,
                         false => 0.0_f32,
@@ -1769,7 +1769,7 @@ impl UISystem {
                         continue;
                     }
 
-                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    let is_visible_coef = match elem.ui_data.is_visible
                     {
                         true => 1.0_f32,
                         false => 0.0_f32,
@@ -1835,7 +1835,7 @@ impl UISystem {
                         continue;
                     }
 
-                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    let is_visible_coef = match elem.ui_data.is_visible
                     {
                         true => 1.0_f32,
                         false => 0.0_f32,
@@ -1895,7 +1895,7 @@ impl UISystem {
                         continue;
                     }
 
-                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    let is_visible_coef = match elem.ui_data.is_visible
                     {
                         true => 1.0_f32,
                         false => 0.0_f32,
@@ -1923,7 +1923,7 @@ impl UISystem {
                         continue;
                     }
 
-                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    let is_visible_coef = match elem.ui_data.is_visible
                     {
                         true => 1.0_f32,
                         false => 0.0_f32,
@@ -1960,7 +1960,7 @@ impl UISystem {
                         continue;
                     }
 
-                    let is_visible_coef = match *elem.ui_data.is_visible.lock().unwrap()
+                    let is_visible_coef = match elem.ui_data.is_visible
                     {
                         true => 1.0_f32,
                         false => 0.0_f32,
@@ -2172,7 +2172,7 @@ impl UIRect {
 }
 
 pub struct UIData {
-    pub is_visible: Arc<Mutex<bool>>,
+    pub is_visible: bool,
     pub rect: UIRect,
     pub need_to_redraw: bool,
     pub parent_ui_elem: Option<UIElementType>,
@@ -2184,8 +2184,6 @@ impl UIData {
         is_visible: bool,
         parent_ui_elem: Option<UIElementType>,
     ) -> Self {
-        let is_visible =  Arc::new(Mutex::new(is_visible));
-
         UIData {
             is_visible,
             rect,
@@ -2199,11 +2197,11 @@ impl UIData {
     }
 
     pub fn set_is_visible(&mut self, is_visible: bool) {
-        *self.is_visible.lock().unwrap() = is_visible;
+        self.is_visible = is_visible;
     }
 
-    pub fn get_is_visible_cloned_arc(&self) -> Arc<Mutex<bool>> {
-        self.is_visible.clone()
+    pub fn get_is_visible_mut(&mut self) -> &mut bool {
+        &mut self.is_visible
     }
 
     pub fn set_transparency(&mut self, transparency: f32) {

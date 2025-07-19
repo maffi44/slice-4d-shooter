@@ -1,6 +1,6 @@
 use crate::{
     actor::Actor,
-    engine::Engine,
+    engine::{ui::UIElementType, Engine},
 };
 
 use web_time::Instant;
@@ -168,7 +168,6 @@ impl ApplicationHandler for Slice4DShooter
                         KeyCode::Escape => {
                             if event.state.is_pressed() {
                                 systems.render.window.set_cursor_visible(true);
-                                // #[cfg(target_arch="wasm32")]
                                 systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
                                 systems.render.window.set_fullscreen(None);
                             }
@@ -210,6 +209,31 @@ impl ApplicationHandler for Slice4DShooter
                                 systems.time.get_prev_frame_duration()
                             );
                         },
+                        KeyCode::KeyY => {
+                            match event.state
+                            {
+                                ElementState::Pressed =>
+                                {
+                                    //temporary
+                                    if systems.ui.get_ui_element(&UIElementType::TutorialWindow).get_ui_data().is_visible
+                                    {
+                                        // Temporary link for youtube video. There will be a link to the video tutorial later
+                                        match opener::open_browser("https://youtu.be/u2GZPIDo1vI?si=7rV4d3KXusQiq0xM")
+                                        {
+                                            Err(e) => eprintln!(
+                                                "You can't open the browser with the link https://youtu.be/u2GZPIDo1vI?si=7rV4d3KXusQiq0xM"
+                                            ),
+                                            _ => {
+                                                systems.render.window.set_cursor_visible(true);
+                                                systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
+                                            }
+                                        };
+                                    }
+                                },
+                                ElementState::Released => {},
+                            }
+                            
+                        }
                         _ => {
                             systems.input.set_keyboard_input(&event);
                         }

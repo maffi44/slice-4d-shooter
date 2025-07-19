@@ -382,14 +382,14 @@ impl Actor for Flag
             {
                 let ui_flag = ui_system.get_mut_ui_element(&UIElementType::RedFlagMark);
 
-                *ui_flag.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = self.flag_ui_tick_switch;
+                *ui_flag.get_ui_data_mut().get_is_visible_mut() = self.flag_ui_tick_switch;
             }
 
             Team::Blue =>
             {
                 let ui_flag = ui_system.get_mut_ui_element(&UIElementType::BlueFlagMark);
 
-                *ui_flag.get_ui_data_mut().get_is_visible_cloned_arc().lock().unwrap() = self.flag_ui_tick_switch;
+                *ui_flag.get_ui_data_mut().get_is_visible_mut() = self.flag_ui_tick_switch;
             }
         }
 

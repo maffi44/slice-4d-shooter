@@ -230,53 +230,43 @@ impl NetSystem {
         ui_system: &mut UISystem,
     ) -> ConnectionState
     {
-        *ui_system.get_ui_element(&self.current_visible_ui_elem)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap() = false;
+        *ui_system.get_mut_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = false;
 
         match &reason {
             ConnectionError::WrongVersion(_) =>
             {
-                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedOldVersion)
-                    .get_ui_data()
-                    .get_is_visible_cloned_arc()
-                    .lock()
-                    .unwrap() = true;
+                *ui_system.get_mut_ui_element(&UIElementType::TitleConnectionFailedOldVersion)
+                    .get_ui_data_mut()
+                    .get_is_visible_mut() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedOldVersion;
             },
 
             ConnectionError::NoFreeServers =>
             {
-                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedServerIsFull)
-                    .get_ui_data()
-                    .get_is_visible_cloned_arc()
-                    .lock()
-                    .unwrap() = true;
+                *ui_system.get_mut_ui_element(&UIElementType::TitleConnectionFailedServerIsFull)
+                    .get_ui_data_mut()
+                    .get_is_visible_mut() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerIsFull;
             },
 
             ConnectionError::MatchmakingServerClientProtocolError =>
             {
-                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedServerError)
-                    .get_ui_data()
-                    .get_is_visible_cloned_arc()
-                    .lock()
-                    .unwrap() = true;
+                *ui_system.get_mut_ui_element(&UIElementType::TitleConnectionFailedServerError)
+                    .get_ui_data_mut()
+                    .get_is_visible_mut() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerError;
             },
 
             ConnectionError::ConnectionTimeout =>
             {
-                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedServerNotFound)
-                    .get_ui_data()
-                    .get_is_visible_cloned_arc()
-                    .lock()
-                    .unwrap() = true;
+                *ui_system.get_mut_ui_element(&UIElementType::TitleConnectionFailedServerNotFound)
+                    .get_ui_data_mut()
+                    .get_is_visible_mut() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerNotFound;
             }
@@ -287,21 +277,17 @@ impl NetSystem {
                 {
                     Error::ConnectionClosed => 
                     {
-                        *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedLostConnection)
-                            .get_ui_data()
-                            .get_is_visible_cloned_arc()
-                            .lock()
-                            .unwrap() = true;
+                        *ui_system.get_mut_ui_element(&UIElementType::TitleConnectionFailedLostConnection)
+                            .get_ui_data_mut()
+                            .get_is_visible_mut() = true;
                         
                         self.current_visible_ui_elem = UIElementType::TitleConnectionFailedLostConnection;
                     },
                     _ =>
                     {
-                        *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedServerNotFound)
-                            .get_ui_data()
-                            .get_is_visible_cloned_arc()
-                            .lock()
-                            .unwrap() = true;
+                        *ui_system.get_mut_ui_element(&UIElementType::TitleConnectionFailedServerNotFound)
+                            .get_ui_data_mut()
+                            .get_is_visible_mut() = true;
                         
                         self.current_visible_ui_elem = UIElementType::TitleConnectionFailedServerNotFound;
                     }
@@ -311,11 +297,9 @@ impl NetSystem {
 
             ConnectionError::ConnectionClosedByServer =>
             {
-                *ui_system.get_ui_element(&UIElementType::TitleConnectionFailedLostConnection)
-                    .get_ui_data()
-                    .get_is_visible_cloned_arc()
-                    .lock()
-                    .unwrap() = true;
+                *ui_system.get_mut_ui_element(&UIElementType::TitleConnectionFailedLostConnection)
+                    .get_ui_data_mut()
+                    .get_is_visible_mut() = true;
                 
                 self.current_visible_ui_elem = UIElementType::TitleConnectionFailedLostConnection;
             },
@@ -351,17 +335,13 @@ impl NetSystem {
         ui_system: &mut UISystem,
     ) -> ConnectionState
     {
-        *ui_system.get_ui_element(&self.current_visible_ui_elem)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap() = false;
+        *ui_system.get_mut_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = false;
 
-        *ui_system.get_ui_element(&UIElementType::TitlePressPToPlayOnline)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap() = true && self.connection_status_visible;
+        *ui_system.get_mut_ui_element(&UIElementType::TitlePressPToPlayOnline)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = true && self.connection_status_visible;
         
         self.current_visible_ui_elem = UIElementType::TitlePressPToPlayOnline;
 
@@ -383,17 +363,13 @@ impl NetSystem {
         ui_system: &mut UISystem,
     ) -> ConnectionState
     {
-        *ui_system.get_ui_element(&self.current_visible_ui_elem)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap() = false;
+        *ui_system.get_mut_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = false;
 
-        *ui_system.get_ui_element(&UIElementType::TitleConnectingToServer)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap() = true;
+        *ui_system.get_mut_ui_element(&UIElementType::TitleConnectingToServer)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = true;
         
         self.current_visible_ui_elem = UIElementType::TitleConnectingToServer;
 
@@ -458,17 +434,13 @@ impl NetSystem {
         ui_system: &mut UISystem,
     ) -> ConnectionState
     {
-        *ui_system.get_ui_element(&self.current_visible_ui_elem)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap() = false;
+        *ui_system.get_mut_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = false;
 
-        *ui_system.get_ui_element(&UIElementType::TitleConnectingToServer)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap() = true;
+        *ui_system.get_mut_ui_element(&UIElementType::TitleConnectingToServer)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = true;
         
         self.current_visible_ui_elem = UIElementType::TitleConnectingToServer;
 
@@ -574,17 +546,13 @@ impl NetSystem {
         ui_system: &mut UISystem,
     ) -> ConnectionState
     {
-        *ui_system.get_ui_element(&self.current_visible_ui_elem)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap() = false;
+        *ui_system.get_mut_ui_element(&self.current_visible_ui_elem)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = false;
 
-        *ui_system.get_ui_element(&UIElementType::TitleConnectedToServer)
-            .get_ui_data()
-            .get_is_visible_cloned_arc()
-            .lock()
-            .unwrap() = true;
+        *ui_system.get_mut_ui_element(&UIElementType::TitleConnectedToServer)
+            .get_ui_data_mut()
+            .get_is_visible_mut() = true;
         
         self.current_visible_ui_elem = UIElementType::TitleConnectedToServer;
 

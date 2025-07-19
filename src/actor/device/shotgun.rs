@@ -270,18 +270,18 @@ impl Device for Shotgun {
         let bar = ui_system.get_mut_ui_element(&UIElementType::ShotgunBarRed);
 
         if let UIElement::ProgressBar(bar) = bar {
-            *bar.ui_data.is_visible.lock().unwrap() = false;
+            bar.ui_data.is_visible = false;
         }
 
         let bar = ui_system.get_mut_ui_element(&UIElementType::ShotgunBarBlue);
 
         if let UIElement::ProgressBar(bar) = bar {
-            *bar.ui_data.is_visible.lock().unwrap() = false;
+            bar.ui_data.is_visible = false;
         }
         let img = ui_system.get_mut_ui_element(&UIElementType::ShotgunImage);
 
         if let UIElement::Image(img) = img {
-            *img.ui_data.is_visible.lock().unwrap() = false;
+            img.ui_data.is_visible = false;
         }
 
     }
@@ -299,7 +299,7 @@ impl Device for Shotgun {
         let img = ui_system.get_mut_ui_element(&UIElementType::ShotgunImage);
 
         if let UIElement::Image(img) = img {
-            *img.ui_data.is_visible.lock().unwrap() = true;
+            img.ui_data.is_visible = true;
         }
     
         match player.team
@@ -309,13 +309,13 @@ impl Device for Shotgun {
                 let bar = ui_system.get_mut_ui_element(&UIElementType::ShotgunBarRed);
 
                 if let UIElement::ProgressBar(bar) = bar {
-                    *bar.ui_data.is_visible.lock().unwrap() = true;
+                    bar.ui_data.is_visible = true;
                 }
 
                 let bar = ui_system.get_mut_ui_element(&UIElementType::ShotgunBarBlue);
 
                 if let UIElement::ProgressBar(bar) = bar {
-                    *bar.ui_data.is_visible.lock().unwrap() = false;
+                    bar.ui_data.is_visible = false;
                 }
             }
 
@@ -324,13 +324,13 @@ impl Device for Shotgun {
                 let bar = ui_system.get_mut_ui_element(&UIElementType::ShotgunBarBlue);
 
                 if let UIElement::ProgressBar(bar) = bar {
-                    *bar.ui_data.is_visible.lock().unwrap() = true;
+                    bar.ui_data.is_visible = true;
                 }
 
                 let bar = ui_system.get_mut_ui_element(&UIElementType::ShotgunBarRed);
 
                 if let UIElement::ProgressBar(bar) = bar {
-                    *bar.ui_data.is_visible.lock().unwrap() = false;
+                    bar.ui_data.is_visible = false;
                 }
             }
         }
