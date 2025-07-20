@@ -32,51 +32,44 @@ jobs:
 
     - name: SSH into EC2 and deploy
       run: |
-        ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
-          set -e
+        NEW_MATCHMAKING="/opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/matchmaking_server"
+        OLD_MATCHMAKING="/opt/4dShooter/matchmaking_server"
+        NEW_GAME="/opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/game_server"
+        OLD_GAME="/opt/4dShooter/game_server"
 
-          cd /opt/4dShooter/slice-4d-shooter
+        ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+          NEW_MATCHMAKING="$NEW_MATCHMAKING" \
+          OLD_MATCHMAKING="$OLD_MATCHMAKING" \
+          NEW_GAME="$NEW_GAME" \
+          OLD_GAME="$OLD_GAME" \
+          bash -s <<EOF
+            set -e
 
-          git pull origin main
+            cd /opt/4dShooter/slice-4d-shooter
+            git pull origin main
 
-          # Build Rust binaries
-          cargo build --release -p matchmaking_server
-          cargo build --release -p game_server
+            cargo build --release -p matchmaking_server
+            cargo build --release -p game_server
 
-          # Update matchmaking-server-config.json version
-          jq '.current_game_version = "${{ env.VERSION }}"' /opt/4dShooter/matchmaking-server-config.json > /tmp/config.tmp
-          sudo mv /tmp/config.tmp /opt/4dShooter/matchmaking-server-config.json
-
-          # Define paths
-          NEW_MATCHMAKING="./target/x86_64-unknown-linux-gnu/release/matchmaking_server"
-          OLD_MATCHMAKING="/opt/4dShooter/matchmaking_server"
-
-          NEW_GAME="./target/x86_64-unknown-linux-gnu/release/game_server"
-          OLD_GAME="/opt/4dShooter/game_server"
-
-          # Compare binaries
-          RESTART_NEEDED=0
-
-          if ! cmp -s "\$NEW_MATCHMAKING" "\$OLD_MATCHMAKING"; then
-            echo "matchmaking_server has changed"
-            RESTART_NEEDED=1
-          fi
-
-          if ! cmp -s "\$NEW_GAME" "\$OLD_GAME"; then
-            echo "game_server has changed"
-            RESTART_NEEDED=1
-          fi
-
-          if [ "\$RESTART_NEEDED" -eq 1 ]; then
-            echo "Restarting matchmaking.service due to binary changes..."
-            sudo systemctl stop matchmaking.service
-
-            cp "\$NEW_MATCHMAKING" "\$OLD_MATCHMAKING"
-            cp "\$NEW_GAME" "\$OLD_GAME"
-
-            sudo systemctl start matchmaking.service
-          else
-            echo "No changes in binaries. Skipping restart."
-          fi
+            jq '.current_game_version = "${{ env.VERSION }}"' /opt/4dShooter/matchmaking-server-config.json > /tmp/config.tmp
+            sudo mv /tmp/config.tmp /opt/4dShooter/matchmaking-server-config.json
+            echo "Update matchmaking-server-config.json version to ${{ env.VERSION }}"
+            
+            if [ -f "$NEW_MATCHMAKING" ] && [ -f "$OLD_MATCHMAKING" ] && [ -f "$NEW_GAME" ] && [ -f "$OLD_GAME" ]; then
+              if ! cmp -s "$NEW_MATCHMAKING" "$OLD_MATCHMAKING" && ! cmp -s "$NEW_GAME" "$OLD_GAME"; then
+                echo "Restarting matchmaking.service due to binary changes..."
+                sudo systemctl stop matchmaking.service
+                cp "\$NEW_MATCHMAKING" "\$OLD_MATCHMAKING"
+                cp "\$NEW_GAME" "\$OLD_GAME"
+                sudo systemctl start matchmaking.service
+              else
+                echo "No changes in binaries. Skipping restart."
+              fi
+            else
+              ls -la "$NEW_MATCHMAKING" || echo "$NEW_MATCHMAKING not found"
+              ls -la "$OLD_MATCHMAKING" || echo "$OLD_MATCHMAKING not found"
+              ls -la "$NEW_GAME" || echo "$NEW_GAME not found"
+              ls -la "$OLD_GAME" || echo "$OLD_GAME not found"
+            fi
         EOF
 
