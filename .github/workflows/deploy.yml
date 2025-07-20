@@ -44,7 +44,8 @@ jobs:
           OLD_GAME="$OLD_GAME" \
           bash -s <<EOF
             set -e
-
+            
+            source ~/.cargo/env
             cd /opt/4dShooter/slice-4d-shooter
             git pull origin main
 
