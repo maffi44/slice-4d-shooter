@@ -35,7 +35,7 @@ wasm-bindgen-futures = "0.4.50"
 getrandom = { version = "0.2.16", features = [ "js" ] }
 matchbox_socket = "0.12.0"
 rustc-hash = "1.1.0"
-opener = "*"
+opener = "0.8.2"
 web-sys = { version = "0.3.77", features = [
     "Document",
     "Window",

@@ -221,7 +221,7 @@ impl ApplicationHandler for Slice4DShooter
                                         match opener::open_browser("https://youtu.be/u2GZPIDo1vI?si=7rV4d3KXusQiq0xM")
                                         {
                                             Err(e) => eprintln!(
-                                                "You can't open the browser with the link https://youtu.be/u2GZPIDo1vI?si=7rV4d3KXusQiq0xM"
+                                                "Can't open a browser"
                                             ),
                                             _ => {
                                                 systems.render.window.set_cursor_visible(true);

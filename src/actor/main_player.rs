@@ -2153,7 +2153,7 @@ pub fn process_player_second_jump_input(
         }
         else
         {
-            if inner_state.collider.is_on_w_ground
+            if inner_state.collider.is_on_x_ground
             {
                 inner_state.collider.current_velocity.x = inner_state.collider.current_velocity.x.max(0.0);
 
@@ -2181,7 +2181,7 @@ pub fn process_player_second_jump_input(
             }
             else
             {
-                if inner_state.collider.is_on_w_ground
+                if inner_state.collider.is_on_x_ground
                 {
                     inner_state.collider.current_velocity.x = inner_state.collider.current_velocity.x.max(0.0);
 

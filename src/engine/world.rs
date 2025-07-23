@@ -37,7 +37,7 @@ use client_server_protocol::{NetCommand, Team};
 pub struct World {
     pub level: Level,
     pub actors: HashMap<ActorID, ActorWrapper>,
-    pub main_player_id: ActorID,
+    pub main_actor_id: ActorID,
     pub players_settings: PlayerSettings,
 }
 
@@ -56,7 +56,7 @@ impl World {
             actors: HashMap::with_capacity(actors.len()*3),
             players_settings,
             level,
-            main_player_id: 0,
+            main_actor_id: 0,
         };
 
         for actor in actors {
@@ -242,7 +242,7 @@ impl World {
                     // temporal solution is get main_player_id (todo: need to detect when actor change ID, store pair (new 
                     // and old ids) for one frame and change old id for new in this case)
 
-                    let actor = self.actors.get_mut(&self.main_player_id).expect("World have not actor with main_player_id");
+                    let actor = self.actors.get_mut(&self.main_actor_id).expect("World have not actor with main_player_id");
 
                     if let Some(controlled_actor) = actor.get_actor_as_controlled_mut()
                     {
@@ -281,9 +281,9 @@ impl World {
                         time_system.set_server_time(server_time);
                     },
                     NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {
-                        self.change_actor_id(self.main_player_id, new_id, engine_handle);
+                        self.change_actor_id(self.main_actor_id, new_id, engine_handle);
 
-                        self.main_player_id = new_id;                       
+                        self.main_actor_id = new_id;                       
                     },
                     NetCommand::SendBoardcastNetMessageReliable(message) => {
                         net_system.send_boardcast_message_reliable(message);
@@ -417,6 +417,15 @@ impl World {
 
             self.actors.insert(new_id_for_swaped_actor, swaped_actor);
         }
+
+        id
+    }
+
+    pub fn add_main_actor_to_world(&mut self, actor: ActorWrapper, engine_handle: &mut EngineHandle) -> ActorID {
+
+        let id = self.add_actor_to_world(actor, engine_handle);
+
+        self.main_actor_id = id;
 
         id
     }

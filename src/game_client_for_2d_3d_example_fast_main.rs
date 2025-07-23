@@ -50,7 +50,7 @@ fn main() {
                 systems.world.level.red_base_position,
             );
 
-            let main_player_id = systems.world.add_actor_to_world(
+            systems.world.add_main_actor_to_world(
                 ActorWrapper::PlayerFor2d3dExample(main_player),
                 &mut systems.engine_handle,
             );
@@ -121,7 +121,5 @@ fn main() {
                 ActorWrapper::SessionController(session_controller),
                 &mut systems.engine_handle,
             );
-
-            systems.world.main_player_id = main_player_id;
     })));
 }

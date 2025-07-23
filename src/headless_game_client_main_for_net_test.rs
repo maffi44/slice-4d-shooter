@@ -64,7 +64,7 @@ fn spawn_actors(
         systems.world.level.red_base_position,
     );
 
-    let main_player_id = systems.world.add_actor_to_world(
+    let main_player_id = systems.world.add_main_actor_to_world(
         ActorWrapper::MainPlayer(main_player),
         &mut systems.engine_handle,
     );
@@ -134,8 +134,6 @@ fn spawn_actors(
         ActorWrapper::SessionController(session_controller),
         &mut systems.engine_handle,
     );
-
-    systems.world.main_player_id = main_player_id;
 }
 
 

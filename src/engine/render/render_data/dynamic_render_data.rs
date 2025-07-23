@@ -1226,7 +1226,7 @@ impl DynamicRenderData {
         self.clear_all_frame_buffers();
 
         let main_camera =  world.actors
-            .get(&world.main_player_id)
+            .get(&world.main_actor_id)
             .expect("World have wrong main_player id")
             .get_actor_as_controlled()
             .expect("Main actor is not ControlledActor")
@@ -1292,7 +1292,7 @@ impl DynamicRenderData {
 
 fn get_players_screen_effects(world: &World) -> &PlayerScreenEffects {
     world.actors
-        .get(&world.main_player_id)
+        .get(&world.main_actor_id)
         .expect("Render system ERROR: World have not main player on main_player_id")
         .get_actor_as_controlled()
         .expect("Main actor is not ControlledActor")
@@ -1441,7 +1441,7 @@ impl OtherDynamicData {
         // self.additional_data_2 = frame_bounding_box.neg_surfs.to_array();
 
         let main_actor = world.actors
-            .get(&world.main_player_id)
+            .get(&world.main_actor_id)
             .expect("World have not main player Actor");
 
         let camera = main_actor

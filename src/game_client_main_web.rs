@@ -114,6 +114,6 @@ async fn client_main() {
                 &mut systems.engine_handle,
             );
     
-            systems.world.main_player_id = main_player_id;
+            systems.world.main_actor_id = main_player_id;
     })).await;
 }
