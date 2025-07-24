@@ -131,9 +131,47 @@ pub enum MatchmakingServerMessage
 
 #[repr(C)]
 #[alkahest(Formula, Serialize, Deserialize)]
+#[derive(Clone)]
+pub enum GameType
+{
+    Slice4DShooter,
+    Slice3DExample,
+}
+
+impl PartialEq for GameType
+{
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            GameType::Slice4DShooter =>
+            {
+                match other
+                {
+                    GameType::Slice4DShooter => true,
+                    GameType::Slice3DExample => false,
+                }
+            },
+            GameType::Slice3DExample =>
+            {
+                match other
+                {
+                    GameType::Slice4DShooter => false,
+                    GameType::Slice3DExample => true,
+                }
+            },
+        }
+    }
+}
+
+#[repr(C)]
+#[alkahest(Formula, Serialize, Deserialize)]
 pub enum ClientMessage
 {
-    RequestToConnectToGameServer((u32,u32,u32))
+    RequestToConnectToGameServer(
+        // game version of connecting client
+        (u32,u32,u32),
+        // game type of connecting client
+        GameType
+    )
 }
 
 #[repr(C)]

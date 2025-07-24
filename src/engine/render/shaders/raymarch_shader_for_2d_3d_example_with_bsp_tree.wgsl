@@ -565,7 +565,9 @@ fn get_individual_volume_sphere_color(sphere: SphericalArea, start_pos: vec4<f32
 
             let color_coef = abs(dot(sphere_normal, direction));
 
-            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) + vec3(0.00);
+            let air_perspective = clamp(1.0 - ((intr.x)/50.0),0.4,1.0);
+
+            color = mix(sphere.color, vec3(1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0) * air_perspective;
         }
     }
     else
@@ -643,7 +645,7 @@ fn ray_march_individual_wave_sphere(sphere: SphericalArea, start_pos: vec4<f32>,
 
     let dist_to_wave = sd_sphere((start_pos + direction*max_distance) - sphere.pos, sphere.radius);
         
-    let edge_intensity = clamp(pow(1.0 - abs(dist_to_wave), 5.0), 0.0, 1.0);
+    let edge_intensity = clamp(pow(max(1.0 - abs(dist_to_wave),0.0), 5.0), 0.0, 1.0);
     
     color += sphere.color*edge_intensity;
     
@@ -764,53 +766,44 @@ fn plane_w_intersect( ro: vec4<f32>, rd: vec4<f32>, h: f32 ) -> f32
     return (ro.w-h)/-rd.w;
 }
 
+var<private> intr_normal: array<vec2<f32>, 32>;
+var<private> intr_normal_size: u32 = 0u;
+var<private> intr_neg: array<vec2<f32>, 32>;
+var<private> intr_neg_size: u32 = 0u;
+var<private> intr_unbreakables: array<vec2<f32>, 32>;
+var<private> intr_unbreakables_size: u32 = 0u;
+var<private> intr_players: bool = false;
 
-struct Intersections
+
+fn store_intersection_entrance_and_exit_for_neg(intr: vec2<f32>)
 {
-    intr_normal: array<vec2<f32>, 32>,
-    intr_normal_size: u32,
-
-    intr_neg: array<vec2<f32>, 32>,
-    intr_neg_size: u32,
-
-    intr_unbreakables: array<vec2<f32>, 32>,
-    intr_unbreakables_size: u32,
-
-    intr_players: bool,
+    store_value_in_array_in_order_of_first_elem_for_neg(intr);
 }
 
 
-fn store_intersection_entrance_and_exit_for_neg(intr: vec2<f32>, intrs: ptr<function,Intersections>)
+fn store_intersection_entrance_and_exit(intr: vec2<f32>)
 {
-    store_value_in_array_in_order_of_first_elem_for_neg(intr, intrs);
+    store_value_in_array_in_order_of_first_elem_for_normal(intr);
 }
 
 
-fn store_intersection_entrance_and_exit(intr: vec2<f32>, intrs: ptr<function,Intersections>)
+fn store_intersection_entrance_and_exit_for_unbreakables(intr: vec2<f32>)
 {
-    store_value_in_array_in_order_of_first_elem_for_normal(intr, intrs);
+    store_value_in_array_in_order_of_first_elem_for_normal(intr);
+    store_value_in_array_in_order_of_first_elem_for_unbreakables(intr);
 }
 
 
-fn store_intersection_entrance_and_exit_for_unbreakables(intr: vec2<f32>, intrs: ptr<function,Intersections>)
+fn combine_interscted_entrances_and_exites_for_all_intrs()
 {
-    store_value_in_array_in_order_of_first_elem_for_normal(intr, intrs);
-    store_value_in_array_in_order_of_first_elem_for_unbreakables(intr, intrs);
+    combine_interscted_entrances_and_exites_for_unbreakables();
+    combine_interscted_entrances_and_exites_for_normal();
+    combine_interscted_entrances_and_exites_for_neg();
 }
 
 
-fn combine_interscted_entrances_and_exites_for_all_intrs(intrs: ptr<function,Intersections>)
-{
-    combine_interscted_entrances_and_exites_for_unbreakables(intrs);
-    combine_interscted_entrances_and_exites_for_normal(intrs);
-    combine_interscted_entrances_and_exites_for_neg(intrs);
-}
-
-
-fn combine_interscted_entrances_and_exites_for_normal(
-    intrs: ptr<function,Intersections>
-) {
-    var i = (*intrs).intr_normal_size;
+fn combine_interscted_entrances_and_exites_for_normal() {
+    var i = intr_normal_size;
 
     if i > 1u
     {
@@ -818,32 +811,30 @@ fn combine_interscted_entrances_and_exites_for_normal(
         {
             i -= 1u;
 
-            if (*intrs).intr_normal[i].x < (*intrs).intr_normal[i-1].y
+            if intr_normal[i].x < intr_normal[i-1].y
             {
-                if (*intrs).intr_normal[i-1].y < (*intrs).intr_normal[i].y
+                if intr_normal[i-1].y < intr_normal[i].y
                 {
-                    (*intrs).intr_normal[i-1].y = (*intrs).intr_normal[i].y;
+                    intr_normal[i-1].y = intr_normal[i].y;
                 }
 
-                let size = (*intrs).intr_normal_size - 1u;
+                let size = intr_normal_size - 1u;
 
                 while i < size
                 {
-                    (*intrs).intr_normal[i] = (*intrs).intr_normal[i+1u];
+                    intr_normal[i] = intr_normal[i+1u];
                     i += 1u;
                 }
 
-                (*intrs).intr_normal_size -= 1u;
+                intr_normal_size -= 1u;
             }
         }
     }
 }
 
 
-fn combine_interscted_entrances_and_exites_for_neg(
-    intrs: ptr<function,Intersections>
-) {
-    var i = (*intrs).intr_neg_size;
+fn combine_interscted_entrances_and_exites_for_neg() {
+    var i = intr_neg_size;
 
     if i > 1u
     {
@@ -851,32 +842,30 @@ fn combine_interscted_entrances_and_exites_for_neg(
         {
             i -= 1u;
 
-            if (*intrs).intr_neg[i].x < (*intrs).intr_neg[i-1].y
+            if intr_neg[i].x < intr_neg[i-1].y
             {
-                if (*intrs).intr_neg[i-1].y < (*intrs).intr_neg[i].y
+                if intr_neg[i-1].y < intr_neg[i].y
                 {
-                    (*intrs).intr_neg[i-1].y = (*intrs).intr_neg[i].y;
+                    intr_neg[i-1].y = intr_neg[i].y;
                 }
 
-                let size = (*intrs).intr_neg_size - 1u;
+                let size = intr_neg_size - 1u;
 
                 while i < size
                 {
-                    (*intrs).intr_neg[i] = (*intrs).intr_neg[i+1u];
+                    intr_neg[i] = intr_neg[i+1u];
                     i += 1u;
                 }
 
-                (*intrs).intr_neg_size -= 1u;
+                intr_neg_size -= 1u;
             }
         }
     }
 }
 
 
-fn combine_interscted_entrances_and_exites_for_unbreakables(
-    intrs: ptr<function,Intersections>
-) {
-    var i = (*intrs).intr_unbreakables_size;
+fn combine_interscted_entrances_and_exites_for_unbreakables() {
+    var i = intr_unbreakables_size;
 
     if i > 1u
     {
@@ -884,22 +873,22 @@ fn combine_interscted_entrances_and_exites_for_unbreakables(
         {
             i -= 1u;
 
-            if (*intrs).intr_unbreakables[i].x < (*intrs).intr_unbreakables[i-1].y
+            if intr_unbreakables[i].x < intr_unbreakables[i-1].y
             {
-                if (*intrs).intr_unbreakables[i-1].y < (*intrs).intr_unbreakables[i].y
+                if intr_unbreakables[i-1].y < intr_unbreakables[i].y
                 {
-                    (*intrs).intr_unbreakables[i-1].y = (*intrs).intr_unbreakables[i].y;
+                    intr_unbreakables[i-1].y = intr_unbreakables[i].y;
                 }
 
-                let size = (*intrs).intr_unbreakables_size - 1u;
+                let size = intr_unbreakables_size - 1u;
 
                 while i < size
                 {
-                    (*intrs).intr_unbreakables[i] = (*intrs).intr_unbreakables[i+1u];
+                    intr_unbreakables[i] = intr_unbreakables[i+1u];
                     i += 1u;
                 }
 
-                (*intrs).intr_unbreakables_size -= 1u;
+                intr_unbreakables_size -= 1u;
             }
         }
     }
@@ -907,96 +896,93 @@ fn combine_interscted_entrances_and_exites_for_unbreakables(
 
 
 fn store_value_in_array_in_order_of_first_elem_for_normal(
-    val: vec2<f32>,
-    intrs: ptr<function,Intersections>
+    val: vec2<f32>
 ) {
-    var i = (*intrs).intr_normal_size;
+    var i = intr_normal_size;
 
     if i > 0
     {
-        while (*intrs).intr_normal[i-1].x > val.x
+        while intr_normal[i-1].x > val.x
         {
             i -= 1;
 
             if i == 0 {break;}
         }
 
-        var j = (*intrs).intr_normal_size;
+        var j = intr_normal_size;
     
         while j > i
         {
-            (*intrs).intr_normal[j] = (*intrs).intr_normal[j-1];
+            intr_normal[j] = intr_normal[j-1];
             j -= 1;
         }
     }
 
-    (*intrs).intr_normal[i] = val;
+    intr_normal[i] = val;
 
-    (*intrs).intr_normal_size += 1u;
+    intr_normal_size += 1u;
 }
 
 
 fn store_value_in_array_in_order_of_first_elem_for_neg(
-    val: vec2<f32>,
-    intrs: ptr<function,Intersections>
+    val: vec2<f32>
 ) {
-    var i = (*intrs).intr_neg_size;
+    var i = intr_neg_size;
 
     if i > 0
     {
-        while (*intrs).intr_neg[i-1].x > val.x
+        while intr_neg[i-1].x > val.x
         {
             i -= 1;
 
             if i == 0 {break;}
         }
 
-        var j = (*intrs).intr_neg_size;
+        var j = intr_neg_size;
     
         while j > i
         {
-            (*intrs).intr_neg[j] = (*intrs).intr_neg[j-1];
+            intr_neg[j] = intr_neg[j-1];
             j -= 1;
         }
     }
 
-    (*intrs).intr_neg[i] = val;
+    intr_neg[i] = val;
 
-    (*intrs).intr_neg_size += 1u;
+    intr_neg_size += 1u;
 }
 
 
 fn store_value_in_array_in_order_of_first_elem_for_unbreakables(
-    val: vec2<f32>,
-    intrs: ptr<function,Intersections>
+    val: vec2<f32>
 ) {
-    var i = (*intrs).intr_unbreakables_size;
+    var i = intr_unbreakables_size;
 
     if i > 0
     {
-        while (*intrs).intr_unbreakables[i-1].x > val.x
+        while intr_unbreakables[i-1].x > val.x
         {
             i -= 1;
 
             if i == 0 {break;}
         }
 
-        var j = (*intrs).intr_unbreakables_size;
+        var j = intr_unbreakables_size;
     
         while j > i
         {
-            (*intrs).intr_unbreakables[j] = (*intrs).intr_unbreakables[j-1];
+            intr_unbreakables[j] = intr_unbreakables[j-1];
             j -= 1;
         }
     }
 
-    (*intrs).intr_unbreakables[i] = val;
+    intr_unbreakables[i] = val;
 
-    (*intrs).intr_unbreakables_size += 1u;
+    intr_unbreakables_size += 1u;
 }
 
 
-fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>, intrs: ptr<function,Intersections>) {
+fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
     var rd = rdd;
     if rd.x == 0 {
         rd.x += 0.000001; 
@@ -1521,8 +1507,8 @@ d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09)
                 rotated_p,
                 vec4(
                     dyn_player_forms[i].radius * 1.2,
-                    dyn_player_forms[i].radius* 0.18,
-                    dyn_player_forms[i].radius* 1.2,
+                    dyn_player_forms[i].radius * 0.18,
+                    dyn_player_forms[i].radius * 1.2,
                     dyn_player_forms[i].radius * 1.2
                 )));
             
@@ -1637,6 +1623,7 @@ fn get_mats(
     ray_dir: vec4<f32>,
     dist: f32,
 ) -> OutputMaterials {
+
     var output: OutputMaterials;
 
     if dist > MAX_DIST-MIN_DIST {
@@ -3334,56 +3321,54 @@ fn get_normal(p: vec4<f32>, intrs_players: bool) -> vec4<f32> {
 
     return normalize(n);
 }
-
 const MIN_STEP: f32 = 0.005;
 
 fn ray_march(
     ray_origin: vec4<f32>,
     ray_direction: vec4<f32>,
     max_dist: f32,
-    intrs: ptr<function,Intersections>
 ) -> vec2<f32>  {
     
-    if (*intrs).intr_normal_size == 0u {
+    if intr_normal_size == 0u {
         return vec2(MAX_DIST*2.0, 0.0);
     }
     
     var closest_normal_intrs_index = 0u;
-    var closest_normal_intrs = (*intrs).intr_normal[closest_normal_intrs_index];
+    var closest_normal_intrs = intr_normal[closest_normal_intrs_index];
 
     var total_distance: f32 = max(closest_normal_intrs.x, 0.0);
     
     var closest_neg_intrs_index = 0u;
     var closest_neg_intrs = vec2(MAX_DIST*2.0);
-    if (*intrs).intr_neg_size > 0u
+    if intr_neg_size > 0u
     {
-        closest_neg_intrs = (*intrs).intr_neg[0u];
+        closest_neg_intrs = intr_neg[0u];
     }
 
     var closest_unbreakables_intrs_index = 0u;
     var closest_unbreakables_intrs = vec2(MAX_DIST*2.0);
-    if (*intrs).intr_unbreakables_size > 0u
+    if intr_unbreakables_size > 0u
     {
-        closest_unbreakables_intrs = (*intrs).intr_unbreakables[0u];
+        closest_unbreakables_intrs = intr_unbreakables[0u];
     }
 
     var i: i32 = 0;
     for (; i < MAX_STEPS; i++)
     {
-        while true
+        while total_distance < max_dist
         {
             // cheking if ray is out of area of positive (not negative) objects
             // in this case go to next closest positve object or finish ray marching 
             // if it was last area of positive objects
-            if total_distance > closest_normal_intrs.y
+            while total_distance > closest_normal_intrs.y
             {
                 closest_normal_intrs_index += 1u;
     
-                if closest_normal_intrs_index < (*intrs).intr_normal_size
+                if closest_normal_intrs_index < intr_normal_size
                 {
-                    closest_normal_intrs = (*intrs).intr_normal[closest_normal_intrs_index];
+                    closest_normal_intrs = intr_normal[closest_normal_intrs_index];
     
-                    total_distance = closest_normal_intrs.x;
+                    total_distance = max(total_distance, closest_normal_intrs.x);
                 }
                 else
                 {
@@ -3396,76 +3381,61 @@ fn ray_march(
             {
                 closest_unbreakables_intrs_index += 1u;
     
-                if closest_unbreakables_intrs_index < (*intrs).intr_unbreakables_size
+                if closest_unbreakables_intrs_index < intr_unbreakables_size
                 {
-                    closest_unbreakables_intrs = (*intrs).intr_unbreakables[closest_unbreakables_intrs_index];
+                    closest_unbreakables_intrs = intr_unbreakables[closest_unbreakables_intrs_index];
                 }
                 else
                 {
                     closest_unbreakables_intrs = vec2(MAX_DIST*2.0);
                 }
             }
+
+            // finding closet area of negative objects
+            while total_distance > closest_neg_intrs.y
+            {
+                closest_neg_intrs_index += 1u;
+
+                if closest_neg_intrs_index < intr_neg_size
+                {
+                    closest_neg_intrs = intr_neg[closest_neg_intrs_index];
+                }
+                else
+                {
+                    closest_neg_intrs = vec2(MAX_DIST*2.0);
+                }
+            }
             
             
             // cheking if ray is entered in area of negative objects
             // skip whole nagtive area if ray is not collided
-            // by area of unbreakable objects. if ray is not entered
-            // nagtive area stop the loop - it's means that ray is inside 
+            // by area of unbreakable objects. 
+            // if ray is not entered nagtive area - it's means that ray is inside 
             // area of positive objects
             if total_distance > closest_neg_intrs.x && total_distance < closest_unbreakables_intrs.x
             {
-                if total_distance > closest_neg_intrs.y
+                if closest_unbreakables_intrs.x < closest_neg_intrs.y
                 {
+                    total_distance = closest_unbreakables_intrs.x;
+
+                    break;
+                }
+                else
+                {
+                    total_distance = closest_neg_intrs.y;
+
                     closest_neg_intrs_index += 1u;
-    
-                    if closest_neg_intrs_index < (*intrs).intr_neg_size
+
+                    if closest_neg_intrs_index < intr_neg_size
                     {
-                        closest_neg_intrs = (*intrs).intr_neg[closest_neg_intrs_index];
+                        closest_neg_intrs = intr_neg[closest_neg_intrs_index];
                     }
                     else
                     {
                         closest_neg_intrs = vec2(MAX_DIST*2.0);
                     }
-    
+
                     continue;
-                }
-                else
-                {
-                    if closest_unbreakables_intrs.x < closest_neg_intrs.y
-                    {
-                        total_distance = closest_unbreakables_intrs.x;
-    
-                        while total_distance > closest_normal_intrs.y
-                        {
-                            closest_normal_intrs_index += 1u;
-    
-                            if closest_normal_intrs_index < (*intrs).intr_normal_size
-                            {
-                                closest_normal_intrs = (*intrs).intr_normal[closest_normal_intrs_index];
-                            }
-                            else
-                            {
-                                closest_normal_intrs = vec2(MAX_DIST*2.0);
-                            }
-                        }
-    
-                        break;
-                    }
-                    else
-                    {
-                        total_distance = closest_neg_intrs.y;
-    
-                        closest_neg_intrs_index += 1u;
-    
-                        if closest_neg_intrs_index < (*intrs).intr_neg_size
-                        {
-                            closest_neg_intrs = (*intrs).intr_neg[closest_neg_intrs_index];
-                        }
-                        else
-                        {
-                            closest_neg_intrs = vec2(MAX_DIST*2.0);
-                        }
-                    }
                 }
             }
             else
@@ -3473,15 +3443,16 @@ fn ray_march(
                 break;
             }
         }
-
-        var d: f32  = map(ray_origin + ray_direction * total_distance, (*intrs).intr_players);
-        total_distance += d;
-
+        
         if total_distance > max_dist
         {
             return vec2<f32>(total_distance, f32(i));
         }
 
+        var d: f32  = map(ray_origin + ray_direction * total_distance, intr_players);
+        total_distance += d;
+
+        
         if (d < MIN_DIST) {
 
             return vec2<f32>(total_distance, f32(i));
@@ -3646,8 +3617,7 @@ fn get_color_and_light_from_mats(
     pos: vec4<f32>,
     ray_dir: vec4<f32>,
     dist: f32,
-    mats: OutputMaterials,
-    intrs: ptr<function,Intersections>,
+    mats: OutputMaterials
 ) -> vec4<f32> {
     var lightness = 0.0;
     
@@ -3663,7 +3633,7 @@ fn get_color_and_light_from_mats(
         var color = static_data.red_base_color*0.5;
         
         let hited_pos = pos + ray_dir * dist;
-        let normal = get_normal(hited_pos, (*intrs).intr_players);
+        let normal = get_normal(hited_pos, intr_players);
         let c = pow(abs(dot(normal, ray_dir)),9.0);
 
         color = mix(vec3(0.5),color, c);
@@ -3675,7 +3645,7 @@ fn get_color_and_light_from_mats(
         var color = static_data.blue_base_color*0.5;
         
         let hited_pos = pos + ray_dir * dist;
-        let normal = get_normal(hited_pos, (*intrs).intr_players);
+        let normal = get_normal(hited_pos, intr_players);
         let c = pow(abs(dot(normal, ray_dir)),9.0);
 
         color = mix(vec3(0.5),color, c);
@@ -3695,7 +3665,7 @@ fn get_color_and_light_from_mats(
     }
 
     let hited_pos = pos + ray_dir * dist;
-    let normal = get_normal(hited_pos, (*intrs).intr_players);
+    let normal = get_normal(hited_pos, intr_players);
     
     var lines_size = 5.8;
 
@@ -3707,7 +3677,7 @@ fn get_color_and_light_from_mats(
         lines_size = 1.8;
     }
 
-    let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*lines_size, (*intrs).intr_players);
+    let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*lines_size, intr_players);
 
     let wireframe_fog = exp(-0.007*dist*dist);
     let wireframe_dif = pow(clamp(1.0-abs(dot(normal, next_normal)),0.0,1.0),1.3);
@@ -3721,7 +3691,7 @@ fn get_color_and_light_from_mats(
     var sun_shadow_1 = 1.0;
     if dynamic_data.shadows_enabled == 1
     {
-        sun_shadow_1 = get_shadow(hited_pos+(normal*MIN_DIST*1.6), sun_dir_1, intrs);
+        sun_shadow_1 = get_shadow(hited_pos+(normal*MIN_DIST*1.6), sun_dir_1);
     }
 
     let base_coef = clamp((hited_pos.z - static_data.blue_base_position.z) / (static_data.red_base_position.z - static_data.blue_base_position.z), 0.0, 1.0);
@@ -3763,7 +3733,7 @@ fn get_color_and_light_from_mats(
     light += static_data.sun_color  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 3.0;// * aocc;
     light += static_data.sky_color    * sky_dif   * 0.3 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
     light += static_data.frenel_color * frenel    * 0.3 * (0.6+0.4*sun_dif_1);// * aocc;
-    light += neon_wireframe_color * wireframe_dif*40.0 * (0.1+0.9*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
+    light += neon_wireframe_color * wireframe_dif*40.0 * (0.08+0.5*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5);
 
     lightness = wireframe_dif*30.0;
 
@@ -3796,19 +3766,19 @@ fn get_color_and_light_from_mats(
 }
 
 
-fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>, intrs: ptr<function,Intersections>) -> f32 {
+fn get_shadow(init_position: vec4<f32>, ray_direction: vec4<f32>) -> f32 {
 
-    (*intrs).intr_neg_size = 0u;
-    (*intrs).intr_normal_size = 0u;
-    (*intrs).intr_unbreakables_size = 0u;
-    (*intrs).intr_players = false;
+    intr_neg_size = 0u;
+    intr_normal_size = 0u;
+    intr_unbreakables_size = 0u;
+    intr_players = false;
 
     
-    find_intersections(init_position, ray_direction, intrs);
+    find_intersections(init_position, ray_direction);
 
-    let dist_and_depth: vec2<f32> = ray_march(init_position, ray_direction, 11.0, intrs);
+    let dist_and_depth: vec2<f32> = ray_march(init_position, ray_direction, 11.0);
 
-    let shadow_coef = pow((min(dist_and_depth.x, 11.0))/11.0, 1.3);
+    let shadow_coef = pow((min(max(dist_and_depth.x,0.0), 11.0))/11.0, 1.6);
 
     return clamp(shadow_coef, 0.0, 1.0);
 }
@@ -4286,18 +4256,17 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
         let camera_position = dynamic_data.camera_data.cam_pos;
 
-        var intrs: Intersections;
-        intrs.intr_neg_size = 0u;
-        intrs.intr_normal_size = 0u;
-        intrs.intr_unbreakables_size = 0u;
-        intrs.intr_players = false;
+        intr_neg_size = 0u;
+        intr_normal_size = 0u;
+        intr_unbreakables_size = 0u;
+        intr_players = false;
 
-        find_intersections(camera_position, ray_direction, &intrs);
+        find_intersections(camera_position, ray_direction);
 
-        let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, MAX_DIST, &intrs); 
+        let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, MAX_DIST); 
 
         var mats = get_mats(camera_position, ray_direction, dist_and_depth.x);
-        var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats, &intrs);
+        var color_and_light = get_color_and_light_from_mats(camera_position, ray_direction, dist_and_depth.x, mats);
 
         var color = color_and_light.rgb;
 

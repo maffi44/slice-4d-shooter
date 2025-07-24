@@ -23,9 +23,7 @@ use matchbox_socket::{
 };
 
 use matchmaking_server_protocol::{
-    ClientMatchmakingServerProtocol,
-    MatchmakingServerMessage,
-    GameVersion
+    ClientMatchmakingServerProtocol, GameType, GameVersion, MatchmakingServerMessage
 };
 
 use client_server_protocol::{
@@ -416,6 +414,7 @@ impl NetSystem {
 
                         get_game_server_url(
                             self.connection_data.matchmaking_server_url.clone(),
+                            self.it_is_2d_3d_example
                         )
                     ));
                 
@@ -1762,6 +1761,7 @@ fn process_message(
 
 async fn get_game_server_url(
     matchmaking_server_url: String,
+    it_is_2d_3d_example: bool,
 ) -> Result<String, ConnectionError>
 {
 
@@ -1779,10 +1779,17 @@ async fn get_game_server_url(
                 Ok((mut ws_stream, _)) =>
                 {
                     let version = GameVersion::from(VERSION);
-        
+                    
+                    let game_type = match it_is_2d_3d_example
+                    {
+                        false => GameType::Slice4DShooter,
+                        true => GameType::Slice3DExample,
+                    };
+
                     let message = ClientMatchmakingServerProtocol::ClientMessage(
                         matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
-                            version.into()
+                            version.into(),
+                            game_type,
                         )
                     ).to_packet();
         

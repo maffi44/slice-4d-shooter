@@ -35,6 +35,8 @@ use serde_json::{
 use tokio_tungstenite::accept_async;
 use std::collections::HashMap;
 
+use crate::matchmaking_server_protocol::GameType;
+
 #[derive(Clone)]
 struct Config
 {
@@ -140,6 +142,8 @@ impl GameServersIceConfig {
 
 #[derive(Clone)]
 struct GameServerInfo {
+    game_type: GameType,
+
     players_amount_by_matchmaking_server: u32,
     players_amount_by_game_server: u32,
     max_amount_of_players: u32,
@@ -180,7 +184,7 @@ async fn handle_client_connection(
                 ClientMatchmakingServerProtocol::ClientMessage(client_message) =>
                 {
                     match client_message {
-                        ClientMessage::RequestToConnectToGameServer(clients_game_version) => {
+                        ClientMessage::RequestToConnectToGameServer(clients_game_version, client_game_type) => {
 
                             // uodate current game version and max game sessions amount
 
@@ -201,7 +205,9 @@ async fn handle_client_connection(
 
                                     server_info.players_amount_by_matchmaking_server < server_info.max_amount_of_players
                                     &&
-                                    clients_game_version == server_info.game_server_game_version
+                                    server_info.game_server_game_version == clients_game_version 
+                                    &&
+                                    server_info.game_type == client_game_type
                                 }
                             );
 
@@ -271,6 +277,7 @@ async fn handle_client_connection(
                                                 &config,
                                                 async_rutime.clone(),
                                                 state.clone(),
+                                                client_game_type
                                             ).await;
 
                                             if server_info.is_err()
@@ -371,6 +378,7 @@ async fn spawn_game_server(
     config: &Config,
     async_rutime: Arc<Runtime>,
     state: GameServersState,
+    game_type: GameType,
 ) -> Result<GameServerInfo, ()>
 {
     let server_process = Command::new("./game_server")
@@ -421,6 +429,7 @@ async fn spawn_game_server(
             );
 
             return Ok(GameServerInfo {
+                game_type,
                 game_server_ip_address: config.game_severs_public_ip,
                 players_amount_by_matchmaking_server: 1_u32,
                 players_amount_by_game_server: 0_u32,
