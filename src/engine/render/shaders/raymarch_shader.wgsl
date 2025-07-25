@@ -2287,12 +2287,15 @@ fn get_color_and_light_from_mats(
     {
         let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
 
-        let w_height_coef = clamp((hited_pos.w - 0.3) / 4.5, 0.0, 1.0);
+        let w_height_coef = clamp((hited_pos.w - 0.3) / 7.5, 0.0, 1.0);
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
-            mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
-            w_height_coef
+            mix(
+                inverted_base_diffuse*0.5*vec3(2.2,4.9,1.2),
+                base_diffuse*0.5*vec3(1.2,4.9,2.2),
+                base_coef),
+            pow(w_height_coef, 0.69)
         );
     }
 
@@ -2395,7 +2398,7 @@ fn fbm(pp: vec2<f32>, tt: vec2<f32>) -> f32 {
     var r = 0.0;
     var p = pp;
     var t = tt;
-    for (var i = 0; i < 6; i++) {
+    for (var i = 0; i < 7; i++) {
         r += a*perlin(p, t);
         a *= 0.5;
         p *= 2.0;
@@ -2406,11 +2409,11 @@ fn fbm(pp: vec2<f32>, tt: vec2<f32>) -> f32 {
 
 fn w_shift_effect(uv: vec2<f32>, shift_coef: f32, intensity: f32) -> f32
 {
-    let cuv = vec2((atan(uv.x / uv.y)+PI)/(2.0*PI), 0.005/length(uv)+0.03*shift_coef);
+    let cuv = vec2((atan(uv.x / uv.y)+PI)/(2.0*PI), 0.005/length(uv)+0.03*shift_coef+111.0);
 
-    var v = clamp(pow(length(uv),26.0),0.0,1.0);
+    var v = clamp(pow(length(uv),23.0),0.0,1.0);
 
-    return clamp((pow(max(0.9+0.5*fbm(20.0*cuv, vec2(20)),0.0),40.0)),0.0,1.0)*intensity*v;
+    return clamp((pow(max(0.9+0.5*fbm(29.0*cuv, vec2(20)),0.0),40.0)),0.0,1.0)*intensity*v;
 }
 //^---------------------------------------------------------^
 
@@ -2477,7 +2480,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     let v = 0.2+pow(max(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.0),0.32 );
     color *= v;
 
-    color += 0.28*w_shift_effect(
+    color += 0.36*w_shift_effect(
         uv,
         dynamic_data.w_shift_coef,
         dynamic_data.w_shift_intensity,

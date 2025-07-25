@@ -998,9 +998,9 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
     }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(3.2, -1.4, 27.2, 0),
+                ro - vec4<f32>(3.2, -1.4, 16.9, 0),
                 rd,
-                vec4<f32>(3.9, 1, 12.2, 15.4)
+                vec4<f32>(3.9, 1, 10.799999, 15.4)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit(intr);
@@ -1008,7 +1008,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(3, 1.9, 40, 0),
+                ro - vec4<f32>(3, 1.9, 28.7, 0),
                 rd,
                 vec4<f32>(3.08, 2.1799998, 0.28, 15.08)
             );
@@ -1018,7 +1018,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(0.95, 4.2, 36.5, 0),
+                ro - vec4<f32>(0.95, 4.2, 25.2, 0),
                 rd,
                 vec4<f32>(1.13, 0.26, 6.68, 15.18)
             );
@@ -1028,7 +1028,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(1, 1.1, 25.7, 4),
+                ro - vec4<f32>(1, 1.1, 15.9, 4),
                 rd,
                 vec4<f32>(1.2, 1.85, 0.3, 4.2)
             );
@@ -1038,7 +1038,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(0.6, -0.1, 25.5, 4),
+                ro - vec4<f32>(0.6, -0.1, 15.7, 4),
                 rd,
                 vec4<f32>(0.8, 0.55, 3.3, 4.2)
             );
@@ -1050,7 +1050,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(3.4, -0.2, 0, 15),
                 rd,
-                vec4<f32>(2.2, 1.65, 16, 16)
+                vec4<f32>(2.2, 1.65, 7.4, 16)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit(intr);
@@ -1058,9 +1058,9 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(3.2, 4.6, 0, 15),
+                ro - vec4<f32>(3.2, 5.6, 0, 15),
                 rd,
-                vec4<f32>(2, 1.55, 10.8, 16)
+                vec4<f32>(2, 1.55, 1.5, 16)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit(intr);
@@ -1068,9 +1068,9 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(3.2, -1.4, -27.2, 0),
+                ro - vec4<f32>(3.2, -1.4, -16.9, 0),
                 rd,
-                vec4<f32>(3.9, 1, 12.2, 15.4)
+                vec4<f32>(3.9, 1, 10.799999, 15.4)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit(intr);
@@ -1078,7 +1078,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(3, 1.9, -40, 0),
+                ro - vec4<f32>(3, 1.9, -28.7, 0),
                 rd,
                 vec4<f32>(3.08, 2.1799998, 0.28, 15.08)
             );
@@ -1088,7 +1088,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(0.95, 4.2, -36.5, 0),
+                ro - vec4<f32>(0.95, 4.2, -25.2, 0),
                 rd,
                 vec4<f32>(1.13, 0.26, 6.68, 15.18)
             );
@@ -1098,7 +1098,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(1, 1.1, -25.7, 4),
+                ro - vec4<f32>(1, 1.1, -15.9, 4),
                 rd,
                 vec4<f32>(1.2, 1.85, 0.3, 4.2)
             );
@@ -1108,7 +1108,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(0.6, -0.1, -25.5, 4),
+                ro - vec4<f32>(0.6, -0.1, -15.7, 4),
                 rd,
                 vec4<f32>(0.8, 0.55, 3.3, 4.2)
             );
@@ -1118,7 +1118,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(3, -0.2, 36, 0),
+                ro - vec4<f32>(3, -0.2, 24.7, 0),
                 rd,
                 vec4<f32>(3.4627435, 0.66274333, 4.4627433, 15.462744)
             );
@@ -1128,7 +1128,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(0, 0.6, 22.5, 0),
+                ro - vec4<f32>(0, 0.6, 12.7, 0),
                 rd,
                 vec4<f32>(4.7727437, 1.3227433, 1.4727434, 7.3727436)
             );
@@ -1138,7 +1138,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(0, 1.4, 9, 0),
+                ro - vec4<f32>(0, 1.4, 0, 0),
                 rd,
                 vec4<f32>(6.3827434, 6.4827433, 1.0827434, 7.9827433)
             );
@@ -1148,17 +1148,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(4.8, 2.3, 0, 15),
-                rd,
-                vec4<f32>(1.7827433, 3.2827435, 1.5827433, 16.282743)
-            );
-if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr);
-        }
-}
-{
-let intr = cube_intersection(
-                ro - vec4<f32>(3, -0.2, -36, 0),
+                ro - vec4<f32>(3, -0.2, -24.7, 0),
                 rd,
                 vec4<f32>(3.4627435, 0.66274333, 4.4627433, 15.462744)
             );
@@ -1168,7 +1158,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(0, 0.6, -22.5, 0),
+                ro - vec4<f32>(0, 0.6, -12.7, 0),
                 rd,
                 vec4<f32>(4.7727437, 1.3227433, 1.4727434, 7.3727436)
             );
@@ -1178,17 +1168,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(0, 1.4, -9, 0),
-                rd,
-                vec4<f32>(6.3827434, 6.4827433, 1.0827434, 7.9827433)
-            );
-if intr.y > 0.0 {
-            store_intersection_entrance_and_exit(intr);
-        }
-}
-{
-let intr = cube_intersection(
-                ro - vec4<f32>(3, 1.8, 21, 0),
+                ro - vec4<f32>(3, 1.8, 11.2, 0),
                 rd,
                 vec4<f32>(1.7509117, 1.1509117, 1.5509117, 5.050912)
             );
@@ -1198,7 +1178,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(6, 2.1, 16.9, 0),
+                ro - vec4<f32>(6, 2.1, 7.1, 0),
                 rd,
                 vec4<f32>(4.6697054, 2.8197057, 2.8697057, 5.1697054)
             );
@@ -1210,7 +1190,7 @@ if intr.y > 0.0 {
 let intr = cube_intersection(
                 ro - vec4<f32>(5.4, -0.2, 0, 15),
                 rd,
-                vec4<f32>(2.709117, 0.7091168, 18.509117, 15.509117)
+                vec4<f32>(2.709117, 0.7091168, 8.809117, 15.509117)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr);
@@ -1218,9 +1198,9 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(4.4, 4.6, 0, 15),
+                ro - vec4<f32>(4.4, 5.6, 0, 15),
                 rd,
-                vec4<f32>(2.5394113, 0.78941125, 14.339411, 15.339411)
+                vec4<f32>(2.5394113, 0.78941125, 2.8394113, 15.339411)
             );
 if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr);
@@ -1228,17 +1208,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(6.3, 2.3, 0, 15),
-                rd,
-                vec4<f32>(2.5394113, 2.7394114, 0.6394113, 15.339411)
-            );
-if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_neg(intr);
-        }
-}
-{
-let intr = cube_intersection(
-                ro - vec4<f32>(3, 1.8, -21, 0),
+                ro - vec4<f32>(3, 1.8, -11.2, 0),
                 rd,
                 vec4<f32>(1.7509117, 1.1509117, 1.5509117, 5.050912)
             );
@@ -1248,7 +1218,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(6, 2.1, -16.9, 0),
+                ro - vec4<f32>(6, 2.1, -7.1, 0),
                 rd,
                 vec4<f32>(4.6697054, 2.8197057, 2.8697057, 5.1697054)
             );
@@ -1305,14 +1275,14 @@ combine_interscted_entrances_and_exites_for_all_intrs();
 
 
 fn map(p: vec4<f32>, intr_players: bool) -> f32 {
-    var d = MAX_DIST*2.0;if p.z > -4.75 {
-if p.z > 17.705 {
-if p.z > 24.545002 {
-if p.z > 29.31 {
-d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-d = min(d, sd_box(p - vec4<f32>(3, 1.9, 40, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
-d = min(d, sd_box(p - vec4<f32>(0.95, 4.2, 36.5, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
-d = smin(d, sd_box(p - vec4<f32>(3, -0.2, 36, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18, 0.09);
+    var d = MAX_DIST*2.0;if p.z > -3.6 {
+if p.z > 10.805 {
+if p.z > 17.36 {
+if p.y > 0.17274335 {
+d = min(d, sd_box(p - vec4<f32>(3, 1.9, 28.7, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
+d = min(d, sd_box(p - vec4<f32>(0.95, 4.2, 25.2, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
+d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+d = smin(d, sd_box(p - vec4<f32>(3, -0.2, 24.7, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
@@ -1320,9 +1290,10 @@ d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09)
 d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-d = min(d, sd_box(p - vec4<f32>(1, 1.1, 25.7, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
-d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 25.5, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+d = min(d, sd_box(p - vec4<f32>(3, 1.9, 28.7, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
+d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+d = smin(d, sd_box(p - vec4<f32>(3, -0.2, 24.7, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
@@ -1330,119 +1301,107 @@ d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09)
 d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }}
 else
-{if p.z > 20.605 {
-d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 25.5, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
-d = smin(d, sd_box(p - vec4<f32>(0, 0.6, 22.5, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09, 0.09);
+{if p.x > 0.5086283 {
+d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+d = min(d, sd_box(p - vec4<f32>(1, 1.1, 15.9, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
+d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+d = smin(d, sd_box(p - vec4<f32>(0, 0.6, 12.7, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(3, 1.8, 21, 0), vec4<f32>(1.7, 1.1, 1.5, 5)) - 0.09), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(3, 1.8, 11.2, 0), vec4<f32>(1.7, 1.1, 1.5, 5)) - 0.09), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
-d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+d = min(d, sd_box(p - vec4<f32>(1, 1.1, 15.9, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
+d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+d = smin(d, sd_box(p - vec4<f32>(0, 0.6, 12.7, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(3, 1.8, 21, 0), vec4<f32>(1.7, 1.1, 1.5, 5)) - 0.09), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(6, 2.1, 16.9, 0), vec4<f32>(4.5, 2.65, 2.7, 5)) - 0.3), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(5.4, -0.2, 0, 15), vec4<f32>(2.2, 0.2, 18, 15)) - 0.9), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }}}
 else
-{if p.y > 1.4577433 {
-if p.z > 4.75 {
-d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
-d = min(d, sd_box(p - vec4<f32>(3.2, 4.6, 0, 15), vec4<f32>(1, 0.55, 9.8, 15)) - 1);
-d = smin(d, sd_box(p - vec4<f32>(0, 1.4, 9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7, 0.09);
+{if p.z > 3.6 {
+if p.x > 0.5036282 {
+d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 6.4, 15)) - 1);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(6, 2.1, 16.9, 0), vec4<f32>(4.5, 2.65, 2.7, 5)) - 0.3), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(4.4, 4.6, 0, 15), vec4<f32>(2.2, 0.45, 14, 15)) - 0.6), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(3, 1.8, 11.2, 0), vec4<f32>(1.7, 1.1, 1.5, 5)) - 0.09), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(6, 2.1, 7.1, 0), vec4<f32>(4.5, 2.65, 2.7, 5)) - 0.3), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(5.4, -0.2, 0, 15), vec4<f32>(2.2, 0.2, 8.3, 15)) - 0.9), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
-d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
-d = min(d, sd_box(p - vec4<f32>(3.2, 4.6, 0, 15), vec4<f32>(1, 0.55, 9.8, 15)) - 1);
-d = smin(d, sd_box(p - vec4<f32>(4.8, 2.3, 0, 15), vec4<f32>(0.5, 2, 0.3, 15)) - 1, 0.09);
+{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(4.4, 4.6, 0, 15), vec4<f32>(2.2, 0.45, 14, 15)) - 0.6), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(6.3, 2.3, 0, 15), vec4<f32>(2.2, 2.4, 0.3, 15)) - 0.6), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }}
 else
-{if p.z > 4.75 {
-d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
-d = smin(d, sd_box(p - vec4<f32>(0, 1.4, 9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7, 0.09);
+{if p.y > 2.75 {
+d = min(d, sd_box(p - vec4<f32>(3.2, 5.6, 0, 15), vec4<f32>(1, 0.55, 0.5, 15)) - 1);
+d = smin(d, sd_box(p - vec4<f32>(0, 1.4, 0, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(6, 2.1, 16.9, 0), vec4<f32>(4.5, 2.65, 2.7, 5)) - 0.3), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(5.4, -0.2, 0, 15), vec4<f32>(2.2, 0.2, 18, 15)) - 0.9), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(4.4, 5.6, 0, 15), vec4<f32>(2.2, 0.45, 2.5, 15)) - 0.6), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
-d = smin(d, sd_box(p - vec4<f32>(4.8, 2.3, 0, 15), vec4<f32>(0.5, 2, 0.3, 15)) - 1, 0.09);
+{d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 6.4, 15)) - 1);
+d = smin(d, sd_box(p - vec4<f32>(0, 1.4, 0, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(5.4, -0.2, 0, 15), vec4<f32>(2.2, 0.2, 18, 15)) - 0.9), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(6.3, 2.3, 0, 15), vec4<f32>(2.2, 2.4, 0.3, 15)) - 0.6), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(5.4, -0.2, 0, 15), vec4<f32>(2.2, 0.2, 8.3, 15)) - 0.9), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }}}}
 else
-{if p.z > -20.605 {
-if p.y > 1.4577433 {
-if p.z > -12.35 {
-d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
-d = min(d, sd_box(p - vec4<f32>(3.2, 4.6, 0, 15), vec4<f32>(1, 0.55, 9.8, 15)) - 1);
-d = smin(d, sd_box(p - vec4<f32>(0, 1.4, -9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7, 0.09);
+{if p.z > -14.744999 {
+if p.z > -10.805 {
+if p.x > 0.5036282 {
+d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 6.4, 15)) - 1);
+d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(4.4, 4.6, 0, 15), vec4<f32>(2.2, 0.45, 14, 15)) - 0.6), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(5.4, -0.2, 0, 15), vec4<f32>(2.2, 0.2, 8.3, 15)) - 0.9), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(3, 1.8, -11.2, 0), vec4<f32>(1.7, 1.1, 1.5, 5)) - 0.09), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(6, 2.1, -7.1, 0), vec4<f32>(4.5, 2.65, 2.7, 5)) - 0.3), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
-d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
+{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(4.4, 4.6, 0, 15), vec4<f32>(2.2, 0.45, 14, 15)) - 0.6), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(3, 1.8, -21, 0), vec4<f32>(1.7, 1.1, 1.5, 5)) - 0.09), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(6, 2.1, -16.9, 0), vec4<f32>(4.5, 2.65, 2.7, 5)) - 0.3), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }}
 else
-{if p.x > 0.5036282 {
-d = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
-d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-d = smin(d, sd_box(p - vec4<f32>(0, 1.4, -9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7, 0.09);
+{if p.x > 0.5086283 {
+d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+d = smin(d, sd_box(p - vec4<f32>(0, 0.6, -12.7, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(5.4, -0.2, 0, 15), vec4<f32>(2.2, 0.2, 18, 15)) - 0.9), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(3, 1.8, -21, 0), vec4<f32>(1.7, 1.1, 1.5, 5)) - 0.09), 0.09);
-d = smax(d, -(sd_box(p - vec4<f32>(6, 2.1, -16.9, 0), vec4<f32>(4.5, 2.65, 2.7, 5)) - 0.3), 0.09);
+d = smax(d, -(sd_box(p - vec4<f32>(3, 1.8, -11.2, 0), vec4<f32>(1.7, 1.1, 1.5, 5)) - 0.09), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-d = smin(d, sd_box(p - vec4<f32>(0, 1.4, -9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7, 0.09);
+{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+d = smin(d, sd_box(p - vec4<f32>(0, 0.6, -12.7, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
@@ -1450,23 +1409,21 @@ d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09)
 d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }}}
 else
-{if p.z > -29.31 {
-if p.x > 0.5086283 {
-d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-d = min(d, sd_box(p - vec4<f32>(1, 1.1, -25.7, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
-d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -25.5, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
-d = smin(d, sd_box(p - vec4<f32>(0, 0.6, -22.5, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09, 0.09);
+{if p.z > -19.76 {
+if p.y > 0.30774337 {
+d = min(d, sd_box(p - vec4<f32>(0.95, 4.2, -25.2, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
+d = min(d, sd_box(p - vec4<f32>(1, 1.1, -15.9, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
+d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
-d = smax(d, -(sd_box(p - vec4<f32>(3, 1.8, -21, 0), vec4<f32>(1.7, 1.1, 1.5, 5)) - 0.09), 0.09);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-d = min(d, sd_box(p - vec4<f32>(1, 1.1, -25.7, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
-d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -25.5, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
-d = smin(d, sd_box(p - vec4<f32>(0, 0.6, -22.5, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09, 0.09);
+{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+d = min(d, sd_box(p - vec4<f32>(1, 1.1, -15.9, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
+d = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
@@ -1475,9 +1432,9 @@ d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09)
 }}
 else
 {if p.y > 0.17274335 {
-d = min(d, sd_box(p - vec4<f32>(3, 1.9, -40, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
-d = min(d, sd_box(p - vec4<f32>(0.95, 4.2, -36.5, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
-d = smin(d, sd_box(p - vec4<f32>(3, -0.2, -36, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18, 0.09);
+d = min(d, sd_box(p - vec4<f32>(3, 1.9, -28.7, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
+d = min(d, sd_box(p - vec4<f32>(0.95, 4.2, -25.2, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
+d = smin(d, sd_box(p - vec4<f32>(3, -0.2, -24.7, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
@@ -1485,9 +1442,9 @@ d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09)
 d = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-d = min(d, sd_box(p - vec4<f32>(3, 1.9, -40, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
-d = smin(d, sd_box(p - vec4<f32>(3, -0.2, -36, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18, 0.09);
+{d = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+d = min(d, sd_box(p - vec4<f32>(3, 1.9, -28.7, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
+d = smin(d, sd_box(p - vec4<f32>(3, -0.2, -24.7, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18, 0.09);
 for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
                     d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
                 }
@@ -1802,28 +1759,12 @@ fn get_mats(
     }
 var d = MAX_DIST * 2.0;
     output.materials_count = 0u;
-if p.z > -4.75 {
-if p.z > 17.705 {
-if p.z > 24.545002 {
-if p.z > 29.31 {
+if p.z > -3.6 {
+if p.z > 10.805 {
+if p.z > 17.36 {
+if p.y > 0.17274335 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 5;
-                        return output;
-                    }
-                    
-                    if dd < d {
-                        d = dd;
-                        output.materials[0] = 5;
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                    }
-}
-{
-let dd = min(d, sd_box(p - vec4<f32>(3, 1.9, 40, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
+let dd = min(d, sd_box(p - vec4<f32>(3, 1.9, 28.7, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -1839,7 +1780,7 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(0.95, 4.2, 36.5, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
+let dd = min(d, sd_box(p - vec4<f32>(0.95, 4.2, 25.2, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -1850,6 +1791,22 @@ if dd < MIN_DIST*2.0 {
                     if dd < d {
                         d = dd;
                         output.materials[0] = 1;
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
                     }
@@ -1859,7 +1816,7 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                     output.materials_count = 0u;
                 }
 {
-let dd = sd_box(p - vec4<f32>(3, -0.2, 36, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18;
+let dd = sd_box(p - vec4<f32>(3, -0.2, 24.7, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18;
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -1920,7 +1877,7 @@ if dd < MIN_DIST*2.0 {
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -1936,23 +1893,23 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(1, 1.1, 25.7, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
+let dd = min(d, sd_box(p - vec4<f32>(3, 1.9, 28.7, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
-                        output.materials[0] = 5;
+                        output.materials[0] = 1;
                         return output;
                     }
                     
                     if dd < d {
                         d = dd;
-                        output.materials[0] = 5;
+                        output.materials[0] = 1;
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 25.5, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -1971,6 +1928,47 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                 {
                     output.materials_count = 0u;
                 }
+{
+let dd = sd_box(p - vec4<f32>(3, -0.2, 24.7, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18;
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 1;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = 1;
+                            d = dd;
+                        }
+                        else
+                        {
+                    
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = 1;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            d = min(d,dd);
+                        }
+                    }
+
+                    }
 {
 let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 if dd < MIN_DIST*2.0 {
@@ -1991,9 +1989,9 @@ if dd < MIN_DIST*2.0 {
 }
 }}
 else
-{if p.z > 20.605 {
+{if p.x > 0.5086283 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2009,7 +2007,23 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 25.5, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+let dd = min(d, sd_box(p - vec4<f32>(1, 1.1, 15.9, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2029,7 +2043,7 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                     output.materials_count = 0u;
                 }
 {
-let dd = sd_box(p - vec4<f32>(0, 0.6, 22.5, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09;
+let dd = sd_box(p - vec4<f32>(0, 0.6, 12.7, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09;
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2078,19 +2092,42 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
-{
-let dd = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 10;
-                        return output;
-                    }
-}
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(1, 1.1, 15.9, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, 15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2109,6 +2146,47 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                 {
                     output.materials_count = 0u;
                 }
+{
+let dd = sd_box(p - vec4<f32>(0, 0.6, 12.7, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09;
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = 5;
+                            d = dd;
+                        }
+                        else
+                        {
+                    
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = 5;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            d = min(d,dd);
+                        }
+                    }
+
+                    }
 {
 let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 if dd < MIN_DIST*2.0 {
@@ -2129,10 +2207,10 @@ if dd < MIN_DIST*2.0 {
 }
 }}}
 else
-{if p.y > 1.4577433 {
-if p.z > 4.75 {
+{if p.z > 3.6 {
+if p.x > 0.5036282 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2148,17 +2226,17 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.2, 4.6, 0, 15), vec4<f32>(1, 0.55, 9.8, 15)) - 1);
+let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 6.4, 15)) - 1);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
-                        output.materials[0] = 1;
+                        output.materials[0] = 5;
                         return output;
                     }
                     
                     if dd < d {
                         d = dd;
-                        output.materials[0] = 1;
+                        output.materials[0] = 5;
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
                     }
@@ -2167,47 +2245,6 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                 {
                     output.materials_count = 0u;
                 }
-{
-let dd = sd_box(p - vec4<f32>(0, 1.4, 9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7;
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 5;
-                        return output;
-                    }
-
-                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                        if output.materials_count == 0u
-                        {
-                            output.materials_count = 1u;
-                            output.material_weights[0] = 1.0;
-                            output.materials[0] = 5;
-                            d = dd;
-                        }
-                        else
-                        {
-                    
-                            var coef = 0.0;
-                            if d<dd {
-                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
-                            } else {
-                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
-                            }
-                            output.materials[output.materials_count] = 5;
-                            output.material_weights[output.materials_count] = coef;
-
-                            let mult = 1.0 - coef;
-
-                            for (var k = 0u; k < output.materials_count; k++) {
-                                output.material_weights[k] *= mult;
-                            }
-
-                            output.materials_count += 1u;
-                            d = min(d,dd);
-                        }
-                    }
-
-                    }
 {
 let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 if dd < MIN_DIST*2.0 {
@@ -2217,19 +2254,10 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
-{
-let dd = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 10;
-                        return output;
-                    }
-}
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2240,22 +2268,6 @@ if dd < MIN_DIST*2.0 {
                     if dd < d {
                         d = dd;
                         output.materials[0] = 5;
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                    }
-}
-{
-let dd = min(d, sd_box(p - vec4<f32>(3.2, 4.6, 0, 15), vec4<f32>(1, 0.55, 9.8, 15)) - 1);
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 1;
-                        return output;
-                    }
-                    
-                    if dd < d {
-                        d = dd;
-                        output.materials[0] = 1;
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
                     }
@@ -2264,47 +2276,6 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                 {
                     output.materials_count = 0u;
                 }
-{
-let dd = sd_box(p - vec4<f32>(4.8, 2.3, 0, 15), vec4<f32>(0.5, 2, 0.3, 15)) - 1;
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 1;
-                        return output;
-                    }
-
-                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                        if output.materials_count == 0u
-                        {
-                            output.materials_count = 1u;
-                            output.material_weights[0] = 1.0;
-                            output.materials[0] = 1;
-                            d = dd;
-                        }
-                        else
-                        {
-                    
-                            var coef = 0.0;
-                            if d<dd {
-                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
-                            } else {
-                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
-                            }
-                            output.materials[output.materials_count] = 1;
-                            output.material_weights[output.materials_count] = coef;
-
-                            let mult = 1.0 - coef;
-
-                            for (var k = 0u; k < output.materials_count; k++) {
-                                output.material_weights[k] *= mult;
-                            }
-
-                            output.materials_count += 1u;
-                            d = min(d,dd);
-                        }
-                    }
-
-                    }
 {
 let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 if dd < MIN_DIST*2.0 {
@@ -2325,35 +2296,19 @@ if dd < MIN_DIST*2.0 {
 }
 }}
 else
-{if p.z > 4.75 {
+{if p.y > 2.75 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, 27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, 5.6, 0, 15), vec4<f32>(1, 0.55, 0.5, 15)) - 1);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
-                        output.materials[0] = 5;
+                        output.materials[0] = 1;
                         return output;
                     }
                     
                     if dd < d {
                         d = dd;
-                        output.materials[0] = 5;
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                    }
-}
-{
-let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 5;
-                        return output;
-                    }
-                    
-                    if dd < d {
-                        d = dd;
-                        output.materials[0] = 5;
+                        output.materials[0] = 1;
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
                     }
@@ -2363,7 +2318,7 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                     output.materials_count = 0u;
                 }
 {
-let dd = sd_box(p - vec4<f32>(0, 1.4, 9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7;
+let dd = sd_box(p - vec4<f32>(0, 1.4, 0, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7;
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2424,7 +2379,7 @@ if dd < MIN_DIST*2.0 {
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
+let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 6.4, 15)) - 1);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2444,11 +2399,11 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                     output.materials_count = 0u;
                 }
 {
-let dd = sd_box(p - vec4<f32>(4.8, 2.3, 0, 15), vec4<f32>(0.5, 2, 0.3, 15)) - 1;
+let dd = sd_box(p - vec4<f32>(0, 1.4, 0, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7;
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
-                        output.materials[0] = 1;
+                        output.materials[0] = 5;
                         return output;
                     }
 
@@ -2457,7 +2412,7 @@ if dd < MIN_DIST*2.0 {
                         {
                             output.materials_count = 1u;
                             output.material_weights[0] = 1.0;
-                            output.materials[0] = 1;
+                            output.materials[0] = 5;
                             d = dd;
                         }
                         else
@@ -2469,7 +2424,7 @@ if dd < MIN_DIST*2.0 {
                             } else {
                                 coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
                             }
-                            output.materials[output.materials_count] = 1;
+                            output.materials[output.materials_count] = 5;
                             output.material_weights[output.materials_count] = coef;
 
                             let mult = 1.0 - coef;
@@ -2504,11 +2459,11 @@ if dd < MIN_DIST*2.0 {
 }
 }}}}
 else
-{if p.z > -20.605 {
-if p.y > 1.4577433 {
-if p.z > -12.35 {
+{if p.z > -14.744999 {
+if p.z > -10.805 {
+if p.x > 0.5036282 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
+let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 6.4, 15)) - 1);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2524,17 +2479,17 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.2, 4.6, 0, 15), vec4<f32>(1, 0.55, 9.8, 15)) - 1);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
-                        output.materials[0] = 1;
+                        output.materials[0] = 5;
                         return output;
                     }
                     
                     if dd < d {
                         d = dd;
-                        output.materials[0] = 1;
+                        output.materials[0] = 5;
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
                     }
@@ -2544,47 +2499,6 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                     output.materials_count = 0u;
                 }
 {
-let dd = sd_box(p - vec4<f32>(0, 1.4, -9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7;
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 5;
-                        return output;
-                    }
-
-                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                        if output.materials_count == 0u
-                        {
-                            output.materials_count = 1u;
-                            output.material_weights[0] = 1.0;
-                            output.materials[0] = 5;
-                            d = dd;
-                        }
-                        else
-                        {
-                    
-                            var coef = 0.0;
-                            if d<dd {
-                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
-                            } else {
-                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
-                            }
-                            output.materials[output.materials_count] = 5;
-                            output.material_weights[output.materials_count] = coef;
-
-                            let mult = 1.0 - coef;
-
-                            for (var k = 0u; k < output.materials_count; k++) {
-                                output.material_weights[k] *= mult;
-                            }
-
-                            output.materials_count += 1u;
-                            d = min(d,dd);
-                        }
-                    }
-
-                    }
-{
 let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
@@ -2593,19 +2507,10 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
-{
-let dd = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 10;
-                        return output;
-                    }
-}
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2644,9 +2549,9 @@ if dd < MIN_DIST*2.0 {
 }
 }}
 else
-{if p.x > 0.5036282 {
+{if p.x > 0.5086283 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.4, -0.2, 0, 15), vec4<f32>(1.2, 0.65, 15, 15)) - 1);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2662,7 +2567,7 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2682,7 +2587,7 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                     output.materials_count = 0u;
                 }
 {
-let dd = sd_box(p - vec4<f32>(0, 1.4, -9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7;
+let dd = sd_box(p - vec4<f32>(0, 0.6, -12.7, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09;
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2734,7 +2639,23 @@ if dd < MIN_DIST*2.0 {
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 5;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 5;
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2754,7 +2675,7 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                     output.materials_count = 0u;
                 }
 {
-let dd = sd_box(p - vec4<f32>(0, 1.4, -9, 0), vec4<f32>(5.4, 5.5, 0.1, 7)) - 0.7;
+let dd = sd_box(p - vec4<f32>(0, 0.6, -12.7, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09;
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2814,10 +2735,26 @@ if dd < MIN_DIST*2.0 {
 }
 }}}
 else
-{if p.z > -29.31 {
-if p.x > 0.5086283 {
+{if p.z > -19.76 {
+if p.y > 0.30774337 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+let dd = min(d, sd_box(p - vec4<f32>(0.95, 4.2, -25.2, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 1;
+                        return output;
+                    }
+                    
+                    if dd < d {
+                        d = dd;
+                        output.materials[0] = 1;
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                    }
+}
+{
+let dd = min(d, sd_box(p - vec4<f32>(1, 1.1, -15.9, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2833,23 +2770,7 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(1, 1.1, -25.7, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 5;
-                        return output;
-                    }
-                    
-                    if dd < d {
-                        d = dd;
-                        output.materials[0] = 5;
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                    }
-}
-{
-let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -25.5, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2868,47 +2789,6 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                 {
                     output.materials_count = 0u;
                 }
-{
-let dd = sd_box(p - vec4<f32>(0, 0.6, -22.5, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09;
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 5;
-                        return output;
-                    }
-
-                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                        if output.materials_count == 0u
-                        {
-                            output.materials_count = 1u;
-                            output.material_weights[0] = 1.0;
-                            output.materials[0] = 5;
-                            d = dd;
-                        }
-                        else
-                        {
-                    
-                            var coef = 0.0;
-                            if d<dd {
-                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
-                            } else {
-                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
-                            }
-                            output.materials[output.materials_count] = 5;
-                            output.material_weights[output.materials_count] = coef;
-
-                            let mult = 1.0 - coef;
-
-                            for (var k = 0u; k < output.materials_count; k++) {
-                                output.material_weights[k] *= mult;
-                            }
-
-                            output.materials_count += 1u;
-                            d = min(d,dd);
-                        }
-                    }
-
-                    }
 {
 let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 if dd < MIN_DIST*2.0 {
@@ -2918,10 +2798,19 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+{
+let dd = min(d, sd_box(p - vec4<f32>(-1, 2, 0, 0), vec4<f32>(1, 4.7, 80, 30)) - 0.09);
+if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = 10;
+                        return output;
+                    }
+}
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2937,7 +2826,7 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(1, 1.1, -25.7, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
+let dd = min(d, sd_box(p - vec4<f32>(1, 1.1, -15.9, 4), vec4<f32>(1, 1.65, 0.1, 4)) - 0.2);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2953,7 +2842,7 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -25.5, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
+let dd = min(d, sd_box(p - vec4<f32>(0.6, -0.1, -15.7, 4), vec4<f32>(0.6, 0.35, 3.1, 4)) - 0.2);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -2972,47 +2861,6 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                 {
                     output.materials_count = 0u;
                 }
-{
-let dd = sd_box(p - vec4<f32>(0, 0.6, -22.5, 0), vec4<f32>(4.4, 0.95, 1.1, 7)) - 0.09;
-if dd < MIN_DIST*2.0 {
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = 5;
-                        return output;
-                    }
-
-                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-                        if output.materials_count == 0u
-                        {
-                            output.materials_count = 1u;
-                            output.material_weights[0] = 1.0;
-                            output.materials[0] = 5;
-                            d = dd;
-                        }
-                        else
-                        {
-                    
-                            var coef = 0.0;
-                            if d<dd {
-                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
-                            } else {
-                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
-                            }
-                            output.materials[output.materials_count] = 5;
-                            output.material_weights[output.materials_count] = coef;
-
-                            let mult = 1.0 - coef;
-
-                            for (var k = 0u; k < output.materials_count; k++) {
-                                output.material_weights[k] *= mult;
-                            }
-
-                            output.materials_count += 1u;
-                            d = min(d,dd);
-                        }
-                    }
-
-                    }
 {
 let dd = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 if dd < MIN_DIST*2.0 {
@@ -3035,7 +2883,7 @@ if dd < MIN_DIST*2.0 {
 else
 {if p.y > 0.17274335 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(3, 1.9, -40, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
+let dd = min(d, sd_box(p - vec4<f32>(3, 1.9, -28.7, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -3051,7 +2899,7 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(0.95, 4.2, -36.5, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
+let dd = min(d, sd_box(p - vec4<f32>(0.95, 4.2, -25.2, 0), vec4<f32>(0.95, 0.08, 6.5, 15)) - 0.18);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -3071,7 +2919,7 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                     output.materials_count = 0u;
                 }
 {
-let dd = sd_box(p - vec4<f32>(3, -0.2, -36, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18;
+let dd = sd_box(p - vec4<f32>(3, -0.2, -24.7, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18;
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -3132,7 +2980,7 @@ if dd < MIN_DIST*2.0 {
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -27.2, 0), vec4<f32>(3.5, 0.6, 11.8, 15)) - 0.4);
+let dd = min(d, sd_box(p - vec4<f32>(3.2, -1.4, -16.9, 0), vec4<f32>(3.5, 0.6, 10.4, 15)) - 0.4);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -3148,7 +2996,7 @@ if dd < MIN_DIST*2.0 {
                     }
 }
 {
-let dd = min(d, sd_box(p - vec4<f32>(3, 1.9, -40, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
+let dd = min(d, sd_box(p - vec4<f32>(3, 1.9, -28.7, 0), vec4<f32>(3, 2.1, 0.2, 15)) - 0.08);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -3168,7 +3016,7 @@ if d > static_data.stickiness * STICKINESS_EFFECT_COEF
                     output.materials_count = 0u;
                 }
 {
-let dd = sd_box(p - vec4<f32>(3, -0.2, -36, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18;
+let dd = sd_box(p - vec4<f32>(3, -0.2, -24.7, 0), vec4<f32>(3, 0.2, 4, 15)) - 0.18;
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -3746,7 +3594,12 @@ fn get_color_and_light_from_mats(
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
-            mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
+            mix
+            (
+                inverted_base_diffuse+vec3(6.1,7.2,0.5),
+                base_diffuse+vec3(6.1,7.2,0.5),
+                base_coef
+            ),
             w_height_coef
         );
     }

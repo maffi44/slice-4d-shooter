@@ -2286,12 +2286,15 @@ fn get_color_and_light_from_mats(
     {
         let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
 
-        let w_height_coef = clamp((hited_pos.w - 0.3) / 4.5, 0.0, 1.0);
+        let x_height_coef = clamp((hited_pos.x - 0.5) / 6.0, 0.0, 1.0);
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
-            mix(inverted_base_diffuse+vec3(0.1,1.2,0.1), base_diffuse+vec3(0.1,1.2,0.1), base_coef),
-            w_height_coef
+            mix(
+                inverted_base_diffuse*0.5*vec3(2.2,4.9,1.2),
+                base_diffuse*0.5*vec3(1.2,4.9,2.2),
+                base_coef),
+            pow(x_height_coef, 2.5)
         );
     }
 
@@ -2426,12 +2429,15 @@ fn get_color_and_light_from_mats_2d(
     {
         let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
 
-        let x_height_coef = clamp((hited_pos.x - 0.3) / 6.0, 0.0, 1.0);
+        let x_height_coef = clamp((hited_pos.x - 0.5) / 3.0, 0.0, 1.0);
 
         base_diffuse = mix(
             mix(base_diffuse, inverted_base_diffuse, base_coef),
-            mix(base_diffuse*0.09, inverted_base_diffuse*0.09, pow(base_coef, 2.0)),
-            x_height_coef
+            mix(
+                inverted_base_diffuse*0.5*vec3(2.2,4.9,1.2),
+                base_diffuse*0.5*vec3(1.2,4.9,2.2),
+                base_coef),
+            pow(x_height_coef, 0.49)
         );
     }
 

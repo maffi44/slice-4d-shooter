@@ -95,7 +95,10 @@ pub struct PlayerFor2d3dExample {
 
     volume_beam_pointer: Vec<VolumeArea>,
 
-    model_has_left_orientation: bool
+    model_has_left_orientation: bool,
+
+    camera_dynamic_offset: Vec4,
+    camera_dynamic_offset_target: Vec4,
 }
 
 impl Actor for PlayerFor2d3dExample {
@@ -839,6 +842,8 @@ impl Actor for PlayerFor2d3dExample {
                 delta,
             );
 
+            self.move_camera(&input, delta);
+            
             main_player::process_player_primary_jump_input(
                 &input,
                 &mut player_doll_input_state,
@@ -962,6 +967,7 @@ impl Actor for PlayerFor2d3dExample {
         main_player::procces_w_shift_sound(
             audio_system,
             &mut self.inner_state,
+            true
         );
 
         self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
@@ -1373,13 +1379,18 @@ impl PlayerFor2d3dExample {
             volume_beam_pointer,
 
             model_has_left_orientation: true,
+
+            camera_dynamic_offset: Vec4::ZERO,
+            camera_dynamic_offset_target: Vec4::ZERO,
         }
     }
 
+
     pub fn get_2d_slice_pos(&self) -> Vec4
     {
-        self.inner_state.get_position()
+        self.inner_state.get_position() + self.camera_dynamic_offset
     }
+
 
     pub fn get_2d_slice_xz_rot(&self) -> Mat2
     {
@@ -1401,6 +1412,45 @@ impl PlayerFor2d3dExample {
         )
     }
 
+
+    const CAMERA_TARGET_SPEED: f32 = 23.0;
+    const CAMERA_SPEED: f32 = 3.2;
+
+    fn move_camera(&mut self, input: &ActionsFrameState, delta: f32)
+    {
+        if input.arrow_up.is_action_pressed()
+        {
+            self.camera_dynamic_offset_target.y += delta*Self::CAMERA_TARGET_SPEED;
+        }
+
+        if input.arrow_down.is_action_pressed()
+        {
+            self.camera_dynamic_offset_target.y -= delta*Self::CAMERA_TARGET_SPEED;
+        }
+
+        if input.arrow_right.is_action_pressed()
+        {
+            self.camera_dynamic_offset_target.z -= delta*Self::CAMERA_TARGET_SPEED;
+        }
+
+        if input.arrow_left.is_action_pressed()
+        {
+            self.camera_dynamic_offset_target.z += delta*Self::CAMERA_TARGET_SPEED;
+        }
+
+        if input.move_camera_back_in_example.is_action_just_pressed()
+        {
+            self.camera_dynamic_offset_target = Vec4::ZERO;
+        }
+
+        self.camera_dynamic_offset = self.camera_dynamic_offset
+            .lerp(
+                self.camera_dynamic_offset_target,
+                delta*Self::CAMERA_SPEED
+            );
+    }
+
+
     fn process_show_3d_example
     (
         &mut self,
@@ -1420,7 +1470,7 @@ impl PlayerFor2d3dExample {
             }
         }
     
-        let example_expand_speed = 5.0 * delta;
+        let example_expand_speed = 2.0 * delta;
     
         let mut diff = self.show_3d_example_target_value - self.show_3d_example_current_value;
     
@@ -1434,7 +1484,7 @@ impl ControlledActor for PlayerFor2d3dExample
 {
     fn get_camera(&self) -> Camera {
         Camera {
-            position: self.inner_state.get_position() + self.camera3d_offset,
+            position: self.inner_state.get_position() + self.camera3d_offset + self.camera_dynamic_offset,
             rotation_matrix: self.camera3d_rotation,
             zw_rotation_matrix: self.camera3d_rotation_zw,
             zx_rotation_matrix: self.camera3d_rotation_zx,

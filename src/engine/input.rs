@@ -56,6 +56,11 @@ pub struct ActionsFrameState {
     pub decrease_render_quality: Action,
     pub shadows_toggle: Action,
     pub connect_to_server: Action,
+    pub arrow_up: Action,
+    pub arrow_down: Action,
+    pub arrow_left: Action,
+    pub arrow_right: Action,
+    pub move_camera_back_in_example: Action,
     pub mouse_axis: Vec2,
 }
 
@@ -82,6 +87,11 @@ impl ActionsFrameState {
         let mut decrease_render_quality = Action:: new();
         let mut shadows_toggle = Action:: new();
         let mut connect_to_server = Action:: new();
+        let mut arrow_up = Action::new();
+        let mut arrow_down = Action::new();
+        let mut arrow_left = Action::new();
+        let mut arrow_right = Action::new();
+        let mut move_camera_back_in_example = Action::new();
         let mouse_axis = mouse_axis;
         
         for (_, (button_action, action)) in actions_table.iter() {
@@ -107,6 +117,11 @@ impl ActionsFrameState {
                 ButtonActions::DecreaseRenderQuality => decrease_render_quality = action.clone(),
                 ButtonActions::ShadowsToggle => shadows_toggle = action.clone(),
                 ButtonActions::ConnectToServer => connect_to_server = action.clone(),
+                ButtonActions::ArrowUp => arrow_up = action.clone(),
+                ButtonActions::ArrowDown => arrow_down = action.clone(),
+                ButtonActions::ArrowLeft => arrow_left = action.clone(),
+                ButtonActions::ArrowRight => arrow_right = action.clone(),
+                ButtonActions::MoveCameraBackInExample => move_camera_back_in_example = action.clone(),
             }
         }
 
@@ -133,6 +148,11 @@ impl ActionsFrameState {
             shadows_toggle,
             show_hide_controls,
             connect_to_server,
+            arrow_up,
+            arrow_down,
+            arrow_left,
+            arrow_right,
+            move_camera_back_in_example,
         }
     }
 
@@ -158,6 +178,11 @@ impl ActionsFrameState {
         let decrease_render_quality = Action:: new();
         let shadows_toggle = Action:: new();
         let connect_to_server = Action::new();
+        let arrow_up = Action::new();
+        let arrow_down = Action::new();
+        let arrow_left = Action::new();
+        let arrow_right = Action::new();
+        let move_camera_back_in_example = Action::new();
         let mouse_axis = Vec2::ZERO;
 
         ActionsFrameState {
@@ -182,6 +207,11 @@ impl ActionsFrameState {
             decrease_render_quality,
             shadows_toggle,
             connect_to_server,
+            arrow_up,
+            arrow_down,
+            arrow_left,
+            arrow_right,
+            move_camera_back_in_example,
             mouse_axis
         }
     }
@@ -221,6 +251,11 @@ pub enum ButtonActions {
     DecreaseRenderQuality,
     ConnectToServer,
     ShadowsToggle,
+    ArrowUp,
+    ArrowDown,
+    ArrowLeft,
+    ArrowRight,
+    MoveCameraBackInExample,
 }
 
 // for future user's settings
@@ -329,6 +364,27 @@ impl InputSystem {
             SomeButton::KeyCode(KeyCode::KeyP),
             (ButtonActions::ConnectToServer, Action::new())
         );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ArrowUp),
+            (ButtonActions::ArrowUp, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ArrowDown),
+            (ButtonActions::ArrowDown, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ArrowLeft),
+            (ButtonActions::ArrowLeft, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ArrowRight),
+            (ButtonActions::ArrowRight, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ControlRight),
+            (ButtonActions::MoveCameraBackInExample, Action::new())
+        );
+
         InputSystem {
             actions_table,
             mouse_axis: Vec2::ZERO,

@@ -1602,6 +1602,7 @@ impl Actor for MainPlayer {
         procces_w_shift_sound(
             audio_system,
             &mut self.inner_state,
+            false
         );
 
         self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
@@ -1977,9 +1978,22 @@ pub fn process_ui_tutorial_window_input(
 pub fn procces_w_shift_sound(
     audio_system: &mut AudioSystem,
     inner_state: &mut PlayerInnerState,
+    it_is_3d_example: bool,
 )
 {
-    let shift_pitch = {
+    let shift_pitch = if it_is_3d_example
+    {
+        1.0.lerp(
+            1.5,
+            0.5 +
+            (
+                (inner_state.get_position().x - inner_state.player_previous_w_position) *
+                10.0
+            ).clamp(-0.5, 0.5)
+        )
+    }
+    else
+    {
         1.0.lerp(
             1.5,
             0.5 +
@@ -1990,7 +2004,18 @@ pub fn procces_w_shift_sound(
         )
     };
 
-    let shift_gain = {
+    let shift_gain = if it_is_3d_example
+    {
+        0.0.lerp(
+            1.0,
+            (
+                (inner_state.get_position().x - inner_state.player_previous_w_position).abs() *
+                20.0
+            ).clamp(0.0, 1.0)
+        )
+    }
+    else
+    {
         0.0.lerp(
             1.0,
             (
@@ -2006,7 +2031,14 @@ pub fn procces_w_shift_sound(
         shift_gain
     );
 
-    inner_state.player_previous_w_position = inner_state.get_position().w;
+    inner_state.player_previous_w_position = if it_is_3d_example
+    {
+        inner_state.get_position().x
+    }
+    else
+    {
+        inner_state.get_position().w
+    };
 }
 
 
