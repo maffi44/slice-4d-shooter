@@ -862,7 +862,7 @@ impl Actor for PlayerFor2d3dExample {
 
             main_player::process_w_scanner(
                 &input,
-                &self.inner_state,
+                &mut self.inner_state,
                 &self.player_settings,
                 &mut self.screen_effects,
                 &mut self.w_scanner,
@@ -958,13 +958,13 @@ impl Actor for PlayerFor2d3dExample {
             );
         }
 
-        main_player::procces_w_rotation_sound(
+        main_player::process_w_rotation_sound(
             audio_system,
             &mut self.inner_state,
             delta,
         );
 
-        main_player::procces_w_shift_sound(
+        main_player::process_w_shift_sound(
             audio_system,
             &mut self.inner_state,
             true
@@ -1268,6 +1268,7 @@ impl PlayerFor2d3dExample {
             w_shift_coef: 0.0,
             w_shift_intensity: 0.0,
             player_projections: PlayersProjections::new(),
+            player_projections_is_visible: false
         };
 
         let w_scanner = WScanner::new(&player_settings);

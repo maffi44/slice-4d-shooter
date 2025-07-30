@@ -472,6 +472,7 @@ impl Observer {
             w_shift_coef: 0.0,
             w_shift_intensity: 0.0,
             player_projections: PlayersProjections::new(),
+            player_projections_is_visible: false
         };
         
         Observer {

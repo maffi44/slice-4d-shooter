@@ -40,7 +40,7 @@ use glam::Vec4;
 
 
 
-const MAX_RAY_MARCHING_STEPS: usize = 350;
+const MAX_RAY_MARCHING_STEPS: usize = 500;
 
 pub struct PhysicsSystem {
     physics_state: PhysicsState,

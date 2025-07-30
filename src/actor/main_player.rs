@@ -97,6 +97,8 @@ pub struct PlayerScreenEffects {
     pub getting_damage_screen_effect: f32,
 
     pub player_projections: PlayersProjections,
+    pub player_projections_is_visible: bool,
+    
 }
 
 pub struct PlayersProjections
@@ -625,6 +627,7 @@ impl Default for PlayerScreenEffects
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
             player_projections: PlayersProjections::new(),
+            player_projections_is_visible: false,
         }
     }
 }
@@ -1487,7 +1490,7 @@ impl Actor for MainPlayer {
 
             process_w_scanner(
                 &input,
-                &self.inner_state,
+                &mut self.inner_state,
                 &self.player_settings,
                 &mut self.screen_effects,
                 &mut self.w_scanner,
@@ -1593,13 +1596,13 @@ impl Actor for MainPlayer {
             delta,
         );
 
-        procces_w_rotation_sound(
+        process_w_rotation_sound(
             audio_system,
             &mut self.inner_state,
             delta,
         );
 
-        procces_w_shift_sound(
+        process_w_shift_sound(
             audio_system,
             &mut self.inner_state,
             false
@@ -1650,6 +1653,8 @@ pub fn process_projection_w_aim(
     {
         inner_state.w_aim_enabled = !inner_state.w_aim_enabled; 
     }
+
+    screen_effects.player_projections_is_visible = inner_state.w_aim_enabled;
 
     if inner_state.w_aim_enabled
     {
@@ -1861,7 +1866,7 @@ pub fn process_w_scanner_ui(
 }
 
 
-pub fn procces_w_rotation_sound(
+pub fn process_w_rotation_sound(
     audio_system: &mut AudioSystem,
     inner_state: &mut PlayerInnerState,
     delta: f32,
@@ -1975,7 +1980,7 @@ pub fn process_ui_tutorial_window_input(
 }
 
 
-pub fn procces_w_shift_sound(
+pub fn process_w_shift_sound(
     audio_system: &mut AudioSystem,
     inner_state: &mut PlayerInnerState,
     it_is_3d_example: bool,
@@ -2230,7 +2235,7 @@ pub fn process_player_second_jump_input(
 
 pub fn process_w_scanner(
     input: &ActionsFrameState,
-    inner_state: &PlayerInnerState,
+    inner_state: &mut PlayerInnerState,
     player_settings: &PlayerSettings,
     screen_effects: &mut PlayerScreenEffects,
     w_scanner: &mut WScanner,
@@ -2245,6 +2250,8 @@ pub fn process_w_scanner(
     if input.w_scanner.is_action_just_pressed() {
         if !w_scanner.w_scanner_enable {
             if w_scanner.w_scanner_reloading_time >= player_settings.scanner_reloading_time {
+
+                inner_state.w_aim_enabled = true;
 
                 engine_handle.send_command(
                     Command {

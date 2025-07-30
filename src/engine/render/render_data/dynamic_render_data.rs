@@ -1483,10 +1483,14 @@ impl OtherDynamicData {
 
         self.player_projections = [PlayerProjectionForShader::default(); 16];
 
-        for (i, projection) in players_screen_effects.player_projections.projections.iter().enumerate()
+        if players_screen_effects.player_projections_is_visible
         {
-            self.player_projections[i] = PlayerProjectionForShader::from(projection);
+            for (i, projection) in players_screen_effects.player_projections.projections.iter().enumerate()
+            {
+                self.player_projections[i] = PlayerProjectionForShader::from(projection);
+            }
         }
+
 
         self.w_shift_coef = players_screen_effects.w_shift_coef;
         self.w_shift_intensity = players_screen_effects.w_shift_intensity;
