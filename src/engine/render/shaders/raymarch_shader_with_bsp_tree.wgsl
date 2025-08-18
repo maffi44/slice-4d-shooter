@@ -998,7 +998,7 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
     }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(2, -0.75, 35, 0),
+                ro - vec4<f32>(2, -0.75, 35, 15),
                 rd,
                 vec4<f32>(15.1, 0.75, 11.6, 15.6)
             );
@@ -1138,7 +1138,7 @@ if intr.y > 0.0 {
 }
 {
 let intr = cube_intersection(
-                ro - vec4<f32>(2, -0.75, -35, 0),
+                ro - vec4<f32>(2, -0.75, -35, 15),
                 rd,
                 vec4<f32>(15.1, 0.75, 11.6, 15.6)
             );
@@ -2148,7 +2148,7 @@ d = smax(d, -(sd_box(p - vec4<f32>(18, 6, 43.9, 13.55), vec4<f32>(6.3, 1.8, 1.25
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+{d = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 d = min(d, sd_box(p - vec4<f32>(14, 3, 34.2, 4.75), vec4<f32>(2, 1.5, 2.3, 2.4)) - 0.2);
 d = min(d, sd_box(p - vec4<f32>(18, 4, 43.9, 13.2), vec4<f32>(5.3, 0.8, 0.25, 1.5)) - 0.15);
 d = min(d, sd_box(p - vec4<f32>(8, 0.5, 0, 17), vec4<f32>(1.6, 1.1, 22.8, 14)) - 1.6);
@@ -2167,7 +2167,7 @@ d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09)
 }}
 else
 {if p.x > 0.17499995 {
-d = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+d = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 d = min(d, sd_box(p - vec4<f32>(6, 1.4, 43, 7.5), vec4<f32>(3.5, 1.55, 2.1, 7.5)) - 0.2);
 d = min(d, sd_box(p - vec4<f32>(8, 0.5, 0, 17), vec4<f32>(1.6, 1.1, 22.8, 14)) - 1.6);
 d = smin(d, sd_box(p - vec4<f32>(12, 0.2, 38.5, 0), vec4<f32>(3.3, 0.7, 9.5, 0.8)) - 0.3, 0.15);
@@ -2186,7 +2186,7 @@ d = smax(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 3), vec4<f32>(1.1, 0.6, 30, 0.001)
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+{d = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 d = min(d, sd_box(p - vec4<f32>(-3.54, 3.2, 40, 4.5), vec4<f32>(0.8, 0.3, 3.5, 3.3)) - 0.7);
 d = min(d, sd_box(p - vec4<f32>(-10, 3, 50, 0), vec4<f32>(1.9, 3, 0.2, 15)) - 0.08);
 d = min(d, sd_box(p - vec4<f32>(-10, 6.2, 39, 0), vec4<f32>(1.9, 0.18, 16, 1.8)) - 0.08);
@@ -2387,7 +2387,7 @@ d = smax(d, -(sd_box(p - vec4<f32>(18, 6, -43.9, 13.55), vec4<f32>(6.3, 1.8, 1.2
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+{d = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 d = min(d, sd_box(p - vec4<f32>(6, 1.4, -43, 7.5), vec4<f32>(3.5, 1.55, 2.1, 7.5)) - 0.2);
 d = min(d, sd_box(p - vec4<f32>(14, 3, -34.2, 4.75), vec4<f32>(2, 1.5, 2.3, 2.4)) - 0.2);
 d = min(d, sd_box(p - vec4<f32>(18, 4, -43.9, 13.2), vec4<f32>(5.3, 0.8, 0.25, 1.5)) - 0.15);
@@ -2406,7 +2406,7 @@ d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09)
 }}
 else
 {if p.x > 0.17499995 {
-d = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+d = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 d = min(d, sd_box(p - vec4<f32>(6, 1.4, -43, 7.5), vec4<f32>(3.5, 1.55, 2.1, 7.5)) - 0.2);
 d = min(d, sd_box(p - vec4<f32>(8, 0.5, 0, 17), vec4<f32>(1.6, 1.1, 22.8, 14)) - 1.6);
 d = smin(d, sd_box(p - vec4<f32>(12, 0.2, -38.5, 0), vec4<f32>(3.3, 0.7, 9.5, 0.8)) - 0.3, 0.15);
@@ -2425,7 +2425,7 @@ d = smax(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 3), vec4<f32>(1.1, 0.6, 30, 0.001)
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
 }
 else
-{d = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+{d = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 d = min(d, sd_box(p - vec4<f32>(-3.54, 3.2, -40, 4.5), vec4<f32>(0.8, 0.3, 3.5, 3.3)) - 0.7);
 d = min(d, sd_box(p - vec4<f32>(-10, 3, -50, 0), vec4<f32>(1.9, 3, 0.2, 15)) - 0.08);
 d = min(d, sd_box(p - vec4<f32>(-10, 6.2, -39, 0), vec4<f32>(1.9, 0.18, 16, 1.8)) - 0.08);
@@ -2850,7 +2850,7 @@ if dd < MIN_DIST*2.0 {
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -3012,7 +3012,7 @@ if dd < MIN_DIST*2.0 {
 else
 {if p.x > 0.17499995 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -3198,7 +3198,7 @@ if dd < MIN_DIST*2.0 {
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -4783,7 +4783,7 @@ if dd < MIN_DIST*2.0 {
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -4961,7 +4961,7 @@ if dd < MIN_DIST*2.0 {
 else
 {if p.x > 0.17499995 {
 {
-let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
@@ -5147,7 +5147,7 @@ if dd < MIN_DIST*2.0 {
 }
 else
 {{
-let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 0), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
+let dd = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
 if dd < MIN_DIST*2.0 {
                         output.materials_count = 1u;
                         output.material_weights[0] = 1.0;
