@@ -80,7 +80,7 @@ enum ConnectionState {
     WaitingForUsersRequest,
     ConnectionFailure(u32, ConnectionError),
     ConnectingToMatchmakingServer(Option<JoinHandle<Result<String, ConnectionError>>>),
-    ConnectingToGameServer(u64, Option<WebRtcSocket>),
+    ConnectingToGameServer(u64, u64, Option<WebRtcSocket>),
     ConnectedToGameServer(WebRtcSocket, PeerId, Vec<u128>),
 }
 
@@ -190,11 +190,16 @@ impl NetSystem {
                 );
             }
 
-            ConnectionState::ConnectingToGameServer(delay_counter, webrtc_socket) =>
+            ConnectionState::ConnectingToGameServer(
+                connection_timeout_counter,
+                connection_attempts_counter,
+                webrtc_socket
+            ) =>
             {
                 self.connection_state = Some(
                     self.handle_connecting_to_game_server_state(
-                        delay_counter,
+                        connection_timeout_counter,
+                        connection_attempts_counter,
                         webrtc_socket,
                         async_runtime,
                         engine_handle,
@@ -386,11 +391,17 @@ impl NetSystem {
                                 {
                                     println!("got the url of game server: {}", game_server_url);
                                     self.connection_data.game_server_url = Some(game_server_url);
-                                    return ConnectionState::ConnectingToGameServer(0, None);
+                                    
+                                    return ConnectionState::ConnectingToGameServer(
+                                        180,
+                                        3,
+                                        None
+                                    );
                                 }
                                 Err(e) =>
                                 {
                                     println!("WARNING: Can't connect to game server: {:?}, trying to reconnect", e);
+                                    
                                     return ConnectionState::ConnectionFailure(300, e);
                                 }
                             }
@@ -426,7 +437,8 @@ impl NetSystem {
 
     fn handle_connecting_to_game_server_state(
         &mut self,
-        mut connection_delay_counter: u64,
+        mut connection_timeout_counter: u64,
+        connection_attempts_counter: u64,
         webrtc_socket: Option<WebRtcSocket>,
         async_runtime: &mut Runtime,
         engine_handle: &mut EngineHandle,
@@ -443,11 +455,24 @@ impl NetSystem {
         
         self.current_visible_ui_elem = UIElementType::TitleConnectingToServer;
 
-        if connection_delay_counter > 0
+        if connection_timeout_counter > 0
         {
-            connection_delay_counter -= 1;
-
-            return  ConnectionState::ConnectingToGameServer(connection_delay_counter, webrtc_socket);
+            connection_timeout_counter -= 1;
+        }
+        else
+        {
+            if connection_attempts_counter > 0
+            {
+                return  ConnectionState::ConnectingToGameServer(
+                    180,
+                    connection_attempts_counter - 1,
+                    webrtc_socket
+                );
+            }
+            else
+            {
+                return  ConnectionState::ConnectionFailure(300, ConnectionError::ConnectionLost(Error::ConnectionClosed));
+            }
         }
 
         match webrtc_socket {
@@ -491,7 +516,11 @@ impl NetSystem {
                     }
                 }
 
-                return ConnectionState::ConnectingToGameServer(0, Some(webrtc_socket));
+                return ConnectionState::ConnectingToGameServer(
+                    connection_timeout_counter,
+                    connection_attempts_counter,
+                    Some(webrtc_socket)
+                );
             }
             None =>
             {
@@ -530,7 +559,11 @@ impl NetSystem {
                 
                 println!("INFO: Connecting to the game server");
 
-                return ConnectionState::ConnectingToGameServer(0, Some(webrtc_socket));
+                return ConnectionState::ConnectingToGameServer(
+                    connection_timeout_counter,
+                    connection_attempts_counter,
+                    Some(webrtc_socket)
+                );
             }
         }
     }
