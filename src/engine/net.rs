@@ -79,7 +79,7 @@ enum ConnectionError {
 enum ConnectionState {
     WaitingForUsersRequest,
     ConnectionFailure(u32, ConnectionError),
-    ConnectingToMatchmakingServer(Option<JoinHandle<Result<String, ConnectionError>>>),
+    ConnectingToMatchmakingServer(Option<JoinHandle<Result<String, ConnectionError>>>, u64),
     ConnectingToGameServer(u64, u64, Option<WebRtcSocket>),
     ConnectedToGameServer(WebRtcSocket, PeerId, Vec<u128>),
 }
@@ -179,11 +179,15 @@ impl NetSystem {
                 )
             }
 
-            ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise) =>
+            ConnectionState::ConnectingToMatchmakingServer(
+                game_server_url_promise,
+                connection_attempts_counter
+            ) =>
             {
                 self.connection_state = Some(
                     self.handle_connecting_to_matchmaking_server_state(
                         game_server_url_promise,
+                        connection_attempts_counter,
                         async_runtime,
                         ui_system
                     )
@@ -350,7 +354,7 @@ impl NetSystem {
 
         if input.connect_to_server.is_action_just_pressed()
         {
-            ConnectionState::ConnectingToMatchmakingServer(None)
+            ConnectionState::ConnectingToMatchmakingServer(None, 2)
         }
         else
         {
@@ -362,6 +366,7 @@ impl NetSystem {
     fn handle_connecting_to_matchmaking_server_state(
         &mut self,
         game_server_url_promise:  Option<JoinHandle<Result<String, ConnectionError>>>,
+        connection_attempts_counter: u64,
         async_runtime: &mut Runtime,
         ui_system: &mut UISystem,
     ) -> ConnectionState
@@ -393,16 +398,26 @@ impl NetSystem {
                                     self.connection_data.game_server_url = Some(game_server_url);
                                     
                                     return ConnectionState::ConnectingToGameServer(
-                                        180,
-                                        3,
+                                        240,
+                                        connection_attempts_counter,
                                         None
                                     );
                                 }
                                 Err(e) =>
                                 {
-                                    println!("WARNING: Can't connect to game server: {:?}, trying to reconnect", e);
-                                    
-                                    return ConnectionState::ConnectionFailure(300, e);
+                                    if connection_attempts_counter > 0
+                                    {
+                                        println!("WARNING: Can't connect to game server: {:?}, trying to reconnect", e);
+
+                                        return ConnectionState::ConnectingToMatchmakingServer(
+                                            None,
+                                            connection_attempts_counter - 1
+                                        );
+                                    }
+                                    else
+                                    {
+                                        return ConnectionState::ConnectionFailure(300, e);
+                                    }
                                 }
                             }
                         }
@@ -415,7 +430,10 @@ impl NetSystem {
                 }
                 else
                 {
-                    return ConnectionState::ConnectingToMatchmakingServer(Some(promise));
+                    return ConnectionState::ConnectingToMatchmakingServer(
+                        Some(promise),
+                        connection_attempts_counter
+                    );
                 }
             }
             None =>
@@ -429,7 +447,10 @@ impl NetSystem {
                         )
                     ));
                 
-                return ConnectionState::ConnectingToMatchmakingServer(game_server_url_promise);
+                return ConnectionState::ConnectingToMatchmakingServer(
+                    game_server_url_promise,
+                    connection_attempts_counter
+                );
             }
         }
     }
@@ -463,10 +484,9 @@ impl NetSystem {
         {
             if connection_attempts_counter > 0
             {
-                return  ConnectionState::ConnectingToGameServer(
-                    180,
-                    connection_attempts_counter - 1,
-                    webrtc_socket
+                return ConnectionState::ConnectingToMatchmakingServer(
+                    None,
+                    connection_attempts_counter
                 );
             }
             else
@@ -1799,7 +1819,7 @@ async fn get_game_server_url(
 {
 
     let connection_result = tokio::time::timeout(
-        Duration::from_secs(3),
+        Duration::from_secs(5),
         connect_async(matchmaking_server_url)
     ).await;
 
