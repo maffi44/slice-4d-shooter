@@ -44,6 +44,7 @@ web-sys = { version = "*", features = [
     "Performance",
     "Response"
 ]}
+winresource = "0.1.23"
 
 
 [lib]
@@ -84,3 +85,6 @@ name="raymarch_shader_generator"
 path="src/raymarch_shader_generator.rs"
 
 resolver = "2"
+
+[build-dependencies]
+winresource = "0.1.23"
