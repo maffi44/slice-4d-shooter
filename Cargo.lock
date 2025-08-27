@@ -2833,13 +2833,13 @@ checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 
 [[package]]
 name = "matchmaking_server"
-version = "0.1.3"
+version = "0.2.0"
 dependencies = [
  "alkahest",
  "fyrox-core",
  "serde_json",
  "tokio",
- "tokio-tungstenite 0.27.0",
+ "tokio-tungstenite 0.26.2",
 ]
 
 [[package]]
@@ -4638,7 +4638,7 @@ checksum = "04dc19736151f35336d325007ac991178d504a119863a2fcb3758cdb5e52c50d"
 
 [[package]]
 name = "slice-4d-shooter"
-version = "0.4.4"
+version = "0.5.0"
 dependencies = [
  "alkahest",
  "bincode",
