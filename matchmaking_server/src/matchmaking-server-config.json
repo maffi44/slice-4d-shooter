@@ -6,12 +6,15 @@
     "matchmaking_server_port_for_clients" : 45123,
     "matchmaking_server_port_for_servers" : 45124,
 
+    "proxy_server_ip" : "127.0.0.1",
+    "proxy_server_port" : 45125,
+
     "game_severs_public_ip" : "127.0.0.1",
 
-    "game_severs_min_port_for_signaling_servers" : 45125,
+    "game_severs_min_port_for_signaling_servers" : 45126,
     "game_severs_max_port_for_signaling_servers" : 45129,
 
-    "game_severs_min_port_for_tcp_listener" : 45125,
+    "game_severs_min_port_for_tcp_listener" : 45126,
     "game_severs_max_port_for_tcp_listener" : 45129,
 
     "game_severs_ice_config" : {

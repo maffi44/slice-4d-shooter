@@ -44,6 +44,9 @@ struct Config
     pub matchmaking_server_port_for_clients: u16,
     pub matchmaking_server_port_for_servers: u16,
 
+    pub proxy_server_ip: Ipv4Addr,
+    pub proxy_server_port: u16,
+
     pub current_game_version: GameVersion,
 
     pub game_severs_public_ip: Ipv4Addr,
@@ -219,10 +222,17 @@ async fn handle_client_connection(
 
                                     server_info.players_amount_by_matchmaking_server += 1;
 
+                                    // let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
+                                    //     MatchmakingServerMessage::GameServerAddress((
+                                    //         server_info.game_server_ip_address.octets(),
+                                    //         server_info.game_server_main_port
+                                    //     ))
+                                    // );
                                     let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
-                                        MatchmakingServerMessage::GameServerAddress((
-                                            server_info.game_server_ip_address.octets(),
-                                            server_info.game_server_main_port
+                                        MatchmakingServerMessage::GameServerAddressThroughProxy((
+                                            config.proxy_server_ip.octets(),
+                                            config.proxy_server_port,
+                                            server_info.game_server_main_port // настоящий порт геймсервера (он уйдёт в путь)
                                         ))
                                     );
 
@@ -304,10 +314,17 @@ async fn handle_client_connection(
         
                                             locked_state.insert(server_info.server_index, server_info.clone());
         
+                                            // let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
+                                            //     MatchmakingServerMessage::GameServerAddress((
+                                            //         server_info.game_server_ip_address.octets(),
+                                            //         server_info.game_server_main_port
+                                            //     ))
+                                            // );
                                             let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
-                                                MatchmakingServerMessage::GameServerAddress((
-                                                    server_info.game_server_ip_address.octets(),
-                                                    server_info.game_server_main_port
+                                                MatchmakingServerMessage::GameServerAddressThroughProxy((
+                                                    config.proxy_server_ip.octets(),
+                                                    config.proxy_server_port,
+                                                    server_info.game_server_main_port // настоящий порт геймсервера (он уйдёт в путь)
                                                 ))
                                             );
         
@@ -717,6 +734,27 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         .as_object()
         .expect("ERROR: Wrong JSON config format");
 
+    let proxy_server_ip = {
+        object
+            .get("proxy_server_ip")
+            .expect("ERROR: Have not proxy_server_ip in matchmaking-server-config.json")
+            .as_str()
+            .expect("ERROR: proxy_server_ip is not string value in matchmaking-server-config.json")
+            .to_string()
+    };
+
+    let proxy_server_ip = Ipv4Addr::from_str(&proxy_server_ip)
+    .expect("ERROR: wrong proxy_server_ip ip address format");
+
+    let proxy_server_port = {
+        object
+            .get("proxy_server_port")
+            .expect("ERROR: Have not proxy_server_port in matchmaking-server-config.json")
+            .as_i64()
+            .expect("ERROR: proxy_server_port is not number value in matchmaking-server-config.json")
+            as u16
+    };
+
     let matchmaking_server_port_for_clients = {
         object
             .get("matchmaking_server_port_for_clients")
@@ -830,6 +868,8 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         current_game_version,
         matchmaking_server_port_for_clients,
         matchmaking_server_port_for_servers,
+        proxy_server_ip,
+        proxy_server_port,
         game_severs_public_ip,
         game_severs_min_port_for_signaling_servers,
         game_severs_max_port_for_signaling_servers,

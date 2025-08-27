@@ -124,6 +124,7 @@ impl PartialOrd for GameVersion {
 #[alkahest(Formula, Serialize, Deserialize)]
 pub enum MatchmakingServerMessage
 {
+    GameServerAddressThroughProxy(([u8;4],u16,u16)),
     GameServerAddress(([u8;4],u16)),
     NoFreeServers,
     WrongGameVersionCorrectIs((u32,u32,u32))
