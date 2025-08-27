@@ -1,7 +1,7 @@
 {
     "mouse_sensivity" : 0.21,
 
-    "matchmaking_server_url" : "ws://matchmaking.slice4d.info:45123/",
+    "matchmaking_server_url" : "ws://matchmaking.slice4d.info:8080/",
 
     "bash_and_turn_servers" : [],
 
