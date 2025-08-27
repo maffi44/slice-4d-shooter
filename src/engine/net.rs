@@ -1887,6 +1887,15 @@ async fn get_game_server_url(
                     
                                                             return Ok(url);
                                                         }
+                                                        MatchmakingServerMessage::GameServerAddressThroughProxy((proxy_ip, proxy_port, game_port)) =>
+                                                        {
+                                                            let url = format!(
+                                                                "ws://{}.{}.{}.{}:{}/ws/{}",
+                                                                proxy_ip[0], proxy_ip[1], proxy_ip[2], proxy_ip[3], proxy_port, game_port
+                                                            );
+
+                                                            return Ok(url);
+                                                        }
                                                         MatchmakingServerMessage::NoFreeServers =>
                                                         {
                                                             return Err(ConnectionError::NoFreeServers);
