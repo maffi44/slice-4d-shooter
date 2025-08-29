@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod engine;
 mod actor;
 mod main_loop;
@@ -13,6 +15,7 @@ use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
 use crate::{actor::flag_base::FlagBase, read_args::read_args};
+
 
 
 #[global_allocator]

@@ -44,6 +44,7 @@ struct Config
     pub matchmaking_server_port_for_clients: u16,
     pub matchmaking_server_port_for_servers: u16,
 
+    pub clients_connecting_via_proxy_server: bool,
     pub proxy_server_ip: Ipv4Addr,
     pub proxy_server_port: u16,
 
@@ -313,20 +314,26 @@ async fn handle_client_connection(
                                             println!("INFO: New game server is successfully created, send to the client server's addres");
         
                                             locked_state.insert(server_info.server_index, server_info.clone());
-        
-                                            // let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
-                                            //     MatchmakingServerMessage::GameServerAddress((
-                                            //         server_info.game_server_ip_address.octets(),
-                                            //         server_info.game_server_main_port
-                                            //     ))
-                                            // );
-                                            let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
-                                                MatchmakingServerMessage::GameServerAddressThroughProxy((
-                                                    config.proxy_server_ip.octets(),
-                                                    config.proxy_server_port,
-                                                    server_info.game_server_main_port // настоящий порт геймсервера (он уйдёт в путь)
-                                                ))
-                                            );
+
+                                            let message = if config.clients_connecting_via_proxy_server
+                                            {
+                                                ClientMatchmakingServerProtocol::MatchmakingServerMessage(
+                                                    MatchmakingServerMessage::GameServerAddressThroughProxy((
+                                                        config.proxy_server_ip.octets(),
+                                                        config.proxy_server_port,
+                                                        server_info.game_server_main_port // настоящий порт геймсервера (он уйдёт в путь)
+                                                    ))
+                                                )
+                                            }
+                                            else
+                                            {
+                                                ClientMatchmakingServerProtocol::MatchmakingServerMessage(
+                                                    MatchmakingServerMessage::GameServerAddress((
+                                                        server_info.game_server_ip_address.octets(),
+                                                        server_info.game_server_main_port
+                                                    ))
+                                                )
+                                            };
         
                                             let message: Vec<u8> = message.to_packet();
         
@@ -572,7 +579,7 @@ async fn check_game_servers_status(
                 TcpStream::connect(("127.0.0.1", game_server_info.matchmaking_server_listener_port))
             ).await
             {
-                Ok(Ok(mut stream)) => {
+                Ok(Ok(stream)) => {
                     Some(stream)
                 },
                 _ => None,
@@ -734,6 +741,14 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         .as_object()
         .expect("ERROR: Wrong JSON config format");
 
+    let clients_connecting_via_proxy_server = {
+        object
+            .get("clients_connecting_via_proxy_server")
+            .expect("ERROR: Have not clients_connecting_via_proxy_server in matchmaking-server-config.json")
+            .as_bool()
+            .expect("ERROR: clients_connecting_via_proxy_server is not bool value in matchmaking-server-config.json")
+    };
+
     let proxy_server_ip = {
         object
             .get("proxy_server_ip")
@@ -868,6 +883,7 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         current_game_version,
         matchmaking_server_port_for_clients,
         matchmaking_server_port_for_servers,
+        clients_connecting_via_proxy_server,
         proxy_server_ip,
         proxy_server_port,
         game_severs_public_ip,

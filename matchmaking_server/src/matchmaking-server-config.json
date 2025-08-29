@@ -6,6 +6,7 @@
     "matchmaking_server_port_for_clients" : 45123,
     "matchmaking_server_port_for_servers" : 45124,
 
+    "clients_connecting_via_proxy_server" : true,
     "proxy_server_ip" : "127.0.0.1",
     "proxy_server_port" : 45125,
 

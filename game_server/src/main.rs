@@ -448,7 +448,7 @@ struct PlayerInfo
 }
 
 pub const MOVE_W_BONUS_RESPAWN_TIME: u128 = 30_000;
-pub const FLAG_RESPAWN_TIME: u128 = 6_400;
+pub const FLAG_RESPAWN_TIME: u128 = 10_200;
 pub const MAX_SCORE: u32 = 4;
 pub const TIME_IN_SESSION_AFTER_WIN: u128 = 12_000;
 
@@ -1188,6 +1188,23 @@ fn make_teams_equal(
     channel: &mut WebRtcChannel,
 )
 {
+    for (player_id, player_info) in &game_session_state.players
+    {
+        match player_info.team
+        {
+            Team::Red =>
+            {
+                game_session_state.red_team.insert(*player_id, ());
+                game_session_state.blue_team.remove(player_id);
+            }
+            Team::Blue =>
+            {
+                game_session_state.blue_team.insert(*player_id, ());
+                game_session_state.red_team.remove(player_id);
+            }
+        }
+    }
+
     let difference =
         game_session_state.red_team.len() as i32 -
         game_session_state.blue_team.len() as i32;
