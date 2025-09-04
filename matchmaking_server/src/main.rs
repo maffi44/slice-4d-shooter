@@ -172,8 +172,11 @@ async fn handle_client_connection(
     async_rutime: Arc<Runtime>,
 )
 {
-    let ws_stream = accept_async(stream).await.unwrap();
-    let (mut sender_to_client, mut receiver_from_client) = ws_stream.split();
+    let ws_stream = accept_async(stream).await;
+
+    if ws_stream.is_err() {return;}
+
+    let (mut sender_to_client, mut receiver_from_client) = ws_stream.unwrap().split();
 
     while let Some(Ok(msg)) = receiver_from_client.next().await {
         let message =
