@@ -1,3 +1,19 @@
+// Slice 4D Shooter - the first multiplayer shooter set in 4D space
+// Copyright (C) 2023-2025  Timofei Molokov
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use std::collections::HashMap;
 
 use fyrox_core::{
@@ -48,10 +64,8 @@ pub enum Sound {
     GetScore,
     LooseScore,
     WShiftStart,
-    WShiftEnd,
     FlagOnTheBase,
     FlagCuptured,
-    PickUpBonus,
     NewProjecion,
     SwitchWeapon,
     PlayerGetScanned,
@@ -640,18 +654,6 @@ impl AudioSystem {
             )
         ).expect("can't create sound buffer resourse");
 
-        let w_shift_end = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../assets/sounds/arrived_to_another_w_level.wav").into(),
-            )
-        ).expect("can't create sound buffer resourse");
-
-        let pick_up_bonus = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../assets/sounds/pickup_bonus.wav").into(),
-            )
-        ).expect("can't create sound buffer resourse");
-
         let new_projection = SoundBufferResource::new_generic(
             DataSource::from_memory(
                 include_bytes!("../assets/sounds/new_projection.wav").into(),
@@ -710,8 +712,6 @@ impl AudioSystem {
         sounds.insert(Sound::FlagCuptured, flag_captured);
         sounds.insert(Sound::FlagOnTheBase, flag_on_the_base);
         sounds.insert(Sound::WShiftStart, w_shift_start);
-        sounds.insert(Sound::WShiftEnd, w_shift_end);
-        sounds.insert(Sound::PickUpBonus, pick_up_bonus);
         sounds.insert(Sound::NewProjecion, new_projection);
         sounds.insert(Sound::SwitchWeapon, switch_weapon);
         sounds.insert(Sound::PlayerGetScanned, player_get_scanned);

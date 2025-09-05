@@ -1,3 +1,19 @@
+// Slice 4D Shooter - the first multiplayer shooter set in 4D space
+// Copyright (C) 2023-2025  Timofei Molokov
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 pub mod matchmaking_server_protocol;
 
 use matchmaking_server_protocol::{
@@ -414,7 +430,7 @@ async fn spawn_game_server(
         .arg(config.game_severs_max_port_for_signaling_servers.to_string())
         .arg(config.game_severs_min_port_for_tcp_listener.to_string())
         .arg(config.game_severs_max_port_for_tcp_listener.to_string())
-        .arg("127.0.0.1") //here will be config.matchmaking_server_ip.to_string()
+        .arg("127.0.0.1")
         .arg(config.matchmaking_server_port_for_servers.to_string())
         .arg(config.max_players_per_game_session.to_string())
         .arg(config.game_servers_ice_config.urls.clone())
