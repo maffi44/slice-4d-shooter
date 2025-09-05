@@ -77,6 +77,10 @@ name="game-client-observer-for-map-editing"
 path="src/game_client_observer_main_for_map_editing.rs"
 
 [[bin]]
+name="game-client-with-windows-command-line"
+path="src/game_client_main_with_windows_command_line.rs"
+
+[[bin]]
 name="headless-game-client-for-net-test"
 path="src/headless_game_client_main_for_net_test.rs"
 
