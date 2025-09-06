@@ -118,7 +118,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Create GitHub Release and upload asset
+      # creates a remote git tag with release version
+      - name: Create GitHub Release and upload asset 
         if: steps.decide.outputs.publish == 'true' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
@@ -174,7 +175,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   build-and-deploy-servers:
-    name: Build and Deploying servers to EC2
+    name: Build and Deploy servers to EC2
     runs-on: ubuntu-latest
     needs: get-version
     env:
@@ -190,7 +191,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: SSH into EC2 and deploy
+      - name: Build and deploy on EC2
         run: |
           NEW_MATCHMAKING="/opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/matchmaking_server"
           OLD_MATCHMAKING="/opt/4dShooter/matchmaking_server"
@@ -198,25 +199,31 @@ jobs:
           OLD_GAME="/opt/4dShooter/game_server"
 
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+            VERSION="${VERSION}" \
             NEW_MATCHMAKING="$NEW_MATCHMAKING" \
             OLD_MATCHMAKING="$OLD_MATCHMAKING" \
             NEW_GAME="$NEW_GAME" \
             OLD_GAME="$OLD_GAME" \
             bash -s <<'EOF'
-              set -e
-              source ~/.cargo/env
+              set -euo pipefail
+              echo "Remote VERSION=${VERSION}"
+
+              source ~/.cargo/env || true
               cd /opt/4dShooter/slice-4d-shooter
               git pull origin main
 
               cargo build --release -p matchmaking_server
               cargo build --release -p game_server
 
-              jq '.current_game_version = "'"${VERSION}"'"' /opt/4dShooter/matchmaking-server-config.json > /tmp/config.tmp
-              sudo mv /tmp/config.tmp /opt/4dShooter/matchmaking-server-config.json
+              tmp="$(mktemp)"
+              jq --arg version "$VERSION" \
+                '.current_game_version = $version' \
+                /opt/4dShooter/matchmaking-server-config.json > "$tmp"
+              sudo mv "$tmp" /opt/4dShooter/matchmaking-server-config.json
               echo "Updated matchmaking-server-config.json version to ${VERSION}"
 
               if [ -f "$NEW_MATCHMAKING" ] && [ -f "$OLD_MATCHMAKING" ] && [ -f "$NEW_GAME" ] && [ -f "$OLD_GAME" ]; then
-                if ! cmp -s "$NEW_MATCHMAKING" "$OLD_MATCHMAKING" && ! cmp -s "$NEW_GAME" "$OLD_GAME"; then
+                if ! cmp -s "$NEW_MATCHMAKING" "$OLD_MATCHMAKING" || ! cmp -s "$NEW_GAME" "$OLD_GAME"; then
                   echo "Restarting matchmaking.service due to binary changes..."
                   sudo systemctl stop matchmaking.service
                   cp "$NEW_MATCHMAKING" "$OLD_MATCHMAKING"
