@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use std::{env,io};
+use std::{env,fs,io};
+use std::path::PathBuf;
 use winresource::WindowsResource;
 
 fn main() -> io::Result<()> {
@@ -22,6 +23,20 @@ fn main() -> io::Result<()> {
         WindowsResource::new()
             .set_icon("./media/icon.ico")
             .compile()?;
+
+        let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+        let dll_src = manifest_dir.join("dll").join("WinSparkle.dll");
+        let target_dir = manifest_dir
+            .join("target")
+            .join(env::var("TARGET").unwrap())
+            .join(env::var("PROFILE").unwrap());
+
+        fs::create_dir_all(&target_dir)?;
+        let dll_dst = target_dir.join("WinSparkle.dll");
+        fs::copy(&dll_src, &dll_dst)
+            .expect("Couldn't copy WinSparkle.dll");
+
+        println!("cargo:rerun-if-changed={}", dll_src.display());
     }
     Ok(())
 }

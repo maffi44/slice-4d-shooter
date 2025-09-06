@@ -4654,6 +4654,7 @@ dependencies = [
  "getrandom 0.2.16",
  "glam",
  "image",
+ "libloading",
  "log",
  "matchbox_socket",
  "matchmaking_server",

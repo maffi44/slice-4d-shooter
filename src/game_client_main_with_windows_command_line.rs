@@ -1,8 +1,25 @@
+// Slice 4D Shooter - the first multiplayer shooter set in 4D space
+// Copyright (C) 2023-2025  Timofei Molokov
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 mod engine;
 mod actor;
 mod main_loop;
 mod transform;
 mod read_args;
+mod winsparkle;
 
 use main_loop::MainLoop;
 use pollster;
@@ -21,10 +38,21 @@ static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
     UnsafeGlobalBlinkAlloc::new()
 };
 
+#[cfg(target_os = "windows")]
+fn init_winsparkle() {
+    winsparkle::init();
+}
+
+#[cfg(not(target_os = "windows"))]
+fn init_winsparkle() {
+}
+
 // This is pre-alpha demo version
 
 fn main() {
     env_logger::init();
+
+    init_winsparkle();
 
     let specific_backend = read_args();
 

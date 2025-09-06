@@ -21,6 +21,7 @@ mod actor;
 mod main_loop;
 mod transform;
 mod read_args;
+mod winsparkle;
 
 use main_loop::MainLoop;
 use pollster;
@@ -39,10 +40,21 @@ static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
     UnsafeGlobalBlinkAlloc::new()
 };
 
+#[cfg(target_os = "windows")]
+fn init_winsparkle() {
+    winsparkle::init();
+}
+
+#[cfg(not(target_os = "windows"))]
+fn init_winsparkle() {
+}
+
 // This is pre-alpha demo version
 
 fn main() {
     env_logger::init();
+
+    init_winsparkle();
 
     let specific_backend = read_args();
 

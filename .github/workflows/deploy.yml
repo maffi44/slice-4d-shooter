@@ -1,76 +1,235 @@
-name: Deploy to EC2
+name: Building and deploying a windows-client and linux-servers
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Build and Deploy to EC2
+  get-version:
     runs-on: ubuntu-latest
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
-      
-    - name: Set up SSH access to EC2
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      - uses: actions/checkout@v4
+      - name: Read version from Cargo.toml
+        id: version
+        run: |
+          version=$(grep -E '^\s*version\s*=\s*"' Cargo.toml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "Detected version: $version"
 
-    - name: Install tomlq
-      run: |
-        pip install tomlq
+  build-windows-client:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    needs: get-version
+    env:
+      VERSION: ${{ needs.get-version.outputs.version }}
+    outputs:
+      publish: ${{ steps.decide.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Extract version from Cargo.toml
-      id: cargo_version
-      run: |
-        version=$(tomlq -r '.package.version' Cargo.toml)
-        echo "VERSION=$version" >> $GITHUB_ENV
+      - name: Cache cargo registry and git
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\.cargo\registry
+            ~\.cargo\git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: SSH into EC2 and deploy
-      run: |
-        NEW_MATCHMAKING="/opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/matchmaking_server"
-        OLD_MATCHMAKING="/opt/4dShooter/matchmaking_server"
-        NEW_GAME="/opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/game_server"
-        OLD_GAME="/opt/4dShooter/game_server"
+      - name: Cache target
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-target-release-
 
-        ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-          NEW_MATCHMAKING="$NEW_MATCHMAKING" \
-          OLD_MATCHMAKING="$OLD_MATCHMAKING" \
-          NEW_GAME="$NEW_GAME" \
-          OLD_GAME="$OLD_GAME" \
-          bash -s <<EOF
-            set -e
-            
-            source ~/.cargo/env
-            cd /opt/4dShooter/slice-4d-shooter
-            git pull origin main
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
 
-            cargo build --release -p matchmaking_server
-            cargo build --release -p game_server
+      - name: Build client (release)
+        run: cargo build --release --bin game-client
 
-            jq '.current_game_version = "${{ env.VERSION }}"' /opt/4dShooter/matchmaking-server-config.json > /tmp/config.tmp
-            sudo mv /tmp/config.tmp /opt/4dShooter/matchmaking-server-config.json
-            echo "Update matchmaking-server-config.json version to ${{ env.VERSION }}"
-            
-            if [ -f "$NEW_MATCHMAKING" ] && [ -f "$OLD_MATCHMAKING" ] && [ -f "$NEW_GAME" ] && [ -f "$OLD_GAME" ]; then
-              if ! cmp -s "$NEW_MATCHMAKING" "$OLD_MATCHMAKING" && ! cmp -s "$NEW_GAME" "$OLD_GAME"; then
-                echo "Restarting matchmaking.service due to binary changes..."
-                sudo systemctl stop matchmaking.service
-                cp "\$NEW_MATCHMAKING" "\$OLD_MATCHMAKING"
-                cp "\$NEW_GAME" "\$OLD_GAME"
-                sudo systemctl start matchmaking.service
+      - name: Prepare client exe name (safe rename)
+        shell: pwsh
+        run: |
+          $src = "target\release\game-client.exe"
+          $dst = "target\release\Slice 4D Shooter.exe"
+          if (-not (Test-Path $src)) { throw "$src not found" }
+          if (Test-Path $dst) { Remove-Item $dst -Force }
+          Move-Item $src $dst
+
+      - name: Decide whether to publish (check if tag exists)
+        id: decide
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "v${{ env.VERSION }}"
+          gh release view $tag > $null 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            "publish=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          } else {
+            "publish=true"  | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+          $global:LASTEXITCODE = 0
+
+      - name: Patch installer.iss AppVersion
+        shell: pwsh
+        run: |
+          $content = Get-Content installer.iss -Raw
+          $patched = $content -replace '^(AppVersion\s*=\s*).*$', "`$1$env:VERSION"
+          Set-Content installer.iss $patched
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer with Inno Setup
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /O"." ".\installer.iss"'
+
+      - name: Verify installer exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path ".\Slice 4D Shooter Installer.exe")) {
+            Get-ChildItem -Recurse
+            throw "Slice 4D Shooter Installer.exe not found after ISCC build"
+          }
+
+      - name: Upload installer as artifact (optional)
+        if: steps.decide.outputs.publish == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Slice 4D Shooter Installer
+          path: ./Slice 4D Shooter Installer.exe
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Create GitHub Release and upload asset
+        if: steps.decide.outputs.publish == 'true' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: "Slice 4D Shooter ${{ env.VERSION }}"
+          files: ./Slice 4D Shooter Installer.exe
+          draft: false
+          prerelease: false
+
+      - name: Generate appcast.xml
+        if: steps.decide.outputs.publish == 'true'
+        shell: pwsh
+        run: |
+          $assetUrl = "https://github.com/${{ github.repository }}/releases/download/v$env:VERSION/Slice 4D Shooter Installer.exe"
+          $len = (Get-Item .\Slice 4D Shooter Installer.exe).Length
+          $now = Get-Date -Format r
+          $xml = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+          <channel>
+            <title>Slice 4D Shooter Updates</title>
+            <item>
+              <title>$env:VERSION</title>
+              <pubDate>$now</pubDate>
+              <enclosure
+                url="$assetUrl"
+                sparkle:version="$env:VERSION"
+                length="$len"
+                type="application/octet-stream" />
+            </item>
+          </channel>
+          </rss>
+          "@
+          New-Item -ItemType Directory -Force -Path public | Out-Null
+          $xml | Out-File public/appcast.xml -Encoding utf8
+
+      - name: Upload Pages artifact
+        if: steps.decide.outputs.publish == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
+  deploy-pages:
+    needs: build-windows-client
+    if: needs.build-windows-client.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  build-and-deploy-servers:
+    name: Build and Deploying servers to EC2
+    runs-on: ubuntu-latest
+    needs: get-version
+    env:
+      VERSION: ${{ needs.get-version.outputs.version }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up SSH access to EC2
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: SSH into EC2 and deploy
+        run: |
+          NEW_MATCHMAKING="/opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/matchmaking_server"
+          OLD_MATCHMAKING="/opt/4dShooter/matchmaking_server"
+          NEW_GAME="/opt/4dShooter/slice-4d-shooter/target/x86_64-unknown-linux-gnu/release/game_server"
+          OLD_GAME="/opt/4dShooter/game_server"
+
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+            NEW_MATCHMAKING="$NEW_MATCHMAKING" \
+            OLD_MATCHMAKING="$OLD_MATCHMAKING" \
+            NEW_GAME="$NEW_GAME" \
+            OLD_GAME="$OLD_GAME" \
+            bash -s <<'EOF'
+              set -e
+              source ~/.cargo/env
+              cd /opt/4dShooter/slice-4d-shooter
+              git pull origin main
+
+              cargo build --release -p matchmaking_server
+              cargo build --release -p game_server
+
+              jq '.current_game_version = "'"${VERSION}"'"' /opt/4dShooter/matchmaking-server-config.json > /tmp/config.tmp
+              sudo mv /tmp/config.tmp /opt/4dShooter/matchmaking-server-config.json
+              echo "Updated matchmaking-server-config.json version to ${VERSION}"
+
+              if [ -f "$NEW_MATCHMAKING" ] && [ -f "$OLD_MATCHMAKING" ] && [ -f "$NEW_GAME" ] && [ -f "$OLD_GAME" ]; then
+                if ! cmp -s "$NEW_MATCHMAKING" "$OLD_MATCHMAKING" && ! cmp -s "$NEW_GAME" "$OLD_GAME"; then
+                  echo "Restarting matchmaking.service due to binary changes..."
+                  sudo systemctl stop matchmaking.service
+                  cp "$NEW_MATCHMAKING" "$OLD_MATCHMAKING"
+                  cp "$NEW_GAME" "$OLD_GAME"
+                  sudo systemctl start matchmaking.service
+                else
+                  echo "No changes in binaries. Skipping restart."
+                fi
               else
-                echo "No changes in binaries. Skipping restart."
+                ls -la "$NEW_MATCHMAKING" || echo "$NEW_MATCHMAKING not found"
+                ls -la "$OLD_MATCHMAKING" || echo "$OLD_MATCHMAKING not found"
+                ls -la "$NEW_GAME" || echo "$NEW_GAME not found"
+                ls -la "$OLD_GAME" || echo "$OLD_GAME not found"
               fi
-            else
-              ls -la "$NEW_MATCHMAKING" || echo "$NEW_MATCHMAKING not found"
-              ls -la "$OLD_MATCHMAKING" || echo "$OLD_MATCHMAKING not found"
-              ls -la "$NEW_GAME" || echo "$NEW_GAME not found"
-              ls -la "$OLD_GAME" || echo "$OLD_GAME not found"
-            fi
-        EOF
+          EOF
 

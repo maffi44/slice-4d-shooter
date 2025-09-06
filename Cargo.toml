@@ -48,6 +48,7 @@ web-sys = { version = "*", features = [
     "Response"
 ]}
 winresource = "0.1.23"
+libloading = "0.8"
 
 
 [lib]

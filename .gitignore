@@ -21,3 +21,6 @@ pkg/*
 *.code-workspace
 .DS_Store
 /benches/target
+
+# WinSparkle
+Output/*
