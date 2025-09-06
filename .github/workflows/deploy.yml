@@ -104,17 +104,17 @@ jobs:
       - name: Verify installer exists
         shell: pwsh
         run: |
-          if (-not (Test-Path ".\Slice 4D Shooter Installer.exe")) {
+          if (-not (Test-Path ".\Slice4DShooterInstaller.exe")) {
             Get-ChildItem -Recurse
-            throw "Slice 4D Shooter Installer.exe not found after ISCC build"
+            throw "Slice4DShooterInstaller.exe not found after ISCC build"
           }
 
       - name: Upload installer as artifact (optional)
         if: steps.decide.outputs.publish == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Slice 4D Shooter Installer
-          path: ./Slice 4D Shooter Installer.exe
+          name: Slice4DShooterInstaller
+          path: ./Slice4DShooterInstaller.exe
           if-no-files-found: error
           retention-days: 7
 
@@ -124,7 +124,7 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           name: "Slice 4D Shooter ${{ env.VERSION }}"
-          files: ./Slice 4D Shooter Installer.exe
+          files: ./Slice4DShooterInstaller.exe
           draft: false
           prerelease: false
 
@@ -132,8 +132,8 @@ jobs:
         if: steps.decide.outputs.publish == 'true'
         shell: pwsh
         run: |
-          $assetUrl = "https://github.com/${{ github.repository }}/releases/download/v$env:VERSION/Slice 4D Shooter Installer.exe"
-          $len = (Get-Item .\Slice 4D Shooter Installer.exe).Length
+          $assetUrl = "https://github.com/${{ github.repository }}/releases/download/v$env:VERSION/Slice4DShooterInstaller.exe"
+          $len = (Get-Item .\Slice4DShooterInstaller.exe).Length
           $now = Get-Date -Format r
           $xml = @"
           <?xml version="1.0" encoding="utf-8"?>
