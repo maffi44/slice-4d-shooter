@@ -105,12 +105,11 @@ jobs:
       - name: Patch installer.iss AppVersion
         shell: pwsh
         run: |
-          $content  = Get-Content installer.iss -Raw
-          $pattern  = '(?m)^(AppVersion\s*=\s*).+$'   # (?m) = multiline anchors ^$
-          $patched  = [regex]::Replace($content, $pattern, "`$1$env:VERSION")
-          Set-Content installer.iss -Value $patched
+          $content = Get-Content installer.iss -Raw
+          $patched = $content -replace 'AppVersion\s*=\s*\S+', "AppVersion=$($env:VERSION)"
+          Set-Content installer.iss $patched
           Write-Host "Patched AppVersion to $env:VERSION"
-          (Get-Content installer.iss) | Write-Host
+          (Select-String -Path installer.iss -Pattern '^AppVersion').Line | Write-Host
         
       - name: Install Inno Setup
         shell: pwsh

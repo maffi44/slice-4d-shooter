@@ -42,8 +42,6 @@ static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
 fn main() {
     env_logger::init();
 
-    init_winsparkle();
-
     let specific_backend = read_args();
 
     let main_loop = MainLoop::new();
