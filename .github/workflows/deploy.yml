@@ -60,7 +60,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build client (release)
-        run: cargo build --release --bin game-client
+        run: cargo build --release --bin game-client --target x86_64-pc-windows-msvc
 
       - name: Prepare client exe name (safe rename)
         shell: pwsh
