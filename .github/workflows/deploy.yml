@@ -65,7 +65,7 @@ jobs:
       - name: Prepare client exe name (safe rename)
         shell: pwsh
         run: |
-          $src = "target\release\game-client.exe"
+          $src = "target\x86_64-pc-windows-msvc\release\game-client.exe"
           $dst = "target\release\Slice 4D Shooter.exe"
           if (-not (Test-Path $src)) { throw "$src not found" }
           if (Test-Path $dst) { Remove-Item $dst -Force }
