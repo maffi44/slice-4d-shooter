@@ -85,8 +85,8 @@ name="game-client-with-windows-command-line"
 path="src/game_client_main_with_windows_command_line.rs"
 
 [[bin]]
-name="game-client-without-winsparkle"
-path="src/game_client_main_without_winsparkle.rs"
+name="game-client-without-autoupdate"
+path="src/game_client_main_without_autoupdate.rs"
 
 [[bin]]
 name="headless-game-client-for-net-test"
