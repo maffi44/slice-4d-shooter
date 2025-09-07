@@ -1,11 +1,38 @@
+# Slice 4D Shooter - the first multiplayer shooter set in 4D space
+# Copyright (C) 2023-2025  Timofei Molokov
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 workspace = { members = [ "game_server", "matchmaking_server", "matchbox_signaling_modified"] }
 [package]
 name = "slice-4d-shooter"
-version = "0.5.2"
 edition = "2021"
 license = "AGPL-3.0"
 license-file = "LICENSE.txt"
 authors = ["Timofei Molokov"]
+
+
+###
+### When the version is changed (the counter is increased), 
+### Windows game clients are updated worldwide for players.
+
+version = "0.5.2"
+
+###
+###
+###
+
 
 [dependencies]
 

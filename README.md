@@ -3,12 +3,22 @@
 
 ## Build game client on multiple operating systems
 
-### Ubuntu 24.04
+### To build the project, you need to install the rust programming language and the cargo utility. 
+
+For unix-like operating systems:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+For Windows, you need to download `rustup-init.exe` according to [this link](https://rust-lang.github.io/rustup/installation/other.html).
+
+
+### Debian-based Linux distributions
 
 Install dependencies:
 
 ```bash
-sudo apt install build-essential pkg-config libasound2-dev
+apt install build-essential pkg-config libasound2-dev
 ```
 
 Build the game client:
@@ -17,12 +27,12 @@ Build the game client:
 cargo build --release --bin game-client
 ```
 
-### Fedora 42
+### RHEL-based Linux distributions
 
 Install dependencies:
 
 ```bash
-sudo dnf install gcc make glibc-devel pkgconf-pkg-config alsa-lib-devel
+dnf install gcc make glibc-devel pkgconf-pkg-config alsa-lib-devel
 ```
 
 Build the game client:
@@ -39,7 +49,7 @@ Build the game client:
 cargo build --release --bin game-client --target aarch64-apple-darwin
 ```
 
-## Windows
+## Windows 10/11
 
 Install dependencies:
 
