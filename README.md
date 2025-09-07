@@ -92,7 +92,7 @@ tee settings.json > /dev/null <<EOF
 EOF
 ```
 
-The address 8.8.8.8 needs to be replaced with your host's address.
+The address `8.8.8.8` needs to be replaced with your host's address.
 
 ---
 
