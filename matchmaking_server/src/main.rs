@@ -53,7 +53,7 @@ use std::collections::HashMap;
 
 use crate::matchmaking_server_protocol::GameType;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Config
 {
     pub matchmaking_server_ip: Ipv4Addr,
@@ -94,7 +94,7 @@ impl ToOption<String> for String {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct GameServersIceConfig {
     urls: String,
     username: String,
@@ -242,19 +242,39 @@ async fn handle_client_connection(
 
                                     server_info.players_amount_by_matchmaking_server += 1;
 
-                                    // let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
-                                    //     MatchmakingServerMessage::GameServerAddress((
-                                    //         server_info.game_server_ip_address.octets(),
-                                    //         server_info.game_server_main_port
-                                    //     ))
-                                    // );
-                                    let message = ClientMatchmakingServerProtocol::MatchmakingServerMessage(
-                                        MatchmakingServerMessage::GameServerAddressThroughProxy((
-                                            config.proxy_server_ip.octets(),
+                                    if config.clients_connecting_via_proxy_server 
+                                    {
+                                        println!(
+                                            "DEBUG: CLIENT PATH: ws://{}:{}/ws/{} (via proxy)",
+                                            config.proxy_server_ip,
                                             config.proxy_server_port,
-                                            server_info.game_server_main_port // настоящий порт геймсервера (он уйдёт в путь)
-                                        ))
-                                    );
+                                            server_info.game_server_main_port
+                                        );
+                                    } 
+                                    else 
+                                    {
+                                        println!(
+                                            "DEBUG: CLIENT PATH: ws://{}:{}/ (direct)",
+                                            server_info.game_server_ip_address,
+                                            server_info.game_server_main_port
+                                        );
+                                    }
+                                    let message = if config.clients_connecting_via_proxy_server {
+                                        ClientMatchmakingServerProtocol::MatchmakingServerMessage(
+                                            MatchmakingServerMessage::GameServerAddressThroughProxy((
+                                                config.proxy_server_ip.octets(),
+                                                config.proxy_server_port,
+                                                server_info.game_server_main_port,
+                                            )),
+                                        )
+                                    } else {
+                                        ClientMatchmakingServerProtocol::MatchmakingServerMessage(
+                                            MatchmakingServerMessage::GameServerAddress((
+                                                server_info.game_server_ip_address.octets(),
+                                                server_info.game_server_main_port,
+                                            )),
+                                        )
+                                    };
 
                                     let message: Vec<u8> = message.to_packet();
 
@@ -272,6 +292,7 @@ async fn handle_client_connection(
 
                                     // update config to change max_game_sessions, max_players_per_session and current_game_version dynamically
                                     config = load_config().await;
+                                    println!("DEBUG: CONFIG UPDATED: {:#?}", config);
 
                                     if clients_game_version != config.current_game_version
                                     {
@@ -334,13 +355,31 @@ async fn handle_client_connection(
         
                                             locked_state.insert(server_info.server_index, server_info.clone());
 
+                                            if config.clients_connecting_via_proxy_server 
+                                            {
+                                                println!(
+                                                    "DEBUG: CLIENT PATH: ws://{}:{}/ws/{} (via proxy)",
+                                                    config.proxy_server_ip,
+                                                    config.proxy_server_port,
+                                                    server_info.game_server_main_port
+                                                );
+                                            } 
+                                            else 
+                                            {
+                                                println!(
+                                                    "DEBUG: CLIENT PATH: ws://{}:{}/ (direct)",
+                                                    server_info.game_server_ip_address,
+                                                    server_info.game_server_main_port
+                                                );
+                                            }
+
                                             let message = if config.clients_connecting_via_proxy_server
                                             {
                                                 ClientMatchmakingServerProtocol::MatchmakingServerMessage(
                                                     MatchmakingServerMessage::GameServerAddressThroughProxy((
                                                         config.proxy_server_ip.octets(),
                                                         config.proxy_server_port,
-                                                        server_info.game_server_main_port // настоящий порт геймсервера (он уйдёт в путь)
+                                                        server_info.game_server_main_port
                                                     ))
                                                 )
                                             }
@@ -542,6 +581,7 @@ async fn async_main(
     async_runtime: Arc<Runtime>
 ) {
     let config = load_config().await;
+    println!("DEBUG: CONFIG UPDATED: {:#?}", config);
 
     let game_servers_state = Arc::new(Mutex::new(HashMap::<u16, GameServerInfo>::new()));
     

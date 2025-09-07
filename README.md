@@ -92,7 +92,7 @@ tee settings.json > /dev/null <<EOF
 EOF
 ```
 
-The address `8.8.8.8` needs to be replaced with your host's address.
+The address `8.8.8.8` needs to be replaced with your server host's address.
 
 ---
 
@@ -156,7 +156,7 @@ tee matchmaking-server-config.json > /dev/null <<EOF
   "matchmaking_server_port_for_servers": 45124,
   "clients_connecting_via_proxy_server": false,
   "proxy_server_ip": "8.8.8.8",
-  "proxy_server_port": 45123,
+  "proxy_server_port": 45122,
   "game_severs_public_ip": "8.8.8.8",
   "game_severs_min_port_for_signaling_servers": 45125,
   "game_severs_max_port_for_signaling_servers": 46125,
@@ -227,7 +227,7 @@ The allowed port range in the Lua block **must match** the ranges defined in you
 # path: /etc/nginx/sites-enabled/your-config.conf
 
 server {
-    listen 45123;
+    listen 45122;
 
     location ~ ^/ws/(\d+)$ {
         set $target_port $1;
@@ -257,10 +257,15 @@ server {
 In this example, only ports `45125` to `46125` are allowed.  
 Make sure to update this range to match your actual configured ranges in `matchmaking-server-config.json`.
 
+In order for the nginx config from this example to work, you need to install the nginx extras package.
+```bash
+apt install nginx-extras
+```
+
 #### Additional Configuration Fields
 
 | Field | Description |
 |-------|-------------|
 | `clients_connecting_via_proxy_server` | Whether a **proxy server** (e.g., NGINX) will be used between clients and game servers. Set to `true` to enable proxying, `false` to allow direct connections. |
 | `proxy_server_ip` | IP address of the proxy server that clients will connect to (if proxying is enabled). |
-| `proxy_server_port` | Port on which the proxy server listens for client connections. Must match the `listen` directive in the NGINX config (e.g., `45123`). |
+| `proxy_server_port` | Port on which the proxy server listens for client connections. Must match the `listen` directive in the NGINX config (e.g., `45122`). |
