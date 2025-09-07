@@ -69,9 +69,11 @@ cargo build --release --bin game-client-without-autoupdate --target x86_64-pc-wi
 
 After compiling and launching the game client (created in the `target` directory), shader compilation is underway, which may take some time, depending on the performance of your computer.
 
-If you want to play online on your own servers, you need to create a game-client `settings.json` executable file in the same directory, and enter the ipv4 address and port of the matchmaking server in the `matchmaking_server_url` field.
+If the FPS of the game client is **too low**, you can press the `NumPad 7` key to degrade the graphics rendering parameters.
 
 Currently, the client can make several connection attempts until success is achieved.
+
+If you want to play online on your own servers, you need to create a game-client `settings.json` executable file in the same directory, and enter the ipv4 address and port of the matchmaking server in the `matchmaking_server_url` field. Playing on the official Slice 4D Shooter servers does **not require** a settings.json file.
 
 ```bash
 tee settings.json > /dev/null <<EOF
@@ -89,8 +91,6 @@ tee settings.json > /dev/null <<EOF
 }
 EOF
 ```
-
-Playing on the official Slice 4D Shooter servers does **not require** a settings.json file.
 
 ---
 
@@ -132,6 +132,8 @@ cargo build --release -p matchmaking_server
 ```bash
 cargo build --release -p game_server
 ```
+
+Matchmaking server and game server **must** be located in the same directory.
 
 #### 5) Create the matchmaking-server-config configuration file.json for the matchmaking server
 
