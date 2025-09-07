@@ -209,7 +209,7 @@ async fn handle_client_connection(
                     match client_message {
                         ClientMessage::RequestToConnectToGameServer(clients_game_version, client_game_type) => {
 
-                            // uodate current game version and max game sessions amount
+                            // update current game version and max game sessions amount
 
                             println!("INFO: Client is requesting to connect to a game server");
 
