@@ -199,7 +199,7 @@ The table below describes the purpose of each field in the `matchmaking-server-c
 | `game_severs_min_port_for_tcp_listener`      | **Start of the port range** used by game servers for TCP listener (actual data exchange).                                                                           |
 | `game_severs_max_port_for_tcp_listener`      | **End of the port range** used by game servers for TCP listener.                                                                                                    |
 | `game_severs_ice_config`                     | Configuration for WebRTC ICE servers. You can specify your own **STUN** and/or **TURN** servers here (e.g., via [coturn](https://github.com/coturn/coturn)).        |
-| `max_game_sessions`                          | The maximum number of **concurrent game sessions** that the matchmaking server can handle.                                                                          |
+| `max_game_sessions`                          | The maximum number of **concurrent game sessions** (i.e., game server instances) that the matchmaking server can handle.                                                                          |
 | `max_players_per_game_session`               | The maximum number of **players per game session** (i.e., per game server instance).                                                                                |
 
 ---
