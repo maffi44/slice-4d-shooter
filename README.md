@@ -13,7 +13,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 For Windows, you need to download `rustup-init.exe` according to [this link](https://rust-lang.github.io/rustup/installation/other.html).
 
 
-### Debian-based Linux distributions
+## Debian-based Linux distros
 
 Install dependencies:
 
@@ -27,7 +27,7 @@ Build the game client:
 cargo build --release --bin game-client
 ```
 
-### RHEL-based Linux distributions
+## RHEL-based Linux distros
 
 Install dependencies:
 
