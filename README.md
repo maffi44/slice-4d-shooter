@@ -62,6 +62,9 @@ Build the game client:
 ```powershell
 cargo build --release --bin game-client-without-autoupdate --target x86_64-pc-windows-msvc
 ```
+
+---
+
 ## Launching the game
 
 After compiling and launching the game client (created in the `target` directory), shader compilation is underway, which may take some time, depending on the performance of your computer.
@@ -87,19 +90,21 @@ tee settings.json > /dev/null <<EOF
 EOF
 ```
 
-Playing on the official Slice 4D Shooter servers does not require a settings.json file.
+Playing on the official Slice 4D Shooter servers does **not require** a settings.json file.
+
+---
 
 ## Hosting your own servers
 
-### While on the game node, follow these steps:
+#### While on the game node, follow these steps:
 
-1. #### Clone the repository:
+#### 1) Clone the repository:
 
 ```bash
 git clone https://github.com/maffi44/slice-4d-shooter.git
 ```
 
-2. #### Install dependencies:
+#### 2) Install dependencies:
 
 For RHEL-based Linux distros
 
@@ -113,7 +118,7 @@ For Debian-based Linux distros
 apt install build-essential pkg-config libasound2-dev
 ```
 
-3. #### Compile matchmaking server
+#### 3) Compile matchmaking server
 
 ```bash
 cd slice-4d-shooter
@@ -122,13 +127,13 @@ cd slice-4d-shooter
 cargo build --release -p matchmaking_server
 ```
 
-4. #### Compile game server
+#### 4) Compile game server
 
 ```bash
 cargo build --release -p game_server
 ```
 
-5. #### Create the matchmaking-server-config configuration file.json for the matchmaking server
+#### 5) Create the matchmaking-server-config configuration file.json for the matchmaking server
 
 Go to the directory where matchmaking_server is located.
 
@@ -167,9 +172,11 @@ tee matchmaking-server-config.json > /dev/null <<EOF
 EOF
 ```
 
-The address `8.8.8.8` needs to be replaced with your host's address.
+The address `8.8.8.8` **needs to be replaced** with your host's address.
 
-#### Configuration fields explained
+---
+
+### Configuration fields explained
 
 The table below describes the purpose of each field in the `matchmaking-server-config.json` file:
 
@@ -179,7 +186,7 @@ The table below describes the purpose of each field in the `matchmaking-server-c
 | `matchmaking_server_ip`                      | The **external IPv4 address** of the matchmaking server. Clients and game servers will connect to this IP.                                                          |
 | `matchmaking_server_port_for_clients`        | Port used by **clients** to connect to the matchmaking server.                                                                                                      |
 | `matchmaking_server_port_for_servers`        | Port used by **game servers** to connect to the matchmaking server.                                                                                                 |
-| `clients_connecting_via_proxy_server`        | Whether a **proxy server** is used between clients and game servers. Set to `true` if clients connect via a proxy.                                                  |
+| `clients_connecting_via_proxy_server`        | Whether a **proxy server** is used between clients and game servers. Set to `true` if clients connect via a proxy. The default value is `false`.                                                 |
 | `proxy_server_ip`                            | IP address of the proxy server (used only if `clients_connecting_via_proxy_server` is `true`).                                                                      |
 | `proxy_server_port`                          | Port on which the proxy server listens (used only if proxy is enabled).                                                                                             |
 | `game_severs_public_ip`                      | Public IP address of the game servers. Currently, this should be the **same as** `matchmaking_server_ip` since multi-node game server hosting is not yet supported. |
@@ -191,7 +198,9 @@ The table below describes the purpose of each field in the `matchmaking-server-c
 | `max_game_sessions`                          | The maximum number of **concurrent game sessions** that the matchmaking server can handle.                                                                          |
 | `max_players_per_game_session`               | The maximum number of **players per game session** (i.e., per game server instance).                                                                                |
 
-#### Using a Proxy Server (e.g., NGINX)
+---
+
+### Using a Proxy Server (e.g., NGINX)
 
 If you **do not want to use a proxy server**, such as NGINX, which sits between the players and the game servers, then set the field `clients_connecting_via_proxy_server` to `false`.
 
