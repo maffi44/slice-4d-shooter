@@ -234,7 +234,7 @@ server {
 
         access_by_lua_block {
             local port = tonumber(ngx.var.target_port)
-            if not port or port < 45125 or port > 45225 then
+            if not port or port < 45125 or port > 46125 then
                 ngx.status = 403
                 ngx.say("Port out of allowed range")
                 return ngx.exit(ngx.HTTP_FORBIDDEN)
@@ -254,7 +254,7 @@ server {
 }
 ```
 
-In this example, only ports `45125` to `45225` are allowed.  
+In this example, only ports `45125` to `46125` are allowed.  
 Make sure to update this range to match your actual configured ranges in `matchmaking-server-config.json`.
 
 #### Additional Configuration Fields
@@ -263,4 +263,4 @@ Make sure to update this range to match your actual configured ranges in `matchm
 |-------|-------------|
 | `clients_connecting_via_proxy_server` | Whether a **proxy server** (e.g., NGINX) will be used between clients and game servers. Set to `true` to enable proxying, `false` to allow direct connections. |
 | `proxy_server_ip` | IP address of the proxy server that clients will connect to (if proxying is enabled). |
-| `proxy_server_port` | Port on which the proxy server listens for client connections. Must match the `listen` directive in the NGINX config (e.g., `8443`). |
+| `proxy_server_port` | Port on which the proxy server listens for client connections. Must match the `listen` directive in the NGINX config (e.g., `45123`). |
