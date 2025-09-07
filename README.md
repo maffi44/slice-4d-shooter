@@ -71,8 +71,6 @@ After compiling and launching the game client (created in the `target` directory
 
 If the FPS of the game client is **too low**, you can press the `NumPad 7` key to degrade the graphics rendering parameters.
 
-Currently, the client can make several connection attempts until success is achieved.
-
 If you want to play online on your own servers, you need to create a game-client `settings.json` executable file in the same directory, and enter the ipv4 address and port of the matchmaking server in the `matchmaking_server_url` field. Playing on the official Slice 4D Shooter servers does **not require** a settings.json file.
 
 ```bash
@@ -92,7 +90,9 @@ tee settings.json > /dev/null <<EOF
 EOF
 ```
 
-The address `8.8.8.8` needs to be replaced with your server host's address.
+Currently, the client can make several connection attempts until success is achieved.
+
+The address `8.8.8.8` must be replaced with the hosting address of your server.
 
 ---
 
@@ -137,7 +137,7 @@ cargo build --release -p game_server
 
 Matchmaking server and game server **must** be located in the same directory.
 
-#### 5) Create the matchmaking-server-config configuration file.json for the matchmaking server
+#### 5) Create the matchmaking-server-config.json configuration file for the matchmaking server
 
 Go to the directory where matchmaking_server is located.
 
@@ -176,7 +176,7 @@ tee matchmaking-server-config.json > /dev/null <<EOF
 EOF
 ```
 
-The address `8.8.8.8` **needs to be replaced** with your host's address.
+The address `8.8.8.8` **needs to be replaced** with your hosting address.
 
 ---
 
@@ -194,10 +194,10 @@ The table below describes the purpose of each field in the `matchmaking-server-c
 | `proxy_server_ip`                            | IP address of the proxy server (used only if `clients_connecting_via_proxy_server` is `true`).                                                                      |
 | `proxy_server_port`                          | Port on which the proxy server listens (used only if proxy is enabled).                                                                                             |
 | `game_severs_public_ip`                      | Public IP address of the game servers. Currently, this should be the **same as** `matchmaking_server_ip` since multi-node game server hosting is not yet supported. |
-| `game_severs_min_port_for_signaling_servers` | **Start of the port range** used by game servers for signaling (WebRTC communication setup).                                                                        |
-| `game_severs_max_port_for_signaling_servers` | **End of the port range** used by game servers for signaling.                                                                                                       |
-| `game_severs_min_port_for_tcp_listener`      | **Start of the port range** used by game servers for TCP listener (actual data exchange).                                                                           |
-| `game_severs_max_port_for_tcp_listener`      | **End of the port range** used by game servers for TCP listener.                                                                                                    |
+| `game_severs_min_port_for_signaling_servers` | **Start of the port range** used by game servers for signaling (WebRTC communication setup) (game server port).                                                                        |
+| `game_severs_max_port_for_signaling_servers` | **End of the port range** used by game servers for signaling (game server port).                                                                                                       |
+| `game_severs_min_port_for_tcp_listener`      | **Start of the port range** used by game servers for TCP listener (actual data exchange) (game server port).                                                                           |
+| `game_severs_max_port_for_tcp_listener`      | **End of the port range** used by game servers for TCP listener (game server port).                                                                                                    |
 | `game_severs_ice_config`                     | Configuration for WebRTC ICE servers. You can specify your own **STUN** and/or **TURN** servers here (e.g., via [coturn](https://github.com/coturn/coturn)).        |
 | `max_game_sessions`                          | The maximum number of **concurrent game sessions** (i.e., game server instances) that the matchmaking server can handle.                                                                          |
 | `max_players_per_game_session`               | The maximum number of **players per game session** (i.e., per game server instance).                                                                                |
