@@ -73,10 +73,10 @@ use tokio_tungstenite::tungstenite::Message;
 #[derive(Clone, Debug)]
 struct GameServerConfig {
     signaling_port: u16,
-    game_severs_min_port_for_signaling_servers: u16,
-    game_severs_max_port_for_signaling_servers: u16,
-    game_severs_min_port_for_tcp_listener: u16,
-    game_severs_max_port_for_tcp_listener: u16,
+    game_servers_min_port_for_signaling_servers: u16,
+    game_servers_max_port_for_signaling_servers: u16,
+    game_servers_min_port_for_tcp_listener: u16,
+    game_servers_max_port_for_tcp_listener: u16,
     matchmaking_server_ip: Ipv4Addr,
     matchmaking_server_port: u16,
     max_players: u32,
@@ -93,10 +93,10 @@ impl GameServerConfig {
             return Err(
                 "Usage: game_server
     <signaling_port>
-    <game_severs_min_port_for_signaling_servers>
-    <game_severs_max_port_for_signaling_servers>
-    <game_severs_min_port_for_tcp_listener>
-    <game_severs_max_port_for_tcp_listener>
+    <game_servers_min_port_for_signaling_servers>
+    <game_servers_max_port_for_signaling_servers>
+    <game_servers_min_port_for_tcp_listener>
+    <game_servers_max_port_for_tcp_listener>
     <matchmaking_server_ip>
     <matchmaking_server_port>
     <max_players_per_game_session>
@@ -110,21 +110,21 @@ impl GameServerConfig {
             .parse()
             .map_err(|_| "Invalid signaling port")?;
 
-        let game_severs_min_port_for_signaling_servers = args[2]
+        let game_servers_min_port_for_signaling_servers = args[2]
             .parse()
-            .map_err(|_| "Invalid game_severs_min_port_for_signaling_servers")?;
+            .map_err(|_| "Invalid game_servers_min_port_for_signaling_servers")?;
         
-        let game_severs_max_port_for_signaling_servers = args[3]
+        let game_servers_max_port_for_signaling_servers = args[3]
             .parse()
-            .map_err(|_| "Invalid game_severs_max_port_for_signaling_servers")?;
+            .map_err(|_| "Invalid game_servers_max_port_for_signaling_servers")?;
         
-        let game_severs_min_port_for_tcp_listener = args[4]
+        let game_servers_min_port_for_tcp_listener = args[4]
             .parse()
-            .map_err(|_| "Invalid game_severs_min_port_for_tcp_listener")?;
+            .map_err(|_| "Invalid game_servers_min_port_for_tcp_listener")?;
         
-        let game_severs_max_port_for_tcp_listener = args[5]
+        let game_servers_max_port_for_tcp_listener = args[5]
             .parse()
-            .map_err(|_| "Invalid game_severs_max_port_for_tcp_listener")?;
+            .map_err(|_| "Invalid game_servers_max_port_for_tcp_listener")?;
 
         
         let matchmaking_server_ip = Ipv4Addr::from_str(&args[6])
@@ -185,10 +185,10 @@ impl GameServerConfig {
 
         let config = GameServerConfig {
             signaling_port,
-            game_severs_min_port_for_signaling_servers,
-            game_severs_max_port_for_signaling_servers,
-            game_severs_min_port_for_tcp_listener,
-            game_severs_max_port_for_tcp_listener,
+            game_servers_min_port_for_signaling_servers,
+            game_servers_max_port_for_signaling_servers,
+            game_servers_min_port_for_tcp_listener,
+            game_servers_max_port_for_tcp_listener,
             matchmaking_server_ip,
             matchmaking_server_port,
             max_players,
@@ -1790,7 +1790,7 @@ enum PlayerAmountChangedEvent
 
 
 async fn create_matchmaking_server_listener(config: GameServerConfig) -> Option<(TcpListener, u16)> {
-    for port in config.game_severs_min_port_for_tcp_listener..=config.game_severs_max_port_for_tcp_listener
+    for port in config.game_servers_min_port_for_tcp_listener..=config.game_servers_max_port_for_tcp_listener
     {
         match TcpListener::bind(("0.0.0.0", port)).await
         {    
@@ -1904,7 +1904,7 @@ async fn  run_signaling_server(
 
     if server.serve().await.is_err()
     {
-        for port in config.game_severs_min_port_for_signaling_servers..=config.game_severs_max_port_for_signaling_servers
+        for port in config.game_servers_min_port_for_signaling_servers..=config.game_servers_max_port_for_signaling_servers
         {
             {
                 *actual_signaling_server_port.lock().unwrap() = port;
@@ -1956,8 +1956,8 @@ async fn  run_signaling_server(
 
         eprintln!(
             "ERROR: no free ports for signaling server in {} to {} ports range",
-            config.game_severs_min_port_for_signaling_servers,
-            config.game_severs_max_port_for_signaling_servers
+            config.game_servers_min_port_for_signaling_servers,
+            config.game_servers_max_port_for_signaling_servers
         );
         exit(1);
     }

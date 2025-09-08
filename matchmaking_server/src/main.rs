@@ -66,13 +66,13 @@ struct Config
 
     pub current_game_version: GameVersion,
 
-    pub game_severs_public_ip: Ipv4Addr,
+    pub game_servers_public_ip: Ipv4Addr,
 
-    pub game_severs_min_port_for_signaling_servers: u16,
-    pub game_severs_max_port_for_signaling_servers: u16,
+    pub game_servers_min_port_for_signaling_servers: u16,
+    pub game_servers_max_port_for_signaling_servers: u16,
     
-    pub game_severs_min_port_for_tcp_listener: u16,
-    pub game_severs_max_port_for_tcp_listener: u16,
+    pub game_servers_min_port_for_tcp_listener: u16,
+    pub game_servers_max_port_for_tcp_listener: u16,
 
     pub game_servers_ice_config: GameServersIceConfig,
 
@@ -108,23 +108,23 @@ impl GameServersIceConfig {
     {
         let object = {
             object
-                .get("game_severs_ice_config")
-                .expect("ERROR: Have not game_severs_ice_config in matchmaking-server-config.json")
+                .get("game_servers_ice_config")
+                .expect("ERROR: Have not game_servers_ice_config in matchmaking-server-config.json")
                 .as_object()
-                .expect("ERROR: game_severs_ice_config is not object value in matchmaking-server-config.json")
+                .expect("ERROR: game_servers_ice_config is not object value in matchmaking-server-config.json")
         };
 
         let urls = {
             object
                 .get("urls")
-                .expect("ERROR: Have not urls in game_severs_ice_config in matchmaking-server-config.json")
+                .expect("ERROR: Have not urls in game_servers_ice_config in matchmaking-server-config.json")
                 .as_array()
-                .expect("ERROR: urls is not array value in game_severs_ice_config in matchmaking-server-config.json")
+                .expect("ERROR: urls is not array value in game_servers_ice_config in matchmaking-server-config.json")
                 .into_iter()
                 .map(|s| {
                     s
                         .as_str()
-                        .expect("ERROR: urls members is not string value in game_severs_ice_config in matchmaking-server-config.json")
+                        .expect("ERROR: urls members is not string value in game_servers_ice_config in matchmaking-server-config.json")
                         .to_string() + "|"
                 })
                 .collect::<String>()
@@ -134,9 +134,9 @@ impl GameServersIceConfig {
         let username = {
             object
                 .get("username")
-                .expect("ERROR: Have not username in game_severs_ice_config in matchmaking-server-config.json")
+                .expect("ERROR: Have not username in game_servers_ice_config in matchmaking-server-config.json")
                 .as_str()
-                .expect("ERROR: username is not string value in game_severs_ice_config in matchmaking-server-config.json")
+                .expect("ERROR: username is not string value in game_servers_ice_config in matchmaking-server-config.json")
                 .to_string()
                 // .none_if_zero()
         };
@@ -144,9 +144,9 @@ impl GameServersIceConfig {
         let credential = {
             object
                 .get("credential")
-                .expect("ERROR: Have not credential in game_severs_ice_config in matchmaking-server-config.json")
+                .expect("ERROR: Have not credential in game_servers_ice_config in matchmaking-server-config.json")
                 .as_str()
-                .expect("ERROR: credential is not string value in game_severs_ice_config in matchmaking-server-config.json")
+                .expect("ERROR: credential is not string value in game_servers_ice_config in matchmaking-server-config.json")
                 .to_string()
                 // .none_if_zero()
         };
@@ -316,8 +316,8 @@ async fn handle_client_connection(
                                     let free_port = get_free_server_port(
                                         &mut locked_state,
                                         config.max_game_sessions,
-                                        config.game_severs_min_port_for_signaling_servers,
-                                        config.game_severs_max_port_for_signaling_servers,
+                                        config.game_servers_min_port_for_signaling_servers,
+                                        config.game_servers_max_port_for_signaling_servers,
                                     );
 
                                     match free_port {
@@ -465,10 +465,10 @@ async fn spawn_game_server(
 {
     let server_process = Command::new("./game_server")
         .arg(port.to_string())
-        .arg(config.game_severs_min_port_for_signaling_servers.to_string())
-        .arg(config.game_severs_max_port_for_signaling_servers.to_string())
-        .arg(config.game_severs_min_port_for_tcp_listener.to_string())
-        .arg(config.game_severs_max_port_for_tcp_listener.to_string())
+        .arg(config.game_servers_min_port_for_signaling_servers.to_string())
+        .arg(config.game_servers_max_port_for_signaling_servers.to_string())
+        .arg(config.game_servers_min_port_for_tcp_listener.to_string())
+        .arg(config.game_servers_max_port_for_tcp_listener.to_string())
         .arg("127.0.0.1")
         .arg(config.matchmaking_server_port_for_servers.to_string())
         .arg(config.max_players_per_game_session.to_string())
@@ -512,7 +512,7 @@ async fn spawn_game_server(
 
             return Ok(GameServerInfo {
                 game_type,
-                game_server_ip_address: config.game_severs_public_ip,
+                game_server_ip_address: config.game_servers_public_ip,
                 players_amount_by_matchmaking_server: 1_u32,
                 players_amount_by_game_server: 0_u32,
                 max_amount_of_players: config.max_players_per_game_session,
@@ -847,17 +847,17 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
             as u16
     };
 
-    let game_severs_public_ip = {
+    let game_servers_public_ip = {
         object
-            .get("game_severs_public_ip")
-            .expect("ERROR: Have not game_severs_public_ip in matchmaking-server-config.json")
+            .get("game_servers_public_ip")
+            .expect("ERROR: Have not game_servers_public_ip in matchmaking-server-config.json")
             .as_str()
-            .expect("ERROR: game_severs_public_ip is not string value in matchmaking-server-config.json")
+            .expect("ERROR: game_servers_public_ip is not string value in matchmaking-server-config.json")
             .to_string()
     };
 
-    let game_severs_public_ip = Ipv4Addr::from_str(&game_severs_public_ip)
-        .expect("ERROR: wrong game_severs_public_ip ip address format");
+    let game_servers_public_ip = Ipv4Addr::from_str(&game_servers_public_ip)
+        .expect("ERROR: wrong game_servers_public_ip ip address format");
 
     let matchmaking_server_ip = {
         object
@@ -871,39 +871,39 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
     let matchmaking_server_ip = Ipv4Addr::from_str(&matchmaking_server_ip)
         .expect("ERROR: wrong matchmaking_server_ip ip address format");
 
-    let game_severs_min_port_for_signaling_servers = {
+    let game_servers_min_port_for_signaling_servers = {
         object
-            .get("game_severs_min_port_for_signaling_servers")
-            .expect("ERROR: Have not game_severs_min_port_for_signaling_servers in matchmaking-server-config.json")
+            .get("game_servers_min_port_for_signaling_servers")
+            .expect("ERROR: Have not game_servers_min_port_for_signaling_servers in matchmaking-server-config.json")
             .as_i64()
-            .expect("ERROR: game_severs_min_port_for_signaling_servers is not number value in matchmaking-server-config.json")
+            .expect("ERROR: game_servers_min_port_for_signaling_servers is not number value in matchmaking-server-config.json")
             as u16
     };
 
-    let game_severs_max_port_for_signaling_servers = {
+    let game_servers_max_port_for_signaling_servers = {
         object
-            .get("game_severs_max_port_for_signaling_servers")
-            .expect("ERROR: Have not game_severs_max_port_for_signaling_servers in matchmaking-server-config.json")
+            .get("game_servers_max_port_for_signaling_servers")
+            .expect("ERROR: Have not game_servers_max_port_for_signaling_servers in matchmaking-server-config.json")
             .as_i64()
-            .expect("ERROR: game_severs_max_port_for_signaling_servers is not number value in matchmaking-server-config.json")
+            .expect("ERROR: game_servers_max_port_for_signaling_servers is not number value in matchmaking-server-config.json")
             as u16
     };
 
-    let game_severs_min_port_for_tcp_listener = {
+    let game_servers_min_port_for_tcp_listener = {
         object
-            .get("game_severs_min_port_for_tcp_listener")
-            .expect("ERROR: Have not game_severs_min_port_for_tcp_listener in matchmaking-server-config.json")
+            .get("game_servers_min_port_for_tcp_listener")
+            .expect("ERROR: Have not game_servers_min_port_for_tcp_listener in matchmaking-server-config.json")
             .as_i64()
-            .expect("ERROR: game_severs_min_port_for_tcp_listener is not number value in matchmaking-server-config.json")
+            .expect("ERROR: game_servers_min_port_for_tcp_listener is not number value in matchmaking-server-config.json")
             as u16
     };
 
-    let game_severs_max_port_for_tcp_listener = {
+    let game_servers_max_port_for_tcp_listener = {
         object
-            .get("game_severs_max_port_for_tcp_listener")
-            .expect("ERROR: Have not game_severs_max_port_for_tcp_listener in matchmaking-server-config.json")
+            .get("game_servers_max_port_for_tcp_listener")
+            .expect("ERROR: Have not game_servers_max_port_for_tcp_listener in matchmaking-server-config.json")
             .as_i64()
-            .expect("ERROR: game_severs_max_port_for_tcp_listener is not number value in matchmaking-server-config.json")
+            .expect("ERROR: game_servers_max_port_for_tcp_listener is not number value in matchmaking-server-config.json")
             as u16
     };
 
@@ -945,11 +945,11 @@ fn parse_json_matchmaking_config(json_config: Value) -> Config
         clients_connecting_via_proxy_server,
         proxy_server_ip,
         proxy_server_port,
-        game_severs_public_ip,
-        game_severs_min_port_for_signaling_servers,
-        game_severs_max_port_for_signaling_servers,
-        game_severs_min_port_for_tcp_listener,
-        game_severs_max_port_for_tcp_listener,
+        game_servers_public_ip,
+        game_servers_min_port_for_signaling_servers,
+        game_servers_max_port_for_signaling_servers,
+        game_servers_min_port_for_tcp_listener,
+        game_servers_max_port_for_tcp_listener,
         game_servers_ice_config,
         max_game_sessions,
         max_players_per_game_session,  

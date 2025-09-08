@@ -116,10 +116,6 @@ name="game-client-without-autoupdate"
 path="src/game_client_main_without_autoupdate.rs"
 
 [[bin]]
-name="headless-game-client-for-net-test"
-path="src/headless_game_client_main_for_net_test.rs"
-
-[[bin]]
 name="raymarch_shader_generator"
 path="src/raymarch_shader_generator.rs"
 
