@@ -158,7 +158,7 @@ If you want to play online on your own servers, you need to create a game-client
 
 **The `settings.json` file is not required for single-player mode or for playing on the official Slice: 4D Shooter servers.**
 
-Currently, the client can make serveral connection attempts until success is achieved.
+Currently, the client can make several connection attempts until success is achieved.
 
 The address `8.8.8.8` must be replaced with the hosting address of your server.
 
