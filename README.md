@@ -54,9 +54,9 @@ The chosen method for visualizing 4D geometry (an SDF-based rendering algorithm)
 
 For weaker hardware, the Slice prototype includes tools to control performance:
 
-*   **Lower Resolution:** Press `Num 7` to decrease the rendering resolution. Each press reduces it by 5%, which can significantly increase framerate.
+*   **Lower Resolution:** Press `Num 7` to decrease the rendering resolution. Each press reduces it by 5%, which can increase framerate.
 *   **Higher Resolution:** Press `Num 8` to increase the rendering resolution by 5%.
-*   **Shadows:** Press `Num 9` to toggle shadow rendering on/off. Disabling shadows can greatly improve performance.
+*   **Shadows:** Press `Num 9` to toggle shadow rendering on/off. Disabling shadows can improve performance.
 
 Slice: 4D Shooter is in a playable prototype stage, and we have observed launch issues on some older laptops with integrated graphics and other specific hardware, particularly on Windows.
 

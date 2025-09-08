@@ -1,7 +1,7 @@
-Slice: 4D Shooter - Attribution and Licensing
+# Slice: 4D Shooter - Attribution and Licensing
 
 This document outlines the copyright and licensing information for the various components of the Slice: 4D Shooter project.
-1. Source Code
+## 1. Source Code
 
 The entire source code of the Slice: 4D Shooter project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
@@ -12,9 +12,50 @@ The entire source code of the Slice: 4D Shooter project is licensed under the GN
     You should have received a copy of the GNU Affero General Public License along with this program. If not, see https://www.gnu.org/licenses/.
 
 A full copy of the license is available in the project's root directory in the file LICENSE.txt.
-2. Assets (Audio, Textures, Graphics)
 
-### 2.1. Third-Party Audio
+## 2. Third-Party Libraries
+
+This project includes third-party libraries and code used under their respective licenses.
+
+### 2.1. WinSparkle
+
+The project uses the **WinSparkle** library for automatic updates on Windows.
+
+*   **Location:** `dll/` directory
+*   **Copyright:** (c) 2009-2025 Vaclav Slavik
+*   **License:**
+    ```
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal in
+    the Software without restriction, including without limitation the rights to
+    use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+    of the Software, and to permit persons to whom the Software is furnished to do
+    so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+    ```
+*   **Note:** This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit (http://www.openssl.org/).
+
+### 2.2. Matchbox Signaling
+
+The project includes a modified version of the `matchbox_signaling` Rust crate.
+
+*   **Location:** `matchbox_signaling_modified/` directory
+*   **Original License:** Dual-licensed under either the **MIT License** or the **Apache License 2.0** (at the user's choice).
+*   **Modifications:** The source code has been modified. The original licenses, README, and a `NOTICE` file describing all modifications are preserved within the directory.
+*   **Full original copyright notices and license texts are available in the aforementioned directory.**
+
+## 3. Assets (Audio, Textures, Graphics)
+### 3.1. Third-Party Audio
 
 The sound effects listed below are used under their respective Creative Commons licenses. Attribution to the original authors is required as specified by their licenses.
 
@@ -52,7 +93,7 @@ The sound effects listed below are used under their respective Creative Commons 
 
     CC BY 3.0/4.0 requires attribution to the creator. You must give appropriate credit, provide a link to the license, and indicate if changes were made. See the CC BY 4.0 deed or CC BY 3.0 deed.
 
-2.2. Original Project Assets
+### 3.2. Original Project Assets
 
 All other assets in this project, including but not limited to textures, graphics, and original sound effects not listed in the "Third-Party Audio" section above, are original works created by Molokov Timofei.
 
@@ -73,7 +114,8 @@ These original assets are licensed under the Creative Commons Attribution-ShareA
     Full legal code: https://creativecommons.org/licenses/by-sa/4.0/legalcode
 
 Exclusion: All files located in the ./media/ directory are the exclusive property of Molokov Timofei and are All Rights Reserved. These files are included for demonstration purposes only within this project and are not licensed for redistribution or reuse under the CC BY-SA 4.0 or AGPL-3.0 licenses.
-3. Trademark and Project Name
+
+## 4. Trademark and Project Name
 
 The name "Slice: 4D Shooter", associated logos, and any other related trademarks are the exclusive intellectual property of Molokov Timofei.
 
