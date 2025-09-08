@@ -1,19 +1,87 @@
-# [![Slice: 4D Shooter](https://github.com/maffi44/slice-4d-shooter/blob/main/media/slice_4d_shooter_poster.png)](https://slice4d.info)
-# Slice: 4D Shooter - multiplayer shooter set in 4D space
+# [![Slice: 4D Shooter](https://github.com/maffi44/slice-4d-shooter/blob/main/media/slice_4d_shooter_poster.png)](https://github.com/maffi44/slice-4d-shooter)
+[![AGPLv3 License](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://opensource.org/licenses/AGPL-3.0)
+[![Rust](https://img.shields.io/badge/Built%20with-Rust-dea584.svg)](https://rust-lang.org)
+[![Windows](https://img.shields.io/badge/Platform-Windows-informational)](https://windows.com)
+[![Linux](https://img.shields.io/badge/Platform-Linux-informational)](https://linux.org)
+[![macOS](https://img.shields.io/badge/Platform-macOS-informational)](https://apple.com)
+# Slice: 4D Shooter
 
-### To build the project, you need to install the rust programming language and the cargo utility. 
+**Slice** is a competitive multiplayer first-person shooter that takes place in a **true four-dimensional space**. It is developed as free and open-source software under the **AGPLv3** license.
+Our **goal** is to create the first **free and open-source esports shooter in 4D space**.  [**Help us create it!**](https://slice4d.info/#donate)
+
+## Resources
+*   **[Official Website](https://slice4d.info/)**
+*   **[Official Trailer](https://youtu.be/u2GZPIDo1vI?si=2mSRlsTFC2b_SkS3)**
+*   **[Video Tutorial](https://youtu.be/u2GZPIDo1vI?si=2mSRlsTFC2b_SkS3)**
+*   **[Download auto-update version for Windows on Itch.io](https://maffi44.itch.io/slice4d)**
+
+## Technology Overview
+
+**Slice: 4D Shooter** is built on a **custom game engine**, developed from scratch in **Rust**.
+The project is currently in playable prototype stage. 
+
+**Core engine features include:**
+*   **4D Rendering:** Utilizes a Signed Distance Field (SDF) algorithm to render four-dimensional geometry.
+*   **4D Physics:** Features a custom-built physics engine, also SDF-based, to handle movement and collisions in 4D space.
+*   **Actor-based Architecture:** Uses an actor-in-arena-based game logic architecture.
+*   **Destructible Environment:** Supports environment destruction using the SDF-based physics and rendering systems.
+*   **Multiplayer Networking:** Implements a temporary client-based networking model for multiplayer gameplay and game state synchronization.
+*   **Cross-Platform Support:** The game runs on Windows, Linux, and macOS.
+
+## License
+
+The source code of **Slice: 4D Shooter** is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).  
+See the [`LICENSE.txt`](LICENSE.txt) file for full terms.
+
+This project incorporates third-party components under their respective licenses:
+
+*   **WinSparkle** (located in the `dll/` directory): Copyright (c) 2009-2025 Vaclav Slavik. Licensed under the MIT-like license found in the library's binaries and source code. This software includes components from the OpenSSL Project.
+*   **Modified `matchbox_signaling` crate**: The original work is licensed under either **MIT** or **Apache 2.0**. The modified source code, original licenses, README, and a `NOTICE` file describing the changes are located in the `matchbox_signaling_modified/` directory.
+*   **Audio Assets**: Various sound effects are used under **CC0 1.0**, **CC BY 3.0**, and **CC BY 4.0** licenses. A complete list with attribution is available in the [`CREDITS.md`](CREDITS.md) file.
+
+### Original Assets and Trademark
+
+*   **Original Art & Assets**: All other project assets (excluding third-party audio and the `media/` directory) are original works by Timofei Molokov and are licensed under **Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)**.
+*   **Media Directory**: All files in the `media/` directory are **All Rights Reserved** and are the exclusive property of Timofei Molokov. They are included for demonstration only and are not covered by the AGPL-3.0 or CC BY-SA 4.0 licenses.
+*   **Project Name**: The name **"Slice: 4D Shooter"** and its associated logo are trademarks and are **not covered** by the AGPL or CC BY-SA 4.0 licenses. If you create a fork of this project, please choose a unique, original name for your work.
+
+### For a detailed breakdown of licensing and attribution, please see the full [`CREDITS.md`](CREDITS.md) file.
+
+
+## Technical Requirements
+
+The chosen method for visualizing 4D geometry (an SDF-based rendering algorithm) is demanding on the GPU. A **minimum recommended video card** for a smooth experience is an **Nvidia RTX 3060** or its equivalent.
+
+For weaker hardware, the Slice prototype includes tools to control performance:
+
+*   **Lower Resolution:** Press `Num 7` to decrease the rendering resolution. Each press reduces it by 5%, which can significantly increase framerate.
+*   **Higher Resolution:** Press `Num 8` to increase the rendering resolution by 5%.
+*   **Shadows:** Press `Num 9` to toggle shadow rendering on/off. Disabling shadows can greatly improve performance.
+
+Slice: 4D Shooter is in a playable prototype stage, and we have observed launch issues on some older laptops with integrated graphics and other specific hardware, particularly on Windows.
+
+If you encounter technical problems (crashes, bugs, performance issues), please report them:
+*   By creating an `issue` in our [GitHub repository](https://github.com/maffi44/slice-4d-shooter/issues).
+*   Or by sending a detailed report to: **slice4d-bugs-report@pm.me**.
+
+**Please include in your report:**
+1.  A description of the error or problem.
+2.  Your hardware specifications (GPU model, CPU, RAM).
+3.  Your operating system version.
+
+## Build the Game Client
+
+[**Here you can download the game client version for Windows that is ready to install and auto-updates.**](https://maffi44.itch.io/slice4d)
+
+### To Build the project, you need to install the **Rust Programming Language** and the **Cargo** utility. 
 
 For unix-like operating systems:
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
+For Windows, you need to download `rustup-init.exe` according to [**this link**](https://rust-lang.github.io/rustup/installation/other.html).
 
-For Windows, you need to download `rustup-init.exe` according to [this link](https://rust-lang.github.io/rustup/installation/other.html).
-
-
-## Build game client on multiple operating systems
-
-### Debian-based Linux distros
+### Build on Debian-based Linux distros
 
 Install dependencies:
 
@@ -27,7 +95,7 @@ Build the game client:
 cargo build --release --bin game-client
 ```
 
-### RHEL-based Linux distros
+### Build on RHEL-based Linux distros
 
 Install dependencies:
 
@@ -41,7 +109,7 @@ Build the game client:
 cargo build --release --bin game-client
 ```
 
-### macOS (Apple Silicon)
+### Build on macOS (Apple Silicon)
 
 Build the game client:
 
@@ -49,7 +117,7 @@ Build the game client:
 cargo build --release --bin game-client --target aarch64-apple-darwin
 ```
 
-### Windows 10/11
+### Build on Windows 10/11
 
 Install dependencies:
 
@@ -69,9 +137,9 @@ cargo build --release --bin game-client-without-autoupdate --target x86_64-pc-wi
 
 After compiling and launching the game client (created in the `target` directory), shader compilation is underway, which may take some time, depending on the performance of your computer.
 
-If the FPS of the game client is **too low**, you can press the `NumPad 7` key to degrade the graphics rendering parameters.
+If the FPS of the game client is **too low**, you can press the `NumPad 7` key (each tap reduces the screen resolution by 5 percent) to degrade the graphics rendering parameters.
 
-If you want to play online on your own servers, you need to create a game-client `settings.json` executable file in the same directory, and enter the ipv4 address and port of the matchmaking server in the `matchmaking_server_url` field. Playing on the official Slice 4D Shooter servers does **not require** a settings.json file.
+If you want to play online on your own servers, you need to create a game-client `settings.json` executable file in the same directory, and enter the ipv4 address and port of the matchmaking server in the `matchmaking_server_url` field.
 
 ```bash
 tee settings.json > /dev/null <<EOF
@@ -89,6 +157,8 @@ tee settings.json > /dev/null <<EOF
 }
 EOF
 ```
+
+**The `settings.json` file is not required for single-player mode or for playing on the official Slice: 4D Shooter servers.**
 
 Currently, the client can make several connection attempts until success is achieved.
 
