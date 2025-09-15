@@ -365,19 +365,19 @@ impl InputSystem {
             (ButtonActions::EnableWAim, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Numpad7),
+            SomeButton::KeyCode(KeyCode::KeyI),
             (ButtonActions::DecreaseRenderQuality, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Numpad8),
+            SomeButton::KeyCode(KeyCode::KeyO),
             (ButtonActions::IncreaseRenderQuality, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Numpad9),
+            SomeButton::KeyCode(KeyCode::KeyP),
             (ButtonActions::ShadowsToggle, Action::new())
         );
         actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyP),
+            SomeButton::KeyCode(KeyCode::KeyG),
             (ButtonActions::ConnectToServer, Action::new())
         );
         actions_table.insert(

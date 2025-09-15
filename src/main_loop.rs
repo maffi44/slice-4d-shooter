@@ -116,13 +116,6 @@ impl ApplicationHandler for Slice4DShooter
                 // set wake up time gof the next interation
                 event_loop.set_control_flow(ControlFlow::WaitUntil(
                     Instant::now() + self.systems.as_mut().unwrap().time.target_frame_duration
-                    // Instant::from(
-                    //     systems.as_mut().unwrap().time.timestamp_of_main_loop_start +
-                    //     Duration::from_secs_f64(
-                    //         systems.as_mut().unwrap().time.target_frame_duration.as_secs_f64() *
-                    //         (systems.as_mut().unwrap().time.frame_counter + 1) as f64
-                    //     )
-                    // )
                 ));
                 
                 main_loop_tick(self.systems.as_mut().unwrap());
@@ -205,22 +198,22 @@ impl ApplicationHandler for Slice4DShooter
                                 );
                             }
                         },
-                        KeyCode::Numpad1 => {
+                        KeyCode::KeyJ => {
                             systems.settings.decrease_mouse_sensitivity(
                                 systems.time.get_prev_frame_duration()
                             );
                         },
-                        KeyCode::Numpad2 => {
+                        KeyCode::KeyK => {
                             systems.settings.increase_mouse_sensitivity(
                                 systems.time.get_prev_frame_duration()
                             );
                         },
-                        KeyCode::Numpad4 => {
+                        KeyCode::KeyN => {
                             systems.audio.decrease_sound_volume(
                                 systems.time.get_prev_frame_duration()
                             );
                         },
-                        KeyCode::Numpad5 => {
+                        KeyCode::KeyM => {
                             systems.audio.increase_sound_volume(
                                 systems.time.get_prev_frame_duration()
                             );
@@ -235,6 +228,31 @@ impl ApplicationHandler for Slice4DShooter
                                     {
                                         // Temporary link for youtube video. There will be a link to the video tutorial later
                                         match opener::open_browser("https://youtu.be/u2GZPIDo1vI?si=7rV4d3KXusQiq0xM")
+                                        {
+                                            Err(e) => eprintln!(
+                                                "Can't open a browser"
+                                            ),
+                                            _ => {
+                                                systems.render.window.set_cursor_visible(true);
+                                                systems.render.window.set_cursor_grab(winit::window::CursorGrabMode::None).unwrap();
+                                            }
+                                        };
+                                    }
+                                },
+                                ElementState::Released => {},
+                            }
+                            
+                        }
+                        KeyCode::KeyH => {
+                            match event.state
+                            {
+                                ElementState::Pressed =>
+                                {
+                                    //temporary
+                                    if systems.ui.get_ui_element(&UIElementType::TutorialWindow).get_ui_data().is_visible
+                                    {
+                                        // Temporary link for youtube video. There will be a link to the video tutorial later
+                                        match opener::open_browser("https://slice4d.info")
                                         {
                                             Err(e) => eprintln!(
                                                 "Can't open a browser"
