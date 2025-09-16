@@ -137,7 +137,7 @@ cargo build --release --bin game-client-without-autoupdate --target x86_64-pc-wi
 
 After compiling and launching the game client (created in the `target` directory), shader compilation is underway, which may take some time, depending on the performance of your computer.
 
-If the FPS of the game client is **too low**, you can press the `NumPad 7` key (each tap reduces the screen resolution by 5 percent) to degrade the graphics rendering parameters.
+If the FPS of the game client is **too low**, you can press the `i` key (each tap reduces the screen resolution by 5 percent) to degrade the graphics rendering parameters.
 
 If you want to play online on your own servers, you need to create a game-client `settings.json` executable file in the same directory, and enter the ipv4 address and port of the matchmaking server in the `matchmaking_server_url` field.
 
