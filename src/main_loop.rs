@@ -227,7 +227,7 @@ impl ApplicationHandler for Slice4DShooter
                                     if systems.ui.get_ui_element(&UIElementType::TutorialWindow).get_ui_data().is_visible
                                     {
                                         // Temporary link for youtube video. There will be a link to the video tutorial later
-                                        match opener::open_browser("https://youtu.be/u2GZPIDo1vI?si=7rV4d3KXusQiq0xM")
+                                        match opener::open_browser("https://youtu.be/Pl355uSTBLc")
                                         {
                                             Err(e) => eprintln!(
                                                 "Can't open a browser"
