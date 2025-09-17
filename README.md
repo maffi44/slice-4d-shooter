@@ -11,8 +11,8 @@ Our **goal** is to create the first **free and open-source esports shooter in 4D
 
 ## Resources
 *   **[Official Website](https://slice4d.info/)**
-*   **[Official Trailer](https://youtu.be/u2GZPIDo1vI?si=2mSRlsTFC2b_SkS3)**
-*   **[Video Tutorial](https://youtu.be/u2GZPIDo1vI?si=2mSRlsTFC2b_SkS3)**
+*   **[Official Trailer](https://youtu.be/yeCqfqE4ylk)**
+*   **[Video Tutorial](https://youtu.be/Pl355uSTBLc)**
 *   **[Download auto-update version for Windows on Itch.io](https://maffi44.itch.io/slice4d)**
 
 ## Technology Overview
