@@ -135,7 +135,15 @@ cargo build --release --bin game-client-without-autoupdate --target x86_64-pc-wi
 
 ## Launching the game
 
-After compiling and launching the game client (created in the `target` directory), shader compilation is underway, which may take some time, depending on the performance of your computer.
+After completing the compilation and build (created in the "target" directory), check the version of the game-client.
+
+```bash
+./game-client -v
+```
+
+If you are going to connect to the official servers, then the version of the game-client **must match the version** of the **[latest release](https://github.com/maffi44/slice-4d-shooter/releases)** of the game.
+
+After launching the game client (created in the `target` directory), shader compilation is underway, which may take some time, depending on the performance of your computer.
 
 If the FPS of the game client is **too low**, you can press the `i` key (each tap reduces the screen resolution by 5 percent) to degrade the graphics rendering parameters.
 
@@ -190,9 +198,6 @@ apt install build-essential pkg-config libasound2-dev
 
 #### 3) Compile matchmaking server
 
-```bash
-cd slice-4d-shooter
-```
 ```bash
 cargo build --release -p matchmaking_server
 ```
