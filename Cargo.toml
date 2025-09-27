@@ -49,7 +49,7 @@ tokio-tungstenite = "*"
 web-time = "*"
 glam = "*"
 rand = "*"
-blink-alloc = "*"
+blink-alloc = {version = "*", features = ["sync"]}
 fyrox-sound = "*"
 fyrox-resource = "*"
 fyrox-core = "*"

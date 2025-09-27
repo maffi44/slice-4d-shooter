@@ -618,12 +618,23 @@ impl NetSystem {
             .get_ui_data_mut()
             .get_is_visible_mut() = false;
 
-        *ui_system.get_mut_ui_element(&UIElementType::TitleConnectedToServer)
-            .get_ui_data_mut()
-            .get_is_visible_mut() = true;
+        if players_id.len() > 0
+        {
+            *ui_system.get_mut_ui_element(&UIElementType::TitleConnectedToServer)
+                .get_ui_data_mut()
+                .get_is_visible_mut() = true;
         
-        self.current_visible_ui_elem = UIElementType::TitleConnectedToServer;
-
+            self.current_visible_ui_elem = UIElementType::TitleConnectedToServer;
+        }
+        else
+        {
+            *ui_system.get_mut_ui_element(&UIElementType::TitleConnectedToServerAndWaitingForOthers)
+                .get_ui_data_mut()
+                .get_is_visible_mut() = true;
+        
+            self.current_visible_ui_elem = UIElementType::TitleConnectedToServerAndWaitingForOthers;
+        }
+        
         if webrtc_socket.any_channel_closed() {
 
             engine_handle.send_boardcast_message(

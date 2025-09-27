@@ -732,6 +732,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e669f146bb8b2327006ed94c69cf78c8ec81c100192564654230a40b4f091d82"
 dependencies = [
  "allocator-api2",
+ "parking_lot",
 ]
 
 [[package]]
@@ -1845,7 +1846,7 @@ dependencies = [
 
 [[package]]
 name = "game_server"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "alkahest",
  "blink-alloc",

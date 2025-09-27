@@ -155,6 +155,7 @@ pub enum UIElementType {
     TitlePressTForTutorial,
     TitlePressPToPlayOnline,
     TitleConnectingToServer,
+    TitleConnectedToServerAndWaitingForOthers,
     TitleConnectedToServer,
     TitleConnectionFailedServerNotFound,
     TitleConnectionFailedServerIsFull,
@@ -206,6 +207,7 @@ pub enum TextureType {
     TitlePressPToPlayOnline,
     TitleConnectingToServer,
     TitleConnectedToServer,
+    TitleConnectedToServerAndWaitingForOthers,
     TitleConnectionFailedServerNotFound,
     TitleConnectionFailedServerIsFull,
     TitleConnectionFailedServerError,
@@ -387,6 +389,10 @@ impl UISystem {
         texture_sources.insert(
             TextureType::TitleConnectedToServer,
             include_bytes!("../assets/textures/connected_to_server.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::TitleConnectedToServerAndWaitingForOthers,
+            include_bytes!("../assets/textures/connected_to_server_and_wait_for_others.png").as_slice()
         );
         texture_sources.insert(
             TextureType::TitleConnectionFailedServerNotFound,
@@ -1528,6 +1534,29 @@ impl UISystem {
                         None,
                     ),
                     TextureType::TitleConnectedToServer
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::TitleConnectedToServerAndWaitingForOthers,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::TopRight,
+                            position: Vec2::new(1.0, 1.0),
+                            size: RectSize::LockedWight(
+                                0.23,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::TitleConnectedToServerAndWaitingForOthers
                 )
             )
         );

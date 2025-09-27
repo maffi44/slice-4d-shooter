@@ -22,7 +22,6 @@ mod read_args;
 
 use main_loop::MainLoop;
 use pollster;
-use blink_alloc::UnsafeGlobalBlinkAlloc;
 
 use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, PlayerMessage}, player_for_2d_3d_example::PlayerFor2d3dExample, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
@@ -30,11 +29,9 @@ use engine::input::ActionsFrameState;
 
 use crate::{actor::flag_base::FlagBase, read_args::read_args};
 
-
+use blink_alloc::GlobalBlinkAlloc;
 #[global_allocator]
-static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
-    UnsafeGlobalBlinkAlloc::new()
-};
+static GLOBAL_ALLOC: GlobalBlinkAlloc = GlobalBlinkAlloc::new();
 
 fn main() {
     env_logger::init();

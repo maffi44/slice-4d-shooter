@@ -16,8 +16,6 @@
 
 mod client_server_protocol;
 
-use blink_alloc::UnsafeGlobalBlinkAlloc;
-
 use std::{
     collections::HashMap,
     env,
@@ -204,11 +202,9 @@ impl GameServerConfig {
     }
 }
 
+use blink_alloc::GlobalBlinkAlloc;
 #[global_allocator]
-static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
-    UnsafeGlobalBlinkAlloc::new()
-};
-    
+static GLOBAL_ALLOC: GlobalBlinkAlloc = GlobalBlinkAlloc::new();
 
 fn main() -> Result<(), ()> {
     let args: Vec<String> = env::args().collect();

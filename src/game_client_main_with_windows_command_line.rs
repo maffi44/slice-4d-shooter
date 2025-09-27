@@ -23,7 +23,6 @@ mod winsparkle;
 
 use main_loop::MainLoop;
 use pollster;
-use blink_alloc::UnsafeGlobalBlinkAlloc;
 
 use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
@@ -33,10 +32,9 @@ use crate::{actor::flag_base::FlagBase, read_args::read_args};
 
 
 
+use blink_alloc::GlobalBlinkAlloc;
 #[global_allocator]
-static GLOBAL_ALLOC: UnsafeGlobalBlinkAlloc = unsafe {
-    UnsafeGlobalBlinkAlloc::new()
-};
+static GLOBAL_ALLOC: GlobalBlinkAlloc = GlobalBlinkAlloc::new();
 
 #[cfg(target_os = "windows")]
 fn init_winsparkle() {

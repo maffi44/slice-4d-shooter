@@ -1,6 +1,6 @@
 [package]
 name = "game_server"
-version = "0.4.5"
+version = "0.4.6"
 edition = "2021"
 
 [dependencies]
@@ -14,7 +14,7 @@ matchbox_signaling = { path = "../matchbox_signaling_modified" }
 matchbox_socket = "0.12.0"
 rand = "*"
 glam = "*"
-blink-alloc = "*"
+blink-alloc = { version = "*", features = [ "sync" ] }
 
 [lib]
 name = "client_server_protocol"
