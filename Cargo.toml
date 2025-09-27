@@ -27,7 +27,7 @@ authors = ["Timofei Molokov"]
 ### When the version is changed (the counter is increased), 
 ### Windows game clients are updated worldwide for players.
 
-version = "0.5.3"
+version = "0.5.4"
 
 ###
 ###
