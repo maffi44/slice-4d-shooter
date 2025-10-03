@@ -30,6 +30,7 @@ use engine::input::ActionsFrameState;
 use crate::{actor::flag_base::FlagBase, read_args::read_args};
 
 use blink_alloc::GlobalBlinkAlloc;
+#[cfg(not(debug_assertions))]
 #[global_allocator]
 static GLOBAL_ALLOC: GlobalBlinkAlloc = GlobalBlinkAlloc::new();
 

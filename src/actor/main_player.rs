@@ -152,6 +152,8 @@ impl PlayersProjections
         
         for projection in &self.projections
         {
+            if projection.anti_projection_mode_enabled {continue;}
+
             if let Some(body) = &projection.body
             {
                 let current_intr = get_sphere_intersection(
@@ -328,20 +330,11 @@ impl PlayersProjections
                 return false;
             }
 
-            if projection.damage_intensity > 0.0
-            {
-                projection.damage_intensity -= delta;
-            }
-            else
+            if projection.anti_projection_mode_enabled
             {
                 projection.damage_intensity = 0.0;
-            }
-
-            if projection.is_active_by_timer > 0.0
-            {
-                projection.is_active_by_timer -= delta;
-
-                if projection.is_active_by_timer <= 0.0
+                
+                if projection.is_active_by_timer > 0.0
                 {
                     projection.is_active_by_timer = 0.0;
 
@@ -359,29 +352,88 @@ impl PlayersProjections
                     );
                 }
 
-                projection.is_active_intensity = lerpf(
-                    projection.is_active_intensity,
-                    projection.is_active_by_timer /
-                    PROJECTION_ACTIVE_TIME,
-                    delta*30.0
-                );
+                projection.anti_projection_mode_tick_timer -= delta;
+
+                if projection.anti_projection_mode_tick_timer < -ANTI_PROJECTION_MODE_INVISIBLE_TICK_TIME
+                {
+                    projection.anti_projection_mode_tick_counter -= 1;
+
+                    projection.anti_projection_mode_tick_timer = ANTI_PROJECTION_MODE_VISIBLE_TICK_TIME;
+                }
+
+                if projection.anti_projection_mode_tick_counter == 0
+                {
+                    return false;
+                }
+
+                projection.intensity = {
+                    lerpf(
+                        projection.intensity,
+                        (projection.timer*0.3).clamp(0.0, 1.0),
+                        delta*12.0
+                    )
+                };
+
+                if projection.anti_projection_mode_tick_timer < 0.0
+                {
+                    projection.intensity = 0.0;
+                }
             }
             else
             {
-                projection.is_active_by_timer = 0.0;
-                projection.is_active_intensity = 0.0;
+                if projection.damage_intensity > 0.0
+                {
+                    projection.damage_intensity -= delta;
+                }
+                else
+                {
+                    projection.damage_intensity = 0.0;
+                }
+
+                if projection.is_active_by_timer > 0.0
+                {
+                    projection.is_active_by_timer -= delta;
+
+                    if projection.is_active_by_timer <= 0.0
+                    {
+                        projection.is_active_by_timer = 0.0;
+
+                        self.current_active_projection = None;
+
+                        //use the same sound for cuptured and lost 
+                        //projection, just with different pitch
+                        audio_system.spawn_non_spatial_sound(
+                            Sound::ProjectionCaptured,
+                            0.70,
+                            0.48,
+                            false,
+                            true,
+                            Status::Playing,
+                        );
+                    }
+
+                    projection.is_active_intensity = lerpf(
+                        projection.is_active_intensity,
+                        projection.is_active_by_timer /
+                        PROJECTION_ACTIVE_TIME,
+                        delta*30.0
+                    );
+                }
+                else
+                {
+                    projection.is_active_by_timer = 0.0;
+                    projection.is_active_intensity = 0.0;
+                }
+        
+                projection.intensity = {
+                    lerpf(
+                        projection.intensity,
+                        (projection.timer*0.3).clamp(0.0, 1.0),
+                        delta*12.0
+                    )
+                };
             }
-    
-            projection.intensity = {
-                lerpf(
-                    projection.intensity,
-                    (projection.timer*0.3).clamp(0.0, 1.0),
-                    delta*12.0
-                )
-            };
-    
-            projection.body = None;
-    
+
             engine_handle.send_direct_message(
                 projection.id,
                 Message {
@@ -447,11 +499,13 @@ impl PlayersProjections
         None
     }
 
-    pub fn update_projection_postiton(
+    pub fn update_projection_state(
         &mut self,
         projection_id: ActorID,
         updated_projection_original_position: Vec4,
         projection_updated_radius: f32,
+        anti_projection_mode_enabled: bool,
+        player_is_alive: bool,
         inner_state: &PlayerInnerState
     )
     {
@@ -461,7 +515,24 @@ impl PlayersProjections
      
         if let Some(projection) = projection
         {
+            if anti_projection_mode_enabled && projection.body.is_none()
+            {
+                // if projection's anti projection mode enabled on projection's start
+                // do not show this projection
+                projection.timer = -1.0;
+                return;
+            }
+
+            if !player_is_alive
+            {
+                projection.timer = -1.0;
+                return;
+            }
+
+            projection.anti_projection_mode_enabled = anti_projection_mode_enabled;
+            
             let player_position = inner_state.get_position();
+
         
             let player_to_projection_vec = updated_projection_original_position - player_position;
             let player_w_vertical_dir = inner_state.get_rotation_matrix() * W_UP;
@@ -508,11 +579,13 @@ impl PlayersProjections
     }
 
 
-    pub fn update_projection_postiton_for_2d_3d_example(
+    pub fn update_projection_state_for_2d_3d_example(
         &mut self,
         projection_id: ActorID,
         updated_projection_original_position: Vec4,
         projection_updated_radius: f32,
+        anti_projection_mode_enabled: bool,
+        player_is_alive: bool,
         inner_state: &PlayerInnerState
     )
     {
@@ -523,6 +596,22 @@ impl PlayersProjections
         if let Some(projection) = projection
         {
             let player_position = inner_state.get_position();
+
+            if anti_projection_mode_enabled && projection.body.is_none()
+            {
+                // if projection's anti projection mode enabled on projection's start
+                // do not show this projection
+                projection.timer = -1.0;
+                return;
+            }
+
+            if !player_is_alive
+            {
+                projection.timer = -1.0;
+                return;
+            }
+
+            projection.anti_projection_mode_enabled = anti_projection_mode_enabled;
         
             let player_to_projection_vec = updated_projection_original_position - player_position;
             let player_x_vertical_dir = inner_state.get_rotation_matrix() * RIGHT;
@@ -579,6 +668,10 @@ pub struct PlayerProjection
 
     pub is_active_by_timer: f32,
 
+    pub anti_projection_mode_enabled: bool,
+    pub anti_projection_mode_tick_counter: u32,
+    pub anti_projection_mode_tick_timer: f32,
+
     pub body: Option<PlayerProjectionBody>
 }
 
@@ -625,6 +718,9 @@ impl PlayerProjection
             is_active_by_timer: 0.0,
             is_active_intensity: 0.0,
             damage_intensity,
+            anti_projection_mode_enabled: false,
+            anti_projection_mode_tick_counter: ANTI_PROJECTION_MODE_TICK_COUNTS,
+            anti_projection_mode_tick_timer: ANTI_PROJECTION_MODE_VISIBLE_TICK_TIME,
             body: None,
         }
     }
@@ -739,9 +835,14 @@ pub const DEFAULT_ZW_ROTATION_TARGET_IN_RADS: f32 = 0.0;
 pub const PLAYER_PROJECTION_DISPLAY_TIME: f32 = 3.4;
 pub const GET_DAMAGE_PROJECTION_INTENSITY: f32 = 1.2;
 pub const SECOND_JUMP_CHARGING_SPEED: f32 = 10.0;
+pub const ANTI_PROJECTION_MODE_DURATION: f32 = 3.5;
+pub const ANTI_PROJECTION_MODE_TICK_COUNTS: u32 = 4;
+pub const ANTI_PROJECTION_MODE_VISIBLE_TICK_TIME: f32 = 0.08;
+pub const ANTI_PROJECTION_MODE_INVISIBLE_TICK_TIME: f32 = 0.08;
 
 #[derive(Clone)]
 pub enum PlayerMessage {
+    AntiProjectionModeTurnedOn,
     YouWasScanned,
     GetDamageAndForce(
         // damage
@@ -761,6 +862,10 @@ pub enum PlayerMessage {
         Vec4,
         // player radius
         f32,
+        // Anti Projection Mode is Enabled
+        bool,
+        // Player is alive
+        bool,
     ),
     NewPeerConnected(u128),
     Telefrag,
@@ -862,7 +967,10 @@ impl Actor for MainPlayer {
                 {
                     SpecificActorMessage::PlayerMessage(message) =>
                     {
-                        match message {
+                        match message
+                        {
+                            PlayerMessage::AntiProjectionModeTurnedOn => {},
+
                             PlayerMessage::YouWasScanned =>
                             {
                                 audio_system.spawn_non_spatial_sound(
@@ -877,13 +985,17 @@ impl Actor for MainPlayer {
 
                             PlayerMessage::DataForProjection(
                                 updated_projection_position,
-                                updated_projection_radius
+                                updated_projection_radius,
+                                anti_projection_mode_enabled,
+                                player_is_alive,
                             ) =>
                             {
-                                self.screen_effects.player_projections.update_projection_postiton(
+                                self.screen_effects.player_projections.update_projection_state(
                                     from,
                                     updated_projection_position,
                                     updated_projection_radius,
+                                    anti_projection_mode_enabled,
+                                    player_is_alive,
                                     &self.inner_state
                                 );
                             }
@@ -2305,7 +2417,48 @@ pub fn process_w_scanner(
             }
         }
     }
+
+    if input.anti_projection_mode.is_action_just_pressed() {
+        if w_scanner.w_scanner_reloading_time >= player_settings.scanner_reloading_time {
+
+            inner_state.anti_projection_mode_enabled_timer = ANTI_PROJECTION_MODE_DURATION;
+
+            engine_handle.send_command(
+                Command {
+                    sender: my_id,
+                    command_type: CommandType::NetCommand(
+                        NetCommand::SendBoardcastNetMessageReliable(
+                            NetMessageToPlayer::RemoteDirectMessage(
+                                my_id,
+                                RemoteMessage::AntiProjectionModeTurnedOn
+                            ),
+                        )
+                    )
+                }
+            );
+
+            audio_system.spawn_non_spatial_sound(
+                crate::engine::audio::Sound::AntiProjectionModeEnabledSound,
+                0.81,
+                1.0,
+                false,
+                true,
+                fyrox_sound::source::Status::Playing,
+            );
+
+            w_scanner.w_scanner_reloading_time = 0.0;
+        }
+    }
     
+    if inner_state.anti_projection_mode_enabled_timer > 0.0
+    {
+        inner_state.anti_projection_mode_enabled_timer -= delta;
+    }
+    
+    inner_state.anti_projection_mode_enabled_timer = {
+        inner_state.anti_projection_mode_enabled_timer.max(0.0)
+    };
+
     if w_scanner.w_scanner_enable {
         w_scanner.w_scanner_radius += delta * W_SCANNER_EXPANDING_SPEED;
 

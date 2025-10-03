@@ -4639,7 +4639,7 @@ checksum = "04dc19736151f35336d325007ac991178d504a119863a2fcb3758cdb5e52c50d"
 
 [[package]]
 name = "slice-4d-shooter"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "alkahest",
  "bincode",

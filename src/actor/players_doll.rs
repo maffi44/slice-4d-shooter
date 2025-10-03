@@ -26,21 +26,17 @@ use client_server_protocol::{
 };
 
 use crate::{
-    engine::{
+    actor::main_player, engine::{
         audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{
             Command,
             CommandType,
             EngineHandle
         }, physics::{
-            colliders_container::PhysicalElement,
-            dynamic_collider::PlayersDollCollider,
-            kinematic_collider::KinematicCollider,
-            PhysicsSystem
+            PhysicsSystem, colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider
         }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
             SphericalVolumeArea, VisualWave, VolumeArea
         }
-    },
-    transform::{Transform, BACKWARD, DOWN, FORWARD, LEFT, RIGHT, UP, W_DOWN},
+    }, transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN}
 };
 
 use super::{
@@ -124,6 +120,8 @@ pub struct PlayerDoll {
     w_scanner_radius: f32,
     w_scanner_ring_intesity: f32,
     visual_wave: Vec<VisualWave>,
+
+    anti_projection_mode_enabled_timer: f32, 
 }
 
 #[derive(Clone)]
@@ -310,6 +308,7 @@ impl PlayerDoll {
             w_scanner_ring_intesity: 0.0,
             visual_wave: Vec::with_capacity(1),
             player_doll_for_2d_3d_example,
+            anti_projection_mode_enabled_timer: 0.0,
         }
     }
 
@@ -604,6 +603,12 @@ impl PlayerDoll {
                 self.w_scanner_enable = false;
             }
         }
+
+        self.anti_projection_mode_enabled_timer -= delta;
+
+        self.anti_projection_mode_enabled_timer = {
+            self.anti_projection_mode_enabled_timer.max(0.0)
+        };
     }
 }
 
@@ -691,30 +696,47 @@ impl Actor for PlayerDoll {
                     {
                         match message
                         {
+                            PlayerMessage::AntiProjectionModeTurnedOn =>
+                            {
+                                self.anti_projection_mode_enabled_timer = main_player::ANTI_PROJECTION_MODE_DURATION;
+
+                                audio_system.spawn_spatial_sound(
+                                    crate::engine::audio::Sound::AntiProjectionModeEnabledSound,
+                                    0.68,
+                                    1.0,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing,
+                                    self.transform.get_position(),
+                                    1.0,
+                                    1.0,
+                                    50.0
+                                );
+                            }
+
                             PlayerMessage::YouWasScanned => {},
 
                             PlayerMessage::GiveMeDataForProjection => {
-                                if self.is_alive
-                                {
-                                    engine_handle.send_direct_message(
-                                        from,
-                                        Message {
-                                            from: self.get_id().expect("Player Doll have not ActorID"),
-                                            remote_sender: false,
-                                            message: MessageType::SpecificActorMessage(
-                                                SpecificActorMessage::PlayerMessage(
-                                                    PlayerMessage::DataForProjection(
-                                                        self.transform.get_position(),
-                                                        self.player_settings.collider_radius
-                                                    )
+                                engine_handle.send_direct_message(
+                                    from,
+                                    Message {
+                                        from: self.get_id().expect("Player Doll have not ActorID"),
+                                        remote_sender: false,
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::PlayerMessage(
+                                                PlayerMessage::DataForProjection(
+                                                    self.transform.get_position(),
+                                                    self.player_settings.collider_radius,
+                                                    self.anti_projection_mode_enabled_timer > 0.0,
+                                                    self.is_alive,
                                                 )
                                             )
-                                        }
-                                    );
-                                }
+                                        )
+                                    }
+                                );
                             }
 
-                            PlayerMessage::DataForProjection(_,_) => {}
+                            PlayerMessage::DataForProjection(_,_,_,_) => {}
 
                             PlayerMessage::Telefrag =>
                             {

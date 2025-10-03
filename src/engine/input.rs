@@ -58,6 +58,7 @@ pub struct ActionsFrameState {
     pub w_down: Action,
     pub w_up: Action,
     pub w_scanner: Action,
+    pub anti_projection_mode: Action,
     pub activate_hand_slot_0: Action,
     pub activate_hand_slot_1: Action,
     pub activate_hand_slot_2: Action,
@@ -108,6 +109,7 @@ impl ActionsFrameState {
         let mut arrow_left = Action::new();
         let mut arrow_right = Action::new();
         let mut move_camera_back_in_example = Action::new();
+        let mut anti_projection_mode = Action::new();
         let mouse_axis = mouse_axis;
         
         for (_, (button_action, action)) in actions_table.iter() {
@@ -138,6 +140,7 @@ impl ActionsFrameState {
                 ButtonActions::ArrowLeft => arrow_left = action.clone(),
                 ButtonActions::ArrowRight => arrow_right = action.clone(),
                 ButtonActions::MoveCameraBackInExample => move_camera_back_in_example = action.clone(),
+                ButtonActions::AntiProjectionMode => anti_projection_mode = action.clone(),
             }
         }
 
@@ -169,6 +172,7 @@ impl ActionsFrameState {
             arrow_left,
             arrow_right,
             move_camera_back_in_example,
+            anti_projection_mode,
         }
     }
 
@@ -199,6 +203,7 @@ impl ActionsFrameState {
         let arrow_left = Action::new();
         let arrow_right = Action::new();
         let move_camera_back_in_example = Action::new();
+        let anti_projection_mode = Action::new();
         let mouse_axis = Vec2::ZERO;
 
         ActionsFrameState {
@@ -228,6 +233,7 @@ impl ActionsFrameState {
             arrow_left,
             arrow_right,
             move_camera_back_in_example,
+            anti_projection_mode,
             mouse_axis
         }
     }
@@ -255,6 +261,7 @@ pub enum ButtonActions {
     HandSlot2,
     HandSlot3,
     WScanner,
+    AntiProjectionMode,
     JumpW,
     ShowHideControls,
     Jump,
@@ -399,6 +406,10 @@ impl InputSystem {
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::ControlRight),
             (ButtonActions::MoveCameraBackInExample, Action::new())
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyQ),
+            (ButtonActions::AntiProjectionMode, Action::new())
         );
 
         InputSystem {

@@ -163,13 +163,17 @@ impl Actor for Observer {
 
                             PlayerMessage::DataForProjection(
                                 updated_projection_position,
-                                updated_projection_radius
+                                updated_projection_radius,
+                                anti_projection_mode_enabled,
+                                player_is_alive,
                             ) =>
                             {
-                                self.screen_effects.player_projections.update_projection_postiton(
+                                self.screen_effects.player_projections.update_projection_state(
                                     from,
                                     updated_projection_position,
                                     updated_projection_radius,
+                                    anti_projection_mode_enabled,
+                                    player_is_alive,
                                     &self.inner_state
                                 );
                             }

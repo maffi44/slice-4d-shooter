@@ -68,6 +68,7 @@ pub struct PlayerInnerState {
     pub eyes_offset: Vec4,
     pub tutrial_window_was_open: bool,
     pub title_press_t_for_tutorial_toggle_timer: f32,
+    pub anti_projection_mode_enabled_timer: f32,
 }
 
 
@@ -179,6 +180,8 @@ impl PlayerInnerState {
             eyes_offset,
             tutrial_window_was_open: false,
             title_press_t_for_tutorial_toggle_timer: 0.0,
+
+            anti_projection_mode_enabled_timer: 0.0,
         }
     }
 

@@ -185,6 +185,7 @@ pub enum RemoteCommand {
 #[alkahest(Formula, Serialize, Deserialize)]
 #[derive(Clone)]
 pub enum RemoteMessage {
+    AntiProjectionModeTurnedOn,
     ScannerTurnedOn,
     YouWasScanned,
     DealDamageAndForce(

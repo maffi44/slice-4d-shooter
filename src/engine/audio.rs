@@ -45,6 +45,7 @@ use glam::Vec4;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Sound {
+    AntiProjectionModeEnabledSound,
     MachinegunShot,
     ShotgunShot,
     ShotgunShotImpact,
@@ -690,6 +691,11 @@ impl AudioSystem {
             )
         ).expect("can't create sound buffer resourse");
 
+        let anti_projection_mode_enabled = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/anti_projection_mode_enabled.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
 
         sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
         sounds.insert(Sound::ShotgunShot, shotgun_shot_sound_resource);
@@ -718,6 +724,8 @@ impl AudioSystem {
         sounds.insert(Sound::ChargingWJump, charging_w_jump);
         sounds.insert(Sound::WJump, w_jump);
         sounds.insert(Sound::ProjectionCaptured, projection_captured);
+        sounds.insert(Sound::AntiProjectionModeEnabledSound, anti_projection_mode_enabled);
+
 
         AudioSystem {
             sound_engine,

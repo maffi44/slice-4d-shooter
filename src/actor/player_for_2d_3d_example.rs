@@ -206,7 +206,10 @@ impl Actor for PlayerFor2d3dExample {
                 {
                     SpecificActorMessage::PlayerMessage(message) =>
                     {
-                        match message {
+                        match message
+                        {
+                            PlayerMessage::AntiProjectionModeTurnedOn => {},
+
                             PlayerMessage::YouWasScanned =>
                             {
                                 audio_system.spawn_non_spatial_sound(
@@ -221,13 +224,17 @@ impl Actor for PlayerFor2d3dExample {
 
                             PlayerMessage::DataForProjection(
                                 updated_projection_position,
-                                updated_projection_radius
+                                updated_projection_radius,
+                                anti_projection_mode_enabled,
+                                player_is_alive,
                             ) =>
                             {
-                                self.screen_effects.player_projections.update_projection_postiton_for_2d_3d_example(
+                                self.screen_effects.player_projections.update_projection_state_for_2d_3d_example(
                                     from,
                                     updated_projection_position,
                                     updated_projection_radius,
+                                    anti_projection_mode_enabled,
+                                    player_is_alive,
                                     &self.inner_state
                                 );
                             }
