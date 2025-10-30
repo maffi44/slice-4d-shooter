@@ -449,8 +449,46 @@ pub fn get_dist(
         );
     }
 
-    for collider in static_objects.cubes.iter_undestroyable() {
-        d = d.min(sd_box(p - collider.position, collider.size) - collider.roundness);
+    for collider in static_objects.cubes.iter_undestroyable_normal() {
+         d = d.min(sd_box(p - collider.position, collider.size) - collider.roundness);
+    }
+    for collider in static_objects.inf_w_cubes.iter_undestroyable_normal() {
+        d = d.min(sd_inf_box(p - collider.position, collider.size.xyz()) - collider.roundness);
+    }
+    for collider in static_objects.spheres.iter_undestroyable_normal() {
+        d = d.min(sd_sphere(p - collider.position, collider.size.x) - collider.roundness);
+    }
+    for collider in static_objects.sph_cubes.iter_undestroyable_normal() {
+        d = d.min(sd_sph_box(p - collider.position, collider.size) - collider.roundness);
+    }
+
+    for collider in static_objects.cubes.iter_undestroyable_stickiness() {
+        d = smin(
+           d,
+           sd_box(p - collider.position, collider.size) - collider.roundness,
+           stickiness
+       );
+    }
+    for collider in static_objects.inf_w_cubes.iter_undestroyable_stickiness() {
+        d = smin(
+            d,
+            sd_inf_box(p - collider.position, collider.size.xyz()) - collider.roundness,
+            stickiness
+        );
+    }
+    for collider in static_objects.spheres.iter_undestroyable_stickiness() {
+        d = smin(
+            d,
+            sd_sphere(p - collider.position, collider.size.x) - collider.roundness,
+            stickiness
+        );
+    }
+    for collider in static_objects.sph_cubes.iter_undestroyable_stickiness() {
+        d = smin(
+            d,
+            sd_sph_box(p - collider.position, collider.size) - collider.roundness,
+            stickiness
+        );
     }
 
     match excluding_ids {
@@ -551,13 +589,11 @@ pub fn get_bounce_and_friction(
 
         new_d = smin(d, new_d, stickiness);
         
-        if d < d{
+        if new_d < d{
             bounce_coeficient = collider.bounce_rate;
             friction = collider.friction;
 
             d = new_d;
-
-
         };
     }
     for collider in static_objects.sph_cubes.iter_stickiness() {
@@ -616,8 +652,67 @@ pub fn get_bounce_and_friction(
         friction = 0.0;
     };
 
-    for collider in static_objects.cubes.iter_undestroyable() {
+    for collider in static_objects.cubes.iter_undestroyable_normal() {
         let new_d = sd_box(position - collider.position, collider.size) - collider.roundness;
+
+        if new_d < d{
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
+
+            d = new_d;
+        };
+    }
+    for collider in static_objects.spheres.iter_undestroyable_normal() {
+        let new_d = sd_sphere(position - collider.position, collider.size.x) - collider.roundness;
+
+        if new_d < d{
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
+
+            d = new_d;
+        };
+    }
+    for collider in static_objects.sph_cubes.iter_undestroyable_normal() {
+        let new_d = sd_sph_box(position - collider.position, collider.size) - collider.roundness;
+
+        if new_d < d{
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
+
+            d = new_d;
+        };
+    }
+
+    let stickiness = static_objects.stickiness;
+
+    for collider in static_objects.cubes.iter_undestroyable_stickiness() {
+        let mut new_d = sd_box(position - collider.position, collider.size) - collider.roundness;
+
+        new_d = smin(d, new_d, stickiness);
+
+        if new_d < d{
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
+
+            d = new_d;
+        };
+    }
+    for collider in static_objects.spheres.iter_undestroyable_stickiness() {
+        let mut new_d = sd_sphere(position - collider.position, collider.size.x) - collider.roundness;
+
+        new_d = smin(d, new_d, stickiness);
+        
+        if new_d < d{
+            bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);
+            friction = friction.max(collider.friction);
+
+            d = new_d;
+        };
+    }
+    for collider in static_objects.sph_cubes.iter_undestroyable_stickiness() {
+        let mut new_d = sd_sph_box(position - collider.position, collider.size) - collider.roundness;
+
+        new_d = smin(d, new_d, stickiness);
 
         if new_d < d{
             bounce_coeficient = bounce_coeficient.max(collider.bounce_rate);

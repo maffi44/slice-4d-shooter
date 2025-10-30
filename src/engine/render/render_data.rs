@@ -132,8 +132,8 @@ pub struct ShapesArrays {
     pub negative: Box<[Shape; 256]>,
     pub stickiness: Box<[Shape; 256]>,
     pub neg_stickiness: Box<[Shape; 256]>,
-    pub undestroyable_cubes: Box<[Shape; 64]>,
-    pub undestroyable_cubes_amount: u32,
+    pub undestroyable: Box<[Shape; 256]>,
+    pub undestroyable_stickiness: Box<[Shape; 256]>,
 }
 
 impl Default for ShapesArrays {
@@ -142,16 +142,17 @@ impl Default for ShapesArrays {
         let negative = {Box::new([Shape::default(); 256])};
         let stickiness = {Box::new([Shape::default(); 256])};
         let neg_stickiness = {Box::new([Shape::default(); 256])};
-        let undestroyable_cubes = {Box::new([Shape::default(); 64])};
+        let undestroyable = {Box::new([Shape::default(); 256])};
+        let undestroyable_stickiness = {Box::new([Shape::default(); 256])};
 
         ShapesArrays {
             normal,
             negative,
             stickiness,
             neg_stickiness,
-            undestroyable_cubes,
-            undestroyable_cubes_amount: 0,
-        }   
+            undestroyable,
+            undestroyable_stickiness,
+        }
     }
 }
 
@@ -165,8 +166,8 @@ pub struct ShapesArraysMetadata {
     spheres_start: u32,
     spheres_amount: u32,
 
-    inf_cubes_start: u32,
-    inf_cubes_amount: u32,
+    // inf_cubes_start: u32,
+    // inf_cubes_amount: u32,
 
     sph_cubes_start: u32,
     sph_cubes_amount: u32,
@@ -178,8 +179,8 @@ pub struct ShapesArraysMetadata {
     s_spheres_start: u32,
     s_spheres_amount: u32,
 
-    s_inf_cubes_start: u32,
-    s_inf_cubes_amount: u32,
+    // s_inf_cubes_start: u32,
+    // s_inf_cubes_amount: u32,
 
     s_sph_cubes_start: u32,
     s_sph_cubes_amount: u32,
@@ -191,8 +192,8 @@ pub struct ShapesArraysMetadata {
     neg_spheres_start: u32,
     neg_spheres_amount: u32,
 
-    neg_inf_cubes_start: u32,
-    neg_inf_cubes_amount: u32,
+    // neg_inf_cubes_start: u32,
+    // neg_inf_cubes_amount: u32,
 
     neg_sph_cubes_start: u32,
     neg_sph_cubes_amount: u32,
@@ -204,11 +205,37 @@ pub struct ShapesArraysMetadata {
     s_neg_spheres_start: u32,
     s_neg_spheres_amount: u32,
 
-    s_neg_inf_cubes_start: u32,
-    s_neg_inf_cubes_amount: u32,
+    // s_neg_inf_cubes_start: u32,
+    // s_neg_inf_cubes_amount: u32,
 
     s_neg_sph_cubes_start: u32,
     s_neg_sph_cubes_amount: u32,
+
+    //unbreakable normals
+    unbreakable_cubes_start: u32,
+    unbreakable_cubes_amount: u32,
+
+    unbreakable_spheres_start: u32,
+    unbreakable_spheres_amount: u32,
+
+    // unbreakable_inf_cubes_start: u32,
+    // unbreakable_inf_cubes_amount: u32,
+
+    unbreakable_sph_cubes_start: u32,
+    unbreakable_sph_cubes_amount: u32,
+
+    //unbreakable stickinesses
+    unbreakable_s_cubes_start: u32,
+    unbreakable_s_cubes_amount: u32,
+
+    unbreakable_s_spheres_start: u32,
+    unbreakable_s_spheres_amount: u32,
+
+    // unbreakable_s_inf_cubes_start: u32,
+    // unbreakable_s_inf_cubes_amount: u32,
+
+    unbreakable_s_sph_cubes_start: u32,
+    unbreakable_s_sph_cubes_amount: u32,
 
     // padding_byte1: u32,
     // padding_byte2: u32,

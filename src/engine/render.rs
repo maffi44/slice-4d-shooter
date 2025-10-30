@@ -287,6 +287,18 @@ impl RenderSystem
             0,
             bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.neg_stickiness.as_slice()),
         );
+
+        self.renderer_queue.write_buffer(
+            &self.buffers.dynamic_undestroyable_shapes_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.undestroyable.as_slice()),
+        );
+
+        self.renderer_queue.write_buffer(
+            &self.buffers.dynamic_undestroyable_stickiness_shapes_buffer,
+            0,
+            bytemuck::cast_slice(self.render_data.dynamic_data.dynamic_shapes_data.undestroyable_stickiness.as_slice()),
+        );
         
         self.renderer_queue.write_buffer(
             &self.buffers.spherical_areas_data_buffer,

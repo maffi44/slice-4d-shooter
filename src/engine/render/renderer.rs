@@ -53,6 +53,8 @@ pub struct RendererBuffers
     pub dynamic_normal_shapes_buffer: Buffer,
     pub dynamic_stickiness_shapes_buffer: Buffer,
     pub dynamic_neg_stickiness_shapes_buffer: Buffer,
+    pub dynamic_undestroyable_shapes_buffer: Buffer,
+    pub dynamic_undestroyable_stickiness_shapes_buffer: Buffer,
     pub spherical_areas_data_buffer: Buffer,
     pub beam_areas_data_buffer: Buffer,
     pub player_forms_data_buffer: Buffer,
@@ -423,6 +425,18 @@ impl Renderer {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
+        let dynamic_undestroyable_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("dynamic_negative_shapes_buffer"),
+            contents: bytemuck::cast_slice(render_data.dynamic_data.dynamic_shapes_data.undestroyable.as_slice()),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+
+        let dynamic_undestroyable_stickiness_shapes_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("dynamic_neg_stickiness_shapes_buffer"),
+            contents: bytemuck::cast_slice(render_data.dynamic_data.dynamic_shapes_data.undestroyable_stickiness.as_slice()),
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+
         let other_dynamic_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("other_dynamic_data_buffer"),
             contents: bytemuck::cast_slice(&[render_data.dynamic_data.other_dynamic_data]),
@@ -503,6 +517,26 @@ impl Renderer {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 5,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 6,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 7,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -612,6 +646,14 @@ impl Renderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 5,
+                    resource: dynamic_undestroyable_shapes_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: dynamic_undestroyable_stickiness_shapes_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
                     resource: other_dynamic_data_buffer.as_entire_binding(),
                 }
             ],
@@ -874,6 +916,8 @@ impl Renderer {
                 dynamic_stickiness_shapes_buffer,
                 dynamic_negative_shapes_buffer,
                 dynamic_neg_stickiness_shapes_buffer,
+                dynamic_undestroyable_shapes_buffer,
+                dynamic_undestroyable_stickiness_shapes_buffer,
                 other_dynamic_data_buffer,
                 spherical_areas_data_buffer,
                 beam_areas_data_buffer,

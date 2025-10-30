@@ -35,23 +35,19 @@ pub mod player_for_2d_3d_example;
 pub mod shotgun_shot_source;
 pub mod shotgun_laser_shot;
 pub mod observer;
+pub mod obstaclesgun_shot;
 
 use std::fmt::Display;
 
 use crate::{
-    actor::flag_base::{FlagBase, FlagBaseMessage}, engine::{
+    actor::{flag_base::{FlagBase, FlagBaseMessage}, obstaclesgun_shot::ObstaclesGunShot}, engine::{
         audio::AudioSystem,
         effects::EffectsSystem,
         engine_handle::EngineHandle,
         physics::{
-            area::AreaMessage,
-            colliders_container::PhysicalElement,
-            dynamic_collider::DynamicColliderMessage,
-            kinematic_collider::KinematicColliderMessage,
-            static_collider::StaticColliderMessage,
-            PhysicsSystem
+            PhysicsSystem, area::AreaMessage, colliders_container::PhysicalElement, dynamic_collider::DynamicColliderMessage, kinematic_collider::KinematicColliderMessage, static_collider::StaticColliderMessage
         },
-        render::{camera::Camera, VisualElement},
+        render::{VisualElement, camera::Camera},
         time::TimeSystem,
         ui::UISystem, world::level::Spawn
     }, transform::Transform
@@ -158,6 +154,7 @@ pub enum ActorWrapper {
     PlayerFor2d3dExample(PlayerFor2d3dExample),
     WonderingActor(WanderingActor),
     HoleGunShot(HoleGunShot),
+    ObstaclesGunShot(ObstaclesGunShot),
     HoleGunMiss(HoleGunMiss),
     PlayersDoll(PlayerDoll),
     PlayersDeathExplosion(PlayersDeathExplosion),
@@ -186,6 +183,7 @@ impl Display for ActorWrapper
             ActorWrapper::PlayerFor2d3dExample(_) => "PlayerFor2d3dExample",
             ActorWrapper::WonderingActor(_) => "WonderingActor",
             ActorWrapper::HoleGunShot(_) => "HoleGunShot",
+            ActorWrapper::ObstaclesGunShot(_) => "ObstaclesGunShot",
             ActorWrapper::HoleGunMiss(_) => "HoleGunMiss",
             ActorWrapper::PlayersDoll(_) => "PlayersDoll",
             ActorWrapper::PlayersDeathExplosion(_) => "PlayersDeathExplosion",
@@ -270,6 +268,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FlagBase(actor) => {
                 actor.get_transform()
             }
+            ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_transform()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -332,6 +333,9 @@ impl Actor for ActorWrapper {
                 actor.get_mut_transform()
             }
             ActorWrapper::FlagBase(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_mut_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -407,6 +411,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FlagBase(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
+            ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -480,6 +487,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FlagBase(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
+            ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -542,6 +552,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             }
             ActorWrapper::FlagBase(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_physical_element()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -608,6 +621,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FlagBase(actor) => {
                 actor.get_visual_element()
             }
+            ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -670,6 +686,9 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             }
             ActorWrapper::FlagBase(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_id()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -736,6 +755,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FlagBase(actor) => {
                 actor.change_id(id, engine_handle)
             }
+            ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -798,6 +820,9 @@ impl Actor for ActorWrapper {
                 actor.set_id(id)
             }
             ActorWrapper::FlagBase(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.set_id(id)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -865,6 +890,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FlagBase(actor) => {
                 actor.get_actor_as_controlled()
             }
+            ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_actor_as_controlled()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -928,6 +956,9 @@ impl Actor for ActorWrapper {
                 actor.get_actor_as_controlled_mut()
             }
             ActorWrapper::FlagBase(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_actor_as_controlled_mut()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},

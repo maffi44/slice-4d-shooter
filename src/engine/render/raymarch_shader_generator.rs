@@ -330,28 +330,28 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
     }
 
     // undetroyable cubes
-    for shape in &static_data.undestroyable_cubes
-    {
-        func_body +=
+    // for shape in &static_data.undestroyable_cubes
+    // {
+    //     func_body +=
 
-        &format!
-        (
-            "{}let intr = cube_intersection(
-                ro - {},
-                rd,
-                {}
-            );\n",
-            "{\n",
-            string_from_vec4(shape.pos),
-            string_from_vec4(add_vec4_and_float(shape.size, shape.roundness)),
-        );
+    //     &format!
+    //     (
+    //         "{}let intr = cube_intersection(
+    //             ro - {},
+    //             rd,
+    //             {}
+    //         );\n",
+    //         "{\n",
+    //         string_from_vec4(shape.pos),
+    //         string_from_vec4(add_vec4_and_float(shape.size, shape.roundness)),
+    //     );
 
-        func_body +=
+    //     func_body +=
 
-        "if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_unbreakables(intr);
-        }\n}\n";
-    }
+    //     "if intr.y > 0.0 {
+    //         store_intersection_entrance_and_exit_for_unbreakables(intr);
+    //     }\n}\n";
+    // }
 
     func_body +=
 
@@ -2551,17 +2551,17 @@ impl Objects
 
 
         let mut undestroyable_cubes = Vec::new();
-        for shape in &static_data.undestroyable_cubes
-        {
-            let obj_info = ObjectInfo {
-                shape_type: ShapeType::Cube,
-                obj_type: ObjectType::Unbreakable
-            };
+        // for shape in &static_data.undestroyable_cubes
+        // {
+        //     let obj_info = ObjectInfo {
+        //         shape_type: ShapeType::Cube,
+        //         obj_type: ObjectType::Unbreakable
+        //     };
 
-            let object = Object::new(shape, obj_info, stickiness);
+        //     let object = Object::new(shape, obj_info, stickiness);
 
-            undestroyable_cubes.push(object);
-        }
+        //     undestroyable_cubes.push(object);
+        // }
         
         let object_edges_list_along_x = Vec::new();
         let object_edges_list_along_y = Vec::new();

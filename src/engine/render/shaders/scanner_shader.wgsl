@@ -123,17 +123,19 @@ struct OtherDynamicData {
 
     death_screen_effect: f32,
 
-    undestroyable_cubes: array<Shape, 64>,
-    undestroyable_cubes_amount: u32,
-    padding_byte1: u32,
-    padding_byte2: u32,
-    padding_byte3: u32,
+    // padding_byte_0: u32,
+    splited_screen_in_2d_3d_example: f32,
+    w_shift_coef: f32,
+    w_shift_intensity: f32,
 
     getting_damage_screen_effect: f32,
     zx_player_rotation: f32,
     screen_aspect: f32,
     time: f32,
-    //all shapes bounding box sides
+    shadows_enabled: i32,
+    // padding_byte_1: i32,
+    // padding_byte_2: i32,
+    // padding_byte_3: i32,
     additional_data: vec4<f32>,
     additional_data_2: vec4<f32>,
 }

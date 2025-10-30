@@ -44,7 +44,12 @@ pub struct StaticRenderData {
     pub neg_sph_cubes: Vec<Shape>,
     pub s_neg_sph_cubes: Vec<Shape>,
 
-    pub undestroyable_cubes: Vec<Shape>,
+    pub unbreakable_cubes: Vec<Shape>,
+    pub unbreakable_s_cubes: Vec<Shape>,
+    pub unbreakable_spheres: Vec<Shape>,
+    pub unbreakable_s_spheres: Vec<Shape>,
+    pub unbreakable_sph_cubes: Vec<Shape>,
+    pub unbreakable_s_sph_cubes: Vec<Shape>,
 
     // pub inf_w_cubes: Vec<Shape>,
     // pub s_inf_w_cubes: Vec<Shape>,
@@ -255,6 +260,31 @@ impl StaticRenderData {
         let mut s_neg_sph_cubes_start = 0u32;
         let mut s_neg_sph_cubes_amount = 0u32;
 
+        let mut unbreakable_cubes_start = 0u32;
+        let mut unbreakable_cubes_amount = 0u32;
+
+        let mut unbreakable_spheres_start = 0u32;
+        let mut unbreakable_spheres_amount = 0u32;
+
+        let mut unbreakable_inf_cubes_start = 0u32;
+        let mut unbreakable_inf_cubes_amount = 0u32;
+
+        let mut unbreakable_sph_cubes_start = 0u32;
+        let mut unbreakable_sph_cubes_amount = 0u32;
+
+
+        let mut unbreakable_s_cubes_start = 0u32;
+        let mut unbreakable_s_cubes_amount = 0u32;
+
+        let mut unbreakable_s_spheres_start = 0u32;
+        let mut unbreakable_s_spheres_amount = 0u32;
+
+        let mut unbreakable_s_inf_cubes_start = 0u32;
+        let mut unbreakable_s_inf_cubes_amount = 0u32;
+
+        let mut unbreakable_s_sph_cubes_start = 0u32;
+        let mut unbreakable_s_sph_cubes_amount = 0u32;
+
         let mut cubes: Vec<Shape> = Vec::new();
         let mut s_cubes: Vec<Shape> = Vec::new();
         let mut neg_cubes: Vec<Shape> = Vec::new();
@@ -275,7 +305,12 @@ impl StaticRenderData {
         let mut neg_inf_w_cubes: Vec<Shape> = Vec::new();
         let mut s_neg_inf_w_cubes: Vec<Shape> = Vec::new();
 
-        let mut undestroyable_cubes: Vec<Shape> = Vec::new();
+        let mut unbreakable_cubes: Vec<Shape> = Vec::new();
+        let mut unbreakable_s_cubes: Vec<Shape> = Vec::new();
+        let mut unbreakable_spheres: Vec<Shape> = Vec::new();
+        let mut unbreakable_s_spheres: Vec<Shape> = Vec::new();
+        let mut unbreakable_sph_cubes: Vec<Shape> = Vec::new();
+        let mut unbreakable_s_sph_cubes: Vec<Shape> = Vec::new();
         
         let mut static_bounding_box = BoundingBox::new();
         
@@ -285,21 +320,40 @@ impl StaticRenderData {
 
             match obj.collider.shape_type {
                 ShapeType::Cube => {
-
-                    if obj.collider.undestroyable
-                    {
-                        let shape = Shape {
-                            pos: obj.collider.position.to_array(),
-                            size: obj.collider.size.to_array(),
-                            material: obj.material_index,
-                            empty_bytes: [0,0],
-                            roundness: obj.collider.roundness,
-                        };
-                        undestroyable_cubes.push(shape);
-                    }
-                    else
-                    {
-                        if obj.collider.is_positive {
+                    if obj.collider.is_positive {
+                        if obj.collider.undestroyable
+                        {
+                            if !obj.collider.stickiness {
+    
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                unbreakable_cubes.push(shape);
+    
+                                unbreakable_cubes_amount += 1;
+    
+                            } else {
+    
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                unbreakable_s_cubes.push(shape);
+    
+                                unbreakable_s_cubes_amount += 1;
+                            }
+                        }
+                        else
+                        {
                             if !obj.collider.stickiness {
     
                                 let shape = Shape {
@@ -328,60 +382,91 @@ impl StaticRenderData {
     
                                 s_cubes_amount += 1;
                             }
+                        }
+                    } else {
+                        if !obj.collider.stickiness {
+                            let shape = Shape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
+                                roundness: obj.collider.roundness,
+                            };
+                            static_bounding_box.expand_by_shape(&shape);
+                            neg_cubes.push(shape);
+
+                            neg_cubes_amount += 1;
                         } else {
-                            if !obj.collider.stickiness {
-                                let shape = Shape {
-                                    pos: obj.collider.position.to_array(),
-                                    size: obj.collider.size.to_array(),
-                                    material: obj.material_index,
-                                    empty_bytes: [0,0],
-                                    roundness: obj.collider.roundness,
-                                };
-                                static_bounding_box.expand_by_shape(&shape);
-                                neg_cubes.push(shape);
-    
-                                neg_cubes_amount += 1;
-                            } else {
-                                let shape = Shape {
-                                    pos: obj.collider.position.to_array(),
-                                    size: obj.collider.size.to_array(),
-                                    material: obj.material_index,
-                                    empty_bytes: [0,0],
-                                    roundness: obj.collider.roundness,
-                                };
-                                static_bounding_box.expand_by_shape(&shape);
-                                s_neg_cubes.push(shape);
-    
-                                s_neg_cubes_amount += 1;
-                            }
+                            let shape = Shape {
+                                pos: obj.collider.position.to_array(),
+                                size: obj.collider.size.to_array(),
+                                material: obj.material_index,
+                                empty_bytes: [0,0],
+                                roundness: obj.collider.roundness,
+                            };
+                            static_bounding_box.expand_by_shape(&shape);
+                            s_neg_cubes.push(shape);
+
+                            s_neg_cubes_amount += 1;
                         }
                     }
                 }
                 ShapeType::Sphere => {
                     if obj.collider.is_positive {
-                        if !obj.collider.stickiness {
 
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            spheres.push(shape);
+                        if obj.collider.undestroyable
+                        {
+                            if !obj.collider.stickiness {
 
-                        } else {
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                unbreakable_spheres.push(shape);
 
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            s_spheres.push(shape);
+                            } else {
+
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                unbreakable_s_spheres.push(shape);
+                            }
+                        }
+                        else
+                        {
+                            if !obj.collider.stickiness {
+
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                spheres.push(shape);
+
+                            } else {
+
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                s_spheres.push(shape);
+                            }
                         }
                     } else {
                         if !obj.collider.stickiness {
@@ -408,80 +493,141 @@ impl StaticRenderData {
                     }
                 }
                 ShapeType::CubeInfW => {
-                    if obj.collider.is_positive {
-                        if !obj.collider.stickiness {
+                    // if obj.collider.is_positive {
 
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            inf_w_cubes.push(shape);
+                    //     if obj.collider.undestroyable
+                    //     {
+                    //         if !obj.collider.stickiness {
 
-                        } else {
+                    //             let shape = Shape {
+                    //                 pos: obj.collider.position.to_array(),
+                    //                 size: obj.collider.size.to_array(),
+                    //                 material: obj.material_index,
+                    //                 empty_bytes: [0,0],
+                    //                 roundness: obj.collider.roundness,
+                    //             };
+                    //             static_bounding_box.expand_by_shape(&shape);
+                    //             unbreakable_inf_w_cubes.push(shape);
 
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            s_inf_w_cubes.push(shape);
-                        }
-                    } else {
-                        if !obj.collider.stickiness {
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            neg_inf_w_cubes.push(shape);
-                        } else {
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            s_neg_inf_w_cubes.push(shape);
-                        }
-                    }
+                    //         } else {
+
+                    //             let shape = Shape {
+                    //                 pos: obj.collider.position.to_array(),
+                    //                 size: obj.collider.size.to_array(),
+                    //                 material: obj.material_index,
+                    //                 empty_bytes: [0,0],
+                    //                 roundness: obj.collider.roundness,
+                    //             };
+                    //             static_bounding_box.expand_by_shape(&shape);
+                    //             unbreakable_s_inf_w_cubes.push(shape);
+                    //         }
+                    //     }
+                    //     else
+                    //     {
+                    //         if !obj.collider.stickiness {
+
+                    //             let shape = Shape {
+                    //                 pos: obj.collider.position.to_array(),
+                    //                 size: obj.collider.size.to_array(),
+                    //                 material: obj.material_index,
+                    //                 empty_bytes: [0,0],
+                    //                 roundness: obj.collider.roundness,
+                    //             };
+                    //             static_bounding_box.expand_by_shape(&shape);
+                    //             inf_w_cubes.push(shape);
+
+                    //         } else {
+
+                    //             let shape = Shape {
+                    //                 pos: obj.collider.position.to_array(),
+                    //                 size: obj.collider.size.to_array(),
+                    //                 material: obj.material_index,
+                    //                 empty_bytes: [0,0],
+                    //                 roundness: obj.collider.roundness,
+                    //             };
+                    //             static_bounding_box.expand_by_shape(&shape);
+                    //             s_inf_w_cubes.push(shape);
+                    //         }
+                    //     }
+                    // } else {
+                    //     if !obj.collider.stickiness {
+                    //         let shape = Shape {
+                    //             pos: obj.collider.position.to_array(),
+                    //             size: obj.collider.size.to_array(),
+                    //             material: obj.material_index,
+                    //             empty_bytes: [0,0],
+                    //             roundness: obj.collider.roundness,
+                    //         };
+                    //         static_bounding_box.expand_by_shape(&shape);
+                    //         neg_inf_w_cubes.push(shape);
+                    //     } else {
+                    //         let shape = Shape {
+                    //             pos: obj.collider.position.to_array(),
+                    //             size: obj.collider.size.to_array(),
+                    //             material: obj.material_index,
+                    //             empty_bytes: [0,0],
+                    //             roundness: obj.collider.roundness,
+                    //         };
+                    //         static_bounding_box.expand_by_shape(&shape);
+                    //         s_neg_inf_w_cubes.push(shape);
+                    //     }
+                    // }
                 },
                 ShapeType::SphCube => {
                     if obj.collider.is_positive {
-                        if !obj.collider.stickiness {
+                        if obj.collider.undestroyable
+                        {
+                            if !obj.collider.stickiness {
 
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            sph_cubes.push(shape);
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                unbreakable_sph_cubes.push(shape);
 
-                        } else {
+                            } else {
 
-                            let shape = Shape {
-                                pos: obj.collider.position.to_array(),
-                                size: obj.collider.size.to_array(),
-                                material: obj.material_index,
-                                empty_bytes: [0,0],
-                                roundness: obj.collider.roundness,
-                            };
-                            static_bounding_box.expand_by_shape(&shape);
-                            s_sph_cubes.push(shape);
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                unbreakable_s_sph_cubes.push(shape);
+                            }
+                        }
+                        else
+                        {
+                            if !obj.collider.stickiness {
+
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                sph_cubes.push(shape);
+
+                            } else {
+
+                                let shape = Shape {
+                                    pos: obj.collider.position.to_array(),
+                                    size: obj.collider.size.to_array(),
+                                    material: obj.material_index,
+                                    empty_bytes: [0,0],
+                                    roundness: obj.collider.roundness,
+                                };
+                                static_bounding_box.expand_by_shape(&shape);
+                                s_sph_cubes.push(shape);
+                            }
                         }
                     } else {
                         if !obj.collider.stickiness {
@@ -681,8 +827,88 @@ impl StaticRenderData {
         s_neg_sph_cubes_amount = index as u32 - s_neg_sph_cubes_start;
 
 
+        // packing unbreakable normal shapes
+        let mut index = 0;
+        unbreakable_cubes_start = 0u32;
+
+        for shape in &cubes {
+            shapes.undestroyable[index] = shape.clone();
+            index += 1;
+        }
+
+        unbreakable_cubes_amount = index as u32;
 
 
+        unbreakable_spheres_start = index as u32;
+
+        for shape in &spheres {
+            shapes.undestroyable[index] = shape.clone();
+            index += 1;
+        }
+
+        unbreakable_spheres_amount = index as u32 - unbreakable_spheres_start;
+
+
+        unbreakable_inf_cubes_start = index as u32;
+
+        for shape in &inf_w_cubes {
+            shapes.undestroyable[index] = shape.clone();
+            index += 1;
+        }
+
+        unbreakable_inf_cubes_amount = index as u32 - unbreakable_inf_cubes_start;
+
+
+        unbreakable_sph_cubes_start = index as u32;
+
+        for shape in &sph_cubes {
+            shapes.undestroyable[index] = shape.clone();
+            index += 1;
+        }
+
+        unbreakable_sph_cubes_amount = index as u32 - unbreakable_sph_cubes_start;
+
+
+        // packing unbreakable stickiness shapes
+        let mut index = 0;
+        unbreakable_s_cubes_start = 0u32;
+
+        for shape in &s_cubes {
+            shapes.undestroyable_stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        unbreakable_s_cubes_amount = index as u32;
+
+
+        unbreakable_s_spheres_start = index as u32;
+
+        for shape in &s_spheres {
+            shapes.undestroyable_stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        unbreakable_spheres_amount = index as u32 - unbreakable_s_spheres_start;
+
+
+        unbreakable_s_inf_cubes_start = index as u32;
+
+        for shape in &s_inf_w_cubes {
+            shapes.undestroyable_stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        unbreakable_s_inf_cubes_amount = index as u32 - unbreakable_s_inf_cubes_start;
+
+
+        unbreakable_s_sph_cubes_start = index as u32;
+
+        for shape in &s_sph_cubes {
+            shapes.undestroyable_stickiness[index] = shape.clone();
+            index += 1;
+        }
+
+        unbreakable_s_sph_cubes_amount = index as u32 - unbreakable_s_sph_cubes_start;
 
 
         let metadata = ShapesArraysMetadata {
@@ -690,38 +916,50 @@ impl StaticRenderData {
             cubes_amount,
             spheres_start,
             spheres_amount,
-            inf_cubes_start,
-            inf_cubes_amount,
+            // inf_cubes_start,
+            // inf_cubes_amount,
             sph_cubes_start,
             sph_cubes_amount,
             s_cubes_start,
             s_cubes_amount,
             s_spheres_start,
             s_spheres_amount,
-            s_inf_cubes_start,
-            s_inf_cubes_amount,
+            // s_inf_cubes_start,
+            // s_inf_cubes_amount,
             s_sph_cubes_start,
             s_sph_cubes_amount,
             neg_cubes_start,
             neg_cubes_amount,
             neg_spheres_start,
             neg_spheres_amount,
-            neg_inf_cubes_start,
-            neg_inf_cubes_amount,
+            // neg_inf_cubes_start,
+            // neg_inf_cubes_amount,
             neg_sph_cubes_start,
             neg_sph_cubes_amount,
             s_neg_cubes_start,
             s_neg_cubes_amount,
             s_neg_spheres_start,
             s_neg_spheres_amount,
-            s_neg_inf_cubes_start,
-            s_neg_inf_cubes_amount,
+            // s_neg_inf_cubes_start,
+            // s_neg_inf_cubes_amount,
             s_neg_sph_cubes_start,
             s_neg_sph_cubes_amount,
-            // padding_byte1: 0u32,
-            // padding_byte2: 0u32,
-            // undestroyable_cubes_start: 0u32,
-            // undestroyable_cubes_amount: 0u32,
+            unbreakable_cubes_start,
+            unbreakable_cubes_amount,
+            unbreakable_spheres_start,
+            unbreakable_spheres_amount,
+            // unbreakable_inf_cubes_start,
+            // unbreakable_inf_cubes_amount,
+            unbreakable_sph_cubes_start,
+            unbreakable_sph_cubes_amount,
+            unbreakable_s_cubes_start,
+            unbreakable_s_cubes_amount,
+            unbreakable_s_spheres_start,
+            unbreakable_s_spheres_amount,
+            // unbreakable_s_inf_cubes_start,
+            // unbreakable_s_inf_cubes_amount,
+            unbreakable_s_sph_cubes_start,
+            unbreakable_s_sph_cubes_amount,
         };
         
         log::info!("static shapes metadata: \n{:?}", metadata);
@@ -750,7 +988,12 @@ impl StaticRenderData {
             neg_sph_cubes,
             s_neg_sph_cubes,
 
-            undestroyable_cubes,
+            unbreakable_cubes,
+            unbreakable_s_cubes,
+            unbreakable_s_sph_cubes,
+            unbreakable_s_spheres,
+            unbreakable_sph_cubes,
+            unbreakable_spheres,
 
             // inf_w_cubes,
             // s_inf_w_cubes,

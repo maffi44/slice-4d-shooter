@@ -114,35 +114,43 @@ impl DynamicRenderData {
         let undestroyable = static_object.collider.undestroyable;
         
         match static_object.collider.shape_type {
-
             ShapeType::Cube => {
-                if undestroyable
-                {
-                    self.frame_cubes_buffer.undestroyable.push(shape);
-                }
-                else
-                {
-                    if is_positive {
+                if is_positive {
+                    if undestroyable {
+                        if is_stickiness {
+                            self.frame_cubes_buffer.undestroyable_stickiness.push(shape);
+                        } else {
+                            self.frame_cubes_buffer.undestroyable_normal.push(shape);
+                        }
+                    } else {
                         if is_stickiness {
                             self.frame_cubes_buffer.stickiness.push(shape);
                         } else {
                             self.frame_cubes_buffer.normal.push(shape);
                         }
+                    }
+                } else {
+                    if is_stickiness {
+                        self.frame_cubes_buffer.neg_stickiness.push(shape);
                     } else {
-                        if is_stickiness {
-                            self.frame_cubes_buffer.neg_stickiness.push(shape);
-                        } else {
-                            self.frame_cubes_buffer.negative.push(shape);
-                        }
+                        self.frame_cubes_buffer.negative.push(shape);
                     }
                 }
             },
             ShapeType::Sphere => {
                 if is_positive {
-                    if is_stickiness {
-                        self.frame_spheres_buffer.stickiness.push(shape);
+                    if undestroyable {
+                        if is_stickiness {
+                            self.frame_spheres_buffer.undestroyable_stickiness.push(shape);
+                        } else {
+                            self.frame_spheres_buffer.undestroyable_normal.push(shape);
+                        }
                     } else {
-                        self.frame_spheres_buffer.normal.push(shape);
+                        if is_stickiness {
+                            self.frame_spheres_buffer.stickiness.push(shape);
+                        } else {
+                            self.frame_spheres_buffer.normal.push(shape);
+                        }
                     }
                 } else {
                     if is_stickiness {
@@ -155,10 +163,18 @@ impl DynamicRenderData {
             },
             ShapeType::SphCube => {
                 if is_positive {
-                    if is_stickiness {
-                        self.frame_sph_cubes_buffer.stickiness.push(shape);
+                    if undestroyable {
+                        if is_stickiness {
+                            self.frame_sph_cubes_buffer.undestroyable_stickiness.push(shape);
+                        } else {
+                            self.frame_sph_cubes_buffer.undestroyable_normal.push(shape);
+                        }
                     } else {
-                        self.frame_sph_cubes_buffer.normal.push(shape);
+                        if is_stickiness {
+                            self.frame_sph_cubes_buffer.stickiness.push(shape);
+                        } else {
+                            self.frame_sph_cubes_buffer.normal.push(shape);
+                        }
                     }
                 } else {
                     if is_stickiness {
@@ -171,10 +187,18 @@ impl DynamicRenderData {
             },
             ShapeType::CubeInfW => {
                 if is_positive {
-                    if is_stickiness {
-                        self.frame_inf_w_cubes_buffer.stickiness.push(shape);
+                    if undestroyable {
+                        if is_stickiness {
+                            self.frame_inf_w_cubes_buffer.undestroyable_stickiness.push(shape);
+                        } else {
+                            self.frame_inf_w_cubes_buffer.undestroyable_normal.push(shape);
+                        }
                     } else {
-                        self.frame_inf_w_cubes_buffer.normal.push(shape);
+                        if is_stickiness {
+                            self.frame_inf_w_cubes_buffer.stickiness.push(shape);
+                        } else {
+                            self.frame_inf_w_cubes_buffer.normal.push(shape);
+                        }
                     }
                 } else {
                     if is_stickiness {
@@ -522,6 +546,32 @@ impl DynamicRenderData {
 
         let mut s_neg_sph_cubes_start = 0u32;
         let mut s_neg_sph_cubes_amount = 0u32;
+
+        
+        let mut unbreakable_cubes_start = 0u32;
+        let mut unbreakable_cubes_amount = 0u32;
+
+        let mut unbreakable_spheres_start = 0u32;
+        let mut unbreakable_spheres_amount = 0u32;
+        
+        let mut unbreakable_inf_cubes_start = 0u32;
+        let mut unbreakable_inf_cubes_amount = 0u32;
+        
+        let mut unbreakable_sph_cubes_start = 0u32;
+        let mut unbreakable_sph_cubes_amount = 0u32;
+        
+        
+        let mut unbreakable_s_cubes_start = 0u32;
+        let mut unbreakable_s_cubes_amount = 0u32;
+        
+        let mut unbreakable_s_spheres_start = 0u32;
+        let mut unbreakable_s_spheres_amount = 0u32;
+        
+        let mut unbreakable_s_inf_cubes_start = 0u32;
+        let mut unbreakable_s_inf_cubes_amount = 0u32;
+        
+        let mut unbreakable_s_sph_cubes_start = 0u32;
+        let mut unbreakable_s_sph_cubes_amount = 0u32;
 
 
 
@@ -1029,9 +1079,11 @@ impl DynamicRenderData {
         s_neg_inf_cubes_amount = index as u32 - s_neg_inf_cubes_start;
 
 
+        // packing unbreakable normal shapes
         let mut index = 0;
+        unbreakable_cubes_start = 0u32;
 
-            for shape in &sd.undestroyable_cubes
+            for shape in &sd.unbreakable_cubes
             {
                 if check_if_player_see_cube(
                     camera,
@@ -1040,12 +1092,12 @@ impl DynamicRenderData {
                     clip_planes,
                 )
                 {
-                    self.dynamic_shapes_data.undestroyable_cubes[index] = *shape;
+                    self.dynamic_shapes_data.undestroyable[index] = *shape;
                     index += 1;
                 }
             }
     
-            while let Some(shape) = self.frame_cubes_buffer.undestroyable.pop()
+            while let Some(shape) = self.frame_cubes_buffer.undestroyable_normal.pop()
             {
                 if check_if_player_see_cube(
                     camera,
@@ -1054,13 +1106,224 @@ impl DynamicRenderData {
                     clip_planes,
                 )
                 {
-                    self.dynamic_shapes_data.undestroyable_cubes[index] = shape;
+                    self.dynamic_shapes_data.undestroyable[index] = shape;
+                    index += 1;
+                }
+            }
+
+        unbreakable_cubes_amount = index as u32;
+
+
+        unbreakable_spheres_start = index as u32;
+
+            for shape in &sd.unbreakable_spheres {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_spheres_buffer.undestroyable_normal.pop() {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable[index] = shape;
                     index += 1;
                 }
             }
 
 
-        self.dynamic_shapes_data.undestroyable_cubes_amount = index as u32;
+        unbreakable_spheres_amount = index as u32 - unbreakable_spheres_start;
+
+
+        unbreakable_sph_cubes_start = index as u32;
+
+            for shape in &sd.unbreakable_sph_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_sph_cubes_buffer.undestroyable_normal.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable[index] = shape;
+                    index += 1;
+                }
+            }
+
+
+        unbreakable_sph_cubes_amount = index as u32 - unbreakable_sph_cubes_start;
+
+
+        unbreakable_inf_cubes_start = index as u32;
+
+        // for shape in &sd.inf_w_cubes {
+        //     self.dynamic_shapes_data.normal[index] = shape.clone();
+        //     index += 1;
+        // }
+
+        // while let Some(shape) = self.frame_inf_w_cubes_buffer.normal.pop() {
+        //     self.dynamic_shapes_data.normal[index] = shape;
+        //     index += 1;
+        // }
+
+        unbreakable_inf_cubes_amount = index as u32 - inf_cubes_start;
+
+
+        // packing unbreakable stickiness shapes
+        let mut index = 0;
+        unbreakable_s_cubes_start = 0u32;
+
+            for shape in &sd.unbreakable_s_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable_stickiness[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_cubes_buffer.undestroyable_stickiness.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::from_array(shape.size) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable_stickiness[index] = shape;
+                    index += 1;
+                }
+            }
+
+
+        unbreakable_s_cubes_amount = index as u32;
+
+
+        unbreakable_s_spheres_start = index as u32;
+
+            for shape in &sd.unbreakable_s_spheres {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable_stickiness[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_spheres_buffer.undestroyable_stickiness.pop() {
+                if check_if_player_see_sphere(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    shape.size[0] + shape.roundness + stickiness_value*PI,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable_stickiness[index] = shape;
+                    index += 1;
+                }
+            }
+
+
+        unbreakable_s_spheres_amount = index as u32 - unbreakable_s_spheres_start;
+
+
+        unbreakable_s_sph_cubes_start = index as u32;
+
+            for shape in &sd.unbreakable_s_sph_cubes {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable_stickiness[index] = *shape;
+                    index += 1;
+                }
+            }
+    
+            while let Some(shape) = self.frame_sph_cubes_buffer.undestroyable_stickiness.pop() {
+                if check_if_player_see_cube(
+                    camera,
+                    Vec4::from_array(shape.pos),
+                    Vec4::new(
+                        (shape.size[1].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[0].min(shape.size[2])).min(shape.size[3]),    
+                        (shape.size[1].min(shape.size[0])).min(shape.size[3]),
+                        shape.size[3]
+                    ) + shape.roundness + stickiness_value,
+                    clip_planes,
+                )
+                {
+                    self.dynamic_shapes_data.undestroyable_stickiness[index] = shape;
+                    index += 1;
+                }
+            }
+
+        unbreakable_s_sph_cubes_amount = index as u32 - unbreakable_s_sph_cubes_start;
+
+
+
+        unbreakable_s_inf_cubes_start = index as u32;
+
+        // for shape in &sd.s_inf_w_cubes {
+        //     self.dynamic_shapes_data.stickiness[index] = shape.clone();
+        //     index += 1;
+        // }
+
+        // while let Some(shape) = self.frame_inf_w_cubes_buffer.stickiness.pop() {
+        //     self.dynamic_shapes_data.stickiness[index] = shape;
+        //     index += 1;
+        // }
+
+        unbreakable_s_inf_cubes_amount = index as u32 - unbreakable_s_inf_cubes_start;
 
 
         ShapesArraysMetadata {
@@ -1068,34 +1331,50 @@ impl DynamicRenderData {
             cubes_amount,
             spheres_start,
             spheres_amount,
-            inf_cubes_start,
-            inf_cubes_amount,
+            // inf_cubes_start,
+            // inf_cubes_amount,
             sph_cubes_start,
             sph_cubes_amount,
             s_cubes_start,
             s_cubes_amount,
             s_spheres_start,
             s_spheres_amount,
-            s_inf_cubes_start,
-            s_inf_cubes_amount,
+            // s_inf_cubes_start,
+            // s_inf_cubes_amount,
             s_sph_cubes_start,
             s_sph_cubes_amount,
             neg_cubes_start,
             neg_cubes_amount,
             neg_spheres_start,
             neg_spheres_amount,
-            neg_inf_cubes_start,
-            neg_inf_cubes_amount,
+            // neg_inf_cubes_start,
+            // neg_inf_cubes_amount,
             neg_sph_cubes_start,
             neg_sph_cubes_amount,
             s_neg_cubes_start,
             s_neg_cubes_amount,
             s_neg_spheres_start,
             s_neg_spheres_amount,
-            s_neg_inf_cubes_start,
-            s_neg_inf_cubes_amount,
+            // s_neg_inf_cubes_start,
+            // s_neg_inf_cubes_amount,
             s_neg_sph_cubes_start,
             s_neg_sph_cubes_amount,
+            unbreakable_cubes_start,
+            unbreakable_cubes_amount,
+            unbreakable_spheres_start,
+            unbreakable_spheres_amount,
+            // unbreakable_inf_cubes_start,
+            // unbreakable_inf_cubes_amount,
+            unbreakable_sph_cubes_start,
+            unbreakable_sph_cubes_amount,
+            unbreakable_s_cubes_start,
+            unbreakable_s_cubes_amount,
+            unbreakable_s_spheres_start,
+            unbreakable_s_spheres_amount,
+            // unbreakable_s_inf_cubes_start,
+            // unbreakable_s_inf_cubes_amount,
+            unbreakable_s_sph_cubes_start,
+            unbreakable_s_sph_cubes_amount,
         }
     }
 
@@ -1297,8 +1576,6 @@ impl DynamicRenderData {
             beams_areas_amount,
             player_forms_amount,
             players_screen_effects,
-            *self.dynamic_shapes_data.undestroyable_cubes.clone(),
-            self.dynamic_shapes_data.undestroyable_cubes_amount,
             render_quality_data,
         );
     }
@@ -1413,8 +1690,7 @@ pub struct OtherDynamicData {
 
     death_screen_effect: f32,
 
-    undestroyable_cubes: [Shape; 64],
-    undestroyable_cubes_amount: u32,
+    // padding_byte_0: u32,
     splited_screen_in_2d_3d_example: f32,
     w_shift_coef: f32,
     w_shift_intensity: f32,
@@ -1425,9 +1701,9 @@ pub struct OtherDynamicData {
     time: f32,
 
     shadows_enabled: i32,
-    padding_byte_1: i32,
-    padding_byte_2: i32,
-    padding_byte_3: i32,
+    // padding_byte_1: i32,
+    // padding_byte_2: i32,
+    // padding_byte_3: i32,
 
     additional_data: [f32;4],
     additional_data_2: [f32;4],
@@ -1446,8 +1722,6 @@ impl OtherDynamicData {
         beams_areas_amount: u32,
         player_forms_amount: u32,
         players_screen_effects: &PlayerScreenEffects,
-        undestroyable_cubes: [Shape; 64],
-        undestroyable_cubes_amount: u32,
         render_quality_data: &RenderQualityData,
     ) {
         // let explore_w_pos;
@@ -1525,9 +1799,6 @@ impl OtherDynamicData {
             players_screen_effects.w_scanner_enemies_intesity
         };
 
-        self.undestroyable_cubes = undestroyable_cubes;
-        self.undestroyable_cubes_amount = undestroyable_cubes_amount;
-
         self.death_screen_effect = players_screen_effects.death_screen_effect;
         self.getting_damage_screen_effect = players_screen_effects.getting_damage_screen_effect;
 
@@ -1565,8 +1836,7 @@ impl Default for OtherDynamicData {
 
             death_screen_effect: 0.0,
 
-            undestroyable_cubes: [Shape::default(); 64],
-            undestroyable_cubes_amount: 0,
+            // padding_byte_0: 0,
             splited_screen_in_2d_3d_example: 0.0,
             w_shift_coef: 0.0,
             w_shift_intensity: 0.0,
@@ -1577,9 +1847,9 @@ impl Default for OtherDynamicData {
             time: 0.0,
 
             shadows_enabled: 1,
-            padding_byte_1: 0,
-            padding_byte_2: 0,
-            padding_byte_3: 0,
+            // padding_byte_1: 0,
+            // padding_byte_2: 0,
+            // padding_byte_3: 0,
 
             additional_data: [0.0;4],
             additional_data_2: [0.0;4],
@@ -1618,7 +1888,8 @@ pub struct SpecificShapeBuffers {
     pub negative: Vec<Shape>,
     pub stickiness: Vec<Shape>,
     pub neg_stickiness: Vec<Shape>,
-    pub undestroyable: Vec<Shape>,
+    pub undestroyable_normal: Vec<Shape>,
+    pub undestroyable_stickiness: Vec<Shape>,
 }
 
 impl Default for SpecificShapeBuffers {
@@ -1628,7 +1899,8 @@ impl Default for SpecificShapeBuffers {
             negative: Vec::new(),
             stickiness: Vec::new(),
             neg_stickiness: Vec::new(),
-            undestroyable: Vec::new(),
+            undestroyable_normal: Vec::new(),
+            undestroyable_stickiness: Vec::new(),
         }
     }
 }
@@ -1640,7 +1912,8 @@ impl SpecificShapeBuffers {
             negative: Vec::new(),
             stickiness: Vec::new(),
             neg_stickiness: Vec::new(),
-            undestroyable: Vec::new(),
+            undestroyable_normal: Vec::new(),
+            undestroyable_stickiness: Vec::new(),
         }
     }
 
@@ -1649,7 +1922,8 @@ impl SpecificShapeBuffers {
         self.negative.clear();
         self.stickiness.clear();
         self.neg_stickiness.clear();
-        self.undestroyable.clear();
+        self.undestroyable_normal.clear();
+        self.undestroyable_stickiness.clear();
     }
 }
 

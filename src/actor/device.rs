@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod holegun;
+pub mod obstaclesgun;
 pub mod machinegun;
 pub mod shotgun;
 

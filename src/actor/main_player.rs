@@ -30,9 +30,9 @@ use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
-        device::{
-            holegun::HoleGun, shotgun::Shotgun, Device, DeviceType
-        }, flag_base::FlagBaseMessage, players_doll::PlayerDollInputState, Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage
+        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{
+            Device, DeviceType, holegun::HoleGun, obstaclesgun::ObstaclesGun, shotgun::Shotgun
+        }, flag_base::FlagBaseMessage, obstaclesgun_shot::ObstaclesGunShot, players_doll::PlayerDollInputState
     },
     engine::{
         audio::{
@@ -46,12 +46,12 @@ use crate::{
             EngineHandle
         },
         input::ActionsFrameState, physics::{
-            colliders_container::PhysicalElement, kinematic_collider::KinematicColliderMessage, PhysicsSystem
-        }, render::{camera::Camera, VisualElement}, time::TimeSystem, ui::{
+            PhysicsSystem, colliders_container::PhysicalElement, kinematic_collider::KinematicColliderMessage
+        }, render::{VisualElement, camera::Camera}, time::TimeSystem, ui::{
             UIElement, UIElementType, UISystem
         }, world::{level::Spawn, static_object::VisualWave}
     },
-    transform::{Transform, BACKWARD, DOWN, FORWARD, LEFT, RIGHT, UP, W_DOWN, W_UP},
+    transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
 };
 
 use self::{
@@ -3851,7 +3851,18 @@ impl MainPlayer {
                     0.0
                 ),
             ))),
-            hands_slot_3: None,
+            hands_slot_3: Some(Box::new(ObstaclesGun::new(
+                player_settings.energy_gun_hole_size_mult, 
+                player_settings.energy_gun_add_force_mult, 
+                player_settings.energy_gun_damage_mult, 
+                player_settings.energy_gun_restoring_speed,
+                Vec4::new(
+                    1.0,
+                    -0.3,
+                    -1.0,
+                    0.0
+                ),
+            ))),
 
             devices: [None, None, None, None],
             
