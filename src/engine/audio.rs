@@ -48,6 +48,7 @@ pub enum Sound {
     AntiProjectionModeEnabledSound,
     MachinegunShot,
     ShotgunShot,
+    ObstacleGunShot,
     ShotgunShotImpact,
     HolegunShot,
     HolegunCharging,
@@ -697,6 +698,12 @@ impl AudioSystem {
             )
         ).expect("can't create sound buffer resourse");
 
+        let obstacle_gun_shot = SoundBufferResource::new_generic(
+            DataSource::from_memory(
+                include_bytes!("../assets/sounds/obstacle_gun_shot.wav").into(),
+            )
+        ).expect("can't create sound buffer resourse");
+
         sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
         sounds.insert(Sound::ShotgunShot, shotgun_shot_sound_resource);
         sounds.insert(Sound::ShotgunShotImpact, shotgun_shot_impact_sound_resource);
@@ -725,6 +732,7 @@ impl AudioSystem {
         sounds.insert(Sound::WJump, w_jump);
         sounds.insert(Sound::ProjectionCaptured, projection_captured);
         sounds.insert(Sound::AntiProjectionModeEnabledSound, anti_projection_mode_enabled);
+        sounds.insert(Sound::ObstacleGunShot, obstacle_gun_shot);
 
 
         AudioSystem {

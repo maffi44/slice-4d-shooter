@@ -234,6 +234,18 @@ pub enum RemoteMessage {
         // shot's flash radius
         f32
     ),
+    SpawnObstacleGunShotActor(
+        // shot's impact position
+        [f32;4],
+        // shot's source position
+        [f32;4],
+        // hole radius
+        f32,
+        // hole color
+        [f32;3],
+        // shot's flash radius
+        f32
+    ),
     SpawHoleGunMissActor(
         // shot's impact position
         [f32;4],

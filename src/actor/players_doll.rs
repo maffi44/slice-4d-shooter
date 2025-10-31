@@ -26,7 +26,7 @@ use client_server_protocol::{
 };
 
 use crate::{
-    actor::main_player, engine::{
+    actor::{main_player, obstaclesgun_shot::ObstaclesGunShot}, engine::{
         audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{
             Command,
             CommandType,
@@ -150,6 +150,12 @@ pub enum PlayersDollMessage{
         u128
     ),
     SpawnHoleGunShotActor(
+        Vec4,
+        f32,
+        Vec3,
+        f32
+    ),
+    SpawnObstacleGunShotActor(
         Vec4,
         f32,
         Vec3,
@@ -1032,6 +1038,60 @@ impl Actor for PlayerDoll {
                                 );
     
                                 let actor = ActorWrapper::HoleGunShot(holegun_shot);
+    
+                                engine_handle.send_command(Command {
+                                    sender: 0u128,
+                                    command_type: CommandType::SpawnActor(actor)
+                                })
+                            },
+
+                            PlayersDollMessage::SpawnObstacleGunShotActor(
+                                position,
+                                radius,
+                                color,
+                                charging_volume_area
+                            ) =>
+                            {
+                                self.volume_area.clear();
+                                self.charging_time = 0.0;
+
+                                if let Some(handle) = self.holegun_charge_sound.take() {
+                                    audio_system.remove_sound(handle);
+                                }
+
+                                audio_system.spawn_spatial_sound(
+                                    Sound::ObstacleGunShot,
+                                    0.9,
+                                    0.9,
+                                    false,
+                                    true,
+                                    fyrox_sound::source::Status::Playing,
+                                    self.transform.get_position(),
+                                    1.0,
+                                    1.0,
+                                    50.0
+                                );
+
+                                let shooted_from = self.transform.get_position() + self.transform.get_rotation() * self.weapon_shooting_point;
+
+                                let charging_volume_area = VolumeArea::SphericalVolumeArea(
+                                    SphericalVolumeArea {
+                                        translation: shooted_from,
+                                        radius: (charging_volume_area + 0.05) *VISUAL_FIRE_SHPERE_MULT,
+                                        color: color,
+                                    }
+                                );
+    
+                                let obstacle_gun_shot = ObstaclesGunShot::new(
+                                    position,
+                                    shooted_from,
+                                    radius,
+                                    color,
+                                    charging_volume_area,
+                                    VISUAL_BEAM_MULT,
+                                );
+    
+                                let actor = ActorWrapper::ObstaclesGunShot(obstacle_gun_shot);
     
                                 engine_handle.send_command(Command {
                                     sender: 0u128,

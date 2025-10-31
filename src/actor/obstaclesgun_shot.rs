@@ -187,7 +187,7 @@ impl Actor for ObstaclesGunShot {
         if self.target_size_reached {
             
             for area in self.coloring_areas.iter_mut() {
-                area.radius -= delta * 0.2;
+                area.radius -= delta * 0.35;
                 area.radius = area.radius.abs();
             }
     
@@ -229,7 +229,7 @@ impl Actor for ObstaclesGunShot {
             }
     
             for obj in self.static_objects.iter_mut() {
-                obj.collider.size.x -= delta * 0.2;
+                obj.collider.size.x -= delta * 0.35;
     
                 if obj.collider.size.x <= 0.0 {
                     engine_handle.send_command(

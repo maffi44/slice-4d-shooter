@@ -89,7 +89,7 @@ impl ObstaclesGun {
         energy_gun_hole_size_mult: f32, 
         energy_gun_add_force_mult: f32, 
         energy_gun_damage_mult: f32, 
-        energy_gun_restoring_speed: f32,
+        mut energy_gun_restoring_speed: f32,
         shooted_from_pivot_point_dir: Vec4,
     ) -> Self {
 
@@ -101,6 +101,8 @@ impl ObstaclesGun {
             waves: None,
             player: None,
         };
+
+        energy_gun_restoring_speed *= 0.65;
 
         ObstaclesGun {
             shooted_on_this_charge: false,
@@ -144,11 +146,11 @@ impl ObstaclesGun {
             .as_mut()
             .expect("Hole gun have not bolume areas in visual element")
             .pop().expect("Hole Gun doesn't have volume area on shoot");
-        
+
         audio_system.spawn_non_spatial_sound(
-            Sound::HolegunShot,
-            (charging_energy*0.9/ (MAX_CHARGING_TIME*2.0)).powf(1.6).clamp(0.1, 0.44), 
-        ((MAX_CHARGING_TIME*0.13+1.0) - charging_energy*0.5*0.2) as f64,
+            Sound::ObstacleGunShot,
+            (charging_energy*2.9/ (MAX_CHARGING_TIME*1.0)).powf(0.7).clamp(0.2, 1.94), 
+            ((MAX_CHARGING_TIME*0.1+1.15) - charging_energy*0.5*0.15).clamp(1.0, 100.0) as f64,
             false,
             true,
             fyrox_sound::source::Status::Playing,
@@ -177,7 +179,7 @@ impl ObstaclesGun {
 
             let position = hit.hit_point;
             let shooted_from = player.transform.get_position() + weapon_offset;
-            let radius = charging_energy*CHARGING_COEF*0.87;
+            let radius = charging_energy*CHARGING_COEF*0.79;
 
             let obstacle = ObstaclesGunShot::new(
                 position,
@@ -204,7 +206,7 @@ impl ObstaclesGun {
                         NetCommand::SendBoardcastNetMessageReliable(
                             NetMessageToPlayer::RemoteDirectMessage(
                                 player_id,
-                                RemoteMessage::SpawnHoleGunShotActor(
+                                RemoteMessage::SpawnObstacleGunShotActor(
                                     position.to_array(),
                                     shooted_from.to_array(),
                                     radius.abs(),//*base_coef,
@@ -481,8 +483,8 @@ impl Device for ObstaclesGun {
         }
 
         let bar = match player.team {
-            Team::Red => ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarRed),
-            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarBlue),
+            Team::Red => ui_system.get_mut_ui_element(&UIElementType::ObstacleGunBarRed),
+            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::ObstacleGunBarBlue),
         };
 
         if let UIElement::ProgressBar(bar) = bar {
@@ -553,19 +555,19 @@ impl Device for ObstaclesGun {
             .clear();
 
 
-        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarRed);
+        let bar = ui_system.get_mut_ui_element(&UIElementType::ObstacleGunBarRed);
 
         if let UIElement::ProgressBar(bar) = bar {
             bar.ui_data.is_visible = false;
         }
 
-        let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarBlue);
+        let bar = ui_system.get_mut_ui_element(&UIElementType::ObstacleGunBarBlue);
 
         if let UIElement::ProgressBar(bar) = bar {
             bar.ui_data.is_visible = false;
         }
 
-        let img = ui_system.get_mut_ui_element(&UIElementType::EnergyGunImage);
+        let img = ui_system.get_mut_ui_element(&UIElementType::ObstacleGunImage);
 
         if let UIElement::Image(img) = img {
             img.ui_data.is_visible = false;
@@ -581,7 +583,7 @@ impl Device for ObstaclesGun {
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
     ) {
-        let img = ui_system.get_mut_ui_element(&UIElementType::EnergyGunImage);
+        let img = ui_system.get_mut_ui_element(&UIElementType::ObstacleGunImage);
 
         if let UIElement::Image(img) = img {
             img.ui_data.is_visible = true;
@@ -591,13 +593,13 @@ impl Device for ObstaclesGun {
         {
             Team::Red =>
             {
-                let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarRed);
+                let bar = ui_system.get_mut_ui_element(&UIElementType::ObstacleGunBarRed);
 
                 if let UIElement::ProgressBar(bar) = bar {
                     bar.ui_data.is_visible = true;
                 }
 
-                let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarBlue);
+                let bar = ui_system.get_mut_ui_element(&UIElementType::ObstacleGunBarBlue);
 
                 if let UIElement::ProgressBar(bar) = bar {
                     bar.ui_data.is_visible = false;
@@ -606,13 +608,13 @@ impl Device for ObstaclesGun {
 
             Team::Blue =>
             {
-                let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarBlue);
+                let bar = ui_system.get_mut_ui_element(&UIElementType::ObstacleGunBarBlue);
 
                 if let UIElement::ProgressBar(bar) = bar {
                     bar.ui_data.is_visible = true;
                 }
 
-                let bar = ui_system.get_mut_ui_element(&UIElementType::EnergyGunBarRed);
+                let bar = ui_system.get_mut_ui_element(&UIElementType::ObstacleGunBarRed);
 
                 if let UIElement::ProgressBar(bar) = bar {
                     bar.ui_data.is_visible = false;

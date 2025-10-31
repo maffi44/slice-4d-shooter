@@ -1423,6 +1423,33 @@ fn process_message(
                     )
                 },
 
+                RemoteMessage::SpawnObstacleGunShotActor(
+                    position,
+                    shoooted_from,
+                    radius,
+                    color,
+                    charging_volume_area
+                ) =>
+                {
+                    engine_handle.send_direct_message(
+                        actor_id,
+                        Message {
+                            from: message_from_peer_id,
+                            remote_sender: true,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawnObstacleGunShotActor(
+                                        Vec4::from_array(position),
+                                        radius,
+                                        Vec3::from_array(color),
+                                        charging_volume_area
+                                    )
+                                )
+                            )
+                        }
+                    )
+                },
+
                 RemoteMessage::SetTransform(tr) =>
                 {
                     let transform = Transform::from_serializable_transform(tr);
@@ -1801,6 +1828,32 @@ fn process_message(
                             message: MessageType::SpecificActorMessage(
                                 SpecificActorMessage::PlayersDollMessage(
                                     PlayersDollMessage::SpawnHoleGunShotActor(
+                                        Vec4::from_array(position),
+                                        radius,
+                                        Vec3::from_array(color),
+                                        charging_volume_area
+                                    )
+                                )
+                            )
+                        }
+                    )
+                },
+
+                RemoteMessage::SpawnObstacleGunShotActor(
+                    position,
+                    shoooted_from,
+                    radius,
+                    color,
+                    charging_volume_area
+                ) =>
+                {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: message_from_peer_id,
+                            remote_sender: true,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayersDollMessage(
+                                    PlayersDollMessage::SpawnObstacleGunShotActor(
                                         Vec4::from_array(position),
                                         radius,
                                         Vec3::from_array(color),

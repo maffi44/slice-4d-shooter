@@ -47,8 +47,8 @@ struct ShapesMetadata {
     spheres_start: u32,
     spheres_amount: u32,
 
-    inf_cubes_start: u32,
-    inf_cubes_amount: u32,
+    // inf_cubes_start: u32,
+    // inf_cubes_amount: u32,
 
     sph_cubes_start: u32,
     sph_cubes_amount: u32,
@@ -60,8 +60,8 @@ struct ShapesMetadata {
     s_spheres_start: u32,
     s_spheres_amount: u32,
 
-    s_inf_cubes_start: u32,
-    s_inf_cubes_amount: u32,
+    // s_inf_cubes_start: u32,
+    // s_inf_cubes_amount: u32,
 
     s_sph_cubes_start: u32,
     s_sph_cubes_amount: u32,
@@ -73,8 +73,8 @@ struct ShapesMetadata {
     neg_spheres_start: u32,
     neg_spheres_amount: u32,
 
-    neg_inf_cubes_start: u32,
-    neg_inf_cubes_amount: u32,
+    // neg_inf_cubes_start: u32,
+    // neg_inf_cubes_amount: u32,
 
     neg_sph_cubes_start: u32,
     neg_sph_cubes_amount: u32,
@@ -86,132 +86,39 @@ struct ShapesMetadata {
     s_neg_spheres_start: u32,
     s_neg_spheres_amount: u32,
 
-    s_neg_inf_cubes_start: u32,
-    s_neg_inf_cubes_amount: u32,
+    // s_neg_inf_cubes_start: u32,
+    // s_neg_inf_cubes_amount: u32,
 
     s_neg_sph_cubes_start: u32,
     s_neg_sph_cubes_amount: u32,
+
+    //unbreakable normals
+    unbreakable_cubes_start: u32,
+    unbreakable_cubes_amount: u32,
+
+    unbreakable_spheres_start: u32,
+    unbreakable_spheres_amount: u32,
+
+    // unbreakable_inf_cubes_start: u32,
+    // unbreakable_inf_cubes_amount: u32,
+
+    unbreakable_sph_cubes_start: u32,
+    unbreakable_sph_cubes_amount: u32,
+
+    //unbreakable stickinesses
+    unbreakable_s_cubes_start: u32,
+    unbreakable_s_cubes_amount: u32,
+
+    unbreakable_s_spheres_start: u32,
+    unbreakable_s_spheres_amount: u32,
+
+    // unbreakable_s_inf_cubes_start: u32,
+    // unbreakable_s_inf_cubes_amount: u32,
+
+    unbreakable_s_sph_cubes_start: u32,
+    unbreakable_s_sph_cubes_amount: u32,
 }
 
-struct IntersectedShapesMetadata {
-    //normals
-    st_cubes_start: u32,
-    st_cubes_amount: u32,
-
-    dyn_cubes_start: u32,
-    dyn_cubes_amount: u32,
-
-
-    st_spheres_start: u32,
-    st_spheres_amount: u32,
-
-    dyn_spheres_start: u32,
-    dyn_spheres_amount: u32,
-
-
-    st_inf_cubes_start: u32,
-    st_inf_cubes_amount: u32,
-
-    dyn_inf_cubes_start: u32,
-    dyn_inf_cubes_amount: u32,
-
-
-    st_sph_cubes_start: u32,
-    st_sph_cubes_amount: u32,
-
-    dyn_sph_cubes_start: u32,
-    dyn_sph_cubes_amount: u32,
-
-
-    //stickinesses
-    st_s_cubes_start: u32,
-    st_s_cubes_amount: u32,
-
-    dyn_s_cubes_start: u32,
-    dyn_s_cubes_amount: u32,
-
-
-    st_s_spheres_start: u32,
-    st_s_spheres_amount: u32,
-
-    dyn_s_spheres_start: u32,
-    dyn_s_spheres_amount: u32,
-
-
-    st_s_inf_cubes_start: u32,
-    st_s_inf_cubes_amount: u32,
-
-    dyn_s_inf_cubes_start: u32,
-    dyn_s_inf_cubes_amount: u32,
-
-
-    st_s_sph_cubes_start: u32,
-    st_s_sph_cubes_amount: u32,
-
-    dyn_s_sph_cubes_start: u32,
-    dyn_s_sph_cubes_amount: u32,
-
-
-    //negatives
-    st_neg_cubes_start: u32,
-    st_neg_cubes_amount: u32,
-
-    dyn_neg_cubes_start: u32,
-    dyn_neg_cubes_amount: u32,
-
-
-    st_neg_spheres_start: u32,
-    st_neg_spheres_amount: u32,
-
-    dyn_neg_spheres_start: u32,
-    dyn_neg_spheres_amount: u32,
-
-
-    st_neg_inf_cubes_start: u32,
-    st_neg_inf_cubes_amount: u32,
-
-    dyn_neg_inf_cubes_start: u32,
-    dyn_neg_inf_cubes_amount: u32,
-
-
-    st_neg_sph_cubes_start: u32,
-    st_neg_sph_cubes_amount: u32,
-
-    dyn_neg_sph_cubes_start: u32,
-    dyn_neg_sph_cubes_amount: u32,
-
-    //neg_stickinesses
-    st_s_neg_cubes_start: u32,
-    st_s_neg_cubes_amount: u32,
-
-    dyn_s_neg_cubes_start: u32,
-    dyn_s_neg_cubes_amount: u32,
-
-
-    st_s_neg_spheres_start: u32,
-    st_s_neg_spheres_amount: u32,
-
-    dyn_s_neg_spheres_start: u32,
-    dyn_s_neg_spheres_amount: u32,
-
-
-    st_s_neg_inf_cubes_start: u32,
-    st_s_neg_inf_cubes_amount: u32,
-
-    dyn_s_neg_inf_cubes_start: u32,
-    dyn_s_neg_inf_cubes_amount: u32,
-
-
-    st_s_neg_sph_cubes_start: u32,
-    st_s_neg_sph_cubes_amount: u32,
-
-    dyn_s_neg_sph_cubes_start: u32,
-    dyn_s_neg_sph_cubes_amount: u32,
-
-
-    player_forms_start: u32,
-    player_forms_amount: u32,
-}
 
 struct SphericalAreasMetadata {
     holegun_colorized_areas_start: u32,
@@ -271,8 +178,7 @@ struct OtherDynamicData {
 
     death_screen_effect: f32,
 
-    undestroyable_cubes: array<Shape, 64>,
-    undestroyable_cubes_amount: u32,
+    // padding_byte_0: u32,
     splited_screen_in_2d_3d_example: f32,
     w_shift_coef: f32,
     w_shift_intensity: f32,
@@ -282,9 +188,9 @@ struct OtherDynamicData {
     screen_aspect: f32,
     time: f32,
     shadows_enabled: i32,
-    padding_byte_1: i32,
-    padding_byte_2: i32,
-    padding_byte_3: i32,
+    // padding_byte_1: i32,
+    // padding_byte_2: i32,
+    // padding_byte_3: i32,
     additional_data: vec4<f32>,
     additional_data_2: vec4<f32>,
 }
@@ -327,8 +233,12 @@ struct OtherStaticData {
 @group(0) @binding(2) var<uniform> dyn_negatives_shapes: array<Shape, 256>;
 @group(0) @binding(3) var<uniform> dyn_stickiness_shapes: array<Shape, 256>;
 @group(0) @binding(4) var<uniform> dyn_neg_stickiness_shapes: array<Shape, 256>;
+@group(0) @binding(5) var<uniform> dyn_undestroyable_normal_shapes: array<Shape, 256>;
+@group(0) @binding(6) var<uniform> dyn_undestroyable_stickiness_shapes: array<Shape, 256>;
 
-@group(0) @binding(5) var<uniform> dynamic_data: OtherDynamicData;
+
+
+@group(0) @binding(7) var<uniform> dynamic_data: OtherDynamicData;
 
 @group(1) @binding(0) var<uniform> dyn_spherical_areas: array<SphericalArea, 256>;
 @group(1) @binding(1) var<uniform> dyn_beam_areas: array<BeamArea, 256>;
@@ -2121,6 +2031,17 @@ for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_
             store_intersection_entrance_and_exit_for_neg(intr);
         }
     }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+        let intr = sph_intersection(
+            ro - dyn_undestroyable_stickiness_shapes[i].pos,
+            rd,
+            dyn_undestroyable_stickiness_shapes[i].size.x + dyn_undestroyable_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+        );
+        
+        if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
+        }
+    }
 for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
         let intr = sph_intersection(
             ro - dyn_player_forms[i].pos,
@@ -2160,6 +2081,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(30, 4, 26.6, 9.55), vec4<f32>(1.75, 1.4, 6, 1
 d = smax(d, -(sd_box(p - vec4<f32>(27.8, 4.6, 38.7, 11.55), vec4<f32>(3.8, 1.2, 7, 1.1)) - 0), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(18, 6, 43.9, 13.55), vec4<f32>(6.3, 1.8, 1.25, 1.1)) - 0), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }
 else
 {d = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
@@ -2178,6 +2102,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(8, 1.5, 25.5, 11.5), vec4<f32>(11, 1.8, 5.5, 
 d = smax(d, -(sd_box(p - vec4<f32>(21, 2.38, 31.5, 5.2), vec4<f32>(0.7, 0.7, 0.7, 1)) - 1), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(18, 6, 43.9, 13.55), vec4<f32>(6.3, 1.8, 1.25, 1.1)) - 0), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }}
 else
 {if p.x > 0.17499995 {
@@ -2198,6 +2125,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(4, 3, 41.5, 4.3), vec4<f32>(3, 1.1, 2, 1.75))
 d = smax(d, -(sd_box(p - vec4<f32>(2.5, 2.5, 36, 3.5), vec4<f32>(1.4, 1.5, 1.4, 2)) - 0.09), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 3), vec4<f32>(1.1, 0.6, 30, 0.001)) - 1), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }
 else
 {d = min(d, sd_box(p - vec4<f32>(2, -0.75, 35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
@@ -2216,6 +2146,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(8, 1.5, 25.5, 11.5), vec4<f32>(11, 1.8, 5.5, 
 d = smax(d, -(sd_box(p - vec4<f32>(-3.54, 5.2, 37, 4.35), vec4<f32>(3, 2, 3, 2)) - 0.09), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(-5, 0.55, 36, 3.5), vec4<f32>(1, 0.6, 1, 2)) - 0.3), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }}}
 else
 {if p.x > 2 {
@@ -2238,6 +2171,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(30, 4, 26.6, 9.55), vec4<f32>(1.75, 1.4, 6, 1
 d = smax(d, -(sd_box(p - vec4<f32>(4, 0.5, 0, 3), vec4<f32>(14.5, 0.34, 0.55, 0.301)) - 1.65), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(25.5, 1, 0, 6.4), vec4<f32>(8.9, 1.4, 2.2, 4.2)) - 0), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }
 else
 {d = min(d, sd_box(p - vec4<f32>(8, 0.5, 0, 17), vec4<f32>(1.6, 1.1, 22.8, 14)) - 1.6);
@@ -2257,6 +2193,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(4, 0.5, 0, 3), vec4<f32>(14.5, 0.34, 0.55, 0.
 d = smax(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 3), vec4<f32>(1.1, 0.6, 30, 0.001)) - 1), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(2.05, 6.5, 0, 3.5), vec4<f32>(12.2, 0.4, 0.6, 1.5)) - 1), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }}
 else
 {if p.y > 3.375 {
@@ -2279,6 +2218,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(2.05, 6.5, 0, 3.5), vec4<f32>(12.2, 0.4, 0.6,
 d = smax(d, -(sd_box(p - vec4<f32>(-10, 3.5, 0, 5), vec4<f32>(0.2, 2.9, 0.2, 2.5)) - 1.2), 0.15);
 d = smax(d, -(sd_sph_box(p - vec4<f32>(-1, 5, 10, 3), vec4<f32>(4, 4, 4, 2)) - 0.09), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }
 else
 {d = min(d, sd_box(p - vec4<f32>(7, -1.4, 0, 14), vec4<f32>(17.3, 0.4, 10, 14)) - 0.18);
@@ -2299,6 +2241,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(-2, 1.75, 0, 3), vec4<f32>(3, 1, 6, 2)) - 0.1
 d = smax(d, -(sd_box(p - vec4<f32>(-2, 2, 0, 4), vec4<f32>(3, 0.7, 7, 2)) - 0.1), 0.15);
 d = smax(d, -(sd_sph_box(p - vec4<f32>(-1, 5, 10, 3), vec4<f32>(4, 4, 4, 2)) - 0.09), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }}}}
 else
 {if p.z > -22.41 {
@@ -2321,6 +2266,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(30, 4, -26.6, 9.55), vec4<f32>(1.75, 1.4, 6, 
 d = smax(d, -(sd_box(p - vec4<f32>(4, 0.5, 0, 3), vec4<f32>(14.5, 0.34, 0.55, 0.301)) - 1.65), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(25.5, 1, 0, 6.4), vec4<f32>(8.9, 1.4, 2.2, 4.2)) - 0), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }
 else
 {d = min(d, sd_box(p - vec4<f32>(8, 0.5, 0, 17), vec4<f32>(1.6, 1.1, 22.8, 14)) - 1.6);
@@ -2340,6 +2288,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(4, 0.5, 0, 3), vec4<f32>(14.5, 0.34, 0.55, 0.
 d = smax(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 3), vec4<f32>(1.1, 0.6, 30, 0.001)) - 1), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(25.5, 1, 0, 6.4), vec4<f32>(8.9, 1.4, 2.2, 4.2)) - 0), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }}
 else
 {if p.y > 3.375 {
@@ -2360,6 +2311,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(8, 1.5, -25.5, 11.5), vec4<f32>(11, 1.8, 5.5,
 d = smax(d, -(sd_box(p - vec4<f32>(-10, 7.5, 0, 4), vec4<f32>(0.5, 0.5, 8.5, 1.5)) - 0.6), 0.15);
 d = smax(d, -(sd_sph_box(p - vec4<f32>(-1, 5, -10, 3), vec4<f32>(4, 4, 4, 2)) - 0.09), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }
 else
 {d = min(d, sd_box(p - vec4<f32>(7, -1.4, 0, 14), vec4<f32>(17.3, 0.4, 10, 14)) - 0.18);
@@ -2379,6 +2333,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(-2, 1.75, 0, 3), vec4<f32>(3, 1, 6, 2)) - 0.1
 d = smax(d, -(sd_box(p - vec4<f32>(-2, 2, 0, 4), vec4<f32>(3, 0.7, 7, 2)) - 0.1), 0.15);
 d = smax(d, -(sd_sph_box(p - vec4<f32>(-1, 5, -10, 3), vec4<f32>(4, 4, 4, 2)) - 0.09), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }}}
 else
 {if p.x > 9.41124 {
@@ -2399,6 +2356,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(30, 4, -26.6, 9.55), vec4<f32>(1.75, 1.4, 6, 
 d = smax(d, -(sd_box(p - vec4<f32>(27.8, 4.6, -38.7, 11.55), vec4<f32>(3.8, 1.2, 7, 1.1)) - 0), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(18, 6, -43.9, 13.55), vec4<f32>(6.3, 1.8, 1.25, 1.1)) - 0), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }
 else
 {d = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
@@ -2417,6 +2377,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(8, 1.5, -25.5, 11.5), vec4<f32>(11, 1.8, 5.5,
 d = smax(d, -(sd_box(p - vec4<f32>(18, 6, -43.9, 13.55), vec4<f32>(6.3, 1.8, 1.25, 1.1)) - 0), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 3), vec4<f32>(1.1, 0.6, 30, 0.001)) - 1), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }}
 else
 {if p.x > 0.17499995 {
@@ -2437,6 +2400,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(4, 3, -41.5, 4.3), vec4<f32>(3, 1.1, 2, 1.75)
 d = smax(d, -(sd_box(p - vec4<f32>(2.5, 2.5, -36, 3.5), vec4<f32>(1.4, 1.5, 1.4, 2)) - 0.09), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(8, 0.5, 0, 3), vec4<f32>(1.1, 0.6, 30, 0.001)) - 1), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }
 else
 {d = min(d, sd_box(p - vec4<f32>(2, -0.75, -35, 15), vec4<f32>(14.5, 0.15, 11, 15)) - 0.6);
@@ -2455,6 +2421,9 @@ d = smax(d, -(sd_box(p - vec4<f32>(8, 1.5, -25.5, 11.5), vec4<f32>(11, 1.8, 5.5,
 d = smax(d, -(sd_box(p - vec4<f32>(-3.54, 5.2, -37, 4.35), vec4<f32>(3, 2, 3, 2)) - 0.09), 0.15);
 d = smax(d, -(sd_box(p - vec4<f32>(-5, 0.55, -36, 3.5), vec4<f32>(1, 0.6, 1, 2)) - 0.3), 0.15);
 d = min(d, sd_box(p - vec4<f32>(0, 0, 0, -1), vec4<f32>(50, 50, 100, 1)) - 0.09);
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }
 }}}}
 
     if intr_players
@@ -2861,6 +2830,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }
 else
 {{
@@ -3022,6 +3033,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }}
 else
 {if p.x > 0.17499995 {
@@ -3209,6 +3262,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }
 else
 {{
@@ -3452,6 +3547,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }}}
 else
 {if p.x > 2 {
@@ -3631,6 +3768,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }
 else
 {{
@@ -3767,6 +3946,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }}
 else
 {if p.y > 3.375 {
@@ -3954,6 +4175,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }
 else
 {{
@@ -4115,6 +4378,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }}}}
 else
 {if p.z > -22.41 {
@@ -4213,6 +4518,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }
 else
 {{
@@ -4349,6 +4696,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }}
 else
 {if p.y > 3.375 {
@@ -4536,6 +4925,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }
 else
 {{
@@ -4697,6 +5128,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }}}
 else
 {if p.x > 9.41124 {
@@ -4794,6 +5267,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }
 else
 {{
@@ -4971,6 +5486,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }}
 else
 {if p.x > 0.17499995 {
@@ -5158,6 +5715,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }
 else
 {{
@@ -5401,6 +6000,48 @@ if dd < MIN_DIST*2.0 {
                         return output;
                     }
 }
+for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }
 }}}}return output;
 
 }

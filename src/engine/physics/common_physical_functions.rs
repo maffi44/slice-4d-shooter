@@ -449,19 +449,6 @@ pub fn get_dist(
         );
     }
 
-    for collider in static_objects.cubes.iter_undestroyable_normal() {
-         d = d.min(sd_box(p - collider.position, collider.size) - collider.roundness);
-    }
-    for collider in static_objects.inf_w_cubes.iter_undestroyable_normal() {
-        d = d.min(sd_inf_box(p - collider.position, collider.size.xyz()) - collider.roundness);
-    }
-    for collider in static_objects.spheres.iter_undestroyable_normal() {
-        d = d.min(sd_sphere(p - collider.position, collider.size.x) - collider.roundness);
-    }
-    for collider in static_objects.sph_cubes.iter_undestroyable_normal() {
-        d = d.min(sd_sph_box(p - collider.position, collider.size) - collider.roundness);
-    }
-
     for collider in static_objects.cubes.iter_undestroyable_stickiness() {
         d = smin(
            d,
@@ -489,6 +476,19 @@ pub fn get_dist(
             sd_sph_box(p - collider.position, collider.size) - collider.roundness,
             stickiness
         );
+    }
+
+    for collider in static_objects.cubes.iter_undestroyable_normal() {
+         d = d.min(sd_box(p - collider.position, collider.size) - collider.roundness);
+    }
+    for collider in static_objects.inf_w_cubes.iter_undestroyable_normal() {
+        d = d.min(sd_inf_box(p - collider.position, collider.size.xyz()) - collider.roundness);
+    }
+    for collider in static_objects.spheres.iter_undestroyable_normal() {
+        d = d.min(sd_sphere(p - collider.position, collider.size.x) - collider.roundness);
+    }
+    for collider in static_objects.sph_cubes.iter_undestroyable_normal() {
+        d = d.min(sd_sph_box(p - collider.position, collider.size) - collider.roundness);
     }
 
     match excluding_ids {

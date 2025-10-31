@@ -1830,134 +1830,48 @@ fn get_mats(
         output.materials_count = 0u;
     }
 
-    // for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_start; i++) {
-    //     if (i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start) {
-    //         let dd = sd_box(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size) - dyn_undestroyable_stickiness_shapes[i].roundness;
-        
-    //         if dd < MIN_DIST*2.0 {
-    //             output.materials_count = 1u;
-    //             output.material_weights[0] = 1.0;
-    //             output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
-    //             return output;
-    //         }
+    for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+        let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+    
+        if dd < MIN_DIST*2.0 {
+            output.materials_count = 1u;
+            output.material_weights[0] = 1.0;
+            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+            return output;
+        }
 
-    //         if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+        if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
 
-    //             if output.materials_count == 0u
-    //             {
-    //                 output.materials_count = 1u;
-    //                 output.material_weights[0] = 1.0;
-    //                 output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
-    //                 d = dd;
-    //             }
-    //             else
-    //             {
-    //                 var coef = 0.0;
-    //                 if d<dd {
-    //                     coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
-    //                 } else {
-    //                     coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
-    //                 }
-    //                 output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
-    //                 output.material_weights[output.materials_count] = coef;
-    
-    //                 let mult = 1.0 - coef;
-    
-    //                 for (var k = 0u; k < output.materials_count; k++) {
-    //                     output.material_weights[k] *= mult;
-    //                 }
-    
-    //                 output.materials_count += 1u;
-                    
-    //                 d = min(d,dd);
-    //             }
-    //         }
+            if output.materials_count == 0u
+            {
+                output.materials_count = 1u;
+                output.material_weights[0] = 1.0;
+                output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                d = dd;
+            }
+            else
+            {
+                var coef = 0.0;
+                if d<dd {
+                    coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                } else {
+                    coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                }
+                output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                output.material_weights[output.materials_count] = coef;
 
-    //     } else if (i < dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_start) {
-    //         let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
-        
-    //         if dd < MIN_DIST*2.0 {
-    //             output.materials_count = 1u;
-    //             output.material_weights[0] = 1.0;
-    //             output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
-    //             return output;
-    //         }
+                let mult = 1.0 - coef;
 
-    //         if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+                for (var k = 0u; k < output.materials_count; k++) {
+                    output.material_weights[k] *= mult;
+                }
 
-    //             if output.materials_count == 0u
-    //             {
-    //                 output.materials_count = 1u;
-    //                 output.material_weights[0] = 1.0;
-    //                 output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
-    //                 d = dd;
-    //             }
-    //             else
-    //             {
-    //                 var coef = 0.0;
-    //                 if d<dd {
-    //                     coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
-    //                 } else {
-    //                     coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
-    //                 }
-    //                 output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
-    //                 output.material_weights[output.materials_count] = coef;
-    
-    //                 let mult = 1.0 - coef;
-    
-    //                 for (var k = 0u; k < output.materials_count; k++) {
-    //                     output.material_weights[k] *= mult;
-    //                 }
-    
-    //                 output.materials_count += 1u;
-                    
-    //                 d = min(d,dd);
-    //             }
-    //         }
-
-    //     } else {
-    //         let dd = sd_sph_box(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size) - dyn_undestroyable_stickiness_shapes[i].roundness;
-            
-    //         if dd < MIN_DIST*2.0 {
-    //             output.materials_count = 1u;
-    //             output.material_weights[0] = 1.0;
-    //             output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
-    //             return output;
-    //         }
-
-    //         if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
-
-    //             if output.materials_count == 0u
-    //             {
-    //                 output.materials_count = 1u;
-    //                 output.material_weights[0] = 1.0;
-    //                 output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
-    //                 d = dd;
-    //             }
-    //             else
-    //             {
-    //                 var coef = 0.0;
-    //                 if d<dd {
-    //                     coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
-    //                 } else {
-    //                     coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
-    //                 }
-    //                 output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
-    //                 output.material_weights[output.materials_count] = coef;
-    
-    //                 let mult = 1.0 - coef;
-    
-    //                 for (var k = 0u; k < output.materials_count; k++) {
-    //                     output.material_weights[k] *= mult;
-    //                 }
-    
-    //                 output.materials_count += 1u;
-                    
-    //                 d = min(d,dd);
-    //             }
-    //         }
-    //     }
-    // }
+                output.materials_count += 1u;
+                
+                d = min(d,dd);
+            }
+        }
+    }
     
     return output;
     //###get_mats###

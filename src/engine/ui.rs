@@ -115,6 +115,9 @@ pub enum UIElementType {
     EnergyGunBarBlue,
     EnergyGunBarRed,
     EnergyGunImage,
+    ObstacleGunBarBlue,
+    ObstacleGunBarRed,
+    ObstacleGunImage,
     MachinegunBarBlue,
     MachinegunBarRed,
     MachinegunImage,
@@ -172,6 +175,8 @@ pub enum TextureType {
     HeathBarMaskRed,
     EnergyGunBarTexture,
     EnergyGunImgTexture,
+    ObstacleGunBarTexture,
+    ObstacleGunImgTexture,
     ShotgunBarTexture,
     ShotgunImgTexture,
     MachinegunBarTexture,
@@ -245,6 +250,14 @@ impl UISystem {
         texture_sources.insert(
             TextureType::EnergyGunBarTexture,
             include_bytes!("../assets/textures/energy_gun_bar_texture_hud.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ObstacleGunImgTexture,
+            include_bytes!("../assets/textures/obstacle_gun_image.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::ObstacleGunBarTexture,
+            include_bytes!("../assets/textures/obstacle_gun_bar_texture_hud.png").as_slice()
         );
         texture_sources.insert(
             TextureType::EnergyGunImgTexture,
@@ -820,6 +833,85 @@ impl UISystem {
                         None,
                     ),
                     TextureType::EnergyGunImgTexture
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ObstacleGunBarRed,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                        
+                    ),
+                    TextureType::ObstacleGunBarTexture,
+                    TextureType::GunBarMaskRed,
+                    0.95,
+                    0.17,
+                    ProgressBarDirection::RightLeft,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ObstacleGunBarBlue,
+            UIElement::ProgressBar(
+                UIProgressBar::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                        
+                    ),
+                    TextureType::ObstacleGunBarTexture,
+                    TextureType::GunBarMaskBlue,
+                    0.95,
+                    0.17,
+                    ProgressBarDirection::RightLeft,
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::ObstacleGunImage,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.224
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 0,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::ObstacleGunImgTexture
                 )
             )
         );

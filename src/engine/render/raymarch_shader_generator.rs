@@ -330,28 +330,156 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
     }
 
     // undetroyable cubes
-    // for shape in &static_data.undestroyable_cubes
-    // {
-    //     func_body +=
+    for shape in &static_data.unbreakable_cubes
+    {
+        func_body +=
 
-    //     &format!
-    //     (
-    //         "{}let intr = cube_intersection(
-    //             ro - {},
-    //             rd,
-    //             {}
-    //         );\n",
-    //         "{\n",
-    //         string_from_vec4(shape.pos),
-    //         string_from_vec4(add_vec4_and_float(shape.size, shape.roundness)),
-    //     );
+        &format!
+        (
+            "{}let intr = cube_intersection(
+                ro - {},
+                rd,
+                {}
+            );\n",
+            "{\n",
+            string_from_vec4(shape.pos),
+            string_from_vec4(add_vec4_and_float(shape.size, shape.roundness)),
+        );
 
-    //     func_body +=
+        func_body +=
 
-    //     "if intr.y > 0.0 {
-    //         store_intersection_entrance_and_exit_for_unbreakables(intr);
-    //     }\n}\n";
-    // }
+        "if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
+        }\n}\n";
+    }
+
+    // undetroyable spheres
+    for shape in &static_data.unbreakable_spheres
+    {
+        func_body +=
+
+        &format!
+        (
+            "{}let intr = sph_intersection(
+                ro - {},
+                rd,
+                {}
+            );\n",
+            "{\n",
+            string_from_vec4(shape.pos),
+            shape.size[0] + shape.roundness,
+        );
+
+        func_body +=
+
+        "if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
+        }\n}\n";
+    }
+
+    // undetroyable sph_cubes
+    for shape in &static_data.unbreakable_sph_cubes 
+    {
+        func_body +=
+
+        &format!
+        (
+            "{}let intr = cube_intersection(
+                ro - {},
+                rd,
+                {}
+            );\n",
+            "{\n",
+            string_from_vec4(shape.pos),
+            string_from_vec4(calc_size_for_sphcube(shape.size, shape.roundness)),
+        );
+
+        func_body +=
+
+        "if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
+        }\n}\n";
+    }
+
+    // undetroyable stickiness
+    for shape in &static_data.unbreakable_s_cubes
+    {
+        func_body +=
+
+        &format!
+        (
+            "{}let intr = cube_intersection(
+                ro - {},
+                rd,
+                {}
+            );\n",
+            "{\n",
+            string_from_vec4(shape.pos),
+            string_from_vec4(
+                add_vec4_and_float(
+                    add_vec4_and_float(shape.size, shape.roundness),
+                    stickiness * PI
+                )
+            ),
+        );
+
+        func_body +=
+
+        "if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
+        }\n}\n";
+    }
+
+    for shape in &static_data.unbreakable_s_spheres
+    {
+        func_body +=
+
+        &format!
+        (
+            "{}let intr = sph_intersection(
+                ro - {},
+                rd,
+                {}
+            );\n",
+            "{\n",
+            string_from_vec4(shape.pos),
+            shape.size[0] + shape.roundness + stickiness * PI,
+        );
+
+        func_body +=
+
+        "if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
+        }\n}\n";
+    }
+
+    for shape in &static_data.unbreakable_s_sph_cubes 
+    {
+        func_body +=
+
+        &format!
+        (
+            "{}let intr = cube_intersection(
+                ro - {},
+                rd,
+                {}
+            );\n",
+            "{\n",
+            string_from_vec4(shape.pos),
+            string_from_vec4(
+                add_vec4_and_float(
+                    calc_size_for_sphcube(shape.size, shape.roundness),
+                    stickiness * PI
+                )
+            ),
+        );
+
+        func_body +=
+
+        "if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
+        }\n}\n";
+    }
 
     func_body +=
 
@@ -364,6 +492,20 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         
         if intr.y > 0.0 {
             store_intersection_entrance_and_exit_for_neg(intr);
+        }
+    }\n";
+
+    func_body +=
+
+    "for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+        let intr = sph_intersection(
+            ro - dyn_undestroyable_stickiness_shapes[i].pos,
+            rd,
+            dyn_undestroyable_stickiness_shapes[i].size.x + dyn_undestroyable_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+        );
+        
+        if intr.y > 0.0 {
+            store_intersection_entrance_and_exit_for_unbreakables(intr);
         }
     }\n";
 
@@ -825,6 +967,51 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                     "}\n}\n",
                 ));
             }
+
+            func_body.push_str(
+                "for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                    let dd = sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness;
+                
+                    if dd < MIN_DIST*2.0 {
+                        output.materials_count = 1u;
+                        output.material_weights[0] = 1.0;
+                        output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                        return output;
+                    }
+
+                    if dd < static_data.stickiness * STICKINESS_EFFECT_COEF {
+
+                        if output.materials_count == 0u
+                        {
+                            output.materials_count = 1u;
+                            output.material_weights[0] = 1.0;
+                            output.materials[0] = dyn_undestroyable_stickiness_shapes[i].material;
+                            d = dd;
+                        }
+                        else
+                        {
+                            var coef = 0.0;
+                            if d<dd {
+                                coef = clamp(pow(max(d/dd,0.0),1.9) * 0.5, 0.0, 1.0);
+                            } else {
+                                coef = 1.0-clamp((pow(max(dd/d,0.0),1.9) * 0.5), 0.0, 1.0);
+                            }
+                            output.materials[output.materials_count] = dyn_undestroyable_stickiness_shapes[i].material;
+                            output.material_weights[output.materials_count] = coef;
+
+                            let mult = 1.0 - coef;
+
+                            for (var k = 0u; k < output.materials_count; k++) {
+                                output.material_weights[k] *= mult;
+                            }
+
+                            output.materials_count += 1u;
+                            
+                            d = min(d,dd);
+                        }
+                    }
+                }\n"
+            );
         },
     }
 }
@@ -1287,6 +1474,12 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                     )
                 );
             }
+
+            func_body.push_str(
+                "for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+            }\n"
+            );
         },
     }
 }
@@ -2551,17 +2744,17 @@ impl Objects
 
 
         let mut undestroyable_cubes = Vec::new();
-        // for shape in &static_data.undestroyable_cubes
-        // {
-        //     let obj_info = ObjectInfo {
-        //         shape_type: ShapeType::Cube,
-        //         obj_type: ObjectType::Unbreakable
-        //     };
+        for shape in &static_data.unbreakable_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Cube,
+                obj_type: ObjectType::Unbreakable
+            };
 
-        //     let object = Object::new(shape, obj_info, stickiness);
+            let object = Object::new(shape, obj_info, stickiness);
 
-        //     undestroyable_cubes.push(object);
-        // }
+            undestroyable_cubes.push(object);
+        }
         
         let object_edges_list_along_x = Vec::new();
         let object_edges_list_along_y = Vec::new();
