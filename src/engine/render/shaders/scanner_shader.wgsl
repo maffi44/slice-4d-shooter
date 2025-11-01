@@ -37,8 +37,8 @@ struct ShapesMetadata {
     spheres_start: u32,
     spheres_amount: u32,
 
-    inf_cubes_start: u32,
-    inf_cubes_amount: u32,
+    // inf_cubes_start: u32,
+    // inf_cubes_amount: u32,
 
     sph_cubes_start: u32,
     sph_cubes_amount: u32,
@@ -50,8 +50,8 @@ struct ShapesMetadata {
     s_spheres_start: u32,
     s_spheres_amount: u32,
 
-    s_inf_cubes_start: u32,
-    s_inf_cubes_amount: u32,
+    // s_inf_cubes_start: u32,
+    // s_inf_cubes_amount: u32,
 
     s_sph_cubes_start: u32,
     s_sph_cubes_amount: u32,
@@ -63,8 +63,8 @@ struct ShapesMetadata {
     neg_spheres_start: u32,
     neg_spheres_amount: u32,
 
-    neg_inf_cubes_start: u32,
-    neg_inf_cubes_amount: u32,
+    // neg_inf_cubes_start: u32,
+    // neg_inf_cubes_amount: u32,
 
     neg_sph_cubes_start: u32,
     neg_sph_cubes_amount: u32,
@@ -76,12 +76,39 @@ struct ShapesMetadata {
     s_neg_spheres_start: u32,
     s_neg_spheres_amount: u32,
 
-    s_neg_inf_cubes_start: u32,
-    s_neg_inf_cubes_amount: u32,
+    // s_neg_inf_cubes_start: u32,
+    // s_neg_inf_cubes_amount: u32,
 
     s_neg_sph_cubes_start: u32,
     s_neg_sph_cubes_amount: u32,
+
+    //unbreakable normals
+    unbreakable_cubes_start: u32,
+    unbreakable_cubes_amount: u32,
+
+    unbreakable_spheres_start: u32,
+    unbreakable_spheres_amount: u32,
+
+    // unbreakable_inf_cubes_start: u32,
+    // unbreakable_inf_cubes_amount: u32,
+
+    unbreakable_sph_cubes_start: u32,
+    unbreakable_sph_cubes_amount: u32,
+
+    //unbreakable stickinesses
+    unbreakable_s_cubes_start: u32,
+    unbreakable_s_cubes_amount: u32,
+
+    unbreakable_s_spheres_start: u32,
+    unbreakable_s_spheres_amount: u32,
+
+    // unbreakable_s_inf_cubes_start: u32,
+    // unbreakable_s_inf_cubes_amount: u32,
+
+    unbreakable_s_sph_cubes_start: u32,
+    unbreakable_s_sph_cubes_amount: u32,
 }
+
 
 struct RectTransformUniform {
     scale: vec2<f32>,
@@ -254,7 +281,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         {
             var en_pos  = (dynamic_data.camera_data.cam_pos - dynamic_data.player_projections[i].original_position) / MAX_SCANNER_RADIUS;
 
-            if scanner_data.orientation == 0 {
+            if scanner_data.orientation == 0u {
 
                 let en_pos_2d = rot_xz_mat_2d * (en_pos.xz*vec2(-1.0,-1.0)); 
                 let e = clamp((0.09 - length(uv_pos-en_pos_2d)) * 100.0, 0.0, 1.0);
