@@ -32,7 +32,7 @@ use engine::input::ActionsFrameState;
 
 use crate::{actor::flag_base::FlagBase, read_args::read_args};
 
-
+#[cfg(not(debug_assertions))]
 use blink_alloc::GlobalBlinkAlloc;
 
 #[cfg(not(debug_assertions))]
@@ -70,6 +70,7 @@ fn main() {
         // Unless you see the previous version of the map.
         true,
         specific_backend,
+        false,
         Box::new(|systems| {
             
             let main_player = MainPlayer::new(

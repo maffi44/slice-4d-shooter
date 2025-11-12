@@ -36,11 +36,13 @@ pub mod shotgun_shot_source;
 pub mod shotgun_laser_shot;
 pub mod observer;
 pub mod obstaclesgun_shot;
+pub mod obstacle_course_player_two_jumps;
+pub mod obstacle_course_free_movement_player;
 
 use std::fmt::Display;
 
 use crate::{
-    actor::{flag_base::{FlagBase, FlagBaseMessage}, obstaclesgun_shot::ObstaclesGunShot}, engine::{
+    actor::{flag_base::{FlagBase, FlagBaseMessage}, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, obstacle_course_player_two_jumps::ObstacleCoursePlayerTwoJumps, obstaclesgun_shot::ObstaclesGunShot}, engine::{
         audio::AudioSystem,
         effects::EffectsSystem,
         engine_handle::EngineHandle,
@@ -172,6 +174,8 @@ pub enum ActorWrapper {
     Observer(Observer),
     Diamond,
     Exit,
+    ObstacleCoursePlayerTwoJumps(ObstacleCoursePlayerTwoJumps),
+    ObstacleCourseFreeMovementPlayer(ObstacleCourseFreeMovementPlayer),
 }
 
 impl Display for ActorWrapper
@@ -201,6 +205,8 @@ impl Display for ActorWrapper
             ActorWrapper::Observer(_) => "Observer",
             ActorWrapper::Diamond => "Diamond",
             ActorWrapper::Exit => "Exit",
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(_) => "ObstacleCoursePlayerTwoJumps",
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(_) => "ObstacleCourseFreeMovementPlayer",
         };
 
         write!(f, "Actor: {}", actor_type)
@@ -271,6 +277,12 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_transform()
             }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_transform()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -336,6 +348,12 @@ impl Actor for ActorWrapper {
                 actor.get_mut_transform()
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
                 actor.get_mut_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -414,6 +432,12 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -490,6 +514,12 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -555,6 +585,12 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
                 actor.get_physical_element()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -624,6 +660,12 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_visual_element()
             }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -689,6 +731,12 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
                 actor.get_id()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -758,6 +806,12 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.change_id(id, engine_handle)
             }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -823,6 +877,12 @@ impl Actor for ActorWrapper {
                 actor.set_id(id)
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
                 actor.set_id(id)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -893,6 +953,12 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_actor_as_controlled()
             }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.get_actor_as_controlled()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_actor_as_controlled()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -959,6 +1025,12 @@ impl Actor for ActorWrapper {
                 actor.get_actor_as_controlled_mut()
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::ObstacleCoursePlayerTwoJumps(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
                 actor.get_actor_as_controlled_mut()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},

@@ -2532,9 +2532,9 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
 
-    ray_direction *= dynamic_data.camera_data.cam_zw_rot;
     ray_direction *= dynamic_data.camera_data.cam_zy_rot;
     ray_direction *= dynamic_data.camera_data.cam_zx_rot;
+    ray_direction *= dynamic_data.camera_data.cam_zw_rot;
 
     let camera_position = dynamic_data.camera_data.cam_pos;
 

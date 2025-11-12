@@ -52,6 +52,7 @@ pub struct KinematicCollider {
     pub forces: Vec<Vec4>,
     pub is_on_y_ground: bool,
     pub is_on_w_ground: bool,
+    pub is_on_w_upper_ground: bool,
     pub is_on_x_ground: bool,
     actor_id: Option<ActorID>,
 }
@@ -80,6 +81,7 @@ impl KinematicCollider {
             forces: Vec::with_capacity(10),
             is_on_y_ground: false,
             is_on_w_ground: false,
+            is_on_w_upper_ground: false,
             is_on_x_ground: false,
             actor_id: None,
         }
@@ -142,6 +144,7 @@ impl KinematicCollider {
     ) {
         self.is_on_y_ground = false;
         self.is_on_w_ground = false;
+        self.is_on_w_upper_ground = false;
         self.is_on_x_ground = false;
 
         while let Some(force) = self.forces.pop() {
@@ -219,6 +222,18 @@ impl KinematicCollider {
 
             if dist < self.collider_radius * 0.99 {
                 self.is_on_w_ground = true;
+            }
+
+            let w_upper_position = transform.get_position() + ((self.collider_radius * 0.1) * W_UP);
+
+            let dist = get_dist(
+                w_upper_position,
+                static_objects,
+                Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+            );
+
+            if dist < self.collider_radius * 0.99 {
+                self.is_on_w_upper_ground = true;
             }
 
             let x_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * Vec4::X);

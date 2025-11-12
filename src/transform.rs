@@ -34,6 +34,8 @@ pub const UP: Vec4 = Vec4::Y;
 pub const DOWN: Vec4 = Vec4::NEG_Y;
 pub const W_UP: Vec4 = Vec4::W;
 pub const W_DOWN: Vec4 = Vec4::NEG_W;
+pub const ATA: Vec4 = Vec4::W;
+pub const KETA: Vec4 = Vec4::NEG_W;
 
 pub type SerializableTransform = ([f32; 4], [f32; 16]);
 

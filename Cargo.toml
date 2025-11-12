@@ -88,6 +88,14 @@ name="game-client"
 path="src/game_client_main.rs"
 
 [[bin]]
+name="obstacle-course-two-jumps"
+path="src/obstacle_course_two_jumps_main.rs"
+
+[[bin]]
+name="obstacle-course-free-movement"
+path="src/obstacle_course_free_movement_main.rs"
+
+[[bin]]
 name="game-client-for-map-editing"
 path="src/game_client_main_for_map_editing.rs"
 

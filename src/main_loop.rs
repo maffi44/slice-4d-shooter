@@ -45,6 +45,7 @@ pub struct Slice4DShooter
     with_ui_renderer: bool,
     it_is_2d_3d_example: bool,
     with_generated_raymarch_shader: bool,
+    disable_net_system: bool,
     specific_backend: Option<Backend>,
 }
 
@@ -55,6 +56,7 @@ impl Slice4DShooter
         it_is_2d_3d_example: bool,
         with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>,
+        disable_net_system: bool,
         init_level: Box<dyn FnOnce(&mut Engine)>,
     ) -> Self
     {
@@ -66,6 +68,7 @@ impl Slice4DShooter
             it_is_2d_3d_example,
             with_generated_raymarch_shader,
             specific_backend,
+            disable_net_system,
         }
     }
 }
@@ -94,6 +97,8 @@ impl ApplicationHandler for Slice4DShooter
                             self.with_ui_renderer,
                             self.it_is_2d_3d_example,
                             self.with_generated_raymarch_shader,
+                            self.disable_net_system,
+
                             self.specific_backend,
                         )
                     )
@@ -147,6 +152,9 @@ impl ApplicationHandler for Slice4DShooter
                 self.systems.as_mut().unwrap().input.add_mouse_delta(Vec2::new(x as f32, y as f32))
 
             },
+            DeviceEvent::MouseWheel { delta } => {
+                self.systems.as_mut().unwrap().input.set_mouse_wheel_input(delta);
+            }
             _ => {}
         }
     }
@@ -321,6 +329,7 @@ impl MainLoop {
         it_is_2d_3d_example: bool,
         with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>,
+        disable_net_system: bool,
         init_level: Box<dyn FnOnce(&mut Engine)>,
     ) {
         // #[cfg(target_arch="wasm32")]
@@ -331,6 +340,7 @@ impl MainLoop {
             it_is_2d_3d_example,
             with_generated_raymarch_shader,
             specific_backend,
+            disable_net_system,
             init_level,
         );
         

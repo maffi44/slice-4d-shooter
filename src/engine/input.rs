@@ -34,9 +34,7 @@ use std::collections::HashMap;
 
 use winit::{
     event::{
-        ElementState,
-         MouseButton,
-         KeyEvent,
+        ElementState, KeyEvent, MouseButton, MouseScrollDelta
     },
     keyboard::{
         KeyCode,
@@ -79,10 +77,12 @@ pub struct ActionsFrameState {
     pub arrow_right: Action,
     pub move_camera_back_in_example: Action,
     pub mouse_axis: Vec2,
+    pub mouse_wheel_delta: Vec2,
+    
 }
 
 impl ActionsFrameState {
-    fn current(actions_table: &HashMap<SomeButton, (ButtonActions, Action)>, mouse_axis: Vec2) -> Self {
+    fn current(actions_table: &HashMap<SomeButton, (ButtonActions, Action)>, mouse_axis: Vec2, mouse_wheel_delta: Vec2) -> Self {
         let mut move_forward = Action::new();
         let mut move_backward = Action::new();
         let mut move_right = Action::new();
@@ -173,6 +173,7 @@ impl ActionsFrameState {
             arrow_right,
             move_camera_back_in_example,
             anti_projection_mode,
+            mouse_wheel_delta,
         }
     }
 
@@ -205,6 +206,7 @@ impl ActionsFrameState {
         let move_camera_back_in_example = Action::new();
         let anti_projection_mode = Action::new();
         let mouse_axis = Vec2::ZERO;
+        let mouse_wheel_delta = Vec2::ZERO;
 
         ActionsFrameState {
             move_forward,
@@ -234,7 +236,8 @@ impl ActionsFrameState {
             arrow_right,
             move_camera_back_in_example,
             anti_projection_mode,
-            mouse_axis
+            mouse_axis,
+            mouse_wheel_delta,
         }
     }
 }
@@ -296,6 +299,7 @@ enum ButtonActionsLinkedKeys {
 pub struct InputSystem {
     actions_table: HashMap<SomeButton, (ButtonActions, Action)>,
     mouse_axis: Vec2,
+    mouse_wheel_delta: Vec2,
 }
 
 impl InputSystem {
@@ -415,6 +419,7 @@ impl InputSystem {
         InputSystem {
             actions_table,
             mouse_axis: Vec2::ZERO,
+            mouse_wheel_delta: Vec2::ZERO,
         }
     }
 
@@ -437,7 +442,8 @@ impl InputSystem {
                         master.current_input =
                             ActionsFrameState::current(
                                 &self.actions_table,
-                                self.mouse_axis
+                                self.mouse_axis,
+                                self.mouse_wheel_delta,
                             );
                     }
                     RemoteMaster(master) => {
@@ -453,7 +459,8 @@ impl InputSystem {
     {
         ActionsFrameState::current(
             &self.actions_table,
-            self.mouse_axis
+            self.mouse_axis,
+            self.mouse_wheel_delta,
         )
     }
 
@@ -464,7 +471,9 @@ impl InputSystem {
             action.is_action_just_pressed = false;
         }
 
+        // println!("mouse wheel delta: {}", self.mouse_wheel_delta);
         self.mouse_axis = Vec2::ZERO;
+        self.mouse_wheel_delta = Vec2::ZERO;
     }
 
     pub fn add_mouse_delta(&mut self, delta: Vec2) {
@@ -517,6 +526,19 @@ impl InputSystem {
                     action.is_action_pressed = false;
                 }
             }
+        }
+    }
+
+    pub fn set_mouse_wheel_input(&mut self, delta: MouseScrollDelta) {
+
+        match delta
+        {
+            MouseScrollDelta::LineDelta(x, y) => {
+                self.mouse_wheel_delta = Vec2::new(x,y);
+            },
+            MouseScrollDelta::PixelDelta(pos) => {
+                self.mouse_wheel_delta = Vec2::new(pos.x as f32, pos.y as f32);
+            },
         }
     }
 

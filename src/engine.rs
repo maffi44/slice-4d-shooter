@@ -116,6 +116,7 @@ impl Engine {
         with_ui_renderer: bool,
         it_is_2d_3d_example: bool,
         with_generated_raymarch_shader: bool,
+        disable_net_system: bool,
         specific_backend: Option<Backend>,
     ) -> Engine
     {
@@ -200,6 +201,7 @@ impl Engine {
         let net = NetSystem::new(
             &world.players_settings,
             it_is_2d_3d_example,
+            disable_net_system,
             #[cfg(not(target_arch = "wasm32"))]
             &mut runtime
         ).await;
@@ -246,6 +248,7 @@ pub struct HeadlessEngine
 impl HeadlessEngine
 {
     pub async fn new(
+        disable_net_system: bool,
     ) -> HeadlessEngine {
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -288,6 +291,7 @@ impl HeadlessEngine
         let net = NetSystem::new(
             &world.players_settings,
             false,
+            disable_net_system,
             #[cfg(not(target_arch = "wasm32"))]
             &mut runtime
         ).await;

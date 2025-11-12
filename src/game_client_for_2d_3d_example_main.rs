@@ -47,6 +47,7 @@ fn main() {
         true,
         false,
         specific_backend,
+        false,
         Box::new(|systems| {
 
             let main_player = PlayerFor2d3dExample::new(

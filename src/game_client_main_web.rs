@@ -48,7 +48,7 @@ async fn client_main() {
     
     log::info!("main: main_loop init");
 
-    main_loop.run(true, false, false, None, Box::new(|systems| {
+    main_loop.run(true, false, false, None, false, Box::new(|systems| {
             let main_player = MainPlayer::new(
                 InputMaster::LocalMaster(
                     LocalMaster::new(ActionsFrameState::empty())

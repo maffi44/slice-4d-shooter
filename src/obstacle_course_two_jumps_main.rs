@@ -14,25 +14,41 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#![windows_subsystem = "windows"]
+
 mod engine;
 mod actor;
 mod main_loop;
 mod transform;
 mod read_args;
+mod winsparkle;
 
 use main_loop::MainLoop;
 use pollster;
 
-use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, PlayerMessage}, player_for_2d_3d_example::PlayerFor2d3dExample, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
+use actor::{flag::Flag, main_player::{player_input_master::{InputMaster, LocalMaster}, MainPlayer, PlayerMessage}, session_controller::{self, SessionController}, ActorWrapper, Message, SpecificActorMessage};
 use client_server_protocol::Team;
 use engine::input::ActionsFrameState;
 
-use crate::{actor::flag_base::FlagBase, read_args::read_args};
+use crate::{actor::{flag_base::FlagBase, obstacle_course_player_two_jumps::ObstacleCoursePlayerTwoJumps}, read_args::read_args};
 
-
+#[cfg(not(debug_assertions))]
 use blink_alloc::GlobalBlinkAlloc;
+
+#[cfg(not(debug_assertions))]
 #[global_allocator]
 static GLOBAL_ALLOC: GlobalBlinkAlloc = GlobalBlinkAlloc::new();
+
+#[cfg(target_os = "windows")]
+fn init_winsparkle() {
+    winsparkle::init();
+}
+
+#[cfg(not(target_os = "windows"))]
+fn init_winsparkle() {
+}
+
+// This is pre-alpha demo version
 
 fn main() {
     env_logger::init();
@@ -44,18 +60,18 @@ fn main() {
     log::info!("main: main_loop init");
 
     pollster::block_on(main_loop.run(
-        false,
         true,
+        false,
         // If you made any changes to the game map, you should
         // run raymarch_shader_generator binary to generate a 
         // relevant raymarch shader with a BSP tree before creating the Engine.
         // Unless you see the previous version of the map.
-        true,
-        specific_backend,
         false,
+        specific_backend,
+        true,
         Box::new(|systems| {
-
-            let main_player = PlayerFor2d3dExample::new(
+            
+            let main_player = ObstacleCoursePlayerTwoJumps::new(
                 InputMaster::LocalMaster(
                     LocalMaster::new(ActionsFrameState::empty())
                 ),
@@ -65,8 +81,8 @@ fn main() {
                 systems.world.level.red_base_position,
             );
 
-            systems.world.add_main_actor_to_world(
-                ActorWrapper::PlayerFor2d3dExample(main_player),
+            let main_player_id = systems.world.add_main_actor_to_world(
+                ActorWrapper::ObstacleCoursePlayerTwoJumps(main_player),
                 &mut systems.engine_handle,
             );
 
@@ -104,7 +120,6 @@ fn main() {
                 &mut systems.engine_handle,
             );
 
-
             let red_flag = Flag::new(
                 Team::Red,
                 systems.world.level.red_flag_base
@@ -125,16 +140,16 @@ fn main() {
                 &mut systems.engine_handle,
             );
 
-            let session_controller = SessionController::new(
-                &mut systems.ui,
-                systems.world.level.red_flag_base.get_position(),
-                systems.world.level.blue_flag_base.get_position(),
-                false,
-            );
+            // let session_controller = SessionController::new(
+            //     &mut systems.ui,
+            //     systems.world.level.red_flag_base.get_position(),
+            //     systems.world.level.blue_flag_base.get_position(),
+            //     false,
+            // );
             
-            systems.world.add_actor_to_world(
-                ActorWrapper::SessionController(session_controller),
-                &mut systems.engine_handle,
-            );
+            // systems.world.add_actor_to_world(
+            //     ActorWrapper::SessionController(session_controller),
+            //     &mut systems.engine_handle,
+            // );
     })));
 }
