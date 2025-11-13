@@ -474,13 +474,13 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 &self.player_settings,
             );
 
-            process_dash(
-                &input,
-                &mut self.inner_state,
-                &self.player_settings,
-                audio_system,
-                delta,
-            );
+            // process_dash(
+            //     &input,
+            //     &mut self.inner_state,
+            //     &self.player_settings,
+            //     audio_system,
+            //     delta,
+            // );
 
             self.screen_effects.player_projections.projections_tick(
                 my_id,
@@ -1298,7 +1298,8 @@ pub fn process_player_rotation(
     inner_state.zy_rotation = zy_rotation;
     inner_state.zx_rotation = zx_rotation;
 
-    let mut rotation = zw_rotation;
+    let mut rotation = Mat4::IDENTITY;
+    rotation *= zw_rotation;
     rotation *= zx_rotation;
     rotation *= zy_rotation;
 

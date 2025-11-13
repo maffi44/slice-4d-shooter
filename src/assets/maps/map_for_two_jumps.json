@@ -394,10 +394,10 @@
     "static_objects": [
         {
             "cube" : {
-                "comment" : "map's walls",
+                "comment" : "start platform",
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
+                        "x": 3.0,
                         "y": 0.0,
                         "z": 0.0,
                         "w": 0.0
@@ -412,23 +412,52 @@
                     }
                 },
                 "size" : {
-                    "x": 30.0,
-                    "y": 5,
-                    "z": 30,
-                    "w": 30
+                    "x": 6.0,
+                    "y": 0.15,
+                    "z": 2.0,
+                    "w": 16.0
                 },
-                "roundness" : 0
+                "roundness" : 0.6
             }
         },
         {
             "cube" : {
-                "comment" : "first room",
+                "comment" : "side wall",
                 "transform" : {
                     "position" : {
-                        "x": 0,
-                        "y": 4,
-                        "z": 0,
-                        "w": 14.0
+                        "x": 7.5,
+                        "y": 2.0,
+                        "z": -15.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.1,
+                    "y": 5.15,
+                    "z": 15.15,
+                    "w": 16.0
+                },
+                "roundness" : 0.6,
+                "stickiness" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "first obstacle",
+                "transform" : {
+                    "position" : {
+                        "x": -4.0,
+                        "y": 2.0,
+                        "z": -8.0,
+                        "w": 0.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -441,23 +470,22 @@
                 },
                 "size" : {
                     "x": 3.5,
-                    "y": 5,
-                    "z": 3.5,
-                    "w": 14
+                    "y": 5.15,
+                    "z": 0.6,
+                    "w": 16.0
                 },
-                "roundness" : 0.6,
-                "is_positive" : false
+                "roundness" : 0.6
             }
         },
         {
-            "cube" : {
-                "comment" : "second room",
+            "sph_cube" : {
+                "comment" : "first obstacle hole",
                 "transform" : {
                     "position" : {
-                        "x": 0,
-                        "y": 4,
-                        "z": 7,
-                        "w": 14.0
+                        "x": -0.5,
+                        "y": 2.0,
+                        "z": -8.0,
+                        "w": 2.8
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -469,13 +497,98 @@
                     }
                 },
                 "size" : {
-                    "x": 3.5,
-                    "y": 5,
-                    "z": 7,
-                    "w": 3.5
+                    "x": 4.5,
+                    "y": 4.5,
+                    "z": 4.5,
+                    "w": 2.5
                 },
-                "roundness" : 0.6,
-                "is_positive" : false
+                "roundness" : 0,
+                "is_positive" : false,
+                "stickiness" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "second platform",
+                "transform" : {
+                    "position" : {
+                        "x": 5.0,
+                        "y": -2.0,
+                        "z": -17.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6.0,
+                    "y": 0.15,
+                    "z": 2.0,
+                    "w": 16.0
+                },
+                "roundness" : 0.6
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "long column",
+                "transform" : {
+                    "position" : {
+                        "x": -5.0,
+                        "y": 7.0,
+                        "z": -23.0,
+                        "w": -5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.01,
+                    "y": 18.0,
+                    "z": 0.01,
+                    "w": 2
+                },
+                "roundness" : 2.7
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "final platform",
+                "transform" : {
+                    "position" : {
+                        "x": 4.6,
+                        "y": 10.0,
+                        "z": -25.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 6.0,
+                    "y": 0.15,
+                    "z": 2.0,
+                    "w": 16.0
+                },
+                "roundness" : 0.4
             }
         }
     ]
