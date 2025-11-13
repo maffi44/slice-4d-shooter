@@ -5,13 +5,13 @@ use crate::engine::{render::{render_data::RenderData, ui_renderer::UIRenderer}, 
 use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
 use wgpu::{
-    rwh::{
+    Backend, BackendOptions, BindGroup, Buffer, BufferUsages, Color, ExperimentalFeatures, Extent3d, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions, PollStatus, Sampler, ShaderRuntimeChecks, TexelCopyBufferLayout, TexelCopyTextureInfoBase, Texture, TextureView, rwh::{
         HasDisplayHandle,
         HasWindowHandle
     }, util::{
         BufferInitDescriptor,
         DeviceExt,
-    }, Backend, BackendOptions, BindGroup, Buffer, BufferUsages, Color, Extent3d, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions, PollStatus, Sampler, ShaderRuntimeChecks, TexelCopyBufferLayout, TexelCopyTextureInfoBase, Texture, TextureView
+    }
 };
 
 
@@ -274,6 +274,7 @@ impl Renderer {
                     required_limits: wgpu::Limits::default(),
                     memory_hints: wgpu::MemoryHints::Performance,
                     trace: wgpu::Trace::Off,
+                    experimental_features: ExperimentalFeatures::disabled(),
                 }
             )
             .await;
@@ -288,6 +289,7 @@ impl Renderer {
                     required_limits: wgpu::Limits::downlevel_defaults(),
                     memory_hints: wgpu::MemoryHints::Performance,
                     trace: wgpu::Trace::Off,
+                    experimental_features: ExperimentalFeatures::disabled(),
                 },
             )
             .await;
@@ -303,6 +305,7 @@ impl Renderer {
                     required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     memory_hints: wgpu::MemoryHints::Performance,
                     trace: wgpu::Trace::Off,
+                    experimental_features: ExperimentalFeatures::disabled(),
                 },
             )
             .await;
