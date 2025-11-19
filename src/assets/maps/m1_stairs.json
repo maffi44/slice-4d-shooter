@@ -1,0 +1,834 @@
+{
+    "level_name" : "test_level",
+
+
+    "defaults" : {
+        "is_positive": true,
+        "friction": 7.2,
+        "bounce_rate": 0.0,
+        "visual_material": "standart",
+        "roundness": 0.09,
+        "stickiness": false,
+        "undestroyable": false
+    },
+
+    "visual_settings_of_environment" : {
+        "sky_box" : "star_sky",
+        "sky_color" : {
+            "red": 0.1,
+            "green": 0.3,
+            "blue": 0.5,
+            "multiplier": 0.025
+        },
+        "fog_color" : {
+            "red": 0.021,
+            "green": 0.01,
+            "blue": 0.022,
+            "multiplier": 0.2
+        },
+        "frenel_color" : {
+            "red": 0.3,
+            "green": 0.5,
+            "blue": 0.4,
+            "multiplier": 0.17
+        },
+        "neon_wireframe_color" : {
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
+        },
+        "sun_color" : {
+            "red": 1.6,
+            "green": 1.2,
+            "blue": 0.8,
+            "multiplier": 2.2
+        },
+        "red_map_color" :
+        {
+            "red": 3.5,
+            "green": 0.7,
+            "blue": 0.08,
+            "multiplier": 3.0
+        },
+        "blue_map_color" :
+        {
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
+        },
+        "sun_direction" : {
+            "x" : 1.0,
+            "y" : 2.8,
+            "z" : 1.3,
+            "w" : 0.0
+        }
+    },
+
+    "visual_materials" : [
+        {
+            "name" : "common",
+            "color" : {
+                "red": 0.2,
+                "green": 0.225,
+                "blue": 0.25
+            },
+            "roughness" : 0.9
+        },
+        {
+            "name" : "slick",
+            "color" : {
+                "red": 3.7333,
+                "green": 0.085,
+                "blue": 1.0
+            },
+            "roughness": 0.0514
+        },
+        {
+            "name" : "golden_slick",
+            "color" : {
+                "red": 1.1,
+                "green": 0.82,
+                "blue": 0.23
+            },
+            "roughness": 0.09
+        },
+        {
+            "name" : "super_red",
+            "color" : {
+                "red":5.1,
+                "green": 0.82,
+                "blue": 3.23
+            },
+            "roughness": 0.09
+        },
+        {
+            "name" : "red_team",
+            "color" : {
+                "red": 2.2,
+                "green": 1.7,
+                "blue": 1.04
+            },
+            "roughness": 0.064
+        },
+        {
+            "name" : "standart",
+            "color" : {
+                "red": 1.81,
+                "green": 1.81,
+                "blue": 3.4
+            },
+            "roughness": 0.08
+        },
+        {
+            "name" : "gun_red",
+            "color" : {
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
+            },
+            "roughness" : 0.95
+
+        },
+        {
+            "name" : "metallic_red",
+            "color" : {
+                "red": 2.2,
+                "green": 0.7,
+                "blue": 0.04
+            },
+            "roughness" : 0.4
+
+        },
+        {
+            "name" : "gun_blue",
+            "color" : {
+                "red": 0.016,
+                "green": 0.013,
+                "blue": 0.001
+            },
+            "roughness" : 0.95
+
+        },
+        {
+            "name" : "metallic_blue",
+            "color" : {
+                "red": 0.01,
+                "green": 0.81,
+                "blue": 4.9
+            },
+            "roughness" : 0.5
+
+        },
+        {
+            "name" : "w-floor",
+            "color" : {
+                "red": 0.4,
+                "green": 0.085,
+                "blue": 1.5
+            },
+            "roughness" : 1.0
+        },
+        {
+            "name" : "trumplin",
+            "color" : {
+                "red": 0.15,
+                "green": 0.01    ,
+                "blue": 0.01
+            },
+            "roughness" : 0.8
+        },
+        {
+            "name" : "black",
+            "color" : {
+                "red": 0.500001,
+                "green": 0.000001,
+                "blue": 0.300001
+            },
+            "roughness" : 0.85
+
+        }
+    ],
+
+    "red_players_visual_materials" : {
+        "inner" : "metallic_red",
+        "outer" : "gun_red"
+    },
+
+    "blue_players_visual_materials" : {
+        "inner" : "metallic_blue",
+        "outer" : "gun_blue"
+    },
+
+    "w_cups_visual_materials" : "gun_red",
+
+    "all_shapes_stickiness_radius": 0.1,
+
+    "red_base_position" :
+    {
+        "transform" : {
+            "position" : {
+                "x": 0.0,
+                "y": 1.5,
+                "z": -12,
+                "w": 0.5
+            }
+        }
+    },
+
+    "blue_base_position" :
+    {
+        "transform" : {
+            "position" : {
+                "x": 0.0,
+                "y": 1.5,
+                "z": 12,
+                "w": 0.5
+            }
+        }
+    },
+
+    "red_flag_base" :
+    {
+        "transform" : {
+            "position" : {
+                "x": 0,
+                "y": 8.25,
+                "z": -1.5,
+                "w": 1
+            }
+        }
+    },
+
+    "blue_flag_base" :
+    {
+        "transform" : {
+            "position" : {
+                "x": 0,
+                "y": 8.25,
+                "z": 1.5,
+                "w": 1
+            }
+        }
+    },
+
+    "red_spawns" : [
+        {
+            "transform" : {
+                "position" : {
+                    "x": 0.0,
+                    "y": 1.5,
+                    "z": -35.0,
+                    "w": 1.5
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 11.0,
+                    "y": 3.5,
+                    "z": -31.0,
+                    "w": 1.5
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 4,
+                    "y": 2.2,
+                    "z": -36.2,
+                    "w": 2.5
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 4,
+                    "y": 3.4,
+                    "z": -37.75,
+                    "w": 4.0
+                }
+            }
+        }
+    ],
+
+    "blue_spawns" : [
+        {
+            "transform" : {
+                "position" : {
+                    "x": 0.0,
+                    "y": 1.5,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            }
+        }
+    ],
+
+    "w_cups" : {
+    },
+
+
+    "actors" : [
+        {
+            "wandering_actor" : {
+
+                "comment" : "lift",
+                
+                "transform" : {
+                    "position" : {
+                        "x": 3.5,
+                        "y": 3.15,
+                        "z": 10.5,
+                        "w": 11.5
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0 ,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+
+                "target" : {
+                    "transform" : {
+                        "position" : {
+                            "x": 10.5,
+                            "y": 13.2,
+                            "z": 10.5,
+                            "w": 0.0
+                        },
+                        "scale" : {
+                            "x": 1.0,
+                            "y": 1.0 ,
+                            "z": 1.0,
+                            "w": 1.0
+                        }
+                    }
+                },
+
+                "travel_time" : 4.6,
+
+                "movement_type" : "linear",
+
+                "static_objects" : [
+                    {
+                        
+                        "sphere" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 2.2
+                            },
+                            "roundness" : 0.0,
+                            "is_positive" : true,
+                            "stickiness" : false,
+                            "undestroyable" : true,
+                            "visual_material" : "black"
+                        }
+                    },
+                    {
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.001,
+                                "y": 0.001,
+                                "z": 0.001,
+                                "w": 0.001
+                            },
+                            "roundness" : 4.5,
+                            "is_positive" : false,
+                            "stickiness" : true
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    
+    "static_objects": [
+        {
+            "cube" : {
+                "comment" : "map's walls",
+                "transform" : {
+                    "position" : {
+                        "x": 2.0,
+                        "y": 1.5,
+                        "z": 5.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 22.0,
+                    "y": 7,
+                    "z": 22,
+                    "w": 30
+                },
+                "roundness" : 0
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "first room",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 4,
+                        "z": 0,
+                        "w": 1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.5,
+                    "y": 6,
+                    "z": 3.5,
+                    "w": 4.5
+                },
+                "roundness" : 0.6,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "tetramine 1",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -1.6,
+                        "z": 2,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.4,
+                    "y": 0.4,
+                    "z": 0.4,
+                    "w": 0.4
+                },
+                "roundness" : 0.1,
+                "undestroyable" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cenral tetramine 2",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -0.6,
+                        "z": 2,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.4,
+                    "y": 0.4,
+                    "z": 0.4,
+                    "w": 0.4
+                },
+                "roundness" : 0.1,
+                "undestroyable" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "tetramine 3",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 0.4,
+                        "z": 2,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.4,
+                    "y": 0.4,
+                    "z": 0.4,
+                    "w": 0.4
+                },
+                "roundness" : 0.1,
+                "undestroyable" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "tetramine 4",
+                "transform" : {
+                    "position" : {
+                        "x": 1,
+                        "y": -0.6,
+                        "z": 2,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.4,
+                    "y": 0.4,
+                    "z": 0.4,
+                    "w": 0.4
+                },
+                "roundness" : 0.1,
+                "undestroyable" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "tetramine 5",
+                "transform" : {
+                    "position" : {
+                        "x": 2,
+                        "y": -0.6,
+                        "z": 2,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.4,
+                    "y": 0.4,
+                    "z": 0.4,
+                    "w": 0.4
+                },
+                "roundness" : 0.1,
+                "undestroyable" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "tetramine 6",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -0.6,
+                        "z": 2,
+                        "w": 1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.4,
+                    "y": 0.4,
+                    "z": 0.4,
+                    "w": 0.4
+                },
+                "roundness" : 0.1,
+                "undestroyable" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "tetramine 7",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -0.6,
+                        "z": 2,
+                        "w": -1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.4,
+                    "y": 0.4,
+                    "z": 0.4,
+                    "w": 0.4
+                },
+                "roundness" : 0.1,
+                "undestroyable" : true
+            }
+        },
+
+        {
+            "cube" : {
+                "comment" : "first room upper path",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 7.25,
+                        "z": 0,
+                        "w": 1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.9,
+                    "y": 0.3,
+                    "z": 5.6,
+                    "w": 6.0
+                },
+                "roundness" : 0.0,
+                "is_positive" : true,
+                "stickiness" : true,
+                "undestroyable" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "step 1",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 5.25,
+                        "z": 0,
+                        "w": 7.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.5,
+                    "y": 6,
+                    "z": 3.5,
+                    "w": 3.5
+                },
+                "roundness" : 0.6,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "step 2",
+                "transform" : {
+                    "position" : {
+                        "x": 3.5,
+                        "y": 6.5,
+                        "z": 0.0,
+                        "w": 9.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 4.5,
+                    "y": 6,
+                    "z": 2.5,
+                    "w": 3.5
+                },
+                "roundness" : 0.6,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "step 3",
+                "transform" : {
+                    "position" : {
+                        "x": 3.5,
+                        "y": 7.75,
+                        "z": 6.5,
+                        "w": 11.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 6,
+                    "z": 7.5,
+                    "w": 2.5
+                },
+                "roundness" : 0.6,
+                "is_positive" : false
+            }
+        },
+        {
+            "sph_cube" : {
+                "comment" : "cube sphere",
+                "transform" : {
+                    "position" : {
+                        "x": 2,
+                        "y": 3.0,
+                        "z": -2,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2,
+                    "y": 2,
+                    "z": 2,
+                    "w": 1.5
+                },
+                "roundness" : 0.0,
+                "undestroyable" : true
+            }
+        }
+    ]
+}

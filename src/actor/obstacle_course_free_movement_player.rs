@@ -474,13 +474,13 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 &self.player_settings,
             );
 
-            // process_dash(
-            //     &input,
-            //     &mut self.inner_state,
-            //     &self.player_settings,
-            //     audio_system,
-            //     delta,
-            // );
+            process_dash(
+                &input,
+                &mut self.inner_state,
+                &self.player_settings,
+                audio_system,
+                delta,
+            );
 
             self.screen_effects.player_projections.projections_tick(
                 my_id,
@@ -551,17 +551,17 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
         //     delta,
         // );
 
-        main_player::process_w_rotation_sound(
-            audio_system,
-            &mut self.inner_state,
-            delta,
-        );
+        // main_player::process_w_rotation_sound(
+        //     audio_system,
+        //     &mut self.inner_state,
+        //     delta,
+        // );
 
-        main_player::process_w_shift_sound(
-            audio_system,
-            &mut self.inner_state,
-            false
-        );
+        // main_player::process_w_shift_sound(
+        //     audio_system,
+        //     &mut self.inner_state,
+        //     false
+        // );
 
         self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
 
@@ -1205,67 +1205,26 @@ pub fn process_player_rotation(
 {
     let mut xz = inner_state.saved_angle_of_rotation.x;
     let mut yz = inner_state.saved_angle_of_rotation.y;
-    let mut zw = inner_state.saved_angle_of_rotation.w;
+    let mut zw = inner_state.saved_angle_of_rotation.z;
+    let mut xw = inner_state.saved_angle_of_rotation.w;
 
     inner_state.last_frame_zw_rotation = zw;
 
     inner_state.w_aim_ui_frame_intensity = 0.20;
 
     if input.second_mouse.is_action_pressed() {
-        zw = input.mouse_axis.x *
+        zw = (input.mouse_axis.y *
             *player_settings.mouse_sensivity.lock().unwrap() +
-            zw;
+            zw);
         
-        yz = (
-            input.mouse_axis.y *
+        xw =
+            input.mouse_axis.x *
             *player_settings.mouse_sensivity.lock().unwrap() +
-            yz
-        ).clamp(-PI/2.0, PI/2.0);
+            xw;
         
     }
     else
     {
-        // let (target_zw_angle, rotation_speed) = {
-        //     if inner_state.w_aim_enabled
-        //     {
-        //         let active_projection = screen_effects
-        //             .player_projections
-        //             .get_active_projection();
-
-        //         if let Some(projection) = active_projection {
-        //             if let Some(projection_body) = projection.body.as_ref()
-        //             {
-        //                 inner_state.w_aim_ui_frame_intensity = 0.20 +
-        //                     (projection.is_active_intensity*4.0).clamp(0.0, 0.5);
-
-        //                 (projection_body.abs_zw_rotation_offset, 3.4)
-        //             }
-        //             else
-        //             {
-        //                 (DEFAULT_ZW_ROTATION_TARGET_IN_RADS, 1.0)
-        //             }
-        //         }
-        //         else
-        //         {
-        //             (DEFAULT_ZW_ROTATION_TARGET_IN_RADS, 1.0)
-        //         }
-        //     }
-        //     else
-        //     {
-        //         (DEFAULT_ZW_ROTATION_TARGET_IN_RADS, 1.0)
-        //     }
-        // };
-
-        // // target player's rotation along W
-        // zw = lerpf(
-        //     zw,
-        //     target_zw_angle,
-        //     (delta * 4.8) * rotation_speed,
-        // );
-        // if (zw - target_zw_angle).abs() < 0.0005 {
-        //     zw = target_zw_angle;
-        // }
-
         xz =
             input.mouse_axis.x *
             *player_settings.mouse_sensivity.lock().unwrap() +
@@ -1283,25 +1242,38 @@ pub fn process_player_rotation(
     let zx_rotation = Mat4::from_rotation_y(xz);
 
     let zw_rotation = Mat4::from_cols_slice(&[
-        (-zw).cos(),     0.0,      0.0,      (-zw).sin(),
-        0.0,     1.0,      0.0,      0.0,
-        0.0,     0.0,      1.0,     0.0,
-        -(-zw).sin(),     0.0,      0.0,     (-zw).cos()
+        1.0,     0.0,      0.0,             0.0,
+        0.0,     1.0,      0.0,             0.0,
+        0.0,     0.0,      (-zw).cos(),     (-zw).sin(),
+        0.0,     0.0,      -(-zw).sin(),    (-zw).cos()
+
+    ]);
+
+    let xw_rotation = Mat4::from_cols_slice(&[
+        (-xw).cos(),     0.0,      0.0,     (-xw).sin(),
+        0.0,             1.0,      0.0,     0.0,
+        0.0,             0.0,      1.0,     0.0,
+        -(-xw).sin(),    0.0,      0.0,     (-xw).cos()
 
     ]);
 
     inner_state.saved_angle_of_rotation.x = xz;
     inner_state.saved_angle_of_rotation.y = yz;
-    inner_state.saved_angle_of_rotation.w = zw;
+    inner_state.saved_angle_of_rotation.z = zw;
+    inner_state.saved_angle_of_rotation.w = xw;
 
-    inner_state.zw_rotation = zw_rotation;
-    inner_state.zy_rotation = zy_rotation;
-    inner_state.zx_rotation = zx_rotation;
+    // inner_state.zw_rotation = zw_rotation;
+    // inner_state.zy_rotation = zy_rotation;
+    // inner_state.zx_rotation = zx_rotation;
 
     let mut rotation = Mat4::IDENTITY;
     rotation *= zw_rotation;
+    rotation *= xw_rotation;
     rotation *= zx_rotation;
     rotation *= zy_rotation;
+
+    // temporally
+    inner_state.zw_rotation = rotation;
 
     inner_state.set_rotation_matrix(rotation);
 }
