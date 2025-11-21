@@ -124,8 +124,8 @@
         {
             "name" : "standart_slick",
             "color" : {
-                "red": 10.4,
-                "green": 10.4,
+                "red": 3.4,
+                "green": 3.4,
                 "blue": 1.81
             },
             "roughness": 0.01
@@ -212,7 +212,7 @@
 
     "w_cups_visual_materials" : "gun_red",
 
-    "all_shapes_stickiness_radius": 0.3,
+    "all_shapes_stickiness_radius": 0.5,
 
     "red_base_position" :
     {
@@ -242,10 +242,10 @@
     {
         "transform" : {
             "position" : {
-                "x": -8,
-                "y": 0,
-                "z": 25.5,
-                "w": 6.0
+                "x": 0,
+                "y": 8.25,
+                "z": -1.5,
+                "w": 1
             }
         }
     },
@@ -254,10 +254,10 @@
     {
         "transform" : {
             "position" : {
-                "x": -6,
-                "y": 0,
-                "z": 25.5,
-                "w": 6.0
+                "x": 0,
+                "y": 8.25,
+                "z": 1.5,
+                "w": 1
             }
         }
     },
@@ -310,7 +310,7 @@
             "transform" : {
                 "position" : {
                     "x": 0.0,
-                    "y": 1.5,
+                    "y": 11.5,
                     "z": 0.0,
                     "w": 0.0
                 }
@@ -332,7 +332,7 @@
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": -0.5,
+                        "y": 9.5,
                         "z": 0.0,
                         "w": 0.0
                     },
@@ -360,9 +360,9 @@
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": 1.2,
+                        "y": 10.6,
                         "z": -3.0,
-                        "w": 2.5
+                        "w": 2.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -375,7 +375,7 @@
                 },
                 "size" : {
                     "x": 1.25,
-                    "y": 1.25,
+                    "y": 0.7,
                     "z": 1.25,
                     "w": 1.25
                 },
@@ -389,9 +389,9 @@
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": 0.65,
-                        "z": -3.0,
-                        "w": -0.3
+                        "y": 11.4,
+                        "z": 0.0,
+                        "w": 2.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -404,11 +404,12 @@
                 },
                 "size" : {
                     "x": 0.65,
-                    "y": 0.65,
+                    "y": 1.7,
                     "z": 0.65,
                     "w": 0.65
                 },
-                "roundness" : 0.00
+                "roundness" : 0.00,
+                "stickiness" : false
             }
         },
         {
@@ -417,7 +418,7 @@
                 "transform" : {
                     "position" : {
                         "x": -2.7,
-                        "y": 2.3,
+                        "y": 12.3,
                         "z": 2.7,
                         "w": -0.5
                     },
@@ -447,9 +448,9 @@
                 "transform" : {
                     "position" : {
                         "x": -9.0,
-                        "y": 9.2,
+                        "y": 19.2,
                         "z": 0.0,
-                        "w": 2.0
+                        "w": -2.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -477,9 +478,9 @@
                 "transform" : {
                     "position" : {
                         "x": -9.0,
-                        "y": 9.2,
+                        "y": 19.2,
                         "z": 0.0,
-                        "w": 2.0
+                        "w": -2.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -506,9 +507,9 @@
                 "transform" : {
                     "position" : {
                         "x": -9.0,
-                        "y": 11.2,
+                        "y": 21.2,
                         "z": 0.0,
-                        "w": 4.0
+                        "w": -4.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -536,9 +537,9 @@
                 "transform" : {
                     "position" : {
                         "x": -9.0,
-                        "y": 11.2,
+                        "y": 21.2,
                         "z": 3.0,
-                        "w": 6.0
+                        "w": -6.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -565,9 +566,9 @@
                 "transform" : {
                     "position" : {
                         "x": -9.0,
-                        "y": 11.2,
+                        "y": 21.2,
                         "z": 11.0,
-                        "w": 6.0
+                        "w": -6.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -594,9 +595,9 @@
                 "transform" : {
                     "position" : {
                         "x": -9.0,
-                        "y": 3,
+                        "y": 12,
                         "z": 12.0,
-                        "w": 6.0
+                        "w": -6.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -609,7 +610,7 @@
                 },
                 "size" : {
                     "x": 1.2,
-                    "y": 8,
+                    "y": 9,
                     "z": 1.2,
                     "w": 1.2
                 },
@@ -625,9 +626,9 @@
                 "transform" : {
                     "position" : {
                         "x": -9.0,
-                        "y": 3,
+                        "y": 12,
                         "z": 12.0,
-                        "w": 6.0
+                        "w": -6.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -640,7 +641,7 @@
                 },
                 "size" : {
                     "x": 0.1,
-                    "y": 10,
+                    "y": 11,
                     "z": 0.1,
                     "w": 0.1
                 },
@@ -648,342 +649,6 @@
                 "visual_material" : "standart_slick",
                 "stickiness" : true,
                 "is_positive" : false
-            }
-        },
-
-
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1",
-                "transform" : {
-                    "position" : {
-                        "x": -7,
-                        "y": -15.5,
-                        "z": 15.0,
-                        "w": 6.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 5,
-                    "y": 3.5,
-                    "z": 7,
-                    "w": 5
-                },
-                "roundness" : 0.0,
-                "friction" : 0.1,
-                "visual_material" : "standart_slick"
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 z wall 1",
-                "transform" : {
-                    "position" : {
-                        "x": -7,
-                        "y": -6,
-                        "z": 8.5,
-                        "w": 6.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 5,
-                    "y": 9,
-                    "z": 0.5,
-                    "w": 5
-                },
-                "roundness" : 0.0,
-                "friction" : 0.1,
-                "undestroyable" : false,
-                "visual_material" : "standart_slick"
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 z wall 2",
-                "transform" : {
-                    "position" : {
-                        "x": -7,
-                        "y": -6,
-                        "z": 21.5,
-                        "w": 6.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 5,
-                    "y": 9,
-                    "z": 0.5,
-                    "w": 5
-                },
-                "roundness" : 0.0,
-                "friction" : 0.1,
-                "undestroyable" : false,
-                "visual_material" : "standart_slick"
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 hole",
-                "transform" : {
-                    "position" : {
-                        "x": -7,
-                        "y": -12,
-                        "z": 15.0,
-                        "w": 6.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 5,
-                    "y": 0.1,
-                    "z": 0.1,
-                    "w": 5
-                },
-                "roundness" : 5.9,
-                "is_positive" : false
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 cup",
-                "transform" : {
-                    "position" : {
-                        "x": -7,
-                        "y": 2.5,
-                        "z": 15.0,
-                        "w": 6.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 5,
-                    "y": 0.5,
-                    "z": 7,
-                    "w": 5
-                },
-                "roundness" : 0.0,
-                "friction" : 0.1,
-                "visual_material" : "standart_slick"
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 x wall 1",
-                "transform" : {
-                    "position" : {
-                        "x": -12,
-                        "y": -8,
-                        "z": 15.0,
-                        "w": 6.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 0.5,
-                    "y": 11,
-                    "z": 7,
-                    "w": 5
-                },
-                "roundness" : 0.0,
-                "friction" : 0.1,
-                "undestroyable" : true,
-                "visual_material" : "standart_slick"
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 x wall 2",
-                "transform" : {
-                    "position" : {
-                        "x": -2,
-                        "y": -8,
-                        "z": 15.0,
-                        "w": 6.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 0.5,
-                    "y": 11,
-                    "z": 7,
-                    "w": 5
-                },
-                "roundness" : 0.0,
-                "friction" : 0.1,
-                "undestroyable" : true,
-                "visual_material" : "standart_slick"
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 w wall 1",
-                "transform" : {
-                    "position" : {
-                        "x": -7,
-                        "y": -8,
-                        "z": 15.0,
-                        "w": 11
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 5,
-                    "y": 11,
-                    "z": 7,
-                    "w": 0.5
-                },
-                "roundness" : 0.0,
-                "friction" : 0.1,
-                "undestroyable" : true,
-                "visual_material" : "standart_slick"
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 w wall 2",
-                "transform" : {
-                    "position" : {
-                        "x": -7,
-                        "y": -8,
-                        "z": 15.0,
-                        "w": 1
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 5,
-                    "y": 11,
-                    "z": 7,
-                    "w": 0.5
-                },
-                "roundness" : 0.0,
-                "friction" : 0.1,
-                "undestroyable" : true,
-                "visual_material" : "standart_slick"
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 z wall 2 small room",
-                "transform" : {
-                    "position" : {
-                        "x": -7,
-                        "y": 0,
-                        "z": 25.5,
-                        "w": 6.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 5,
-                    "y": 3,
-                    "z": 4.5,
-                    "w": 5
-                },
-                "roundness" : 0.0,
-                "undestroyable" : false
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "slick trumplin 1 z wall 2 small room hole",
-                "transform" : {
-                    "position" : {
-                        "x": -7,
-                        "y": 0,
-                        "z": 24,
-                        "w": 6.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 3.5,
-                    "y": 1.5,
-                    "z": 6,
-                    "w": 3.5
-                },
-                "roundness" : 0.4,
-                "is_positive" : false,
-                "stickiness" : true
             }
         }
     ]

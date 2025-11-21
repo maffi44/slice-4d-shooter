@@ -323,7 +323,7 @@
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": -0.5,
+                        "y": 5,
                         "z": 0.0,
                         "w": 0.0
                     },
@@ -338,22 +338,23 @@
                 },
                 "size" : {
                     "x": 5,
-                    "y": 0.4,
+                    "y": 7,
                     "z": 5,
-                    "w": 5
+                    "w": 10
                 },
-                "roundness" : 0.1
+                "roundness" : 0,
+                "friction" : 0.1,
+                "visual_material" : "standart"
             }
         },
-
         {
             "cube" : {
-                "comment" : "cube 1",
+                "comment" : "platform 1 hole 1",
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": 1.1,
-                        "z": -3.0,
+                        "y": 5,
+                        "z": 0.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -366,23 +367,24 @@
                     }
                 },
                 "size" : {
-                    "x": 1,
-                    "y": 1,
-                    "z": 1,
-                    "w": 1
+                    "x": 3.0,
+                    "y": 5.0,
+                    "z": 3.0,
+                    "w": 8.0
                 },
-                "roundness" : 0.1
+                "roundness" : 1.4,
+                "is_positive" : false
             }
         },
         {
             "cube" : {
-                "comment" : "cube 1",
+                "comment" : "platform 1 hole 2",
                 "transform" : {
                     "position" : {
-                        "x": 1.5,
-                        "y": 0.6,
-                        "z": -3.0,
-                        "w": 1.5
+                        "x": 0.0,
+                        "y": 7,
+                        "z": 0.0,
+                        "w": 2.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -394,24 +396,25 @@
                     }
                 },
                 "size" : {
-                    "x": 0.5,
-                    "y": 0.5,
-                    "z": 0.5,
-                    "w": 0.5
+                    "x": 7,
+                    "y": 6,
+                    "z": 7,
+                    "w": 9
                 },
-                "roundness" : 0.1
+                "roundness" : 0.0,
+                "is_positive" : false
             }
         },
 
         {
-            "sphere" : {
-                "comment" : "sphere 1",
+            "cube" : {
+                "comment" : "platform 2",
                 "transform" : {
                     "position" : {
-                        "x": 3.0,
-                        "y": 1.1,
-                        "z": 3.0,
-                        "w": -0.5
+                        "x": 0.0,
+                        "y": 7,
+                        "z": 0.0,
+                        "w": 4.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -423,12 +426,15 @@
                     }
                 },
                 "size" : {
-                    "x": 1.1,
-                    "y": 0.5,
-                    "z": 0.5,
-                    "w": 0.5
-                }
+                    "x": 5,
+                    "y": 0.4,
+                    "z": 5,
+                    "w": 6
+                },
+                "roundness" : 0.1,
+                "undestroyable" : true
             }
         }
+        
     ]
 }

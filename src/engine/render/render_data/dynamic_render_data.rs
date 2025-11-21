@@ -1750,6 +1750,19 @@ impl OtherDynamicData {
         {
             self.zx_player_rotation = player.get_xz_rotation();
         }
+        else if let ActorWrapper::ObstacleCourseFreeMovementPlayer(player) = main_actor
+        {
+            if player.navigation_coloring_walls
+            {
+                self.additional_data[0] = 1.0;
+            }
+            else
+            {
+                self.additional_data[0] = 0.0;
+            }
+
+            self.additional_data[1] = player.navigation_lines_mode as f32;
+        }
 
         self.camera_data = CameraUniform {
             cam_pos: camera.get_position().to_array(),

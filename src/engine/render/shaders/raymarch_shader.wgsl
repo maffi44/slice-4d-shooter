@@ -2373,26 +2373,42 @@ fn get_color_and_light_from_mats(
         //         base_coef),
         //     pow(w_height_coef, 0.69)
         // );
-        base_diffuse += normal.xzw;
 
-        // base_diffuse += vec3(
-        //     0.0,
-        //     floor(my_mod(hited_pos.x, 3.0)/2.0)*floor(my_mod(hited_pos.z, 3.0)/2.0)*3.0,
-        //     0.0,
-        // );
+        let x_color = vec3(5.02, 0.58, 0.00);
+        let z_color = vec3(0.00, 5.02, 0.58);
+        let w_color = vec3(0.58, 0.00, 5.02);
 
-        let w_perpendicular_line = smoothstep(0.99,1.0,sin(hited_pos.w*2.3));
-        let w_parallel_line = smoothstep(0.92,1.0,sin(hited_pos.z*2.6))*smoothstep(0.92,1.0,sin(hited_pos.x*2.6));
+        if dynamic_data.additional_data[0] > 0.0
+        {
+            base_diffuse += dot(abs(normal), vec4(1.0,0.0,0.0,0.0))*x_color;
+            base_diffuse += dot(abs(normal), vec4(0.0,0.0,1.0,0.0))*z_color;
+            base_diffuse += dot(abs(normal), vec4(0.0,0.0,0.0,1.0))*w_color;
+        }
 
-        wireframe_dif += w_perpendicular_line*0.02;
-        wireframe_dif += w_parallel_line*0.02;
-        // wireframe_dif += x_line*0.03;
-        // wireframe_dif += z_line*0.03;
+        if dynamic_data.additional_data[1] > 0.0
+        {
+            let w_perpendicular_line = smoothstep(0.99,1.0,sin(hited_pos.w*2.1));
+            wireframe_dif += w_perpendicular_line*0.006;
+            base_diffuse += w_color*6.0 * w_perpendicular_line;
 
-        base_diffuse += static_data.blue_base_color*6.0 * w_perpendicular_line;
-        base_diffuse += static_data.red_base_color*6.0 * w_parallel_line;
-        // base_diffuse += static_data.red_base_color*4.0 * x_line;
-        // base_diffuse += (static_data.blue_base_color + static_data.red_base_color)*2.0 * z_line;
+            if dynamic_data.additional_data[1] > 1.0
+            {
+                // let w_parallel_line = smoothstep(0.92,1.0,sin(hited_pos.z*2.6))*smoothstep(0.92,1.0,sin(hited_pos.x*2.6));
+                // wireframe_dif += w_parallel_line*0.02;
+                // base_diffuse += vec3(0.33,3.0,0.33) * w_parallel_line;
+                
+                let x_perpendicular_line = smoothstep(0.99,1.0,sin(hited_pos.x*2.1));
+                wireframe_dif += x_perpendicular_line*0.006;
+                base_diffuse += x_color*6.0 * x_perpendicular_line;
+
+                let z_perpendicular_line = smoothstep(0.99,1.0,sin(hited_pos.z*2.1));
+                wireframe_dif += z_perpendicular_line*0.006;
+                base_diffuse += z_color*6.0 * z_perpendicular_line;
+                // if dynamic_data.additional_data[1] > 2.0
+                // {
+                // }
+            }
+        }
     }
 
     var ref_dir = reflect(ray_dir, normal);

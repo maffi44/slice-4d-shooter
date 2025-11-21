@@ -96,6 +96,10 @@ name="obstacle-course-free-movement"
 path="src/obstacle_course_free_movement_main.rs"
 
 [[bin]]
+name="obstacle-course-free-movement-fast"
+path="src/obstacle_course_free_movement_fast_main.rs"
+
+[[bin]]
 name="game-client-for-map-editing"
 path="src/game_client_main_for_map_editing.rs"
 

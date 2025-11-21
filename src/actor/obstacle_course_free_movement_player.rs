@@ -32,7 +32,7 @@ use crate::{
             Command,
             CommandType,
             EngineHandle
-        }, input::ActionsFrameState, physics::{
+        }, input::{self, ActionsFrameState}, physics::{
             PhysicsSystem, colliders_container::PhysicalElement, kinematic_collider::KinematicColliderMessage
         }, render::{VisualElement, camera::Camera}, time::TimeSystem, ui::{UIElement, UIElementType, UISystem}, world::level::Spawn
     },
@@ -66,6 +66,9 @@ pub struct ObstacleCourseFreeMovementPlayer {
     hands_slot_3: Option<Box<dyn Device>>,
 
     devices: [Option<Box<dyn Device>>; 4],
+
+    pub navigation_coloring_walls: bool,
+    pub navigation_lines_mode: u32,
 }
 
 impl Actor for ObstacleCourseFreeMovementPlayer {
@@ -418,6 +421,8 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 delta
             );
 
+            self.process_navigation_input(&input);
+
             process_w_scanner_ui(
                 ui_system,
                 &self.inner_state,
@@ -541,27 +546,6 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 my_id,
             );
         }
-
-        // main_player::process_ui_tutorial_window_input(
-        //     &input,
-        //     &mut self.inner_state,
-        //     ui_system,
-        //     engine_handle,
-        //     my_id,
-        //     delta,
-        // );
-
-        // main_player::process_w_rotation_sound(
-        //     audio_system,
-        //     &mut self.inner_state,
-        //     delta,
-        // );
-
-        // main_player::process_w_shift_sound(
-        //     audio_system,
-        //     &mut self.inner_state,
-        //     false
-        // );
 
         self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
 
@@ -732,6 +716,27 @@ impl ObstacleCourseFreeMovementPlayer {
             master,
 
             screen_effects,
+
+            navigation_coloring_walls: true,
+            navigation_lines_mode: 2u32,
+        }
+    }
+
+    fn process_navigation_input(&mut self, input: &ActionsFrameState)
+    {
+        if input.anti_projection_mode.is_action_just_pressed()
+        {
+            self.navigation_coloring_walls = !self.navigation_coloring_walls;
+        }
+
+        if input.w_scanner.is_action_just_pressed()
+        {
+            self.navigation_lines_mode += 1u32;
+
+            if self.navigation_lines_mode > 2u32
+            {
+                self.navigation_lines_mode = 0u32;
+            }
         }
     }
 }

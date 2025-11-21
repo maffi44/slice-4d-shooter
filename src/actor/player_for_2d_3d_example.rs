@@ -973,17 +973,17 @@ impl Actor for PlayerFor2d3dExample {
             );
         }
 
-        main_player::process_w_rotation_sound(
-            audio_system,
-            &mut self.inner_state,
-            delta,
-        );
+        // main_player::process_w_rotation_sound(
+        //     audio_system,
+        //     &mut self.inner_state,
+        //     delta,
+        // );
 
-        main_player::process_w_shift_sound(
-            audio_system,
-            &mut self.inner_state,
-            true
-        );
+        // main_player::process_w_shift_sound(
+        //     audio_system,
+        //     &mut self.inner_state,
+        //     true
+        // );
 
         self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
 
@@ -1045,7 +1045,7 @@ fn process_player_for_example_rotation(
             input.mouse_axis.y *
             *player_settings.mouse_sensivity.lock().unwrap() +
             yz
-        ).clamp(-PI/2.0, PI/2.0);
+        );
         
     } else {
 
@@ -1108,14 +1108,14 @@ fn process_player_for_example_rotation(
             }
         };
 
-        xz = lerpf(
-            xz,
-            target_zw_angle,
-            delta * 4.8 * rotation_speed
-        );
-        if (xz - target_zw_angle).abs() < 0.001 {
-            xz = target_zw_angle;
-        }
+        // xz = lerpf(
+        //     xz,
+        //     target_zw_angle,
+        //     delta * 4.8 * rotation_speed
+        // );
+        // if (xz - target_zw_angle).abs() < 0.001 {
+        //     xz = target_zw_angle;
+        // }
 
         yz = (
             input.mouse_axis.y *
@@ -1193,15 +1193,15 @@ fn process_player_for_example_movement_input(
 
     if input.move_right.is_action_pressed() {
         movement_vec += FORWARD;
-        player_doll_input_state.move_forward = true;
-        model_has_left_orientation_current = true;
+        // player_doll_input_state.move_forward = true;
+        // model_has_left_orientation_current = true;
 
     }
 
     if input.move_left.is_action_pressed() {
         movement_vec += BACKWARD;
-        player_doll_input_state.move_backward = true;
-        model_has_left_orientation_current = false;
+        // player_doll_input_state.move_backward = true;
+        // model_has_left_orientation_current = false;
 
     }
 
@@ -1233,6 +1233,8 @@ fn process_player_for_example_movement_input(
         None => movement_vec = Vec4::ZERO,
     }
 
+    movement_vec = inner_state.get_rotation_matrix() * movement_vec;
+
     // lock player on w axis 
     let w_dif = current_w_position_target - inner_state.get_position().w;
     inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
@@ -1240,7 +1242,7 @@ fn process_player_for_example_movement_input(
         player_settings.gravity_w_speed*25.0
     );
 
-    inner_state.collider.add_force(Vec4::NEG_X * player_settings.gravity_w_speed * delta);
+    // inner_state.collider.add_force(Vec4::NEG_X * player_settings.gravity_w_speed * delta);
 
     inner_state.collider.add_force(DOWN * player_settings.gravity_y_speed * delta);
 
