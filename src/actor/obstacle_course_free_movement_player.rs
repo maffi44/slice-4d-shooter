@@ -1200,6 +1200,8 @@ pub fn process_w_scanner_ui(
     }
 }
 
+const GAMEPAD_STICK_SENSIVITY_MULT: f32 = 0.15;
+
 pub fn process_player_rotation(
     input: &ActionsFrameState,
     player_settings: &PlayerSettings,
@@ -1222,9 +1224,16 @@ pub fn process_player_rotation(
             *player_settings.mouse_sensivity.lock().unwrap() +
             zw);
         
-        xw =
-            input.mouse_axis.x *
+        xw = input.mouse_axis.x *
             *player_settings.mouse_sensivity.lock().unwrap() +
+            xw;
+
+        zw = (input.gamepad_right_stick_axis_delta.y *
+            *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+            zw);
+        
+        xw = input.gamepad_right_stick_axis_delta.x *
+            *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
             xw;
         
     }
@@ -1240,7 +1249,25 @@ pub fn process_player_rotation(
             *player_settings.mouse_sensivity.lock().unwrap() +
             yz
         ).clamp(-PI/2.0, PI/2.0);
+
+        xz = input.gamepad_right_stick_axis_delta.x *
+            *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+            xz;
+
+        yz = (
+            input.gamepad_right_stick_axis_delta.y *
+            *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+            yz
+        ).clamp(-PI/2.0, PI/2.0);
     }
+
+    zw = (input.gamepad_left_stick_axis_delta.y *
+            *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+            zw);
+        
+    xw = input.gamepad_left_stick_axis_delta.x *
+        *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+        xw;
 
     let zy_rotation = Mat4::from_rotation_x(yz);
 

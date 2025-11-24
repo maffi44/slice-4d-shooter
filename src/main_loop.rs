@@ -21,6 +21,7 @@ use crate::{
 
 use web_time::Instant;
 use glam::Vec2;
+use gilrs;
 
 use wgpu::Backend;
 use winit::{
@@ -122,6 +123,8 @@ impl ApplicationHandler for Slice4DShooter
                 event_loop.set_control_flow(ControlFlow::WaitUntil(
                     Instant::now() + self.systems.as_mut().unwrap().time.target_frame_duration
                 ));
+
+                collect_gamepad_input(self.systems.as_mut().unwrap());
                 
                 main_loop_tick(self.systems.as_mut().unwrap());
 
@@ -350,6 +353,15 @@ impl MainLoop {
     }
    
 }
+
+
+#[inline]
+fn collect_gamepad_input (
+    systems : &mut Engine,
+) {
+    systems.input.collect_gamepad_button_input();
+}
+
 
 #[inline]
 fn main_loop_tick(
