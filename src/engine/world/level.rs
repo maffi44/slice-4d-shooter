@@ -18,14 +18,14 @@ use std::{collections::HashMap, fs::File, io::Read};
 
 use crate::{
     actor::{
-        mover_w::MoverW, wandering_actor::{
+        ActorWrapper, device, main_player::{player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, wandering_actor::{
             WanderingActor,
             WanderingActorMovementType,
-        }, ActorWrapper
+        }
     }, engine::{
-        physics::{
+        input::ActionsFrameState, physics::{
             physics_system_data::ShapeType, static_collider::StaticCollider
-        }, world::static_object::{
+        }, render::RenderPipelineBuilderKit, world::static_object::{
             ObjectMaterial, StaticObject
         }
     }, transform::Transform
@@ -36,6 +36,7 @@ use client_server_protocol::Team;
 use wasm_bindgen_futures::JsFuture;
 use glam::{Vec4, Vec3};
 use serde_json::Value;
+use wgpu::{Device, RenderPipeline, ShaderRuntimeChecks};
 
 use super::static_object::{WFloor, WRoof};
 
@@ -56,8 +57,8 @@ pub struct Spawn {
     pub spawn_position: Vec4,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct EnvirnomentVisualSettings {
-    pub sky_box_name: String,
     pub sky_color: Vec4,
     pub fog_color: Vec4,
     pub frenel_color: Vec4,
@@ -71,65 +72,56 @@ pub struct EnvirnomentVisualSettings {
 pub struct Level {
     pub level_name: String,
     pub static_objects: Vec<StaticObject>,
-    pub red_spawns: Vec<Spawn>,
-    pub blue_spawns: Vec<Spawn>,
     pub all_shapes_stickiness_radius: f32,
-    // pub w_floor: Option<WFloor>,
-    // pub w_roof: Option<WRoof>,
     pub visual_materials: Vec<ObjectMaterial>,
     pub blue_players_visual_materials: (i32, i32),
     pub red_players_visual_materials: (i32, i32),
-    // pub w_cups_visual_materials: i32,
     pub visual_settings_of_environment: EnvirnomentVisualSettings,
-
-    // pub w_levels: Vec<f32>,
-
-    // pub blue_base_w_level: f32,
-    // pub red_base_w_level: f32,
-
-    // pub blue_map_color_level: f32,
-    // pub red_map_color_level: f32,
-    pub red_flag_base: Transform,
-    pub blue_flag_base: Transform,
+    pub main_actor: Option<ActorWrapper>,
+    pub actors: Option<Vec<ActorWrapper>>,
+    pub main_shader: Option<wgpu::RenderPipeline>,
     pub red_base_position: Vec4,
     pub blue_base_position: Vec4,
-    // pub move_w_bonus_spot: Transform,
-
-    // pub mover_w_list: Vec<MoverW>,
+    pub is_generated_raymarch_shader: bool,
+    // pub 
 }
 
 impl Level {
     
-    pub fn get_random_spawn_position(&self, team: Team) -> Spawn {
-        match team {
-            Team::Red =>
-            {
-                let random_index = {
-                    let mut usize_bytes = 0usize.to_be_bytes();
-                    getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
+    // pub fn get_random_spawn_position(&self, team: Team) -> Spawn {
+    //     match team {
+    //         Team::Red =>
+    //         {
+    //             let random_index = {
+    //                 let mut usize_bytes = 0usize.to_be_bytes();
+    //                 getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
                     
-                    usize::from_le_bytes(usize_bytes) % self.red_spawns.len()
-                };
+    //                 usize::from_le_bytes(usize_bytes) % self.red_spawns.len()
+    //             };
         
-                self.red_spawns[random_index].clone()
-            }
+    //             self.red_spawns[random_index].clone()
+    //         }
 
-            Team::Blue =>
-            {
-                let random_index = {
-                    let mut usize_bytes = 0usize.to_be_bytes();
-                    getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
+    //         Team::Blue =>
+    //         {
+    //             let random_index = {
+    //                 let mut usize_bytes = 0usize.to_be_bytes();
+    //                 getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
                     
-                    usize::from_le_bytes(usize_bytes) % self.blue_spawns.len()
-                };
+    //                 usize::from_le_bytes(usize_bytes) % self.blue_spawns.len()
+    //             };
         
-                self.blue_spawns[random_index].clone()
-            }
-        }
-    }
+    //             self.blue_spawns[random_index].clone()
+    //         }
+    //     }
+    // }
 
 
-    pub async fn load_level(level_name: String) -> (Level, Vec<ActorWrapper>)
+    pub async fn load_level(
+        level_name: String,
+        player_settings: PlayerSettings,
+        render_pipeline_builder_kit: Option<RenderPipelineBuilderKit>
+    ) -> Level
     {
         #[cfg(target_arch = "wasm32")]
         {
@@ -251,7 +243,7 @@ impl Level {
                 }
             };
 
-            return parse_json_level(json_map);
+            return parse_json_level(json_map, player_settings, render_pipeline_builder_kit);
         }
     }
 }
@@ -259,8 +251,11 @@ impl Level {
 
 
 fn parse_json_level(
-    json: Value
-) -> (Level, Vec<ActorWrapper>) {
+    json: Value,
+    player_settings: PlayerSettings,
+    render_pipeline_builder_kit: Option<RenderPipelineBuilderKit>,
+) -> Level
+{
     let json_level = json
     .as_object()
     .expect("Wrong JSON map format. Root json level value must be object");
@@ -283,49 +278,49 @@ fn parse_json_level(
             as f32
     };
 
-    let red_spawns = {
-        let spawns_array = json_level
-            .get("red_spawns")
-            .expect("Wrong JSON map format. JSON level must have red_spawns property")
-            .as_array()
-            .expect("red_spawns is not an array");
+    // let red_spawns = {
+    //     let spawns_array = json_level
+    //         .get("red_spawns")
+    //         .expect("Wrong JSON map format. JSON level must have red_spawns property")
+    //         .as_array()
+    //         .expect("red_spawns is not an array");
 
-        let mut spawns = Vec::new();
+    //     let mut spawns = Vec::new();
 
-        for value in spawns_array {
-            let transform = parse_json_into_transform(value, "spawn_position");
+    //     for value in spawns_array {
+    //         let transform = parse_json_into_transform(value, "spawn_position");
 
-            let spawn = Spawn {
-                spawn_position: transform.get_position(),
-            };
+    //         let spawn = Spawn {
+    //             spawn_position: transform.get_position(),
+    //         };
 
-            spawns.push(spawn);
-        }
+    //         spawns.push(spawn);
+    //     }
 
-        spawns  
-    };
+    //     spawns  
+    // };
 
-    let blue_spawns = {
-        let spawns_array = json_level
-            .get("blue_spawns")
-            .expect("Wrong JSON map format. JSON level must have blue_spawns property")
-            .as_array()
-            .expect("blue_spawns is not an array");
+    // let blue_spawns = {
+    //     let spawns_array = json_level
+    //         .get("blue_spawns")
+    //         .expect("Wrong JSON map format. JSON level must have blue_spawns property")
+    //         .as_array()
+    //         .expect("blue_spawns is not an array");
 
-        let mut spawns = Vec::new();
+    //     let mut spawns = Vec::new();
 
-        for value in spawns_array {
-            let transform = parse_json_into_transform(value, "spawn_position");
+    //     for value in spawns_array {
+    //         let transform = parse_json_into_transform(value, "spawn_position");
 
-            let spawn = Spawn {
-                spawn_position: transform.get_position(),
-            };
+    //         let spawn = Spawn {
+    //             spawn_position: transform.get_position(),
+    //         };
 
-            spawns.push(spawn);
-        }
+    //         spawns.push(spawn);
+    //     }
 
-        spawns  
-    };
+    //     spawns  
+    // };
 
 
     let (visual_materials, materials_table) = {
@@ -392,6 +387,19 @@ fn parse_json_level(
         parse_json_actors(json_actors, &default_settings, &materials_table)
     };
 
+    let main_actor = {
+        let json_main_actor = json_level
+            .get("main_actor")
+            .expect("Wrong JSON map format. JSON level must have static_objects property");
+
+        parse_json_main_actor(
+            json_main_actor,
+            &default_settings,
+            &materials_table,
+            player_settings,
+        )
+    };
+
     // let w_levels = {
     //     let mut w_levels = Vec::new();
 
@@ -439,21 +447,21 @@ fn parse_json_level(
     //         as f32
     // };
     
-    let red_flag_base = {
-        let red_flag_base_json = json_level
-            .get("red_flag_base")
-            .expect("Wrong JSON map format. JSON level must have red_flag_base property");
+    // let red_flag_base = {
+    //     let red_flag_base_json = json_level
+    //         .get("red_flag_base")
+    //         .expect("Wrong JSON map format. JSON level must have red_flag_base property");
 
-        parse_json_into_transform(red_flag_base_json, "red_flag_base")
-    };
+    //     parse_json_into_transform(red_flag_base_json, "red_flag_base")
+    // };
     
-    let blue_flag_base = {
-        let blue_flag_base_json = json_level
-            .get("blue_flag_base")
-            .expect("Wrong JSON map format. JSON level must have blue_flag_base property");
+    // let blue_flag_base = {
+    //     let blue_flag_base_json = json_level
+    //         .get("blue_flag_base")
+    //         .expect("Wrong JSON map format. JSON level must have blue_flag_base property");
 
-        parse_json_into_transform(blue_flag_base_json, "blue_flag_base")
-    };
+    //     parse_json_into_transform(blue_flag_base_json, "blue_flag_base")
+    // };
 
     let red_base_position = {
         let red_base_position_json = json_level
@@ -515,33 +523,119 @@ fn parse_json_level(
     //     list
     // };
 
-    let level = Level {
-        // blue_base_w_level,
-        // red_base_w_level,
+    let is_generated_raymarch_shader = {
+        json_level
+            .get("generated_shader_with_bsp_tree")
+            .expect("Wrong JSON map format. JSON level must have generated_shader_with_bsp_tree property")
+            .as_bool()
+            .expect("Wrong JSON map format. generated_shader_with_bsp_tree property must boolean type")
+    };
+
+    let main_shader = {
+        let shader_name = json_level
+            .get("main_shader")
+            .expect("Wrong JSON map format. JSON level must have main_shader property")
+            .as_str()
+            .expect("Wrong JSON map format. main_shader property must string type");
+
+        build_render_pipeline(render_pipeline_builder_kit, shader_name, is_generated_raymarch_shader)
+    };
+
+    Level {
         level_name,
         static_objects,
-        red_spawns,
-        blue_spawns,
         all_shapes_stickiness_radius,
-        red_base_position,
-        blue_base_position,
-        // w_floor,
-        // w_roof,
         visual_materials,
         blue_players_visual_materials,
         red_players_visual_materials,
-        // w_cups_visual_materials,
-        // w_levels,
         visual_settings_of_environment,
-        red_flag_base,
-        blue_flag_base,
-        // red_map_color_level,
-        // blue_map_color_level,
-        // move_w_bonus_spot,
-        // mover_w_list,
-    };
+        actors: Some(actors),
+        main_actor,
+        main_shader,
+        is_generated_raymarch_shader,
+        red_base_position,
+        blue_base_position
+    }
+}
 
-    (level, actors)
+
+fn build_render_pipeline(
+    render_pipeline_builder_kit: Option<RenderPipelineBuilderKit>,
+    shader_name: &str,
+    is_generated_raymarch_shader: bool
+) -> Option<RenderPipeline>
+{
+    if render_pipeline_builder_kit.is_none()
+    {
+        return None;
+    }
+
+    let render_pipeline_builder_kit= render_pipeline_builder_kit.unwrap();
+    match shader_name
+    {
+        "raymarch_shader_obstacle_course" =>
+        {
+            if is_generated_raymarch_shader
+            {
+                unimplemented!()
+            }
+            else
+            {
+                let raymarch_shader_obstacle_course = unsafe {
+                    render_pipeline_builder_kit.device.create_shader_module_trusted(
+                    wgpu::ShaderModuleDescriptor {
+                        label: Some("Raymarch Shader"),
+                        source: wgpu::ShaderSource::Wgsl(include_str!("../render/shaders/raymarch_shader_obstacle_course.wgsl").into()),
+                    },
+                    ShaderRuntimeChecks::unchecked()
+                )};
+
+                let render_pipeline = render_pipeline_builder_kit.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: Some("main shader render pipeline"),
+                    layout: Some(&render_pipeline_builder_kit.raymarch_render_pipeline_layout),
+                    vertex: wgpu::VertexState {
+                        module: &raymarch_shader_obstacle_course,
+                        entry_point: Some("vs_main"),
+                        compilation_options: wgpu::PipelineCompilationOptions::default(), 
+                        buffers: &[
+                            render_pipeline_builder_kit.vertex_desc,
+                        ],
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &raymarch_shader_obstacle_course,
+                        compilation_options: wgpu::PipelineCompilationOptions::default(),
+                        entry_point: Some("fs_main"),
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: render_pipeline_builder_kit.config.format,
+                            blend: Some(wgpu::BlendState::REPLACE),
+                            write_mask: wgpu::ColorWrites::ALL,
+                        })],
+                    }),
+                    primitive: wgpu::PrimitiveState {
+                        topology: wgpu::PrimitiveTopology::TriangleList,
+                        strip_index_format: None,
+                        front_face: wgpu::FrontFace::Ccw,
+                        cull_mode: None,
+                        polygon_mode: wgpu::PolygonMode::Fill,
+                        unclipped_depth: false,
+                        conservative: false,
+                    },
+                    depth_stencil: None,
+                    multisample: wgpu::MultisampleState {
+                        count: 1,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    multiview: None,
+                    cache: None,
+                });
+
+                return Some(render_pipeline);
+            }
+        }
+
+        _ => unimplemented!()
+    }
 }
 
 
@@ -567,14 +661,6 @@ fn parse_json_visual_settings_of_environment(
     let obj = json
         .as_object()
         .expect("Wrong JSON map format. Root of visual_settings_of_environment property must be an object");
-
-    let sky_box_name = {
-        obj.get("sky_box")
-            .expect("Wrong JSON map format. visual_settings_of_environment have not an sky_box property")
-            .as_str()
-            .expect("Wrong JSON map format. visual_settings_of_environment's sky_box property is not a string")
-            .to_string()
-    };
 
     let sky_color = {
         let json_value = obj.get("sky_color")
@@ -657,7 +743,6 @@ fn parse_json_visual_settings_of_environment(
     };
 
     EnvirnomentVisualSettings {
-        sky_box_name,
         sky_color,
         sun_color,
         sun_direction,
@@ -1682,6 +1767,65 @@ fn parse_json_into_material_index(
     Some(material_index)
 }
 
+
+fn parse_json_main_actor(
+    json: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>,
+    player_settings: PlayerSettings,
+) -> Option<ActorWrapper>
+{
+
+    let mut main_actor = None;
+
+    let main_actor_json_obj = json
+        .as_object()
+        .expect("Wrong JSON map format, main_actor property must be an object");
+    
+    for (actor_type, actor_value) in main_actor_json_obj {
+        match actor_type.as_str() {
+            "obstacle_course_free_movement_player" => {
+
+                let actor = parse_obstacle_course_free_movement_player(
+                    actor_value,
+                    player_settings.clone(),
+                );
+
+                main_actor = Some(ActorWrapper::ObstacleCourseFreeMovementPlayer(actor));
+            }
+            _ => {panic!("Wrong JSON map format, {} it is worng main actor type", actor_type)}
+        }
+    }
+
+    main_actor
+}
+
+
+fn parse_obstacle_course_free_movement_player(
+    actor_value: &Value,
+    player_settings: PlayerSettings,
+) -> ObstacleCourseFreeMovementPlayer
+{
+
+    let spawn_transform_json = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, obstacle_course_free_movement_player must be an json object")
+        .get("spawn")
+        .expect("Wrong JSON map format, obstacle_course_free_movement_player must have an spawn property");
+    
+    let spawn_transform = parse_json_into_transform(
+        spawn_transform_json,
+        "obstacle_course_free_movement_player"
+    );
+
+    ObstacleCourseFreeMovementPlayer::new(
+        InputMaster::LocalMaster(
+            LocalMaster::new(ActionsFrameState::empty()),
+        ),
+        player_settings,
+        spawn_transform.get_position(),
+    )
+}
 
 
 fn parse_json_actors(

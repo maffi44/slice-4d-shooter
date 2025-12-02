@@ -34,9 +34,10 @@ pub enum CommandType {
     SpawnActor(ActorWrapper),
     RemoveActor(ActorID),
     NetCommand(NetCommand),
-    RespawnPlayer(ActorID),
     RemoveAllHolesAndEffects,
     ShowConnectionStatusUI,
+    LoadNewLevelSync(String),
+    LoadNewLevelAsync(String),
 }
 
 pub struct EngineHandle {

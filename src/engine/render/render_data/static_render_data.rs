@@ -110,33 +110,11 @@ impl OtherStaticData {
         // shapes_arrays_metadata: ShapesArraysMetadata,
         stickiness: f32
     ) -> Self {
-        
-        // let mut w_floor = 0.0;
-        // let is_w_floor_exist = {
-        //     if let Some(val) = &world.level.w_floor {
-        //         w_floor = val.w_pos;
-
-        //         1_i32
-        //     } else {
-        //         0_i32
-        //     }
-        // };
-    
-        // let mut w_roof = 0.0;
-        // let is_w_roof_exist = {
-        //     if let Some(val) = &world.level.w_roof {
-        //         w_roof = val.w_pos;
-
-        //         1_i32
-        //     } else {
-        //         0_i32
-        //     }
-        // };
 
         let mut materials = [VisualMaterial::default(); 32];
 
         let mut index = 0usize;
-        for obj_material in &world.level.visual_materials {
+        for obj_material in &world.level.as_ref().unwrap().visual_materials {
             let material = VisualMaterial {
                 color: [
                     obj_material.color.x,
@@ -151,11 +129,11 @@ impl OtherStaticData {
             index += 1;
         }
 
-        let (blue_players_mat1, blue_players_mat2) = world.level.blue_players_visual_materials;
-        let (red_players_mat1, red_players_mat2) = world.level.red_players_visual_materials;
+        let (blue_players_mat1, blue_players_mat2) = world.level.as_ref().unwrap().blue_players_visual_materials;
+        let (red_players_mat1, red_players_mat2) = world.level.as_ref().unwrap().red_players_visual_materials;
 
-        let blue_base_position = world.level.blue_base_position.to_array();
-        let red_base_position = world.level.red_base_position.to_array();
+        let blue_base_position = world.level.as_ref().unwrap().blue_base_position.to_array();
+        let red_base_position = world.level.as_ref().unwrap().red_base_position.to_array();
 
         let w_cups_mat = 0;
 
@@ -166,6 +144,8 @@ impl OtherStaticData {
                 0
             }
         };
+
+        let visual_settings_of_environment =  world.level.as_ref().unwrap().visual_settings_of_environment;
 
         OtherStaticData {
             // shapes_arrays_metadata,
@@ -191,21 +171,50 @@ impl OtherStaticData {
             // shadows_enabled,
             materials,
 
-            red_base_color: world.level.visual_settings_of_environment.red_map_color.to_array(),
-            blue_base_color: world.level.visual_settings_of_environment.blue_map_color.to_array(),
-
-            sky_color: world.level.visual_settings_of_environment.sky_color.to_array(),
-            sun_color: world.level.visual_settings_of_environment.sun_color.to_array(),
-            fog_color: world.level.visual_settings_of_environment.fog_color.to_array(),
-            frenel_color: world.level.visual_settings_of_environment.frenel_color.to_array(),
-            neon_wireframe_color: world.level.visual_settings_of_environment.neon_wireframe_color.to_array(),
-            sun_direction: world.level.visual_settings_of_environment.sun_direction.to_array(),
+            red_base_color: visual_settings_of_environment.red_map_color.to_array(),
+            blue_base_color: visual_settings_of_environment.blue_map_color.to_array(),
+            sky_color: visual_settings_of_environment.sky_color.to_array(),
+            sun_color: visual_settings_of_environment.sun_color.to_array(),
+            fog_color: visual_settings_of_environment.fog_color.to_array(),
+            frenel_color: visual_settings_of_environment.frenel_color.to_array(),
+            neon_wireframe_color: visual_settings_of_environment.neon_wireframe_color.to_array(),
+            sun_direction: visual_settings_of_environment.sun_direction.to_array(),
         }
     }
 }
 
 impl StaticRenderData {
-    pub fn new(world: &World) -> Self {
+    
+    pub fn new() -> Self
+    {
+        StaticRenderData {
+            static_shapes_data: ShapesArrays::default(),
+            other_static_data: OtherStaticData::default(),
+            static_bounding_box: BoundingBox::default(),
+            cubes: Vec::with_capacity(0),
+            s_cubes: Vec::with_capacity(0),
+            neg_cubes: Vec::with_capacity(0),
+            s_neg_cubes: Vec::with_capacity(0),
+            spheres: Vec::with_capacity(0),
+            s_spheres: Vec::with_capacity(0),
+            neg_spheres: Vec::with_capacity(0),
+            s_neg_spheres: Vec::with_capacity(0),
+            sph_cubes: Vec::with_capacity(0),
+            s_sph_cubes: Vec::with_capacity(0),
+            neg_sph_cubes: Vec::with_capacity(0),
+            s_neg_sph_cubes: Vec::with_capacity(0),
+            unbreakable_cubes: Vec::with_capacity(0),
+            unbreakable_s_cubes: Vec::with_capacity(0),
+            unbreakable_spheres: Vec::with_capacity(0),
+            unbreakable_s_spheres: Vec::with_capacity(0),
+            unbreakable_sph_cubes: Vec::with_capacity(0),
+            unbreakable_s_sph_cubes: Vec::with_capacity(0),
+            metadata: ShapesArraysMetadata::default(),
+        }
+    }
+
+    pub fn update(&mut self, world: &World)
+    {
 
         let mut shapes = ShapesArrays::default();
 
@@ -314,7 +323,7 @@ impl StaticRenderData {
         
         let mut static_bounding_box = BoundingBox::new();
         
-        for obj in &world.level.static_objects {
+        for obj in &world.level.as_ref().unwrap().static_objects {
             
             // log::info!("static objects amount is {}", world.level.static_objects.len());
 
@@ -967,39 +976,36 @@ impl StaticRenderData {
         let other_static_data = OtherStaticData::new(
             world,
             // metadata,
-            world.level.all_shapes_stickiness_radius
+            world.level.as_ref().unwrap().all_shapes_stickiness_radius
         );
 
-        StaticRenderData {
-            static_shapes_data: shapes,
-            other_static_data,
-            static_bounding_box,
+        self.static_shapes_data = shapes;
+        self.other_static_data = other_static_data;
+        self.static_bounding_box = static_bounding_box;
+        self.cubes = cubes;
+        self.s_cubes = s_cubes;
+        self.neg_cubes = neg_cubes;
+        self.s_neg_cubes = s_neg_cubes;
+        self.spheres = spheres;
+        self.s_spheres = s_spheres;
+        self.neg_spheres = neg_spheres;
+        self.s_neg_spheres = s_neg_spheres;
+        self.sph_cubes = sph_cubes;
+        self.s_sph_cubes = s_sph_cubes;
+        self.neg_sph_cubes = neg_sph_cubes;
+        self.s_neg_sph_cubes = s_neg_sph_cubes;
+        self.unbreakable_cubes = unbreakable_cubes;
+        self.unbreakable_s_cubes = unbreakable_s_cubes;
+        self.unbreakable_s_sph_cubes = unbreakable_s_sph_cubes;
+        self.unbreakable_s_spheres = unbreakable_s_spheres;
+        self.unbreakable_sph_cubes = unbreakable_sph_cubes;
+        self.unbreakable_spheres = unbreakable_spheres;
+        self.metadata = metadata;
+    }
+}
 
-            cubes,
-            s_cubes,
-            neg_cubes,
-            s_neg_cubes,
-            spheres,
-            s_spheres,
-            neg_spheres,
-            s_neg_spheres,
-            sph_cubes,
-            s_sph_cubes,
-            neg_sph_cubes,
-            s_neg_sph_cubes,
-
-            unbreakable_cubes,
-            unbreakable_s_cubes,
-            unbreakable_s_sph_cubes,
-            unbreakable_s_spheres,
-            unbreakable_sph_cubes,
-            unbreakable_spheres,
-
-            // inf_w_cubes,
-            // s_inf_w_cubes,
-            // neg_inf_w_cubes,
-            // s_neg_inf_w_cubes,
-            metadata,
-        }
+impl Default for StaticRenderData {
+    fn default() -> Self {
+        Self::new()
     }
 }

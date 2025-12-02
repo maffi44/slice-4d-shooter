@@ -168,15 +168,16 @@ impl Actor for ObstacleCoursePlayerTwoJumps {
                     PhysicsMessages::KinematicColliderMessage(message) => {
                         match message {
                             KinematicColliderMessage::ColliderIsStuckInsideObject =>
-                            {    
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                            {
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
                             _ => {}
                         }
@@ -203,14 +204,15 @@ impl Actor for ObstacleCoursePlayerTwoJumps {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
 
                             PlayerMessage::DataForProjection(
@@ -241,14 +243,15 @@ impl Actor for ObstacleCoursePlayerTwoJumps {
                             {
                                 self.inner_state.team = team;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
 
                                 set_right_team_hud(
                                     &self.inner_state,
@@ -263,14 +266,15 @@ impl Actor for ObstacleCoursePlayerTwoJumps {
                             {
                                 self.inner_state.team = your_team;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
 
                                 set_right_team_hud(
                                     &self.inner_state,
@@ -499,14 +503,15 @@ impl Actor for ObstacleCoursePlayerTwoJumps {
 
             if self.inner_state.get_position().y < Y_DEATH_PLANE_LEVEL
             {
-                engine_handle.send_command(
-                    Command {
-                        sender: self.get_id().expect("Player have not ActorID"),
-                        command_type: CommandType::RespawnPlayer(
-                            self.get_id().expect("Player have not ActorID")
-                        )
-                    }
-                );
+                todo!("must impliment respawn for observer");
+                // engine_handle.send_command(
+                //     Command {
+                //         sender: self.get_id().expect("Player have not ActorID"),
+                //         command_type: CommandType::RespawnPlayer(
+                //             self.get_id().expect("Player have not ActorID")
+                //         )
+                //     }
+                // );
             }
 
         } else {
@@ -684,6 +689,24 @@ impl ObstacleCoursePlayerTwoJumps {
             player_projections_is_visible: false
         };
 
+        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::RotatingAroundW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
+        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::ShiftingAlongW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
         let mut inner_state = PlayerInnerState::new(
             Transform::new(),
             &player_settings,
@@ -693,7 +716,8 @@ impl ObstacleCoursePlayerTwoJumps {
             red_base_position,
             RIGHT*0.6,
             UP * player_settings.collider_radius * 0.2,
-            audio_system,
+            rotating_around_w_sound_handle,
+            shifting_along_w_sound_handle,
         );
 
         inner_state.tutrial_window_was_open = true;

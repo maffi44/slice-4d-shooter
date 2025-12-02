@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use crate::engine::{render::{render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
+use crate::engine::{render::{RenderPipelineBuilderKit, render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
 use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
 use wgpu::{
-    Backend, BackendOptions, BindGroup, Buffer, BufferUsages, Color, ExperimentalFeatures, Extent3d, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions, PollStatus, Sampler, ShaderRuntimeChecks, TexelCopyBufferLayout, TexelCopyTextureInfoBase, Texture, TextureView, rwh::{
+    Backend, BackendOptions, BindGroup, Buffer, BufferUsages, Color, Device, ExperimentalFeatures, Extent3d, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions, PipelineLayout, PollStatus, RenderPipeline, Sampler, ShaderRuntimeChecks, TexelCopyBufferLayout, TexelCopyTextureInfoBase, Texture, TextureView, rwh::{
         HasDisplayHandle,
         HasWindowHandle
     }, util::{
@@ -49,6 +49,7 @@ const INDICES: &[u16] = &[0, 2, 1];
 pub struct RendererBuffers
 {
     pub other_dynamic_data_buffer: Buffer,
+    pub other_static_data_buffer: Buffer,
     pub dynamic_negative_shapes_buffer: Buffer,
     pub dynamic_normal_shapes_buffer: Buffer,
     pub dynamic_stickiness_shapes_buffer: Buffer,
@@ -69,7 +70,7 @@ pub struct Renderer {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
 
-    raymarch_render_pipeline: wgpu::RenderPipeline,
+    // raymarch_render_pipeline: wgpu::RenderPipeline,
     raymarch_target_texture: wgpu::Texture,
     raymarch_target_texture_view: wgpu::TextureView,
 
@@ -102,6 +103,7 @@ pub struct Renderer {
 
     ui_renderer: UIRenderer,
     with_ui_renderer: bool,
+    main_raymarch_shader_pipeline: Arc<Mutex<Option<RenderPipeline>>>,
 }
 
 impl Drop for Renderer {
@@ -217,12 +219,10 @@ impl Renderer {
         ui_system: &mut UISystem,
         target_frame_duration: f64,
         raymarch_target_texture_scale_factor: f32,
-        sky_box_name: &str,
-        it_is_2d_3d_example: bool,
         with_ui_renderer: bool,
-        with_generated_raymarch_shader: bool,
-        specific_backend: Option<Backend>
-    ) -> (Renderer, RendererBuffers)
+        specific_backend: Option<Backend>,
+        main_raymarch_shader_pipeline: Arc<Mutex<Option<RenderPipeline>>>,
+    ) -> (Renderer, RendererBuffers, RenderPipelineBuilderKit)
     {
         let size = window.inner_size();
 
@@ -342,50 +342,50 @@ impl Renderer {
         surface.configure(&device, &config);
         log::info!("renderer: wgpu surface configurated");
 
-        let raymarch_shader = unsafe {device.create_shader_module_trusted(
-            wgpu::ShaderModuleDescriptor {
-                label: Some("Raymarch Shader"),
-                source:
-                {
-                    if it_is_2d_3d_example
-                    {
-                        if with_generated_raymarch_shader
-                        {
-                            wgpu::ShaderSource::Wgsl
-                            (
-                                include_str!("shaders/raymarch_shader_for_2d_3d_example_with_bsp_tree.wgsl").into()
-                            )
+        // let blank_raymarch_shader = unsafe {device.create_shader_module_trusted(
+        //     wgpu::ShaderModuleDescriptor {
+        //         label: Some("Raymarch Shader"),
+        //         source:
+        //         {
+        //             if it_is_2d_3d_example
+        //             {
+        //                 if with_generated_raymarch_shader
+        //                 {
+        //                     wgpu::ShaderSource::Wgsl
+        //                     (
+        //                         include_str!("shaders/raymarch_shader_for_2d_3d_example_with_bsp_tree.wgsl").into()
+        //                     )
 
-                        }
-                        else
-                        {
-                            wgpu::ShaderSource::Wgsl
-                            (
-                                include_str!("shaders/raymarch_shader_for_2d_3d_example.wgsl").into()
-                            )
-                        }
-                    }
-                    else
-                    {
-                        if with_generated_raymarch_shader
-                        {
-                            wgpu::ShaderSource::Wgsl
-                            (
-                                include_str!("shaders/raymarch_shader_with_bsp_tree.wgsl").into()
-                            )
-                        }
-                        else
-                        {
-                            wgpu::ShaderSource::Wgsl
-                            (
-                                include_str!("shaders/raymarch_shader.wgsl").into()
-                            )
-                        }
-                    }
-                }
-            },
-            ShaderRuntimeChecks::unchecked()
-        )};
+        //                 }
+        //                 else
+        //                 {
+        //                     wgpu::ShaderSource::Wgsl
+        //                     (
+        //                         include_str!("shaders/raymarch_shader_for_2d_3d_example.wgsl").into()
+        //                     )
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 if with_generated_raymarch_shader
+        //                 {
+        //                     wgpu::ShaderSource::Wgsl
+        //                     (
+        //                         include_str!("shaders/raymarch_shader_with_bsp_tree.wgsl").into()
+        //                     )
+        //                 }
+        //                 else
+        //                 {
+        //                     wgpu::ShaderSource::Wgsl
+        //                     (
+        //                         include_str!("shaders/raymarch_shader.wgsl").into()
+        //                     )
+        //                 }
+        //             }
+        //         }
+        //     },
+        //     ShaderRuntimeChecks::unchecked()
+        // )};
 
         let upscale_shader = unsafe {device.create_shader_module_trusted(
             wgpu::ShaderModuleDescriptor {
@@ -397,7 +397,7 @@ impl Renderer {
 
         log::info!("renderer: wgpu shaders init");
 
-        let other_static_data = device.create_buffer_init(&BufferInitDescriptor {
+        let other_static_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("other_static_data"),
             contents: bytemuck::cast_slice(&[render_data.static_data.other_static_data]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
@@ -610,8 +610,7 @@ impl Renderer {
 
         let (sky_box_texture, sky_box_texture_view) = load_cube_texture(
             &device,
-            &queue,
-            sky_box_name,
+            &queue
         );
 
         let sky_box_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -629,7 +628,7 @@ impl Renderer {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: other_static_data.as_entire_binding(),
+                    resource: other_static_data_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
@@ -703,45 +702,45 @@ impl Renderer {
 
         log::info!("renderer: wgpu render_pipeline_layout init");
 
-        let raymarch_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("main shader render pipeline"),
-            layout: Some(&raymarch_render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &raymarch_shader,
-                entry_point: Some("vs_main"),
-                compilation_options: PipelineCompilationOptions::default(), 
-                buffers: &[
-                    Vertex::desc(),
-                ],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &raymarch_shader,
-                compilation_options: PipelineCompilationOptions::default(),
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None,
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-            cache: None,
-        });
+        // let raymarch_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        //     label: Some("main shader render pipeline"),
+        //     layout: Some(&raymarch_render_pipeline_layout),
+        //     vertex: wgpu::VertexState {
+        //         module: &raymarch_shader,
+        //         entry_point: Some("vs_main"),
+        //         compilation_options: PipelineCompilationOptions::default(), 
+        //         buffers: &[
+        //             Vertex::desc(),
+        //         ],
+        //     },
+        //     fragment: Some(wgpu::FragmentState {
+        //         module: &raymarch_shader,
+        //         compilation_options: PipelineCompilationOptions::default(),
+        //         entry_point: Some("fs_main"),
+        //         targets: &[Some(wgpu::ColorTargetState {
+        //             format: config.format,
+        //             blend: Some(wgpu::BlendState::REPLACE),
+        //             write_mask: wgpu::ColorWrites::ALL,
+        //         })],
+        //     }),
+        //     primitive: wgpu::PrimitiveState {
+        //         topology: wgpu::PrimitiveTopology::TriangleList,
+        //         strip_index_format: None,
+        //         front_face: wgpu::FrontFace::Ccw,
+        //         cull_mode: None,
+        //         polygon_mode: wgpu::PolygonMode::Fill,
+        //         unclipped_depth: false,
+        //         conservative: false,
+        //     },
+        //     depth_stencil: None,
+        //     multisample: wgpu::MultisampleState {
+        //         count: 1,
+        //         mask: !0,
+        //         alpha_to_coverage_enabled: false,
+        //     },
+        //     multiview: None,
+        //     cache: None,
+        // });
 
         let upscale_render_bind_group_layout = device.create_bind_group_layout(
             &wgpu::BindGroupLayoutDescriptor {
@@ -875,12 +874,12 @@ impl Renderer {
         (
             Renderer {
                 surface,
-                device,
+                device: device.clone(),
                 queue: Arc::new(queue),
-                config, 
+                config: config.clone(), 
                 size,
 
-                raymarch_render_pipeline,
+                // raymarch_render_pipeline,
                 upscale_render_pipeline,
                 upscale_render_bind_group_layout,
                 upscale_render_bind_group,
@@ -912,9 +911,11 @@ impl Renderer {
 
                 ui_renderer,
                 with_ui_renderer,
+                main_raymarch_shader_pipeline,
             },
             
             RendererBuffers {
+                other_static_data_buffer,
                 dynamic_normal_shapes_buffer,
                 dynamic_stickiness_shapes_buffer,
                 dynamic_negative_shapes_buffer,
@@ -925,6 +926,13 @@ impl Renderer {
                 spherical_areas_data_buffer,
                 beam_areas_data_buffer,
                 player_forms_data_buffer,
+            },
+
+            RenderPipelineBuilderKit {
+                device: device.clone(),
+                vertex_desc: Vertex::desc(),
+                config: config.clone(),
+                raymarch_render_pipeline_layout,
             }
         )
     }
@@ -1020,120 +1028,131 @@ impl Renderer {
             Err(e) => {
                 panic!("{}", e);
             } 
-
+            
         }
+        match self.main_raymarch_shader_pipeline.lock().unwrap().as_ref() {
+            Some(main_shader_pipeline) =>
+            {
+        
+                if let Some(instant) = self.prev_time_instant {
+                    let current_frame_time = instant.elapsed().as_secs_f64();
 
-        if let Some(instant) = self.prev_time_instant {
-            let current_frame_time = instant.elapsed().as_secs_f64();
+                    if current_frame_time < self.target_frame_duration - 0.001 {
+                        return Ok(());
+                    }
 
-            if current_frame_time < self.target_frame_duration - 0.001 {
-                return Ok(());
+                    self.total_time += current_frame_time;
+                    self.total_frames_count += 1;
+                    self.min_time = self.min_time.min(current_frame_time);
+                    self.max_time = self.max_time.max(current_frame_time);
+
+                    // println!(
+                    //     "DT: {}",
+                    //     current_frame_time,
+                    // );
+                }
+
+                self.prev_time_instant = Some(web_time::Instant::now());
+                
+                let output = self.surface.get_current_texture()?;
+                let view = output
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+                let mut encoder = self
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("main shader render encoder"),
+                    });
+        
+                {
+                // raymarch render pass
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("raymarch shader render pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &self.raymarch_target_texture_view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(
+                                Color {
+                                    r: 0.0,
+                                    g: 0.0,
+                                    b: 0.0,
+                                    a: 1.0
+                                }
+                            ),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+
+                render_pass.set_pipeline(main_shader_pipeline);
+                render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
+                render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
+                render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
             }
 
-            self.total_time += current_frame_time;
-            self.total_frames_count += 1;
-            self.min_time = self.min_time.min(current_frame_time);
-            self.max_time = self.max_time.max(current_frame_time);
+            {
+                // upscale raymarch target texture render pass
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("upscale shader render pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(
+                                Color {
+                                    r: 0.0,
+                                    g: 0.0,
+                                    b: 0.0,
+                                    a: 1.0
+                                }
+                            ),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
 
-            // println!(
-            //     "DT: {}",
-            //     current_frame_time,
-            // );
-        }
+                render_pass.set_pipeline(&self.upscale_render_pipeline);
+                render_pass.set_bind_group(0, &self.upscale_render_bind_group, &[]);
+                render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            }
 
-        self.prev_time_instant = Some(web_time::Instant::now());
-        
-        let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("main shader render encoder"),
-            });
+            if self.with_ui_renderer
+            {
+                self.ui_renderer.render_ui(&mut encoder, &view);
+            }
+
+            // let istts = web_time::Instant::now();
+            self.queue.submit(std::iter::once(encoder.finish()));
+            // println!("submit time: {}",istts.elapsed().as_secs_f64());
+
+            window.pre_present_notify();
             
-        {
-            // raymarch render pass
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("raymarch shader render pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.raymarch_target_texture_view,
-                    depth_slice: None,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(
-                            Color {
-                                r: 1.0,
-                                g: 1.0,
-                                b: 1.0,
-                                a: 1.0
-                            }
-                        ),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
+            // let istts = web_time::Instant::now();
+            output.present();
+            // println!("output time: {}",istts.elapsed().as_secs_f64());
 
-            render_pass.set_pipeline(&self.raymarch_render_pipeline);
-            render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
-            render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            // println!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
+            },
+            None =>
+            {
+
+            },
         }
-
-        {
-            // upscale raymarch target texture render pass
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("upscale shader render pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    depth_slice: None,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(
-                            Color {
-                                r: 1.0,
-                                g: 1.0,
-                                b: 1.0,
-                                a: 1.0
-                            }
-                        ),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            render_pass.set_pipeline(&self.upscale_render_pipeline);
-            render_pass.set_bind_group(0, &self.upscale_render_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
-        }
-
-        if self.with_ui_renderer
-        {
-            self.ui_renderer.render_ui(&mut encoder, &view);
-        }
-
-        // let istts = web_time::Instant::now();
-        self.queue.submit(std::iter::once(encoder.finish()));
-        // println!("submit time: {}",istts.elapsed().as_secs_f64());
-
-        window.pre_present_notify();
+            
         
-        // let istts = web_time::Instant::now();
-        output.present();
-        // println!("output time: {}",istts.elapsed().as_secs_f64());
-
-        // println!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
         Ok(())
     }
 
@@ -1148,35 +1167,18 @@ fn load_texture(device: &wgpu::Device, queue: &wgpu::Queue, texture_buffer: &[u8
     (rgba, (width, height))
 }
 
-fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue, sky_box_name: &str) -> (wgpu::Texture, wgpu::TextureView) {
+fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> (wgpu::Texture, wgpu::TextureView) {
     let path = "src/assets/sky_boxes/".to_string();
 
     let faces = {
-        match sky_box_name {
-            "star_sky" => {
-                [
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_right1.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_left2.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_top3.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_bottom4.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_front5.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_back6.png").as_slice(),
-                ]
-            }
-            "blue_stars" => {
-                
-                unimplemented!()
-                // [
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_right1.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_left2.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_top3.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_bottom4.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_front5.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_back6.png").as_slice(),
-                // ]
-            }
-            _ => panic!("sky box with this name is not exist")
-        }
+        [
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_right1.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_left2.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_top3.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_bottom4.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_front5.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_back6.png").as_slice(),
+        ]
     };
 
     let mut textures_data = Vec::new();

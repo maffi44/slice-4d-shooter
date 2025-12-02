@@ -2328,7 +2328,7 @@ fn get_color_and_light_from_mats(
     let next_normal = get_normal(hited_pos+ray_dir*MIN_DIST*lines_size, intr_players);
 
     let wireframe_fog = exp(-0.007*dist*dist);
-    let wireframe_dif = pow(clamp(1.0-abs(dot(normal, next_normal)),0.0,1.0),1.3);
+    var wireframe_dif = pow(clamp(1.0-abs(dot(normal, next_normal)),0.0,1.0),1.3);
 
     // sun light 1
     let sun_dir_1 = normalize(static_data.sun_direction);
@@ -2358,6 +2358,68 @@ fn get_color_and_light_from_mats(
         }
     }
 
+    if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 &&
+        mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2
+    {
+        // let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
+
+        // let w_height_coef = clamp((hited_pos.w - 0.3) / 7.5, 0.0, 1.0);
+
+        // base_diffuse = mix(
+        //     mix(base_diffuse, inverted_base_diffuse, base_coef),
+        //     mix(
+        //         inverted_base_diffuse*0.5*vec3(2.2,4.9,1.2),
+        //         base_diffuse*0.5*vec3(1.2,4.9,2.2),
+        //         base_coef),
+        //     pow(w_height_coef, 0.69)
+        // );
+
+        let x_color = vec3(5.02, 0.58, 0.00);
+        let z_color = vec3(0.00, 5.02, 0.58);
+        let w_color = vec3(0.58, 0.00, 5.02);
+
+        if dynamic_data.additional_data[0] > 0.0
+        {
+            base_diffuse += dot(abs(normal), vec4(1.0,0.0,0.0,0.0))*x_color*0.5;
+            base_diffuse += dot(abs(normal), vec4(0.0,0.0,1.0,0.0))*z_color*0.5;
+            base_diffuse += dot(abs(normal), vec4(0.0,0.0,0.0,1.0))*w_color*0.5;
+        }
+
+        if dynamic_data.additional_data[1] > 0.0
+        {
+            // let w_perpendicular_line = smoothstep(0.99,1.0,sin(hited_pos.w*2.1));
+            // wireframe_dif += w_perpendicular_line*0.006;
+            // base_diffuse += w_color*6.0 * w_perpendicular_line;
+
+            let w_perpendicular_line = clamp(pow(my_mod(hited_pos.w-4.636, 3.696)/3.85, 21.0), smoothstep(0.996,1.0,sin(hited_pos.w*1.7)), 1.0);
+            wireframe_dif += w_perpendicular_line*0.006;
+            base_diffuse += w_color*5.0 * w_perpendicular_line;
+
+            if dynamic_data.additional_data[1] > 1.0
+            {
+                // let w_parallel_line = smoothstep(0.92,1.0,sin(hited_pos.z*2.6))*smoothstep(0.92,1.0,sin(hited_pos.x*2.6));
+                // wireframe_dif += w_parallel_line*0.02;
+                // base_diffuse += vec3(0.33,3.0,0.33) * w_parallel_line;
+                
+                // let x_perpendicular_line = smoothstep(0.99,1.0,sin(hited_pos.x*2.1));
+                // wireframe_dif += x_perpendicular_line*0.006;
+                // base_diffuse += x_color*6.0 * x_perpendicular_line;
+
+                // let z_perpendicular_line = smoothstep(0.99,1.0,sin(hited_pos.z*2.1));
+                // wireframe_dif += z_perpendicular_line*0.006;
+                // base_diffuse += z_color*6.0 * z_perpendicular_line;
+
+                let x_perpendicular_line = clamp(pow(my_mod(hited_pos.x-4.636, 3.696)/3.85, 21.0), smoothstep(0.996,1.0,sin(hited_pos.x*1.7)), 1.0);
+                wireframe_dif += x_perpendicular_line*0.006;
+                base_diffuse += x_color*5.0 * x_perpendicular_line;
+
+                let z_perpendicular_line = clamp(pow(my_mod(hited_pos.z-4.636, 3.696)/3.85, 21.0), smoothstep(0.996,1.0,sin(hited_pos.z*1.7)), 1.0);
+                wireframe_dif += z_perpendicular_line*0.006;
+                base_diffuse += z_color*5.0 * z_perpendicular_line;
+            }
+        }
+    }
+
     var ref_dir = reflect(ray_dir, normal);
 
     ref_dir = normalize(
@@ -2368,7 +2430,8 @@ fn get_color_and_light_from_mats(
             hash(ref_dir.z) - 0.5,
             hash(ref_dir.w) - 0.5,
         ) * max((roughness*0.08)-0.15,0.0)
-    ); 
+    );
+
     let frenel = smoothstep(0.0, 2.0,clamp(1.0 + dot(normal, ray_dir), 0.0, 1.0));
 
     // sky light    
@@ -2385,22 +2448,7 @@ fn get_color_and_light_from_mats(
 
     lightness = wireframe_dif*30.0;
 
-    if mats.materials[0] != static_data.blue_players_mat1 && mats.materials[0] != static_data.blue_players_mat2 &&
-        mats.materials[0] != static_data.red_players_mat1 && mats.materials[0] != static_data.red_players_mat2
-    {
-        let inverted_base_diffuse = vec3(base_diffuse.b, base_diffuse.g, base_diffuse.r);
-
-        let w_height_coef = clamp((hited_pos.w - 0.3) / 7.5, 0.0, 1.0);
-
-        base_diffuse = mix(
-            mix(base_diffuse, inverted_base_diffuse, base_coef),
-            mix(
-                inverted_base_diffuse*0.5*vec3(2.2,4.9,1.2),
-                base_diffuse*0.5*vec3(1.2,4.9,2.2),
-                base_coef),
-            pow(w_height_coef, 0.69)
-        );
-    }
+    
 
     let diffuse = base_diffuse + neon_wireframe_color * pow(wireframe_dif,2.5)*20.0*(0.1+0.9*wireframe_fog);
     
@@ -2532,9 +2580,9 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     var ray_direction: vec4<f32> = normalize(vec4<f32>(uv, -1.0, 0.0));
 
+    // ray_direction *= dynamic_data.camera_data.cam_zy_rot;
+    // ray_direction *= dynamic_data.camera_data.cam_zx_rot;
     ray_direction *= dynamic_data.camera_data.cam_zw_rot;
-    ray_direction *= dynamic_data.camera_data.cam_zy_rot;
-    ray_direction *= dynamic_data.camera_data.cam_zx_rot;
 
     let camera_position = dynamic_data.camera_data.cam_pos;
 
@@ -2583,11 +2631,11 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     let v = 0.2+pow(max(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.0),0.32 );
     color *= v;
 
-    color += 0.36*w_shift_effect(
-        uv,
-        dynamic_data.w_shift_coef,
-        dynamic_data.w_shift_intensity,
-    );
+    // color += 0.36*w_shift_effect(
+    //     uv,
+    //     dynamic_data.w_shift_coef,
+    //     dynamic_data.w_shift_intensity,
+    // );
 
     let hurt_coef = max(
         clamp(0.01+pow(max(30.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.0),0.2),0.0,1.0),
@@ -2600,35 +2648,35 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
 
     // add w rotation effect
-    let zw_dir = dynamic_data.camera_data.cam_zw_rot * vec4(0.0, 0.0, -1.0, 0.0);
+    // let zw_dir = dynamic_data.camera_data.cam_zw_rot * vec4(0.0, 0.0, -1.0, 0.0);
 
-    let ring_r = 0.29;
-    let line_width = 0.004;
-    let n_uv = normalize(uv);
+    // let ring_r = 0.29;
+    // let line_width = 0.004;
+    // let n_uv = normalize(uv);
 
-    // draw segment of circle to show angle of rotation along w axis
-    let rot_c = clamp(clamp(line_width-abs(length(uv)-(ring_r-line_width)),0.0,1.0)*100.0,0.0,1.0);
+    // // draw segment of circle to show angle of rotation along w axis
+    // let rot_c = clamp(clamp(line_width-abs(length(uv)-(ring_r-line_width)),0.0,1.0)*100.0,0.0,1.0);
 
-    if zw_dir.w > 0.0
-    {
-        if n_uv.x < 0.0 && n_uv.y < 0.0
-        {
-            if -n_uv.y < zw_dir.w
-            {
-                color = mix(color, vec3(2.0, 0.0, 0.0), rot_c);
-            } 
-        }
-    }
-    else
-    {
-        if n_uv.x > 0.0 && n_uv.y > 0.0
-        {
-            if -n_uv.y > zw_dir.w
-            {
-                color = mix(color, vec3(2.0, 0.0, 0.0), rot_c);
-            }
-        }
-    }
+    // if zw_dir.w > 0.0
+    // {
+    //     if n_uv.x < 0.0 && n_uv.y < 0.0
+    //     {
+    //         if -n_uv.y < zw_dir.w
+    //         {
+    //             color = mix(color, vec3(2.0, 0.0, 0.0), rot_c);
+    //         } 
+    //     }
+    // }
+    // else
+    // {
+    //     if n_uv.x > 0.0 && n_uv.y > 0.0
+    //     {
+    //         if -n_uv.y > zw_dir.w
+    //         {
+    //             color = mix(color, vec3(2.0, 0.0, 0.0), rot_c);
+    //         }
+    //     }
+    // }
 
     // making death effect
     let death_eff_col = max(
@@ -2650,4 +2698,9 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     );
 
     return vec4<f32>(color, lightness);
+}
+
+fn my_mod(x: f32, y: f32) -> f32
+{
+    return x - y * floor(x / y);
 }

@@ -386,14 +386,15 @@ impl Actor for PlayerFor2d3dExample {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
                         }
                     },
@@ -412,14 +413,15 @@ impl Actor for PlayerFor2d3dExample {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
 
                             }
 
@@ -438,14 +440,15 @@ impl Actor for PlayerFor2d3dExample {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
 
                             SessionControllerMessage::TeamWin(team) =>
@@ -1321,6 +1324,24 @@ impl PlayerFor2d3dExample {
                 }
             )
         ];
+
+        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::RotatingAroundW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
+        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::ShiftingAlongW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
         
         PlayerFor2d3dExample {
             id: None,
@@ -1334,7 +1355,8 @@ impl PlayerFor2d3dExample {
                 red_base_position,
                 UP*0.6,
                 Vec4::ZERO,
-                audio_system,
+                rotating_around_w_sound_handle,
+                shifting_along_w_sound_handle,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
 

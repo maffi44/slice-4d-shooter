@@ -16,7 +16,7 @@
 
 use crate::{
     actor::Actor,
-    engine::{ui::UIElementType, Engine},
+    engine::{Engine, send_messages_and_process_commands, ui::UIElementType},
 };
 
 use web_time::Instant;
@@ -42,10 +42,9 @@ MainLoop {
 pub struct Slice4DShooter
 {
     systems: Option<Engine>,
-    init_level_closure: Option<Box<dyn FnOnce(&mut Engine)>>,
+    start_level: Option<String>,
     with_ui_renderer: bool,
     it_is_2d_3d_example: bool,
-    with_generated_raymarch_shader: bool,
     disable_net_system: bool,
     specific_backend: Option<Backend>,
 }
@@ -53,21 +52,19 @@ pub struct Slice4DShooter
 impl Slice4DShooter
 {
     pub fn new(
+        start_level: String,
         with_ui_renderer: bool,
         it_is_2d_3d_example: bool,
-        with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>,
         disable_net_system: bool,
-        init_level: Box<dyn FnOnce(&mut Engine)>,
     ) -> Self
     {
 
         Slice4DShooter {
             systems: None,
-            init_level_closure: Some(init_level),
+            start_level: Some(start_level),
             with_ui_renderer,
             it_is_2d_3d_example,
-            with_generated_raymarch_shader,
             specific_backend,
             disable_net_system,
         }
@@ -95,17 +92,15 @@ impl ApplicationHandler for Slice4DShooter
                     pollster::block_on(
                     Engine::new(
                             window,
+                            self.start_level.take().unwrap(),
                             self.with_ui_renderer,
                             self.it_is_2d_3d_example,
-                            self.with_generated_raymarch_shader,
                             self.disable_net_system,
 
                             self.specific_backend,
                         )
                     )
                 );
-
-                self.init_level_closure.take().unwrap()(self.systems.as_mut().unwrap());
                 
                 log::info!("main: Engine systems init");
 
@@ -114,6 +109,8 @@ impl ApplicationHandler for Slice4DShooter
                 event_loop.set_control_flow(ControlFlow::WaitUntil(
                     Instant::now() + self.systems.as_mut().unwrap().time.target_frame_duration
                 ));
+
+                println!("init");
             }
             StartCause::ResumeTimeReached {
                 start,
@@ -328,23 +325,21 @@ impl MainLoop {
 
     pub async fn run(
         self,
+        start_level: String,
         with_ui_renderer: bool,
         it_is_2d_3d_example: bool,
-        with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>,
         disable_net_system: bool,
-        init_level: Box<dyn FnOnce(&mut Engine)>,
     ) {
         // #[cfg(target_arch="wasm32")]
         // let mut it_is_first_input_action = true;
 
         let mut slice_4d_shooter_app = Slice4DShooter::new(
+            start_level,
             with_ui_renderer,
             it_is_2d_3d_example,
-            with_generated_raymarch_shader,
             specific_backend,
             disable_net_system,
-            init_level,
         );
         
         let active_event_loop = self.event_loop.run_app(
@@ -395,14 +390,17 @@ fn main_loop_tick(
         &mut systems.effects,
     );
 
-    systems.world.send_messages_and_process_commands(
+    send_messages_and_process_commands(
+        &mut systems.world,
         &mut systems.net,
-        &systems.physic,
+        &mut systems.physic,
         &mut systems.audio,
         &mut systems.ui,
         &mut systems.engine_handle,
         &mut systems.time,
         &mut systems.effects,
+        Some(&mut systems.render),
+        &mut systems.runtime,
     );
 
     systems.physic.process_physics(
@@ -411,14 +409,17 @@ fn main_loop_tick(
         &mut systems.engine_handle
     );
 
-    systems.world.send_messages_and_process_commands(
+    send_messages_and_process_commands(
+        &mut systems.world,
         &mut systems.net,
-        &systems.physic,
+        &mut systems.physic,
         &mut systems.audio,
         &mut systems.ui,
         &mut systems.engine_handle,
         &mut systems.time,
         &mut systems.effects,
+        Some(&mut systems.render),
+        &mut systems.runtime,
     );
 
     systems.render.process_player_input(

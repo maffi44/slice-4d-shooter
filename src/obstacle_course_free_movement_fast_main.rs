@@ -76,9 +76,7 @@ fn main() {
                     LocalMaster::new(ActionsFrameState::empty())
                 ),
                 systems.world.players_settings.clone(),
-                &mut systems.audio,
-                systems.world.level.blue_base_position,
-                systems.world.level.red_base_position,
+                &mut systems.audio
             );
 
             let main_player_id = systems.world.add_main_actor_to_world(

@@ -78,59 +78,60 @@ web-sys = { version = "*", features = [
 winresource = "0.1.23"
 libloading = "0.8"
 
-
-[lib]
-name="game_client_main_web"
-path = "src/game_client_main_web.rs"
-crate-type = ["cdylib", "rlib"]
-
-[[bin]]
-name="game-client"
-path="src/game_client_main.rs"
-
-[[bin]]
-name="obstacle-course-two-jumps"
-path="src/obstacle_course_two_jumps_main.rs"
-
 [[bin]]
 name="obstacle-course-free-movement"
 path="src/obstacle_course_free_movement_main.rs"
 
-[[bin]]
-name="obstacle-course-free-movement-fast"
-path="src/obstacle_course_free_movement_fast_main.rs"
+# Should to update other bin
 
-[[bin]]
-name="game-client-for-map-editing"
-path="src/game_client_main_for_map_editing.rs"
+# [lib]
+# name="game_client_main_web"
+# path = "src/game_client_main_web.rs"
+# crate-type = ["cdylib", "rlib"]
 
-[[bin]]
-name="game-client-2d-3d-example"
-path="src/game_client_for_2d_3d_example_main.rs"
+# [[bin]]
+# name="game-client"
+# path="src/game_client_main.rs"
 
-[[bin]]
-name="game-client-2d-3d-example-fast"
-path="src/game_client_for_2d_3d_example_fast_main.rs"
+# [[bin]]
+# name="obstacle-course-two-jumps"
+# path="src/obstacle_course_two_jumps_main.rs"
 
-[[bin]]
-name="game-client-observer"
-path="src/game_client_observer_main.rs"
+# [[bin]]
+# name="obstacle-course-free-movement-fast"
+# path="src/obstacle_course_free_movement_fast_main.rs"
 
-[[bin]]
-name="game-client-observer-for-map-editing"
-path="src/game_client_observer_main_for_map_editing.rs"
+# [[bin]]
+# name="game-client-for-map-editing"
+# path="src/game_client_main_for_map_editing.rs"
 
-[[bin]]
-name="game-client-with-windows-command-line"
-path="src/game_client_main_with_windows_command_line.rs"
+# [[bin]]
+# name="game-client-2d-3d-example"
+# path="src/game_client_for_2d_3d_example_main.rs"
 
-[[bin]]
-name="game-client-without-autoupdate"
-path="src/game_client_main_without_autoupdate.rs"
+# [[bin]]
+# name="game-client-2d-3d-example-fast"
+# path="src/game_client_for_2d_3d_example_fast_main.rs"
 
-[[bin]]
-name="raymarch_shader_generator"
-path="src/raymarch_shader_generator.rs"
+# [[bin]]
+# name="game-client-observer"
+# path="src/game_client_observer_main.rs"
+
+# [[bin]]
+# name="game-client-observer-for-map-editing"
+# path="src/game_client_observer_main_for_map_editing.rs"
+
+# [[bin]]
+# name="game-client-with-windows-command-line"
+# path="src/game_client_main_with_windows_command_line.rs"
+
+# [[bin]]
+# name="game-client-without-autoupdate"
+# path="src/game_client_main_without_autoupdate.rs"
+
+# [[bin]]
+# name="raymarch_shader_generator"
+# path="src/raymarch_shader_generator.rs"
 
 resolver = "2"
 

@@ -82,8 +82,8 @@ impl PlayerInnerState {
         red_base_position: Vec4,
         weapon_offset: Vec4,
         eyes_offset: Vec4,
-
-        audio_system: &mut AudioSystem,
+        rotating_around_w_sound_handle: Option<Handle<SoundSource>>,
+        shifting_along_w_sound_handle: Option<Handle<SoundSource>>,
     ) -> Self {
 
         let collider_for_others = {
@@ -101,23 +101,6 @@ impl PlayerInnerState {
             vec
         };
 
-        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
-            Sound::RotatingAroundW,
-            0.0,
-            1.0,
-            true,
-            false,
-            fyrox_sound::source::Status::Playing
-        );
-
-        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
-            Sound::ShiftingAlongW,
-            0.0,
-            1.0,
-            true,
-            false,
-            fyrox_sound::source::Status::Playing
-        );
         let player_radius = player_settings.collider_radius;
         let after_death_timer =  player_settings.min_respawn_timer;
 

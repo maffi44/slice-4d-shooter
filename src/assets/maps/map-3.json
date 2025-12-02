@@ -1,0 +1,990 @@
+{
+    "level_name" : "test_level",
+
+
+    "defaults" : {
+        "is_positive": true,
+        "friction": 7.2,
+        "bounce_rate": 0.0,
+        "visual_material": "standart",
+        "roundness": 0.09,
+        "stickiness": false,
+        "undestroyable": false
+    },
+
+    "visual_settings_of_environment" : {
+        "sky_box" : "star_sky",
+        "sky_color" : {
+            "red": 0.1,
+            "green": 0.3,
+            "blue": 0.5,
+            "multiplier": 0.025
+        },
+        "fog_color" : {
+            "red": 0.021,
+            "green": 0.01,
+            "blue": 0.022,
+            "multiplier": 0.2
+        },
+        "frenel_color" : {
+            "red": 0.3,
+            "green": 0.5,
+            "blue": 0.4,
+            "multiplier": 0.17
+        },
+        "neon_wireframe_color" : {
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
+        },
+        "sun_color" : {
+            "red": 1.6,
+            "green": 1.2,
+            "blue": 0.8,
+            "multiplier": 2.2
+        },
+        "red_map_color" :
+        {
+            "red": 3.5,
+            "green": 0.7,
+            "blue": 0.08,
+            "multiplier": 3.0
+        },
+        "blue_map_color" :
+        {
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
+        },
+        "sun_direction" : {
+            "x" : 1.0,
+            "y" : 2.8,
+            "z" : 1.3,
+            "w" : 0.0
+        }
+    },
+
+    "visual_materials" : [
+        {
+            "name" : "common",
+            "color" : {
+                "red": 0.2,
+                "green": 0.225,
+                "blue": 0.25
+            },
+            "roughness" : 0.9
+        },
+        {
+            "name" : "slick",
+            "color" : {
+                "red": 3.7333,
+                "green": 0.085,
+                "blue": 1.0
+            },
+            "roughness": 0.0514
+        },
+        {
+            "name" : "golden_slick",
+            "color" : {
+                "red": 1.1,
+                "green": 0.82,
+                "blue": 0.23
+            },
+            "roughness": 0.09
+        },
+        {
+            "name" : "super_red",
+            "color" : {
+                "red":5.1,
+                "green": 0.82,
+                "blue": 3.23
+            },
+            "roughness": 0.09
+        },
+        {
+            "name" : "red_team",
+            "color" : {
+                "red": 2.2,
+                "green": 1.7,
+                "blue": 1.04
+            },
+            "roughness": 0.064
+        },
+        {
+            "name" : "standart",
+            "color" : {
+                "red": 1.81,
+                "green": 1.81,
+                "blue": 3.4
+            },
+            "roughness": 0.08
+        },
+        {
+            "name" : "standart_slick",
+            "color" : {
+                "red": 10.4,
+                "green": 10.4,
+                "blue": 1.81
+            },
+            "roughness": 0.01
+        },
+        {
+            "name" : "gun_red",
+            "color" : {
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
+            },
+            "roughness" : 0.95
+
+        },
+        {
+            "name" : "metallic_red",
+            "color" : {
+                "red": 2.2,
+                "green": 0.7,
+                "blue": 0.04
+            },
+            "roughness" : 0.4
+
+        },
+        {
+            "name" : "gun_blue",
+            "color" : {
+                "red": 0.016,
+                "green": 0.013,
+                "blue": 0.001
+            },
+            "roughness" : 0.95
+
+        },
+        {
+            "name" : "metallic_blue",
+            "color" : {
+                "red": 0.01,
+                "green": 0.81,
+                "blue": 4.9
+            },
+            "roughness" : 0.5
+
+        },
+        {
+            "name" : "w-floor",
+            "color" : {
+                "red": 0.4,
+                "green": 0.085,
+                "blue": 1.5
+            },
+            "roughness" : 1.0
+        },
+        {
+            "name" : "trumplin",
+            "color" : {
+                "red": 0.15,
+                "green": 0.01    ,
+                "blue": 0.01
+            },
+            "roughness" : 0.8
+        },
+        {
+            "name" : "black",
+            "color" : {
+                "red": 0.500001,
+                "green": 0.000001,
+                "blue": 0.300001
+            },
+            "roughness" : 0.85
+
+        }
+    ],
+
+    "red_players_visual_materials" : {
+        "inner" : "metallic_red",
+        "outer" : "gun_red"
+    },
+
+    "blue_players_visual_materials" : {
+        "inner" : "metallic_blue",
+        "outer" : "gun_blue"
+    },
+
+    "w_cups_visual_materials" : "gun_red",
+
+    "all_shapes_stickiness_radius": 0.3,
+
+    "red_base_position" :
+    {
+        "transform" : {
+            "position" : {
+                "x": 0.0,
+                "y": 1.5,
+                "z": -12,
+                "w": 0.5
+            }
+        }
+    },
+
+    "blue_base_position" :
+    {
+        "transform" : {
+            "position" : {
+                "x": 0.0,
+                "y": 1.5,
+                "z": 12,
+                "w": 0.5
+            }
+        }
+    },
+
+    "red_flag_base" :
+    {
+        "transform" : {
+            "position" : {
+                "x": -8,
+                "y": 0,
+                "z": 25.5,
+                "w": 6.0
+            }
+        }
+    },
+
+    "blue_flag_base" :
+    {
+        "transform" : {
+            "position" : {
+                "x": -6,
+                "y": 0,
+                "z": 25.5,
+                "w": 6.0
+            }
+        }
+    },
+
+    "red_spawns" : [
+        {
+            "transform" : {
+                "position" : {
+                    "x": 0.0,
+                    "y": 1.5,
+                    "z": -35.0,
+                    "w": 1.5
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 11.0,
+                    "y": 3.5,
+                    "z": -31.0,
+                    "w": 1.5
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 4,
+                    "y": 2.2,
+                    "z": -36.2,
+                    "w": 2.5
+                }
+            }
+        },
+        {
+            "transform" : {
+                "position" : {
+                    "x": 4,
+                    "y": 3.4,
+                    "z": -37.75,
+                    "w": 4.0
+                }
+            }
+        }
+    ],
+
+    "blue_spawns" : [
+        {
+            "transform" : {
+                "position" : {
+                    "x": 0.0,
+                    "y": 1.5,
+                    "z": 0.0,
+                    "w": 0.0
+                }
+            }
+        }
+    ],
+
+    "w_cups" : {
+    },
+
+
+    "actors" : [
+    ],
+    
+    "static_objects": [
+        {
+            "cube" : {
+                "comment" : "platform 1",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": -0.5,
+                        "z": 0.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 0.4,
+                    "z": 5,
+                    "w": 5
+                },
+                "roundness" : 0.1
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cube 1",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 1.2,
+                        "z": -3.0,
+                        "w": 2.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.25,
+                    "y": 1.25,
+                    "z": 1.25,
+                    "w": 1.25
+                },
+                "roundness" : 0.05,
+                "stickiness" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "cube 2",
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 0.65,
+                        "z": -3.0,
+                        "w": -0.3
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.65,
+                    "y": 0.65,
+                    "z": 0.65,
+                    "w": 0.65
+                },
+                "roundness" : 0.00
+            }
+        },
+        {
+            "sphere" : {
+                "comment" : "sphere 1",
+                "transform" : {
+                    "position" : {
+                        "x": -2.7,
+                        "y": 2.3,
+                        "z": 2.7,
+                        "w": -0.5
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.3,
+                    "y": 0.5,
+                    "z": 0.5,
+                    "w": 0.5
+                },
+                "friction" : 24.2
+            }
+        },
+
+
+        {
+            "cube" : {
+                "comment" : "slick platform 1",
+                "transform" : {
+                    "position" : {
+                        "x": -9.0,
+                        "y": 9.2,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 10,
+                    "z": 5,
+                    "w": 10
+                },
+                "roundness" : 0.2,
+                "friction" : 0.1,
+                "visual_material" : "standart_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick platform 1 hole 1",
+                "transform" : {
+                    "position" : {
+                        "x": -9.0,
+                        "y": 9.2,
+                        "z": 0.0,
+                        "w": 2.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.1,
+                    "y": 5.0,
+                    "z": 3.1,
+                    "w": 8.1
+                },
+                "roundness" : 1.4,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick platform 1 hole 2",
+                "transform" : {
+                    "position" : {
+                        "x": -9.0,
+                        "y": 11.2,
+                        "z": 0.0,
+                        "w": 4.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 7,
+                    "y": 6,
+                    "z": 7,
+                    "w": 9
+                },
+                "roundness" : 0.0,
+                "is_positive" : false
+            }
+        },
+
+        {
+            "cube" : {
+                "comment" : "platform 2",
+                "transform" : {
+                    "position" : {
+                        "x": -9.0,
+                        "y": 11.2,
+                        "z": 3.0,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 0.4,
+                    "z": 6.5,
+                    "w": 6
+                },
+                "roundness" : 0.5,
+                "undestroyable" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "platform 2 addition",
+                "transform" : {
+                    "position" : {
+                        "x": -9.0,
+                        "y": 11.2,
+                        "z": 11.0,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 0.4,
+                    "z": 4,
+                    "w": 6
+                },
+                "roundness" : 0.5,
+                "undestroyable" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick tube",
+                "transform" : {
+                    "position" : {
+                        "x": -9.0,
+                        "y": 3,
+                        "z": 12.0,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.2,
+                    "y": 8,
+                    "z": 1.2,
+                    "w": 1.2
+                },
+                "roundness" : 0.5,
+                "visual_material" : "standart_slick",
+                "stickiness" : true,
+                "undestroyable" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick tube hole",
+                "transform" : {
+                    "position" : {
+                        "x": -9.0,
+                        "y": 3,
+                        "z": 12.0,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.1,
+                    "y": 10,
+                    "z": 0.1,
+                    "w": 0.1
+                },
+                "roundness" : 0.5,
+                "visual_material" : "standart_slick",
+                "stickiness" : true,
+                "is_positive" : false
+            }
+        },
+
+
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1",
+                "transform" : {
+                    "position" : {
+                        "x": -7,
+                        "y": -15.5,
+                        "z": 15.0,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 3.5,
+                    "z": 7,
+                    "w": 5
+                },
+                "roundness" : 0.0,
+                "friction" : 0.1,
+                "visual_material" : "standart_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 z wall 1",
+                "transform" : {
+                    "position" : {
+                        "x": -7,
+                        "y": -6,
+                        "z": 8.5,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 9,
+                    "z": 0.5,
+                    "w": 5
+                },
+                "roundness" : 0.0,
+                "friction" : 0.1,
+                "undestroyable" : false,
+                "visual_material" : "standart_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 z wall 2",
+                "transform" : {
+                    "position" : {
+                        "x": -7,
+                        "y": -6,
+                        "z": 21.5,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 9,
+                    "z": 0.5,
+                    "w": 5
+                },
+                "roundness" : 0.0,
+                "friction" : 0.1,
+                "undestroyable" : false,
+                "visual_material" : "standart_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 hole",
+                "transform" : {
+                    "position" : {
+                        "x": -7,
+                        "y": -12,
+                        "z": 15.0,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 0.1,
+                    "z": 0.1,
+                    "w": 5
+                },
+                "roundness" : 5.9,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 cup",
+                "transform" : {
+                    "position" : {
+                        "x": -7,
+                        "y": 2.5,
+                        "z": 15.0,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 0.5,
+                    "z": 7,
+                    "w": 5
+                },
+                "roundness" : 0.0,
+                "friction" : 0.1,
+                "visual_material" : "standart_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 x wall 1",
+                "transform" : {
+                    "position" : {
+                        "x": -12,
+                        "y": -8,
+                        "z": 15.0,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.5,
+                    "y": 11,
+                    "z": 7,
+                    "w": 5
+                },
+                "roundness" : 0.0,
+                "friction" : 0.1,
+                "undestroyable" : true,
+                "visual_material" : "standart_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 x wall 2",
+                "transform" : {
+                    "position" : {
+                        "x": -2,
+                        "y": -8,
+                        "z": 15.0,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.5,
+                    "y": 11,
+                    "z": 7,
+                    "w": 5
+                },
+                "roundness" : 0.0,
+                "friction" : 0.1,
+                "undestroyable" : true,
+                "visual_material" : "standart_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 w wall 1",
+                "transform" : {
+                    "position" : {
+                        "x": -7,
+                        "y": -8,
+                        "z": 15.0,
+                        "w": 11
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 11,
+                    "z": 7,
+                    "w": 0.5
+                },
+                "roundness" : 0.0,
+                "friction" : 0.1,
+                "undestroyable" : true,
+                "visual_material" : "standart_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 w wall 2",
+                "transform" : {
+                    "position" : {
+                        "x": -7,
+                        "y": -8,
+                        "z": 15.0,
+                        "w": 1
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 11,
+                    "z": 7,
+                    "w": 0.5
+                },
+                "roundness" : 0.0,
+                "friction" : 0.1,
+                "undestroyable" : true,
+                "visual_material" : "standart_slick"
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 z wall 2 small room",
+                "transform" : {
+                    "position" : {
+                        "x": -7,
+                        "y": 0,
+                        "z": 25.5,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5,
+                    "y": 3,
+                    "z": 4.5,
+                    "w": 5
+                },
+                "roundness" : 0.0,
+                "undestroyable" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "slick trumplin 1 z wall 2 small room hole",
+                "transform" : {
+                    "position" : {
+                        "x": -7,
+                        "y": 0,
+                        "z": 24,
+                        "w": 6.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.5,
+                    "y": 1.5,
+                    "z": 6,
+                    "w": 3.5
+                },
+                "roundness" : 0.4,
+                "is_positive" : false,
+                "stickiness" : true
+            }
+        }
+    ]
+}

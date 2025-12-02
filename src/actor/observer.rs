@@ -121,15 +121,16 @@ impl Actor for Observer {
                     PhysicsMessages::KinematicColliderMessage(message) => {
                         match message {
                             KinematicColliderMessage::ColliderIsStuckInsideObject =>
-                            {    
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                            {
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
                             _ => {}
                         }
@@ -151,14 +152,15 @@ impl Actor for Observer {
                                 self.inner_state.team = team;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
 
                             PlayerMessage::DataForProjection(
@@ -189,14 +191,15 @@ impl Actor for Observer {
                             {
                                 self.inner_state.team = team;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
 
                             }
 
@@ -206,14 +209,15 @@ impl Actor for Observer {
                             {
                                 self.inner_state.team = your_team;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
 
                             _ => {}
@@ -395,14 +399,15 @@ impl Actor for Observer {
 
         if self.inner_state.get_position().y < Y_DEATH_PLANE_LEVEL
         {
-            engine_handle.send_command(
-                Command {
-                    sender: self.get_id().expect("Player have not ActorID"),
-                    command_type: CommandType::RespawnPlayer(
-                        self.get_id().expect("Player have not ActorID")
-                    )
-                }
-            );
+            todo!("must impliment respawn for observer");
+            // engine_handle.send_command(
+            //     Command {
+            //         sender: self.get_id().expect("Player have not ActorID"),
+            //         command_type: CommandType::RespawnPlayer(
+            //             self.get_id().expect("Player have not ActorID")
+            //         )
+            //     }
+            // );
         }
         
         main_player::set_audio_listener_position
@@ -495,6 +500,7 @@ impl Observer {
             player_projections_is_visible: false
         };
         
+        
         Observer {
             id: None,
 
@@ -507,7 +513,8 @@ impl Observer {
                 red_base_position,
                 UP*0.6,
                 UP * player_settings.collider_radius * 0.2,
-                audio_system,
+                None,
+                None,
             ),
             
             player_settings,

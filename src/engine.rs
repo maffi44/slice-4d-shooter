@@ -37,7 +37,7 @@ use std::{
     }
 };
 
-use crate::actor::main_player::player_settings::PlayerSettings;
+use crate::{actor::{Actor, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage, main_player::{PlayerMessage, player_settings::PlayerSettings}}, engine::{engine_handle::{Command, CommandType}, world::level::Level}};
 
 use self::{
     render::RenderSystem,
@@ -51,10 +51,12 @@ use self::{
     ui::UISystem
 };
 
+use client_server_protocol::NetCommand;
 use effects::EffectsSystem;
 // use winit::window::WindowBuilder;
 
 use settings::Settings;
+use tokio::runtime::Runtime;
 use wgpu::Backend;
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::WindowBuilderExtWebSys;
@@ -113,9 +115,9 @@ impl<'a> Future for WindowReadyFuture<'a> {
 impl Engine {
     pub async fn new(
         window: Window,
+        start_level: String,
         with_ui_renderer: bool,
         it_is_2d_3d_example: bool,
-        with_generated_raymarch_shader: bool,
         disable_net_system: bool,
         specific_backend: Option<Backend>,
     ) -> Engine
@@ -153,46 +155,36 @@ impl Engine {
         
         let settings = Settings::new(global_players_settings.clone());
 
-        let world = World::new(
-            &mut engine_handle,
-            global_players_settings,
-            if it_is_2d_3d_example
-            {
-                "map_2d_3d".to_string()
-            }
-            else
-            {
-                "map".to_string()    
-            }
-        ).await;
-        log::info!("engine systems: world init");
-        
-        let physic = PhysicsSystem::new(&world);
-        log::info!("engine systems: physic init");
-
-        let input = InputSystem::new();
-        log::info!("engine systems: input init");
-
         let time = TimeSystem::new(60_u32);
         log::info!("engine systems: time init");
 
         let mut pre_initialized_ui = UISystem::new(); 
 
-        let render = RenderSystem::new(
+        let mut render = RenderSystem::new(
             window,
-            &world,
             &time,
             &mut pre_initialized_ui,
             #[cfg(not(target_arch = "wasm32"))]
             &mut runtime,
-            it_is_2d_3d_example,
             with_ui_renderer,
-            with_generated_raymarch_shader,
             specific_backend,
         ).await;
         log::info!("engine systems: render init");
 
         let initialized_ui = pre_initialized_ui;
+
+        let mut world = World::new(
+            &mut engine_handle,
+            global_players_settings,
+            // start_level,
+        ).await;
+        log::info!("engine systems: world init");
+        
+        let mut physic = PhysicsSystem::new();
+        log::info!("engine systems: physic init");
+
+        let input = InputSystem::new();
+        log::info!("engine systems: input init");
 
         let audio = AudioSystem::new(false).await;
 
@@ -207,6 +199,24 @@ impl Engine {
         ).await;
         log::info!("engine systems: net init");
 
+        let level = {
+            runtime.block_on(
+                world::level::Level::load_level(
+                    start_level,
+                    world.players_settings.clone(),
+                    Some(render.render_pipeline_builder_kit.clone()),
+
+                )
+            )
+        };
+
+        set_new_level(
+            level,
+            &mut engine_handle,
+            &mut world,
+            &mut Some(&mut render),
+            &mut physic,
+        );
 
         Engine {
             physic,
@@ -269,11 +279,11 @@ impl HeadlessEngine
         let world = World::new(
             &mut engine_handle,
             global_players_settings,
-            "map".to_string()
+            // "map".to_string()
         ).await;
         log::info!("engine systems: world init");
         
-        let physic = PhysicsSystem::new(&world);
+        let physic = PhysicsSystem::new();
         log::info!("engine systems: physic init");
 
         let input = InputSystem::new();
@@ -313,5 +323,305 @@ impl HeadlessEngine
             #[cfg(not(target_arch = "wasm32"))]
             runtime,
         }
+    }
+}
+
+#[inline]
+pub fn execute_command(
+    command: Command,
+    world: &mut World,
+    net_system: &mut NetSystem,
+    physics_system: &mut PhysicsSystem,
+    engine_handle: &mut EngineHandle,
+    audio_system: &mut AudioSystem,
+    ui_system: &mut UISystem,
+    time_system: &mut TimeSystem,
+    render_system: &mut Option<&mut RenderSystem>,
+    runtime: &mut Runtime,
+    player_settings: PlayerSettings,
+) {
+    let from = command.sender;
+
+    match command.command_type {
+        CommandType::ShowConnectionStatusUI =>
+        {
+            net_system.set_is_visible_for_connection_status(true);
+        }
+        CommandType::RemoveAllHolesAndEffects =>
+        {
+            let mut keys_for_remove = Vec::new();
+
+            for (key, actor) in world.actors.iter()
+            {
+                match actor {
+                    ActorWrapper::Hole(_) =>
+                    {
+                        keys_for_remove.push(*key);
+                    }
+
+                    ActorWrapper::HoleGunMiss(_) =>
+                    {
+                        keys_for_remove.push(*key);
+                    }
+
+                    ActorWrapper::MachinegunShot(_) =>
+                    {
+                        keys_for_remove.push(*key);
+                    }
+
+                    ActorWrapper::PlayersDeathExplosion(_) =>
+                    {
+                        keys_for_remove.push(*key);
+                    }
+
+                    ActorWrapper::HoleGunShot(_) =>
+                    {
+                        keys_for_remove.push(*key);
+                    }
+
+                    ActorWrapper::ShootingImpact(_) =>
+                    {
+                        keys_for_remove.push(*key);
+                    }
+
+                    _ => {}
+                }
+            }
+
+            for key in keys_for_remove
+            {
+                world.actors.remove(&key);
+            }
+        }
+        CommandType::SpawnEffect(_) => {}
+        CommandType::SpawnActor(actor) =>
+        {
+            world.add_actor_to_world(actor, engine_handle);
+        }
+        CommandType::RemoveActor(id) =>
+        {
+            world.remove_actor_from_world(id);
+        }
+        CommandType::NetCommand(command) =>
+        {
+            match command {
+                NetCommand::SetServerTime(server_time) => {
+                    time_system.set_server_time(server_time);
+                },
+                NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {
+                    world.change_actor_id(world.main_actor_id, new_id, engine_handle);
+
+                    world.main_actor_id = new_id;                       
+                },
+                NetCommand::SendBoardcastNetMessageReliable(message) => {
+                    net_system.send_boardcast_message_reliable(message);
+                },
+
+                NetCommand::SendBoardcastNetMessageUnreliable(message) => {
+                    net_system.send_boardcast_message_unreliable(message);
+                },
+
+                NetCommand::SendDirectNetMessageReliable(message, peer) => {
+                    net_system.send_direct_message_reliable(message, peer);
+                },
+
+                NetCommand::SendDirectNetMessageUnreliable(message, peer) => {
+                    net_system.send_direct_message_unreliable(message, peer);
+                },
+
+                NetCommand::PeerConnected(peer_id) => {
+                    engine_handle.send_boardcast_message(
+                        Message {
+                            from: 0u128,
+                            remote_sender: false,
+                            message: MessageType::SpecificActorMessage(
+                                SpecificActorMessage::PlayerMessage(
+                                    PlayerMessage::NewPeerConnected(peer_id)
+                                )
+                            )
+                        }
+                    )
+                },
+
+                NetCommand::SendMessageToServer(message) =>
+                {
+                    net_system.send_message_to_game_server(message);
+                }
+
+                NetCommand::PeerDisconnected(id) => {
+                    world.remove_actor_from_world(id);
+                }
+            }
+        }
+        CommandType::LoadNewLevelSync(level_name) =>
+        {
+            let render_pipeline_builder_kit =
+            {
+                if render_system.is_some()
+                {
+                    Some(render_system.as_ref().unwrap().render_pipeline_builder_kit.clone())
+                }
+                else
+                {
+                    None
+                }
+            };
+
+            let level = {
+                runtime.block_on(world::level::Level::load_level(level_name, player_settings, render_pipeline_builder_kit))
+            };
+
+            set_new_level(level, engine_handle, world, render_system, physics_system);
+        },
+        
+        CommandType::LoadNewLevelAsync(level) => 
+        {
+            unimplemented!("LoadNewLevelAsync command unimplemented yet");
+        },
+    }
+}
+
+#[inline]
+pub fn send_direct_messages(
+    to: ActorID,
+    message: Message,
+    engine_handle: &mut EngineHandle,
+    world: &mut World,
+    physics_system: &PhysicsSystem,
+    audio_system: &mut AudioSystem,
+    ui_system: &mut UISystem,
+    time_system: &TimeSystem,
+    effects_system: &mut EffectsSystem,
+
+) {
+    if let Some(actor) = world.actors.get_mut(&to)
+    {
+        actor.recieve_message(
+            message,
+            engine_handle,
+            physics_system,
+            audio_system,
+            ui_system,
+            time_system,
+            effects_system,
+        );
+    }
+}
+
+#[inline]
+pub fn send_boardcast_messages(
+    message: Message,
+    engine_handle: &mut EngineHandle,
+    world: &mut World,
+    physics_system: &PhysicsSystem,
+    audio_system: &mut AudioSystem,
+    ui_system: &mut UISystem,
+    time_system: &TimeSystem,
+    effects_system: &mut EffectsSystem,
+) {
+    for (_, actor) in world.actors.iter_mut() {
+        if actor.get_id().expect("actor does not have id") != message.from
+        {
+            actor.recieve_message
+            (
+                message.clone(),
+                engine_handle,
+                physics_system,
+                audio_system,
+                ui_system,
+                time_system,
+                effects_system
+            );
+        } 
+    }
+}
+
+#[inline]
+pub fn send_messages_and_process_commands(
+    world: &mut World,
+    net_system: &mut NetSystem,
+    physics_system: &mut PhysicsSystem,
+    audio_system: &mut AudioSystem,
+    ui_system: &mut UISystem,
+    engine_handle: &mut EngineHandle,
+    time_system: &mut TimeSystem,
+    effects_system: &mut EffectsSystem,
+    mut render_system: Option<&mut RenderSystem>,
+    runtime: &mut Runtime,
+) {
+
+    let player_settings = world.players_settings.clone();
+    
+    loop {
+        while let Some(message) = engine_handle.boardcast_message_buffer.pop()
+        {
+            send_boardcast_messages(
+                message,
+                engine_handle,
+                world,
+                physics_system,
+                audio_system,
+                ui_system,
+                time_system,
+                effects_system,
+            )                
+        }
+
+        while let Some((to, message)) = engine_handle.direct_message_buffer.pop()
+        {
+            send_direct_messages(
+                to,
+                message,
+                engine_handle,
+                world,
+                physics_system,
+                audio_system,
+                ui_system,
+                time_system,
+                effects_system,
+            )                
+        }
+
+        while let Some(command) = engine_handle.command_buffer.pop()
+        {
+            execute_command(
+                command,
+                world,
+                net_system,
+                physics_system,
+                engine_handle,
+                audio_system,
+                ui_system,
+                time_system,
+                &mut render_system,
+                runtime,
+                player_settings.clone(),
+            );
+        }
+
+        if engine_handle.direct_message_buffer.is_empty() &&
+            engine_handle.boardcast_message_buffer.is_empty() &&
+            engine_handle.command_buffer.is_empty()
+        {   
+            return;
+        }
+    }
+}
+
+fn set_new_level (
+    level: Level,
+    engine_handle: &mut EngineHandle,
+    world: &mut World,
+    render_system: &mut Option<&mut RenderSystem>,
+    physics_system: &mut PhysicsSystem
+)
+{
+    world.set_new_level(level, engine_handle);
+ 
+    physics_system.set_new_level(world);
+
+    if render_system.is_some()
+    {
+        (*render_system).as_mut().unwrap().set_new_level(world);
     }
 }

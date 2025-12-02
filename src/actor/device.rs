@@ -76,6 +76,7 @@ pub enum DeviceType {
     Gun,
     Device,
 }
+
 pub trait Device {
 
     fn process_input(

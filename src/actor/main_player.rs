@@ -1147,14 +1147,15 @@ impl Actor for MainPlayer {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for main_player");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
                         }
                     },
@@ -1173,14 +1174,15 @@ impl Actor for MainPlayer {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for main_player");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
 
                             }
 
@@ -1199,14 +1201,15 @@ impl Actor for MainPlayer {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for main_player");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
 
                             SessionControllerMessage::TeamWin(team) =>
@@ -2611,27 +2614,31 @@ pub fn process_player_respawn(
 )
 {
     if inner_state.after_death_timer >= player_settings.max_respawn_timer {
-        engine_handle.send_command(
-            Command {
-                sender: my_id,
-                command_type: CommandType::RespawnPlayer(
-                    my_id
-                )
-            }
-        );
+        
+        todo!("must impliment respawn for main_player");
+        // engine_handle.send_command(
+        //     Command {
+        //         sender: my_id,
+        //         command_type: CommandType::RespawnPlayer(
+        //             my_id
+        //         )
+        //     }
+        // );
         return;
     }
 
     if input.first_mouse.is_action_just_pressed() {
         if inner_state.after_death_timer >= player_settings.min_respawn_timer {
-            engine_handle.send_command(
-                Command {
-                    sender: my_id,
-                    command_type: CommandType::RespawnPlayer(
-                        my_id
-                    )
-                }
-            );
+            
+            todo!("must impliment respawn for main_player");
+            // engine_handle.send_command(
+            //     Command {
+            //         sender: my_id,
+            //         command_type: CommandType::RespawnPlayer(
+            //             my_id
+            //         )
+            //     }
+            // );
             return;
         }
     }
@@ -3801,7 +3808,25 @@ impl MainPlayer {
         let screen_effects = PlayerScreenEffects::default();
 
         let w_scanner = WScanner::new(&player_settings);
-        
+
+        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::RotatingAroundW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
+        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::ShiftingAlongW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
         MainPlayer {
             id: None,
 
@@ -3814,7 +3839,8 @@ impl MainPlayer {
                 red_base_position,
                 RIGHT*0.6,
                 UP * player_settings.collider_radius * 0.2,
-                audio_system,
+                rotating_around_w_sound_handle,
+                shifting_along_w_sound_handle,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
 

@@ -69,6 +69,8 @@ pub struct ObstacleCourseFreeMovementPlayer {
 
     pub navigation_coloring_walls: bool,
     pub navigation_lines_mode: u32,
+
+    current_spawn: Vec4,
 }
 
 impl Actor for ObstacleCourseFreeMovementPlayer {
@@ -172,13 +174,11 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                         match message {
                             KinematicColliderMessage::ColliderIsStuckInsideObject =>
                             {    
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
+                                self.respawn(
+                                    physic_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle,
                                 );
                             }
                             _ => {}
@@ -206,13 +206,11 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
+                                self.respawn(
+                                    physic_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle,
                                 );
                             }
 
@@ -244,13 +242,11 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                             {
                                 self.inner_state.team = team;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
+                                self.respawn(
+                                    physic_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle,
                                 );
 
                                 set_right_team_hud(
@@ -266,13 +262,11 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                             {
                                 self.inner_state.team = your_team;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
+                                self.respawn(
+                                    physic_system,
+                                    ui_system,
+                                    audio_system,
+                                    engine_handle,
                                 );
 
                                 set_right_team_hud(
@@ -496,13 +490,11 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
 
             if self.inner_state.get_position().y < Y_DEATH_PLANE_LEVEL
             {
-                engine_handle.send_command(
-                    Command {
-                        sender: self.get_id().expect("Player have not ActorID"),
-                        command_type: CommandType::RespawnPlayer(
-                            self.get_id().expect("Player have not ActorID")
-                        )
-                    }
+                self.respawn(
+                    physic_system,
+                    ui_system,
+                    audio_system,
+                    engine_handle,
                 );
             }
 
@@ -538,12 +530,12 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 delta,
             );
 
-            main_player::process_player_respawn(
+            self.process_player_respawn(
+                physic_system,
+                ui_system,
+                audio_system,
                 engine_handle,
-                &self.player_settings,
                 &input,
-                &self.inner_state,
-                my_id,
             );
         }
 
@@ -575,6 +567,18 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
             time_system,
             engine_handle,
         );
+
+        if input.arrow_up.is_action_just_pressed()
+        {
+            engine_handle.send_command(
+                Command {
+                    sender: 0u128,
+                    command_type: CommandType::LoadNewLevelSync(
+                        "map-first".to_string()
+                    )
+                }
+            );
+        }
     }
 }
 
@@ -642,9 +646,7 @@ impl ObstacleCourseFreeMovementPlayer {
     pub fn new(
         master: InputMaster,
         player_settings: PlayerSettings,
-        audio_system: &mut AudioSystem,
-        blue_base_position: Vec4,
-        red_base_position: Vec4,
+        spawn: Vec4,
     ) -> Self {
         
         let screen_effects = PlayerScreenEffects {
@@ -665,11 +667,12 @@ impl ObstacleCourseFreeMovementPlayer {
             &player_settings,
             false,
             false,
-            blue_base_position,
-            red_base_position,
+            Vec4::ZERO,
+            Vec4::ZERO,
             RIGHT*0.6,
             UP * player_settings.collider_radius * 0.2,
-            audio_system,
+            None,
+            None,
         );
 
         inner_state.tutrial_window_was_open = true;
@@ -717,8 +720,9 @@ impl ObstacleCourseFreeMovementPlayer {
 
             screen_effects,
 
-            navigation_coloring_walls: true,
+            navigation_coloring_walls: false,
             navigation_lines_mode: 2u32,
+            current_spawn: spawn,
         }
     }
 
@@ -739,6 +743,217 @@ impl ObstacleCourseFreeMovementPlayer {
             }
         }
     }
+
+    fn respawn(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        ui_system: &mut UISystem,
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle,
+    ) {
+
+        set_right_team_hud(
+            &self.inner_state,
+            ui_system
+        );
+
+
+        let hits = physic_system.sphere_cast_on_dynamic_colliders(
+            self.current_spawn,
+            self.inner_state.get_collider_radius(),
+            Some(self.get_id().expect("Player hasn't ActorID"))
+        );
+
+        for hit in hits {
+            engine_handle.send_direct_message(
+                hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
+                Message {
+                    from: self.get_id().expect("Player have not ID in respawn func"),
+                    remote_sender: false,
+                    message: MessageType::SpecificActorMessage(
+                        SpecificActorMessage::PlayerMessage(
+                            PlayerMessage::Telefrag
+                        )
+                    )
+                }
+            )
+        }
+
+        self.inner_state.w_aim_enabled = true;
+        self.inner_state.is_alive = true;
+        self.inner_state.is_enable = true;
+        self.inner_state.hp = main_player::PLAYER_MAX_HP;
+        self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
+        // self.inner_state.player_moving_state =
+        //     PlayerMovingState::MovingPerpendicularW(self.w_levels_of_map[current_spawn.w_level]);
+
+        self.inner_state.saved_angle_of_rotation = Vec4::ZERO;
+
+        self.inner_state.restore_w_shift_and_rotate_values();
+
+        audio_system.spawn_non_spatial_sound(
+            Sound::PlayerRespawned,
+            1.0,
+            1.0,
+            false,
+            true,
+            fyrox_sound::source::Status::Playing,
+        );
+
+        let health_bar = match self.inner_state.team {
+            Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
+            Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
+        };
+
+        if let UIElement::ProgressBar(bar) = health_bar {
+            let bar_value = {
+                (self.inner_state.hp as f32 / main_player::PLAYER_MAX_HP as f32)
+                    .clamp(0.0, 1.0)
+            };
+
+            bar.set_bar_value(bar_value)
+            
+        } else {
+            panic!("Health Bar is not UIProgressBar")
+        }
+
+        let my_id = self.get_id().expect("Player have not ActorID");
+
+        match self.active_hands_slot {
+            ActiveHandsSlot::Zero => {
+                self.hands_slot_0.activate(
+                    my_id,
+                    &mut self.inner_state,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+
+            },
+            ActiveHandsSlot::First => {
+                if let Some(device) = self.hands_slot_1.as_mut() {
+                    device.activate(
+                        my_id,
+                        &mut self.inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                }
+
+            },
+            ActiveHandsSlot::Second => {
+                if let Some(device) = self.hands_slot_2.as_mut() {
+                    device.activate(
+                        my_id,
+                        &mut self.inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                }
+
+            },
+            ActiveHandsSlot::Third => {
+                if let Some(device) = self.hands_slot_3.as_mut() {
+                    device.activate(
+                        my_id,
+                        &mut self.inner_state,
+                        physic_system,
+                        audio_system,
+                        ui_system,
+                        engine_handle,
+                    );
+                }
+
+            }
+        }
+
+        for device in self.devices.iter_mut() {
+            if let Some(device) = device {
+                device.activate(
+                    my_id,
+                    &mut self.inner_state,
+                    physic_system,
+                    audio_system,
+                    ui_system,
+                    engine_handle,
+                );
+            }
+        }
+
+        self.screen_effects.w_scanner_ring_intesity = 0.0;
+        self.screen_effects.w_scanner_radius = 0.0;
+        self.screen_effects.w_scanner_is_active = false;
+
+        self.inner_state.collider.reset_forces_and_velocity();
+
+        self.inner_state.transform = Transform::from_position(self.current_spawn);
+
+        // self.current_w_level = current_spawn.w_level;
+
+        self.inner_state.player_previous_w_position = self.current_spawn.w;
+
+        let player_doll_input_state = PlayerDollInputState {
+            move_forward: false,
+            move_backward: false,
+            move_right: false,
+            move_left: false,
+            will_jump: false,
+            // player_moving_state: self.inner_state.player_moving_state.clone(),
+        };
+
+        engine_handle.send_command(
+            Command {
+                sender: self.get_id().expect("Player have not ActorID"),
+                command_type: CommandType::NetCommand(
+                    NetCommand::SendBoardcastNetMessageReliable(
+                        NetMessageToPlayer::RemoteDirectMessage(
+                            self.get_id().expect("Player have not ActorID"),
+                            RemoteMessage::PlayerRespawn(
+                                self.inner_state.transform.to_serializable_transform(),
+                                player_doll_input_state.serialize(),
+                                Vec4::ZERO.to_array(),
+                                self.inner_state.team
+                            )
+                        )
+                    )
+                )
+            }
+        )
+    }
+
+
+    pub fn process_player_respawn(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        ui_system: &mut UISystem,
+        audio_system: &mut AudioSystem,
+        engine_handle: &mut EngineHandle,
+        input: &ActionsFrameState,
+    )
+    {
+        if self.inner_state.after_death_timer >= self.player_settings.max_respawn_timer
+        {
+            self.respawn(physic_system, ui_system, audio_system, engine_handle);
+
+            return;
+        }
+
+        if input.first_mouse.is_action_just_pressed()
+        {
+            if self.inner_state.after_death_timer >= self.player_settings.min_respawn_timer {
+                
+                self.respawn(physic_system, ui_system, audio_system, engine_handle);
+                
+                return;
+            }
+        }
+    }
+
 }
 
 impl ControlledActor for ObstacleCourseFreeMovementPlayer

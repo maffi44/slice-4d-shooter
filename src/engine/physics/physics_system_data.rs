@@ -246,6 +246,23 @@ impl CollidersShapeTypeArrays {
         self.undestroyable_stickiness.truncate(self.constant_undestroyable_stickiness_len);
     }
 
+    fn clear_all_static_colliders(&mut self) {
+
+        self.normal.clear();
+        self.negative.clear();
+        self.stickiness.clear();
+        self.neg_stickiness.clear();
+        self.undestroyable_normal.clear();
+        self.undestroyable_stickiness.clear();
+
+        self.constant_normal_len = 0;
+        self.constant_negative_len = 0;
+        self.constant_stickiness_len = 0;
+        self.constant_neg_stickiness_len = 0;
+        self.constant_undestroyable_normal_len = 0;
+        self.constant_undestroyable_stickiness_len = 0;
+    }
+
 }
 
 pub struct PhysicsState {
@@ -277,32 +294,13 @@ struct StaticColliderData {
 }
 
 impl PhysicsState {
-    pub fn new(world: &World) -> Self {
+    pub fn new() -> Self {
         let mut cubes = CollidersShapeTypeArrays::new();
         let mut spheres = CollidersShapeTypeArrays::new();
         let mut sph_cubes = CollidersShapeTypeArrays::new();
         let mut inf_w_cubes = CollidersShapeTypeArrays::new();
 
-        for static_object in world.level.static_objects.iter() {
-
-            let collider = static_object.collider.clone();
-
-            match collider.shape_type {
-                ShapeType::Cube => {
-                    cubes.add_constant_static_collider(collider)
-                }
-                ShapeType::CubeInfW => {
-                    inf_w_cubes.add_constant_static_collider(collider)
-                }
-                ShapeType::SphCube => {
-                    sph_cubes.add_constant_static_collider(collider)
-                }
-                ShapeType::Sphere => {
-                    spheres.add_constant_static_collider(collider)
-                }
-            }
-        }
-
+        
         PhysicsState {
             cubes,
             inf_w_cubes,
@@ -314,8 +312,39 @@ impl PhysicsState {
             // w_floor: world.level.w_floor.clone(),
             // w_roof: world.level.w_roof.clone(),
 
-            stickiness: world.level.all_shapes_stickiness_radius
+            stickiness: 0.0,
         }
+    }
+
+    pub fn update_level_static_info(&mut self, world: &World)
+    {
+        self.cubes.clear_all_static_colliders();
+        self.spheres.clear_all_static_colliders();
+        self.sph_cubes.clear_all_static_colliders();
+        self.inf_w_cubes.clear_all_static_colliders();
+
+        for static_object in world.level.as_ref().unwrap().static_objects.iter() {
+
+            let collider = static_object.collider.clone();
+
+            match collider.shape_type {
+                ShapeType::Cube => {
+                    self.cubes.add_constant_static_collider(collider)
+                }
+                ShapeType::CubeInfW => {
+                    self.inf_w_cubes.add_constant_static_collider(collider)
+                }
+                ShapeType::SphCube => {
+                    self.sph_cubes.add_constant_static_collider(collider)
+                }
+                ShapeType::Sphere => {
+                    self.spheres.add_constant_static_collider(collider)
+                }
+            }
+        }
+
+        self.stickiness = world.level.as_ref().unwrap().all_shapes_stickiness_radius;
+
     }
 
     pub fn add_temporal_static_collider(&mut self, collider: StaticCollider) {

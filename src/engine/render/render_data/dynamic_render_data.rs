@@ -1544,7 +1544,7 @@ impl DynamicRenderData {
 
             &main_camera,
             clip_planes,
-            world.level.all_shapes_stickiness_radius,
+            world.level.as_ref().unwrap().all_shapes_stickiness_radius,
             for_generated_raymarch_shader,
         );
 
@@ -1552,7 +1552,7 @@ impl DynamicRenderData {
             self.update_spherical_areas_and_get_meatadata(
                 &main_camera,
                 clip_planes,
-                world.level.all_shapes_stickiness_radius
+                world.level.as_ref().unwrap().all_shapes_stickiness_radius
             );
 
         let beams_areas_amount = self.update_beams_buffers_and_get_amount();
@@ -1560,7 +1560,7 @@ impl DynamicRenderData {
         let player_forms_amount = self.update_player_forms_buffers_and_get_amount(
             &main_camera,
             clip_planes,
-            world.level.all_shapes_stickiness_radius
+            world.level.as_ref().unwrap().all_shapes_stickiness_radius
         );
 
         let players_screen_effects = get_players_screen_effects(world);

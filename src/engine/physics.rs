@@ -64,9 +64,9 @@ pub struct PhysicsSystem {
 
 
 impl PhysicsSystem {
-    pub fn new(world: &World) -> Self {
+    pub fn new() -> Self {
         
-        let physics_state = PhysicsState::new(world);
+        let physics_state = PhysicsState::new();
 
         log::info!("physics system: static_colliders_data init");
 
@@ -78,6 +78,13 @@ impl PhysicsSystem {
             physics_state,
         }
     }
+
+
+    pub fn set_new_level(&mut self, world: &World)
+    {
+        self.physics_state.update_level_static_info(world);
+    }
+
 
     pub fn process_physics(
         &mut self,

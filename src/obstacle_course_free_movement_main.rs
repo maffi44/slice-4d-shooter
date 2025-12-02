@@ -60,96 +60,14 @@ fn main() {
     log::info!("main: main_loop init");
 
     pollster::block_on(main_loop.run(
+        "map".to_string(),
         true,
         false,
         // If you made any changes to the game map, you should
         // run raymarch_shader_generator binary to generate a 
         // relevant raymarch shader with a BSP tree before creating the Engine.
         // Unless you see the previous version of the map.
-        false,
         specific_backend,
         true,
-        Box::new(|systems| {
-            
-            let main_player = ObstacleCourseFreeMovementPlayer::new(
-                InputMaster::LocalMaster(
-                    LocalMaster::new(ActionsFrameState::empty())
-                ),
-                systems.world.players_settings.clone(),
-                &mut systems.audio,
-                systems.world.level.blue_base_position,
-                systems.world.level.red_base_position,
-            );
-
-            let main_player_id = systems.world.add_main_actor_to_world(
-                ActorWrapper::ObstacleCourseFreeMovementPlayer(main_player),
-                &mut systems.engine_handle,
-            );
-
-            systems.engine_handle.send_boardcast_message(
-                Message {
-                    from: 0u128,
-                    remote_sender: false,
-                    message: crate::actor::MessageType::SpecificActorMessage(
-                        SpecificActorMessage::PlayerMessage(
-                            PlayerMessage::SetNewTeam(
-                                session_controller::DEFAULT_TEAM
-                            )
-                        )
-                    )
-                }
-            );
-
-            let red_flag_base = FlagBase::new(
-                Team::Red,
-                systems.world.level.red_flag_base
-            );
-
-            let blue_flag_base = FlagBase::new(
-                Team::Blue,
-                systems.world.level.blue_flag_base
-            );
-
-            systems.world.add_actor_to_world(
-                ActorWrapper::FlagBase(red_flag_base),
-                &mut systems.engine_handle,
-            );
-
-            systems.world.add_actor_to_world(
-                ActorWrapper::FlagBase(blue_flag_base),
-                &mut systems.engine_handle,
-            );
-
-            let red_flag = Flag::new(
-                Team::Red,
-                systems.world.level.red_flag_base
-            );
-
-            systems.world.add_actor_to_world(
-                ActorWrapper::Flag(red_flag),
-                &mut systems.engine_handle,
-            );
-
-            let blue_flag = Flag::new(
-                Team::Blue,
-                systems.world.level.blue_flag_base
-            );
-
-            systems.world.add_actor_to_world(
-                ActorWrapper::Flag(blue_flag),
-                &mut systems.engine_handle,
-            );
-
-            // let session_controller = SessionController::new(
-            //     &mut systems.ui,
-            //     systems.world.level.red_flag_base.get_position(),
-            //     systems.world.level.blue_flag_base.get_position(),
-            //     false,
-            // );
-            
-            // systems.world.add_actor_to_world(
-            //     ActorWrapper::SessionController(session_controller),
-            //     &mut systems.engine_handle,
-            // );
-    })));
+    ));
 }
