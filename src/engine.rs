@@ -155,7 +155,7 @@ impl Engine {
         
         let settings = Settings::new(global_players_settings.clone());
 
-        let time = TimeSystem::new(60_u32);
+        let mut time = TimeSystem::new(60_u32);
         log::info!("engine systems: time init");
 
         let mut pre_initialized_ui = UISystem::new(); 
@@ -171,7 +171,7 @@ impl Engine {
         ).await;
         log::info!("engine systems: render init");
 
-        let initialized_ui = pre_initialized_ui;
+        let mut initialized_ui = pre_initialized_ui;
 
         let mut world = World::new(
             &mut engine_handle,
@@ -186,9 +186,9 @@ impl Engine {
         let input = InputSystem::new();
         log::info!("engine systems: input init");
 
-        let audio = AudioSystem::new(false).await;
+        let mut audio = AudioSystem::new(false).await;
 
-        let effects = EffectsSystem::new();
+        let mut effects = EffectsSystem::new();
 
         let net = NetSystem::new(
             &world.players_settings,
@@ -216,6 +216,10 @@ impl Engine {
             &mut world,
             &mut Some(&mut render),
             &mut physic,
+            &mut audio,
+            &mut initialized_ui,
+            &mut time,
+            &mut effects,
         );
 
         Engine {
@@ -337,6 +341,7 @@ pub fn execute_command(
     ui_system: &mut UISystem,
     time_system: &mut TimeSystem,
     render_system: &mut Option<&mut RenderSystem>,
+    effects_system: &mut EffectsSystem,
     runtime: &mut Runtime,
     player_settings: PlayerSettings,
 ) {
@@ -396,7 +401,15 @@ pub fn execute_command(
         CommandType::SpawnEffect(_) => {}
         CommandType::SpawnActor(actor) =>
         {
-            world.add_actor_to_world(actor, engine_handle);
+            world.add_actor_to_world(
+                actor,
+                engine_handle,
+                physics_system,
+                audio_system,
+                ui_system,
+                time_system,
+                effects_system,
+            );
         }
         CommandType::RemoveActor(id) =>
         {
@@ -471,7 +484,17 @@ pub fn execute_command(
                 runtime.block_on(world::level::Level::load_level(level_name, player_settings, render_pipeline_builder_kit))
             };
 
-            set_new_level(level, engine_handle, world, render_system, physics_system);
+            set_new_level(
+                level,
+                engine_handle,
+                world,
+                render_system,
+                physics_system,
+                audio_system,
+                ui_system,
+                time_system,
+                effects_system,
+            );
         },
         
         CommandType::LoadNewLevelAsync(level) => 
@@ -594,6 +617,7 @@ pub fn send_messages_and_process_commands(
                 ui_system,
                 time_system,
                 &mut render_system,
+                effects_system,
                 runtime,
                 player_settings.clone(),
             );
@@ -613,10 +637,22 @@ fn set_new_level (
     engine_handle: &mut EngineHandle,
     world: &mut World,
     render_system: &mut Option<&mut RenderSystem>,
-    physics_system: &mut PhysicsSystem
+    physics_system: &mut PhysicsSystem,
+    audio_system: &mut AudioSystem,
+    ui_system: &mut UISystem,
+    time_system: &mut TimeSystem,
+    effects_system: &mut EffectsSystem,
 )
 {
-    world.set_new_level(level, engine_handle);
+    world.set_new_level(
+        level,
+        engine_handle,
+        physics_system,
+        audio_system,
+        ui_system,
+        time_system,
+        effects_system,
+    );
  
     physics_system.set_new_level(world);
 

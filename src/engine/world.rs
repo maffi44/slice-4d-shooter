@@ -97,23 +97,54 @@ impl World {
         }
     }
 
-    pub fn set_new_level(&mut self, mut level: Level, engine_handle: &mut EngineHandle)
+    pub fn set_new_level(
+        &mut self,
+        mut level: Level,
+        engine_handle: &mut EngineHandle,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem
+    )
     {
         self.actors.clear();
 
         self.add_main_actor_to_world(
             level.main_actor.take().expect("level have not main actor"),
-            engine_handle
+            engine_handle,
+            physic_system,
+            audio_system ,
+            ui_system ,
+            time_system,
+            effects_system
         );
 
         for actor in level.actors.take().unwrap() {
-            self.add_actor_to_world(actor, engine_handle);
+            self.add_actor_to_world(
+                actor,
+                engine_handle,
+                physic_system,
+                audio_system ,
+                ui_system ,
+                time_system,
+                effects_system
+            );
         }
 
         self.level = Some(level);
     }
 
-    pub fn add_actor_to_world(&mut self, mut actor: ActorWrapper, engine_handle: &mut EngineHandle) -> ActorID {
+    pub fn add_actor_to_world(
+        &mut self,
+        mut actor: ActorWrapper,
+        engine_handle: &mut EngineHandle,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem
+    ) -> ActorID {
 
         let id = match actor.get_id() {
             Some(id) => id,
@@ -135,12 +166,39 @@ impl World {
             self.actors.insert(new_id_for_swaped_actor, swaped_actor);
         }
 
+        self.actors.get_mut(&id).expect("world have not actor after added it")
+            .on_added_to_world(
+                physic_system,
+                engine_handle,
+                audio_system,
+                ui_system,
+                time_system,
+                effects_system
+            );
+
         id
     }
 
-    pub fn add_main_actor_to_world(&mut self, actor: ActorWrapper, engine_handle: &mut EngineHandle) -> ActorID {
+    pub fn add_main_actor_to_world(
+        &mut self,
+        actor: ActorWrapper,
+        engine_handle: &mut EngineHandle,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem
+    ) -> ActorID {
 
-        let id = self.add_actor_to_world(actor, engine_handle);
+        let id = self.add_actor_to_world(
+            actor,
+            engine_handle,
+            physic_system,
+            audio_system ,
+            ui_system ,
+            time_system,
+            effects_system
+        );
 
         self.main_actor_id = id;
 

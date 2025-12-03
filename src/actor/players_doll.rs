@@ -1289,6 +1289,9 @@ impl Actor for PlayerDoll {
                     }
 
                     SpecificActorMessage::MoveWBonusSpotMessage(_) => {}
+
+
+                    _ => {}
                 }
 
             }  

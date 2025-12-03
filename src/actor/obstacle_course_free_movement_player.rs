@@ -22,7 +22,7 @@ use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
-        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, holegun::HoleGun, obstaclesgun::ObstaclesGun}, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState, player_input_master, player_settings}, players_doll::PlayerDollInputState
+        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, holegun::HoleGun, obstaclesgun::ObstaclesGun}, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState, player_input_master, player_settings}, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
     },
     engine::{
         audio::{
@@ -311,6 +311,49 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                         }
                     }
 
+                    SpecificActorMessage::TriggerOrbMessage(message) =>
+                    {
+                        match message {
+                            TriggerOrbMessage::YouInteractingWithTriggerOrb =>
+                            {
+                                engine_handle.send_direct_message(
+                                    from,
+                                    Message {
+                                        from: self.get_id().expect("Obstacle course player have not ActorID"),
+                                        remote_sender: false,
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::TriggerOrbMessage(
+                                                TriggerOrbMessage::TriggerOrbCapturedByPlayer(
+                                                    self.get_id().expect("Obstacle course player have not ActorID")
+                                                )
+                                            )
+                                        )
+                                    }
+                                );
+                            },
+
+                            TriggerOrbMessage::GiveMeTargetPosition => 
+                            {
+                                engine_handle.send_direct_message(
+                                    from,
+                                    Message {
+                                        from: self.get_id().expect("Obstacle course player have not ActorID"),
+                                        remote_sender: false,
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::TriggerOrbMessage(
+                                                TriggerOrbMessage::SetTargetPosition(
+                                                    self.inner_state.get_position() + Vec4::Y*0.8
+                                                )
+                                            )
+                                        )
+                                    }
+                                );
+                            },
+
+                            _ => {}
+                        }
+                    }
+
                     _ => {}
                 }
 
@@ -579,6 +622,18 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 }
             );
         }
+    }
+
+    fn on_added_to_world(
+            &mut self,
+            physic_system: &PhysicsSystem,
+            engine_handle: &mut EngineHandle,
+            audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
+            time_system: &mut TimeSystem,
+            effects_system: &mut EffectsSystem,
+        ) {
+        self.respawn(physic_system, ui_system, audio_system, engine_handle);
     }
 }
 

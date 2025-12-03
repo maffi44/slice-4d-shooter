@@ -18,7 +18,7 @@ use std::{collections::HashMap, fs::File, io::Read};
 
 use crate::{
     actor::{
-        ActorWrapper, device, main_player::{player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, wandering_actor::{
+        ActorWrapper, device, final_trigger::FinalTrgger, main_player::{player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, trgger_orb::TriggerOrb, trigger::Trigger, triggering_wandering_actor::TriggeringWanderingActor, wandering_actor::{
             WanderingActor,
             WanderingActorMovementType,
         }
@@ -1855,12 +1855,329 @@ fn parse_json_actors(
 
                     actors.push(ActorWrapper::WonderingActor(actor));
                 }
+                "trigger" => {
+                    let actor = parse_trigger(actor_value, defaults, materials_table);
+
+                    actors.push(ActorWrapper::Trigger(actor));
+                }
+                "final_trigger" => {
+                    let actor = parse_final_trigger(actor_value, defaults, materials_table);
+
+                    actors.push(ActorWrapper::FinalTrigger(actor));
+                }
+                "trigger_orb" => {
+                    let actor = parse_trigger_orb(actor_value);
+
+                    actors.push(ActorWrapper::TriggerOrb(actor));
+                }
+                "triggering_wandering_actor" => {
+                    let actor = parse_triggering_wandering_actor(actor_value, defaults, materials_table);
+
+                    actors.push(ActorWrapper::TriggeringWanderingActor(actor));
+                }
                 _ => {panic!("Wrong JSON map format, {} it is worng actor type", actor_type)}
             }
         }
     }
 
     actors
+}
+
+
+fn parse_trigger_orb(
+    actor_value: &Value
+) -> TriggerOrb
+{
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, trigger_orb must be an json object");
+
+    let target_trigger_name = actor_object
+        .get("target_trigger_name")
+        .expect("Wrong JSON map format, trigger_orb must have target_trigger_name property")
+        .as_str()
+        .expect("Wrong JSON map format, trigger_orb's target_trigger_name property must be string type")
+        .to_string();
+
+    let transform = parse_json_into_transform(actor_value, "trigger_orb_actor");
+
+    let radius = actor_object
+        .get("radius")
+        .expect("Wrong JSON map format, trigger_orb must have radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, radius in trigger_orb must be float number")
+        as f32;
+
+    let color = {
+        let json_value = actor_object.get("color")
+            .expect("Wrong JSON map format. trigger_orb have not an color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x * color.w,
+            color.y * color.w,
+            color.z * color.w,
+        )
+    };
+
+    TriggerOrb::new(
+        transform,
+        target_trigger_name,
+        color,
+        radius
+    )
+}
+
+
+fn parse_final_trigger(
+    actor_value: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>
+) -> FinalTrgger {
+
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, final_trgger must be an json object");
+
+    let next_level_name = actor_object
+        .get("next_level_name")
+        .expect("Wrong JSON map format, final_trgger must have next_level_name property")
+        .as_str()
+        .expect("Wrong JSON map format, final_trgger's next_level_name property must be string type")
+        .to_string();
+
+    let transform = parse_json_into_transform(actor_value, "final_trgger_actor");
+
+    let trigger_area_radius = actor_object
+        .get("trigger_area_radius")
+        .expect("Wrong JSON map format, final_trgger must have trigger_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, trigger_area_radius in final_trgger must be float number")
+        as f32;
+    
+    let visual_area_radius = actor_object
+        .get("visual_area_radius")
+        .expect("Wrong JSON map format, final_trgger must have visual_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, visual_area_radius in final_trgger must be float number")
+        as f32;
+    
+    let coloring_area_radius = actor_object
+        .get("coloring_area_radius")
+        .expect("Wrong JSON map format, final_trgger must have coloring_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, coloring_area_radius in final_trgger must be float number")
+        as f32;
+
+    let static_objects_value = actor_object
+        .get("static_objects")
+        .expect("Wrong JSON map format, final_trgger must have static_objects property");
+
+    let visual_area_color = {
+        let json_value = actor_object.get("visual_area_color")
+            .expect("Wrong JSON map format. final_trgger have not an visual_area_color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x * color.w,
+            color.y * color.w,
+            color.z * color.w,
+        )
+    };
+
+    let coloring_area_color = {
+        let json_value = actor_object.get("coloring_area_color")
+            .expect("Wrong JSON map format. final_trgger have not an coloring_area_color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x * color.w,
+            color.y * color.w,
+            color.z * color.w,
+        )
+    };
+
+    let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
+
+    FinalTrgger::new(
+        transform,
+        next_level_name,
+        trigger_area_radius,
+        visual_area_radius,
+        visual_area_color,
+        Vec4::ZERO,
+        coloring_area_radius,
+        coloring_area_color,
+        Vec4::ZERO,
+        static_objects
+    )
+}
+
+
+fn parse_trigger(
+    actor_value: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>
+) -> Trigger {
+
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, trigger must be an json object");
+
+    let trigger_name = actor_object
+        .get("trigger_name")
+        .expect("Wrong JSON map format, trigger must have trigger_name property")
+        .as_str()
+        .expect("Wrong JSON map format, trigger's trigger_name property must be string type")
+        .to_string();
+
+    let transform = parse_json_into_transform(actor_value, "trigger_actor");
+
+    let trigger_area_radius = actor_object
+        .get("trigger_area_radius")
+        .expect("Wrong JSON map format, trigger must have trigger_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, trigger_area_radius in trigger must be float number")
+        as f32;
+    
+    let visual_area_radius = actor_object
+        .get("visual_area_radius")
+        .expect("Wrong JSON map format, trigger must have visual_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, visual_area_radius in trigger must be float number")
+        as f32;
+    
+    let coloring_area_radius = actor_object
+        .get("coloring_area_radius")
+        .expect("Wrong JSON map format, trigger must have coloring_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, coloring_area_radius in trigger must be float number")
+        as f32;
+
+    let static_objects_value = actor_object
+        .get("static_objects")
+        .expect("Wrong JSON map format, trigger must have static_objects property");
+
+    let visual_area_color = {
+        let json_value = actor_object.get("visual_area_color")
+            .expect("Wrong JSON map format. trigger have not an visual_area_color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x * color.w,
+            color.y * color.w,
+            color.z * color.w,
+        )
+    };
+
+    let coloring_area_color = {
+        let json_value = actor_object.get("coloring_area_color")
+            .expect("Wrong JSON map format. trigger have not an coloring_area_color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x * color.w,
+            color.y * color.w,
+            color.z * color.w,
+        )
+    };
+
+    let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
+
+    Trigger::new(
+        transform,
+        trigger_name,
+        trigger_area_radius,
+        visual_area_radius,
+        visual_area_color,
+        Vec4::ZERO,
+        coloring_area_radius,
+        coloring_area_color,
+        Vec4::ZERO,
+        static_objects
+    )
+}
+
+
+fn parse_triggering_wandering_actor(
+    actor_value: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>
+) -> TriggeringWanderingActor {
+
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, triggering_wandering_actor must be an json object");
+
+    let target = actor_object
+        .get("target")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have target property");
+
+    let transform = parse_json_into_transform(actor_value, "triggering_wandering_actor");
+
+    let second_target = parse_json_into_transform(target, "triggering_wandering_actor, target");
+
+    let travel_time = actor_object
+        .get("travel_time")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have travel_time property")
+        .as_f64()
+        .expect("Wrong JSON map format, travel_time in triggering_wandering_actor must be float number")
+        as f32;
+    
+    let movement_type = actor_object
+        .get("movement_type")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have movement_type property")
+        .as_str()
+        .expect("Wrong JSON map format, movement_type in triggering_wandering_actor must be string value");
+
+    let movement_type = {
+        match movement_type {
+            "linear" => {
+                WanderingActorMovementType::Linear
+            },
+            "nonlinear" => {
+                WanderingActorMovementType::NonLinear
+            },
+            _ => {
+                panic!("Wrong JSON map format, {} it is not allowed movement_type in wandering actor", movement_type);
+            }
+        }
+    };
+
+    let static_objects_value = actor_object
+        .get("static_objects")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have static_objects property");
+
+    let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
+
+
+    let triggering_by_trigger = actor_object
+        .get("triggering_by_trigger")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have triggering_by_trigger property")
+        .as_str()
+        .expect("Wrong JSON map format, triggering_by_trigger in triggering_wandering_actor must be string value")
+        .to_string();
+
+    let is_one_time_movement = actor_object
+        .get("is_one_time_movement")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have is_one_time_movement property")
+        .as_bool()
+        .expect("Wrong JSON map format, is_one_time_movement in triggering_wandering_actor must be boolean value");
+
+    TriggeringWanderingActor::new(
+        transform,
+        second_target,
+        triggering_by_trigger,
+        is_one_time_movement,
+        static_objects,
+        travel_time,
+        movement_type
+    )
 }
 
 
