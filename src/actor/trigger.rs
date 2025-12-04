@@ -149,7 +149,7 @@ impl Actor for Trigger
         &mut self.transform
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement>
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>>
     {
         Some(
             PhysicalElement
@@ -166,7 +166,7 @@ impl Actor for Trigger
     }
 
 
-    fn get_visual_element(&self) -> Option<VisualElement>
+    fn get_visual_element(&self) -> Option<VisualElement<'_>>
     {
         Some(
             VisualElement

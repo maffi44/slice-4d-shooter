@@ -1915,9 +1915,9 @@ fn parse_trigger_orb(
         let color = parse_json_color_and_multiplier(json_value);
 
         Vec3::new(
-            color.x * color.w,
-            color.y * color.w,
-            color.z * color.w,
+            color.x,
+            color.y,
+            color.z,
         )
     };
 
@@ -1981,9 +1981,9 @@ fn parse_final_trigger(
         let color = parse_json_color_and_multiplier(json_value);
 
         Vec3::new(
-            color.x * color.w,
-            color.y * color.w,
-            color.z * color.w,
+            color.x,
+            color.y,
+            color.z,
         )
     };
 
@@ -1994,9 +1994,9 @@ fn parse_final_trigger(
         let color = parse_json_color_and_multiplier(json_value);
 
         Vec3::new(
-            color.x * color.w,
-            color.y * color.w,
-            color.z * color.w,
+            color.x,
+            color.y,
+            color.z,
         )
     };
 
@@ -2068,9 +2068,9 @@ fn parse_trigger(
         let color = parse_json_color_and_multiplier(json_value);
 
         Vec3::new(
-            color.x * color.w,
-            color.y * color.w,
-            color.z * color.w,
+            color.x,
+            color.y,
+            color.z,
         )
     };
 
@@ -2081,9 +2081,9 @@ fn parse_trigger(
         let color = parse_json_color_and_multiplier(json_value);
 
         Vec3::new(
-            color.x * color.w,
-            color.y * color.w,
-            color.z * color.w,
+            color.x,
+            color.y,
+            color.z,
         )
     };
 

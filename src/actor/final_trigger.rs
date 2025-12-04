@@ -152,7 +152,7 @@ impl Actor for FinalTrgger
                 );
             }
 
-            if self.level_transition_timer > 3.5
+            if self.level_transition_timer > 5.0
             {
                 engine_handle.send_command(
                     Command {
@@ -178,7 +178,7 @@ impl Actor for FinalTrgger
                 kinematic_collider: None,
                 dynamic_colliders: None,
                 static_colliders: None,
-                static_objects: None,
+                static_objects: Some(&mut self.static_objects),
                 area: Some(&mut self.area)
             }
         )
@@ -191,8 +191,8 @@ impl Actor for FinalTrgger
             VisualElement
             {
                 transform: &self.transform,
-                static_objects: None,
-                coloring_areas: None,
+                static_objects: Some(&self.static_objects),
+                coloring_areas: Some(&self.coloring_areas),
                 volume_areas: Some(&self.visual_areas),
                 waves: None,
                 player: None,
