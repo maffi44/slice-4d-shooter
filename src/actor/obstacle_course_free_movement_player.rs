@@ -342,7 +342,9 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                                         message: MessageType::SpecificActorMessage(
                                             SpecificActorMessage::TriggerOrbMessage(
                                                 TriggerOrbMessage::SetTargetPosition(
-                                                    self.inner_state.get_position() + Vec4::Y*0.8
+                                                    self.inner_state.get_position()
+                                                    +
+                                                    self.inner_state.get_rotation_matrix() * Vec4::new(-0.8, 0.1, -0.9, 0.0).normalize() * 0.6
                                                 )
                                             )
                                         )
@@ -610,18 +612,6 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
             time_system,
             engine_handle,
         );
-
-        if input.arrow_up.is_action_just_pressed()
-        {
-            engine_handle.send_command(
-                Command {
-                    sender: 0u128,
-                    command_type: CommandType::LoadNewLevelSync(
-                        "map-first".to_string()
-                    )
-                }
-            );
-        }
     }
 
     fn on_added_to_world(

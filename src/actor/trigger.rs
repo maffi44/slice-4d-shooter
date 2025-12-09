@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use std::f32::consts::PI;
+
 use glam::{Vec3, Vec4};
 use rand::Rng;
 
@@ -69,6 +71,11 @@ pub struct Trigger
     static_objects: Vec<StaticObject>,
     trigger_name: String,
     is_triggered: bool,
+    pulse_timer: f32,
+    orginal_visual_area_radius: f32,
+    orginal_visual_area_color: Vec3,
+    orginal_coloring_area_radius: f32,
+    orginal_coloring_area_color: Vec3,
 }
 
 impl Trigger
@@ -128,9 +135,19 @@ impl Trigger
             static_objects,
             trigger_name,
             is_triggered: false,
+            pulse_timer: 0.0,
+            orginal_visual_area_radius: visual_area_radius,
+            orginal_visual_area_color: visual_area_color,
+            orginal_coloring_area_radius: coloring_area_radius,
+            orginal_coloring_area_color: coloring_area_color,
         }
     }
 }
+
+const VISUAL_AREA_SIZE_PULSE_MULT: f32 = 0.2;
+const VISUAL_AREA_COLOR_PULSE_MULT: f32 = 0.01;
+const COLORING_AREA_SIZE_PULSE_MULT: f32 = 0.285;
+const COLORING_AREA_COLOR_PULSE_MULT: f32 = 0.208;
 
 impl Actor for Trigger
 {
@@ -143,7 +160,24 @@ impl Actor for Trigger
         time_system: &mut crate::engine::time::TimeSystem,
         effects_system: &mut EffectsSystem,
         delta: f32
-    ) {}
+    )
+    {
+        self.pulse_timer += delta; 
+        if self.pulse_timer >= PI {self.pulse_timer -= PI}
+
+        let pulse = f32::sin(self.pulse_timer)*0.5+0.5;
+        let visual_area_size_pulse_val = pulse*(1.0-VISUAL_AREA_SIZE_PULSE_MULT)+VISUAL_AREA_SIZE_PULSE_MULT;
+        let visual_area_color_pulse_val = pulse*(1.0-VISUAL_AREA_COLOR_PULSE_MULT)+VISUAL_AREA_COLOR_PULSE_MULT;
+        let coloring_area_size_pulse_val = pulse*(1.0-COLORING_AREA_SIZE_PULSE_MULT)+COLORING_AREA_SIZE_PULSE_MULT;
+        let coloring_area_color_pulse_val = pulse*(1.0-COLORING_AREA_COLOR_PULSE_MULT)+COLORING_AREA_COLOR_PULSE_MULT;
+
+        if let VolumeArea::SphericalVolumeArea(area) = &mut self.visual_areas[0] {
+            area.radius = self.orginal_visual_area_radius * visual_area_size_pulse_val;
+            area.color = self.orginal_visual_area_color * visual_area_color_pulse_val;
+        }
+        self.coloring_areas[0].radius = self.orginal_coloring_area_radius * coloring_area_size_pulse_val;
+        self.coloring_areas[0].color = self.orginal_coloring_area_color * coloring_area_color_pulse_val;
+    }
 
     fn get_mut_transform(&mut self) -> &mut Transform {
         &mut self.transform

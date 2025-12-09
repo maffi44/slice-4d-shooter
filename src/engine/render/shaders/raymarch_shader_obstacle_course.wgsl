@@ -2391,7 +2391,7 @@ fn get_color_and_light_from_mats(
             // wireframe_dif += w_perpendicular_line*0.006;
             // base_diffuse += w_color*6.0 * w_perpendicular_line;
 
-            let w_perpendicular_line = clamp(pow(my_mod(hited_pos.w-4.636, 3.696)/3.85, 21.0), smoothstep(0.996,1.0,sin(hited_pos.w*1.7)), 1.0);
+            let w_perpendicular_line = clamp(pow(my_mod(hited_pos.w-4.636, 3.696)/3.85, 17.0), smoothstep(0.996,1.0,sin(hited_pos.w*1.7)), 1.0);
             wireframe_dif += w_perpendicular_line*0.006;
             base_diffuse += w_color*5.0 * w_perpendicular_line;
 
@@ -2409,11 +2409,11 @@ fn get_color_and_light_from_mats(
                 // wireframe_dif += z_perpendicular_line*0.006;
                 // base_diffuse += z_color*6.0 * z_perpendicular_line;
 
-                let x_perpendicular_line = clamp(pow(my_mod(hited_pos.x-4.636, 3.696)/3.85, 21.0), smoothstep(0.996,1.0,sin(hited_pos.x*1.7)), 1.0);
+                let x_perpendicular_line = clamp(pow(my_mod(hited_pos.x-4.636, 3.696)/3.85, 17.0), smoothstep(0.996,1.0,sin(hited_pos.x*1.7)), 1.0);
                 wireframe_dif += x_perpendicular_line*0.006;
                 base_diffuse += x_color*5.0 * x_perpendicular_line;
 
-                let z_perpendicular_line = clamp(pow(my_mod(hited_pos.z-4.636, 3.696)/3.85, 21.0), smoothstep(0.996,1.0,sin(hited_pos.z*1.7)), 1.0);
+                let z_perpendicular_line = clamp(pow(my_mod(hited_pos.z-4.636, 3.696)/3.85, 17.0), smoothstep(0.996,1.0,sin(hited_pos.z*1.7)), 1.0);
                 wireframe_dif += z_perpendicular_line*0.006;
                 base_diffuse += z_color*5.0 * z_perpendicular_line;
             }

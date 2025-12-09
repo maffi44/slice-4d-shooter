@@ -268,7 +268,7 @@
                 "transform" : {
                     "position" : {
                         "x": 0,
-                        "y": 1.1,
+                        "y": 1.45,
                         "z": -4,
                         "w": 9
                     },
@@ -282,7 +282,7 @@
 
                 "trigger_area_radius" : 1.9,
 
-                "visual_area_radius" : 0.7,
+                "visual_area_radius" : 0.21,
 
                 "visual_area_color" : {
                     "red": 0.08,
@@ -291,7 +291,7 @@
                     "multiplier": 1.5
                 },
 
-                "coloring_area_radius" : 1.8,
+                "coloring_area_radius" : 1.4,
 
                 "coloring_area_color" : {
                     "red": 0.08,
@@ -308,7 +308,7 @@
                             "transform" : {
                                 "position" : {
                                     "x": 0,
-                                    "y": 0.0,
+                                    "y": -1.5,
                                     "z": 0,
                                     "w": 0
                                 },
@@ -323,14 +323,14 @@
                             },
                             "size" : {
                                 "x": 0.01,
-                                "y": 0.01,
+                                "y": 1.35,
                                 "z": 0.01,
                                 "w": 0.01
                             },
-                            "roundness" : 1.5,
-                            "is_positive" : false,
+                            "roundness" : 0.11,
+                            "is_positive" : true,
                             "stickiness" : true,
-                            "undestroyable" : false
+                            "undestroyable" : true
                         }
                     }
                 ]
@@ -347,7 +347,7 @@
                 "transform" : {
                     "position" : {
                         "x": 0,
-                        "y": 1.2,
+                        "y": 1.3,
                         "z": -11,
                         "w": 0
                     },
@@ -361,7 +361,7 @@
 
                 "trigger_area_radius" : 1.5,
 
-                "visual_area_radius" : 1.6,
+                "visual_area_radius" : 0.21,
 
                 "visual_area_color" : {
                     "red": 3.5,
@@ -370,13 +370,13 @@
                     "multiplier": 0.3
                 },
 
-                "coloring_area_radius" : 2.8,
+                "coloring_area_radius" : 2.15,
 
                 "coloring_area_color" : {
                     "red": 3.5,
                     "green": 3.5,
                     "blue": 3.5,
-                    "multiplier": 0.3
+                    "multiplier": 0.26
                 },
 
                 "static_objects" : [
@@ -387,7 +387,39 @@
                             "transform" : {
                                 "position" : {
                                     "x": 0,
-                                    "y": 0.0,
+                                    "y": -1.6,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.01,
+                                "y": 1.4,
+                                "z": 0.01,
+                                "w": 0.01
+                            },
+                            "roundness" : 0.11,
+                            "is_positive" : true,
+                            "stickiness" : true,
+                            "undestroyable" : true
+                        }
+                    },
+                    {
+
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0.1,
                                     "z": 0,
                                     "w": 0
                                 },
@@ -438,7 +470,7 @@
                     }
                 },
 
-                "radius" : 0.8,
+                "radius" : 0.5,
 
                 "color" : {
                     "red": 0.08,
@@ -471,7 +503,7 @@
                     }
                 },
 
-                "radius" : 1.6,
+                "radius" : 1.0,
 
                 "color" : {
                     "red": 3.5,
@@ -674,6 +706,32 @@
                     "w": 5.5
                 },
                 "roundness" : 0.5,
+                "is_positive" :false
+            }
+        },
+        {
+            "sphere" : {
+                "comment" : "exit 1 sphere hole",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 0.4,
+                        "z": -4,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.6
+                },
+                "roundness" : 0.0,
                 "is_positive" :false
             }
         },
