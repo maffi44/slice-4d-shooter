@@ -42,11 +42,12 @@ pub mod triggering_wandering_actor;
 pub mod trigger;
 pub mod trgger_orb;
 pub mod final_trigger;
+pub mod triggering_special_lift;
 
 use std::fmt::Display;
 
 use crate::{
-    actor::{final_trigger::{FinalTrgger, FinalTrggerMessage}, flag_base::{FlagBase, FlagBaseMessage}, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, obstacle_course_player_two_jumps::ObstacleCoursePlayerTwoJumps, obstaclesgun_shot::ObstaclesGunShot, trgger_orb::{TriggerOrb, TriggerOrbMessage}, trigger::{Trigger, TriggerMessage}, triggering_wandering_actor::TriggeringWanderingActor}, engine::{
+    actor::{final_trigger::{FinalTrgger, FinalTrggerMessage}, flag_base::{FlagBase, FlagBaseMessage}, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, obstacle_course_player_two_jumps::ObstacleCoursePlayerTwoJumps, obstaclesgun_shot::ObstaclesGunShot, trgger_orb::{TriggerOrb, TriggerOrbMessage}, trigger::{Trigger, TriggerMessage}, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor}, engine::{
         audio::AudioSystem,
         effects::EffectsSystem,
         engine_handle::EngineHandle,
@@ -193,6 +194,7 @@ pub enum ActorWrapper {
     Trigger(Trigger),
     FinalTrigger(FinalTrgger),
     TriggeringWanderingActor(TriggeringWanderingActor),
+    TriggeringSpecialLiftActor(TriggeringSpecialLiftActor),
     TriggerOrb(TriggerOrb),
 }
 
@@ -228,6 +230,7 @@ impl Display for ActorWrapper
             ActorWrapper::Trigger(_) => "Trigger",
             ActorWrapper::FinalTrigger(_) => "FinalTrgger",
             ActorWrapper::TriggeringWanderingActor(_) => "TriggeringWanderingActor",
+            ActorWrapper::TriggeringSpecialLiftActor(_) => "TriggeringSpecialLiftActor",
             ActorWrapper::TriggerOrb(_) => "TriggerOrb",
         };
 
@@ -317,6 +320,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FinalTrigger(actor) => {
                 actor.get_transform()
             }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_transform()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -400,6 +406,9 @@ impl Actor for ActorWrapper {
                 actor.get_mut_transform()
             }
             ActorWrapper::FinalTrigger(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.get_mut_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -496,6 +505,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FinalTrigger(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -590,6 +602,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FinalTrigger(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -673,6 +688,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             }
             ActorWrapper::FinalTrigger(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.get_physical_element()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -760,6 +778,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FinalTrigger(actor) => {
                 actor.get_visual_element()
             }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -843,6 +864,9 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             }
             ActorWrapper::FinalTrigger(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.get_id()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -930,6 +954,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FinalTrigger(actor) => {
                 actor.change_id(id, engine_handle)
             }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -1013,6 +1040,9 @@ impl Actor for ActorWrapper {
                 actor.set_id(id)
             }
             ActorWrapper::FinalTrigger(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.set_id(id)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -1101,6 +1131,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::FinalTrigger(actor) => {
                 actor.get_actor_as_controlled()
             }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_actor_as_controlled()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -1185,6 +1218,9 @@ impl Actor for ActorWrapper {
                 actor.get_actor_as_controlled_mut()
             }
             ActorWrapper::FinalTrigger(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.get_actor_as_controlled_mut()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -1280,6 +1316,9 @@ impl Actor for ActorWrapper {
                 actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
             }
             ActorWrapper::FinalTrigger(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},

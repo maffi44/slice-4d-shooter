@@ -18,7 +18,7 @@ use std::{collections::HashMap, fs::File, io::Read};
 
 use crate::{
     actor::{
-        ActorWrapper, device, final_trigger::FinalTrgger, main_player::{player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, trgger_orb::TriggerOrb, trigger::Trigger, triggering_wandering_actor::TriggeringWanderingActor, wandering_actor::{
+        ActorWrapper, device, final_trigger::FinalTrgger, main_player::{player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, trgger_orb::TriggerOrb, trigger::Trigger, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor, wandering_actor::{
             WanderingActor,
             WanderingActorMovementType,
         }
@@ -1875,12 +1875,111 @@ fn parse_json_actors(
 
                     actors.push(ActorWrapper::TriggeringWanderingActor(actor));
                 }
+                "triggering_special_lift_actor" => {
+                    let actor = parse_triggering_special_lift_actor(actor_value, defaults, materials_table);
+
+                    actors.push(ActorWrapper::TriggeringSpecialLiftActor(actor));
+                }
+
                 _ => {panic!("Wrong JSON map format, {} it is worng actor type", actor_type)}
             }
         }
     }
 
     actors
+}
+
+
+fn parse_triggering_special_lift_actor(
+    actor_value: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>
+) -> TriggeringSpecialLiftActor {
+
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, triggering_special_lift_actor must be an json object");
+
+    let target = actor_object
+        .get("target")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have target property");
+
+    let transform = parse_json_into_transform(actor_value, "triggering_special_lift_actor");
+
+    let second_target = parse_json_into_transform(target, "triggering_special_lift_actor, target");
+
+    let travel_time = actor_object
+        .get("travel_time")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have travel_time property")
+        .as_f64()
+        .expect("Wrong JSON map format, travel_time in triggering_special_lift_actor must be float number")
+        as f32;
+    
+    let stop_time = actor_object
+        .get("stop_time")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have stop_time property")
+        .as_f64()
+        .expect("Wrong JSON map format, stop_time in triggering_special_lift_actor must be float number")
+        as f32;
+    
+    let lift_door_open_time = actor_object
+        .get("lift_door_open_time")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have lift_door_open_time property")
+        .as_f64()
+        .expect("Wrong JSON map format, lift_door_open_time in triggering_special_lift_actor must be float number")
+        as f32;
+    
+    let lift_door_index = actor_object
+        .get("lift_door_index")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have lift_door_index property")
+        .as_u64()
+        .expect("Wrong JSON map format, lift_door_index in triggering_special_lift_actor must be unsigned integer")
+        as usize;
+
+    let movement_type = actor_object
+        .get("movement_type")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have movement_type property")
+        .as_str()
+        .expect("Wrong JSON map format, movement_type in triggering_special_lift_actor must be string value");
+
+    let movement_type = {
+        match movement_type {
+            "linear" => {
+                WanderingActorMovementType::Linear
+            },
+            "nonlinear" => {
+                WanderingActorMovementType::NonLinear
+            },
+            _ => {
+                panic!("Wrong JSON map format, {} it is not allowed movement_type in wandering actor", movement_type);
+            }
+        }
+    };
+
+    let static_objects_value = actor_object
+        .get("static_objects")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have static_objects property");
+
+    let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
+
+    let triggering_by_trigger = actor_object
+        .get("triggering_by_trigger")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have triggering_by_trigger property")
+        .as_str()
+        .expect("Wrong JSON map format, triggering_by_trigger in triggering_special_lift_actor must be string value")
+        .to_string();
+
+    TriggeringSpecialLiftActor::new(
+        transform,
+        second_target,
+        triggering_by_trigger,
+        static_objects,
+        lift_door_index,
+        lift_door_open_time,
+        travel_time,
+        stop_time,
+        movement_type
+    )
 }
 
 
