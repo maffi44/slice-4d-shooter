@@ -254,9 +254,9 @@
             "spawn" : {
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
+                        "x": 4.0,
                         "y": -1.5,
-                        "z": 2.0,
+                        "z": 7.0,
                         "w": 0.0
                     }
                 }
@@ -272,9 +272,9 @@
                 
                 "transform" : {
                     "position" : {
-                        "x": 2.0,
-                        "y": -3.5,
-                        "z": -9.5,
+                        "x": -6.5,
+                        "y": 18.5,
+                        "z": -3,
                         "w": 0
                     },
                     "scale" : {
@@ -288,9 +288,9 @@
                 "target" : {
                     "transform" : {
                         "position" : {
-                            "x": 2.0,
-                            "y": 4.1,
-                            "z": -9.5,
+                            "x": -6.5,
+                            "y": 6.0,
+                            "z": -3,
                             "w": 0
                         },
                         "scale" : {
@@ -302,7 +302,7 @@
                     }
                 },
 
-                "travel_time" : 3.6,
+                "travel_time" : 8.6,
 
                 "movement_type" : "linear",
 
@@ -327,15 +327,15 @@
                                 }
                             },
                             "size" : {
-                                "x": 1.5,
-                                "y": 0.2,
-                                "z": 2,
-                                "w": 2
+                                "x": 1.7,
+                                "y": 8.5,
+                                "z": 0.2,
+                                "w": 0.2
                             },
-                            "roundness" : 0.02,
-                            "is_positive" : true,
+                            "roundness" : 1.0,
+                            "is_positive" : false,
                             "stickiness" : true,
-                            "undestroyable" : true
+                            "undestroyable" : false
                         }
                     }
                 ]
@@ -350,9 +350,9 @@
 
                 "transform" : {
                     "position" : {
-                        "x": 2,
-                        "y": 5.5,
-                        "z": -6.5,
+                        "x": -3.5,
+                        "y": 8.5,
+                        "z": -3,
                         "w": 0
                     },
                     "scale" : {
@@ -382,10 +382,10 @@
 
                 "transform" : {
                     "position" : {
-                        "x": -8.0,
-                        "y": 15.4,
-                        "z": -7.0,
-                        "w": 0.0
+                        "x": 9.5,
+                        "y": 10,
+                        "z": 1.3,
+                        "w": 5.0
                     },
                     "scale" : {
                         "x": 1.0,
@@ -414,9 +414,9 @@
 
                 "transform" : {
                     "position" : {
-                        "x": 3.0,
-                        "y": -0,
-                        "z": -1.0,
+                        "x": 12.5,
+                        "y": 4.4,
+                        "z": -1.9,
                         "w": 0.0
                     },
                     "scale" : {
@@ -438,7 +438,7 @@
                     "multiplier": 1.5
                 },
 
-                "coloring_area_radius" : 1.8,
+                "coloring_area_radius" : 2.05,
 
                 "coloring_area_color" : {
                     "red":  3.5,
@@ -455,7 +455,7 @@
                             "transform" : {
                                 "position" : {
                                     "x": 0,
-                                    "y": -1.5,
+                                    "y": -0.75,
                                     "z": 0,
                                     "w": 0
                                 },
@@ -470,7 +470,7 @@
                             },
                             "size" : {
                                 "x": 0.01,
-                                "y": 1.35,
+                                "y": 0.70,
                                 "z": 0.01,
                                 "w": 0.01
                             },
@@ -506,7 +506,7 @@
                                 "z": 0.01,
                                 "w": 0.01
                             },
-                            "roundness" : 1.6,
+                            "roundness" : 1.4,
                             "is_positive" : false,
                             "stickiness" : true,
                             "undestroyable" : false
@@ -524,10 +524,10 @@
 
                 "transform" : {
                     "position" : {
-                        "x": -5,
-                        "y": -0.3,
-                        "z": 5,
-                        "w": 0
+                        "x": -5.0,
+                        "y": 0.3,
+                        "z": 7.0,
+                        "w": 0.0
                     },
                     "scale" : {
                         "x": 1.0,
@@ -626,126 +626,15 @@
             }
         },
         {
-            "triggering_wandering_actor" : {
-
-                "comment" : "first triggering_wandering_actor",
-                
-                "transform" : {
-                    "position" : {
-                        "x": -8.0,
-                        "y": -9.0,
-                        "z": -7.0,
-                        "w": 0.0
-                    },
-                    "scale" : {
-                        "x": 1.0,
-                        "y": 1.0 ,
-                        "z": 1.0,
-                        "w": 1.0
-                    }
-                },
-
-                "target" : {
-                    "transform" : {
-                        "position" : {
-                            "x": -8.0,
-                            "y": 6.4,
-                            "z": -7.0,
-                            "w": 0.0
-                        },
-                        "scale" : {
-                            "x": 1.0,
-                            "y": 1.0 ,
-                            "z": 1.0,
-                            "w": 1.0
-                        }
-                    }
-                },
-
-                "travel_time" : 5.6,
-
-                "movement_type" : "linear",
-
-                "triggering_by_trigger" : "first_trigger",
-                
-                "is_one_time_movement" : false,
-
-                "static_objects" : [
-                    {
-                        "cube" : {
-                            "comment" : "",
-                            "transform" : {
-                                "position" : {
-                                    "x": 0,
-                                    "y": 0.0,
-                                    "z": 0,
-                                    "w": 0
-                                },
-                                "rotation" : {
-                                    "yz": 0.0,
-                                    "xz": 0.0,
-                                    "xy": 0.0,
-                                    "wx": 0.0,
-                                    "wy": 0.0,
-                                    "wz": 0.0
-                                }
-                            },
-                            "size" : {
-                                "x": 0.5,
-                                "y": 8.0,
-                                "z": 0.5,
-                                "w": 0.5
-                            },
-                            "roundness" : 1.2,
-                            "undestroyable" : false,
-                            "stickiness" : false,
-                            "visual_material" : "orange"
-                        }
-                    },
-                    {
-                        "cube" : {
-                            "comment" : "",
-                            "transform" : {
-                                "position" : {
-                                    "x": 0,
-                                    "y": 9.0,
-                                    "z": 0,
-                                    "w": 0
-                                },
-                                "rotation" : {
-                                    "yz": 0.0,
-                                    "xz": 0.0,
-                                    "xy": 0.0,
-                                    "wx": 0.0,
-                                    "wy": 0.0,
-                                    "wz": 0.0
-                                }
-                            },
-                            "size" : {
-                                "x": 3.0,
-                                "y": 1.0,
-                                "z": 3.0,
-                                "w": 3.0
-                            },
-                            "roundness" : 0.0,
-                            "is_positive" : false,
-                            "undestroyable" : false,
-                            "stickiness" : false
-                        }
-                    }
-                ]
-            }
-        },
-        {
             "triggering_special_lift_actor" : {
 
                 "comment" : "triggering_special_lift_actor",
                 
                 "transform" : {
                     "position" : {
-                        "x": 3.0,
-                        "y": -0,
-                        "z": -3.0,
+                        "x": 13.5,
+                        "y": 4.7,
+                        "z": 1.3,
                         "w": 0.0
                     },
                     "scale" : {
@@ -759,9 +648,9 @@
                 "target" : {
                     "transform" : {
                         "position" : {
-                            "x": 3.0,
-                            "y": 0,
-                            "z": -3.0,
+                            "x": 13.5,
+                            "y": 4.7,
+                            "z": 1.3,
                             "w": 10.0
                         },
                         "scale" : {
@@ -773,7 +662,7 @@
                     }
                 },
 
-                "lift_door_index" : 4,
+                "lift_door_index" : 5,
 
                 "travel_time" : 5.6,
 
@@ -854,7 +743,7 @@
                             "transform" : {
                                 "position" : {
                                     "x": -4,
-                                    "y": 0.0,
+                                    "y": -0.2,
                                     "z": 0,
                                     "w": 0
                                 },
@@ -885,7 +774,7 @@
                             "transform" : {
                                 "position" : {
                                     "x": -4,
-                                    "y": -0.73,
+                                    "y": -0.93,
                                     "z": 0,
                                     "w": 0
                                 },
@@ -915,8 +804,8 @@
                             "comment" : "",
                             "transform" : {
                                 "position" : {
-                                    "x": -2.2,
-                                    "y": 0.0,
+                                    "x": -4,
+                                    "y": -2.2,
                                     "z": 0,
                                     "w": 0
                                 },
@@ -930,12 +819,43 @@
                                 }
                             },
                             "size" : {
-                                "x": 0.7,
+                                "x": 0.001,
+                                "y": 0.8,
+                                "z": 0.001,
+                                "w": 0.001
+                            },
+                            "roundness" : 0.48,
+                            "is_positive" : false,
+                            "undestroyable" : false,
+                            "stickiness" : false
+                        }
+                    },
+                    {
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": -4.0,
+                                    "y": 0.0,
+                                    "z": -2.2,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.0001,
                                 "y": 0.0001,
-                                "z": 0.0001,
+                                "z": 0.7,
                                 "w": 0.0001
                             },
-                            "roundness" : 1.1,
+                            "roundness" : 1.3,
                             "is_positive" : false,
                             "undestroyable" : false,
                             "stickiness" : false
@@ -954,35 +874,7 @@
                     "position" : {
                         "x": 0.0,
                         "y": -2.3,
-                        "z": 0.0,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 8.0,
-                    "y": 0.3,
-                    "z": 7,
-                    "w": 3
-                },
-                "roundness" : 0
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "map's floor 2",
-                "transform" : {
-                    "position" : {
-                        "x": -8.0,
-                        "y": -2.4,
-                        "z": -7.0,
+                        "z": -1.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -996,22 +888,21 @@
                 },
                 "size" : {
                     "x": 5.0,
-                    "y": 1.0,
-                    "z": 7,
+                    "y": 0.3,
+                    "z": 12,
                     "w": 3
                 },
-                "roundness" : 0.4,
-                "stickiness" : true
+                "roundness" : 0
             }
         },
         {
             "cube" : {
-                "comment" : "map's floor 2 coner hole",
+                "comment" : "right x path",
                 "transform" : {
                     "position" : {
-                        "x": -11.0,
-                        "y": -0.4,
-                        "z": -12.0,
+                        "x": 6.5,
+                        "y": -2.6,
+                        "z": 1.3,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -1024,14 +915,40 @@
                     }
                 },
                 "size" : {
-                    "x": 1.5,
-                    "y": 1.5,
-                    "z": 1.5,
-                    "w": 1.5
+                    "x": 3.5,
+                    "y": 0.3,
+                    "z": 0.8,
+                    "w": 0.8
                 },
-                "roundness" : 0.4,
-                "is_positive" : false,
-                "stickiness" : true
+                "roundness" : 0
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right w path",
+                "transform" : {
+                    "position" : {
+                        "x": 9.5,
+                        "y": -2.45,
+                        "z": 1.3,
+                        "w": 5.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.2,
+                    "y": 0.45,
+                    "z": 1.2,
+                    "w": 6.2
+                },
+                "roundness" : 0.0
             }
         },
         {
@@ -1039,10 +956,10 @@
                 "comment" : "final trigger pedestal",
                 "transform" : {
                     "position" : {
-                        "x": -5,
-                        "y": -2.2,
-                        "z": 5,
-                        "w": 0
+                        "x": -5.0,
+                        "y": -2.3,
+                        "z": 7.0,
+                        "w": 0.0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -1054,26 +971,23 @@
                     }
                 },
                 "size" : {
-                    "x": 2.2,
-                    "y": 0.201,
-                    "z": 2.2,
-                    "w": 0.2
+                    "x": 3.0,
+                    "y": 0.8,
+                    "z": 3,
+                    "w": 3
                 },
                 "roundness" : 0.3,
-                "is_positive" : true,
-                "undestroyable" : false,
                 "stickiness" : true
-
             }
         },
         {
             "cube" : {
-                "comment" : "final trigger orb pedestal",
+                "comment" : "left big cube",
                 "transform" : {
                     "position" : {
-                        "x": 2,
-                        "y": -1.9,
-                        "z": -6.5,
+                        "x": -6.5,
+                        "y": 0.5,
+                        "z": -3,
                         "w": 0
                     },
                     "rotation" : {
@@ -1086,16 +1000,246 @@
                     }
                 },
                 "size" : {
-                    "x": 1.3,
-                    "y": 6,
-                    "z": 1.3,
-                    "w": 0.2
+                    "x": 2,
+                    "y": 6.5,
+                    "z": 0.5,
+                    "w": 0.5
                 },
-                "roundness" : 0.3,
-                "is_positive" : true,
+                "roundness" : 2.0,
                 "undestroyable" : false,
+                "stickiness" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "left big cube entrance",
+                "transform" : {
+                    "position" : {
+                        "x": -2.5,
+                        "y": -0.75,
+                        "z": -3,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.5,
+                    "y": 1.0,
+                    "z": 0.5,
+                    "w": 0.6
+                },
+                "roundness" : 0.25,
+                "undestroyable" : false,
+                "stickiness" : false,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "left big cube cup hole",
+                "transform" : {
+                    "position" : {
+                        "x": -6.5,
+                        "y": 10.0,
+                        "z": -3,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 7.0,
+                    "y": 3.0,
+                    "z": 4.0,
+                    "w": 7.0
+                },
+                "roundness" : 0.0,
+                "is_positive" : false,
+                "undestroyable" : false,
+                "stickiness" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right cube 1",
+                "transform" : {
+                    "position" : {
+                        "x": 6.0,
+                        "y": -2.3,
+                        "z": -7.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 4.0,
+                    "y": 1.3,
+                    "z": 2.0,
+                    "w": 2.0
+                },
+                "roundness" : 0.2
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right cube 2",
+                "transform" : {
+                    "position" : {
+                        "x": 8.0,
+                        "y": -2.5,
+                        "z": -5.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.0,
+                    "y": 3.5,
+                    "z": 2.0,
+                    "w": 2.0
+                },
+                "roundness" : 0.1
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right cube 2 hole",
+                "transform" : {
+                    "position" : {
+                        "x": 8.5,
+                        "y": 3.2,
+                        "z": -7.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0,
+                    "y": 3,
+                    "z": 1.8,
+                    "w": 2.0
+                },
+                "roundness" : 0.2,
+                "is_positive" : false,
                 "stickiness" : true
-
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right cube 3",
+                "transform" : {
+                    "position" : {
+                        "x": 9.5,
+                        "y": 2,
+                        "z": -8.5,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 4.0,
+                    "y": 0.2,
+                    "z": 2.5,
+                    "w": 2.0
+                },
+                "roundness" : 0.1
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right cube 4",
+                "transform" : {
+                    "position" : {
+                        "x": 12.5,
+                        "y": 3,
+                        "z": -4.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.0,
+                    "y": 0.0001,
+                    "z": 3.3,
+                    "w": 2.0
+                },
+                "roundness" : 0.35
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right cube 5",
+                "transform" : {
+                    "position" : {
+                        "x": 10.6,
+                        "y": 3,
+                        "z": -1.9,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 2.4,
+                    "y": 0.0001,
+                    "z": 1.2,
+                    "w": 2.0
+                },
+                "roundness" : 0.35
             }
         }
     ]

@@ -50,6 +50,7 @@ pub struct TriggeringSpecialLiftActor {
     is_stopped: bool,
     current_stop_time: f32,
     stop_time: f32,
+    pulse_timer: f32,
 }
 
 impl TriggeringSpecialLiftActor {
@@ -96,11 +97,13 @@ impl TriggeringSpecialLiftActor {
             id: None,
             current_stop_time: 0.0,
             stop_time,
+            pulse_timer: 0.0,
         }
     }
 }
 
 const THRESHOLD: f32 = 0.01;
+const PULSE_MULT: f32 = 0.12;
 
 impl Actor for TriggeringSpecialLiftActor {
     fn get_transform(&self) -> &Transform {
@@ -158,6 +161,12 @@ impl Actor for TriggeringSpecialLiftActor {
         effects_system: &mut EffectsSystem,
         delta: f32
     ) {
+
+        self.pulse_timer += delta*2.0; 
+        if self.pulse_timer >= PI*2.0 {self.pulse_timer -= PI*2.0}
+        let pulse = f32::sin(self.pulse_timer);
+        self.transform.increment_position(Vec4::Y*pulse*PULSE_MULT*delta);
+
         if self.triggered
         {
             if self.is_stopped

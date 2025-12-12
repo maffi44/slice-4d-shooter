@@ -2157,10 +2157,10 @@ pub fn cube_is_above_or_intersect_the_plane
 ) -> bool
 {
     assert!(
-        cube_size.x > 0.0 &&
-        cube_size.y > 0.0 &&
-        cube_size.z > 0.0 &&
-        cube_size.w > 0.0
+        cube_size.x >= 0.0 &&
+        cube_size.y >= 0.0 &&
+        cube_size.z >= 0.0 &&
+        cube_size.w >= 0.0
     );
 
     (cube_pos + cube_size*Vec4::new(1.0, 1.0, 1.0, 1.0)).dot(plane) > 0.0
