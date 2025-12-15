@@ -18,7 +18,7 @@ use std::{collections::HashMap, fs::File, io::Read};
 
 use crate::{
     actor::{
-        ActorWrapper, device, final_trigger::FinalTrgger, main_player::{player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, trgger_orb::TriggerOrb, trigger::Trigger, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor, wandering_actor::{
+        ActorWrapper, device, droped_rotator_tool::DropedRotatorTool, final_trigger::FinalTrgger, main_player::{player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, trgger_orb::TriggerOrb, trigger::Trigger, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor, wandering_actor::{
             WanderingActor,
             WanderingActorMovementType,
         }
@@ -1818,12 +1818,19 @@ fn parse_obstacle_course_free_movement_player(
         "obstacle_course_free_movement_player"
     );
 
+    let with_rotator_tool = actor_value
+        .get("with_rotator_tool")
+        .expect("Wrong JSON map format, obstacle_course_free_movement_player must have with_rotator_tool property")
+        .as_bool()
+        .expect("Wrong JSON map format, with_rotator_tool in obstacle_course_free_movement_player must be boolean value");
+
     ObstacleCourseFreeMovementPlayer::new(
         InputMaster::LocalMaster(
             LocalMaster::new(ActionsFrameState::empty()),
         ),
         player_settings,
         spawn_transform.get_position(),
+        with_rotator_tool,
     )
 }
 
@@ -1880,6 +1887,11 @@ fn parse_json_actors(
 
                     actors.push(ActorWrapper::TriggeringSpecialLiftActor(actor));
                 }
+                "droped_rotator_tool" => {
+                    let actor = parse_droped_rotator_tool_actor(actor_value);
+
+                    actors.push(ActorWrapper::DropedRotatorTool(actor));
+                }
 
                 _ => {panic!("Wrong JSON map format, {} it is worng actor type", actor_type)}
             }
@@ -1888,6 +1900,19 @@ fn parse_json_actors(
 
     actors
 }
+
+
+fn parse_droped_rotator_tool_actor(
+    actor_value: &Value,
+) -> DropedRotatorTool {
+
+    let transform = parse_json_into_transform(actor_value, "triggering_special_lift_actor");
+
+    DropedRotatorTool::new(
+        transform,
+    )
+}
+
 
 
 fn parse_triggering_special_lift_actor(

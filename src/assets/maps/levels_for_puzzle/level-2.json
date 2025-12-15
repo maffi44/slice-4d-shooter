@@ -260,7 +260,8 @@
                         "w": 0.0
                     }
                 }
-            }
+            },
+            "with_rotator_tool" : false
         }
     },
     
@@ -520,7 +521,7 @@
 
                 "comment" : "final trigger",
 
-                "next_level_name" : "map-first",
+                "next_level_name" : "levels_for_puzzle/level-3",
 
                 "transform" : {
                     "position" : {

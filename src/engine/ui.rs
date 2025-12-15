@@ -166,6 +166,8 @@ pub enum UIElementType {
     TitleConnectionFailedOldVersion,
     TitleConnectionFailedLostConnection,
     TutorialWindow,
+    RotatorDraft,
+    RotatorTutorialDraft,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -219,6 +221,8 @@ pub enum TextureType {
     TitleConnectionFailedOldVersion,
     TitleConnectionFailedLostConnection,
     TutorialWindow,
+    RotatorDraft,
+    RotatorTutorialDraft,
 }
 
 
@@ -430,6 +434,14 @@ impl UISystem {
         texture_sources.insert(
             TextureType::TutorialWindow,
             include_bytes!("../assets/textures/tutorial_window.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::RotatorDraft,
+            include_bytes!("../assets/textures/rotator_draft.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::RotatorTutorialDraft,
+            include_bytes!("../assets/textures/rotator_tutorial_draft.png").as_slice()
         );
         
 
@@ -1793,6 +1805,52 @@ impl UISystem {
                         None,
                     ),
                     TextureType::TutorialWindow
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::RotatorTutorialDraft,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedHeight(
+                                1.0,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 3,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RotatorTutorialDraft
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::RotatorDraft,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.35,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 1,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RotatorDraft
                 )
             )
         );

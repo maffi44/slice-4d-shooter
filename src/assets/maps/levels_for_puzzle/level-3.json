@@ -260,12 +260,29 @@
                         "w": 0.0
                     }
                 }
-            }
+            },
+            "with_rotator_tool" : false
         }
     },
     
     "actors" : [
         {
+            "droped_rotator_tool" : {
+                "transform" : {
+                    "position" : {
+                        "x": 9.5,
+                        "y": -1.25,
+                        "z": 1.3,
+                        "w": 10.0
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0 ,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                }
+            },
             "wandering_actor" : {
 
                 "comment" : "lift",
@@ -302,7 +319,7 @@
                     }
                 },
 
-                "travel_time" : 8.6,
+                "travel_time" : 4.6,
 
                 "movement_type" : "linear",
 
@@ -383,7 +400,7 @@
                 "transform" : {
                     "position" : {
                         "x": 9.5,
-                        "y": 10,
+                        "y": -0.3,
                         "z": 1.3,
                         "w": 5.0
                     },
@@ -520,7 +537,7 @@
 
                 "comment" : "final trigger",
 
-                "next_level_name" : "map-first",
+                "next_level_name" : "levels_for_puzzle/level-4",
 
                 "transform" : {
                     "position" : {
@@ -837,7 +854,7 @@
                                 "position" : {
                                     "x": -4.0,
                                     "y": 0.0,
-                                    "z": -2.2,
+                                    "z": -3.2,
                                     "w": 0
                                 },
                                 "rotation" : {
@@ -852,10 +869,10 @@
                             "size" : {
                                 "x": 0.0001,
                                 "y": 0.0001,
-                                "z": 0.7,
+                                "z": 1.7,
                                 "w": 0.0001
                             },
-                            "roundness" : 1.3,
+                            "roundness" : 1.41,
                             "is_positive" : false,
                             "undestroyable" : false,
                             "stickiness" : false
@@ -951,6 +968,120 @@
                 "roundness" : 0.0
             }
         },
+        {
+            "sphere" : {
+                "comment" : "right w sphere",
+                "transform" : {
+                    "position" : {
+                        "x": 9.5,
+                        "y": 4.0,
+                        "z": -6.3,
+                        "w": 10.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 5.0
+                },
+                "roundness" : 0.0,
+                "visual_material" : "orange",
+                "friction" : 0.8
+            }
+        },
+        {
+            "sphere" : {
+                "comment" : "right w sphere hole",
+                "transform" : {
+                    "position" : {
+                        "x": 9.5,
+                        "y": 4.0,
+                        "z": -6.3,
+                        "w": 10.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 4.2
+                },
+                "roundness" : 0.0,
+                "stickiness" : false,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right w sphere down exit",
+                "transform" : {
+                    "position" : {
+                        "x": 9.5,
+                        "y": 0,
+                        "z": -6.3,
+                        "w": 10.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.1,
+                    "y": 1.8,
+                    "z": 0.1,
+                    "w": 0.1
+                },
+                "roundness" : 0.9,
+                "stickiness" : true,
+                "is_positive" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "right wz path",
+                "transform" : {
+                    "position" : {
+                        "x": 9.5,
+                        "y": -2.6,
+                        "z": -3.8,
+                        "w": 10.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.2,
+                    "y": 0.3,
+                    "z": 4.5,
+                    "w": 0.8
+                },
+                "roundness" : 0,
+                "undestroyable" : true
+            }
+        },
+
         {
             "cube" : {
                 "comment" : "final trigger pedestal",

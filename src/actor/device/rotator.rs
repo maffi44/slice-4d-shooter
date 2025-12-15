@@ -14,67 +14,57 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub mod holegun;
-pub mod obstaclesgun;
-pub mod machinegun;
-pub mod shotgun;
-pub mod rotator;
+use glam::{Vec3, Vec4};
 
 use crate::{
     actor::{
-        main_player::player_inner_state::PlayerInnerState,
-        ActorID,
-    }, engine::{
-        audio::AudioSystem, engine_handle::EngineHandle, input::ActionsFrameState, physics::PhysicsSystem, render::ChildVisualElement, ui::UISystem
-    }, transform::Transform
+        main_player::{
+            player_inner_state::PlayerInnerState,
+            PlayerScreenEffects,
+        }, shotgun_shot_source::ShotgunShotSource, ActorID, ActorWrapper
+    },
+    engine::{
+        audio::AudioSystem,
+        engine_handle::{
+            Command,
+            CommandType,
+            EngineHandle
+        },
+        input::ActionsFrameState,
+        physics::PhysicsSystem,
+        render::ChildVisualElement,
+        ui::{
+            UIElement,
+            UIElementType,
+            UISystem
+        }
+    },
+    transform::{Transform, FORWARD}
 };
 
-use super::main_player::PlayerScreenEffects;
+use client_server_protocol::{
+    NetCommand, NetMessageToPlayer, RemoteMessage, Team
+};
+
+use super::{Device, DeviceType};
 
 
+pub struct RotatorTool {}
 
-const DEFAULT_PISTOL_DAMAGE: u32 = 5;
-
-pub struct EmptyHand {
-}
-
-impl Default for EmptyHand {
-    fn default() -> Self {
-        EmptyHand {}
+impl RotatorTool {
+    pub fn new() -> Self {
+        RotatorTool {}
     }
 }
 
-impl Device for EmptyHand {
+impl Device for RotatorTool {
     fn get_device_type(&self) -> DeviceType {
-        DeviceType::Gun
+        DeviceType::RotatorTool
     }
 
-    fn process_input(
-            &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            screen_effects: &mut PlayerScreenEffects,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
-            delta: f32,
-    ) {
+    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
+        None
     }
-}
-
-
-
-
-
-pub enum DeviceType {
-    Gun,
-    Device,
-    RotatorTool,
-}
-
-pub trait Device {
 
     fn process_input(
         &mut self,
@@ -87,13 +77,33 @@ pub trait Device {
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
         delta: f32,
-    );
+    ) {}
 
-    fn get_device_type(&self) -> DeviceType;
-
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
-        None
+    fn process_while_player_is_not_alive(
+            &mut self,
+            player_id: ActorID,
+            player: &mut PlayerInnerState,
+            input: &ActionsFrameState,
+            physic_system: &PhysicsSystem,
+            audio_system: &mut AudioSystem,
+            ui_system: &mut UISystem,
+            engine_handle: &mut EngineHandle,
+            delta: f32,
+        ) {
+        
     }
+
+    fn process_while_deactive(
+        &mut self,
+        player_id: ActorID,
+        player: &mut PlayerInnerState,
+        input: &ActionsFrameState,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        engine_handle: &mut EngineHandle,
+        delta: f32,
+    ) {}
 
     fn deactivate(
         &mut self,
@@ -104,7 +114,14 @@ pub trait Device {
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
         screen_effects: &mut PlayerScreenEffects,
-    ) {}
+    ) {
+        let img = ui_system.get_mut_ui_element(&UIElementType::RotatorDraft);
+
+        if let UIElement::Image(img) = img {
+            img.ui_data.is_visible = false;
+        }
+
+    }
 
     fn activate(
         &mut self,
@@ -114,29 +131,12 @@ pub trait Device {
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
         engine_handle: &mut EngineHandle,
-    ) {}
+    )
+    {
+        let img = ui_system.get_mut_ui_element(&UIElementType::RotatorDraft);
 
-    fn process_while_player_is_not_alive(
-        &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        input: &ActionsFrameState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-        delta: f32,
-    ) {}
-
-fn process_while_deactive(
-        &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        input: &ActionsFrameState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-        delta: f32,
-    ) {}
+        if let UIElement::Image(img) = img {
+            img.ui_data.is_visible = true;
+        }
+    }
 }

@@ -43,11 +43,12 @@ pub mod trigger;
 pub mod trgger_orb;
 pub mod final_trigger;
 pub mod triggering_special_lift;
+pub mod droped_rotator_tool;
 
 use std::fmt::Display;
 
 use crate::{
-    actor::{final_trigger::{FinalTrgger, FinalTrggerMessage}, flag_base::{FlagBase, FlagBaseMessage}, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, obstacle_course_player_two_jumps::ObstacleCoursePlayerTwoJumps, obstaclesgun_shot::ObstaclesGunShot, trgger_orb::{TriggerOrb, TriggerOrbMessage}, trigger::{Trigger, TriggerMessage}, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor}, engine::{
+    actor::{droped_rotator_tool::{DropedRotatorTool, DropedRotatorToolMessage}, final_trigger::{FinalTrgger, FinalTrggerMessage}, flag_base::{FlagBase, FlagBaseMessage}, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, obstacle_course_player_two_jumps::ObstacleCoursePlayerTwoJumps, obstaclesgun_shot::ObstaclesGunShot, trgger_orb::{TriggerOrb, TriggerOrbMessage}, trigger::{Trigger, TriggerMessage}, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor}, engine::{
         audio::AudioSystem,
         effects::EffectsSystem,
         engine_handle::EngineHandle,
@@ -196,6 +197,7 @@ pub enum ActorWrapper {
     TriggeringWanderingActor(TriggeringWanderingActor),
     TriggeringSpecialLiftActor(TriggeringSpecialLiftActor),
     TriggerOrb(TriggerOrb),
+    DropedRotatorTool(DropedRotatorTool),
 }
 
 impl Display for ActorWrapper
@@ -232,6 +234,7 @@ impl Display for ActorWrapper
             ActorWrapper::TriggeringWanderingActor(_) => "TriggeringWanderingActor",
             ActorWrapper::TriggeringSpecialLiftActor(_) => "TriggeringSpecialLiftActor",
             ActorWrapper::TriggerOrb(_) => "TriggerOrb",
+            ActorWrapper::DropedRotatorTool(_) => "DropedRotatorTool",
         };
 
         write!(f, "Actor: {}", actor_type)
@@ -323,6 +326,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.get_transform()
             }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_transform()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -409,6 +415,9 @@ impl Actor for ActorWrapper {
                 actor.get_mut_transform()
             }
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
                 actor.get_mut_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -508,6 +517,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -605,6 +617,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -691,6 +706,9 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             }
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
                 actor.get_physical_element()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -781,6 +799,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.get_visual_element()
             }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -867,6 +888,9 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             }
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
                 actor.get_id()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -957,6 +981,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.change_id(id, engine_handle)
             }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -1043,6 +1070,9 @@ impl Actor for ActorWrapper {
                 actor.set_id(id)
             }
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
                 actor.set_id(id)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -1134,6 +1164,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.get_actor_as_controlled()
             }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_actor_as_controlled()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -1221,6 +1254,9 @@ impl Actor for ActorWrapper {
                 actor.get_actor_as_controlled_mut()
             }
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
                 actor.get_actor_as_controlled_mut()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -1321,6 +1357,9 @@ impl Actor for ActorWrapper {
             ActorWrapper::TriggeringSpecialLiftActor(actor) => {
                 actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
             }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -1367,6 +1406,7 @@ pub enum CommonActorsMessage {
 #[derive(Clone)]
 pub enum SpecificActorMessage {
     SessionControllerMessage(SessionControllerMessage),
+    DropedRotatorToolMessage(DropedRotatorToolMessage),
     MoveWBonusSpotMessage(MoveWBonusSpotMessage),
     FinalTrggerMessage(FinalTrggerMessage),
     PlayersDollMessage(PlayersDollMessage),

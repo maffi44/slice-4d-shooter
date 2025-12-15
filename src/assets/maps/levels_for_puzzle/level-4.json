@@ -253,7 +253,8 @@
                         "w": 0.0
                     }
                 }
-            }
+            },
+            "with_rotator_tool" : true
         }
     },
 

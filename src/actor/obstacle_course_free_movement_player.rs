@@ -22,7 +22,7 @@ use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
-        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, holegun::HoleGun, obstaclesgun::ObstaclesGun}, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState, player_input_master, player_settings}, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
+        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, EmptyHand, holegun::HoleGun, obstaclesgun::ObstaclesGun, rotator::RotatorTool}, droped_rotator_tool::DropedRotatorToolMessage, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState, player_input_master, player_settings}, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
     },
     engine::{
         audio::{
@@ -192,6 +192,44 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
             {
                 match message
                 {
+                    SpecificActorMessage::DropedRotatorToolMessage(message) =>
+                    {
+                        match message
+                        {
+                            DropedRotatorToolMessage::YouInteractingWithDropedRotatorTool =>
+                            {
+                                engine_handle.send_direct_message(
+                                    from,
+                                    Message {
+                                        from: self.get_id().expect("Player for obstacle course have not ActorID"),
+                                        remote_sender: false,
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::DropedRotatorToolMessage(
+                                                DropedRotatorToolMessage::DropedRotatorToolCapturedByPlayer
+                                            )
+                                        )
+                                    }
+
+                                );
+
+                                self.hands_slot_0 = Box::new(
+                                    RotatorTool::new()
+                                );
+
+                                self.hands_slot_0.activate(
+                                    self.get_id().expect("Player for obstacle course have not ActorID"),
+                                    &mut self.inner_state,
+                                    physic_system,
+                                    audio_system,
+                                    ui_system,
+                                    engine_handle,
+                                );
+
+                                *ui_system.get_mut_ui_element(&UIElementType::RotatorTutorialDraft).get_ui_data_mut().get_is_visible_mut() = true;
+                            }
+                            _ => {}
+                        }
+                    }
                     SpecificActorMessage::PlayerMessage(message) =>
                     {
                         match message {
@@ -457,6 +495,12 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 &self.player_settings,
                 &mut self.inner_state,
                 &self.screen_effects,
+                &self.active_hands_slot,
+                &mut self.hands_slot_0,
+                &mut self.hands_slot_1,
+                &mut self.hands_slot_2,
+                &mut self.hands_slot_3,
+                ui_system,
                 delta
             );
 
@@ -518,13 +562,13 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 &self.player_settings,
             );
 
-            process_dash(
-                &input,
-                &mut self.inner_state,
-                &self.player_settings,
-                audio_system,
-                delta,
-            );
+            // process_dash(
+            //     &input,
+            //     &mut self.inner_state,
+            //     &self.player_settings,
+            //     audio_system,
+            //     delta,
+            // );
 
             self.screen_effects.player_projections.projections_tick(
                 my_id,
@@ -692,6 +736,7 @@ impl ObstacleCourseFreeMovementPlayer {
         master: InputMaster,
         player_settings: PlayerSettings,
         spawn: Vec4,
+        with_rotator_tool: bool,
     ) -> Self {
         
         let screen_effects = PlayerScreenEffects {
@@ -722,7 +767,16 @@ impl ObstacleCourseFreeMovementPlayer {
 
         inner_state.tutrial_window_was_open = true;
         inner_state.w_aim_enabled = false;
-        
+
+        let tool = if with_rotator_tool
+        {
+            Box::new(RotatorTool::new()) as Box<dyn Device>
+        }
+        else
+        {
+            Box::new(EmptyHand::default()) as Box<dyn Device>
+        };
+
         ObstacleCourseFreeMovementPlayer {
             id: None,
 
@@ -730,30 +784,8 @@ impl ObstacleCourseFreeMovementPlayer {
 
             active_hands_slot: ActiveHandsSlot::Zero,
 
-            hands_slot_0: Box::new(HoleGun::new(
-                player_settings.energy_gun_hole_size_mult, 
-                player_settings.energy_gun_add_force_mult, 
-                player_settings.energy_gun_damage_mult, 
-                player_settings.energy_gun_restoring_speed,
-                Vec4::new(
-                    1.0,
-                    -0.3,
-                    -1.0,
-                    0.0
-                ),
-            )),
-            hands_slot_1: Some(Box::new(ObstaclesGun::new(
-                player_settings.energy_gun_hole_size_mult, 
-                player_settings.energy_gun_add_force_mult, 
-                player_settings.energy_gun_damage_mult, 
-                player_settings.energy_gun_restoring_speed,
-                Vec4::new(
-                    1.0,
-                    -0.3,
-                    -1.0,
-                    0.0
-                ),
-            ))),
+            hands_slot_0: tool,
+            hands_slot_1: None,
             hands_slot_2: None,
             hands_slot_3: None,
 
@@ -1467,6 +1499,12 @@ pub fn process_player_rotation(
     player_settings: &PlayerSettings,
     inner_state: &mut PlayerInnerState,
     screen_effects: &PlayerScreenEffects,
+    active_hands_slot: &ActiveHandsSlot,
+    hands_slot_0: &mut Box<dyn Device>,
+    hands_slot_1: &mut Option<Box<dyn Device>>,
+    hands_slot_2: &mut Option<Box<dyn Device>>,
+    hands_slot_3: &mut Option<Box<dyn Device>>,
+    ui: &mut UISystem,
     delta: f32,
 )
 {
@@ -1479,23 +1517,136 @@ pub fn process_player_rotation(
 
     inner_state.w_aim_ui_frame_intensity = 0.20;
 
-    if input.second_mouse.is_action_pressed() {
-        zw = (input.mouse_axis.y *
-            *player_settings.mouse_sensivity.lock().unwrap() +
-            zw);
-        
-        xw = input.mouse_axis.x *
-            *player_settings.mouse_sensivity.lock().unwrap() +
-            xw;
+    let with_rotator_tool = {
+        match active_hands_slot {
+            ActiveHandsSlot::Zero => {
+                match hands_slot_0.get_device_type()
+                {
+                    crate::actor::device::DeviceType::Gun => false,
+                    crate::actor::device::DeviceType::Device => false,
+                    crate::actor::device::DeviceType::RotatorTool => true,
+                }
+            },
+            ActiveHandsSlot::First => {
+                if hands_slot_1.is_some()
+                {
+                    match hands_slot_1.as_ref().unwrap().get_device_type()
+                    {
+                        crate::actor::device::DeviceType::Gun => false,
+                        crate::actor::device::DeviceType::Device => false,
+                        crate::actor::device::DeviceType::RotatorTool => true,
+                    }
+                }
+                else
+                {
+                    false
+                }
+            },
+            ActiveHandsSlot::Second => {
+                if hands_slot_2.is_some()
+                {
+                    match hands_slot_2.as_ref().unwrap().get_device_type()
+                    {
+                        crate::actor::device::DeviceType::Gun => false,
+                        crate::actor::device::DeviceType::Device => false,
+                        crate::actor::device::DeviceType::RotatorTool => true,
+                    }
+                }
+                else
+                {
+                    false
+                }
+            },
+            ActiveHandsSlot::Third => {
+                if hands_slot_3.is_some()
+                {
+                    match hands_slot_3.as_ref().unwrap().get_device_type()
+                    {
+                        crate::actor::device::DeviceType::Gun => false,
+                        crate::actor::device::DeviceType::Device => false,
+                        crate::actor::device::DeviceType::RotatorTool => true,
+                    }
+                }
+                else
+                {
+                    false
+                }
+            },
+        }
+    };
 
-        zw = (input.gamepad_right_stick_axis_delta.y *
-            *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
-            zw);
-        
-        xw = input.gamepad_right_stick_axis_delta.x *
+    if input.show_hide_controls.is_action_just_pressed()
+    {
+        let is_visible = ui
+            .get_mut_ui_element(&UIElementType::RotatorTutorialDraft)
+            .get_ui_data_mut()
+            .get_is_visible_mut();
+
+        if *is_visible
+        {
+            *is_visible = false;
+        }
+        else
+        {
+            if with_rotator_tool
+            {
+                *is_visible = true;
+            }    
+        }
+    }
+
+    if with_rotator_tool
+    {
+        if input.second_mouse.is_action_pressed() {
+            zw = (input.mouse_axis.y *
+                *player_settings.mouse_sensivity.lock().unwrap() +
+                zw);
+            
+            xw = input.mouse_axis.x *
+                *player_settings.mouse_sensivity.lock().unwrap() +
+                xw;
+
+            zw = (input.gamepad_right_stick_axis_delta.y *
+                *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                zw);
+            
+            xw = input.gamepad_right_stick_axis_delta.x *
+                *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                xw;
+            
+        }
+        else
+        {
+            xz =
+                input.mouse_axis.x *
+                *player_settings.mouse_sensivity.lock().unwrap() +
+                xz;
+
+            yz = (
+                input.mouse_axis.y *
+                *player_settings.mouse_sensivity.lock().unwrap() +
+                yz
+            ).clamp(-PI/2.0, PI/2.0);
+
+            xz = input.gamepad_right_stick_axis_delta.x *
+                *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                xz;
+
+            yz = (
+                input.gamepad_right_stick_axis_delta.y *
+                *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                yz
+            ).clamp(-PI/2.0, PI/2.0);
+        }
+
+        zw = (input.gamepad_left_stick_axis_delta.y *
+                *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                zw);
+            
+        xw = input.gamepad_left_stick_axis_delta.x *
             *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
             xw;
-        
+
     }
     else
     {
@@ -1520,14 +1671,6 @@ pub fn process_player_rotation(
             yz
         ).clamp(-PI/2.0, PI/2.0);
     }
-
-    zw = (input.gamepad_left_stick_axis_delta.y *
-            *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
-            zw);
-        
-    xw = input.gamepad_left_stick_axis_delta.x *
-        *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
-        xw;
 
     let zy_rotation = Mat4::from_rotation_x(yz);
 
