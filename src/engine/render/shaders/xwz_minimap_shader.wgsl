@@ -312,6 +312,11 @@ fn tri_intersect_3d( ro: vec3<f32>, rd: vec3<f32>, v0: vec3<f32>, v1: vec3<f32>,
     return t;
 }
 
+fn plane_intersect(ro: vec4<f32>, rd: vec4<f32>, p: vec4<f32>, plane_origin: vec4<f32> ) -> f32
+{
+    return -(dot(ro,p)+dot(p,plane_origin))/dot(rd,p);
+}
+
 fn sph_intersection( ro: vec4<f32>, rd: vec4<f32>, ra: f32) -> vec2<f32> {
     let b = dot( ro, rd );
     let c = dot( ro, ro ) - ra*ra;
@@ -1450,13 +1455,17 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         return vec4(0.0);
     }
 
+    let y_height = dynamic_data.additional_data[2];
+
+    let cam_pos = dynamic_data.camera_data.cam_pos + vec4(0.0, y_height, 0.0, 0.0);
+
     let uv: vec2<f32> = pos * 0.7;
 
     var ray_direction: vec4<f32> = normalize(vec4<f32>(0.0, 0.0, -1.0, 0.0));
     
     var screen_offset = vec4<f32>(uv.x, 0.0, 0.0, uv.y)*12.0;
 
-    var main_camera_offest = vec4(0.0, 0.0, 10.0, 0.0);
+    var main_camera_offest = vec4(0.0, 0.0, 12.0, 0.0);
 
     let zw_rot = 0.3;
     let xz_rot = 1.1;
@@ -1470,7 +1479,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     main_camera_offest *= rotate_zw(zw_rot);
     main_camera_offest *= rotate_xz(xz_rot);
 
-    let camera_position = dynamic_data.camera_data.cam_pos + main_camera_offest + screen_offset;
+    let camera_position = cam_pos + main_camera_offest + screen_offset;
     
     intr_neg_size = 0u;
     intr_normal_size = 0u;
@@ -1481,43 +1490,62 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     let dist_and_depth: vec2<f32> = ray_march_skip_first_obstacle(camera_position, ray_direction, MAX_DIST);
 
-    var view_tri_left_vert= vec4(-40.0*dynamic_data.screen_aspect, 0.0, -40.0, 0.0);
-    var view_tri_right_vert= vec4(40.0*dynamic_data.screen_aspect, 0.0, -40.0, 0.0);
-
-    view_tri_left_vert *= dynamic_data.camera_data.cam_zw_rot;
-    view_tri_right_vert *= dynamic_data.camera_data.cam_zw_rot;
-
-    let camp_pos_3d = vec3(camera_position.x, camera_position.w, camera_position.z);
-    let ray_dir_3d = vec3(ray_direction.x, ray_direction.w, ray_direction.z);
-    let v0 = vec3(dynamic_data.camera_data.cam_pos.x, dynamic_data.camera_data.cam_pos.w, dynamic_data.camera_data.cam_pos.z);
-    let v1 = v0 + vec3(view_tri_left_vert.x, view_tri_left_vert.w, view_tri_left_vert.z);
-    let v2 = v0 + vec3(view_tri_right_vert.x, view_tri_right_vert.w, view_tri_right_vert.z);
-
-    var tri_dist = tri_intersect_3d( camp_pos_3d, ray_dir_3d, v0, v1, v2 );
-
-    if tri_dist < MAX_DIST
+    var tri_dist = MAX_DIST*2.0;
+    var d = 0.0;
+    if y_height == 0.0
     {
-        intr_neg_size = 0u;
-        intr_normal_size = 0u;
-        intr_unbreakables_size = 0u;
-        intr_players = false;
-        
-        let ro = camera_position+ray_direction*tri_dist;
-        let rd =  normalize(dynamic_data.camera_data.cam_pos - ro);
-        
-        find_intersections(ro, rd);
+        var view_tri_left_vert= vec4(-40.0*dynamic_data.screen_aspect, 0.0, -40.0, 0.0);
+        var view_tri_right_vert= vec4(40.0*dynamic_data.screen_aspect, 0.0, -40.0, 0.0);
     
-        let dist_to_player = distance(ro, dynamic_data.camera_data.cam_pos);
-        let dist_to_map = ray_march(ro, rd, MAX_DIST).x;
+        view_tri_left_vert *= dynamic_data.camera_data.cam_zw_rot;
+        view_tri_right_vert *= dynamic_data.camera_data.cam_zw_rot;
     
-        if dist_to_player-(0.4+MIN_DIST) > dist_to_map
+        let camp_pos_3d = vec3(camera_position.x, camera_position.w, camera_position.z);
+        let ray_dir_3d = vec3(ray_direction.x, ray_direction.w, ray_direction.z);
+        let v0 = vec3(cam_pos.x, cam_pos.w, cam_pos.z);
+        let v1 = v0 + vec3(view_tri_left_vert.x, view_tri_left_vert.w, view_tri_left_vert.z);
+        let v2 = v0 + vec3(view_tri_right_vert.x, view_tri_right_vert.w, view_tri_right_vert.z);
+    
+        tri_dist = tri_intersect_3d( camp_pos_3d, ray_dir_3d, v0, v1, v2 );
+    
+        if tri_dist < MAX_DIST
         {
-            tri_dist = MAX_DIST*2.0;
+            intr_neg_size = 0u;
+            intr_normal_size = 0u;
+            intr_unbreakables_size = 0u;
+            intr_players = false;
+            
+            let ro = camera_position+ray_direction*tri_dist;
+            let rd =  normalize(cam_pos - ro);
+            
+            find_intersections(ro, rd);
+        
+            let dist_to_player = distance(ro, cam_pos);
+            let dist_to_map = ray_march(ro, rd, MAX_DIST).x;
+        
+            if dist_to_player-(0.4+MIN_DIST) > dist_to_map
+            {
+                tri_dist = MAX_DIST*2.0;
+            }
+        }
+    
+        let plane = vec4(0.0,0.0,0.0,1.0)*dynamic_data.camera_data.cam_zw_rot;
+    
+        let view_plane_dist = plane_intersect(camera_position, ray_direction, plane, -cam_pos);
+    
+        let p =  camera_position+ray_direction*view_plane_dist;
+    
+        d = map(p, false);
+    
+        if (d > MIN_DIST)
+        {
+            let d_coef = max(1.0 - view_plane_dist / 40.0, 0.0);
+            d = pow(1.0 - min(map(p, false), 4.0) / 4.0, 30.0)*d_coef;
         }
     }
 
 
-    return vec4(1.0 - (min(dist_and_depth.x, tri_dist) / (MAX_DIST*0.2)));
+    return vec4((1.0 - (min(dist_and_depth.x, tri_dist) / (MAX_DIST*0.2)))+max(d,0.0));
     // return vec4(vec3(1.0), 0.1);
     // return vec4(1.0, 0.0, 0.0, 1.0);
 }

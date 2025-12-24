@@ -18,6 +18,7 @@ use std::f32::consts::PI;
 
 use client_server_protocol::{NetCommand, NetMessageToPlayer, RemoteMessage, Team};
 
+use fyrox_core::math::lerpf;
 use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{
@@ -71,6 +72,11 @@ pub struct ObstacleCourseFreeMovementPlayer {
     pub navigation_lines_mode: u32,
 
     current_spawn: Vec4,
+
+    pub nav_slice_height: f32,
+    pub nav_slice_height_target: f32,
+    pub nav_slice_is_visible: f32,
+    pub nav_slice_is_visible_target: f32,
 }
 
 impl Actor for ObstacleCourseFreeMovementPlayer {
@@ -504,7 +510,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 delta
             );
 
-            self.process_navigation_input(&input);
+            self.process_navigation_input(&input, delta);
 
             process_w_scanner_ui(
                 ui_system,
@@ -800,10 +806,14 @@ impl ObstacleCourseFreeMovementPlayer {
             navigation_coloring_walls: false,
             navigation_lines_mode: 2u32,
             current_spawn: spawn,
+            nav_slice_height: 0.0,
+            nav_slice_height_target: 0.0,
+            nav_slice_is_visible: 0.0,
+            nav_slice_is_visible_target: 0.0,
         }
     }
 
-    fn process_navigation_input(&mut self, input: &ActionsFrameState)
+    fn process_navigation_input(&mut self, input: &ActionsFrameState, delta: f32)
     {
         if input.anti_projection_mode.is_action_just_pressed()
         {
@@ -819,6 +829,39 @@ impl ObstacleCourseFreeMovementPlayer {
                 self.navigation_lines_mode = 0u32;
             }
         }
+
+        self.nav_slice_height_target += input.mouse_wheel_delta.y*0.0012;
+
+        if input.middle_mouse.is_action_just_pressed()
+        {
+            self.nav_slice_height_target = 0.0;
+        }
+
+        self.nav_slice_height = lerpf(
+            self.nav_slice_height,
+            self.nav_slice_height_target,
+            delta*7.0
+        );
+
+        if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
+        {
+            self.nav_slice_height = self.nav_slice_height_target;
+        }
+
+        if self.nav_slice_height - self.nav_slice_height_target > 0.04
+        {
+            self.nav_slice_is_visible_target = 1.0;
+        }
+        else
+        {
+            self.nav_slice_is_visible_target = 0.0;
+        }
+
+        self.nav_slice_is_visible = lerpf(
+            self.nav_slice_is_visible,
+            self.nav_slice_is_visible_target,
+            delta*2.0
+        );
     }
 
     fn respawn(

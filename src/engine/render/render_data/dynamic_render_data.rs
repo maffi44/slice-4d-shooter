@@ -1762,6 +1762,10 @@ impl OtherDynamicData {
             }
 
             self.additional_data[1] = player.navigation_lines_mode as f32;
+
+            self.additional_data[2] = player.nav_slice_height;
+
+            self.additional_data[3] = player.nav_slice_is_visible;
         }
 
         self.camera_data = CameraUniform {

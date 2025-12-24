@@ -67,6 +67,7 @@ pub struct ActionsFrameState {
     pub jump_w: Action,
     pub first_mouse: Action,
     pub second_mouse: Action,
+    pub middle_mouse: Action,
     pub w_aim: Action,
     pub increase_render_quality: Action,
     pub decrease_render_quality: Action,
@@ -103,6 +104,7 @@ impl ActionsFrameState {
         let mut jump_w = Action::new();
         let mut first_mouse = Action::new();
         let mut second_mouse = Action::new();
+        let mut middle_mouse = Action::new();
         let mut activate_hand_slot_0 = Action::new();
         let mut activate_hand_slot_1 = Action::new();
         let mut activate_hand_slot_2 = Action::new();
@@ -139,6 +141,7 @@ impl ActionsFrameState {
                 ButtonActions::HandSlot3 => activate_hand_slot_3 = action.clone(),
                 ButtonActions::FirstMouse => first_mouse = action.clone(),
                 ButtonActions::SecondMouse => second_mouse = action.clone(),
+                ButtonActions::MiddleMouse => middle_mouse = action.clone(),
                 ButtonActions::WDown => w_down = action.clone(),
                 ButtonActions::WUp => w_up = action.clone(),
                 ButtonActions::EnableWAim => enable_w_aim = action.clone(),
@@ -172,6 +175,7 @@ impl ActionsFrameState {
             jump_w,
             first_mouse,
             second_mouse,
+            middle_mouse,
             mouse_axis,
             w_aim: enable_w_aim,
             increase_render_quality,
@@ -203,6 +207,7 @@ impl ActionsFrameState {
         let jump_w = Action::new();
         let first_mouse = Action::new();
         let second_mouse = Action::new();
+        let middle_mouse = Action::new();
         let activate_hand_slot_0 = Action::new();
         let activate_hand_slot_1 = Action::new();
         let activate_hand_slot_2 = Action::new();
@@ -241,6 +246,7 @@ impl ActionsFrameState {
             show_hide_controls,
             first_mouse,
             second_mouse,
+            middle_mouse,
             w_aim,
             increase_render_quality,
             decrease_render_quality,
@@ -291,6 +297,7 @@ pub enum ButtonActions {
     WDown,
     FirstMouse,
     SecondMouse,
+    MiddleMouse,
     EnableWAim,
     IncreaseRenderQuality,
     DecreaseRenderQuality,
@@ -339,6 +346,7 @@ impl InputSystem {
         let anti_projection_mode = Arc::new(Mutex::new((ButtonActions::AntiProjectionMode, Action::new(), 0)));
         let first_mouse = Arc::new(Mutex::new((ButtonActions::FirstMouse, Action::new(), 0)));
         let second_mouse = Arc::new(Mutex::new((ButtonActions::SecondMouse, Action::new(), 0)));
+        let middle_mouse = Arc::new(Mutex::new((ButtonActions::MiddleMouse, Action::new(), 0)));
         let hand_slot_0 = Arc::new(Mutex::new((ButtonActions::HandSlot0, Action::new(), 0)));
         let hand_slot_1 = Arc::new(Mutex::new((ButtonActions::HandSlot1, Action::new(), 0)));
 
@@ -381,6 +389,10 @@ impl InputSystem {
         actions_table.insert(
             SomeButton::MouseButton(MouseButton::Right),
             second_mouse.clone(),
+        );
+        actions_table.insert(
+            SomeButton::MouseButton(MouseButton::Middle),
+            middle_mouse.clone(),
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Digit1),
