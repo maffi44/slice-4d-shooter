@@ -115,11 +115,11 @@ impl Device for RotatorTool {
         engine_handle: &mut EngineHandle,
         screen_effects: &mut PlayerScreenEffects,
     ) {
-        let img = ui_system.get_mut_ui_element(&UIElementType::RotatorDraft);
+        // let img = ui_system.get_mut_ui_element(&UIElementType::RotatorDraft);
 
-        if let UIElement::Image(img) = img {
-            img.ui_data.is_visible = false;
-        }
+        // if let UIElement::Image(img) = img {
+        //     img.ui_data.is_visible = false;
+        // }
 
     }
 
@@ -133,10 +133,10 @@ impl Device for RotatorTool {
         engine_handle: &mut EngineHandle,
     )
     {
-        let img = ui_system.get_mut_ui_element(&UIElementType::RotatorDraft);
+        // let img = ui_system.get_mut_ui_element(&UIElementType::RotatorDraft);
 
-        if let UIElement::Image(img) = img {
-            img.ui_data.is_visible = true;
-        }
+        // if let UIElement::Image(img) = img {
+        //     img.ui_data.is_visible = true;
+        // }
     }
 }

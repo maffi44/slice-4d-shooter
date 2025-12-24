@@ -690,6 +690,24 @@ fn plane_w_intersect( ro: vec4<f32>, rd: vec4<f32>, h: f32 ) -> f32
     return (ro.w-h)/-rd.w;
 }
 
+// fn tri_intersect( ro: vec4<f32>, rd: vec4<f32>, v0: vec4<f32>, v1: vec4<f32>, v2: vec4<f32> ) -> f32
+// {
+//     let v1v0 = v1 - v0;
+//     let v2v0 = v2 - v0;
+//     let rov0 = ro - v0;
+//     let n = cross( v1v0, v2v0 );
+//     let q = cross( rov0, rd );
+//     let d = 1.0/dot( rd, n );
+//     let u = d*dot( -q, v2v0 );
+//     let v = d*dot(  q, v1v0 );
+//     var t = d*dot( -n, rov0 );
+//     if ( u<0.0 || v<0.0 || (u+v)>1.0 )
+//     {
+//         t = -1.0;
+//     }
+//     return t;
+// }
+
 var<private> intr_normal: array<vec2<f32>, 32>;
 var<private> intr_normal_size: u32 = 0u;
 var<private> intr_neg: array<vec2<f32>, 32>;

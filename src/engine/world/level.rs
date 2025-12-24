@@ -25,7 +25,7 @@ use crate::{
     }, engine::{
         input::ActionsFrameState, physics::{
             physics_system_data::ShapeType, static_collider::StaticCollider
-        }, render::RenderPipelineBuilderKit, world::static_object::{
+        }, render::MainShaderRenderPipelineBuilderKit, world::static_object::{
             ObjectMaterial, StaticObject
         }
     }, transform::Transform
@@ -120,7 +120,7 @@ impl Level {
     pub async fn load_level(
         level_name: String,
         player_settings: PlayerSettings,
-        render_pipeline_builder_kit: Option<RenderPipelineBuilderKit>
+        render_pipeline_builder_kit: Option<MainShaderRenderPipelineBuilderKit>
     ) -> Level
     {
         #[cfg(target_arch = "wasm32")]
@@ -253,7 +253,7 @@ impl Level {
 fn parse_json_level(
     json: Value,
     player_settings: PlayerSettings,
-    render_pipeline_builder_kit: Option<RenderPipelineBuilderKit>,
+    render_pipeline_builder_kit: Option<MainShaderRenderPipelineBuilderKit>,
 ) -> Level
 {
     let json_level = json
@@ -560,7 +560,7 @@ fn parse_json_level(
 
 
 fn build_render_pipeline(
-    render_pipeline_builder_kit: Option<RenderPipelineBuilderKit>,
+    render_pipeline_builder_kit: Option<MainShaderRenderPipelineBuilderKit>,
     shader_name: &str,
     is_generated_raymarch_shader: bool
 ) -> Option<RenderPipeline>

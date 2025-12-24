@@ -256,11 +256,12 @@ const STICKINESS_EFFECT_COEF: f32 = 3.1415926535897;
 
 struct VertexInput {
     @location(0) @interpolate(perspective) position: vec3<f32>,
+    @location(1) @interpolate(perspective) rel_position: vec3<f32>,
 };
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) position: vec3<f32>
+    @location(0) rel_position: vec3<f32>
 };
 
 fn cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec4<f32>) -> vec2<f32> {
@@ -292,6 +293,24 @@ fn inf_cube_intersection( ro: vec4<f32>, rd: vec4<f32>, size: vec3<f32>) -> vec2
     return vec2( tN, tF );
 }
 
+
+fn tri_intersect_3d( ro: vec3<f32>, rd: vec3<f32>, v0: vec3<f32>, v1: vec3<f32>, v2: vec3<f32> ) -> f32
+{
+    let v1v0 = v1 - v0;
+    let v2v0 = v2 - v0;
+    let rov0 = ro - v0;
+    let n = cross( v1v0, v2v0 );
+    let q = cross( rov0, rd );
+    let d = 1.0/dot( rd, n );
+    let u = d*dot( -q, v2v0 );
+    let v = d*dot(  q, v1v0 );
+    var t = d*dot( -n, rov0 );
+    if ( u<0.0 || v<0.0 || (u+v)>1.0 )
+    {
+        t = MAX_DIST*2.0;
+    }
+    return t;
+}
 
 fn sph_intersection( ro: vec4<f32>, rd: vec4<f32>, ra: f32) -> vec2<f32> {
     let b = dot( ro, rd );
@@ -710,6 +729,9 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
         }
     }
 
+    
+
+
     for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
         if (i < dynamic_data.shapes_arrays_metadata.neg_spheres_start) {
             
@@ -892,18 +914,28 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
         }
     }
 
-    for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-        let intr = sph_intersection(
-            ro - dyn_player_forms[i].pos,
-            rd,
-            dyn_player_forms[i].radius * 1.65
-        );
-        
-        if intr.y > 0.0 {
-            intr_players = true;
-            store_intersection_entrance_and_exit_for_unbreakables(intr);
-        }
+    let intr = sph_intersection(
+        ro - dynamic_data.camera_data.cam_pos,
+        rd,
+        0.4
+    );
+    
+    if intr.y > 0.0 {
+        store_intersection_entrance_and_exit_for_unbreakables(intr);
     }
+
+    // for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+    //     let intr = sph_intersection(
+    //         ro - dyn_player_forms[i].pos,
+    //         rd,
+    //         dyn_player_forms[i].radius * 1.65
+    //     );
+        
+    //     if intr.y > 0.0 {
+    //         intr_players = true;
+    //         store_intersection_entrance_and_exit_for_unbreakables(intr);
+    //     }
+    // }
 
     combine_interscted_entrances_and_exites_for_all_intrs();
     //###find_intersections###
@@ -974,106 +1006,108 @@ fn map(p: vec4<f32>, intr_players: bool) -> f32 {
         }
     }
 
+    d = min(d, sd_sphere(p - dynamic_data.camera_data.cam_pos, 0.4));
+
     //###map###
 
-    if intr_players
-    {
-        var dddd = MAX_DIST;
-        for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-            dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
-            dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
+    // if intr_players
+    // {
+    //     var dddd = MAX_DIST;
+    //     for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+    //         dddd = min(dddd, sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius));
+    //         dddd = max(dddd, -sd_sphere(p - dyn_player_forms[i].pos, dyn_player_forms[i].radius * 0.86));
             
-            let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
-            dddd = max(dddd, -sd_box(
-                rotated_p,
-                vec4(
-                    dyn_player_forms[i].radius * 0.18,
-                    dyn_player_forms[i].radius* 1.2,
-                    dyn_player_forms[i].radius* 1.2,
-                    dyn_player_forms[i].radius * 1.2
-                )));
+    //         let rotated_p = dyn_player_forms[i].rotation * (p - dyn_player_forms[i].pos);
+    //         dddd = max(dddd, -sd_box(
+    //             rotated_p,
+    //             vec4(
+    //                 dyn_player_forms[i].radius * 0.18,
+    //                 dyn_player_forms[i].radius* 1.2,
+    //                 dyn_player_forms[i].radius* 1.2,
+    //                 dyn_player_forms[i].radius * 1.2
+    //             )));
             
-            dddd = max(
-                dddd,
-                -sd_sphere(
-                    rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
-                    dyn_player_forms[i].radius * 0.53
-                )
-            );
+    //         dddd = max(
+    //             dddd,
+    //             -sd_sphere(
+    //                 rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0),
+    //                 dyn_player_forms[i].radius * 0.53
+    //             )
+    //         );
     
-            dddd = min(
-                dddd,
-                sd_sphere(
-                    p - dyn_player_forms[i].pos,
-                    dyn_player_forms[i].radius * 0.6
-                )
-            );
-            dddd = max(
-                dddd,
-                -sd_sphere(
-                    rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
-                    dyn_player_forms[i].radius * 0.34
-                )
-            );
+    //         dddd = min(
+    //             dddd,
+    //             sd_sphere(
+    //                 p - dyn_player_forms[i].pos,
+    //                 dyn_player_forms[i].radius * 0.6
+    //             )
+    //         );
+    //         dddd = max(
+    //             dddd,
+    //             -sd_sphere(
+    //                 rotated_p - vec4(0.0, 0.0, -dyn_player_forms[i].radius, 0.0)*0.6,
+    //                 dyn_player_forms[i].radius * 0.34
+    //             )
+    //         );
     
-            dddd = min(
-                dddd,
-                sd_sphere(
-                    rotated_p - dyn_player_forms[i].weapon_offset,
-                    dyn_player_forms[i].radius * 0.286,
-                )
-            );
+    //         dddd = min(
+    //             dddd,
+    //             sd_sphere(
+    //                 rotated_p - dyn_player_forms[i].weapon_offset,
+    //                 dyn_player_forms[i].radius * 0.286,
+    //             )
+    //         );
     
-            dddd = max(
-                dddd,
-                -sd_capsule(
-                    rotated_p,
-                    dyn_player_forms[i].weapon_offset,
-                    dyn_player_forms[i].weapon_offset -
-                    vec4(
-                        0.0,
-                        0.0,
-                        dyn_player_forms[i].radius* 0.49,
-                        0.0
-                    ),
-                    dyn_player_forms[i].radius* 0.18
-                )
-            );
+    //         dddd = max(
+    //             dddd,
+    //             -sd_capsule(
+    //                 rotated_p,
+    //                 dyn_player_forms[i].weapon_offset,
+    //                 dyn_player_forms[i].weapon_offset -
+    //                 vec4(
+    //                     0.0,
+    //                     0.0,
+    //                     dyn_player_forms[i].radius* 0.49,
+    //                     0.0
+    //                 ),
+    //                 dyn_player_forms[i].radius* 0.18
+    //             )
+    //         );
     
-            dddd = min(
-                dddd,
-                sd_capsule(
-                    rotated_p,
-                    dyn_player_forms[i].weapon_offset,
-                    dyn_player_forms[i].weapon_offset -
-                    vec4(
-                        0.0,
-                        0.0,
-                        dyn_player_forms[i].radius* 0.43,
-                        0.0
-                    ),
-                    dyn_player_forms[i].radius* 0.1
-                )
-            );
+    //         dddd = min(
+    //             dddd,
+    //             sd_capsule(
+    //                 rotated_p,
+    //                 dyn_player_forms[i].weapon_offset,
+    //                 dyn_player_forms[i].weapon_offset -
+    //                 vec4(
+    //                     0.0,
+    //                     0.0,
+    //                     dyn_player_forms[i].radius* 0.43,
+    //                     0.0
+    //                 ),
+    //                 dyn_player_forms[i].radius* 0.1
+    //             )
+    //         );
     
-            dddd = max(
-                dddd,
-                -sd_capsule(
-                    rotated_p,
-                    dyn_player_forms[i].weapon_offset,
-                    dyn_player_forms[i].weapon_offset -
-                    vec4(
-                        0.0,
-                        0.0,
-                        dyn_player_forms[i].radius* 0.65,
-                        0.0
-                    ),
-                    dyn_player_forms[i].radius* 0.052
-                )
-            );
-        }
-        d = min(d, dddd);
-    }
+    //         dddd = max(
+    //             dddd,
+    //             -sd_capsule(
+    //                 rotated_p,
+    //                 dyn_player_forms[i].weapon_offset,
+    //                 dyn_player_forms[i].weapon_offset -
+    //                 vec4(
+    //                     0.0,
+    //                     0.0,
+    //                     dyn_player_forms[i].radius* 0.65,
+    //                     0.0
+    //                 ),
+    //                 dyn_player_forms[i].radius* 0.052
+    //             )
+    //         );
+    //     }
+    //     d = min(d, dddd);
+    // }
 
     return d;
 }
@@ -1084,6 +1118,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4<f32>(model.position, 1.0);
+    out.rel_position = model.rel_position;
     return out;
 }
 
@@ -1113,6 +1148,156 @@ fn rotate_xz(angle: f32) -> mat4x4<f32> {
 }
 
 
+fn ray_march_skip_first_obstacle(
+    ray_origin: vec4<f32>,
+    ray_direction: vec4<f32>,
+    max_dist: f32,
+) -> vec2<f32>  {
+    
+    if intr_normal_size == 0u {
+        return vec2(MAX_DIST*2.0, 0.0);
+    }
+    
+    var closest_normal_intrs_index = 0u;
+    var closest_normal_intrs = intr_normal[closest_normal_intrs_index];
+
+    var total_distance: f32 = max(closest_normal_intrs.x, 0.0);
+
+    
+    var closest_neg_intrs_index = 0u;
+    var closest_neg_intrs = vec2(MAX_DIST*2.0);
+    if intr_neg_size > 0u
+    {
+        closest_neg_intrs = intr_neg[0u];
+    }
+
+    var closest_unbreakables_intrs_index = 0u;
+    var closest_unbreakables_intrs = vec2(MAX_DIST*2.0);
+    if intr_unbreakables_size > 0u
+    {
+        closest_unbreakables_intrs = intr_unbreakables[0u];
+    }
+
+    if closest_normal_intrs.x < 0.0
+    {
+        
+        let intr = min(
+            min(closest_normal_intrs.y, closest_neg_intrs.y),
+            closest_unbreakables_intrs.x
+        );
+
+        total_distance = max(intr, 0.0);
+    }
+
+    var i: i32 = 0;
+    for (; i < MAX_STEPS; i++)
+    {
+        while total_distance < max_dist
+        {
+            // cheking if ray is out of area of positive (not negative) objects
+            // in this case go to next closest positve object or finish ray marching 
+            // if it was last area of positive objects
+            while total_distance > closest_normal_intrs.y
+            {
+                closest_normal_intrs_index += 1u;
+    
+                if closest_normal_intrs_index < intr_normal_size
+                {
+                    closest_normal_intrs = intr_normal[closest_normal_intrs_index];
+    
+                    total_distance = max(total_distance, closest_normal_intrs.x);
+                }
+                else
+                {
+                    return vec2(MAX_DIST*2.0, f32(i));
+                }
+            }
+
+            // finding closet area of unbreakable objects
+            while total_distance > closest_unbreakables_intrs.y
+            {
+                closest_unbreakables_intrs_index += 1u;
+    
+                if closest_unbreakables_intrs_index < intr_unbreakables_size
+                {
+                    closest_unbreakables_intrs = intr_unbreakables[closest_unbreakables_intrs_index];
+                }
+                else
+                {
+                    closest_unbreakables_intrs = vec2(MAX_DIST*2.0);
+                }
+            }
+
+            // finding closet area of negative objects
+            while total_distance > closest_neg_intrs.y
+            {
+                closest_neg_intrs_index += 1u;
+
+                if closest_neg_intrs_index < intr_neg_size
+                {
+                    closest_neg_intrs = intr_neg[closest_neg_intrs_index];
+                }
+                else
+                {
+                    closest_neg_intrs = vec2(MAX_DIST*2.0);
+                }
+            }
+            
+            
+            // cheking if ray is entered in area of negative objects
+            // skip whole nagtive area if ray is not collided
+            // by area of unbreakable objects. 
+            // if ray is not entered nagtive area - it's means that ray is inside 
+            // area of positive objects
+            if total_distance > closest_neg_intrs.x && total_distance < closest_unbreakables_intrs.x
+            {
+                if closest_unbreakables_intrs.x < closest_neg_intrs.y
+                {
+                    total_distance = closest_unbreakables_intrs.x;
+
+                    break;
+                }
+                else
+                {
+                    total_distance = closest_neg_intrs.y;
+
+                    closest_neg_intrs_index += 1u;
+
+                    if closest_neg_intrs_index < intr_neg_size
+                    {
+                        closest_neg_intrs = intr_neg[closest_neg_intrs_index];
+                    }
+                    else
+                    {
+                        closest_neg_intrs = vec2(MAX_DIST*2.0);
+                    }
+
+                    continue;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        if total_distance > max_dist
+        {
+            return vec2<f32>(total_distance, f32(i));
+        }
+
+        var d: f32  = map(ray_origin + ray_direction * total_distance, intr_players);
+        total_distance += d;
+
+        
+        if (d < MIN_DIST) {
+
+            return vec2<f32>(total_distance, f32(i));
+        }
+    }
+    return vec2<f32>(total_distance, f32(i));
+}
+
 fn ray_march(
     ray_origin: vec4<f32>,
     ray_direction: vec4<f32>,
@@ -1127,6 +1312,7 @@ fn ray_march(
     var closest_normal_intrs = intr_normal[closest_normal_intrs_index];
 
     var total_distance: f32 = max(closest_normal_intrs.x, 0.0);
+
     
     var closest_neg_intrs_index = 0u;
     var closest_neg_intrs = vec2(MAX_DIST*2.0);
@@ -1255,22 +1441,37 @@ fn ray_march(
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
-    if length(inn.position.xy) > inn.position.x
+    var pos = inn.rel_position.xy;
+    
+    pos.x *= dynamic_data.screen_aspect;
+
+    if length(pos.xy) > 1.0
     {
-        return vec4(0);
+        return vec4(0.0);
     }
 
-    var uv: vec2<f32> = inn.position.xy * 0.7;
+    let uv: vec2<f32> = pos * 0.7;
 
-    var ray_direction: vec4<f32> = normalize(vec4<f32>(uv.x, 0.0, -1.0, uv.y));
+    var ray_direction: vec4<f32> = normalize(vec4<f32>(0.0, 0.0, -1.0, 0.0));
+    
+    var screen_offset = vec4<f32>(uv.x, 0.0, 0.0, uv.y)*12.0;
 
-    ray_direction *= rotate_zw(1.3);
-    ray_direction *= rotate_xz(1.3);
+    var main_camera_offest = vec4(0.0, 0.0, 10.0, 0.0);
 
-    let main_camera_offest = vec4(14.0, 0.0, 12.0, 12.0);
+    let zw_rot = 0.3;
+    let xz_rot = 1.1;
 
-    let camera_position = dynamic_data.camera_data.cam_pos + main_camera_offest;
+    ray_direction *= rotate_zw(zw_rot);
+    ray_direction *= rotate_xz(xz_rot);
 
+    screen_offset *= rotate_zw(zw_rot);
+    screen_offset *= rotate_xz(xz_rot);
+
+    main_camera_offest *= rotate_zw(zw_rot);
+    main_camera_offest *= rotate_xz(xz_rot);
+
+    let camera_position = dynamic_data.camera_data.cam_pos + main_camera_offest + screen_offset;
+    
     intr_neg_size = 0u;
     intr_normal_size = 0u;
     intr_unbreakables_size = 0u;
@@ -1278,7 +1479,45 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     find_intersections(camera_position, ray_direction);
 
-    let dist_and_depth: vec2<f32> = ray_march(camera_position, ray_direction, MAX_DIST); 
+    let dist_and_depth: vec2<f32> = ray_march_skip_first_obstacle(camera_position, ray_direction, MAX_DIST);
 
-    return vec4((MAX_DIST - dist_and_depth.x) / MAX_DIST);
+    var view_tri_left_vert= vec4(-40.0*dynamic_data.screen_aspect, 0.0, -40.0, 0.0);
+    var view_tri_right_vert= vec4(40.0*dynamic_data.screen_aspect, 0.0, -40.0, 0.0);
+
+    view_tri_left_vert *= dynamic_data.camera_data.cam_zw_rot;
+    view_tri_right_vert *= dynamic_data.camera_data.cam_zw_rot;
+
+    let camp_pos_3d = vec3(camera_position.x, camera_position.w, camera_position.z);
+    let ray_dir_3d = vec3(ray_direction.x, ray_direction.w, ray_direction.z);
+    let v0 = vec3(dynamic_data.camera_data.cam_pos.x, dynamic_data.camera_data.cam_pos.w, dynamic_data.camera_data.cam_pos.z);
+    let v1 = v0 + vec3(view_tri_left_vert.x, view_tri_left_vert.w, view_tri_left_vert.z);
+    let v2 = v0 + vec3(view_tri_right_vert.x, view_tri_right_vert.w, view_tri_right_vert.z);
+
+    var tri_dist = tri_intersect_3d( camp_pos_3d, ray_dir_3d, v0, v1, v2 );
+
+    if tri_dist < MAX_DIST
+    {
+        intr_neg_size = 0u;
+        intr_normal_size = 0u;
+        intr_unbreakables_size = 0u;
+        intr_players = false;
+        
+        let ro = camera_position+ray_direction*tri_dist;
+        let rd =  normalize(dynamic_data.camera_data.cam_pos - ro);
+        
+        find_intersections(ro, rd);
+    
+        let dist_to_player = distance(ro, dynamic_data.camera_data.cam_pos);
+        let dist_to_map = ray_march(ro, rd, MAX_DIST).x;
+    
+        if dist_to_player-(0.4+MIN_DIST) > dist_to_map
+        {
+            tri_dist = MAX_DIST*2.0;
+        }
+    }
+
+
+    return vec4(1.0 - (min(dist_and_depth.x, tri_dist) / (MAX_DIST*0.2)));
+    // return vec4(vec3(1.0), 0.1);
+    // return vec4(1.0, 0.0, 0.0, 1.0);
 }

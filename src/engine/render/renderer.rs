@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::engine::{render::{RenderPipelineBuilderKit, render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
+use crate::engine::{render::{MainShaderRenderPipelineBuilderKit, render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
 use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
@@ -20,11 +20,15 @@ use wgpu::{
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
     position: [f32; 3],
+    position_rel: [f32; 2],
 }
 
 impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 1] =
-        wgpu::vertex_attr_array![0 => Float32x3];
+    const ATTRIBS: [wgpu::VertexAttribute; 2] =
+        wgpu::vertex_attr_array![
+            0 => Float32x3,
+            1 => Float32x2
+        ];
 
     fn desc() -> wgpu::VertexBufferLayout<'static> {
         use std::mem;
@@ -39,12 +43,21 @@ impl Vertex {
 
 
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [-1.0, 3.0, 0.0]},
-    Vertex { position: [3.0, -1.0, 0.0]},
-    Vertex { position: [-1.0, -1.0, 0.0]},
+    Vertex { position: [-1.0, 3.0, 0.0], position_rel: [-1.0, 3.0]},
+    Vertex { position: [3.0, -1.0, 0.0], position_rel: [3.0, -1.0]},
+    Vertex { position: [-1.0, -1.0, 0.0], position_rel: [-1.0, -1.0]},
 ];
 
 const INDICES: &[u16] = &[0, 2, 1];
+
+const VERTICES_MINIMAP: &[Vertex] = &[
+    Vertex { position: [0.2, -0.9 , 0.0], position_rel: [-1.0, -1.0]},
+    Vertex { position: [0.9, -0.2, 0.0], position_rel: [1.0, 1.0]},
+    Vertex { position: [0.2, -0.2, 0.0], position_rel: [-1.0, 1.0]},
+    Vertex { position: [0.9, -0.9, 0.0], position_rel: [1.0, -1.0]},
+];
+
+const INDICES_MINIMAP: &[u16] = &[0, 2, 1, 0, 3, 1];
 
 pub struct RendererBuffers
 {
@@ -70,7 +83,7 @@ pub struct Renderer {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
 
-    // raymarch_render_pipeline: wgpu::RenderPipeline,
+    xwz_minimap_shader_render_pipeline: wgpu::RenderPipeline,
     raymarch_target_texture: wgpu::Texture,
     raymarch_target_texture_view: wgpu::TextureView,
 
@@ -85,6 +98,11 @@ pub struct Renderer {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
+
+    vertex_buffer_minimap: wgpu::Buffer,
+    index_buffer_minimap: wgpu::Buffer,
+    num_indices_minimap: u32,
+
     uniform_bind_group_0: BindGroup,
     uniform_bind_group_1: BindGroup,
 
@@ -222,7 +240,7 @@ impl Renderer {
         with_ui_renderer: bool,
         specific_backend: Option<Backend>,
         main_raymarch_shader_pipeline: Arc<Mutex<Option<RenderPipeline>>>,
-    ) -> (Renderer, RendererBuffers, RenderPipelineBuilderKit)
+    ) -> (Renderer, RendererBuffers, MainShaderRenderPipelineBuilderKit)
     {
         let size = window.inner_size();
 
@@ -702,45 +720,53 @@ impl Renderer {
 
         log::info!("renderer: wgpu render_pipeline_layout init");
 
-        // let raymarch_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        //     label: Some("main shader render pipeline"),
-        //     layout: Some(&raymarch_render_pipeline_layout),
-        //     vertex: wgpu::VertexState {
-        //         module: &raymarch_shader,
-        //         entry_point: Some("vs_main"),
-        //         compilation_options: PipelineCompilationOptions::default(), 
-        //         buffers: &[
-        //             Vertex::desc(),
-        //         ],
-        //     },
-        //     fragment: Some(wgpu::FragmentState {
-        //         module: &raymarch_shader,
-        //         compilation_options: PipelineCompilationOptions::default(),
-        //         entry_point: Some("fs_main"),
-        //         targets: &[Some(wgpu::ColorTargetState {
-        //             format: config.format,
-        //             blend: Some(wgpu::BlendState::REPLACE),
-        //             write_mask: wgpu::ColorWrites::ALL,
-        //         })],
-        //     }),
-        //     primitive: wgpu::PrimitiveState {
-        //         topology: wgpu::PrimitiveTopology::TriangleList,
-        //         strip_index_format: None,
-        //         front_face: wgpu::FrontFace::Ccw,
-        //         cull_mode: None,
-        //         polygon_mode: wgpu::PolygonMode::Fill,
-        //         unclipped_depth: false,
-        //         conservative: false,
-        //     },
-        //     depth_stencil: None,
-        //     multisample: wgpu::MultisampleState {
-        //         count: 1,
-        //         mask: !0,
-        //         alpha_to_coverage_enabled: false,
-        //     },
-        //     multiview: None,
-        //     cache: None,
-        // });
+        let xwz_minimap_shader = unsafe {device.create_shader_module_trusted(
+            wgpu::ShaderModuleDescriptor {
+                label: Some("XWZ Minimap Shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/xwz_minimap_shader.wgsl").into())
+            },
+            ShaderRuntimeChecks::unchecked()
+        )};
+
+        let xwz_minimap_shader_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("main shader render pipeline"),
+            layout: Some(&raymarch_render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &xwz_minimap_shader,
+                entry_point: Some("vs_main"),
+                compilation_options: PipelineCompilationOptions::default(), 
+                buffers: &[
+                    Vertex::desc(),
+                ],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &xwz_minimap_shader,
+                compilation_options: PipelineCompilationOptions::default(),
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+            cache: None,
+        });
 
         let upscale_render_bind_group_layout = device.create_bind_group_layout(
             &wgpu::BindGroupLayoutDescriptor {
@@ -843,6 +869,28 @@ impl Renderer {
 
         let num_indices = INDICES.len() as u32;
 
+        let vertex_buffer_minimap = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("main shader vertex buffer"),
+                contents: bytemuck::cast_slice(VERTICES_MINIMAP),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
+
+        log::info!("renderer: wgpu vertex_buffer init");
+
+        let index_buffer_minimap = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("main shader index buffer"),
+                contents: bytemuck::cast_slice(INDICES_MINIMAP),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
+
+        log::info!("renderer: wgpu index_buffer init");
+
+        let num_indices_minimap = INDICES_MINIMAP.len() as u32;
+
         let ui_renderer = UIRenderer::new(
             ui_system,
             &device,
@@ -880,6 +928,7 @@ impl Renderer {
                 size,
 
                 // raymarch_render_pipeline,
+                xwz_minimap_shader_render_pipeline,
                 upscale_render_pipeline,
                 upscale_render_bind_group_layout,
                 upscale_render_bind_group,
@@ -893,10 +942,13 @@ impl Renderer {
                 num_indices,
                 vertex_buffer,
                 index_buffer,
+
+                index_buffer_minimap,
+                vertex_buffer_minimap,
+                num_indices_minimap,
+
                 uniform_bind_group_0,
                 uniform_bind_group_1,
-
-                
 
                 total_frames_count: 0u64,
                 total_time: 0.0,
@@ -928,7 +980,7 @@ impl Renderer {
                 player_forms_data_buffer,
             },
 
-            RenderPipelineBuilderKit {
+            MainShaderRenderPipelineBuilderKit {
                 device: device.clone(),
                 vertex_desc: Vertex::desc(),
                 config: config.clone(),
@@ -1064,7 +1116,7 @@ impl Renderer {
                         label: Some("main shader render encoder"),
                     });
         
-                {
+            {
                 // raymarch render pass
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("raymarch shader render pass"),
@@ -1095,6 +1147,32 @@ impl Renderer {
                 render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
                 render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
                 render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            }
+
+            {
+                // xwz minimap render pass
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("xwz minimap shader render pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &self.raymarch_target_texture_view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+
+                render_pass.set_pipeline(&self.xwz_minimap_shader_render_pipeline);
+                render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
+                render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
+                render_pass.set_vertex_buffer(0, self.vertex_buffer_minimap.slice(..));
+                render_pass.set_index_buffer(self.index_buffer_minimap.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.num_indices_minimap, 0, 0..1);
             }
 
             {

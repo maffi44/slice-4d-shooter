@@ -66,7 +66,7 @@ pub struct ChildVisualElement {
 }
 
 #[derive(Clone)]
-pub struct RenderPipelineBuilderKit
+pub struct MainShaderRenderPipelineBuilderKit
 {
     pub device: Device,
     pub vertex_desc: wgpu::VertexBufferLayout<'static>,
@@ -89,7 +89,7 @@ pub struct RenderSystem {
     render_quality_data: RenderQualityData,
     window_size: PhysicalSize<u32>,
     is_generated_raymarch_shader: bool,
-    pub render_pipeline_builder_kit: RenderPipelineBuilderKit,
+    pub render_pipeline_builder_kit: MainShaderRenderPipelineBuilderKit,
 }
 
 

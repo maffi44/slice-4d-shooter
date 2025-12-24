@@ -60,7 +60,7 @@ fn main() {
     log::info!("main: main_loop init");
 
     pollster::block_on(main_loop.run(
-        "levels_for_puzzle/level-1".to_string(),
+        "map-first".to_string(),
         true,
         false,
         // If you made any changes to the game map, you should

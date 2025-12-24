@@ -1598,17 +1598,17 @@ pub fn process_player_rotation(
     if with_rotator_tool
     {
         if input.second_mouse.is_action_pressed() {
-            zw = (input.mouse_axis.y *
-                *player_settings.mouse_sensivity.lock().unwrap() +
-                zw);
+            // zw = (input.mouse_axis.y *
+            //     *player_settings.mouse_sensivity.lock().unwrap() +
+            //     zw);
             
             xw = input.mouse_axis.x *
                 *player_settings.mouse_sensivity.lock().unwrap() +
                 xw;
 
-            zw = (input.gamepad_right_stick_axis_delta.y *
-                *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
-                zw);
+            // zw = (input.gamepad_right_stick_axis_delta.y *
+            //     *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+            //     zw);
             
             xw = input.gamepad_right_stick_axis_delta.x *
                 *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
@@ -1639,9 +1639,9 @@ pub fn process_player_rotation(
             ).clamp(-PI/2.0, PI/2.0);
         }
 
-        zw = (input.gamepad_left_stick_axis_delta.y *
-                *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
-                zw);
+        // zw = (input.gamepad_left_stick_axis_delta.y *
+        //         *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+        //         zw);
             
         xw = input.gamepad_left_stick_axis_delta.x *
             *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
