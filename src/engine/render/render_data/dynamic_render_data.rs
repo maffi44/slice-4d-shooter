@@ -1766,6 +1766,8 @@ impl OtherDynamicData {
             self.additional_data[2] = player.nav_slice_height;
 
             self.additional_data[3] = player.nav_slice_is_visible;
+
+            self.additional_data_2 = player.xwz_slice_point.to_array();
         }
 
         self.camera_data = CameraUniform {

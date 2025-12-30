@@ -35,7 +35,7 @@ use crate::{
             EngineHandle
         }, input::{self, ActionsFrameState}, physics::{
             PhysicsSystem, colliders_container::PhysicalElement, kinematic_collider::KinematicColliderMessage
-        }, render::{VisualElement, camera::Camera}, time::TimeSystem, ui::{UIElement, UIElementType, UISystem}, world::level::Spawn
+        }, render::{VisualElement, camera::Camera}, time::TimeSystem, ui::{UIElement, UIElementType, UISystem}, world::{level::Spawn, static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea}}
     },
     transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
 };
@@ -45,12 +45,13 @@ use self::{
     player_settings::PlayerSettings,
 };
 
-use glam::{Mat4, Vec2, Vec4};
+use glam::{Mat4, Vec2, Vec3, Vec4};
 
 use super::{
     main_player::{self, Y_DEATH_PLANE_LEVEL}, move_w_bonus::MoveWBonusSpotMessage, session_controller::SessionControllerMessage, ControlledActor, PhysicsMessages
 };
 
+const POINTER_COLOR: Vec3 = Vec3::new(0.7, 0.0, 0.0);
 
 pub struct ObstacleCourseFreeMovementPlayer {
     id: Option<ActorID>,
@@ -77,6 +78,10 @@ pub struct ObstacleCourseFreeMovementPlayer {
     pub nav_slice_height_target: f32,
     pub nav_slice_is_visible: f32,
     pub nav_slice_is_visible_target: f32,
+    first_mouse_was_pressed: bool,
+    pub xwz_slice_point: Vec4,
+
+    volume_areas: Vec<VolumeArea>,
 }
 
 impl Actor for ObstacleCourseFreeMovementPlayer {
@@ -89,7 +94,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
         Some(self)
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         if self.inner_state.is_enable {
             let device_visual_elem = match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
@@ -122,7 +127,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 transform: self.get_transform(),
                 static_objects: None,
                 coloring_areas: None,
-                volume_areas: None,
+                volume_areas: Some(&self.volume_areas),
                 waves: None,//Some(&self.w_scanner.visual_wave),
                 player: None,
                 child_visual_elem: device_visual_elem,
@@ -510,7 +515,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 delta
             );
 
-            self.process_navigation_input(&input, delta);
+            self.process_navigation_input(&input, physic_system, delta);
 
             process_w_scanner_ui(
                 ui_system,
@@ -783,6 +788,8 @@ impl ObstacleCourseFreeMovementPlayer {
             Box::new(EmptyHand::default()) as Box<dyn Device>
         };
 
+        let volume_areas = Vec::with_capacity(3);
+
         ObstacleCourseFreeMovementPlayer {
             id: None,
 
@@ -810,58 +817,238 @@ impl ObstacleCourseFreeMovementPlayer {
             nav_slice_height_target: 0.0,
             nav_slice_is_visible: 0.0,
             nav_slice_is_visible_target: 0.0,
+            first_mouse_was_pressed: false,
+            xwz_slice_point: Vec4::new(-9999.0,-9999.0,-9999.0,-9999.0),
+            volume_areas,
         }
     }
 
-    fn process_navigation_input(&mut self, input: &ActionsFrameState, delta: f32)
+    fn process_navigation_input(&mut self, input: &ActionsFrameState, physic_system: &PhysicsSystem, delta: f32)
     {
-        if input.anti_projection_mode.is_action_just_pressed()
-        {
-            self.navigation_coloring_walls = !self.navigation_coloring_walls;
-        }
-
-        if input.w_scanner.is_action_just_pressed()
-        {
-            self.navigation_lines_mode += 1u32;
-
-            if self.navigation_lines_mode > 2u32
-            {
-                self.navigation_lines_mode = 0u32;
+        let with_rotator_tool = {
+            match self.active_hands_slot {
+                ActiveHandsSlot::Zero => {
+                    match self.hands_slot_0.get_device_type()
+                    {
+                        crate::actor::device::DeviceType::Gun => false,
+                        crate::actor::device::DeviceType::Device => false,
+                        crate::actor::device::DeviceType::RotatorTool => true,
+                    }
+                },
+                ActiveHandsSlot::First => {
+                    if self.hands_slot_1.is_some()
+                    {
+                        match self.hands_slot_1.as_ref().unwrap().get_device_type()
+                        {
+                            crate::actor::device::DeviceType::Gun => false,
+                            crate::actor::device::DeviceType::Device => false,
+                            crate::actor::device::DeviceType::RotatorTool => true,
+                        }
+                    }
+                    else
+                    {
+                        false
+                    }
+                },
+                ActiveHandsSlot::Second => {
+                    if self.hands_slot_2.is_some()
+                    {
+                        match self.hands_slot_2.as_ref().unwrap().get_device_type()
+                        {
+                            crate::actor::device::DeviceType::Gun => false,
+                            crate::actor::device::DeviceType::Device => false,
+                            crate::actor::device::DeviceType::RotatorTool => true,
+                        }
+                    }
+                    else
+                    {
+                        false
+                    }
+                },
+                ActiveHandsSlot::Third => {
+                    if self.hands_slot_3.is_some()
+                    {
+                        match self.hands_slot_3.as_ref().unwrap().get_device_type()
+                        {
+                            crate::actor::device::DeviceType::Gun => false,
+                            crate::actor::device::DeviceType::Device => false,
+                            crate::actor::device::DeviceType::RotatorTool => true,
+                        }
+                    }
+                    else
+                    {
+                        false
+                    }
+                },
             }
-        }
+        };
+        
+        self.volume_areas.clear();
+        self.xwz_slice_point= Vec4::new(-9999.0,-9999.0,-9999.0,-9999.0);
 
-        self.nav_slice_height_target += input.mouse_wheel_delta.y*0.0012;
 
-        if input.middle_mouse.is_action_just_pressed()
+        if with_rotator_tool
         {
-            self.nav_slice_height_target = 0.0;
-        }
+            if input.anti_projection_mode.is_action_just_pressed()
+            {
+                self.navigation_coloring_walls = !self.navigation_coloring_walls;
+            }
+    
+            if input.w_scanner.is_action_just_pressed()
+            {
+                self.navigation_lines_mode += 1u32;
+    
+                if self.navigation_lines_mode > 2u32
+                {
+                    self.navigation_lines_mode = 0u32;
+                }
+            }
 
-        self.nav_slice_height = lerpf(
-            self.nav_slice_height,
-            self.nav_slice_height_target,
-            delta*7.0
-        );
+            if input.first_mouse.is_action_pressed()
+            {
+                self.first_mouse_was_pressed = true;
 
-        if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
-        {
-            self.nav_slice_height = self.nav_slice_height_target;
-        }
+                let player_pos = self.inner_state.get_eyes_position();
+                let hit = physic_system.ray_cast(
+                    player_pos,
+                    self.get_transform().get_rotation()*FORWARD,
+                    50.0,
+                    Some(self.get_id().expect("Obstacle course player have not an ActorID"))
+                );
 
-        if self.nav_slice_height - self.nav_slice_height_target > 0.04
-        {
-            self.nav_slice_is_visible_target = 1.0;
+                if hit.is_some()
+                {
+                    let hit = hit.unwrap();
+
+                    self.xwz_slice_point = hit.hit_point;
+
+                    self.nav_slice_height_target = hit.hit_point.y - player_pos.y;
+                    self.nav_slice_height = hit.hit_point.y - player_pos.y;
+                    self.nav_slice_is_visible_target = 1.0;
+
+                    self.nav_slice_is_visible = lerpf(
+                        self.nav_slice_is_visible,
+                        self.nav_slice_is_visible_target,
+                        delta*5.0
+                    );
+                    // self.nav_slice_is_visible = 1.0;
+
+                    let pointed_from = self.get_transform().get_rotation() * Vec4::new(-0.6,-0.2,0.0,0.0);
+                    let pointed_to = hit.hit_point - self.get_transform().get_position();
+
+                    let charging_volume_area = VolumeArea::SphericalVolumeArea(
+                        SphericalVolumeArea {
+                            translation: pointed_from,
+                            radius: 0.05,
+                            color: POINTER_COLOR,
+                        }
+                    );
+
+                    let beam = VolumeArea::BeamVolumeArea(
+                        BeamVolumeArea {
+                            translation_pos_1: pointed_from,
+                            translation_pos_2: pointed_to,
+                            radius: 0.015,
+                            color: POINTER_COLOR, 
+                        }
+                    );
+
+                    let point = VolumeArea::SphericalVolumeArea(
+                        SphericalVolumeArea {
+                            translation: pointed_to,
+                            radius: 0.10,
+                            color: POINTER_COLOR, 
+                        }
+                    );
+
+                    self.volume_areas.push(charging_volume_area);
+                    self.volume_areas.push(beam);
+                    self.volume_areas.push(point);
+                }
+                else
+                {
+                    self.nav_slice_height_target = 0.0;
+            
+                    self.nav_slice_height = lerpf(
+                        self.nav_slice_height,
+                        self.nav_slice_height_target,
+                        delta*8.0
+                    );
+            
+                    if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
+                    {
+                        self.nav_slice_height = self.nav_slice_height_target;
+                    }
+            
+                    if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
+                    {
+                        self.nav_slice_is_visible_target = 1.0;
+                    }
+                    else
+                    {
+                        self.nav_slice_is_visible_target = 0.0;
+                    }
+            
+                    self.nav_slice_is_visible = lerpf(
+                        self.nav_slice_is_visible,
+                        self.nav_slice_is_visible_target,
+                        delta*5.0
+                    );
+                }
+            }
+            else
+            {
+                if self.first_mouse_was_pressed == true
+                {
+                    self.first_mouse_was_pressed = false;
+                    self.nav_slice_height_target = 0.0;
+                }
+
+                self.nav_slice_height_target -= input.mouse_wheel_delta.y*0.00105;
+        
+                if input.middle_mouse.is_action_just_pressed()
+                {
+                    self.nav_slice_height_target = 0.0;
+                }
+        
+                self.nav_slice_height = lerpf(
+                    self.nav_slice_height,
+                    self.nav_slice_height_target,
+                    delta*8.0
+                );
+        
+                if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
+                {
+                    self.nav_slice_height = self.nav_slice_height_target;
+                }
+        
+                if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
+                {
+                    self.nav_slice_is_visible_target = 1.0;
+                }
+                else
+                {
+                    self.nav_slice_is_visible_target = 0.0;
+                }
+        
+                self.nav_slice_is_visible = lerpf(
+                    self.nav_slice_is_visible,
+                    self.nav_slice_is_visible_target,
+                    delta*5.0
+                );
+            }
         }
         else
         {
+            self.navigation_coloring_walls = false;
+            self.navigation_lines_mode = 0;
             self.nav_slice_is_visible_target = 0.0;
+            self.nav_slice_is_visible = 0.0;
+            self.nav_slice_height = 0.0;
+            self.nav_slice_height_target = 0.0;
+
         }
 
-        self.nav_slice_is_visible = lerpf(
-            self.nav_slice_is_visible,
-            self.nav_slice_is_visible_target,
-            delta*2.0
-        );
     }
 
     fn respawn(

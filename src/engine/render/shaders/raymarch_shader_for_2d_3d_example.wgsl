@@ -1246,7 +1246,7 @@ fn map(p: vec4<f32>, intr_players: bool) -> f32 {
         if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
             d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
-            d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
+            d = smax(d, -(sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         } else {
             d = smax(d, -(sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         }

@@ -54,13 +54,13 @@ fn main() {
     env_logger::init();
 
     let specific_backend = read_args();
-
+ 
     let main_loop = MainLoop::new();
     
     log::info!("main: main_loop init");
 
     pollster::block_on(main_loop.run(
-        "map-first".to_string(),
+        "map".to_string(),
         true,
         false,
         // If you made any changes to the game map, you should

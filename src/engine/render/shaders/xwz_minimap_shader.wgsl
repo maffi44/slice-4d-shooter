@@ -314,7 +314,7 @@ fn tri_intersect_3d( ro: vec3<f32>, rd: vec3<f32>, v0: vec3<f32>, v1: vec3<f32>,
 
 fn plane_intersect(ro: vec4<f32>, rd: vec4<f32>, p: vec4<f32>, plane_origin: vec4<f32> ) -> f32
 {
-    return -(dot(ro,p)+dot(p,plane_origin))/dot(rd,p);
+    return -(dot(ro,p)+dot(p,-plane_origin))/dot(rd,p);
 }
 
 fn sph_intersection( ro: vec4<f32>, rd: vec4<f32>, ra: f32) -> vec2<f32> {
@@ -919,16 +919,6 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
         }
     }
 
-    let intr = sph_intersection(
-        ro - dynamic_data.camera_data.cam_pos,
-        rd,
-        0.4
-    );
-    
-    if intr.y > 0.0 {
-        store_intersection_entrance_and_exit_for_unbreakables(intr);
-    }
-
     // for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
     //     let intr = sph_intersection(
     //         ro - dyn_player_forms[i].pos,
@@ -942,8 +932,19 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
     //     }
     // }
 
-    combine_interscted_entrances_and_exites_for_all_intrs();
     //###find_intersections###
+
+    let intr = sph_intersection(
+        ro - dynamic_data.camera_data.cam_pos,
+        rd,
+        0.4
+    );
+    
+    if intr.y > 0.0 {
+        store_intersection_entrance_and_exit_for_unbreakables(intr);
+    }
+
+    combine_interscted_entrances_and_exites_for_all_intrs();
 }
 
 
@@ -985,7 +986,7 @@ fn map(p: vec4<f32>, intr_players: bool) -> f32 {
         if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
             d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
-            d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
+            d = smax(d, -(sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         } else {
             d = smax(d, -(sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         }
@@ -1011,9 +1012,9 @@ fn map(p: vec4<f32>, intr_players: bool) -> f32 {
         }
     }
 
-    d = min(d, sd_sphere(p - dynamic_data.camera_data.cam_pos, 0.4));
-
     //###map###
+    
+    d = min(d, sd_sphere(p - dynamic_data.camera_data.cam_pos, 0.4));
 
     // if intr_players
     // {
@@ -1443,6 +1444,30 @@ fn ray_march(
 }
 
 
+fn get_xwz_pointer_color(sph_pos: vec4<f32>, sph_radius: f32, sph_color: vec4<f32>, start_pos: vec4<f32>, direction: vec4<f32>, max_distance: f32) -> vec4<f32> {
+    var color = vec4(0.0);
+
+    let intr = sph_intersection(
+        start_pos - sph_pos,
+        direction,
+        sph_radius
+    );
+
+    if intr.x > 0.0 {
+
+        if intr.x < max_distance
+        {
+            let sphere_normal = start_pos+direction*intr.y - sph_pos;
+
+            let color_coef = abs(dot(sphere_normal, direction));
+
+            color = mix(sph_color, vec4(1.0, 0.0, 0.0, 1.0), pow(color_coef, 40.5)) * pow(color_coef, 10.0);
+        }
+    }
+
+    return color;
+}
+
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
@@ -1450,14 +1475,28 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     
     pos.x *= dynamic_data.screen_aspect;
 
-    if length(pos.xy) > 1.0
+    if length(pos.xy) > 0.98
     {
-        return vec4(0.0);
+        var color = vec4(1.0);
+
+        if length(pos.xy) > 1.0 
+        {
+            color = vec4(0.0);
+        }
+
+        return color;
     }
 
     let y_height = dynamic_data.additional_data[2];
 
-    let cam_pos = dynamic_data.camera_data.cam_pos + vec4(0.0, y_height, 0.0, 0.0);
+    var cam_pos = dynamic_data.camera_data.cam_pos + vec4(0.0, y_height, 0.0, 0.0);
+
+    let xwz_view_point = dynamic_data.additional_data_2;
+
+    if (xwz_view_point.x > -1000.0)
+    {
+        cam_pos = xwz_view_point;
+    }
 
     let uv: vec2<f32> = pos * 0.7;
 
@@ -1531,7 +1570,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     
         let plane = vec4(0.0,0.0,0.0,1.0)*dynamic_data.camera_data.cam_zw_rot;
     
-        let view_plane_dist = plane_intersect(camera_position, ray_direction, plane, -cam_pos);
+        let view_plane_dist = plane_intersect(camera_position, ray_direction, plane, cam_pos);
     
         let p =  camera_position+ray_direction*view_plane_dist;
     
@@ -1540,12 +1579,36 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         if (d > MIN_DIST)
         {
             let d_coef = max(1.0 - view_plane_dist / 40.0, 0.0);
-            d = pow(1.0 - min(map(p, false), 4.0) / 4.0, 30.0)*d_coef;
+            d = pow(1.0 - min(d, 4.0) / 4.0, 30.0)*d_coef;
         }
     }
 
+    var color = vec4(1.0 - (dist_and_depth.x / (MAX_DIST*0.2)));
+    // color.g = 0.0;
+    // color.b = 0.0;
 
-    return vec4((1.0 - (min(dist_and_depth.x, tri_dist) / (MAX_DIST*0.2)))+max(d,0.0));
+    let view_val = max(0.0,1.0 - (tri_dist / (MAX_DIST*0.6)));
+
+    let slice_val = max(0.0,d*6.0);
+
+    color = mix(color, vec4(0.0,0.4,2.1,1.0), min(view_val, 0.8) + slice_val);
+
+
+    if (xwz_view_point.x > -1000.0)
+    {
+        let sph_color = get_xwz_pointer_color(
+            xwz_view_point,
+            1.0,
+            vec4(1.0,0.0,0.0,1.0),
+            camera_position,
+            ray_direction,
+            50.0
+        );
+
+        color += sph_color;
+    }
+
+    return color;
     // return vec4(vec3(1.0), 0.1);
     // return vec4(1.0, 0.0, 0.0, 1.0);
 }

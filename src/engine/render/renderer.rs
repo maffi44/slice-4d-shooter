@@ -83,7 +83,7 @@ pub struct Renderer {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
 
-    xwz_minimap_shader_render_pipeline: wgpu::RenderPipeline,
+    // xwz_minimap_shader_render_pipeline: wgpu::RenderPipeline,
     raymarch_target_texture: wgpu::Texture,
     raymarch_target_texture_view: wgpu::TextureView,
 
@@ -121,7 +121,7 @@ pub struct Renderer {
 
     ui_renderer: UIRenderer,
     with_ui_renderer: bool,
-    main_raymarch_shader_pipeline: Arc<Mutex<Option<RenderPipeline>>>,
+    main_raymarch_shader_pipeline: Arc<Mutex<Option<(RenderPipeline, RenderPipeline)>>>,
 }
 
 impl Drop for Renderer {
@@ -239,7 +239,7 @@ impl Renderer {
         raymarch_target_texture_scale_factor: f32,
         with_ui_renderer: bool,
         specific_backend: Option<Backend>,
-        main_raymarch_shader_pipeline: Arc<Mutex<Option<RenderPipeline>>>,
+        main_raymarch_shader_pipeline: Arc<Mutex<Option<(RenderPipeline, RenderPipeline)>>>,
     ) -> (Renderer, RendererBuffers, MainShaderRenderPipelineBuilderKit)
     {
         let size = window.inner_size();
@@ -928,7 +928,7 @@ impl Renderer {
                 size,
 
                 // raymarch_render_pipeline,
-                xwz_minimap_shader_render_pipeline,
+                // xwz_minimap_shader_render_pipeline,
                 upscale_render_pipeline,
                 upscale_render_bind_group_layout,
                 upscale_render_bind_group,
@@ -1083,7 +1083,7 @@ impl Renderer {
             
         }
         match self.main_raymarch_shader_pipeline.lock().unwrap().as_ref() {
-            Some(main_shader_pipeline) =>
+            Some((main_shader_pipeline, minimap_shader_pipeline)) =>
             {
         
                 if let Some(instant) = self.prev_time_instant {
@@ -1167,7 +1167,7 @@ impl Renderer {
                     occlusion_query_set: None,
                 });
 
-                render_pass.set_pipeline(&self.xwz_minimap_shader_render_pipeline);
+                render_pass.set_pipeline(&minimap_shader_pipeline);
                 render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
                 render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
                 render_pass.set_vertex_buffer(0, self.vertex_buffer_minimap.slice(..));

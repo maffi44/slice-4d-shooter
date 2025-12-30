@@ -11,7 +11,11 @@ use super::render_data::static_render_data::StaticRenderData;
 const MAX_BSP_TREE_DEPTH: usize = 4;
 const MIN_BSP_DIVISION_EFFICIENCY: usize = 0;
 
-pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &str, static_data: &StaticRenderData) -> String
+pub fn generate_raymarch_shader_with_static_bsp_tree(
+    original_shader: &str,
+    static_data: &StaticRenderData,
+    generate_with_get_mats_func: bool,
+) -> String
 {
     let bsp_tree = Box::new(BSPElement::create_binary_space_partition_tree(static_data));
 
@@ -45,20 +49,25 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(original_shader: &str, stat
         panic!("Generate raymarch shader Error! pattern //###find_intersections### occurs {} times", shader_pieces.len() - 1)
     }
 
-    let shader_pieces: Vec<&str> = shader.split("//###get_mats###").collect();
 
-    let mut shader = String::new();
+    if generate_with_get_mats_func
+    {
+        let shader_pieces: Vec<&str> = shader.split("//###get_mats###").collect();
     
-    if shader_pieces.len() == 3
-    {
-        shader += shader_pieces[0];
-        shader += &generate_get_mats_function_body(&bsp_tree);
-        shader += shader_pieces[2];
+        let mut shader = String::new();
+        
+        if shader_pieces.len() == 3
+        {
+            shader += shader_pieces[0];
+            shader += &generate_get_mats_function_body(&bsp_tree);
+            shader += shader_pieces[2];
+        }
+        else
+        {
+            panic!("Generate raymarch shader Error! pattern //###get_mats### occurs {} times", shader_pieces.len() - 1)
+        }
     }
-    else
-    {
-        panic!("Generate raymarch shader Error! pattern //###get_mats### occurs {} times", shader_pieces.len() - 1)
-    }
+
     
     shader
 }
@@ -481,50 +490,50 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
         }\n}\n";
     }
 
-    func_body +=
+    // func_body +=
 
-    "for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
-        let intr = sph_intersection(
-            ro - dyn_negatives_shapes[i].pos,
-            rd,
-            dyn_negatives_shapes[i].size.x + dyn_negatives_shapes[i].roundness
-        );
+    // "for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
+    //     let intr = sph_intersection(
+    //         ro - dyn_negatives_shapes[i].pos,
+    //         rd,
+    //         dyn_negatives_shapes[i].size.x + dyn_negatives_shapes[i].roundness
+    //     );
         
-        if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_neg(intr);
-        }
-    }\n";
+    //     if intr.y > 0.0 {
+    //         store_intersection_entrance_and_exit_for_neg(intr);
+    //     }
+    // }\n";
 
-    func_body +=
+    // func_body +=
 
-    "for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
-        let intr = sph_intersection(
-            ro - dyn_undestroyable_stickiness_shapes[i].pos,
-            rd,
-            dyn_undestroyable_stickiness_shapes[i].size.x + dyn_undestroyable_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
-        );
+    // "for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
+    //     let intr = sph_intersection(
+    //         ro - dyn_undestroyable_stickiness_shapes[i].pos,
+    //         rd,
+    //         dyn_undestroyable_stickiness_shapes[i].size.x + dyn_undestroyable_stickiness_shapes[i].roundness +(static_data.stickiness * STICKINESS_EFFECT_COEF)
+    //     );
         
-        if intr.y > 0.0 {
-            store_intersection_entrance_and_exit_for_unbreakables(intr);
-        }
-    }\n";
+    //     if intr.y > 0.0 {
+    //         store_intersection_entrance_and_exit_for_unbreakables(intr);
+    //     }
+    // }\n";
 
-    func_body +=
+    // func_body +=
 
-    "for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
-        let intr = sph_intersection(
-            ro - dyn_player_forms[i].pos,
-            rd,
-            dyn_player_forms[i].radius * 1.7
-        );
+    // "for (var i = 0u; i < dynamic_data.player_forms_amount; i++) {
+    //     let intr = sph_intersection(
+    //         ro - dyn_player_forms[i].pos,
+    //         rd,
+    //         dyn_player_forms[i].radius * 1.7
+    //     );
         
-        if intr.y > 0.0 {
-            intr_players = true; 
-            store_intersection_entrance_and_exit_for_unbreakables(intr);
-        }
-    }\n";
+    //     if intr.y > 0.0 {
+    //         intr_players = true; 
+    //         store_intersection_entrance_and_exit_for_unbreakables(intr);
+    //     }
+    // }\n";
 
-    func_body += "combine_interscted_entrances_and_exites_for_all_intrs();\n";
+    // func_body += "combine_interscted_entrances_and_exites_for_all_intrs();\n";
 
     func_body
 }
@@ -943,30 +952,30 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
                 ));
             }
 
-            for obj in &objects.undestroyable_cubes
-            {
-                func_body.push_str(&format!
-                (
-                    "{}let dd = min(d, sd_box(p - {}, {}) - {});\n",
-                    "{\n",
-                    string_from_vec4(obj.shape.pos),
-                    string_from_vec4(obj.shape.size),
-                    obj.shape.roundness,
-                ));
+            // for obj in &objects.undestroyable_cubes
+            // {
+            //     func_body.push_str(&format!
+            //     (
+            //         "{}let dd = min(d, sd_box(p - {}, {}) - {});\n",
+            //         "{\n",
+            //         string_from_vec4(obj.shape.pos),
+            //         string_from_vec4(obj.shape.size),
+            //         obj.shape.roundness,
+            //     ));
 
-                func_body.push_str(&format!
-                (
-                    "if dd < MIN_DIST*2.0 {}
-                        output.materials_count = 1u;
-                        output.material_weights[0] = 1.0;
-                        output.materials[0] = {};
-                        return output;
-                    {}",
-                    "{",
-                    obj.shape.material,
-                    "}\n}\n",
-                ));
-            }
+            //     func_body.push_str(&format!
+            //     (
+            //         "if dd < MIN_DIST*2.0 {}
+            //             output.materials_count = 1u;
+            //             output.material_weights[0] = 1.0;
+            //             output.materials[0] = {};
+            //             return output;
+            //         {}",
+            //         "{",
+            //         obj.shape.material,
+            //         "}\n}\n",
+            //     ));
+            // }
 
             func_body.push_str(
                 "for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
@@ -1289,6 +1298,22 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
         {
             let stickiness = objects.stickiness;
             
+
+            func_body.push_str(
+                "
+                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+                    if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
+                        d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+                    } else if (i < dynamic_data.shapes_arrays_metadata.sph_cubes_start) {
+                        d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
+                    } else {
+                        d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+                    }
+                }\n
+                "
+            );
+
+
             for obj in &objects.cubes
             {
                 func_body.push_str(
@@ -1328,6 +1353,20 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                     )
                 );
             }
+
+            func_body.push_str(
+                "
+                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+                    if (i < dynamic_data.shapes_arrays_metadata.s_spheres_start) {
+                        d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+                    } else if (i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_start) {
+                        d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+                    } else {
+                        d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+                    }
+                }\n
+                "
+            );
 
             // stickiness
             for obj in &objects.s_cubes
@@ -1372,6 +1411,20 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                 );
             }
 
+            func_body.push_str(
+                "
+                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+                    if (i < dynamic_data.shapes_arrays_metadata.neg_spheres_start) {
+                        d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+                    } else if (i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start) {
+                        d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+                    } else {
+                        d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+                    }
+                }\n
+                "
+            );
+
             // negative
             for obj in &objects.neg_cubes
             {
@@ -1413,9 +1466,17 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
             }
 
             func_body.push_str(
-                "for (var i = dynamic_data.shapes_arrays_metadata.neg_spheres_start; i < dynamic_data.shapes_arrays_metadata.neg_spheres_start + dynamic_data.shapes_arrays_metadata.neg_spheres_amount; i++) {
-                    d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
-                }\n"
+                "
+                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+                    if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
+                        d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
+                    } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
+                        d = smax(d, -(sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
+                    } else {
+                        d = smax(d, -(sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
+                    }
+                }\n
+                "
             );
 
             // negative stickiness
@@ -1461,8 +1522,22 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                 );
             }
 
+            func_body.push_str(
+                "
+                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.unbreakable_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.unbreakable_sph_cubes_start; i++) {
+                    if (i < dynamic_data.shapes_arrays_metadata.unbreakable_spheres_start) {
+                        d = min(d, sd_box(p - dyn_undestroyable_normal_shapes[i].pos, dyn_undestroyable_normal_shapes[i].size) - dyn_undestroyable_normal_shapes[i].roundness);
+                    } else if (i < dynamic_data.shapes_arrays_metadata.unbreakable_sph_cubes_start) {
+                        d = min(d, sd_sphere(p - dyn_undestroyable_normal_shapes[i].pos, dyn_undestroyable_normal_shapes[i].size.x) - dyn_undestroyable_normal_shapes[i].roundness);
+                    } else {
+                        d = min(d, sd_sph_box(p - dyn_undestroyable_normal_shapes[i].pos, dyn_undestroyable_normal_shapes[i].size) - dyn_undestroyable_normal_shapes[i].roundness);
+                    }
+                }\n
+                "
+            );
+
             // undestroyable
-            for obj in &objects.undestroyable_cubes
+            for obj in &objects.u_cubes
             {
                 func_body.push_str(
                     &format!
@@ -1471,6 +1546,90 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                         string_from_vec4(obj.shape.pos),
                         string_from_vec4(obj.shape.size),
                         obj.shape.roundness,
+                    )
+                );
+
+            }
+
+            for obj in &objects.u_spheres
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = min(d, sd_sphere(p - {}, {}) - {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        obj.shape.size[0],
+                        obj.shape.roundness,
+                    )
+                );
+            }
+
+            for obj in &objects.u_sph_cubes 
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = min(d, sd_sph_box(p - {}, {}) - {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                    )
+                );
+            }
+
+            func_body.push_str(
+                "
+                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_start; i++) {
+                    if (i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start) {
+                        d = smin(d, sd_box(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+                    } else if (i < dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_start) {
+                        d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+                    } else {
+                        d = smin(d, sd_sph_box(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+                    }
+                }\n
+                "
+            );
+
+            // undestroyable stickiness
+            for obj in &objects.u_s_cubes
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = smin(d, sd_box(p - {}, {}) - {}, {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                        stickiness,
+                    )
+                );
+            }
+
+            for obj in &objects.u_s_spheres
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = smin(d, sd_sphere(p - {}, {}) - {}, {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        obj.shape.size[0],
+                        obj.shape.roundness,
+                        stickiness,
+                    )
+                );
+            }
+
+            for obj in &objects.u_s_sph_cubes 
+            {
+                func_body.push_str(
+                    &format!
+                    (
+                        "d = smin(d, sd_sph_box(p - {}, {}) - {}, {});\n",
+                        string_from_vec4(obj.shape.pos),
+                        string_from_vec4(obj.shape.size),
+                        obj.shape.roundness,
+                        stickiness,
                     )
                 );
             }
@@ -1556,15 +1715,20 @@ struct Objects
     pub s_cubes: Vec<Object>,
     pub neg_cubes: Vec<Object>,
     pub s_neg_cubes: Vec<Object>,
+    pub u_cubes: Vec<Object>,
+    pub u_s_cubes: Vec<Object>,
     pub spheres: Vec<Object>,
     pub s_spheres: Vec<Object>,
     pub neg_spheres: Vec<Object>,
     pub s_neg_spheres: Vec<Object>,
+    pub u_spheres: Vec<Object>,
+    pub u_s_spheres: Vec<Object>,
     pub sph_cubes: Vec<Object>,
     pub s_sph_cubes: Vec<Object>,
     pub neg_sph_cubes: Vec<Object>,
     pub s_neg_sph_cubes: Vec<Object>,
-    pub undestroyable_cubes: Vec<Object>,
+    pub u_sph_cubes: Vec<Object>,
+    pub u_s_sph_cubes: Vec<Object>,
 
     pub object_edges_list_along_x: Vec<f32>,
     pub object_edges_list_along_y: Vec<f32>,
@@ -1626,7 +1790,12 @@ impl Objects
         len += self.s_sph_cubes.len();
         len += self.neg_sph_cubes.len();
         len += self.s_neg_sph_cubes.len();
-        len += self.undestroyable_cubes.len();
+        len += self.u_cubes.len();
+        len += self.u_s_cubes.len();
+        len += self.u_spheres.len();
+        len += self.u_s_spheres.len();
+        len += self.u_sph_cubes.len();
+        len += self.u_s_sph_cubes.len();
 
         len  
     }
@@ -1912,7 +2081,92 @@ impl Objects
             }
         }
 
-        for obj in &self.undestroyable_cubes
+        for obj in &self.u_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+
+        for obj in &self.u_s_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+
+        for obj in &self.u_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+
+        for obj in &self.u_s_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+
+        for obj in &self.u_sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    slice_info.left_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Right => {
+                    slice_info.right_branch_objects_amount += 1;
+                },
+                SideAfterSlice::Both => {
+                    slice_info.left_branch_objects_amount += 1;
+                    slice_info.right_branch_objects_amount += 1;
+                },
+            }
+        }
+
+        for obj in &self.u_s_sph_cubes
         {
             match obj.get_side_after_slice(slice)
             {
@@ -2133,19 +2387,104 @@ impl Objects
             }
         }
 
-        for obj in self.undestroyable_cubes
+        for obj in self.u_cubes
         {
             match obj.get_side_after_slice(slice)
             {
                 SideAfterSlice::Left => {
-                    left_objects.undestroyable_cubes.push(obj);
+                    left_objects.u_cubes.push(obj);
                 },
                 SideAfterSlice::Right => {
-                    right_objects.undestroyable_cubes.push(obj);
+                    right_objects.u_cubes.push(obj);
                 },
                 SideAfterSlice::Both => {
-                    left_objects.undestroyable_cubes.push(obj.clone());
-                    right_objects.undestroyable_cubes.push(obj.clone());
+                    left_objects.u_cubes.push(obj.clone());
+                    right_objects.u_cubes.push(obj.clone());
+                },
+            }
+        }
+
+        for obj in self.u_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.u_spheres.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.u_spheres.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.u_spheres.push(obj.clone());
+                    right_objects.u_spheres.push(obj.clone());
+                },
+            }
+        }
+
+        for obj in self.u_sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.u_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.u_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.u_cubes.push(obj.clone());
+                    right_objects.u_cubes.push(obj.clone());
+                },
+            }
+        }
+
+        for obj in self.u_s_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.u_s_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.u_s_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.u_s_cubes.push(obj.clone());
+                    right_objects.u_s_cubes.push(obj.clone());
+                },
+            }
+        }
+
+        for obj in self.u_s_spheres
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.u_s_spheres.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.u_s_spheres.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.u_s_spheres.push(obj.clone());
+                    right_objects.u_s_spheres.push(obj.clone());
+                },
+            }
+        }
+
+        for obj in self.u_s_sph_cubes
+        {
+            match obj.get_side_after_slice(slice)
+            {
+                SideAfterSlice::Left => {
+                    left_objects.u_s_sph_cubes.push(obj);
+                },
+                SideAfterSlice::Right => {
+                    right_objects.u_s_sph_cubes.push(obj);
+                },
+                SideAfterSlice::Both => {
+                    left_objects.u_s_sph_cubes.push(obj.clone());
+                    right_objects.u_s_sph_cubes.push(obj.clone());
                 },
             }
         }
@@ -2171,7 +2510,13 @@ impl Objects
         let s_sph_cubes = Vec::new();
         let neg_sph_cubes = Vec::new();
         let s_neg_sph_cubes = Vec::new();
-        let undestroyable_cubes = Vec::new();
+        let u_cubes = Vec::new();
+        let u_s_cubes = Vec::new();
+        let u_spheres = Vec::new();
+        let u_s_spheres = Vec::new();
+        let u_sph_cubes = Vec::new();
+        let u_s_sph_cubes = Vec::new();
+        
         let object_edges_list_along_x = Vec::new();
         let object_edges_list_along_y = Vec::new();
         let object_edges_list_along_z = Vec::new();
@@ -2191,7 +2536,12 @@ impl Objects
             s_sph_cubes,
             neg_sph_cubes,
             s_neg_sph_cubes,
-            undestroyable_cubes,
+            u_cubes,
+            u_s_cubes,
+            u_spheres,
+            u_s_spheres,
+            u_sph_cubes,
+            u_s_sph_cubes,
             object_edges_list_along_x,
             object_edges_list_along_y,
             object_edges_list_along_z,
@@ -2272,7 +2622,37 @@ impl Objects
             self.object_edges_list_along_x.push(obj.x_bounds.y);
         }
 
-        for obj in &self.undestroyable_cubes
+        for obj in &self.u_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.u_s_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.u_spheres
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.u_s_spheres
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.u_sph_cubes
+        {
+            self.object_edges_list_along_x.push(obj.x_bounds.x);
+            self.object_edges_list_along_x.push(obj.x_bounds.y);
+        }
+
+        for obj in &self.u_s_sph_cubes
         {
             self.object_edges_list_along_x.push(obj.x_bounds.x);
             self.object_edges_list_along_x.push(obj.x_bounds.y);
@@ -2364,7 +2744,37 @@ impl Objects
             self.object_edges_list_along_y.push(obj.y_bounds.y);
         }
 
-        for obj in &self.undestroyable_cubes
+        for obj in &self.u_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.u_s_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.u_spheres
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.u_s_spheres
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.u_sph_cubes
+        {
+            self.object_edges_list_along_y.push(obj.y_bounds.x);
+            self.object_edges_list_along_y.push(obj.y_bounds.y);
+        }
+
+        for obj in &self.u_s_sph_cubes
         {
             self.object_edges_list_along_y.push(obj.y_bounds.x);
             self.object_edges_list_along_y.push(obj.y_bounds.y);
@@ -2456,7 +2866,37 @@ impl Objects
             self.object_edges_list_along_z.push(obj.z_bounds.y);
         }
 
-        for obj in &self.undestroyable_cubes
+        for obj in &self.u_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.u_s_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.u_spheres
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.u_s_spheres
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.u_sph_cubes
+        {
+            self.object_edges_list_along_z.push(obj.z_bounds.x);
+            self.object_edges_list_along_z.push(obj.z_bounds.y);
+        }
+
+        for obj in &self.u_s_sph_cubes
         {
             self.object_edges_list_along_z.push(obj.z_bounds.x);
             self.object_edges_list_along_z.push(obj.z_bounds.y);
@@ -2549,7 +2989,37 @@ impl Objects
             self.object_edges_list_along_w.push(obj.w_bounds.y);
         }
 
-        for obj in &self.undestroyable_cubes
+        for obj in &self.u_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.u_s_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.u_spheres
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.u_s_spheres
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.u_sph_cubes
+        {
+            self.object_edges_list_along_w.push(obj.w_bounds.x);
+            self.object_edges_list_along_w.push(obj.w_bounds.y);
+        }
+
+        for obj in &self.u_s_sph_cubes
         {
             self.object_edges_list_along_w.push(obj.w_bounds.x);
             self.object_edges_list_along_w.push(obj.w_bounds.y);
@@ -2591,6 +3061,34 @@ impl Objects
 
         let mut s_cubes = Vec::new();
         for shape in &static_data.s_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Cube,
+                obj_type: ObjectType::NormalStickiness
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            s_cubes.push(object);
+        }
+
+
+        let mut u_cubes = Vec::new();
+        for shape in &static_data.unbreakable_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Cube,
+                obj_type: ObjectType::Normal
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            cubes.push(object);
+        }
+
+
+        let mut u_s_cubes = Vec::new();
+        for shape in &static_data.unbreakable_s_cubes
         {
             let obj_info = ObjectInfo {
                 shape_type: ShapeType::Cube,
@@ -2658,6 +3156,33 @@ impl Objects
             s_spheres.push(object);
         }
 
+        let mut u_spheres = Vec::new();
+        for shape in &static_data.unbreakable_spheres
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Sphere,
+                obj_type: ObjectType::Normal
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            spheres.push(object);
+        }
+
+
+        let mut u_s_spheres = Vec::new();
+        for shape in &static_data.unbreakable_s_spheres
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::Sphere,
+                obj_type: ObjectType::NormalStickiness
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            s_spheres.push(object);
+        }
+
 
         let mut neg_spheres = Vec::new();
         for shape in &static_data.neg_spheres
@@ -2703,6 +3228,33 @@ impl Objects
 
         let mut s_sph_cubes = Vec::new();
         for shape in &static_data.s_sph_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::SphCube,
+                obj_type: ObjectType::NegativeStickiness
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            s_sph_cubes.push(object);
+        }
+
+        let mut u_sph_cubes = Vec::new();
+        for shape in &static_data.unbreakable_sph_cubes
+        {
+            let obj_info = ObjectInfo {
+                shape_type: ShapeType::SphCube,
+                obj_type: ObjectType::Normal
+            };
+
+            let object = Object::new(shape, obj_info, stickiness);
+
+            sph_cubes.push(object);
+        }
+
+
+        let mut u_s_sph_cubes = Vec::new();
+        for shape in &static_data.unbreakable_s_sph_cubes
         {
             let obj_info = ObjectInfo {
                 shape_type: ShapeType::SphCube,
@@ -2775,7 +3327,12 @@ impl Objects
             s_sph_cubes,
             neg_sph_cubes,
             s_neg_sph_cubes,
-            undestroyable_cubes,
+            u_cubes,
+            u_s_cubes,
+            u_spheres,
+            u_s_spheres,
+            u_sph_cubes,
+            u_s_sph_cubes,
 
             object_edges_list_along_x,
             object_edges_list_along_y,

@@ -21,7 +21,7 @@ use crate::engine::{
         Shape,
         ShapesArraysMetadata
     },
-    world::World
+    world::{World, level::Level}
 };
 
 use super::ShapesArrays;
@@ -106,7 +106,7 @@ pub struct OtherStaticData {
 
 impl OtherStaticData {
     pub fn new(
-        world: &World,
+        level: &Level,
         // shapes_arrays_metadata: ShapesArraysMetadata,
         stickiness: f32
     ) -> Self {
@@ -114,7 +114,7 @@ impl OtherStaticData {
         let mut materials = [VisualMaterial::default(); 32];
 
         let mut index = 0usize;
-        for obj_material in &world.level.as_ref().unwrap().visual_materials {
+        for obj_material in &level.visual_materials {
             let material = VisualMaterial {
                 color: [
                     obj_material.color.x,
@@ -129,23 +129,23 @@ impl OtherStaticData {
             index += 1;
         }
 
-        let (blue_players_mat1, blue_players_mat2) = world.level.as_ref().unwrap().blue_players_visual_materials;
-        let (red_players_mat1, red_players_mat2) = world.level.as_ref().unwrap().red_players_visual_materials;
+        let (blue_players_mat1, blue_players_mat2) = level.blue_players_visual_materials;
+        let (red_players_mat1, red_players_mat2) = level.red_players_visual_materials;
 
-        let blue_base_position = world.level.as_ref().unwrap().blue_base_position.to_array();
-        let red_base_position = world.level.as_ref().unwrap().red_base_position.to_array();
+        let blue_base_position = level.blue_base_position.to_array();
+        let red_base_position = level.red_base_position.to_array();
 
         let w_cups_mat = 0;
 
-        let shadows_enabled = {
-            if world.players_settings.shadows_enable {
-                1
-            } else {
-                0
-            }
-        };
+        let shadows_enabled = 1;//{
+        //     if world.players_settings.shadows_enable {
+        //         1
+        //     } else {
+        //         0
+        //     }
+        // };
 
-        let visual_settings_of_environment =  world.level.as_ref().unwrap().visual_settings_of_environment;
+        let visual_settings_of_environment =  level.visual_settings_of_environment;
 
         OtherStaticData {
             // shapes_arrays_metadata,
@@ -213,7 +213,7 @@ impl StaticRenderData {
         }
     }
 
-    pub fn update(&mut self, world: &World)
+    pub fn update(&mut self, level: &Level)
     {
 
         let mut shapes = ShapesArrays::default();
@@ -323,7 +323,7 @@ impl StaticRenderData {
         
         let mut static_bounding_box = BoundingBox::new();
         
-        for obj in &world.level.as_ref().unwrap().static_objects {
+        for obj in &level.static_objects {
             
             // log::info!("static objects amount is {}", world.level.static_objects.len());
 
@@ -974,9 +974,9 @@ impl StaticRenderData {
         log::info!("static shapes metadata: \n{:?}", metadata);
         
         let other_static_data = OtherStaticData::new(
-            world,
+            level,
             // metadata,
-            world.level.as_ref().unwrap().all_shapes_stickiness_radius
+            level.all_shapes_stickiness_radius
         );
 
         self.static_shapes_data = shapes;

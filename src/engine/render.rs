@@ -85,7 +85,7 @@ pub struct RenderSystem {
     renderer: Arc<Mutex<Renderer>>,
     renderer_queue: Arc<Queue>,
     buffers: RendererBuffers,
-    main_raymarch_shader_pipeline: Arc<Mutex<Option<RenderPipeline>>>,
+    main_raymarch_shader_pipeline: Arc<Mutex<Option<(RenderPipeline, RenderPipeline)>>>,
     render_quality_data: RenderQualityData,
     window_size: PhysicalSize<u32>,
     is_generated_raymarch_shader: bool,
@@ -350,7 +350,7 @@ impl RenderSystem
     {
         self.is_generated_raymarch_shader = world.level.as_ref().unwrap().is_generated_raymarch_shader;
 
-        self.render_data.static_data.update(world);
+        self.render_data.static_data.update(world.level.as_ref().unwrap());
 
         self.renderer_queue.write_buffer(
             &self.buffers.other_static_data_buffer,
@@ -359,8 +359,13 @@ impl RenderSystem
         );
 
         *self.main_raymarch_shader_pipeline.lock().unwrap() = Some(
-            world.level.as_mut().unwrap().main_shader.take().expect(
-                "level have not main shader"
+            (
+                world.level.as_mut().unwrap().main_shader_render_pipeline.take().expect(
+                    "level have not main shader"
+                ),
+                world.level.as_mut().unwrap().minimap_shader_render_pipeline.take().expect(
+                    "level have not minimap shader"
+                )
             )
         )
     }
