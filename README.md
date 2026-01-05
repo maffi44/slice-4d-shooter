@@ -28,6 +28,14 @@ The project is currently in playable prototype stage.
 *   **Multiplayer Networking:** Implements a temporary client-based networking model for multiplayer gameplay and game state synchronization.
 *   **Cross-Platform Support:** The game runs on Windows, Linux, and macOS.
 
+
+## Sponsors
+This project is supported by the following patrons.
+Thank you for helping make the development of **Slice-4D Shooter** possible.
+
+### Demeurge Tier
+- **Richard Scharf**
+
 ## License
 
 The source code of **Slice: 4D Shooter** is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).  
