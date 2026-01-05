@@ -16,11 +16,12 @@
 
 use wgpu::Backend;
 
-pub fn read_args() -> Option<Backend>
+pub fn read_args() -> (Option<Backend>, Option<String>)
 {
     let args: Vec<String> = std::env::args().collect();
     let mut backend = None;
     let mut show_help = false;
+    let mut level = None;
 
     let mut i = 1;
     while i < args.len()
@@ -55,12 +56,29 @@ pub fn read_args() -> Option<Backend>
                 else
                 {
                     eprintln!("Missing argument for backend option");
+
+                    std::process::exit(0);
                 }
             }
 
             "--help" | "-help" | "help" | "-h" | "--usage" | "-usage" | "usage" =>
             {
                 show_help = true;
+            }
+
+            "-l" | "-level" | "--l" | "--level" =>
+            {
+                if i + 1 < args.len()
+                {
+                    level = Some(args[i + 1].to_string());
+                    i += 1;
+                }
+                else
+                {
+                    eprintln!("Missing argument for level option");
+
+                    std::process::exit(0);
+                }
             }
 
             "-v" | "--v" | "-version" | "--version" =>
@@ -90,11 +108,12 @@ pub fn read_args() -> Option<Backend>
         println!("  -b, --backend BACKEND        Set graphics backend (gl, dx12, vulkan, metal)");
         println!("  --help, -help, -h            Show this help message");
         println!("  -v --v -version, --version,  Show current game version");
+        println!("  -l --l -level, --level,  Load specific level");
         println!();
         println!("If no backend is specified, the graphics backend will be selected automatically");
 
         std::process::exit(0);
     }
 
-    backend
+    (backend, level)
 }

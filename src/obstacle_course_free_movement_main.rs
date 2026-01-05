@@ -53,14 +53,16 @@ fn init_winsparkle() {
 fn main() {
     env_logger::init();
 
-    let specific_backend = read_args();
+    let (specific_backend, specific_level) = read_args();
+
+    let start_level = specific_level.unwrap_or("map-3".to_string());
  
     let main_loop = MainLoop::new();
     
     log::info!("main: main_loop init");
 
     pollster::block_on(main_loop.run(
-        "map".to_string(),
+        start_level,
         true,
         false,
         // If you made any changes to the game map, you should

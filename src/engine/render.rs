@@ -85,7 +85,7 @@ pub struct RenderSystem {
     renderer: Arc<Mutex<Renderer>>,
     renderer_queue: Arc<Queue>,
     buffers: RendererBuffers,
-    main_raymarch_shader_pipeline: Arc<Mutex<Option<(RenderPipeline, RenderPipeline)>>>,
+    main_raymarch_shader_pipeline: Arc<Mutex<(Option<RenderPipeline>, Option<RenderPipeline>)>>,
     render_quality_data: RenderQualityData,
     window_size: PhysicalSize<u32>,
     is_generated_raymarch_shader: bool,
@@ -108,7 +108,7 @@ impl RenderSystem
     {    
         let render_data = RenderData::new(time, &window);
 
-        let main_raymarch_shader_pipeline = Arc::new(Mutex::new(None));
+        let main_raymarch_shader_pipeline = Arc::new(Mutex::new((None, None)));
         
         let (renderer, buffers, render_pipeline_builder_kit) = Renderer::new(
                 &window,
@@ -358,16 +358,11 @@ impl RenderSystem
             bytemuck::cast_slice(&[self.render_data.static_data.other_static_data]),
         );
 
-        *self.main_raymarch_shader_pipeline.lock().unwrap() = Some(
-            (
-                world.level.as_mut().unwrap().main_shader_render_pipeline.take().expect(
-                    "level have not main shader"
-                ),
-                world.level.as_mut().unwrap().minimap_shader_render_pipeline.take().expect(
-                    "level have not minimap shader"
-                )
-            )
-        )
+        *self.main_raymarch_shader_pipeline.lock().unwrap() =
+        (
+            world.level.as_mut().unwrap().main_shader_render_pipeline.take(),
+            world.level.as_mut().unwrap().minimap_shader_render_pipeline.take()
+        );
     }
 }
 

@@ -383,7 +383,7 @@ fn parse_json_level(
     let actors = {
         let json_actors = json_level
             .get("actors")
-            .expect("Wrong JSON map format. JSON level must have static_objects property");
+            .expect("Wrong JSON map format. JSON level must have actors property");
 
         parse_json_actors(json_actors, &default_settings, &materials_table)
     };
@@ -391,7 +391,7 @@ fn parse_json_level(
     let main_actor = {
         let json_main_actor = json_level
             .get("main_actor")
-            .expect("Wrong JSON map format. JSON level must have static_objects property");
+            .expect("Wrong JSON map format. JSON level must have main_actor property");
 
         parse_json_main_actor(
             json_main_actor,
@@ -532,6 +532,14 @@ fn parse_json_level(
             .expect("Wrong JSON map format. generated_shader_with_bsp_tree property must boolean type")
     };
 
+    let generated_shader_with_bsp_tree_with_dynamic_objects = {
+        json_level
+            .get("generated_shader_with_bsp_tree_with_dynamic_objects")
+            .expect("Wrong JSON map format. JSON level must have generated_shader_with_bsp_tree_with_dynamic_objects property")
+            .as_bool()
+            .expect("Wrong JSON map format. generated_shader_with_bsp_tree_with_dynamic_objects property must boolean type")
+    };
+
     let mut level = Level {
         level_name,
         static_objects,
@@ -556,7 +564,13 @@ fn parse_json_level(
             .as_str()
             .expect("Wrong JSON map format. main_shader property must string type");
 
-        build_render_pipeline(render_pipeline_builder_kit, shader_name, is_generated_raymarch_shader, &level)
+        build_render_pipeline(
+            render_pipeline_builder_kit,
+            shader_name,
+            is_generated_raymarch_shader,
+            generated_shader_with_bsp_tree_with_dynamic_objects,
+            &level
+        )
     };
 
     level.main_shader_render_pipeline = main_render_pipeline;
@@ -570,6 +584,7 @@ fn build_render_pipeline(
     render_pipeline_builder_kit: Option<MainShaderRenderPipelineBuilderKit>,
     shader_name: &str,
     is_generated_raymarch_shader: bool,
+    generated_shader_with_bsp_tree_with_dynamic_objects: bool,
     level: &Level,
 ) -> (Option<RenderPipeline>, Option<RenderPipeline>)
 {
@@ -592,13 +607,15 @@ fn build_render_pipeline(
                 let main_shader = generate_raymarch_shader_with_static_bsp_tree(
                     include_str!("../render/shaders/raymarch_shader_obstacle_course.wgsl"),
                     &static_render_data,
-                    false
+                    false,
+                    generated_shader_with_bsp_tree_with_dynamic_objects
                 );
 
                 let minimap_shader = generate_raymarch_shader_with_static_bsp_tree(
                     include_str!("../render/shaders/xwz_minimap_shader.wgsl"),
                     &static_render_data,
-                    false
+                    false,
+                    generated_shader_with_bsp_tree_with_dynamic_objects
                 );
 
                 (main_shader, minimap_shader)
@@ -712,6 +729,141 @@ fn build_render_pipeline(
             });
 
             return (Some(main_shader_render_pipeline), Some(minimap_render_pipeline));
+        }
+
+        "raymarch_shader_obstacle_course_dithered" =>
+        {
+            let (main_shader, minimap_shader) = if is_generated_raymarch_shader
+            {
+                let mut static_render_data = StaticRenderData::new();
+
+                static_render_data.update(level);
+
+                let main_shader = generate_raymarch_shader_with_static_bsp_tree(
+                    include_str!("../render/shaders/raymarch_shader_obstacle_course_dithered.wgsl"),
+                    &static_render_data,
+                    false,
+                    generated_shader_with_bsp_tree_with_dynamic_objects
+                );
+
+                let minimap_shader = generate_raymarch_shader_with_static_bsp_tree(
+                    include_str!("../render/shaders/xwz_minimap_shader.wgsl"),
+                    &static_render_data,
+                    false,
+                    generated_shader_with_bsp_tree_with_dynamic_objects
+                );
+
+                (main_shader, minimap_shader)
+
+
+            }
+            else
+            {
+                (
+                    include_str!("../render/shaders/raymarch_shader_obstacle_course_dithered.wgsl").into(),
+                    include_str!("../render/shaders/xwz_minimap_shader.wgsl").into()
+                )
+            };
+
+            let raymarch_shader_obstacle_course = unsafe {
+                render_pipeline_builder_kit.device.create_shader_module_trusted(
+                wgpu::ShaderModuleDescriptor {
+                    label: Some("Raymarch Shader"),
+                    source: wgpu::ShaderSource::Wgsl(main_shader.into()),
+                },
+                ShaderRuntimeChecks::unchecked()
+            )};
+
+            let main_shader_render_pipeline = render_pipeline_builder_kit.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("main shader render pipeline"),
+                layout: Some(&render_pipeline_builder_kit.raymarch_render_pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &raymarch_shader_obstacle_course,
+                    entry_point: Some("vs_main"),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
+                    buffers: &[
+                        render_pipeline_builder_kit.vertex_desc.clone(),
+                    ],
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &raymarch_shader_obstacle_course,
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: render_pipeline_builder_kit.config.format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview: None,
+                cache: None,
+            });
+
+            let minimap_shader_obstacle_course = unsafe {
+                render_pipeline_builder_kit.device.create_shader_module_trusted(
+                wgpu::ShaderModuleDescriptor {
+                    label: Some("Raymarch Shader"),
+                    source: wgpu::ShaderSource::Wgsl(minimap_shader.into()),
+                },
+                ShaderRuntimeChecks::unchecked()
+            )};
+
+            let minimap_render_pipeline = render_pipeline_builder_kit.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("minimap shader render pipeline"),
+                layout: Some(&render_pipeline_builder_kit.raymarch_render_pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &minimap_shader_obstacle_course,
+                    entry_point: Some("vs_main"),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
+                    buffers: &[
+                        render_pipeline_builder_kit.vertex_desc,
+                    ],
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &minimap_shader_obstacle_course,
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: render_pipeline_builder_kit.config.format,
+                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview: None,
+                cache: None,
+            });
+
+            return (Some(main_shader_render_pipeline), None);
         }
 
         _ => unimplemented!()

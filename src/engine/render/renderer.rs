@@ -121,7 +121,7 @@ pub struct Renderer {
 
     ui_renderer: UIRenderer,
     with_ui_renderer: bool,
-    main_raymarch_shader_pipeline: Arc<Mutex<Option<(RenderPipeline, RenderPipeline)>>>,
+    main_raymarch_shader_pipeline: Arc<Mutex<(Option<RenderPipeline>, Option<RenderPipeline>)>>,
 }
 
 impl Drop for Renderer {
@@ -239,7 +239,7 @@ impl Renderer {
         raymarch_target_texture_scale_factor: f32,
         with_ui_renderer: bool,
         specific_backend: Option<Backend>,
-        main_raymarch_shader_pipeline: Arc<Mutex<Option<(RenderPipeline, RenderPipeline)>>>,
+        main_raymarch_shader_pipeline: Arc<Mutex<(Option<RenderPipeline>, Option<RenderPipeline>)>>,
     ) -> (Renderer, RendererBuffers, MainShaderRenderPipelineBuilderKit)
     {
         let size = window.inner_size();
@@ -1082,8 +1082,11 @@ impl Renderer {
             } 
             
         }
-        match self.main_raymarch_shader_pipeline.lock().unwrap().as_ref() {
-            Some((main_shader_pipeline, minimap_shader_pipeline)) =>
+
+        let (main_shader, minimap_shader) = &*self.main_raymarch_shader_pipeline.lock().unwrap();
+
+        match main_shader {
+            Some(main_shader_pipeline) =>
             {
         
                 if let Some(instant) = self.prev_time_instant {
@@ -1149,6 +1152,7 @@ impl Renderer {
                 render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
             }
 
+            if minimap_shader.is_some()
             {
                 // xwz minimap render pass
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -1167,7 +1171,7 @@ impl Renderer {
                     occlusion_query_set: None,
                 });
 
-                render_pass.set_pipeline(&minimap_shader_pipeline);
+                render_pass.set_pipeline(minimap_shader.as_ref().unwrap());
                 render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
                 render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
                 render_pass.set_vertex_buffer(0, self.vertex_buffer_minimap.slice(..));

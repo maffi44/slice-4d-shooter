@@ -627,15 +627,15 @@
             }
         },
         {
-            "triggering_wandering_actor" : {
+            "triggering_special_lift_actor" : {
 
-                "comment" : "first triggering_wandering_actor",
+                "comment" : "triggering_special_lift_actor",
                 
                 "transform" : {
                     "position" : {
                         "x": -8.0,
-                        "y": -9.0,
-                        "z": -7.0,
+                        "y": 0.8,
+                        "z": -4.0,
                         "w": 0.0
                     },
                     "scale" : {
@@ -650,8 +650,8 @@
                     "transform" : {
                         "position" : {
                             "x": -8.0,
-                            "y": 6.4,
-                            "z": -7.0,
+                            "y": 16.4,
+                            "z": -4.0,
                             "w": 0.0
                         },
                         "scale" : {
@@ -663,15 +663,50 @@
                     }
                 },
 
+                "lift_door_index" : 5,
+
                 "travel_time" : 5.6,
+
+                "stop_time" : 5.3,
+
+                "lift_door_open_time" : 0.9,
 
                 "movement_type" : "linear",
 
                 "triggering_by_trigger" : "first_trigger",
-                
-                "is_one_time_movement" : false,
 
                 "static_objects" : [
+                    {
+                        "sphere" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0.0,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 1.8,
+                                "y": 2.0,
+                                "z": 2.0,
+                                "w": 2.0
+                            },
+                            "roundness" : 0.0,
+                            "undestroyable" : false,
+                            "stickiness" : false,
+                            "visual_material" : "orange"
+                        }
+                    },
                     {
                         "cube" : {
                             "comment" : "",
@@ -692,15 +727,15 @@
                                 }
                             },
                             "size" : {
-                                "x": 0.5,
-                                "y": 8.0,
-                                "z": 0.5,
-                                "w": 0.5
+                                "x": 0.0001,
+                                "y": 0.0001,
+                                "z": 0.0001,
+                                "w": 0.0001
                             },
-                            "roundness" : 1.2,
+                            "roundness" : 1.5,
+                            "is_positive" : false,
                             "undestroyable" : false,
-                            "stickiness" : false,
-                            "visual_material" : "orange"
+                            "stickiness" : true
                         }
                     },
                     {
@@ -709,7 +744,7 @@
                             "transform" : {
                                 "position" : {
                                     "x": 0,
-                                    "y": 9.0,
+                                    "y": -0.2,
                                     "z": 0,
                                     "w": 0
                                 },
@@ -723,12 +758,105 @@
                                 }
                             },
                             "size" : {
-                                "x": 3.0,
-                                "y": 1.0,
-                                "z": 3.0,
-                                "w": 3.0
+                                "x": 2.0,
+                                "y": 0.0001,
+                                "z": 2.0,
+                                "w": 2.0
                             },
-                            "roundness" : 0.0,
+                            "roundness" : 0.28,
+                            "is_positive" : false,
+                            "undestroyable" : false,
+                            "stickiness" : false
+                        }
+                    },
+                    {
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": -0.93,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 2.0,
+                                "y": 0.0001,
+                                "z": 2.0,
+                                "w": 2.0
+                            },
+                            "roundness" : 0.28,
+                            "is_positive" : false,
+                            "undestroyable" : false,
+                            "stickiness" : false
+                        }
+                    },
+                    {
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": -2.2,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.001,
+                                "y": 0.8,
+                                "z": 0.001,
+                                "w": 0.001
+                            },
+                            "roundness" : 0.48,
+                            "is_positive" : false,
+                            "undestroyable" : false,
+                            "stickiness" : false
+                        }
+                    },
+                    {
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0.0,
+                                    "z": -3.2,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.0001,
+                                "y": 0.0001,
+                                "z": 1.7,
+                                "w": 0.0001
+                            },
+                            "roundness" : 1.41,
                             "is_positive" : false,
                             "undestroyable" : false,
                             "stickiness" : false
@@ -794,6 +922,35 @@
                     "w": 3
                 },
                 "roundness" : 0.4,
+                "stickiness" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "final trigger platform",
+                "transform" : {
+                    "position" : {
+                        "x": -8.0,
+                        "y": 14.2,
+                        "z": -7.0,
+                        "w": 0.0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 0.15,
+                    "z": 1.5,
+                    "w": 1.5
+                },
+                "roundness" : 0.1,
                 "stickiness" : true
             }
         },

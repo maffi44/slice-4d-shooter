@@ -68,6 +68,15 @@
 
     "visual_materials" : [
         {
+            "name" : "standart",
+            "color" : {
+                "red": 1.81,
+                "green": 1.81,
+                "blue": 3.4
+            },
+            "roughness": 0.08
+        },
+        {
             "name" : "common",
             "color" : {
                 "red": 0.2,
@@ -111,15 +120,6 @@
                 "blue": 1.04
             },
             "roughness": 0.064
-        },
-        {
-            "name" : "standart",
-            "color" : {
-                "red": 1.81,
-                "green": 1.81,
-                "blue": 3.4
-            },
-            "roughness": 0.08
         },
         {
             "name" : "standart_slick",

@@ -15,6 +15,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(
     original_shader: &str,
     static_data: &StaticRenderData,
     generate_with_get_mats_func: bool,
+    generated_with_dynamic_objects: bool,
 ) -> String
 {
     let bsp_tree = Box::new(BSPElement::create_binary_space_partition_tree(static_data));
@@ -26,7 +27,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(
     if shader_pieces.len() == 3
     {
         shader += shader_pieces[0];
-        shader += &generate_map_function_body(&bsp_tree);
+        shader += &generate_map_function_body(&bsp_tree, generated_with_dynamic_objects);
         shader += shader_pieces[2];
     }
     else
@@ -41,7 +42,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(
     if shader_pieces.len() == 3
     {
         shader += shader_pieces[0];
-        shader += &generate_find_intersections_function_body(static_data);
+        shader += &generate_find_intersections_function_body(static_data, generated_with_dynamic_objects);
         shader += shader_pieces[2];
     }
     else
@@ -73,7 +74,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(
 }
 
 
-fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> String
+fn generate_find_intersections_function_body(static_data: &StaticRenderData, generated_with_dynamic_objects: bool) -> String
 {
     let stickiness = static_data.other_static_data.static_shapes_stickiness;
     let mut func_body = String::new();
@@ -539,13 +540,13 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData) -> 
 }
 
 
-fn generate_map_function_body(bsp_tree: &Box<BSPElement>) -> String
+fn generate_map_function_body(bsp_tree: &Box<BSPElement>, generated_with_dynamic_objects: bool) -> String
 {
     let mut func_body = String::new();
 
     func_body += "var d = MAX_DIST*2.0;";
 
-    write_bsp_tree_content_for_map_func(&mut func_body, bsp_tree);
+    write_bsp_tree_content_for_map_func(&mut func_body, bsp_tree, generated_with_dynamic_objects);
 
     func_body
 }
@@ -1262,7 +1263,7 @@ fn calc_size_for_sphcube(size: [f32; 4], roundness: f32) -> [f32; 4]
 }
 
 
-fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BSPElement>)
+fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BSPElement>, generated_with_dynamic_objects: bool)
 {
     match bsp_elem.as_ref() {
         BSPElement::Branches(slice, left_branch, right_branch) => 
@@ -1285,11 +1286,11 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                 )
             );
 
-            write_bsp_tree_content_for_map_func(func_body, right_branch);
+            write_bsp_tree_content_for_map_func(func_body, right_branch, generated_with_dynamic_objects);
 
             func_body.push_str("}\nelse\n{");
 
-            write_bsp_tree_content_for_map_func(func_body, left_branch);
+            write_bsp_tree_content_for_map_func(func_body, left_branch, generated_with_dynamic_objects);
 
             func_body.push_str("}");
 
@@ -1299,19 +1300,21 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
             let stickiness = objects.stickiness;
             
 
-            func_body.push_str(
-                "
-                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
-                    if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
-                        d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
-                    } else if (i < dynamic_data.shapes_arrays_metadata.sph_cubes_start) {
-                        d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
-                    } else {
-                        d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
-                    }
-                }\n
-                "
-            );
+            if generated_with_dynamic_objects {
+                func_body.push_str(
+                    "
+                    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.sph_cubes_amount + dynamic_data.shapes_arrays_metadata.sph_cubes_start; i++) {
+                        if (i < dynamic_data.shapes_arrays_metadata.spheres_start) {
+                            d = min(d, sd_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+                        } else if (i < dynamic_data.shapes_arrays_metadata.sph_cubes_start) {
+                            d = min(d, sd_sphere(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size.x) - dyn_normal_shapes[i].roundness);
+                        } else {
+                            d = min(d, sd_sph_box(p - dyn_normal_shapes[i].pos, dyn_normal_shapes[i].size) - dyn_normal_shapes[i].roundness);
+                        }
+                    }\n
+                    "
+                );
+            }
 
 
             for obj in &objects.cubes
@@ -1354,19 +1357,22 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                 );
             }
 
-            func_body.push_str(
-                "
-                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
-                    if (i < dynamic_data.shapes_arrays_metadata.s_spheres_start) {
-                        d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-                    } else if (i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_start) {
-                        d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-                    } else {
-                        d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
-                    }
-                }\n
-                "
-            );
+            if generated_with_dynamic_objects {
+                func_body.push_str(
+                    "
+                    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_sph_cubes_start; i++) {
+                        if (i < dynamic_data.shapes_arrays_metadata.s_spheres_start) {
+                            d = smin(d, sd_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+                        } else if (i < dynamic_data.shapes_arrays_metadata.s_sph_cubes_start) {
+                            d = smin(d, sd_sphere(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size.x) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+                        } else {
+                            d = smin(d, sd_sph_box(p - dyn_stickiness_shapes[i].pos, dyn_stickiness_shapes[i].size) - dyn_stickiness_shapes[i].roundness, static_data.stickiness);
+                        }
+                    }\n
+                    "
+                );
+
+            }
 
             // stickiness
             for obj in &objects.s_cubes
@@ -1411,19 +1417,22 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                 );
             }
 
-            func_body.push_str(
-                "
-                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
-                    if (i < dynamic_data.shapes_arrays_metadata.neg_spheres_start) {
-                        d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
-                    } else if (i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start) {
-                        d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
-                    } else {
-                        d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
-                    }
-                }\n
-                "
-            );
+            if generated_with_dynamic_objects {
+                func_body.push_str(
+                    "
+                    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start; i++) {
+                        if (i < dynamic_data.shapes_arrays_metadata.neg_spheres_start) {
+                            d = max(d, -(sd_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+                        } else if (i < dynamic_data.shapes_arrays_metadata.neg_sph_cubes_start) {
+                            d = max(d, -(sd_sphere(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size.x) - dyn_negatives_shapes[i].roundness));
+                        } else {
+                            d = max(d, -(sd_sph_box(p - dyn_negatives_shapes[i].pos, dyn_negatives_shapes[i].size) - dyn_negatives_shapes[i].roundness));
+                        }
+                    }\n
+                    "
+                );
+            }
+
 
             // negative
             for obj in &objects.neg_cubes
@@ -1465,19 +1474,22 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                 );
             }
 
-            func_body.push_str(
-                "
-                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
-                    if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
-                        d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
-                    } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
-                        d = smax(d, -(sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
-                    } else {
-                        d = smax(d, -(sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
-                    }
-                }\n
-                "
-            );
+            if generated_with_dynamic_objects {
+                func_body.push_str(
+                    "
+                    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start; i++) {
+                        if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
+                            d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
+                        } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
+                            d = smax(d, -(sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
+                        } else {
+                            d = smax(d, -(sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
+                        }
+                    }\n
+                    "
+                );
+            }
+
 
             // negative stickiness
             for obj in &objects.s_neg_cubes
@@ -1522,19 +1534,22 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                 );
             }
 
-            func_body.push_str(
-                "
-                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.unbreakable_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.unbreakable_sph_cubes_start; i++) {
-                    if (i < dynamic_data.shapes_arrays_metadata.unbreakable_spheres_start) {
-                        d = min(d, sd_box(p - dyn_undestroyable_normal_shapes[i].pos, dyn_undestroyable_normal_shapes[i].size) - dyn_undestroyable_normal_shapes[i].roundness);
-                    } else if (i < dynamic_data.shapes_arrays_metadata.unbreakable_sph_cubes_start) {
-                        d = min(d, sd_sphere(p - dyn_undestroyable_normal_shapes[i].pos, dyn_undestroyable_normal_shapes[i].size.x) - dyn_undestroyable_normal_shapes[i].roundness);
-                    } else {
-                        d = min(d, sd_sph_box(p - dyn_undestroyable_normal_shapes[i].pos, dyn_undestroyable_normal_shapes[i].size) - dyn_undestroyable_normal_shapes[i].roundness);
-                    }
-                }\n
-                "
-            );
+            if generated_with_dynamic_objects {
+                func_body.push_str(
+                    "
+                    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.unbreakable_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.unbreakable_sph_cubes_start; i++) {
+                        if (i < dynamic_data.shapes_arrays_metadata.unbreakable_spheres_start) {
+                            d = min(d, sd_box(p - dyn_undestroyable_normal_shapes[i].pos, dyn_undestroyable_normal_shapes[i].size) - dyn_undestroyable_normal_shapes[i].roundness);
+                        } else if (i < dynamic_data.shapes_arrays_metadata.unbreakable_sph_cubes_start) {
+                            d = min(d, sd_sphere(p - dyn_undestroyable_normal_shapes[i].pos, dyn_undestroyable_normal_shapes[i].size.x) - dyn_undestroyable_normal_shapes[i].roundness);
+                        } else {
+                            d = min(d, sd_sph_box(p - dyn_undestroyable_normal_shapes[i].pos, dyn_undestroyable_normal_shapes[i].size) - dyn_undestroyable_normal_shapes[i].roundness);
+                        }
+                    }\n
+                    "
+                );
+            }
+
 
             // undestroyable
             for obj in &objects.u_cubes
@@ -1577,19 +1592,21 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                 );
             }
 
-            func_body.push_str(
-                "
-                for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_start; i++) {
-                    if (i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start) {
-                        d = smin(d, sd_box(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
-                    } else if (i < dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_start) {
-                        d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
-                    } else {
-                        d = smin(d, sd_sph_box(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
-                    }
-                }\n
-                "
-            );
+            if generated_with_dynamic_objects {
+                func_body.push_str(
+                    "
+                    for (var i = 0u; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_start; i++) {
+                        if (i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start) {
+                            d = smin(d, sd_box(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+                        } else if (i < dynamic_data.shapes_arrays_metadata.unbreakable_s_sph_cubes_start) {
+                            d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+                        } else {
+                            d = smin(d, sd_sph_box(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
+                        }
+                    }\n
+                    "
+                );
+            }
 
             // undestroyable stickiness
             for obj in &objects.u_s_cubes
@@ -1633,12 +1650,6 @@ fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BS
                     )
                 );
             }
-
-            func_body.push_str(
-                "for (var i = dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i < dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_amount + dynamic_data.shapes_arrays_metadata.unbreakable_s_spheres_start; i++) {
-                d = smin(d, sd_sphere(p - dyn_undestroyable_stickiness_shapes[i].pos, dyn_undestroyable_stickiness_shapes[i].size.x) - dyn_undestroyable_stickiness_shapes[i].roundness, static_data.stickiness);
-            }\n"
-            );
         },
     }
 }
@@ -3083,7 +3094,7 @@ impl Objects
 
             let object = Object::new(shape, obj_info, stickiness);
 
-            cubes.push(object);
+            u_cubes.push(object);
         }
 
 
@@ -3097,7 +3108,7 @@ impl Objects
 
             let object = Object::new(shape, obj_info, stickiness);
 
-            s_cubes.push(object);
+            u_s_cubes.push(object);
         }
 
 
@@ -3166,7 +3177,7 @@ impl Objects
 
             let object = Object::new(shape, obj_info, stickiness);
 
-            spheres.push(object);
+            u_spheres.push(object);
         }
 
 
@@ -3180,7 +3191,7 @@ impl Objects
 
             let object = Object::new(shape, obj_info, stickiness);
 
-            s_spheres.push(object);
+            u_s_spheres.push(object);
         }
 
 
@@ -3249,7 +3260,7 @@ impl Objects
 
             let object = Object::new(shape, obj_info, stickiness);
 
-            sph_cubes.push(object);
+            u_sph_cubes.push(object);
         }
 
 
@@ -3263,7 +3274,7 @@ impl Objects
 
             let object = Object::new(shape, obj_info, stickiness);
 
-            s_sph_cubes.push(object);
+            u_s_sph_cubes.push(object);
         }
 
 
@@ -3295,18 +3306,18 @@ impl Objects
         }
 
 
-        let mut undestroyable_cubes = Vec::new();
-        for shape in &static_data.unbreakable_cubes
-        {
-            let obj_info = ObjectInfo {
-                shape_type: ShapeType::Cube,
-                obj_type: ObjectType::Unbreakable
-            };
+        // let mut undestroyable_cubes = Vec::new();
+        // for shape in &static_data.unbreakable_cubes
+        // {
+        //     let obj_info = ObjectInfo {
+        //         shape_type: ShapeType::Cube,
+        //         obj_type: ObjectType::Unbreakable
+        //     };
 
-            let object = Object::new(shape, obj_info, stickiness);
+        //     let object = Object::new(shape, obj_info, stickiness);
 
-            undestroyable_cubes.push(object);
-        }
+        //     undestroyable_cubes.push(object);
+        // }
         
         let object_edges_list_along_x = Vec::new();
         let object_edges_list_along_y = Vec::new();
