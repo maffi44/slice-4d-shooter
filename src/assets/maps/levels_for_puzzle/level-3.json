@@ -1,7 +1,8 @@
 {
     "level_name" : "test_level",
-"main_shader" : "raymarch_shader_obstacle_course",
-    "generated_shader_with_bsp_tree" : false,
+    "main_shader" : "raymarch_shader_obstacle_course_dithered",
+    "generated_shader_with_bsp_tree" : true,
+    "generated_shader_with_bsp_tree_with_dynamic_objects" : true,
 
     "defaults" : {
         "is_positive": true,

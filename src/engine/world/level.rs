@@ -18,7 +18,7 @@ use std::{collections::HashMap, fs::File, io::Read};
 
 use crate::{
     actor::{
-        ActorWrapper, device, droped_rotator_tool::DropedRotatorTool, final_trigger::FinalTrgger, main_player::{player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, trgger_orb::TriggerOrb, trigger::Trigger, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor, wandering_actor::{
+        ActorWrapper, device, droped_rotator_tool::DropedRotatorTool, final_trigger::FinalTrgger, main_player::{player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, new_spawn_area::NewSpawnArea, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, trgger_orb::TriggerOrb, trigger::Trigger, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor, wandering_actor::{
             WanderingActor,
             WanderingActorMovementType,
         }
@@ -2124,6 +2124,11 @@ fn parse_json_actors(
 
                     actors.push(ActorWrapper::DropedRotatorTool(actor));
                 }
+                "new_spawn_area" => {
+                    let actor = parse_new_spawn_area_actor(actor_value);
+
+                    actors.push(ActorWrapper::NewSpawnArea(actor));
+                }
 
                 _ => {panic!("Wrong JSON map format, {} it is worng actor type", actor_type)}
             }
@@ -2134,12 +2139,36 @@ fn parse_json_actors(
 }
 
 
+fn parse_new_spawn_area_actor(
+    actor_value: &Value,
+) -> NewSpawnArea {
+
+    let transform = parse_json_into_transform(actor_value, "new_spawn_area_actor");
+
+    let area_size = parse_json_into_size(actor_value, "new_spawn_area_actor");
+    
+    let new_spawn_position_val = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, new_spawn_area_actor must be an json object")
+        .get("new_spawn_position")
+        .expect("Wrong JSON map format, new_spawn_area_actor must have a new_spawn_position property");
+
+    let new_spawn_position = parse_json_into_transform(new_spawn_position_val, "new_spawn_area_actor/new_spawn_position").get_position();
+
+    NewSpawnArea::new(
+        transform,
+        area_size,
+        new_spawn_position
+    )
+}
+
 fn parse_droped_rotator_tool_actor(
     actor_value: &Value,
 ) -> DropedRotatorTool {
 
-    let transform = parse_json_into_transform(actor_value, "triggering_special_lift_actor");
+    let transform = parse_json_into_transform(actor_value, "droped_rotator_tool_actor");
 
+    
     DropedRotatorTool::new(
         transform,
     )

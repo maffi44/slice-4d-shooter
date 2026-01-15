@@ -23,7 +23,7 @@ use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
-        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, EmptyHand, holegun::HoleGun, obstaclesgun::ObstaclesGun, rotator::RotatorTool}, droped_rotator_tool::DropedRotatorToolMessage, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState, player_input_master, player_settings}, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
+        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, EmptyHand, holegun::HoleGun, obstaclesgun::ObstaclesGun, rotator::RotatorTool}, droped_rotator_tool::DropedRotatorToolMessage, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState, player_input_master, player_settings}, new_spawn_area::NewSpawnAreaMessage, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
     },
     engine::{
         audio::{
@@ -45,13 +45,14 @@ use self::{
     player_settings::PlayerSettings,
 };
 
-use glam::{Mat4, Vec2, Vec3, Vec4};
+use glam::{FloatExt, Mat4, Vec2, Vec3, Vec4};
 
 use super::{
     main_player::{self, Y_DEATH_PLANE_LEVEL}, move_w_bonus::MoveWBonusSpotMessage, session_controller::SessionControllerMessage, ControlledActor, PhysicsMessages
 };
 
 const POINTER_COLOR: Vec3 = Vec3::new(0.7, 0.0, 0.0);
+const DITHERING_EFFET_FOV: f32 = 1.1;
 
 pub struct ObstacleCourseFreeMovementPlayer {
     id: Option<ActorID>,
@@ -69,7 +70,8 @@ pub struct ObstacleCourseFreeMovementPlayer {
 
     devices: [Option<Box<dyn Device>>; 4],
 
-    pub navigation_coloring_walls: bool,
+    pub dithering_effect: f32,
+    pub dithering_effect_target: f32,
     pub navigation_lines_mode: u32,
 
     current_spawn: Vec4,
@@ -203,6 +205,16 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
             {
                 match message
                 {
+                    SpecificActorMessage::NewSpawnArea(message) =>
+                    {
+                        match message
+                        {
+                            NewSpawnAreaMessage::SetNewSpawnPosition(new_spawn_position) =>
+                            {
+                                self.current_spawn = new_spawn_position;
+                            }
+                        }
+                    }
                     SpecificActorMessage::DropedRotatorToolMessage(message) =>
                     {
                         match message
@@ -235,6 +247,8 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                                     ui_system,
                                     engine_handle,
                                 );
+
+                                self.dithering_effect_target = DITHERING_EFFET_FOV;
 
                                 *ui_system.get_mut_ui_element(&UIElementType::RotatorTutorialDraft).get_ui_data_mut().get_is_visible_mut() = true;
                             }
@@ -790,6 +804,9 @@ impl ObstacleCourseFreeMovementPlayer {
 
         let volume_areas = Vec::with_capacity(3);
 
+        let dithering_effect = if with_rotator_tool {1.0} else {0.0};
+        let dithering_effect_target = dithering_effect;
+
         ObstacleCourseFreeMovementPlayer {
             id: None,
 
@@ -810,8 +827,9 @@ impl ObstacleCourseFreeMovementPlayer {
 
             screen_effects,
 
-            navigation_coloring_walls: false,
-            navigation_lines_mode: 2u32,
+            dithering_effect: 0.0,
+            dithering_effect_target: 0.0,
+            navigation_lines_mode: 1u32,
             current_spawn: spawn,
             nav_slice_height: 0.0,
             nav_slice_height_target: 0.0,
@@ -891,7 +909,14 @@ impl ObstacleCourseFreeMovementPlayer {
         {
             if input.anti_projection_mode.is_action_just_pressed()
             {
-                self.navigation_coloring_walls = !self.navigation_coloring_walls;
+                if self.dithering_effect_target > 0.0
+                {
+                    self.dithering_effect_target = 0.0;
+                }
+                else
+                {
+                    self.dithering_effect_target = DITHERING_EFFET_FOV;
+                }
             }
     
             if input.w_scanner.is_action_just_pressed()
@@ -904,149 +929,156 @@ impl ObstacleCourseFreeMovementPlayer {
                 }
             }
 
-            if input.first_mouse.is_action_pressed()
-            {
-                self.first_mouse_was_pressed = true;
+        //     if input.first_mouse.is_action_pressed()
+        //     {
+        //         self.first_mouse_was_pressed = true;
 
-                let player_pos = self.inner_state.get_eyes_position();
-                let hit = physic_system.ray_cast(
-                    player_pos,
-                    self.get_transform().get_rotation()*FORWARD,
-                    50.0,
-                    Some(self.get_id().expect("Obstacle course player have not an ActorID"))
-                );
+        //         let player_pos = self.inner_state.get_eyes_position();
+        //         let hit = physic_system.ray_cast(
+        //             player_pos,
+        //             self.get_transform().get_rotation()*FORWARD,
+        //             50.0,
+        //             Some(self.get_id().expect("Obstacle course player have not an ActorID"))
+        //         );
 
-                if hit.is_some()
-                {
-                    let hit = hit.unwrap();
+        //         if hit.is_some()
+        //         {
+        //             let hit = hit.unwrap();
 
-                    self.xwz_slice_point = hit.hit_point;
+        //             self.xwz_slice_point = hit.hit_point;
 
-                    self.nav_slice_height_target = hit.hit_point.y - player_pos.y;
-                    self.nav_slice_height = hit.hit_point.y - player_pos.y;
-                    self.nav_slice_is_visible_target = 1.0;
+        //             self.nav_slice_height_target = hit.hit_point.y - player_pos.y;
+        //             self.nav_slice_height = hit.hit_point.y - player_pos.y;
+        //             self.nav_slice_is_visible_target = 1.0;
 
-                    self.nav_slice_is_visible = lerpf(
-                        self.nav_slice_is_visible,
-                        self.nav_slice_is_visible_target,
-                        delta*5.0
-                    );
-                    // self.nav_slice_is_visible = 1.0;
+        //             self.nav_slice_is_visible = lerpf(
+        //                 self.nav_slice_is_visible,
+        //                 self.nav_slice_is_visible_target,
+        //                 delta*5.0
+        //             );
+        //             // self.nav_slice_is_visible = 1.0;
 
-                    let pointed_from = self.get_transform().get_rotation() * Vec4::new(-0.6,-0.2,0.0,0.0);
-                    let pointed_to = hit.hit_point - self.get_transform().get_position();
+        //             let pointed_from = self.get_transform().get_rotation() * Vec4::new(-0.6,-0.2,0.0,0.0);
+        //             let pointed_to = hit.hit_point - self.get_transform().get_position();
 
-                    let charging_volume_area = VolumeArea::SphericalVolumeArea(
-                        SphericalVolumeArea {
-                            translation: pointed_from,
-                            radius: 0.05,
-                            color: POINTER_COLOR,
-                        }
-                    );
+        //             let charging_volume_area = VolumeArea::SphericalVolumeArea(
+        //                 SphericalVolumeArea {
+        //                     translation: pointed_from,
+        //                     radius: 0.05,
+        //                     color: POINTER_COLOR,
+        //                 }
+        //             );
 
-                    let beam = VolumeArea::BeamVolumeArea(
-                        BeamVolumeArea {
-                            translation_pos_1: pointed_from,
-                            translation_pos_2: pointed_to,
-                            radius: 0.015,
-                            color: POINTER_COLOR, 
-                        }
-                    );
+        //             let beam = VolumeArea::BeamVolumeArea(
+        //                 BeamVolumeArea {
+        //                     translation_pos_1: pointed_from,
+        //                     translation_pos_2: pointed_to,
+        //                     radius: 0.015,
+        //                     color: POINTER_COLOR, 
+        //                 }
+        //             );
 
-                    let point = VolumeArea::SphericalVolumeArea(
-                        SphericalVolumeArea {
-                            translation: pointed_to,
-                            radius: 0.10,
-                            color: POINTER_COLOR, 
-                        }
-                    );
+        //             let point = VolumeArea::SphericalVolumeArea(
+        //                 SphericalVolumeArea {
+        //                     translation: pointed_to,
+        //                     radius: 0.10,
+        //                     color: POINTER_COLOR, 
+        //                 }
+        //             );
 
-                    self.volume_areas.push(charging_volume_area);
-                    self.volume_areas.push(beam);
-                    self.volume_areas.push(point);
-                }
-                else
-                {
-                    self.nav_slice_height_target = 0.0;
+        //             self.volume_areas.push(charging_volume_area);
+        //             self.volume_areas.push(beam);
+        //             self.volume_areas.push(point);
+        //         }
+        //         else
+        //         {
+        //             self.nav_slice_height_target = 0.0;
             
-                    self.nav_slice_height = lerpf(
-                        self.nav_slice_height,
-                        self.nav_slice_height_target,
-                        delta*8.0
-                    );
+        //             self.nav_slice_height = lerpf(
+        //                 self.nav_slice_height,
+        //                 self.nav_slice_height_target,
+        //                 delta*8.0
+        //             );
             
-                    if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
-                    {
-                        self.nav_slice_height = self.nav_slice_height_target;
-                    }
+        //             if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
+        //             {
+        //                 self.nav_slice_height = self.nav_slice_height_target;
+        //             }
             
-                    if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
-                    {
-                        self.nav_slice_is_visible_target = 1.0;
-                    }
-                    else
-                    {
-                        self.nav_slice_is_visible_target = 0.0;
-                    }
+        //             if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
+        //             {
+        //                 self.nav_slice_is_visible_target = 1.0;
+        //             }
+        //             else
+        //             {
+        //                 self.nav_slice_is_visible_target = 0.0;
+        //             }
             
-                    self.nav_slice_is_visible = lerpf(
-                        self.nav_slice_is_visible,
-                        self.nav_slice_is_visible_target,
-                        delta*5.0
-                    );
-                }
-            }
-            else
-            {
-                if self.first_mouse_was_pressed == true
-                {
-                    self.first_mouse_was_pressed = false;
-                    self.nav_slice_height_target = 0.0;
-                }
+        //             self.nav_slice_is_visible = lerpf(
+        //                 self.nav_slice_is_visible,
+        //                 self.nav_slice_is_visible_target,
+        //                 delta*5.0
+        //             );
+        //         }
+        //     }
+        //     else
+        //     {
+        //         if self.first_mouse_was_pressed == true
+        //         {
+        //             self.first_mouse_was_pressed = false;
+        //             self.nav_slice_height_target = 0.0;
+        //         }
 
-                self.nav_slice_height_target -= input.mouse_wheel_delta.y*0.00105;
+        //         self.nav_slice_height_target -= input.mouse_wheel_delta.y*0.00105;
         
-                if input.middle_mouse.is_action_just_pressed()
-                {
-                    self.nav_slice_height_target = 0.0;
-                }
+        //         if input.middle_mouse.is_action_just_pressed()
+        //         {
+        //             self.nav_slice_height_target = 0.0;
+        //         }
         
-                self.nav_slice_height = lerpf(
-                    self.nav_slice_height,
-                    self.nav_slice_height_target,
-                    delta*8.0
-                );
+        //         self.nav_slice_height = lerpf(
+        //             self.nav_slice_height,
+        //             self.nav_slice_height_target,
+        //             delta*8.0
+        //         );
         
-                if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
-                {
-                    self.nav_slice_height = self.nav_slice_height_target;
-                }
+        //         if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
+        //         {
+        //             self.nav_slice_height = self.nav_slice_height_target;
+        //         }
         
-                if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
-                {
-                    self.nav_slice_is_visible_target = 1.0;
-                }
-                else
-                {
-                    self.nav_slice_is_visible_target = 0.0;
-                }
+        //         if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
+        //         {
+        //             self.nav_slice_is_visible_target = 1.0;
+        //         }
+        //         else
+        //         {
+        //             self.nav_slice_is_visible_target = 0.0;
+        //         }
         
-                self.nav_slice_is_visible = lerpf(
-                    self.nav_slice_is_visible,
-                    self.nav_slice_is_visible_target,
-                    delta*5.0
-                );
-            }
+        //         self.nav_slice_is_visible = lerpf(
+        //             self.nav_slice_is_visible,
+        //             self.nav_slice_is_visible_target,
+        //             delta*5.0
+        //         );
+        //     }
         }
         else
         {
-            self.navigation_coloring_walls = false;
+            self.dithering_effect_target = 0.0;
             self.navigation_lines_mode = 0;
             self.nav_slice_is_visible_target = 0.0;
             self.nav_slice_is_visible = 0.0;
             self.nav_slice_height = 0.0;
             self.nav_slice_height_target = 0.0;
 
+        }
+
+        self.dithering_effect = self.dithering_effect.lerp(self.dithering_effect_target, delta*3.0);
+
+        if (self.dithering_effect - self.dithering_effect_target).abs() < 0.03
+        {
+            self.dithering_effect = self.dithering_effect_target
         }
 
     }

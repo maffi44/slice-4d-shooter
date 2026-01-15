@@ -1752,14 +1752,7 @@ impl OtherDynamicData {
         }
         else if let ActorWrapper::ObstacleCourseFreeMovementPlayer(player) = main_actor
         {
-            if player.navigation_coloring_walls
-            {
-                self.additional_data[0] = 1.0;
-            }
-            else
-            {
-                self.additional_data[0] = 0.0;
-            }
+            self.additional_data[0] = player.dithering_effect;
 
             self.additional_data[1] = player.navigation_lines_mode as f32;
 

@@ -55,7 +55,7 @@ fn main() {
 
     let (specific_backend, specific_level) = read_args();
 
-    let start_level = specific_level.unwrap_or("map-3".to_string());
+    let start_level = specific_level.unwrap_or("map".to_string());
  
     let main_loop = MainLoop::new();
     

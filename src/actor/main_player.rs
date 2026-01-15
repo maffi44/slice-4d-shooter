@@ -874,7 +874,7 @@ pub enum PlayerMessage {
     SetNewTeam(
         // new team you have joined
         Team, 
-    )
+    ),
 }
 
 
