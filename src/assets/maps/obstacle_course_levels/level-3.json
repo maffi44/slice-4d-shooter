@@ -313,7 +313,7 @@
 
                 "comment" : "final trigger",
 
-                "next_level_name" : "map-first",
+                "next_level_name" : "obstacle_course_levels/level-4",
 
                 "transform" : {
                     "position" : {

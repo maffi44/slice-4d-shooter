@@ -1739,30 +1739,6 @@ impl OtherDynamicData {
             .expect("Main actor is not ControlledActor")
             .get_camera();
 
-        // if it is 2d-3d example: send 3d slice transform data into the raymarch shader
-        if let ActorWrapper::PlayerFor2d3dExample(player) = main_actor
-        {
-            self.additional_data = player.get_2d_slice_pos().to_array();
-            self.additional_data_2 = player.get_2d_slice_xz_rot().transpose().to_cols_array();
-            self.splited_screen_in_2d_3d_example = player.show_3d_example_current_value;
-        }
-        else if let ActorWrapper::MainPlayer(player) = main_actor
-        {
-            self.zx_player_rotation = player.get_xz_rotation();
-        }
-        else if let ActorWrapper::ObstacleCourseFreeMovementPlayer(player) = main_actor
-        {
-            self.additional_data[0] = player.dithering_effect;
-
-            self.additional_data[1] = player.navigation_lines_mode as f32;
-
-            self.additional_data[2] = player.nav_slice_height;
-
-            self.additional_data[3] = player.nav_slice_is_visible;
-
-            self.additional_data_2 = player.xwz_slice_point.to_array();
-        }
-
         self.camera_data = CameraUniform {
             cam_pos: camera.get_position().to_array(),
             cam_zw_rot: camera.get_zw_rotation_matrix().transpose().to_cols_array(),
@@ -1824,6 +1800,32 @@ impl OtherDynamicData {
         else
         {
             self.shadows_enabled = 0;
+        }
+
+        // if it is 2d-3d example: send 3d slice transform data into the raymarch shader
+        if let ActorWrapper::PlayerFor2d3dExample(player) = main_actor
+        {
+            self.additional_data = player.get_2d_slice_pos().to_array();
+            self.additional_data_2 = player.get_2d_slice_xz_rot().transpose().to_cols_array();
+            self.splited_screen_in_2d_3d_example = player.show_3d_example_current_value;
+        }
+        else if let ActorWrapper::MainPlayer(player) = main_actor
+        {
+            self.zx_player_rotation = player.get_xz_rotation();
+        }
+        else if let ActorWrapper::ObstacleCourseFreeMovementPlayer(player) = main_actor
+        {
+            self.additional_data[0] = player.dithering_effect;
+
+            self.additional_data[1] = player.navigation_lines_mode as f32;
+
+            self.additional_data[2] = player.nav_slice_height;
+
+            self.additional_data[3] = player.nav_slice_is_visible;
+
+            self.additional_data_2 = player.xwz_slice_point.to_array();
+
+            self.w_scanner_radius = if player.rotator_tool_equiped {1.0} else {0.0};
         }
     }
 }

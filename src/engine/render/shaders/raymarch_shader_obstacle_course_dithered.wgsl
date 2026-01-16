@@ -2398,9 +2398,9 @@ fn get_color_and_light_from_mats(
 
             if dynamic_data.additional_data[1] > 1.0
             {
-                base_diffuse += dot(abs(normal), vec4(1.0,0.0,0.0,0.0))*x_color*0.5;
-                base_diffuse += dot(abs(normal), vec4(0.0,0.0,1.0,0.0))*z_color*0.5;
-                base_diffuse += dot(abs(normal), vec4(0.0,0.0,0.0,1.0))*w_color*0.5;
+                base_diffuse += dot(abs(normal), vec4(1.0,0.0,0.0,0.0))*x_color*0.87;
+                base_diffuse += dot(abs(normal), vec4(0.0,0.0,1.0,0.0))*z_color*0.87;
+                base_diffuse += dot(abs(normal), vec4(0.0,0.0,0.0,1.0))*w_color*0.87;
             }
         }
     }
@@ -2566,27 +2566,29 @@ fn get_color_and_light_from_mats_for_dithering(
         let z_color = vec3(0.00, 5.02, 0.58);
         let w_color = vec3(0.58, 0.00, 5.02);
 
-        if dynamic_data.additional_data[1] > 0.0
-        {
-            let w_perpendicular_line = clamp(pow(my_mod(hited_pos.w-4.636, 3.696)/3.85, 17.0), smoothstep(0.996,1.0,sin(hited_pos.w*1.7)), 1.0);
-            wireframe_dif += w_perpendicular_line*0.006;
-            base_diffuse += w_color*5.0 * w_perpendicular_line;
+        base_diffuse += dot(abs(normal), vec4(1.0,0.0,0.0,0.0))*x_color*0.4;
+        base_diffuse += dot(abs(normal), vec4(0.0,0.0,1.0,0.0))*z_color*0.4;
+        base_diffuse += dot(abs(normal), vec4(0.0,0.0,0.0,1.0))*w_color*0.4;
 
-            let x_perpendicular_line = clamp(pow(my_mod(hited_pos.x-4.636, 3.696)/3.85, 17.0), smoothstep(0.996,1.0,sin(hited_pos.x*1.7)), 1.0);
-            wireframe_dif += x_perpendicular_line*0.006;
-            base_diffuse += x_color*15.0 * x_perpendicular_line;
+        // if dynamic_data.additional_data[1] > 0.0
+        // {
+        //     let w_perpendicular_line = clamp(pow(my_mod(hited_pos.w-4.636, 3.696)/3.85, 17.0), smoothstep(0.996,1.0,sin(hited_pos.w*1.7)), 1.0);
+        //     wireframe_dif += w_perpendicular_line*0.006;
+        //     base_diffuse += w_color*5.0 * w_perpendicular_line;
 
-            let z_perpendicular_line = clamp(pow(my_mod(hited_pos.z-4.636, 3.696)/3.85, 17.0), smoothstep(0.996,1.0,sin(hited_pos.z*1.7)), 1.0);
-            wireframe_dif += z_perpendicular_line*0.006;
-            base_diffuse += z_color*15.0 * z_perpendicular_line;
+        //     let x_perpendicular_line = clamp(pow(my_mod(hited_pos.x-4.636, 3.696)/3.85, 17.0), smoothstep(0.996,1.0,sin(hited_pos.x*1.7)), 1.0);
+        //     wireframe_dif += x_perpendicular_line*0.006;
+        //     base_diffuse += x_color*15.0 * x_perpendicular_line;
 
-            if dynamic_data.additional_data[1] > 1.0
-            {
-                base_diffuse += dot(abs(normal), vec4(1.0,0.0,0.0,0.0))*x_color*0.5;
-                base_diffuse += dot(abs(normal), vec4(0.0,0.0,1.0,0.0))*z_color*0.5;
-                base_diffuse += dot(abs(normal), vec4(0.0,0.0,0.0,1.0))*w_color*0.5;
-            }
-        }
+        //     let z_perpendicular_line = clamp(pow(my_mod(hited_pos.z-4.636, 3.696)/3.85, 17.0), smoothstep(0.996,1.0,sin(hited_pos.z*1.7)), 1.0);
+        //     wireframe_dif += z_perpendicular_line*0.006;
+        //     base_diffuse += z_color*15.0 * z_perpendicular_line;
+
+        //     if dynamic_data.additional_data[1] > 1.0
+        //     {
+
+        //     }
+        // }
     }
 
     var ref_dir = reflect(ray_dir, normal);
@@ -2613,7 +2615,7 @@ fn get_color_and_light_from_mats_for_dithering(
     light += static_data.sun_color  * sun_dif_1 * sun_spe_1 * sun_shadow_1 * 3.0;// * aocc;
     light += static_data.sky_color    * sky_dif   * 0.3 * clamp(sky_spe, 0.25, 1.0);// * 0.8;// * aocc;
     light += static_data.frenel_color * frenel    * 0.3 * (0.6+0.4*sun_dif_1);// * aocc;
-    light += neon_wireframe_color * (wireframe_dif*20.0 * (0.08+0.5*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5))*0.1;
+    light += neon_wireframe_color * (wireframe_dif*35.0 * (0.08+0.5*sun_dif_1*sun_shadow_1) * (wireframe_fog*0.5+0.5))*0.1;
 
     lightness = wireframe_dif*20.0*0.1;
 
@@ -2623,7 +2625,7 @@ fn get_color_and_light_from_mats_for_dithering(
     
     let ref_col = get_sky_color(ref_dir, sun_shadow_1);
 
-    var color = diffuse * mix(ref_col, light, clamp(roughness, 0.0, 1.0));
+    var color = diffuse * mix(ref_col, light*1.6, clamp(roughness, 0.0, 1.0));
 
     color = clamp(color, vec3(0.0), vec3(1.0));
 
@@ -2830,7 +2832,7 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     
             dithered_lightness += color_and_light.a;
     
-            dithered_color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x, dist_and_depth.x);
+            // dithered_color += 0.145*get_coloring_areas_color(camera_position + ray_direction * dist_and_depth.x, dist_and_depth.x);
     
             let color_areas = 0.6*get_volume_areas_color(camera_position, ray_direction, dist_and_depth.x);
     
@@ -2847,8 +2849,8 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
     color += color_areas.rgb;
     lightness += color_areas.a;
 
-    dithered_color /= f32(LAYERS);
-    dithered_lightness /= f32(LAYERS);
+    dithered_color /= f32(LAYERS)*0.85;
+    dithered_lightness /= f32(LAYERS)*0.3;
 
 
     color += max(vec3(0.0),dithered_color)*dithering_effect;
@@ -2892,23 +2894,23 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     // color += (tv_noise- 0.5)*1.5*(0.92-hurt_coef)*dynamic_data.getting_damage_screen_effect;
 
-    // let y_plane_height = camera_position.y + dynamic_data.additional_data[2];
+    let y_plane_height = camera_position.y + dynamic_data.additional_data[2];
 
-    // let y_plane_dist = plane_intersect(camera_position, ray_direction, vec4(0.0,1.0,0.0,0.0), y_plane_height);
+    let y_plane_dist = plane_intersect(camera_position, ray_direction, vec4(0.0,1.0,0.0,0.0), y_plane_height);
 
-    // var y_plane_color = vec3(0.0);
+    var y_plane_color = vec3(0.0);
 
-    // if (y_plane_dist < dist_and_depth.x) & (y_plane_dist > 0.0)
-    // {
+    if (y_plane_dist < dist_and_depth.x) & (y_plane_dist > 0.0)
+    {
 
-    //     let p = camera_position + ray_direction*y_plane_dist;
+        let p = camera_position + ray_direction*y_plane_dist;
 
-    //     let edge_intensity = clamp(pow(max(1.0 - abs(dist_and_depth.x - y_plane_dist),0.0), 5.0), 0.0, 1.0);
+        let edge_intensity = clamp(pow(max(1.0 - abs(dist_and_depth.x - y_plane_dist),0.0), 5.0), 0.0, 1.0);
 
-    //     y_plane_color = vec3(0.1 + edge_intensity);
-    // }
-    // let y_plane_intensity = dynamic_data.additional_data[3];
-    // color += y_plane_color * y_plane_intensity;
+        y_plane_color = vec3(0.1 + edge_intensity);
+    }
+    let y_plane_intensity = dynamic_data.additional_data[3];
+    color += y_plane_color * y_plane_intensity;
 
     // // making death effect
     // let death_eff_col = max(

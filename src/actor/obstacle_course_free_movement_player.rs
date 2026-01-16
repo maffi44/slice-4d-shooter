@@ -84,6 +84,10 @@ pub struct ObstacleCourseFreeMovementPlayer {
     pub xwz_slice_point: Vec4,
 
     volume_areas: Vec<VolumeArea>,
+
+    zw_rotation_enabled: bool,
+    pub rotator_tool_equiped: bool,
+    show_tutorial_widndow_timer: f32,
 }
 
 impl Actor for ObstacleCourseFreeMovementPlayer {
@@ -250,7 +254,9 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
 
                                 self.dithering_effect_target = DITHERING_EFFET_FOV;
 
-                                *ui_system.get_mut_ui_element(&UIElementType::RotatorTutorialDraft).get_ui_data_mut().get_is_visible_mut() = true;
+                                self.navigation_lines_mode = 2u32;
+
+                                self.show_tutorial_widndow_timer = 2.9;
                             }
                             _ => {}
                         }
@@ -507,34 +513,26 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 delta,
             );
 
-            main_player::process_projection_w_aim(
-                &input,
-                &mut self.inner_state,
-                &mut self.screen_effects,
-                ui_system,
-                audio_system,
-            );
+            // main_player::process_projection_w_aim(
+            //     &input,
+            //     &mut self.inner_state,
+            //     &mut self.screen_effects,
+            //     ui_system,
+            //     audio_system,
+            // );
 
-            process_player_rotation(
+            self.process_player_rotation(
                 &input,
-                &self.player_settings,
-                &mut self.inner_state,
-                &self.screen_effects,
-                &self.active_hands_slot,
-                &mut self.hands_slot_0,
-                &mut self.hands_slot_1,
-                &mut self.hands_slot_2,
-                &mut self.hands_slot_3,
                 ui_system,
                 delta
             );
 
-            self.process_navigation_input(&input, physic_system, delta);
+            self.process_navigation_input(&input, physic_system, ui_system, delta);
 
-            process_w_scanner_ui(
-                ui_system,
-                &self.inner_state,
-            );
+            // process_w_scanner_ui(
+            //     ui_system,
+            //     &self.inner_state,
+            // );
 
             main_player::process_active_devices_input
             (
@@ -661,11 +659,11 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
             delta,
         );
 
-        main_player::make_hud_transparency_as_death_screen_effect(
-            &self.screen_effects,
-            &self.inner_state,
-            ui_system
-        );
+        // main_player::make_hud_transparency_as_death_screen_effect(
+        //     &self.screen_effects,
+        //     &self.inner_state,
+        //     ui_system
+        // );
 
         main_player::set_audio_listener_position
         (
@@ -838,11 +836,40 @@ impl ObstacleCourseFreeMovementPlayer {
             first_mouse_was_pressed: false,
             xwz_slice_point: Vec4::new(-9999.0,-9999.0,-9999.0,-9999.0),
             volume_areas,
+            zw_rotation_enabled: true,
+            rotator_tool_equiped: with_rotator_tool,
+            show_tutorial_widndow_timer: 0.0,
         }
     }
 
-    fn process_navigation_input(&mut self, input: &ActionsFrameState, physic_system: &PhysicsSystem, delta: f32)
+    fn process_navigation_input(
+        &mut self,
+        input: &ActionsFrameState,
+        physic_system: &PhysicsSystem,
+        ui_system: &mut UISystem,
+        delta: f32
+    )
     {
+        if self.show_tutorial_widndow_timer > 0.0
+        {
+            self.show_tutorial_widndow_timer -= delta;
+
+            if self.show_tutorial_widndow_timer <= 1.0
+            {
+                *ui_system.get_mut_ui_element(&UIElementType::RotatorTutorialDraft).get_ui_data_mut().get_is_visible_mut() = true;
+                ui_system.get_mut_ui_element(&UIElementType::RotatorTutorialDraft).get_ui_data_mut().set_transparency(
+                    1.0 - self.show_tutorial_widndow_timer
+                );
+            }
+            else if self.show_tutorial_widndow_timer <= 0.0
+            {
+                self.show_tutorial_widndow_timer = 0.0;
+
+                ui_system.get_mut_ui_element(&UIElementType::RotatorTutorialDraft).get_ui_data_mut().set_transparency(
+                    1.0
+                );
+            }
+        }
         let with_rotator_tool = {
             match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
@@ -929,139 +956,139 @@ impl ObstacleCourseFreeMovementPlayer {
                 }
             }
 
-        //     if input.first_mouse.is_action_pressed()
-        //     {
-        //         self.first_mouse_was_pressed = true;
+            if input.first_mouse.is_action_pressed()
+            {
+                self.first_mouse_was_pressed = true;
 
-        //         let player_pos = self.inner_state.get_eyes_position();
-        //         let hit = physic_system.ray_cast(
-        //             player_pos,
-        //             self.get_transform().get_rotation()*FORWARD,
-        //             50.0,
-        //             Some(self.get_id().expect("Obstacle course player have not an ActorID"))
-        //         );
+                let player_pos = self.inner_state.get_eyes_position();
+                let hit = physic_system.ray_cast(
+                    player_pos,
+                    self.get_transform().get_rotation()*FORWARD,
+                    50.0,
+                    Some(self.get_id().expect("Obstacle course player have not an ActorID"))
+                );
 
-        //         if hit.is_some()
-        //         {
-        //             let hit = hit.unwrap();
+                if hit.is_some()
+                {
+                    let hit = hit.unwrap();
 
-        //             self.xwz_slice_point = hit.hit_point;
+                    self.xwz_slice_point = hit.hit_point;
 
-        //             self.nav_slice_height_target = hit.hit_point.y - player_pos.y;
-        //             self.nav_slice_height = hit.hit_point.y - player_pos.y;
-        //             self.nav_slice_is_visible_target = 1.0;
+                    self.nav_slice_height_target = hit.hit_point.y - player_pos.y;
+                    self.nav_slice_height = hit.hit_point.y - player_pos.y;
+                    self.nav_slice_is_visible_target = 1.0;
 
-        //             self.nav_slice_is_visible = lerpf(
-        //                 self.nav_slice_is_visible,
-        //                 self.nav_slice_is_visible_target,
-        //                 delta*5.0
-        //             );
-        //             // self.nav_slice_is_visible = 1.0;
+                    self.nav_slice_is_visible = lerpf(
+                        self.nav_slice_is_visible,
+                        self.nav_slice_is_visible_target,
+                        delta*5.0
+                    );
+                    // self.nav_slice_is_visible = 1.0;
 
-        //             let pointed_from = self.get_transform().get_rotation() * Vec4::new(-0.6,-0.2,0.0,0.0);
-        //             let pointed_to = hit.hit_point - self.get_transform().get_position();
+                    let pointed_from = self.get_transform().get_rotation() * Vec4::new(-0.6,-0.2,0.0,0.0);
+                    let pointed_to = hit.hit_point - self.get_transform().get_position();
 
-        //             let charging_volume_area = VolumeArea::SphericalVolumeArea(
-        //                 SphericalVolumeArea {
-        //                     translation: pointed_from,
-        //                     radius: 0.05,
-        //                     color: POINTER_COLOR,
-        //                 }
-        //             );
+                    let charging_volume_area = VolumeArea::SphericalVolumeArea(
+                        SphericalVolumeArea {
+                            translation: pointed_from,
+                            radius: 0.05,
+                            color: POINTER_COLOR,
+                        }
+                    );
 
-        //             let beam = VolumeArea::BeamVolumeArea(
-        //                 BeamVolumeArea {
-        //                     translation_pos_1: pointed_from,
-        //                     translation_pos_2: pointed_to,
-        //                     radius: 0.015,
-        //                     color: POINTER_COLOR, 
-        //                 }
-        //             );
+                    let beam = VolumeArea::BeamVolumeArea(
+                        BeamVolumeArea {
+                            translation_pos_1: pointed_from,
+                            translation_pos_2: pointed_to,
+                            radius: 0.015,
+                            color: POINTER_COLOR, 
+                        }
+                    );
 
-        //             let point = VolumeArea::SphericalVolumeArea(
-        //                 SphericalVolumeArea {
-        //                     translation: pointed_to,
-        //                     radius: 0.10,
-        //                     color: POINTER_COLOR, 
-        //                 }
-        //             );
+                    let point = VolumeArea::SphericalVolumeArea(
+                        SphericalVolumeArea {
+                            translation: pointed_to,
+                            radius: 0.10,
+                            color: POINTER_COLOR, 
+                        }
+                    );
 
-        //             self.volume_areas.push(charging_volume_area);
-        //             self.volume_areas.push(beam);
-        //             self.volume_areas.push(point);
-        //         }
-        //         else
-        //         {
-        //             self.nav_slice_height_target = 0.0;
+                    self.volume_areas.push(charging_volume_area);
+                    self.volume_areas.push(beam);
+                    self.volume_areas.push(point);
+                }
+                else
+                {
+                    self.nav_slice_height_target = 0.0;
             
-        //             self.nav_slice_height = lerpf(
-        //                 self.nav_slice_height,
-        //                 self.nav_slice_height_target,
-        //                 delta*8.0
-        //             );
+                    self.nav_slice_height = lerpf(
+                        self.nav_slice_height,
+                        self.nav_slice_height_target,
+                        delta*8.0
+                    );
             
-        //             if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
-        //             {
-        //                 self.nav_slice_height = self.nav_slice_height_target;
-        //             }
+                    if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
+                    {
+                        self.nav_slice_height = self.nav_slice_height_target;
+                    }
             
-        //             if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
-        //             {
-        //                 self.nav_slice_is_visible_target = 1.0;
-        //             }
-        //             else
-        //             {
-        //                 self.nav_slice_is_visible_target = 0.0;
-        //             }
+                    if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
+                    {
+                        self.nav_slice_is_visible_target = 1.0;
+                    }
+                    else
+                    {
+                        self.nav_slice_is_visible_target = 0.0;
+                    }
             
-        //             self.nav_slice_is_visible = lerpf(
-        //                 self.nav_slice_is_visible,
-        //                 self.nav_slice_is_visible_target,
-        //                 delta*5.0
-        //             );
-        //         }
-        //     }
-        //     else
-        //     {
-        //         if self.first_mouse_was_pressed == true
-        //         {
-        //             self.first_mouse_was_pressed = false;
-        //             self.nav_slice_height_target = 0.0;
-        //         }
+                    self.nav_slice_is_visible = lerpf(
+                        self.nav_slice_is_visible,
+                        self.nav_slice_is_visible_target,
+                        delta*5.0
+                    );
+                }
+            }
+            else
+            {
+                if self.first_mouse_was_pressed == true
+                {
+                    self.first_mouse_was_pressed = false;
+                    self.nav_slice_height_target = 0.0;
+                }
 
-        //         self.nav_slice_height_target -= input.mouse_wheel_delta.y*0.00105;
+                self.nav_slice_height_target -= input.mouse_wheel_delta.y*0.00105;
         
-        //         if input.middle_mouse.is_action_just_pressed()
-        //         {
-        //             self.nav_slice_height_target = 0.0;
-        //         }
+                if input.middle_mouse.is_action_just_pressed()
+                {
+                    self.nav_slice_height_target = 0.0;
+                }
         
-        //         self.nav_slice_height = lerpf(
-        //             self.nav_slice_height,
-        //             self.nav_slice_height_target,
-        //             delta*8.0
-        //         );
+                self.nav_slice_height = lerpf(
+                    self.nav_slice_height,
+                    self.nav_slice_height_target,
+                    delta*8.0
+                );
         
-        //         if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
-        //         {
-        //             self.nav_slice_height = self.nav_slice_height_target;
-        //         }
+                if (self.nav_slice_height - self.nav_slice_height_target).abs() < 0.02
+                {
+                    self.nav_slice_height = self.nav_slice_height_target;
+                }
         
-        //         if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
-        //         {
-        //             self.nav_slice_is_visible_target = 1.0;
-        //         }
-        //         else
-        //         {
-        //             self.nav_slice_is_visible_target = 0.0;
-        //         }
+                if (self.nav_slice_height - self.nav_slice_height_target).abs() > 0.04
+                {
+                    self.nav_slice_is_visible_target = 1.0;
+                }
+                else
+                {
+                    self.nav_slice_is_visible_target = 0.0;
+                }
         
-        //         self.nav_slice_is_visible = lerpf(
-        //             self.nav_slice_is_visible,
-        //             self.nav_slice_is_visible_target,
-        //             delta*5.0
-        //         );
-        //     }
+                self.nav_slice_is_visible = lerpf(
+                    self.nav_slice_is_visible,
+                    self.nav_slice_is_visible_target,
+                    delta*5.0
+                );
+            }
         }
         else
         {
@@ -1293,6 +1320,246 @@ impl ObstacleCourseFreeMovementPlayer {
         }
     }
 
+    pub fn process_player_rotation(
+        &mut self,
+        input: &ActionsFrameState,
+        ui: &mut UISystem,
+        delta: f32,
+    )
+    {
+        if input.w_aim.is_action_just_pressed()
+        {
+            self.zw_rotation_enabled = !self.zw_rotation_enabled;
+        }
+
+        let mut xz = self.inner_state.saved_angle_of_rotation.x;
+        let mut yz = self.inner_state.saved_angle_of_rotation.y;
+        let mut zw = self.inner_state.saved_angle_of_rotation.z;
+        let mut xw = self.inner_state.saved_angle_of_rotation.w;
+
+        self.inner_state.last_frame_zw_rotation = zw;
+
+        self.inner_state.w_aim_ui_frame_intensity = 0.20;
+
+        let with_rotator_tool = {
+            match self.active_hands_slot {
+                ActiveHandsSlot::Zero => {
+                    match self.hands_slot_0.get_device_type()
+                    {
+                        crate::actor::device::DeviceType::Gun => false,
+                        crate::actor::device::DeviceType::Device => false,
+                        crate::actor::device::DeviceType::RotatorTool => true,
+                    }
+                },
+                ActiveHandsSlot::First => {
+                    if self.hands_slot_1.is_some()
+                    {
+                        match self.hands_slot_1.as_ref().unwrap().get_device_type()
+                        {
+                            crate::actor::device::DeviceType::Gun => false,
+                            crate::actor::device::DeviceType::Device => false,
+                            crate::actor::device::DeviceType::RotatorTool => true,
+                        }
+                    }
+                    else
+                    {
+                        false
+                    }
+                },
+                ActiveHandsSlot::Second => {
+                    if self.hands_slot_2.is_some()
+                    {
+                        match self.hands_slot_2.as_ref().unwrap().get_device_type()
+                        {
+                            crate::actor::device::DeviceType::Gun => false,
+                            crate::actor::device::DeviceType::Device => false,
+                            crate::actor::device::DeviceType::RotatorTool => true,
+                        }
+                    }
+                    else
+                    {
+                        false
+                    }
+                },
+                ActiveHandsSlot::Third => {
+                    if self.hands_slot_3.is_some()
+                    {
+                        match self.hands_slot_3.as_ref().unwrap().get_device_type()
+                        {
+                            crate::actor::device::DeviceType::Gun => false,
+                            crate::actor::device::DeviceType::Device => false,
+                            crate::actor::device::DeviceType::RotatorTool => true,
+                        }
+                    }
+                    else
+                    {
+                        false
+                    }
+                },
+            }
+        };
+
+        if input.show_hide_controls.is_action_just_pressed()
+        {
+            let is_visible = ui
+                .get_mut_ui_element(&UIElementType::RotatorTutorialDraft)
+                .get_ui_data_mut()
+                .get_is_visible_mut();
+
+            if *is_visible
+            {
+                *is_visible = false;
+            }
+            else
+            {
+                if with_rotator_tool
+                {
+                    *is_visible = true;
+                }    
+            }
+        }
+
+        self.rotator_tool_equiped = with_rotator_tool;
+
+        if with_rotator_tool
+        {
+            if input.second_mouse.is_action_pressed() {
+
+                if self.zw_rotation_enabled
+                {
+                    zw = (input.mouse_axis.y *
+                        *self.player_settings.mouse_sensivity.lock().unwrap() +
+                        zw);
+                    
+                    zw = (input.gamepad_right_stick_axis_delta.y *
+                        *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                        zw);
+                }
+                else
+                {
+                    zw = my_mod(zw, PI*2.0);
+
+                    zw = zw.lerp(0.0, delta*4.0);
+                }
+                
+                
+                xw = input.mouse_axis.x *
+                    *self.player_settings.mouse_sensivity.lock().unwrap() +
+                    xw;
+
+                
+                xw = input.gamepad_right_stick_axis_delta.x *
+                    *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                    xw;
+                
+            }
+            else
+            {
+                xz =
+                    input.mouse_axis.x *
+                    *self.player_settings.mouse_sensivity.lock().unwrap() +
+                    xz;
+
+                yz = (
+                    input.mouse_axis.y *
+                    *self.player_settings.mouse_sensivity.lock().unwrap() +
+                    yz
+                ).clamp(-PI/2.0, PI/2.0);
+
+                xz = input.gamepad_right_stick_axis_delta.x *
+                    *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                    xz;
+
+                yz = (
+                    input.gamepad_right_stick_axis_delta.y *
+                    *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                    yz
+                ).clamp(-PI/2.0, PI/2.0);
+            }
+
+            if self.zw_rotation_enabled
+            {
+                zw = (input.gamepad_left_stick_axis_delta.y *
+                    *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                    zw);
+                
+            }
+            else
+            {
+                zw = my_mod(zw, PI*2.0);
+
+                zw = zw.lerp(0.0, delta*4.0);
+            }
+
+            xw = input.gamepad_left_stick_axis_delta.x *
+                *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                xw;
+
+        }
+        else
+        {
+            xz =
+                input.mouse_axis.x *
+                *self.player_settings.mouse_sensivity.lock().unwrap() +
+                xz;
+
+            yz = (
+                input.mouse_axis.y *
+                *self.player_settings.mouse_sensivity.lock().unwrap() +
+                yz
+            ).clamp(-PI/2.0, PI/2.0);
+
+            xz = input.gamepad_right_stick_axis_delta.x *
+                *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                xz;
+
+            yz = (
+                input.gamepad_right_stick_axis_delta.y *
+                *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                yz
+            ).clamp(-PI/2.0, PI/2.0);
+        }
+
+        let zy_rotation = Mat4::from_rotation_x(yz);
+
+        let zx_rotation = Mat4::from_rotation_y(xz);
+
+        let zw_rotation = Mat4::from_cols_slice(&[
+            1.0,     0.0,      0.0,             0.0,
+            0.0,     1.0,      0.0,             0.0,
+            0.0,     0.0,      (-zw).cos(),     (-zw).sin(),
+            0.0,     0.0,      -(-zw).sin(),    (-zw).cos()
+
+        ]);
+
+        let xw_rotation = Mat4::from_cols_slice(&[
+            (-xw).cos(),     0.0,      0.0,     (-xw).sin(),
+            0.0,             1.0,      0.0,     0.0,
+            0.0,             0.0,      1.0,     0.0,
+            -(-xw).sin(),    0.0,      0.0,     (-xw).cos()
+
+        ]);
+
+        self.inner_state.saved_angle_of_rotation.x = xz;
+        self.inner_state.saved_angle_of_rotation.y = yz;
+        self.inner_state.saved_angle_of_rotation.z = zw;
+        self.inner_state.saved_angle_of_rotation.w = xw;
+
+        // inner_state.zw_rotation = zw_rotation;
+        // inner_state.zy_rotation = zy_rotation;
+        // inner_state.zx_rotation = zx_rotation;
+
+        let mut rotation = Mat4::IDENTITY;
+        rotation *= zw_rotation;
+        rotation *= xw_rotation;
+        rotation *= zx_rotation;
+        rotation *= zy_rotation;
+
+        // temporally
+        self.inner_state.zw_rotation = rotation;
+
+        self.inner_state.set_rotation_matrix(rotation);
+    }
 }
 
 impl ControlledActor for ObstacleCourseFreeMovementPlayer
@@ -1538,14 +1805,14 @@ fn set_right_team_hud(
     // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScoreBar);
     // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-    let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointer);
-    *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+    // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerHPointer);
+    // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-    let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrow);
-    *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+    // let hud_elem = ui.get_mut_ui_element(&UIElementType::ZWScannerArrow);
+    // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-    let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrow);
-    *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+    // let hud_elem = ui.get_mut_ui_element(&UIElementType::ZXScannerArrow);
+    // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
     // let hud_elem = ui.get_mut_ui_element(&UIElementType::TitlePressTForTutorial);
     // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
@@ -1555,58 +1822,58 @@ fn set_right_team_hud(
     {
         Team::Red =>
         {
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
         }
 
         Team::Blue =>
         {
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerRed);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
-            *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
+            // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
         }
     }
 }
@@ -1756,221 +2023,7 @@ pub fn process_w_scanner_ui(
 
 const GAMEPAD_STICK_SENSIVITY_MULT: f32 = 0.15;
 
-pub fn process_player_rotation(
-    input: &ActionsFrameState,
-    player_settings: &PlayerSettings,
-    inner_state: &mut PlayerInnerState,
-    screen_effects: &PlayerScreenEffects,
-    active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
-    ui: &mut UISystem,
-    delta: f32,
-)
+fn my_mod(x: f32, y: f32) -> f32
 {
-    let mut xz = inner_state.saved_angle_of_rotation.x;
-    let mut yz = inner_state.saved_angle_of_rotation.y;
-    let mut zw = inner_state.saved_angle_of_rotation.z;
-    let mut xw = inner_state.saved_angle_of_rotation.w;
-
-    inner_state.last_frame_zw_rotation = zw;
-
-    inner_state.w_aim_ui_frame_intensity = 0.20;
-
-    let with_rotator_tool = {
-        match active_hands_slot {
-            ActiveHandsSlot::Zero => {
-                match hands_slot_0.get_device_type()
-                {
-                    crate::actor::device::DeviceType::Gun => false,
-                    crate::actor::device::DeviceType::Device => false,
-                    crate::actor::device::DeviceType::RotatorTool => true,
-                }
-            },
-            ActiveHandsSlot::First => {
-                if hands_slot_1.is_some()
-                {
-                    match hands_slot_1.as_ref().unwrap().get_device_type()
-                    {
-                        crate::actor::device::DeviceType::Gun => false,
-                        crate::actor::device::DeviceType::Device => false,
-                        crate::actor::device::DeviceType::RotatorTool => true,
-                    }
-                }
-                else
-                {
-                    false
-                }
-            },
-            ActiveHandsSlot::Second => {
-                if hands_slot_2.is_some()
-                {
-                    match hands_slot_2.as_ref().unwrap().get_device_type()
-                    {
-                        crate::actor::device::DeviceType::Gun => false,
-                        crate::actor::device::DeviceType::Device => false,
-                        crate::actor::device::DeviceType::RotatorTool => true,
-                    }
-                }
-                else
-                {
-                    false
-                }
-            },
-            ActiveHandsSlot::Third => {
-                if hands_slot_3.is_some()
-                {
-                    match hands_slot_3.as_ref().unwrap().get_device_type()
-                    {
-                        crate::actor::device::DeviceType::Gun => false,
-                        crate::actor::device::DeviceType::Device => false,
-                        crate::actor::device::DeviceType::RotatorTool => true,
-                    }
-                }
-                else
-                {
-                    false
-                }
-            },
-        }
-    };
-
-    if input.show_hide_controls.is_action_just_pressed()
-    {
-        let is_visible = ui
-            .get_mut_ui_element(&UIElementType::RotatorTutorialDraft)
-            .get_ui_data_mut()
-            .get_is_visible_mut();
-
-        if *is_visible
-        {
-            *is_visible = false;
-        }
-        else
-        {
-            if with_rotator_tool
-            {
-                *is_visible = true;
-            }    
-        }
-    }
-
-    if with_rotator_tool
-    {
-        if input.second_mouse.is_action_pressed() {
-            zw = (input.mouse_axis.y *
-                *player_settings.mouse_sensivity.lock().unwrap() +
-                zw);
-            
-            xw = input.mouse_axis.x *
-                *player_settings.mouse_sensivity.lock().unwrap() +
-                xw;
-
-            zw = (input.gamepad_right_stick_axis_delta.y *
-                *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
-                zw);
-            
-            xw = input.gamepad_right_stick_axis_delta.x *
-                *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
-                xw;
-            
-        }
-        else
-        {
-            xz =
-                input.mouse_axis.x *
-                *player_settings.mouse_sensivity.lock().unwrap() +
-                xz;
-
-            yz = (
-                input.mouse_axis.y *
-                *player_settings.mouse_sensivity.lock().unwrap() +
-                yz
-            ).clamp(-PI/2.0, PI/2.0);
-
-            xz = input.gamepad_right_stick_axis_delta.x *
-                *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
-                xz;
-
-            yz = (
-                input.gamepad_right_stick_axis_delta.y *
-                *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
-                yz
-            ).clamp(-PI/2.0, PI/2.0);
-        }
-
-        zw = (input.gamepad_left_stick_axis_delta.y *
-                *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
-                zw);
-            
-        xw = input.gamepad_left_stick_axis_delta.x *
-            *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
-            xw;
-
-    }
-    else
-    {
-        xz =
-            input.mouse_axis.x *
-            *player_settings.mouse_sensivity.lock().unwrap() +
-            xz;
-
-        yz = (
-            input.mouse_axis.y *
-            *player_settings.mouse_sensivity.lock().unwrap() +
-            yz
-        ).clamp(-PI/2.0, PI/2.0);
-
-        xz = input.gamepad_right_stick_axis_delta.x *
-            *player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
-            xz;
-
-        yz = (
-            input.gamepad_right_stick_axis_delta.y *
-            *player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
-            yz
-        ).clamp(-PI/2.0, PI/2.0);
-    }
-
-    let zy_rotation = Mat4::from_rotation_x(yz);
-
-    let zx_rotation = Mat4::from_rotation_y(xz);
-
-    let zw_rotation = Mat4::from_cols_slice(&[
-        1.0,     0.0,      0.0,             0.0,
-        0.0,     1.0,      0.0,             0.0,
-        0.0,     0.0,      (-zw).cos(),     (-zw).sin(),
-        0.0,     0.0,      -(-zw).sin(),    (-zw).cos()
-
-    ]);
-
-    let xw_rotation = Mat4::from_cols_slice(&[
-        (-xw).cos(),     0.0,      0.0,     (-xw).sin(),
-        0.0,             1.0,      0.0,     0.0,
-        0.0,             0.0,      1.0,     0.0,
-        -(-xw).sin(),    0.0,      0.0,     (-xw).cos()
-
-    ]);
-
-    inner_state.saved_angle_of_rotation.x = xz;
-    inner_state.saved_angle_of_rotation.y = yz;
-    inner_state.saved_angle_of_rotation.z = zw;
-    inner_state.saved_angle_of_rotation.w = xw;
-
-    // inner_state.zw_rotation = zw_rotation;
-    // inner_state.zy_rotation = zy_rotation;
-    // inner_state.zx_rotation = zx_rotation;
-
-    let mut rotation = Mat4::IDENTITY;
-    rotation *= zw_rotation;
-    rotation *= xw_rotation;
-    rotation *= zx_rotation;
-    rotation *= zy_rotation;
-
-    // temporally
-    inner_state.zw_rotation = rotation;
-
-    inner_state.set_rotation_matrix(rotation);
+    return x - y * (x / y).floor();
 }

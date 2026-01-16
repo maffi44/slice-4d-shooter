@@ -1912,7 +1912,7 @@ impl UISystem {
                         true => 1.0_f32,
                         false => 0.0_f32,
                     };
-                    
+
                     let parent_transform = {
                         match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
                             UIElement::Image(elem) => {
@@ -2282,7 +2282,7 @@ impl UIRect {
             return RectTransformUniform {
                 rotation_around_rect_center: self.rotation_around_rect_center,
                 rotation_around_screen_center: self.rotation_around_rect_center,
-                transparency: self.transparency,
+                transparency: self.transparency * is_visible_coef,
                 empty_bytes: 0.0,
                 scale,
                 translation,

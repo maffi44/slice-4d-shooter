@@ -863,7 +863,7 @@ fn build_render_pipeline(
                 cache: None,
             });
 
-            return (Some(main_shader_render_pipeline), None);
+            return (Some(main_shader_render_pipeline), Some(minimap_render_pipeline));
         }
 
         _ => unimplemented!()

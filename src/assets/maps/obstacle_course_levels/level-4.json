@@ -1,0 +1,949 @@
+{
+    "level_name" : "obstacle course level 1",
+
+    "main_shader" : "raymarch_shader_obstacle_course_dithered",
+    "generated_shader_with_bsp_tree" : true,
+    "generated_shader_with_bsp_tree_with_dynamic_objects" : true,
+
+    "defaults" : {
+        "is_positive": true,
+        "friction": 7.2,
+        "bounce_rate": 0.0,
+        "visual_material": "standart",
+        "roundness": 0.09,
+        "stickiness": false,
+        "undestroyable": false
+    },
+
+    "visual_settings_of_environment" : {
+        "sky_color" : {
+            "red": 0.1,
+            "green": 0.3,
+            "blue": 0.5,
+            "multiplier": 0.025
+        },
+        "fog_color" : {
+            "red": 0.021,
+            "green": 0.01,
+            "blue": 0.022,
+            "multiplier": 0.2
+        },
+        "frenel_color" : {
+            "red": 0.3,
+            "green": 0.5,
+            "blue": 0.4,
+            "multiplier": 0.17
+        },
+        "neon_wireframe_color" : {
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
+        },
+        "sun_color" : {
+            "red": 1.6,
+            "green": 1.2,
+            "blue": 0.8,
+            "multiplier": 2.2
+        },
+        "red_map_color" :
+        {
+            "red": 3.5,
+            "green": 0.7,
+            "blue": 0.08,
+            "multiplier": 3.0
+        },
+        "blue_map_color" :
+        {
+            "red": 0.08,
+            "green": 0.7,
+            "blue": 3.5,
+            "multiplier": 3.0
+        },
+        "sun_direction" : {
+            "x" : 1.0,
+            "y" : 2.8,
+            "z" : 1.3,
+            "w" : 0.0
+        }
+    },
+
+    "visual_materials" : [
+        {
+            "name" : "standart",
+            "color" : {
+                "red": 1.81,
+                "green": 1.81,
+                "blue": 3.4
+            },
+            "roughness": 0.08
+        },
+        {
+            "name" : "common",
+            "color" : {
+                "red": 0.2,
+                "green": 0.225,
+                "blue": 0.25
+            },
+            "roughness" : 0.9
+        },
+        {
+            "name" : "slick",
+            "color" : {
+                "red": 3.7333,
+                "green": 0.085,
+                "blue": 1.0
+            },
+            "roughness": 0.0514
+        },
+        {
+            "name" : "golden_slick",
+            "color" : {
+                "red": 1.1,
+                "green": 0.82,
+                "blue": 0.23
+            },
+            "roughness": 0.09
+        },
+        {
+            "name" : "super_red",
+            "color" : {
+                "red":5.1,
+                "green": 0.82,
+                "blue": 3.23
+            },
+            "roughness": 0.09
+        },
+        {
+            "name" : "red_team",
+            "color" : {
+                "red": 2.2,
+                "green": 1.7,
+                "blue": 1.04
+            },
+            "roughness": 0.064
+        },
+        {
+            "name" : "standart_slick",
+            "color" : {
+                "red": 10.4,
+                "green": 10.4,
+                "blue": 1.81
+            },
+            "roughness": 0.01
+        },
+        {
+            "name" : "gun_red",
+            "color" : {
+                "red": 0.001,
+                "green": 0.013,
+                "blue": 0.016
+            },
+            "roughness" : 0.95
+
+        },
+        {
+            "name" : "metallic_red",
+            "color" : {
+                "red": 2.2,
+                "green": 0.7,
+                "blue": 0.04
+            },
+            "roughness" : 0.4
+
+        },
+        {
+            "name" : "gun_blue",
+            "color" : {
+                "red": 0.016,
+                "green": 0.013,
+                "blue": 0.001
+            },
+            "roughness" : 0.95
+
+        },
+        {
+            "name" : "metallic_blue",
+            "color" : {
+                "red": 0.01,
+                "green": 0.81,
+                "blue": 4.9
+            },
+            "roughness" : 0.5
+
+        },
+        {
+            "name" : "w-floor",
+            "color" : {
+                "red": 0.4,
+                "green": 0.085,
+                "blue": 1.5
+            },
+            "roughness" : 1.0
+        },
+        {
+            "name" : "trumplin",
+            "color" : {
+                "red": 0.15,
+                "green": 0.01    ,
+                "blue": 0.01
+            },
+            "roughness" : 0.8
+        },
+        {
+            "name" : "black",
+            "color" : {
+                "red": 0.500001,
+                "green": 0.000001,
+                "blue": 0.300001
+            },
+            "roughness" : 0.85
+
+        }
+    ],
+
+    "red_base_position" :
+    {
+        "transform" : {
+            "position" : {
+                "x": 0.0,
+                "y": 1.5,
+                "z": -11,
+                "w": 0.5
+            }
+        }
+    },
+
+    "blue_base_position" :
+    {
+        "transform" : {
+            "position" : {
+                "x": 0.0,
+                "y": 1.5,
+                "z": 1,
+                "w": 0.5
+            }
+        }
+    },
+
+    "red_players_visual_materials" : {
+        "inner" : "metallic_red",
+        "outer" : "gun_red",
+
+        "comment" : "TEMP! need to made option to create new materials inside actor's code"
+    },
+
+    "blue_players_visual_materials" : {
+        "inner" : "metallic_blue",
+        "outer" : "gun_blue",
+
+        "comment" : "TEMP! need to made option to create new materials inside actor's code"
+    },
+
+    "all_shapes_stickiness_radius": 0.1,
+
+    "main_actor" :
+    {
+        "obstacle_course_free_movement_player" : {
+            "spawn" : {
+                "transform" : {
+                    "position" : {
+                        "x": 0.0,
+                        "y": 1.5,
+                        "z": 6.0,
+                        "w": 0.0
+                    }
+                }
+            },
+            "with_rotator_tool" : true
+        }
+    },
+
+    "actors" : [
+        {
+            "trigger" : {
+
+                "comment" : "first_trigger",
+
+                "trigger_name" : "first_trigger",
+
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 1.45,
+                        "z": -4,
+                        "w": 12
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0 ,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+
+                "trigger_area_radius" : 1.9,
+
+                "visual_area_radius" : 0.21,
+
+                "visual_area_color" : {
+                    "red": 0.08,
+                    "green": 0.7,
+                    "blue": 3.5,
+                    "multiplier": 1.5
+                },
+
+                "coloring_area_radius" : 1.8,
+
+                "coloring_area_color" : {
+                    "red": 0.08,
+                    "green": 0.7,
+                    "blue": 3.5,
+                    "multiplier": 1.5
+                },
+
+                "static_objects" : [
+                    {
+
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": -1.5,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.01,
+                                "y": 1.35,
+                                "z": 0.01,
+                                "w": 0.01
+                            },
+                            "roundness" : 0.11,
+                            "is_positive" : true,
+                            "stickiness" : true,
+                            "undestroyable" : true
+                        }
+                    },
+                    {
+
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0.0,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.01,
+                                "y": 0.01,
+                                "z": 0.01,
+                                "w": 0.01
+                            },
+                            "roundness" : 1.6,
+                            "is_positive" : false,
+                            "stickiness" : true,
+                            "undestroyable" : false
+                        }
+                    }
+                ]
+            }
+        },
+
+        {
+            "final_trigger" : {
+
+                "comment" : "final trigger",
+
+                "next_level_name" : "obstacle_course_levels/level-5",
+
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 1.2,
+                        "z": -15,
+                        "w": 0
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+
+                "trigger_area_radius" : 1.5,
+
+                "visual_area_radius" : 0.21,
+
+                "visual_area_color" : {
+                    "red": 3.5,
+                    "green": 3.5,
+                    "blue": 3.5,
+                    "multiplier": 0.3
+                },
+
+                "coloring_area_radius" : 2.85,
+
+                "coloring_area_color" : {
+                    "red": 3.5,
+                    "green": 3.5,
+                    "blue": 3.5,
+                    "multiplier": 0.36
+                },
+
+                "static_objects" : [
+                    {
+
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": -1.2,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.01,
+                                "y": 1,
+                                "z": 0.01,
+                                "w": 0.01
+                            },
+                            "roundness" : 0.11,
+                            "is_positive" : true,
+                            "stickiness" : true,
+                            "undestroyable" : true
+                        }
+                    },
+                    {
+
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0.2,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.01,
+                                "y": 0.01,
+                                "z": 0.01,
+                                "w": 0.01
+                            },
+                            "roundness" : 2.3,
+                            "is_positive" : false,
+                            "stickiness" : true,
+                            "undestroyable" : false
+                        }
+                    }
+                ]
+            }
+        },
+
+        {
+            "trigger_orb" : {
+
+                "comment" : "trgger orb for first trgger",
+
+                "target_trigger_name" : "first_trigger",
+
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 0.8,
+                        "z": -4,
+                        "w": -12
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+
+                "radius" : 0.5,
+
+                "color" : {
+                    "red": 0.08,
+                    "green": 0.7,
+                    "blue": 3.5,
+                    "multiplier": 1.5
+                }
+            }
+        },
+
+        {
+            "trigger_orb" : {
+
+                "comment" : "trgger orb for final trgger",
+
+                "target_trigger_name" : "final_trigger",
+
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 7.2,
+                        "z": -4,
+                        "w": 0
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+
+                "radius" : 1.0,
+
+                "color" : {
+                    "red": 3.5,
+                    "green": 3.5,
+                    "blue": 3.5,
+                    "multiplier": 0.3
+                }
+            }
+        },
+
+        {
+            "triggering_wandering_actor" : {
+
+                "comment" : "first triggering_wandering_actor",
+                
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -0.5,
+                        "z": 1,
+                        "w": 7
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0 ,
+                        "z": 1.0,
+                        "w": 1.0
+                    }
+                },
+
+                "target" : {
+                    "transform" : {
+                        "position" : {
+                            "x": 0,
+                            "y": 5.5,
+                            "z": 1,
+                            "w": 7
+                        },
+                        "scale" : {
+                            "x": 1.0,
+                            "y": 1.0 ,
+                            "z": 1.0,
+                            "w": 1.0
+                        }
+                    }
+                },
+
+                "travel_time" : 3.6,
+
+                "movement_type" : "linear",
+
+                "triggering_by_trigger" : "first_trigger",
+                
+                "is_one_time_movement" : false,
+
+                "static_objects" : [
+                    {
+                        "cube" : {
+                            "comment" : "floor w 2",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0.0,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 1.9,
+                                "y": 0.5,
+                                "z": 1.9,
+                                "w": 1.9
+                            },
+                            "roundness" : 0.05,
+                            "undestroyable" : true,
+                            "stickiness" : true
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    
+    "static_objects": [
+        {
+            "cube" : {
+                "comment" : "floor z 1",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -0.5,
+                        "z": 6,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.0,
+                    "y": 0.5,
+                    "z": 3.0,
+                    "w": 3
+                },
+                "roundness" : 0.1
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "floor z 2",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -0.5,
+                        "z": -15,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.0,
+                    "y": 0.0001,
+                    "z": 3.0,
+                    "w": 3
+                },
+                "roundness" : 0.6
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "room",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 7,
+                        "z": -4,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 8.5,
+                    "z": 5.0,
+                    "w": 6.5
+                },
+                "roundness" : 0.5
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "exit 1",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 2.3,
+                        "z": -4,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.3,
+                    "y": 1.7,
+                    "z": 7.5,
+                    "w": 5.5
+                },
+                "roundness" : 0.5,
+                "is_positive" :false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "exit 1 sphere hole",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 1.1,
+                        "z": -4,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.001,
+                    "y": 0.001,
+                    "z": 0.001,
+                    "w": 0.001
+                },
+                "roundness" : 1.7,
+                "is_positive" : false,
+                "stickiness" : true
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "exit 1 vertical hole",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 6.1,
+                        "z": -4,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.2,
+                    "y": 3,
+                    "z": 0.2,
+                    "w": 0.2
+                },
+                "roundness" : 0.5,
+                "is_positive" : false,
+                "stickiness" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "exit 2",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 2.0,
+                        "z": -4,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.3,
+                    "y": 0.8,
+                    "z": 0.8,
+                    "w": 7.5
+                },
+                "roundness" : 0.5,
+                "is_positive" :false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "exit 3",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 6.8,
+                        "z": -4,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 0.7,
+                    "y": 1.5,
+                    "z": 4.5,
+                    "w": 8.5
+                },
+                "roundness" : 0.5,
+                "is_positive" :false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "floor w 1",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -0.5,
+                        "z": -4,
+                        "w": 12
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 0.5,
+                    "z": 3.0,
+                    "w": 3
+                },
+                "roundness" : 0.1,
+                "undestroyable" : false,
+                "stickiness" : true
+            }
+        },
+        {
+            "sphere" : {
+                "comment" : "exit 1 sphere hole",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": 0.4,
+                        "z": -4,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 3.6
+                },
+                "roundness" : 0.0,
+                "is_positive" :false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "floor w 2",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -0.5,
+                        "z": -4,
+                        "w": -12
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 0.5,
+                    "z": 3.0,
+                    "w": 3
+                },
+                "roundness" : 0.1
+            }
+        }
+    ]
+}

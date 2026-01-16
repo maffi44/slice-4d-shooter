@@ -21,7 +21,7 @@ use glam::{Vec3, Vec4};
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, StaticObject}
+        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
     }, transform::Transform
 };
 
@@ -44,6 +44,7 @@ pub struct DropedRotatorTool
     area: Area,
     static_objects: Vec<StaticObject>,
     coloring_areas: Vec<ColoringArea>,
+    volume_areas: Vec<VolumeArea>,
     pulse_timer: f32,
 }
 
@@ -89,6 +90,18 @@ impl DropedRotatorTool
 
         let coloring_areas = vec![coloring_area];
 
+        
+        let volume_area = VolumeArea::SphericalVolumeArea(
+            SphericalVolumeArea {
+                translation: Vec4::ZERO,
+                radius: 0.5,
+                color:Vec3::Y,
+            }
+        );
+        
+        let volume_areas = vec![volume_area];
+
+
         DropedRotatorTool {
             transform,
             id: None,
@@ -96,6 +109,7 @@ impl DropedRotatorTool
             static_objects,
             coloring_areas,
             pulse_timer: 0.0,
+            volume_areas,
         }
     }
 }
@@ -140,15 +154,15 @@ impl Actor for DropedRotatorTool
     }
 
 
-    fn get_visual_element(&self) -> Option<VisualElement>
+    fn get_visual_element(&self) -> Option<VisualElement<'_>>
     {
         Some(
             VisualElement
             {
                 transform: &self.transform,
-                static_objects: Some(&self.static_objects),
-                coloring_areas: Some(&self.coloring_areas),
-                volume_areas: None,
+                static_objects: None,//Some(&self.static_objects),
+                coloring_areas: None,//Some(&self.coloring_areas),
+                volume_areas: Some(&self.volume_areas),
                 waves: None,
                 player: None,
                 child_visual_elem: None,

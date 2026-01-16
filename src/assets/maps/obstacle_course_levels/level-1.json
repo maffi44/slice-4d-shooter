@@ -2,8 +2,7 @@
     "level_name" : "test_level",
     "main_shader" : "raymarch_shader_obstacle_course_dithered",
     "generated_shader_with_bsp_tree" : true,
-    "generated_shader_with_bsp_tree_with_dynamic_objects" : false,
-
+    "generated_shader_with_bsp_tree_with_dynamic_objects" : true,
 
     "defaults" : {
         "is_positive": true,
@@ -16,7 +15,6 @@
     },
 
     "visual_settings_of_environment" : {
-        "sky_box" : "star_sky",
         "sky_color" : {
             "red": 0.1,
             "green": 0.3,
@@ -203,20 +201,6 @@
         }
     ],
 
-    "red_players_visual_materials" : {
-        "inner" : "metallic_red",
-        "outer" : "gun_red"
-    },
-
-    "blue_players_visual_materials" : {
-        "inner" : "metallic_blue",
-        "outer" : "gun_blue"
-    },
-
-    "w_cups_visual_materials" : "gun_red",
-
-    "all_shapes_stickiness_radius": 0.3,
-
     "red_base_position" :
     {
         "transform" : {
@@ -241,18 +225,30 @@
         }
     },
 
+    "red_players_visual_materials" : {
+        "inner" : "metallic_red",
+        "outer" : "gun_red",
 
-    "w_cups" : {
+        "comment" : "TEMP! need to made option to create new materials inside actor's code"
     },
+
+    "blue_players_visual_materials" : {
+        "inner" : "metallic_blue",
+        "outer" : "gun_blue",
+
+        "comment" : "TEMP! need to made option to create new materials inside actor's code"
+    },
+
+    "all_shapes_stickiness_radius": 0.1,
 
     "main_actor" : {
         "obstacle_course_free_movement_player" : {
             "spawn" : {
                 "transform" : {
                     "position" : {
-                        "x": -1.0,
-                        "y": 0,
-                        "z": 5.0,
+                        "x": 0.0,
+                        "y": -1.5,
+                        "z": 2.0,
                         "w": 0.0
                     }
                 }
@@ -260,16 +256,19 @@
             "with_rotator_tool" : false
         }
     },
-
+    
     "actors" : [
         {
-            "droped_rotator_tool" : {
+            "wandering_actor" : {
+
+                "comment" : "lift",
+                
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
-                        "y": 2.3,
-                        "z": -3.5,
-                        "w": 0.0
+                        "x": 2.3,
+                        "y": -2.5,
+                        "z": -9.5,
+                        "w": 0
                     },
                     "scale" : {
                         "x": 1.0,
@@ -277,34 +276,93 @@
                         "z": 1.0,
                         "w": 1.0
                     }
-                }
+                },
+
+                "target" : {
+                    "transform" : {
+                        "position" : {
+                            "x": 2.3,
+                            "y": 2.1,
+                            "z": -9.5,
+                            "w": 0
+                        },
+                        "scale" : {
+                            "x": 1.0,
+                            "y": 1.0 ,
+                            "z": 1.0,
+                            "w": 1.0
+                        }
+                    }
+                },
+
+                "travel_time" : 3.6,
+
+                "movement_type" : "linear",
+
+                "static_objects" : [
+                    {
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 2,
+                                "y": 0.2,
+                                "z": 2,
+                                "w": 2
+                            },
+                            "roundness" : 0.02,
+                            "is_positive" : true,
+                            "stickiness" : true,
+                            "undestroyable" : true
+                        }
+                    }
+                ]
             }
         },
         {
-            "new_spawn_area" : {
+            "trigger_orb" : {
+
+                "comment" : "trgger orb for final trgger",
+
+                "target_trigger_name" : "final_trigger",
+
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
-                        "y": 3,
-                        "z": -6,
-                        "w": 0.0
+                        "x": 2,
+                        "y": 3.5,
+                        "z": -5.5,
+                        "w": 0
+                    },
+                    "scale" : {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0,
+                        "w": 1.0
                     }
                 },
-                "size" : {
-                    "x": 6,
-                    "y": 3,
-                    "z": 2,
-                    "w": 3
-                },
-                "new_spawn_position": {
-                    "transform" : {
-                        "position" : {
-                            "x": 0.0,
-                            "y": 2,
-                            "z": -6,
-                            "w": 0.0
-                        }
-                    }
+
+                "radius" : 1.0,
+
+                "color" : {
+                    "red": 3.5,
+                    "green": 3.5,
+                    "blue": 3.5,
+                    "multiplier": 0.3
                 }
             }
         },
@@ -313,14 +371,14 @@
 
                 "comment" : "final trigger",
 
-                "next_level_name" : "map-first",
+                "next_level_name" : "obstacle_course_levels/level-2",
 
                 "transform" : {
                     "position" : {
-                        "x": 3.5,
-                        "y": 3.9,
-                        "z": 6.5,
-                        "w": 0.0
+                        "x": 0,
+                        "y": -0.8,
+                        "z": 0,
+                        "w": 0
                     },
                     "scale" : {
                         "x": 1.0,
@@ -351,39 +409,71 @@
                 },
 
                 "static_objects" : [
-                ]
-            }
-        },
-        {
-            "trigger_orb" : {
+                    {
 
-                "comment" : "trgger orb for final trgger",
-
-                "target_trigger_name" : "final_trigger",
-
-                "transform" : {
-                    "position" : {
-                        "x": 0.0,
-                        "y": 1.5,
-                        "z": -27,
-                        "w": 0.0
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": -1.2,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.01,
+                                "y": 1,
+                                "z": 0.01,
+                                "w": 0.01
+                            },
+                            "roundness" : 0.11,
+                            "is_positive" : true,
+                            "stickiness" : true,
+                            "undestroyable" : true
+                        }
                     },
-                    "scale" : {
-                        "x": 1.0,
-                        "y": 1.0,
-                        "z": 1.0,
-                        "w": 1.0
+                    {
+
+                        "cube" : {
+                            "comment" : "",
+                            "transform" : {
+                                "position" : {
+                                    "x": 0,
+                                    "y": 0.2,
+                                    "z": 0,
+                                    "w": 0
+                                },
+                                "rotation" : {
+                                    "yz": 0.0,
+                                    "xz": 0.0,
+                                    "xy": 0.0,
+                                    "wx": 0.0,
+                                    "wy": 0.0,
+                                    "wz": 0.0
+                                }
+                            },
+                            "size" : {
+                                "x": 0.01,
+                                "y": 0.01,
+                                "z": 0.01,
+                                "w": 0.01
+                            },
+                            "roundness" : 2.3,
+                            "is_positive" : false,
+                            "stickiness" : true,
+                            "undestroyable" : false
+                        }
                     }
-                },
-
-                "radius" : 1.0,
-
-                "color" : {
-                    "red": 3.5,
-                    "green": 3.5,
-                    "blue": 3.5,
-                    "multiplier": 0.3
-                }
+                ]
             }
         }
     ],
@@ -391,12 +481,12 @@
     "static_objects": [
         {
             "cube" : {
-                "comment" : "platform 1",
+                "comment" : "map's walls",
                 "transform" : {
                     "position" : {
                         "x": 0.0,
-                        "y": -0.5,
-                        "z": -4,
+                        "y": 1.5,
+                        "z": 0.0,
                         "w": 0.0
                     },
                     "rotation" : {
@@ -409,24 +499,23 @@
                     }
                 },
                 "size" : {
-                    "x": 6,
-                    "y": 1.3,
-                    "z": 4,
-                    "w": 9
+                    "x": 22.0,
+                    "y": 5.5,
+                    "z": 22,
+                    "w": 30
                 },
-                "roundness" : 0.1,
-                "undestroyable" : true
+                "roundness" : 0
             }
         },
         {
             "cube" : {
-                "comment" : "platform final orb",
+                "comment" : "first room",
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
-                        "y": -0.5,
-                        "z": -27,
-                        "w": 4.0
+                        "x": 0,
+                        "y": 4,
+                        "z": -1,
+                        "w": 0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -438,229 +527,24 @@
                     }
                 },
                 "size" : {
-                    "x": 1.5,
-                    "y": 0.4,
-                    "z": 1.5,
-                    "w": 5.0
+                    "x": 3.5,
+                    "y": 6,
+                    "z": 6.5,
+                    "w": 0.1
                 },
-                "roundness" : 0.1
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "pre platform final orb ",
-                "transform" : {
-                    "position" : {
-                        "x": 0.0,
-                        "y": -0.5,
-                        "z": -17,
-                        "w": 7.5
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 1.5,
-                    "y": 0.4,
-                    "z": 9,
-                    "w": 1.5
-                },
-                "roundness" : 0.1
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "room 1 walls",
-                "transform" : {
-                    "position" : {
-                        "x": 0.0,
-                        "y": 3,
-                        "z": 2.5,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 6.0,
-                    "y": 5.0,
-                    "z": 7.5,
-                    "w": 1
-                },
-                "roundness" : 0.1
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "room 1 big cube",
-                "transform" : {
-                    "position" : {
-                        "x": 3.5,
-                        "y": 0,
-                        "z": 6.5,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.3,
-                    "y": 2,
-                    "z": 2.5,
-                    "w": 1
-                },
-                "roundness" : 0.1,
-                "undestroyable" : true
-            }
-        },
-        {
-
-            "cube" : {
-                "comment" : "final trigger stick",
-                "transform" : {
-                    "position" : {
-                        "x": 3.5,
-                        "y": 2.7,
-                        "z": 6.5,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 0.01,
-                    "y": 1,
-                    "z": 0.01,
-                    "w": 0.01
-                },
-                "roundness" : 0.07,
-                "is_positive" : true,
-                "stickiness" : true,
-                "undestroyable" : true
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "room 1 small cube 1",
-                "transform" : {
-                    "position" : {
-                        "x": -4.0,
-                        "y": -1,
-                        "z": 6.9,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 1.1,
-                    "y": 0.8,
-                    "z": 1.5,
-                    "w": 1
-                },
-                "roundness" : 0.3,
-                "undestroyable" : true,
-                "stickiness" : false
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "room 1 small cube 2",
-                "transform" : {
-                    "position" : {
-                        "x": -1.0,
-                        "y": 0.8,
-                        "z": 8.2,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 2.1,
-                    "y": 0.4,
-                    "z": 0.8,
-                    "w": 1
-                },
-                "roundness" : 0.0,
-                "undestroyable" : true,
-                "stickiness" : false
-            }
-        },
-        {
-            "cube" : {
-                "comment" : "room 1 hole",
-                "transform" : {
-                    "position" : {
-                        "x": 0.0,
-                        "y": 2.5,
-                        "z": 3.5,
-                        "w": 0.0
-                    },
-                    "rotation" : {
-                        "yz": 0.0,
-                        "xz": 0.0,
-                        "xy": 0.0,
-                        "wx": 0.0,
-                        "wy": 0.0,
-                        "wz": 0.0
-                    }
-                },
-                "size" : {
-                    "x": 5.0,
-                    "y": 3.5,
-                    "z": 5.5,
-                    "w": 0.5
-                },
-                "roundness" : 0.1,
+                "roundness" : 0.6,
                 "is_positive" : false
             }
         },
         {
             "cube" : {
-                "comment" : "room 1 exit",
+                "comment" : "second room",
                 "transform" : {
                     "position" : {
-                        "x": 0.0,
-                        "y": 1.5,
-                        "z": -3.0,
-                        "w": 0.0
+                        "x": -2,
+                        "y": 5,
+                        "z": -7,
+                        "w": 0
                     },
                     "rotation" : {
                         "yz": 0.0,
@@ -672,14 +556,78 @@
                     }
                 },
                 "size" : {
-                    "x": 1,
-                    "y": 3,
-                    "z": 2.5,
-                    "w": 1.5
+                    "x": 4.5,
+                    "y": 6,
+                    "z": 3.5,
+                    "w": 0.1
                 },
-                "roundness" : 0.1,
+                "roundness" : 0.6,
                 "is_positive" : false,
+                "stickiness" : false
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "final trigger pedestal",
+                "transform" : {
+                    "position" : {
+                        "x": 0,
+                        "y": -2.5,
+                        "z": 0,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.5,
+                    "y": 0.001,
+                    "z": 1.5,
+                    "w": 0.2
+                },
+                "roundness" : 0.3,
+                "is_positive" : true,
+                "undestroyable" : true,
                 "stickiness" : true
+
+            }
+        },
+        {
+            "cube" : {
+                "comment" : "final trigger orb pedestal",
+                "transform" : {
+                    "position" : {
+                        "x": 2,
+                        "y": -1.9,
+                        "z": -6.5,
+                        "w": 0
+                    },
+                    "rotation" : {
+                        "yz": 0.0,
+                        "xz": 0.0,
+                        "xy": 0.0,
+                        "wx": 0.0,
+                        "wy": 0.0,
+                        "wz": 0.0
+                    }
+                },
+                "size" : {
+                    "x": 1.9,
+                    "y": 4,
+                    "z": 1.9,
+                    "w": 0.2
+                },
+                "roundness" : 0.3,
+                "is_positive" : true,
+                "undestroyable" : true,
+                "stickiness" : true
+
             }
         }
     ]

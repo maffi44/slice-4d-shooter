@@ -1468,8 +1468,75 @@ fn get_xwz_pointer_color(sph_pos: vec4<f32>, sph_radius: f32, sph_color: vec4<f3
     return color;
 }
 
+fn get_normal(p: vec4<f32>, intrs_players: bool) -> vec4<f32> {
+    var h: vec3<f32> = vec3<f32>(MIN_DIST, -MIN_DIST, 0.0);
+    
+    let a: vec4<f32> = h.yxxz;
+    let b: vec4<f32> = h.xyxz;
+    let c: vec4<f32> = h.xxyz;
+    let d: vec4<f32> = h.yyyz;
+    let e: vec4<f32> = h.zzzx;
+    let f: vec4<f32> = h.zzzy;
+
+    // after making this const array I catched segmentation fault on
+    // (ubuntu 22.04, nvidia RTX 3070 mobile, driver 565.77, ryzen 9)
+    // segmentation fault probably occurred during the compilation of naga
+
+    // let arr = array<vec4<f32>, 6>(
+    //     vec4(-MIN_DIST, MIN_DIST, MIN_DIST, 0.0),
+    //     vec4(MIN_DIST, -MIN_DIST, MIN_DIST, 0.0),
+    //     vec4(MIN_DIST, MIN_DIST, -MIN_DIST, 0.0),
+    //     vec4(-MIN_DIST, -MIN_DIST, -MIN_DIST, 0.0),
+    //     vec4(0.0, 0.0, 0.0, MIN_DIST),
+    //     vec4(0.0, 0.0, 0.0, -MIN_DIST),
+    // );
+
+    var n = vec4(0.0);
+
+    for( var i=(min(i32(dynamic_data.time), 0)); i<6; i += 1 )
+    {
+        //let nn = arr[i];
+
+        var nn = vec4(0.0);
+         
+        if i == 0
+        {
+            nn = a;
+        }
+        else if i == 1
+        {
+            nn = b;
+        }
+        else if i == 2
+        {
+            nn = c;
+        }
+        else if i == 3
+        {
+            nn = d;
+        }
+        else if i == 4
+        {
+            nn = e;
+        }
+        else
+        {
+            nn = f;
+        }
+
+        n += nn*map(p+nn, intrs_players);
+    }
+
+    return normalize(n);
+}
+
 @fragment
 fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
+
+    if dynamic_data.w_scanner_radius < 0.5
+    {
+        return vec4(0.0);
+    }
 
     var pos = inn.rel_position.xy;
     
@@ -1583,9 +1650,14 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         }
     }
 
-    var color = vec4(1.0 - (dist_and_depth.x / (MAX_DIST*0.2)));
-    // color.g = 0.0;
-    // color.b = 0.0;
+    let normal = abs(get_normal(camera_position+ray_direction*dist_and_depth.x, false));
+
+
+
+
+    let shadow = clamp(dot(normal, normalize(vec4(2.9, 0.0, 2.2,3.5))),0.0,1.0);
+
+    var color = vec4((1.42 - (dist_and_depth.x / (MAX_DIST*0.2)))*pow(shadow,1.34));
 
     let view_val = max(0.0,1.0 - (tri_dist / (MAX_DIST*0.6)));
 
@@ -1608,7 +1680,10 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
         color += sph_color;
     }
 
+    if color.a > 0.3
+    {
+        color.a = 1.0;
+    }
+
     return color;
-    // return vec4(vec3(1.0), 0.1);
-    // return vec4(1.0, 0.0, 0.0, 1.0);
 }
