@@ -353,6 +353,8 @@
                 "comment" : "final trigger",
 
                 "next_level_name" : "obstacle_course_levels/level-6",
+                "async_preload" : true,
+"async_load" : true,
 
                 "transform" : {
                     "position" : {

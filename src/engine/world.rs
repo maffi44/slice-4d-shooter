@@ -42,12 +42,14 @@ use super::{
 };
 
 use client_server_protocol::{NetCommand, Team};
+use tokio::task::JoinHandle;
 
 pub struct World {
     pub level: Option<Level>,
     pub actors: HashMap<ActorID, ActorWrapper>,
     pub main_actor_id: ActorID,
     pub players_settings: PlayerSettings,
+    pub preloaded_levels: HashMap<String, JoinHandle<Level>>
 }
 
 impl World {
@@ -70,6 +72,7 @@ impl World {
             players_settings,
             level: None,
             main_actor_id: 0,
+            preloaded_levels: HashMap::with_capacity(2)
         };
 
         // engine_handle.send_command(

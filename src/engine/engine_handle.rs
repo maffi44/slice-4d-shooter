@@ -38,6 +38,7 @@ pub enum CommandType {
     ShowConnectionStatusUI,
     LoadNewLevelSync(String),
     LoadNewLevelAsync(String),
+    PreloadNewLevelAsync(String),
 }
 
 pub struct EngineHandle {

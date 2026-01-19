@@ -2332,6 +2332,18 @@ fn parse_final_trigger(
         .expect("Wrong JSON map format, final_trgger's next_level_name property must be string type")
         .to_string();
 
+    let async_preload = actor_object
+        .get("async_preload")
+        .expect("Wrong JSON map format, final_trgger must have async_preload property")
+        .as_bool()
+        .expect("Wrong JSON map format, final_trgger's async_preload property must be boolean type");
+
+    let async_load = actor_object
+        .get("async_preload")
+        .expect("Wrong JSON map format, final_trgger must have async_load property")
+        .as_bool()
+        .expect("Wrong JSON map format, final_trgger's async_load property must be boolean type");
+
     let transform = parse_json_into_transform(actor_value, "final_trgger_actor");
 
     let trigger_area_radius = actor_object
@@ -2390,6 +2402,8 @@ fn parse_final_trigger(
     FinalTrgger::new(
         transform,
         next_level_name,
+        async_preload,
+        async_load,
         trigger_area_radius,
         visual_area_radius,
         visual_area_color,

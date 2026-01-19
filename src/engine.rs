@@ -37,7 +37,27 @@ use std::{
     }
 };
 
-use crate::{actor::{Actor, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage, main_player::{PlayerMessage, player_settings::PlayerSettings}}, engine::{engine_handle::{Command, CommandType}, world::level::Level}};
+use crate::{
+    actor::{
+        Actor,
+        ActorID,
+        ActorWrapper,
+        Message,
+        MessageType,
+        SpecificActorMessage,
+        main_player::{
+            PlayerMessage,
+            player_settings::PlayerSettings
+        }
+    },
+    engine::{
+        engine_handle::{
+            Command,
+            CommandType
+        },
+        world::level::Level
+    }
+};
 
 use self::{
     render::RenderSystem,
@@ -56,7 +76,7 @@ use effects::EffectsSystem;
 // use winit::window::WindowBuilder;
 
 use settings::Settings;
-use tokio::runtime::Runtime;
+use tokio::{runtime::Runtime, task::JoinHandle};
 use wgpu::Backend;
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::WindowBuilderExtWebSys;
@@ -76,6 +96,7 @@ pub struct Engine {
     pub ui: UISystem,
     pub effects: EffectsSystem,
     pub settings: Settings,
+    pub level_async_load_handler: Option<JoinHandle<Level>>,
 
     #[cfg(not(target_arch = "wasm32"))]
     pub runtime: tokio::runtime::Runtime,
@@ -234,6 +255,7 @@ impl Engine {
             ui: initialized_ui,
             effects,
             settings,
+            level_async_load_handler: None,
             
             #[cfg(not(target_arch = "wasm32"))]
             runtime,
@@ -344,6 +366,7 @@ pub fn execute_command(
     effects_system: &mut EffectsSystem,
     runtime: &mut Runtime,
     player_settings: PlayerSettings,
+    level_async_load_handler: &mut Option<JoinHandle<Level>>
 ) {
     let from = command.sender;
 
@@ -466,7 +489,8 @@ pub fn execute_command(
                 }
             }
         }
-        CommandType::LoadNewLevelSync(level_name) =>
+
+        CommandType::PreloadNewLevelAsync(level_name) => 
         {
             let render_pipeline_builder_kit =
             {
@@ -479,9 +503,51 @@ pub fn execute_command(
                     None
                 }
             };
+            
+            let preloaded_level_handle = runtime.spawn(
+        Level::load_level(
+                    level_name.clone(),
+                    player_settings,
+                    render_pipeline_builder_kit
+                )
+            );
 
-            let level = {
-                runtime.block_on(world::level::Level::load_level(level_name, player_settings, render_pipeline_builder_kit))
+            world.preloaded_levels.insert(level_name, preloaded_level_handle);
+        },
+
+        CommandType::LoadNewLevelSync(level_name) =>
+        {
+            let level= if world.preloaded_levels.contains_key(&level_name)
+            {
+                runtime.block_on(
+                    world.preloaded_levels.remove(&level_name).unwrap()
+                ).unwrap()
+            }
+            else
+            {
+                let render_pipeline_builder_kit =
+                {
+                    if render_system.is_some()
+                    {
+                        Some(render_system.as_ref().unwrap().render_pipeline_builder_kit.clone())
+                    }
+                    else
+                    {
+                        None
+                    }
+                };
+
+                let level = {
+                    runtime.block_on(
+                        Level::load_level(
+                            level_name,
+                            player_settings,
+                            render_pipeline_builder_kit
+                        )
+                    )
+                };
+
+                level
             };
 
             set_new_level(
@@ -496,10 +562,37 @@ pub fn execute_command(
                 effects_system,
             );
         },
-        
-        CommandType::LoadNewLevelAsync(level) => 
+
+        CommandType::LoadNewLevelAsync(level_name) => 
         {
-            unimplemented!("LoadNewLevelAsync command unimplemented yet");
+            let level_task = if world.preloaded_levels.contains_key(&level_name)
+            {
+                world.preloaded_levels.remove(&level_name)
+            }
+            else
+            {
+                let render_pipeline_builder_kit =
+                {
+                    if render_system.is_some()
+                    {
+                        Some(render_system.as_ref().unwrap().render_pipeline_builder_kit.clone())
+                    }
+                    else
+                    {
+                        None
+                    }
+                };
+
+                Some(runtime.spawn(
+            Level::load_level(
+                        level_name,
+                        player_settings,
+                        render_pipeline_builder_kit
+                    )
+                ))
+            };
+
+            *level_async_load_handler = level_task;
         },
     }
 }
@@ -571,6 +664,7 @@ pub fn send_messages_and_process_commands(
     effects_system: &mut EffectsSystem,
     mut render_system: Option<&mut RenderSystem>,
     runtime: &mut Runtime,
+    level_async_load_handler: &mut Option<JoinHandle<Level>>
 ) {
 
     let player_settings = world.players_settings.clone();
@@ -620,6 +714,7 @@ pub fn send_messages_and_process_commands(
                 effects_system,
                 runtime,
                 player_settings.clone(),
+                level_async_load_handler,
             );
         }
 
@@ -632,7 +727,7 @@ pub fn send_messages_and_process_commands(
     }
 }
 
-fn set_new_level (
+pub fn set_new_level (
     level: Level,
     engine_handle: &mut EngineHandle,
     world: &mut World,

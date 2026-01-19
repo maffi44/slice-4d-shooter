@@ -23,7 +23,7 @@ use rand::{seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
-        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, EmptyHand, holegun::HoleGun, obstaclesgun::ObstaclesGun, rotator::RotatorTool}, droped_rotator_tool::DropedRotatorToolMessage, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState, player_input_master, player_settings}, new_spawn_area::NewSpawnAreaMessage, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
+        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, EmptyHand, holegun::HoleGun, machinegun::MachineGun, obstaclesgun::ObstaclesGun, rotator::RotatorTool}, droped_rotator_tool::DropedRotatorToolMessage, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState, player_input_master, player_settings}, new_spawn_area::NewSpawnAreaMessage, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
     },
     engine::{
         audio::{
@@ -63,12 +63,12 @@ pub struct ObstacleCourseFreeMovementPlayer {
 
     active_hands_slot: ActiveHandsSlot, 
 
-    hands_slot_0: Box<dyn Device>,
-    hands_slot_1: Option<Box<dyn Device>>,
-    hands_slot_2: Option<Box<dyn Device>>,
-    hands_slot_3: Option<Box<dyn Device>>,
+    hands_slot_0: Box<dyn Device + Send>,
+    hands_slot_1: Option<Box<dyn Device + Send>>,
+    hands_slot_2: Option<Box<dyn Device + Send>>,
+    hands_slot_3: Option<Box<dyn Device + Send>>,
 
-    devices: [Option<Box<dyn Device>>; 4],
+    devices: [Option<Box<dyn Device + Send>>; 4],
 
     pub dithering_effect: f32,
     pub dithering_effect_target: f32,
@@ -793,11 +793,11 @@ impl ObstacleCourseFreeMovementPlayer {
 
         let tool = if with_rotator_tool
         {
-            Box::new(RotatorTool::new()) as Box<dyn Device>
+            Box::new(RotatorTool::new()) as Box<dyn Device + Send>
         }
         else
         {
-            Box::new(EmptyHand::default()) as Box<dyn Device>
+            Box::new(EmptyHand::default()) as Box<dyn Device + Send>
         };
 
         let volume_areas = Vec::with_capacity(3);

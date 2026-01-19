@@ -60,12 +60,12 @@ pub struct ObstacleCoursePlayerTwoJumps {
 
     active_hands_slot: ActiveHandsSlot, 
 
-    hands_slot_0: Box<dyn Device>,
-    hands_slot_1: Option<Box<dyn Device>>,
-    hands_slot_2: Option<Box<dyn Device>>,
-    hands_slot_3: Option<Box<dyn Device>>,
+    hands_slot_0: Box<dyn Device + Send>,
+    hands_slot_1: Option<Box<dyn Device + Send>>,
+    hands_slot_2: Option<Box<dyn Device + Send>>,
+    hands_slot_3: Option<Box<dyn Device + Send>>,
 
-    devices: [Option<Box<dyn Device>>; 4],
+    devices: [Option<Box<dyn Device + Send>>; 4],
 }
 
 impl Actor for ObstacleCoursePlayerTwoJumps {

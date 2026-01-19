@@ -16,7 +16,7 @@
 
 use crate::{
     actor::Actor,
-    engine::{Engine, send_messages_and_process_commands, ui::UIElementType},
+    engine::{Engine, send_messages_and_process_commands, set_new_level, ui::UIElementType},
 };
 
 use web_time::Instant;
@@ -363,6 +363,39 @@ fn main_loop_tick(
     systems : &mut Engine,
 ) {
     systems.time.start_of_frame();
+    
+    // println!("PRE level_async_load_handler tick");
+
+    if systems.level_async_load_handler.is_some()
+    {
+        
+        if systems.level_async_load_handler.as_ref().unwrap().is_finished()
+        {
+            // println!("PRE systems.runtime.block_on tick");
+
+            let handle = systems.level_async_load_handler.take().unwrap();
+
+            let level = systems.runtime.block_on(handle).unwrap();
+
+            set_new_level(
+                level,
+                &mut systems.engine_handle,
+                &mut systems.world,
+                &mut Some(&mut systems.render),
+                &mut systems.physic,
+                &mut systems.audio,
+                &mut systems.ui,
+                &mut systems.time,
+                &mut systems.effects
+            );
+
+            // println!("POST systems.runtime.block_on tick");
+
+        }
+    }
+
+    // println!("POST level_async_load_handler tick");
+
 
     #[cfg(target_arch= "wasm32")]
     systems.net.tick(
@@ -401,6 +434,7 @@ fn main_loop_tick(
         &mut systems.effects,
         Some(&mut systems.render),
         &mut systems.runtime,
+        &mut systems.level_async_load_handler,
     );
 
     systems.physic.process_physics(
@@ -420,6 +454,7 @@ fn main_loop_tick(
         &mut systems.effects,
         Some(&mut systems.render),
         &mut systems.runtime,
+        &mut systems.level_async_load_handler,
     );
 
     systems.render.process_player_input(

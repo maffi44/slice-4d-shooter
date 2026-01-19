@@ -22,7 +22,7 @@ use rand::Rng;
 
 use crate::{
     actor::{trgger_orb::TriggerOrbMessage, trigger::TriggerMessage}, engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, EngineHandle}, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
+        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
     }, transform::Transform
 };
 
@@ -60,6 +60,9 @@ pub struct FinalTrgger
     is_triggered: bool,
     level_transition_timer: f32,
     next_level_name: String,
+    async_preload: bool,
+    async_load: bool,
+    async_load_command_sended: bool,
     pulse_timer: f32,
     orginal_visual_area_radius: f32,
     orginal_visual_area_color: Vec3,
@@ -72,6 +75,8 @@ impl FinalTrgger
     pub fn new(
         transform: Transform,
         next_level_name: String,
+        async_preload: bool,
+        async_load: bool,
         trigger_area_radius: f32,
         visual_area_radius: f32,
         visual_area_color: Vec3,
@@ -116,6 +121,9 @@ impl FinalTrgger
         FinalTrgger {
             transform,
             next_level_name,
+            async_preload,
+            async_load,
+            async_load_command_sended: false,
             id: None,
             area,
             visual_areas,
@@ -167,6 +175,18 @@ impl Actor for FinalTrgger
         self.coloring_areas[0].color = self.orginal_coloring_area_color * coloring_area_color_pulse_val;
 
 
+        if self.async_preload
+        {
+            engine_handle.send_command(
+                Command {
+                    sender: self.get_id().expect("Final Trgger have not ActorID"),
+                    command_type: CommandType::PreloadNewLevelAsync(self.next_level_name.clone())
+                }
+            );
+            
+            self.async_preload = false;
+        }
+
         if self.is_triggered
         {
             self.level_transition_timer += delta;
@@ -188,12 +208,29 @@ impl Actor for FinalTrgger
 
             if self.level_transition_timer > 5.0
             {
-                engine_handle.send_command(
-                    Command {
-                        sender: self.get_id().expect("Final Trgger have not ActorID"),
-                        command_type: crate::engine::engine_handle::CommandType::LoadNewLevelSync(self.next_level_name.clone())
+                if self.async_load
+                {
+                    if !self.async_load_command_sended
+                    {
+                        engine_handle.send_command(
+                            Command {
+                                sender: self.get_id().expect("Final Trgger have not ActorID"),
+                                command_type: CommandType::LoadNewLevelAsync(self.next_level_name.clone())
+                            }
+                        );
+    
+                        self.async_load_command_sended = true;
                     }
-                );
+                }
+                else
+                {
+                    engine_handle.send_command(
+                        Command {
+                            sender: self.get_id().expect("Final Trgger have not ActorID"),
+                            command_type: CommandType::LoadNewLevelSync(self.next_level_name.clone())
+                        }
+                    );
+                }
             }
         }
     }
