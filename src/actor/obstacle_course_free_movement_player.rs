@@ -1157,6 +1157,7 @@ impl ObstacleCourseFreeMovementPlayer {
         //     PlayerMovingState::MovingPerpendicularW(self.w_levels_of_map[current_spawn.w_level]);
 
         self.inner_state.saved_angle_of_rotation = Vec4::ZERO;
+        self.base_xz_zw_xw_rotation = Mat4::IDENTITY;
 
         self.inner_state.restore_w_shift_and_rotate_values();
 
@@ -1680,7 +1681,9 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
             )
         }
 
+        self.inner_state.saved_angle_of_rotation = Vec4::ZERO;
         self.base_xz_zw_xw_rotation = Mat4::IDENTITY;
+        println!("123");
         self.inner_state.w_aim_enabled = true;
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
@@ -1689,7 +1692,6 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
         // self.inner_state.player_moving_state =
         //     PlayerMovingState::MovingPerpendicularW(self.w_levels_of_map[current_spawn.w_level]);
 
-        self.inner_state.saved_angle_of_rotation = Vec4::ZERO;
 
         // self.w_scanner.restore_scanner_values(&self.player_settings);
 
