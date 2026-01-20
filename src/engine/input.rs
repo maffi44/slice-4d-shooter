@@ -349,6 +349,8 @@ impl InputSystem {
         let middle_mouse = Arc::new(Mutex::new((ButtonActions::MiddleMouse, Action::new(), 0)));
         let hand_slot_0 = Arc::new(Mutex::new((ButtonActions::HandSlot0, Action::new(), 0)));
         let hand_slot_1 = Arc::new(Mutex::new((ButtonActions::HandSlot1, Action::new(), 0)));
+        let enable_w_aim = Arc::new(Mutex::new((ButtonActions::EnableWAim, Action::new(), 0)));
+        let show_hide_controls = Arc::new(Mutex::new((ButtonActions::ShowHideControls, Action::new(), 0)));
 
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyW),
@@ -440,6 +442,10 @@ impl InputSystem {
             anti_projection_mode.clone(),
         );
         actions_table.insert(
+            SomeButton::GamepadButton(Button::East),
+            enable_w_aim.clone()
+        );
+        actions_table.insert(
             SomeButton::GamepadButton(Button::RightTrigger),
             first_mouse.clone(),
         );
@@ -454,6 +460,10 @@ impl InputSystem {
         actions_table.insert(
             SomeButton::GamepadButton(Button::LeftTrigger2),
             hand_slot_1
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::Start),
+            show_hide_controls.clone()
         );
 
         actions_table.insert(
@@ -474,11 +484,11 @@ impl InputSystem {
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyT),
-            Arc::new(Mutex::new((ButtonActions::ShowHideControls, Action::new(), 0)))
+            show_hide_controls,
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyR),
-            Arc::new(Mutex::new((ButtonActions::EnableWAim, Action::new(), 0)))
+            enable_w_aim
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyI),

@@ -88,6 +88,8 @@ pub struct ObstacleCourseFreeMovementPlayer {
     zw_rotation_enabled: bool,
     pub rotator_tool_equiped: bool,
     show_tutorial_widndow_timer: f32,
+
+    base_xz_zw_xw_rotation: Mat4,
 }
 
 impl Actor for ObstacleCourseFreeMovementPlayer {
@@ -839,6 +841,7 @@ impl ObstacleCourseFreeMovementPlayer {
             zw_rotation_enabled: true,
             rotator_tool_equiped: with_rotator_tool,
             show_tutorial_widndow_timer: 0.0,
+            base_xz_zw_xw_rotation: Mat4::IDENTITY,
         }
     }
 
@@ -1327,17 +1330,11 @@ impl ObstacleCourseFreeMovementPlayer {
         delta: f32,
     )
     {
-        if input.w_aim.is_action_just_pressed()
-        {
-            self.zw_rotation_enabled = !self.zw_rotation_enabled;
-        }
-
-        let mut xz = self.inner_state.saved_angle_of_rotation.x;
-        let mut yz = self.inner_state.saved_angle_of_rotation.y;
-        let mut zw = self.inner_state.saved_angle_of_rotation.z;
-        let mut xw = self.inner_state.saved_angle_of_rotation.w;
-
-        self.inner_state.last_frame_zw_rotation = zw;
+        // if input.w_aim.is_action_just_pressed()
+        // {
+        //     self.base_xz_zw_xw_rotation = Mat4::IDENTITY;
+        //     // self.zw_rotation_enabled = !self.zw_rotation_enabled;
+        // }
 
         self.inner_state.w_aim_ui_frame_intensity = 0.20;
 
@@ -1421,8 +1418,51 @@ impl ObstacleCourseFreeMovementPlayer {
 
         self.rotator_tool_equiped = with_rotator_tool;
 
+        let mut xz = self.inner_state.saved_angle_of_rotation.x;
+        let mut yz = self.inner_state.saved_angle_of_rotation.y;
+        let mut zw = self.inner_state.saved_angle_of_rotation.z;
+        let mut xw = self.inner_state.saved_angle_of_rotation.w;
+
+        self.inner_state.last_frame_zw_rotation = zw;
+
         if with_rotator_tool
         {
+            if input.second_mouse.is_action_just_pressed() ||
+                input.gamepad_left_stick_axis_delta.x != 0.0 ||
+                input.gamepad_left_stick_axis_delta.y != 0.0
+            {
+                let zx_rotation = Mat4::from_rotation_y(xz);
+
+                let zw_rotation = Mat4::from_cols_slice(&[
+                    1.0,     0.0,      0.0,             0.0,
+                    0.0,     1.0,      0.0,             0.0,
+                    0.0,     0.0,      (-zw).cos(),     (-zw).sin(),
+                    0.0,     0.0,      -(-zw).sin(),    (-zw).cos()
+
+                ]);
+
+                let xw_rotation = Mat4::from_cols_slice(&[
+                    (-xw).cos(),     0.0,      0.0,     (-xw).sin(),
+                    0.0,             1.0,      0.0,     0.0,
+                    0.0,             0.0,      1.0,     0.0,
+                    -(-xw).sin(),    0.0,      0.0,     (-xw).cos()
+
+                ]);
+
+                let mut r = Mat4::IDENTITY;
+
+                r *= xw_rotation;
+                r *= zw_rotation;
+                r *= zx_rotation;
+
+                self.base_xz_zw_xw_rotation *= r;
+
+                xz = 0.0;
+                zw = 0.0;
+                xw = 0.0;
+
+            }
+
             if input.second_mouse.is_action_pressed() {
 
                 if self.zw_rotation_enabled
@@ -1437,8 +1477,6 @@ impl ObstacleCourseFreeMovementPlayer {
                 }
                 else
                 {
-                    zw = my_mod(zw, PI*2.0);
-
                     zw = zw.lerp(0.0, delta*4.0);
                 }
                 
@@ -1480,7 +1518,7 @@ impl ObstacleCourseFreeMovementPlayer {
             if self.zw_rotation_enabled
             {
                 zw = (input.gamepad_left_stick_axis_delta.y *
-                    *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                    *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT*0.7 +
                     zw);
                 
             }
@@ -1492,7 +1530,7 @@ impl ObstacleCourseFreeMovementPlayer {
             }
 
             xw = input.gamepad_left_stick_axis_delta.x *
-                *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT*0.7 +
                 xw;
 
         }
@@ -1540,25 +1578,24 @@ impl ObstacleCourseFreeMovementPlayer {
 
         ]);
 
-        self.inner_state.saved_angle_of_rotation.x = xz;
-        self.inner_state.saved_angle_of_rotation.y = yz;
-        self.inner_state.saved_angle_of_rotation.z = zw;
-        self.inner_state.saved_angle_of_rotation.w = xw;
-
-        // inner_state.zw_rotation = zw_rotation;
-        // inner_state.zy_rotation = zy_rotation;
-        // inner_state.zx_rotation = zx_rotation;
-
         let mut rotation = Mat4::IDENTITY;
-        rotation *= zw_rotation;
+        
+        rotation *= self.base_xz_zw_xw_rotation;
         rotation *= xw_rotation;
+        rotation *= zw_rotation;
         rotation *= zx_rotation;
         rotation *= zy_rotation;
-
+        
+        // self.inner_state.zx_rotation = zx_rotation;
         // temporally
         self.inner_state.zw_rotation = rotation;
 
         self.inner_state.set_rotation_matrix(rotation);
+
+        self.inner_state.saved_angle_of_rotation.x = xz;
+        self.inner_state.saved_angle_of_rotation.y = yz;
+        self.inner_state.saved_angle_of_rotation.z = zw;
+        self.inner_state.saved_angle_of_rotation.w = xw;
     }
 }
 
@@ -1643,6 +1680,7 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
             )
         }
 
+        self.base_xz_zw_xw_rotation = Mat4::IDENTITY;
         self.inner_state.w_aim_enabled = true;
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
