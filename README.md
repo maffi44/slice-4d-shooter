@@ -1,13 +1,16 @@
 # [![Slice: 4D Shooter](https://github.com/maffi44/slice-4d-shooter/blob/main/media/slice_4d_shooter_poster.png)](https://github.com/maffi44/slice-4d-shooter)
-[![AGPLv3 License](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://opensource.org/licenses/AGPL-3.0)
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/license/mit/)
 [![Rust](https://img.shields.io/badge/Built%20with-Rust-dea584.svg)](https://rust-lang.org)
 [![Windows](https://img.shields.io/badge/Platform-Windows-informational)](https://windows.com)
 [![Linux](https://img.shields.io/badge/Platform-Linux-informational)](https://linux.org)
 [![macOS](https://img.shields.io/badge/Platform-macOS-informational)](https://apple.com)
 # Slice: 4D Shooter
 
-**Slice** is a competitive multiplayer first-person shooter that takes place in a **true four-dimensional space**. It is developed as free and open-source software under the **AGPLv3** license.
-Our **goal** is to create the first **free and open-source esports shooter in 4D space**.  [**Help us create it!**](https://slice4d.info/#donate)
+**Slice: 4D Shooter** is a competitive multiplayer first-person shooter that takes place in a **true four-dimensional space**.
+
+This is a personal project by **Timofei Molokov**. It was created as an experiment in **game engine development**, **game development**, and **game design**, aimed at building a fast‑paced competitive multiplayer shooter set in true 4D space.
+
+The project is open for learning, experimentation, and reuse: the entire source code is available under the **MIT License** (see the **License** section below).
 
 ## Resources
 *   **[Official Website](https://slice4d.info/)**
@@ -19,6 +22,10 @@ Our **goal** is to create the first **free and open-source esports shooter in 4D
 
 **Slice: 4D Shooter** is built on a **custom game engine**, developed from scratch in **Rust**.
 The project is currently in playable prototype stage. 
+The current version supports online multiplayer. The public server is available.
+
+The entire codebase of this project was written manually by the author, without the use of large language models or AI-assisted code generation tools.
+The only exception is the ```tv_hash``` and ```tv_noise``` functions located in the ```raymarch_shader.wgsl``` file.
 
 **Core engine features include:**
 *   **4D Rendering:** Utilizes a Signed Distance Field (SDF) algorithm to render four-dimensional geometry.
@@ -28,18 +35,13 @@ The project is currently in playable prototype stage.
 *   **Multiplayer Networking:** Implements a temporary client-based networking model for multiplayer gameplay and game state synchronization.
 *   **Cross-Platform Support:** The game runs on Windows, Linux, and macOS.
 
-
-## Sponsors
-This project is supported by the following patrons.
-Thank you for helping make the development of **Slice-4D Shooter** possible.
-
-### Demeurge Tier
-- **Richard Scharf**
-
 ## License
 
-The source code of **Slice: 4D Shooter** is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).  
+The source code of **Slice: 4D Shooter** is licensed under the **MIT License**.  
 See the [`LICENSE.txt`](LICENSE.txt) file for full terms.
+
+For a detailed breakdown of licensing and attribution (third-party libraries, audio, media, trademarks, etc.), see:
+* [`CREDITS.md`](CREDITS.md)
 
 This project incorporates third-party components under their respective licenses:
 
@@ -341,3 +343,5 @@ In order for the nginx config from this example to work, you need to install the
 apt install nginx-extras
 ```
 
+## Sponsors
+- **Richard Scharf**
