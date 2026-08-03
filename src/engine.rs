@@ -189,6 +189,7 @@ impl Engine {
             &mut runtime,
             with_ui_renderer,
             specific_backend,
+            &global_players_settings,
         ).await;
         log::info!("engine systems: render init");
 

@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use crate::engine::{render::{MainShaderRenderPipelineBuilderKit, render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
+use crate::engine::{render::{
+    MAX_SCREEN_RESOLUTION_SCALE, MIN_SCREEN_RESOLUTION_SCALE, MainShaderRenderPipelineBuilderKit,
+    SCREEN_RESOLUTION_SCALE_STEP, render_data::RenderData, ui_renderer::UIRenderer
+}, ui::UISystem};
 
 use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
@@ -59,6 +62,9 @@ const VERTICES_MINIMAP: &[Vertex] = &[
 
 const INDICES_MINIMAP: &[u16] = &[0, 2, 1, 0, 3, 1];
 
+/// How often the renderer reports its measured frame time on the debug log level.
+const FRAME_TIME_REPORT_PERIOD: f64 = 5.0;
+
 pub struct RendererBuffers
 {
     pub other_dynamic_data_buffer: Buffer,
@@ -112,6 +118,8 @@ pub struct Renderer {
     target_frame_duration: f64,
     min_time: f64,
     max_time: f64,
+    time_since_frame_time_report: f64,
+    frames_at_last_report: u64,
     // prev_surface_texture: Option<SurfaceTexture>,
     // prev_frame_rendered: Arc<Mutex<bool>>,
 
@@ -139,16 +147,16 @@ impl Renderer {
 
     pub fn increase_raymarch_target_texture_scale_factor(&mut self)
     {
-        if self.raymarch_target_texture_scale_factor > 0.995
+        if self.raymarch_target_texture_scale_factor > MAX_SCREEN_RESOLUTION_SCALE - 0.005
         {
             return;
         }
 
-        self.raymarch_target_texture_scale_factor = 
+        self.raymarch_target_texture_scale_factor =
         (
-            self.raymarch_target_texture_scale_factor + 
-            0.05
-        ).clamp(0.1, 1.0);
+            self.raymarch_target_texture_scale_factor +
+            SCREEN_RESOLUTION_SCALE_STEP
+        ).clamp(MIN_SCREEN_RESOLUTION_SCALE, MAX_SCREEN_RESOLUTION_SCALE);
 
         let (
             raymarch_target_texture,
@@ -172,16 +180,16 @@ impl Renderer {
 
     pub fn decrease_raymarch_target_texture_scale_factor(&mut self)
     {
-        if self.raymarch_target_texture_scale_factor < 0.105
+        if self.raymarch_target_texture_scale_factor < MIN_SCREEN_RESOLUTION_SCALE + 0.005
         {
             return;
         }
 
-        self.raymarch_target_texture_scale_factor = 
+        self.raymarch_target_texture_scale_factor =
         (
             self.raymarch_target_texture_scale_factor -
-            0.05
-        ).clamp(0.1, 1.0);
+            SCREEN_RESOLUTION_SCALE_STEP
+        ).clamp(MIN_SCREEN_RESOLUTION_SCALE, MAX_SCREEN_RESOLUTION_SCALE);
 
         let (
             raymarch_target_texture,
@@ -956,6 +964,8 @@ impl Renderer {
                 target_frame_duration,
                 min_time: 99999.0,
                 max_time: 0.0,
+                time_since_frame_time_report: 0.0,
+                frames_at_last_report: 0u64,
 
                 sky_box_texture,
                 sky_box_texture_view,
@@ -1100,6 +1110,25 @@ impl Renderer {
                     self.total_frames_count += 1;
                     self.min_time = self.min_time.min(current_frame_time);
                     self.max_time = self.max_time.max(current_frame_time);
+
+                    // periodic frame time report, so a player reporting bad
+                    // performance can get numbers without closing the game
+                    self.time_since_frame_time_report += current_frame_time;
+
+                    if self.time_since_frame_time_report >= FRAME_TIME_REPORT_PERIOD
+                    {
+                        let frames = (self.total_frames_count - self.frames_at_last_report) as f64;
+
+                        log::debug!(
+                            "renderer: {:.1} FPS ({:.2} ms per frame) at raymarch scale factor {}",
+                            frames / self.time_since_frame_time_report,
+                            (self.time_since_frame_time_report / frames) * 1000.0,
+                            self.raymarch_target_texture_scale_factor,
+                        );
+
+                        self.time_since_frame_time_report = 0.0;
+                        self.frames_at_last_report = self.total_frames_count;
+                    }
 
                     // println!(
                     //     "DT: {}",
