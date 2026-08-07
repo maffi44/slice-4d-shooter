@@ -9,7 +9,7 @@
     "turn_server_credential" : "",
 
     "_comment_screen_resolution_scale" : "Resolution the 4D raymarch shader renders in, as a fraction of the screen resolution. The result is upscaled to the full screen. 1.0 is the native resolution, allowed range is 0.1 - 1.0. This is the single most effective setting on weak or integrated GPUs, try 0.5 - 0.7 on a laptop. Can also be changed in game with the I and O keys.",
-    "screen_resolution_scale" : 0.3,
+    "screen_resolution_scale" : 0.4,
 
     "_comment_shadows_enable" : "Sun shadows. Every shaded point casts an additional ray through the 4D scene, so turning them off gives a noticeable speed up. Can also be toggled in game with the P key.",
     "shadows_enable" : true
