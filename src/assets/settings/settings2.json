@@ -17,7 +17,8 @@
 
     "rotation_along_w_standard_method" : true,
     "shadows_enable" : false,
-    
+    "screen_resolution_scale" : 1.0,
+
     "w_jump_time_reloading" : 1.2,
     
     "min_respawn_timer": 6,

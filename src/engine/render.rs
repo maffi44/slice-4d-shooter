@@ -23,6 +23,7 @@ mod ui_renderer;
 use std::{sync::{Arc, Mutex}, time::Duration};
 
 use crate::{
+    actor::main_player::player_settings::PlayerSettings,
     engine::{
         render::renderer::RendererBuffers, time::TimeSystem, world::{
             World, static_object::{
@@ -79,6 +80,14 @@ pub struct RenderQualityData
     shadows_enabled: bool
 }
 
+/// The bounds the raymarch target texture scale factor is kept in, both when it
+/// is loaded from the settings and when it is changed in game.
+pub const MIN_SCREEN_RESOLUTION_SCALE: f32 = 0.1;
+pub const MAX_SCREEN_RESOLUTION_SCALE: f32 = 1.0;
+
+/// The step a single in game render quality change applies to the scale factor.
+pub const SCREEN_RESOLUTION_SCALE_STEP: f32 = 0.05;
+
 pub struct RenderSystem {
     render_data: RenderData,
     pub window: Arc<Window>,
@@ -104,19 +113,37 @@ impl RenderSystem
         runtime: &mut Runtime,
         with_ui_renderer: bool,
         specific_backend: Option<Backend>,
+        player_settings: &PlayerSettings,
     ) -> Self
-    {    
+    {
         let render_data = RenderData::new(time, &window);
 
         let main_raymarch_shader_pipeline = Arc::new(Mutex::new((None, None)));
-        
+
+        // the raymarch shader is heavy enough that rendering more frames than the
+        // main loop produces is pure waste, so the renderer is paced by the same
+        // target frame rate as the simulation
+        let target_frame_duration = time.target_frame_duration.as_secs_f64();
+
+        // 1.0 means the raymarch shader renders in the native screen resolution,
+        // lower values render into a smaller texture which is upscaled afterwards
+        let screen_resolution_scale = player_settings
+            .screen_resolution_scale
+            .clamp(MIN_SCREEN_RESOLUTION_SCALE, MAX_SCREEN_RESOLUTION_SCALE);
+
+        log::info!(
+            "render system: screen_resolution_scale is {}, shadows_enable is {}, target frame rate is {:.1}",
+            screen_resolution_scale,
+            player_settings.shadows_enable,
+            1.0 / target_frame_duration,
+        );
+
         let (renderer, buffers, render_pipeline_builder_kit) = Renderer::new(
                 &window,
                 &render_data,
                 ui,
-                0.008,
-                // time.target_frame_duration.as_secs_f64(),
-                1.0,
+                target_frame_duration,
+                screen_resolution_scale,
                 with_ui_renderer,
                 specific_backend,
                 main_raymarch_shader_pipeline.clone(),
@@ -190,7 +217,7 @@ impl RenderSystem
         log::info!("render system: renderer init");
 
         let render_quality_data = RenderQualityData {
-            shadows_enabled: true,
+            shadows_enabled: player_settings.shadows_enable,
         };
 
         let window_size = window.inner_size();
