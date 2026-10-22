@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use crate::engine::{render::{render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
+use crate::engine::{render::{MainShaderRenderPipelineBuilderKit, render_data::RenderData, ui_renderer::UIRenderer}, ui::UISystem};
 
 use image::{GenericImageView, ImageBuffer, Rgba};
 use winit::window::Window;
 use wgpu::{
-    Backend, BackendOptions, BindGroup, Buffer, BufferUsages, Color, ExperimentalFeatures, Extent3d, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions, PollStatus, Sampler, ShaderRuntimeChecks, TexelCopyBufferLayout, TexelCopyTextureInfoBase, Texture, TextureView, rwh::{
+    Backend, BackendOptions, BindGroup, Buffer, BufferUsages, Color, Device, ExperimentalFeatures, Extent3d, InstanceFlags, MemoryBudgetThresholds, PipelineCompilationOptions, PipelineLayout, PollStatus, RenderPipeline, Sampler, ShaderRuntimeChecks, TexelCopyBufferLayout, TexelCopyTextureInfoBase, Texture, TextureView, rwh::{
         HasDisplayHandle,
         HasWindowHandle
     }, util::{
@@ -20,11 +20,15 @@ use wgpu::{
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
     position: [f32; 3],
+    position_rel: [f32; 2],
 }
 
 impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 1] =
-        wgpu::vertex_attr_array![0 => Float32x3];
+    const ATTRIBS: [wgpu::VertexAttribute; 2] =
+        wgpu::vertex_attr_array![
+            0 => Float32x3,
+            1 => Float32x2
+        ];
 
     fn desc() -> wgpu::VertexBufferLayout<'static> {
         use std::mem;
@@ -39,16 +43,26 @@ impl Vertex {
 
 
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [-1.0, 3.0, 0.0]},
-    Vertex { position: [3.0, -1.0, 0.0]},
-    Vertex { position: [-1.0, -1.0, 0.0]},
+    Vertex { position: [-1.0, 3.0, 0.0], position_rel: [-1.0, 3.0]},
+    Vertex { position: [3.0, -1.0, 0.0], position_rel: [3.0, -1.0]},
+    Vertex { position: [-1.0, -1.0, 0.0], position_rel: [-1.0, -1.0]},
 ];
 
 const INDICES: &[u16] = &[0, 2, 1];
 
+const VERTICES_MINIMAP: &[Vertex] = &[
+    Vertex { position: [0.2, -0.9 , 0.0], position_rel: [-1.0, -1.0]},
+    Vertex { position: [0.9, -0.2, 0.0], position_rel: [1.0, 1.0]},
+    Vertex { position: [0.2, -0.2, 0.0], position_rel: [-1.0, 1.0]},
+    Vertex { position: [0.9, -0.9, 0.0], position_rel: [1.0, -1.0]},
+];
+
+const INDICES_MINIMAP: &[u16] = &[0, 2, 1, 0, 3, 1];
+
 pub struct RendererBuffers
 {
     pub other_dynamic_data_buffer: Buffer,
+    pub other_static_data_buffer: Buffer,
     pub dynamic_negative_shapes_buffer: Buffer,
     pub dynamic_normal_shapes_buffer: Buffer,
     pub dynamic_stickiness_shapes_buffer: Buffer,
@@ -69,7 +83,7 @@ pub struct Renderer {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
 
-    raymarch_render_pipeline: wgpu::RenderPipeline,
+    // xwz_minimap_shader_render_pipeline: wgpu::RenderPipeline,
     raymarch_target_texture: wgpu::Texture,
     raymarch_target_texture_view: wgpu::TextureView,
 
@@ -84,6 +98,11 @@ pub struct Renderer {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
+
+    vertex_buffer_minimap: wgpu::Buffer,
+    index_buffer_minimap: wgpu::Buffer,
+    num_indices_minimap: u32,
+
     uniform_bind_group_0: BindGroup,
     uniform_bind_group_1: BindGroup,
 
@@ -102,6 +121,7 @@ pub struct Renderer {
 
     ui_renderer: UIRenderer,
     with_ui_renderer: bool,
+    main_raymarch_shader_pipeline: Arc<Mutex<(Option<RenderPipeline>, Option<RenderPipeline>)>>,
 }
 
 impl Drop for Renderer {
@@ -217,12 +237,10 @@ impl Renderer {
         ui_system: &mut UISystem,
         target_frame_duration: f64,
         raymarch_target_texture_scale_factor: f32,
-        sky_box_name: &str,
-        it_is_2d_3d_example: bool,
         with_ui_renderer: bool,
-        with_generated_raymarch_shader: bool,
-        specific_backend: Option<Backend>
-    ) -> (Renderer, RendererBuffers)
+        specific_backend: Option<Backend>,
+        main_raymarch_shader_pipeline: Arc<Mutex<(Option<RenderPipeline>, Option<RenderPipeline>)>>,
+    ) -> (Renderer, RendererBuffers, MainShaderRenderPipelineBuilderKit)
     {
         let size = window.inner_size();
 
@@ -342,50 +360,50 @@ impl Renderer {
         surface.configure(&device, &config);
         log::info!("renderer: wgpu surface configurated");
 
-        let raymarch_shader = unsafe {device.create_shader_module_trusted(
-            wgpu::ShaderModuleDescriptor {
-                label: Some("Raymarch Shader"),
-                source:
-                {
-                    if it_is_2d_3d_example
-                    {
-                        if with_generated_raymarch_shader
-                        {
-                            wgpu::ShaderSource::Wgsl
-                            (
-                                include_str!("shaders/raymarch_shader_for_2d_3d_example_with_bsp_tree.wgsl").into()
-                            )
+        // let blank_raymarch_shader = unsafe {device.create_shader_module_trusted(
+        //     wgpu::ShaderModuleDescriptor {
+        //         label: Some("Raymarch Shader"),
+        //         source:
+        //         {
+        //             if it_is_2d_3d_example
+        //             {
+        //                 if with_generated_raymarch_shader
+        //                 {
+        //                     wgpu::ShaderSource::Wgsl
+        //                     (
+        //                         include_str!("shaders/raymarch_shader_for_2d_3d_example_with_bsp_tree.wgsl").into()
+        //                     )
 
-                        }
-                        else
-                        {
-                            wgpu::ShaderSource::Wgsl
-                            (
-                                include_str!("shaders/raymarch_shader_for_2d_3d_example.wgsl").into()
-                            )
-                        }
-                    }
-                    else
-                    {
-                        if with_generated_raymarch_shader
-                        {
-                            wgpu::ShaderSource::Wgsl
-                            (
-                                include_str!("shaders/raymarch_shader_with_bsp_tree.wgsl").into()
-                            )
-                        }
-                        else
-                        {
-                            wgpu::ShaderSource::Wgsl
-                            (
-                                include_str!("shaders/raymarch_shader.wgsl").into()
-                            )
-                        }
-                    }
-                }
-            },
-            ShaderRuntimeChecks::unchecked()
-        )};
+        //                 }
+        //                 else
+        //                 {
+        //                     wgpu::ShaderSource::Wgsl
+        //                     (
+        //                         include_str!("shaders/raymarch_shader_for_2d_3d_example.wgsl").into()
+        //                     )
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 if with_generated_raymarch_shader
+        //                 {
+        //                     wgpu::ShaderSource::Wgsl
+        //                     (
+        //                         include_str!("shaders/raymarch_shader_with_bsp_tree.wgsl").into()
+        //                     )
+        //                 }
+        //                 else
+        //                 {
+        //                     wgpu::ShaderSource::Wgsl
+        //                     (
+        //                         include_str!("shaders/raymarch_shader.wgsl").into()
+        //                     )
+        //                 }
+        //             }
+        //         }
+        //     },
+        //     ShaderRuntimeChecks::unchecked()
+        // )};
 
         let upscale_shader = unsafe {device.create_shader_module_trusted(
             wgpu::ShaderModuleDescriptor {
@@ -397,7 +415,7 @@ impl Renderer {
 
         log::info!("renderer: wgpu shaders init");
 
-        let other_static_data = device.create_buffer_init(&BufferInitDescriptor {
+        let other_static_data_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("other_static_data"),
             contents: bytemuck::cast_slice(&[render_data.static_data.other_static_data]),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
@@ -610,8 +628,7 @@ impl Renderer {
 
         let (sky_box_texture, sky_box_texture_view) = load_cube_texture(
             &device,
-            &queue,
-            sky_box_name,
+            &queue
         );
 
         let sky_box_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -629,7 +646,7 @@ impl Renderer {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: other_static_data.as_entire_binding(),
+                    resource: other_static_data_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
@@ -703,11 +720,19 @@ impl Renderer {
 
         log::info!("renderer: wgpu render_pipeline_layout init");
 
-        let raymarch_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let xwz_minimap_shader = unsafe {device.create_shader_module_trusted(
+            wgpu::ShaderModuleDescriptor {
+                label: Some("XWZ Minimap Shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("shaders/xwz_minimap_shader.wgsl").into())
+            },
+            ShaderRuntimeChecks::unchecked()
+        )};
+
+        let xwz_minimap_shader_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("main shader render pipeline"),
             layout: Some(&raymarch_render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &raymarch_shader,
+                module: &xwz_minimap_shader,
                 entry_point: Some("vs_main"),
                 compilation_options: PipelineCompilationOptions::default(), 
                 buffers: &[
@@ -715,12 +740,12 @@ impl Renderer {
                 ],
             },
             fragment: Some(wgpu::FragmentState {
-                module: &raymarch_shader,
+                module: &xwz_minimap_shader,
                 compilation_options: PipelineCompilationOptions::default(),
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -844,6 +869,28 @@ impl Renderer {
 
         let num_indices = INDICES.len() as u32;
 
+        let vertex_buffer_minimap = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("main shader vertex buffer"),
+                contents: bytemuck::cast_slice(VERTICES_MINIMAP),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
+
+        log::info!("renderer: wgpu vertex_buffer init");
+
+        let index_buffer_minimap = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("main shader index buffer"),
+                contents: bytemuck::cast_slice(INDICES_MINIMAP),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
+
+        log::info!("renderer: wgpu index_buffer init");
+
+        let num_indices_minimap = INDICES_MINIMAP.len() as u32;
+
         let ui_renderer = UIRenderer::new(
             ui_system,
             &device,
@@ -875,12 +922,13 @@ impl Renderer {
         (
             Renderer {
                 surface,
-                device,
+                device: device.clone(),
                 queue: Arc::new(queue),
-                config, 
+                config: config.clone(), 
                 size,
 
-                raymarch_render_pipeline,
+                // raymarch_render_pipeline,
+                // xwz_minimap_shader_render_pipeline,
                 upscale_render_pipeline,
                 upscale_render_bind_group_layout,
                 upscale_render_bind_group,
@@ -894,10 +942,13 @@ impl Renderer {
                 num_indices,
                 vertex_buffer,
                 index_buffer,
+
+                index_buffer_minimap,
+                vertex_buffer_minimap,
+                num_indices_minimap,
+
                 uniform_bind_group_0,
                 uniform_bind_group_1,
-
-                
 
                 total_frames_count: 0u64,
                 total_time: 0.0,
@@ -912,9 +963,11 @@ impl Renderer {
 
                 ui_renderer,
                 with_ui_renderer,
+                main_raymarch_shader_pipeline,
             },
             
             RendererBuffers {
+                other_static_data_buffer,
                 dynamic_normal_shapes_buffer,
                 dynamic_stickiness_shapes_buffer,
                 dynamic_negative_shapes_buffer,
@@ -925,6 +978,13 @@ impl Renderer {
                 spherical_areas_data_buffer,
                 beam_areas_data_buffer,
                 player_forms_data_buffer,
+            },
+
+            MainShaderRenderPipelineBuilderKit {
+                device: device.clone(),
+                vertex_desc: Vertex::desc(),
+                config: config.clone(),
+                raymarch_render_pipeline_layout,
             }
         )
     }
@@ -1020,120 +1080,161 @@ impl Renderer {
             Err(e) => {
                 panic!("{}", e);
             } 
-
+            
         }
 
-        if let Some(instant) = self.prev_time_instant {
-            let current_frame_time = instant.elapsed().as_secs_f64();
+        let (main_shader, minimap_shader) = &*self.main_raymarch_shader_pipeline.lock().unwrap();
 
-            if current_frame_time < self.target_frame_duration - 0.001 {
-                return Ok(());
+        match main_shader {
+            Some(main_shader_pipeline) =>
+            {
+        
+                if let Some(instant) = self.prev_time_instant {
+                    let current_frame_time = instant.elapsed().as_secs_f64();
+
+                    if current_frame_time < self.target_frame_duration - 0.001 {
+                        return Ok(());
+                    }
+
+                    self.total_time += current_frame_time;
+                    self.total_frames_count += 1;
+                    self.min_time = self.min_time.min(current_frame_time);
+                    self.max_time = self.max_time.max(current_frame_time);
+
+                    // println!(
+                    //     "DT: {}",
+                    //     current_frame_time,
+                    // );
+                }
+
+                self.prev_time_instant = Some(web_time::Instant::now());
+                
+                let output = self.surface.get_current_texture()?;
+                let view = output
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+                let mut encoder = self
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("main shader render encoder"),
+                    });
+        
+            {
+                // raymarch render pass
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("raymarch shader render pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &self.raymarch_target_texture_view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(
+                                Color {
+                                    r: 0.0,
+                                    g: 0.0,
+                                    b: 0.0,
+                                    a: 1.0
+                                }
+                            ),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+
+                render_pass.set_pipeline(main_shader_pipeline);
+                render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
+                render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
+                render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
             }
 
-            self.total_time += current_frame_time;
-            self.total_frames_count += 1;
-            self.min_time = self.min_time.min(current_frame_time);
-            self.max_time = self.max_time.max(current_frame_time);
+            if minimap_shader.is_some()
+            {
+                // xwz minimap render pass
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("xwz minimap shader render pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &self.raymarch_target_texture_view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
 
-            // println!(
-            //     "DT: {}",
-            //     current_frame_time,
-            // );
-        }
+                render_pass.set_pipeline(minimap_shader.as_ref().unwrap());
+                render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
+                render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
+                render_pass.set_vertex_buffer(0, self.vertex_buffer_minimap.slice(..));
+                render_pass.set_index_buffer(self.index_buffer_minimap.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.num_indices_minimap, 0, 0..1);
+            }
 
-        self.prev_time_instant = Some(web_time::Instant::now());
-        
-        let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("main shader render encoder"),
-            });
+            {
+                // upscale raymarch target texture render pass
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("upscale shader render pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(
+                                Color {
+                                    r: 0.0,
+                                    g: 0.0,
+                                    b: 0.0,
+                                    a: 1.0
+                                }
+                            ),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+
+                render_pass.set_pipeline(&self.upscale_render_pipeline);
+                render_pass.set_bind_group(0, &self.upscale_render_bind_group, &[]);
+                render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            }
+
+            if self.with_ui_renderer
+            {
+                self.ui_renderer.render_ui(&mut encoder, &view);
+            }
+
+            // let istts = web_time::Instant::now();
+            self.queue.submit(std::iter::once(encoder.finish()));
+            // println!("submit time: {}",istts.elapsed().as_secs_f64());
+
+            window.pre_present_notify();
             
-        {
-            // raymarch render pass
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("raymarch shader render pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.raymarch_target_texture_view,
-                    depth_slice: None,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(
-                            Color {
-                                r: 1.0,
-                                g: 1.0,
-                                b: 1.0,
-                                a: 1.0
-                            }
-                        ),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
+            // let istts = web_time::Instant::now();
+            output.present();
+            // println!("output time: {}",istts.elapsed().as_secs_f64());
 
-            render_pass.set_pipeline(&self.raymarch_render_pipeline);
-            render_pass.set_bind_group(0, &self.uniform_bind_group_0, &[]);
-            render_pass.set_bind_group(1, &self.uniform_bind_group_1, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            // println!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
+            },
+            None =>
+            {
+
+            },
         }
-
-        {
-            // upscale raymarch target texture render pass
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("upscale shader render pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    depth_slice: None,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(
-                            Color {
-                                r: 1.0,
-                                g: 1.0,
-                                b: 1.0,
-                                a: 1.0
-                            }
-                        ),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            render_pass.set_pipeline(&self.upscale_render_pipeline);
-            render_pass.set_bind_group(0, &self.upscale_render_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
-        }
-
-        if self.with_ui_renderer
-        {
-            self.ui_renderer.render_ui(&mut encoder, &view);
-        }
-
-        // let istts = web_time::Instant::now();
-        self.queue.submit(std::iter::once(encoder.finish()));
-        // println!("submit time: {}",istts.elapsed().as_secs_f64());
-
-        window.pre_present_notify();
+            
         
-        // let istts = web_time::Instant::now();
-        output.present();
-        // println!("output time: {}",istts.elapsed().as_secs_f64());
-
-        // println!("RENDER TIME in RENDERER {}", instatnt_full.elapsed().as_secs_f64());
         Ok(())
     }
 
@@ -1148,35 +1249,18 @@ fn load_texture(device: &wgpu::Device, queue: &wgpu::Queue, texture_buffer: &[u8
     (rgba, (width, height))
 }
 
-fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue, sky_box_name: &str) -> (wgpu::Texture, wgpu::TextureView) {
+fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> (wgpu::Texture, wgpu::TextureView) {
     let path = "src/assets/sky_boxes/".to_string();
 
     let faces = {
-        match sky_box_name {
-            "star_sky" => {
-                [
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_right1.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_left2.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_top3.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_bottom4.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_front5.png").as_slice(),
-                    include_bytes!("../../assets/sky_boxes/star_sky/star_sky_back6.png").as_slice(),
-                ]
-            }
-            "blue_stars" => {
-                
-                unimplemented!()
-                // [
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_right1.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_left2.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_top3.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_bottom4.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_front5.png").as_slice(),
-                //     include_bytes!("../../assets/sky_boxes/blue_stars/blue_stars_back6.png").as_slice(),
-                // ]
-            }
-            _ => panic!("sky box with this name is not exist")
-        }
+        [
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_right1.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_left2.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_top3.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_bottom4.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_front5.png").as_slice(),
+            include_bytes!("../../assets/sky_boxes/star_sky/star_sky_back6.png").as_slice(),
+        ]
     };
 
     let mut textures_data = Vec::new();

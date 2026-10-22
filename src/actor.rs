@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod main_player;
 pub mod diamond;
@@ -36,11 +25,19 @@ pub mod shotgun_shot_source;
 pub mod shotgun_laser_shot;
 pub mod observer;
 pub mod obstaclesgun_shot;
+pub mod obstacle_course_free_movement_player;
+pub mod triggering_wandering_actor;
+pub mod trigger;
+pub mod trgger_orb;
+pub mod final_trigger;
+pub mod triggering_special_lift;
+pub mod droped_rotator_tool;
+pub mod new_spawn_area;
 
 use std::fmt::Display;
 
 use crate::{
-    actor::{flag_base::{FlagBase, FlagBaseMessage}, obstaclesgun_shot::ObstaclesGunShot}, engine::{
+    actor::{droped_rotator_tool::{DropedRotatorTool, DropedRotatorToolMessage}, final_trigger::{FinalTrgger, FinalTrggerMessage}, flag_base::{FlagBase, FlagBaseMessage}, new_spawn_area::{NewSpawnArea, NewSpawnAreaMessage}, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, obstaclesgun_shot::ObstaclesGunShot, trgger_orb::{TriggerOrb, TriggerOrbMessage}, trigger::{Trigger, TriggerMessage}, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor}, engine::{
         audio::AudioSystem,
         effects::EffectsSystem,
         engine_handle::EngineHandle,
@@ -147,6 +144,26 @@ pub trait Actor {
         self.set_id(id);
     }
 
+    fn on_added_to_world(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
+    ) {}
+
+    fn on_level_loaded(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
+    ) {}
+
 }
 
 pub enum ActorWrapper {
@@ -172,6 +189,14 @@ pub enum ActorWrapper {
     Observer(Observer),
     Diamond,
     Exit,
+    ObstacleCourseFreeMovementPlayer(ObstacleCourseFreeMovementPlayer),
+    Trigger(Trigger),
+    FinalTrigger(FinalTrgger),
+    TriggeringWanderingActor(TriggeringWanderingActor),
+    TriggeringSpecialLiftActor(TriggeringSpecialLiftActor),
+    TriggerOrb(TriggerOrb),
+    DropedRotatorTool(DropedRotatorTool),
+    NewSpawnArea(NewSpawnArea),
 }
 
 impl Display for ActorWrapper
@@ -201,6 +226,14 @@ impl Display for ActorWrapper
             ActorWrapper::Observer(_) => "Observer",
             ActorWrapper::Diamond => "Diamond",
             ActorWrapper::Exit => "Exit",
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(_) => "ObstacleCourseFreeMovementPlayer",
+            ActorWrapper::Trigger(_) => "Trigger",
+            ActorWrapper::FinalTrigger(_) => "FinalTrgger",
+            ActorWrapper::TriggeringWanderingActor(_) => "TriggeringWanderingActor",
+            ActorWrapper::TriggeringSpecialLiftActor(_) => "TriggeringSpecialLiftActor",
+            ActorWrapper::TriggerOrb(_) => "TriggerOrb",
+            ActorWrapper::DropedRotatorTool(_) => "DropedRotatorTool",
+            ActorWrapper::NewSpawnArea(_) => "NewSpawnArea",
         };
 
         write!(f, "Actor: {}", actor_type)
@@ -209,6 +242,105 @@ impl Display for ActorWrapper
 
 impl Actor for ActorWrapper {
 
+    fn on_level_loaded(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
+    )
+    {
+        match  self {
+            ActorWrapper::MainPlayer(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::HoleGunShot(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::HoleGunMiss(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::PlayersDoll(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::PlayersDeathExplosion(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::MachinegunShot(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::ShootingImpact(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::SessionController(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Wave(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::MoverW(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::ShotgunShotSource(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::ShotgunLaserShot(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Observer(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::FlagBase(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
+                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
+        }
+    }
     fn get_transform(&self) -> &Transform {
         match self {
             ActorWrapper::MainPlayer(actor) => {
@@ -269,6 +401,30 @@ impl Actor for ActorWrapper {
                 actor.get_transform()
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_transform()
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
                 actor.get_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -336,6 +492,30 @@ impl Actor for ActorWrapper {
                 actor.get_mut_transform()
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_mut_transform()
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
                 actor.get_mut_transform()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -414,6 +594,30 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
             }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
+                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -490,6 +694,30 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
             }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
+                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -555,6 +783,30 @@ impl Actor for ActorWrapper {
                 actor.get_physical_element()
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_physical_element()
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
                 actor.get_physical_element()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -624,6 +876,30 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_visual_element()
             }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_visual_element()
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
+                actor.get_visual_element()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -689,6 +965,30 @@ impl Actor for ActorWrapper {
                 actor.get_id()
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_id()
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
                 actor.get_id()
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -758,6 +1058,30 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.change_id(id, engine_handle)
             }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.change_id(id, engine_handle)
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
+                actor.change_id(id, engine_handle)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -823,6 +1147,30 @@ impl Actor for ActorWrapper {
                 actor.set_id(id)
             }
             ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.set_id(id)
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
                 actor.set_id(id)
             }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
@@ -893,6 +1241,30 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_actor_as_controlled()
             }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_actor_as_controlled()
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.get_actor_as_controlled()
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.get_actor_as_controlled()
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.get_actor_as_controlled()
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.get_actor_as_controlled()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_actor_as_controlled()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_actor_as_controlled()
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
+                actor.get_actor_as_controlled()
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -961,6 +1333,131 @@ impl Actor for ActorWrapper {
             ActorWrapper::ObstaclesGunShot(actor) => {
                 actor.get_actor_as_controlled_mut()
             }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
+                actor.get_actor_as_controlled_mut()
+            }
+            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
+            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
+        }
+    }
+
+
+    fn on_added_to_world(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
+    )
+    {
+        match  self {
+            ActorWrapper::MainPlayer(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::WonderingActor(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::HoleGunShot(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::HoleGunMiss(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::PlayersDoll(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::PlayersDeathExplosion(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::MachinegunShot(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::ShootingImpact(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            },
+            ActorWrapper::SessionController(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Flag(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Hole(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::MoveWBonusSpot(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Wave(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::MoverW(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::PlayerFor2d3dExample(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::ShotgunShotSource(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::ShotgunLaserShot(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Observer(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::FlagBase(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::ObstaclesGunShot(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::Trigger(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggerOrb(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggeringWanderingActor(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::FinalTrigger(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::DropedRotatorTool(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
+            ActorWrapper::NewSpawnArea(actor) => {
+                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
+            }
             ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
             ActorWrapper::Exit => {unreachable!("try to get access to exit")},
         }
@@ -1007,19 +1504,24 @@ pub enum CommonActorsMessage {
 #[derive(Clone)]
 pub enum SpecificActorMessage {
     SessionControllerMessage(SessionControllerMessage),
+    DropedRotatorToolMessage(DropedRotatorToolMessage),
     MoveWBonusSpotMessage(MoveWBonusSpotMessage),
+    FinalTrggerMessage(FinalTrggerMessage),
     PlayersDollMessage(PlayersDollMessage),
+    TriggerOrbMessage(TriggerOrbMessage),
+    NewSpawnArea(NewSpawnAreaMessage),
     FlagBaseMessage(FlagBaseMessage),
+    TriggerMessage(TriggerMessage),
     PlayerMessage(PlayerMessage),
     FlagMessage(FlagMessage),
-    MoverW(MoverWMessage)
+    MoverW(MoverWMessage),
 }
 
 #[derive(Clone)]
 pub enum PhysicsMessages {
     KinematicColliderMessage(KinematicColliderMessage),
-    StaticColliderMessage(StaticColliderMessage),
     DynamicColliderMessage(DynamicColliderMessage),
+    StaticColliderMessage(StaticColliderMessage),
     AreaMessage(AreaMessage),
 }
 
@@ -1034,7 +1536,6 @@ pub trait ControlledActor {
 
     fn spawn(
         &mut self,
-        spawns: &mut Vec<Spawn>,
         physics_system: &PhysicsSystem,
         ui_system: &mut UISystem,
         audio_system: &mut AudioSystem,

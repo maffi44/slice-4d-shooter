@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use client_server_protocol::{
     NetCommand,
@@ -23,7 +12,7 @@ use client_server_protocol::{
     Team
 };
 use fyrox_core::math::lerpf;
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{Rng, seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
@@ -83,12 +72,12 @@ pub struct PlayerFor2d3dExample {
 
     active_hands_slot: ActiveHandsSlot, 
 
-    hands_slot_0: Box<dyn Device>,
-    hands_slot_1: Option<Box<dyn Device>>,
-    hands_slot_2: Option<Box<dyn Device>>,
-    hands_slot_3: Option<Box<dyn Device>>,
+    hands_slot_0: Box<dyn Device + Send>,
+    hands_slot_1: Option<Box<dyn Device + Send>>,
+    hands_slot_2: Option<Box<dyn Device + Send>>,
+    hands_slot_3: Option<Box<dyn Device + Send>>,
 
-    devices: [Option<Box<dyn Device>>; 4],
+    devices: [Option<Box<dyn Device + Send>>; 4],
 
     pub player_settings: PlayerSettings,
 
@@ -115,6 +104,9 @@ pub struct PlayerFor2d3dExample {
 
     camera_dynamic_offset: Vec4,
     camera_dynamic_offset_target: Vec4,
+
+    red_spawn_points: Vec<Vec4>,
+    blue_spawn_points: Vec<Vec4>,
 }
 
 impl Actor for PlayerFor2d3dExample {
@@ -386,14 +378,15 @@ impl Actor for PlayerFor2d3dExample {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
                         }
                     },
@@ -412,14 +405,15 @@ impl Actor for PlayerFor2d3dExample {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
 
                             }
 
@@ -438,14 +432,15 @@ impl Actor for PlayerFor2d3dExample {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
 
                             SessionControllerMessage::TeamWin(team) =>
@@ -973,17 +968,17 @@ impl Actor for PlayerFor2d3dExample {
             );
         }
 
-        main_player::process_w_rotation_sound(
-            audio_system,
-            &mut self.inner_state,
-            delta,
-        );
+        // main_player::process_w_rotation_sound(
+        //     audio_system,
+        //     &mut self.inner_state,
+        //     delta,
+        // );
 
-        main_player::process_w_shift_sound(
-            audio_system,
-            &mut self.inner_state,
-            true
-        );
+        // main_player::process_w_shift_sound(
+        //     audio_system,
+        //     &mut self.inner_state,
+        //     true
+        // );
 
         self.inner_state.process_crosshair_size_and_ui(ui_system, delta);
 
@@ -1045,7 +1040,7 @@ fn process_player_for_example_rotation(
             input.mouse_axis.y *
             *player_settings.mouse_sensivity.lock().unwrap() +
             yz
-        ).clamp(-PI/2.0, PI/2.0);
+        );
         
     } else {
 
@@ -1108,14 +1103,14 @@ fn process_player_for_example_rotation(
             }
         };
 
-        xz = lerpf(
-            xz,
-            target_zw_angle,
-            delta * 4.8 * rotation_speed
-        );
-        if (xz - target_zw_angle).abs() < 0.001 {
-            xz = target_zw_angle;
-        }
+        // xz = lerpf(
+        //     xz,
+        //     target_zw_angle,
+        //     delta * 4.8 * rotation_speed
+        // );
+        // if (xz - target_zw_angle).abs() < 0.001 {
+        //     xz = target_zw_angle;
+        // }
 
         yz = (
             input.mouse_axis.y *
@@ -1193,15 +1188,15 @@ fn process_player_for_example_movement_input(
 
     if input.move_right.is_action_pressed() {
         movement_vec += FORWARD;
-        player_doll_input_state.move_forward = true;
-        model_has_left_orientation_current = true;
+        // player_doll_input_state.move_forward = true;
+        // model_has_left_orientation_current = true;
 
     }
 
     if input.move_left.is_action_pressed() {
         movement_vec += BACKWARD;
-        player_doll_input_state.move_backward = true;
-        model_has_left_orientation_current = false;
+        // player_doll_input_state.move_backward = true;
+        // model_has_left_orientation_current = false;
 
     }
 
@@ -1233,6 +1228,8 @@ fn process_player_for_example_movement_input(
         None => movement_vec = Vec4::ZERO,
     }
 
+    movement_vec = inner_state.get_rotation_matrix() * movement_vec;
+
     // lock player on w axis 
     let w_dif = current_w_position_target - inner_state.get_position().w;
     inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
@@ -1240,7 +1237,7 @@ fn process_player_for_example_movement_input(
         player_settings.gravity_w_speed*25.0
     );
 
-    inner_state.collider.add_force(Vec4::NEG_X * player_settings.gravity_w_speed * delta);
+    // inner_state.collider.add_force(Vec4::NEG_X * player_settings.gravity_w_speed * delta);
 
     inner_state.collider.add_force(DOWN * player_settings.gravity_y_speed * delta);
 
@@ -1270,7 +1267,8 @@ impl PlayerFor2d3dExample {
         audio_system: &mut AudioSystem,
         blue_base_position: Vec4,
         red_base_position: Vec4,
-
+        red_spawn_points: Vec<Vec4>,
+        blue_spawn_points: Vec<Vec4>,
     ) -> Self {
         
         let screen_effects = PlayerScreenEffects {
@@ -1319,6 +1317,24 @@ impl PlayerFor2d3dExample {
                 }
             )
         ];
+
+        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::RotatingAroundW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
+        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::ShiftingAlongW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
         
         PlayerFor2d3dExample {
             id: None,
@@ -1328,11 +1344,10 @@ impl PlayerFor2d3dExample {
                 &player_settings,
                 false,
                 false,
-                blue_base_position,
-                red_base_position,
                 UP*0.6,
                 Vec4::ZERO,
-                audio_system,
+                rotating_around_w_sound_handle,
+                shifting_along_w_sound_handle,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
 
@@ -1398,6 +1413,9 @@ impl PlayerFor2d3dExample {
 
             camera_dynamic_offset: Vec4::ZERO,
             camera_dynamic_offset_target: Vec4::ZERO,
+
+            red_spawn_points,
+            blue_spawn_points,
         }
     }
 
@@ -1522,21 +1540,33 @@ impl ControlledActor for PlayerFor2d3dExample
 
     fn spawn(
         &mut self,
-        spawns: &mut Vec<Spawn>,
         physics_system: &PhysicsSystem,
         ui_system: &mut UISystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
-        let mut rng = thread_rng();
-        spawns.shuffle(&mut rng);
+        let spawns: &Vec<Vec4>;
 
-        let mut current_spawn = spawns.last().expect("spawns in respawn function has zero length");
+        match self.get_team()
+        {
+            Team::Red => 
+            {
+                spawns = &self.red_spawn_points;
+            },
+            Team::Blue =>
+            {
+                spawns = &self.blue_spawn_points;
+            },
+        }
+        let mut rng = thread_rng();
+
+        let rand_index: usize = rng.gen_range(0..spawns.len());
+        let mut current_spawn = *spawns.get(rand_index).expect("Main Player haven't spawn points");
 
         for spawn in spawns.iter()
         {
             let hits = physics_system.sphere_cast_on_dynamic_colliders(
-                spawn.spawn_position,
+                *spawn,
                 self.inner_state.get_collider_radius(),
                 Some(self.get_id().expect("Player hasn't ActorID"))
             );
@@ -1551,13 +1581,13 @@ impl ControlledActor for PlayerFor2d3dExample
                 }
             }
 
-            current_spawn = spawn;
+            current_spawn = *spawn;
             
             break;
         };
 
         let hits = physics_system.sphere_cast_on_dynamic_colliders(
-            current_spawn.spawn_position,
+            current_spawn,
             self.inner_state.get_collider_radius(),
             Some(self.get_id().expect("Player hasn't ActorID"))
         );
@@ -1689,9 +1719,9 @@ impl ControlledActor for PlayerFor2d3dExample
 
         self.inner_state.collider.reset_forces_and_velocity();
 
-        self.inner_state.transform = Transform::from_position(current_spawn.spawn_position);
+        self.inner_state.transform = Transform::from_position(current_spawn);
 
-        self.inner_state.player_previous_w_position = current_spawn.spawn_position.w;
+        self.inner_state.player_previous_w_position = current_spawn.w;
 
         let player_doll_input_state = PlayerDollInputState {
             move_forward: false,

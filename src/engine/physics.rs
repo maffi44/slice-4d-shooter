@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod physics_system_data;
 pub mod colliders_container;
@@ -64,9 +53,9 @@ pub struct PhysicsSystem {
 
 
 impl PhysicsSystem {
-    pub fn new(world: &World) -> Self {
+    pub fn new() -> Self {
         
-        let physics_state = PhysicsState::new(world);
+        let physics_state = PhysicsState::new();
 
         log::info!("physics system: static_colliders_data init");
 
@@ -78,6 +67,13 @@ impl PhysicsSystem {
             physics_state,
         }
     }
+
+
+    pub fn set_new_level(&mut self, world: &World)
+    {
+        self.physics_state.update_level_static_info(world);
+    }
+
 
     pub fn process_physics(
         &mut self,

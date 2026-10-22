@@ -13,7 +13,7 @@ use self::{
 use glam::Vec4;
 use winit::{dpi::PhysicalSize, window::Window};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct BoundingBox {
     pos_surfs: Vec4,
     neg_surfs: Vec4,
@@ -63,8 +63,10 @@ pub struct RenderData {
 }
 
 impl RenderData {
-    pub fn new(world: &World, time: &TimeSystem, window: &Window) -> Self {
-        let static_data = StaticRenderData::new(world);
+    pub fn new(
+        // world: &World,
+        time: &TimeSystem, window: &Window) -> Self {
+        let static_data = StaticRenderData::new();
         let dynamic_data = DynamicRenderData::new();
 
         RenderData {

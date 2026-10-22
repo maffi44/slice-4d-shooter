@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 struct CameraUniform {
     cam_pos: vec4<f32>,
@@ -690,6 +679,24 @@ fn plane_w_intersect( ro: vec4<f32>, rd: vec4<f32>, h: f32 ) -> f32
     return (ro.w-h)/-rd.w;
 }
 
+// fn tri_intersect( ro: vec4<f32>, rd: vec4<f32>, v0: vec4<f32>, v1: vec4<f32>, v2: vec4<f32> ) -> f32
+// {
+//     let v1v0 = v1 - v0;
+//     let v2v0 = v2 - v0;
+//     let rov0 = ro - v0;
+//     let n = cross( v1v0, v2v0 );
+//     let q = cross( rov0, rd );
+//     let d = 1.0/dot( rd, n );
+//     let u = d*dot( -q, v2v0 );
+//     let v = d*dot(  q, v1v0 );
+//     var t = d*dot( -n, rov0 );
+//     if ( u<0.0 || v<0.0 || (u+v)>1.0 )
+//     {
+//         t = -1.0;
+//     }
+//     return t;
+// }
+
 var<private> intr_normal: array<vec2<f32>, 32>;
 var<private> intr_normal_size: u32 = 0u;
 var<private> intr_neg: array<vec2<f32>, 32>;
@@ -1205,8 +1212,8 @@ fn find_intersections(ro: vec4<f32>, rdd: vec4<f32>) {
         }
     }
 
-    combine_interscted_entrances_and_exites_for_all_intrs();
     //###find_intersections###
+    combine_interscted_entrances_and_exites_for_all_intrs();
 }
 
 
@@ -1248,7 +1255,7 @@ fn map(p: vec4<f32>, intr_players: bool) -> f32 {
         if (i < dynamic_data.shapes_arrays_metadata.s_neg_spheres_start) {
             d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         } else if (i < dynamic_data.shapes_arrays_metadata.s_neg_sph_cubes_start) {
-            d = smax(d, -(sd_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
+            d = smax(d, -(sd_sphere(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size.x) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         } else {
             d = smax(d, -(sd_sph_box(p - dyn_neg_stickiness_shapes[i].pos, dyn_neg_stickiness_shapes[i].size) - dyn_neg_stickiness_shapes[i].roundness), static_data.stickiness);
         }

@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod static_object;
 pub mod level;
@@ -21,23 +10,16 @@ use self::level::Level;
 
 use crate::{
     actor::{
-        main_player::{
-            player_settings::PlayerSettings,
-            PlayerMessage
-        },
-        Actor,
-        ActorID,
-        ActorWrapper,
-        Message,
-        MessageType,
-        SpecificActorMessage,
+        Actor, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage, main_player::{
+            PlayerMessage, player_settings::PlayerSettings
+        }
     },
     engine::{
         engine_handle::{
             CommandType,
             EngineHandle,
         },
-        physics::PhysicsSystem
+        physics::PhysicsSystem, render::RenderSystem
     },
 };
 
@@ -49,355 +31,50 @@ use super::{
 };
 
 use client_server_protocol::{NetCommand, Team};
+use tokio::task::JoinHandle;
 
 pub struct World {
-    pub level: Level,
+    pub level: Option<Level>,
     pub actors: HashMap<ActorID, ActorWrapper>,
     pub main_actor_id: ActorID,
     pub players_settings: PlayerSettings,
+    pub preloaded_levels: HashMap<String, JoinHandle<Level>>
 }
 
 impl World {
 
-    pub async fn new(engine_handle: &mut EngineHandle, players_settings: PlayerSettings, level_name: String) -> Self {
+    pub async fn new(
+        engine_handle: &mut EngineHandle,
+        players_settings: PlayerSettings,
+        // level_name: String
+    ) -> Self
+    {
         
         // 0 it is id of engine
         // in case when engine send message to the some actor
         // sender property will be 0      
-        let (level, actors) = Level::load_level(level_name).await;
 
         log::info!("world system: level downloaded and init");
 
-        let mut world = World {
-            actors: HashMap::with_capacity(actors.len()*3),
+        let world = World {
+            actors: HashMap::new(),
             players_settings,
-            level,
+            level: None,
             main_actor_id: 0,
+            preloaded_levels: HashMap::with_capacity(2)
         };
 
-        for actor in actors {
-            world.add_actor_to_world(actor, engine_handle);
-        }
+        // engine_handle.send_command(
+        //     Command {
+        //         sender: 0u128,
+        //         command_type: CommandType::LoadNewLevelSync(level_name),
+        //     }
+        // );
 
         world
     }
 
-    pub fn send_messages_and_process_commands(
-        &mut self,
-        net_system: &mut NetSystem,
-        physics_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-    ) {
-        
-        loop {
-                while let Some(message) = engine_handle.boardcast_message_buffer.pop()
-                {
-                    self.send_boardcast_messages(
-                        message,
-                        engine_handle,
-                        physics_system,
-                        audio_system,
-                        ui_system,
-                        time_system,
-                        effects_system,
-                    )                
-                }
-
-                while let Some((to, message)) = engine_handle.direct_message_buffer.pop()
-                {
-                    self.send_direct_messages(
-                        to,
-                        message,
-                        engine_handle,
-                        physics_system,
-                        audio_system,
-                        ui_system,
-                        time_system,
-                        effects_system,
-                    )                
-                }
-
-                while let Some(command) = engine_handle.command_buffer.pop()
-                {
-                    self.execute_command(
-                        command,
-                        net_system,
-                        physics_system,
-                        engine_handle,
-                        audio_system,
-                        ui_system,
-                        time_system,
-                    );
-                }
-
-                if engine_handle.direct_message_buffer.is_empty() &&
-                    engine_handle.boardcast_message_buffer.is_empty() &&
-                    engine_handle.command_buffer.is_empty()
-                {   
-                    return;
-                }
-            }
-    }
-
-    fn execute_command(
-        &mut self,
-        command: Command,
-        net_system: &mut NetSystem,
-        physics_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-    ) {
-        let from = command.sender;
-
-        match command.command_type {
-            CommandType::ShowConnectionStatusUI =>
-            {
-                net_system.set_is_visible_for_connection_status(true);
-            }
-
-            CommandType::RemoveAllHolesAndEffects =>
-            {
-                let mut keys_for_remove = Vec::new();
-
-                for (key, actor) in self.actors.iter()
-                {
-                    match actor {
-                        ActorWrapper::Hole(_) =>
-                        {
-                            keys_for_remove.push(*key);
-                        }
-
-                        ActorWrapper::HoleGunMiss(_) =>
-                        {
-                            keys_for_remove.push(*key);
-                        }
-
-                        ActorWrapper::MachinegunShot(_) =>
-                        {
-                            keys_for_remove.push(*key);
-                        }
-
-                        ActorWrapper::PlayersDeathExplosion(_) =>
-                        {
-                            keys_for_remove.push(*key);
-                        }
-
-                        ActorWrapper::HoleGunShot(_) =>
-                        {
-                            keys_for_remove.push(*key);
-                        }
-
-                        ActorWrapper::ShootingImpact(_) =>
-                        {
-                            keys_for_remove.push(*key);
-                        }
-
-                        _ => {}
-                    }
-                }
-
-                for key in keys_for_remove
-                {
-                    self.actors.remove(&key);
-                }
-            }
-
-            CommandType::SpawnEffect(_) => {}
-
-            CommandType::SpawnActor(actor) =>
-            {
-                self.add_actor_to_world(actor, engine_handle);
-            }
-
-            CommandType::RemoveActor(id) =>
-            {
-                self.remove_actor_from_world(id);
-            }
-
-            CommandType::RespawnPlayer(id) =>
-            {
-            
-                if let Some(actor) = self.actors.get_mut(&id) {
-
-                    if let Some(controlled_actor) = actor.get_actor_as_controlled_mut()
-                    {
-                        match controlled_actor.get_team()
-                        {
-                            Team::Red =>
-                            {
-                                controlled_actor.spawn(
-                                    &mut self.level.red_spawns,
-                                    physics_system,
-                                    ui_system,
-                                    audio_system,
-                                    engine_handle
-                                );
-                            }
-                            Team::Blue =>
-                            {
-                                controlled_actor.spawn(
-                                    &mut self.level.blue_spawns,
-                                    physics_system,
-                                    ui_system,
-                                    audio_system,
-                                    engine_handle
-                                );
-                            }
-                        }
-                    }
-                } else {
-                    //this case is possible when player send command to get respawn and before
-                    //command is processed player's id was changed (for example when game connected to singnaling server)
-
-                    // temporal solution is get main_player_id (todo: need to detect when actor change ID, store pair (new 
-                    // and old ids) for one frame and change old id for new in this case)
-
-                    let actor = self.actors.get_mut(&self.main_actor_id).expect("World have not actor with main_player_id");
-
-                    if let Some(controlled_actor) = actor.get_actor_as_controlled_mut()
-                    {
-                        match controlled_actor.get_team()
-                        {
-                            Team::Red =>
-                            {
-                                controlled_actor.spawn(
-                                    &mut self.level.red_spawns,
-                                    physics_system,
-                                    ui_system,
-                                    audio_system,
-                                    engine_handle
-                                );
-                            }
-                            Team::Blue =>
-                            {
-                                controlled_actor.spawn(
-                                    &mut self.level.blue_spawns,
-                                    physics_system,
-                                    ui_system,
-                                    audio_system,
-                                    engine_handle
-                                );
-                            }
-                        }
-                    }
-                }
-
-            }
-
-            CommandType::NetCommand(command) =>
-            {
-                match command {
-                    NetCommand::SetServerTime(server_time) => {
-                        time_system.set_server_time(server_time);
-                    },
-                    NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {
-                        self.change_actor_id(self.main_actor_id, new_id, engine_handle);
-
-                        self.main_actor_id = new_id;                       
-                    },
-                    NetCommand::SendBoardcastNetMessageReliable(message) => {
-                        net_system.send_boardcast_message_reliable(message);
-                    },
-
-                    NetCommand::SendBoardcastNetMessageUnreliable(message) => {
-                        net_system.send_boardcast_message_unreliable(message);
-                    },
-
-                    NetCommand::SendDirectNetMessageReliable(message, peer) => {
-                        net_system.send_direct_message_reliable(message, peer);
-                    },
-
-                    NetCommand::SendDirectNetMessageUnreliable(message, peer) => {
-                        net_system.send_direct_message_unreliable(message, peer);
-                    },
-
-                    NetCommand::PeerConnected(peer_id) => {
-                        engine_handle.send_boardcast_message(
-                            Message {
-                                from: 0u128,
-                                remote_sender: false,
-                                message: MessageType::SpecificActorMessage(
-                                    SpecificActorMessage::PlayerMessage(
-                                        PlayerMessage::NewPeerConnected(peer_id)
-                                    )
-                                )
-                            }
-                        )
-                    },
-
-                    NetCommand::SendMessageToServer(message) =>
-                    {
-                        net_system.send_message_to_game_server(message);
-                    }
-
-                    NetCommand::PeerDisconnected(id) => {
-                        self.remove_actor_from_world(id);
-                    }
-                }
-            }
-        }
-    }
-
-    fn send_direct_messages(
-        &mut self,
-        to: ActorID,
-        message: Message,
-        engine_handle: &mut EngineHandle,
-        physics_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
-
-    ) {
-        if let Some(actor) = self.actors.get_mut(&to)
-        {
-            actor.recieve_message(
-                message,
-                engine_handle,
-                physics_system,
-                audio_system,
-                ui_system,
-                time_system,
-                effects_system,
-            );
-        }
-    }
-
-    fn send_boardcast_messages(
-        &mut self,
-        message: Message,
-        engine_handle: &mut EngineHandle,
-        physics_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
-    ) {
-        for (_, actor) in self.actors.iter_mut() {
-            if actor.get_id().expect("actor does not have id") != message.from
-            {
-                actor.recieve_message
-                (
-                    message.clone(),
-                    engine_handle,
-                    physics_system,
-                    audio_system,
-                    ui_system,
-                    time_system,
-                    effects_system
-                );
-            } 
-        }
-    }
-
-    fn change_actor_id(&mut self, old_id: ActorID, new_id: ActorID, engine_handle: &mut EngineHandle) {
+    pub fn change_actor_id(&mut self, old_id: ActorID, new_id: ActorID, engine_handle: &mut EngineHandle) {
         if let Some(mut actor) = self.remove_actor_from_world(old_id) {
             actor.change_id(new_id, engine_handle);
 
@@ -412,7 +89,54 @@ impl World {
         }
     }
 
-    pub fn add_actor_to_world(&mut self, mut actor: ActorWrapper, engine_handle: &mut EngineHandle) -> ActorID {
+    pub fn set_new_level(
+        &mut self,
+        mut level: Level,
+        engine_handle: &mut EngineHandle,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem
+    )
+    {
+        self.actors.clear();
+
+        self.add_main_actor_to_world(
+            level.main_actor.take().expect("level have not main actor"),
+            engine_handle,
+            physic_system,
+            audio_system ,
+            ui_system ,
+            time_system,
+            effects_system
+        );
+
+        for actor in level.actors.take().unwrap() {
+            self.add_actor_to_world(
+                actor,
+                engine_handle,
+                physic_system,
+                audio_system ,
+                ui_system ,
+                time_system,
+                effects_system
+            );
+        }
+
+        self.level = Some(level);
+    }
+
+    pub fn add_actor_to_world(
+        &mut self,
+        mut actor: ActorWrapper,
+        engine_handle: &mut EngineHandle,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem
+    ) -> ActorID {
 
         let id = match actor.get_id() {
             Some(id) => id,
@@ -434,12 +158,39 @@ impl World {
             self.actors.insert(new_id_for_swaped_actor, swaped_actor);
         }
 
+        self.actors.get_mut(&id).expect("world have not actor after added it")
+            .on_added_to_world(
+                physic_system,
+                engine_handle,
+                audio_system,
+                ui_system,
+                time_system,
+                effects_system
+            );
+
         id
     }
 
-    pub fn add_main_actor_to_world(&mut self, actor: ActorWrapper, engine_handle: &mut EngineHandle) -> ActorID {
+    pub fn add_main_actor_to_world(
+        &mut self,
+        actor: ActorWrapper,
+        engine_handle: &mut EngineHandle,
+        physic_system: &PhysicsSystem,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem
+    ) -> ActorID {
 
-        let id = self.add_actor_to_world(actor, engine_handle);
+        let id = self.add_actor_to_world(
+            actor,
+            engine_handle,
+            physic_system,
+            audio_system ,
+            ui_system ,
+            time_system,
+            effects_system
+        );
 
         self.main_actor_id = id;
 

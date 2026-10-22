@@ -1,31 +1,20 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::{collections::HashMap, fs::File, io::Read};
 
 use crate::{
     actor::{
-        mover_w::MoverW, wandering_actor::{
+        ActorWrapper, device, droped_rotator_tool::DropedRotatorTool, final_trigger::FinalTrgger, flag::Flag, flag_base::FlagBase, main_player::{MainPlayer, player_input_master::{InputMaster, LocalMaster}, player_settings::PlayerSettings}, mover_w::MoverW, new_spawn_area::NewSpawnArea, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, session_controller::SessionController, trgger_orb::TriggerOrb, trigger::Trigger, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor, wandering_actor::{
             WanderingActor,
             WanderingActorMovementType,
-        }, ActorWrapper
+        }
     }, engine::{
-        physics::{
+        input::ActionsFrameState, physics::{
             physics_system_data::ShapeType, static_collider::StaticCollider
-        }, world::static_object::{
+        }, render::{MainShaderRenderPipelineBuilderKit, raymarch_shader_generator::{AllowedDynamicObjectsInBspTreeTable, generate_raymarch_shader_with_static_bsp_tree}, render_data::static_render_data::StaticRenderData}, world::static_object::{
             ObjectMaterial, StaticObject
         }
     }, transform::Transform
@@ -36,10 +25,44 @@ use client_server_protocol::Team;
 use wasm_bindgen_futures::JsFuture;
 use glam::{Vec4, Vec3};
 use serde_json::Value;
+use wgpu::{Device, RenderPipeline, ShaderRuntimeChecks};
 
 use super::static_object::{WFloor, WRoof};
 
+static LEVELS: &[(&str, &str)] =
+&[
+    ("capture_the_flag_map", include_str!("../../.././src/assets/maps/capture_the_flag_map.json")),
+    ("map_2d_3d", include_str!("../../.././src/assets/maps/map_2d_3d.json")),
+    ("obstacle_course_levels/level-1", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-1.json")),
+    ("obstacle_course_levels/level-2", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-2.json")),
+    ("obstacle_course_levels/level-3", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-3.json")),
+    ("obstacle_course_levels/level-4", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-4.json")),
+    ("obstacle_course_levels/level-5", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-5.json")),
+    ("obstacle_course_levels/level-6", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-6.json")),
+];
 
+fn get_preloaded_level(level_name: &String) -> Option<&str>
+{
+    LEVELS.iter()
+        .find_map(|&(key, json)| (key == level_name).then_some(json))
+}
+
+#[derive(Clone, Copy)]
+pub struct Spawn {
+    pub spawn_position: Vec4,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct EnvirnomentVisualSettings {
+    pub sky_color: Vec4,
+    pub fog_color: Vec4,
+    pub frenel_color: Vec4,
+    pub neon_wireframe_color: Vec4,
+    pub sun_color: Vec4,
+    pub sun_direction: Vec4,
+    pub red_map_color: Vec4,
+    pub blue_map_color: Vec4,
+}
 
 pub struct DefaultStaticObjectSettings {
     friction: f32,
@@ -51,85 +74,61 @@ pub struct DefaultStaticObjectSettings {
     undestroyable: bool,
 }
 
-#[derive(Clone, Copy)]
-pub struct Spawn {
-    pub spawn_position: Vec4,
-}
-
-pub struct EnvirnomentVisualSettings {
-    pub sky_box_name: String,
-    pub sky_color: Vec4,
-    pub fog_color: Vec4,
-    pub frenel_color: Vec4,
-    pub neon_wireframe_color: Vec4,
-    pub sun_color: Vec4,
-    pub sun_direction: Vec4,
-    pub red_map_color: Vec4,
-    pub blue_map_color: Vec4,
-}
-
 pub struct Level {
     pub level_name: String,
     pub static_objects: Vec<StaticObject>,
-    pub red_spawns: Vec<Spawn>,
-    pub blue_spawns: Vec<Spawn>,
     pub all_shapes_stickiness_radius: f32,
-    // pub w_floor: Option<WFloor>,
-    // pub w_roof: Option<WRoof>,
     pub visual_materials: Vec<ObjectMaterial>,
     pub blue_players_visual_materials: (i32, i32),
     pub red_players_visual_materials: (i32, i32),
-    // pub w_cups_visual_materials: i32,
     pub visual_settings_of_environment: EnvirnomentVisualSettings,
-
-    // pub w_levels: Vec<f32>,
-
-    // pub blue_base_w_level: f32,
-    // pub red_base_w_level: f32,
-
-    // pub blue_map_color_level: f32,
-    // pub red_map_color_level: f32,
-    pub red_flag_base: Transform,
-    pub blue_flag_base: Transform,
+    pub main_actor: Option<ActorWrapper>,
+    pub actors: Option<Vec<ActorWrapper>>,
+    pub main_shader_render_pipeline: Option<wgpu::RenderPipeline>,
+    pub minimap_shader_render_pipeline: Option<wgpu::RenderPipeline>,
     pub red_base_position: Vec4,
     pub blue_base_position: Vec4,
-    // pub move_w_bonus_spot: Transform,
-
-    // pub mover_w_list: Vec<MoverW>,
+    pub is_generated_raymarch_shader: bool,
+    pub it_is_2d_3d_example: bool,
+    // pub 
 }
 
 impl Level {
     
-    pub fn get_random_spawn_position(&self, team: Team) -> Spawn {
-        match team {
-            Team::Red =>
-            {
-                let random_index = {
-                    let mut usize_bytes = 0usize.to_be_bytes();
-                    getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
+    // pub fn get_random_spawn_position(&self, team: Team) -> Spawn {
+    //     match team {
+    //         Team::Red =>
+    //         {
+    //             let random_index = {
+    //                 let mut usize_bytes = 0usize.to_be_bytes();
+    //                 getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
                     
-                    usize::from_le_bytes(usize_bytes) % self.red_spawns.len()
-                };
+    //                 usize::from_le_bytes(usize_bytes) % self.red_spawns.len()
+    //             };
         
-                self.red_spawns[random_index].clone()
-            }
+    //             self.red_spawns[random_index].clone()
+    //         }
 
-            Team::Blue =>
-            {
-                let random_index = {
-                    let mut usize_bytes = 0usize.to_be_bytes();
-                    getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
+    //         Team::Blue =>
+    //         {
+    //             let random_index = {
+    //                 let mut usize_bytes = 0usize.to_be_bytes();
+    //                 getrandom::getrandom(&mut usize_bytes).expect("Can not make random usize in get_random_spawn_position func");
                     
-                    usize::from_le_bytes(usize_bytes) % self.blue_spawns.len()
-                };
+    //                 usize::from_le_bytes(usize_bytes) % self.blue_spawns.len()
+    //             };
         
-                self.blue_spawns[random_index].clone()
-            }
-        }
-    }
+    //             self.blue_spawns[random_index].clone()
+    //         }
+    //     }
+    // }
 
 
-    pub async fn load_level(level_name: String) -> (Level, Vec<ActorWrapper>)
+    pub async fn load_level(
+        level_name: String,
+        player_settings: PlayerSettings,
+        render_pipeline_builder_kit: Option<MainShaderRenderPipelineBuilderKit>
+    ) -> Level
     {
         #[cfg(target_arch = "wasm32")]
         {
@@ -173,85 +172,59 @@ impl Level {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let json_map = {
-                let mut file = File::open(
-                    format!("./{}.json", level_name)
+            let mut file = File::open(
+                format!("./{}.json", level_name)
+            );
+
+            if file.is_err()
+            {
+                file = File::open(
+                    format!("./assets/maps/{}.json", level_name)
+                )
+            }
+
+            if file.is_err()
+            {
+                file = File::open(
+                    format!("./src/assets/maps/{}.json", level_name)
+                )
+            }
+
+            if file.is_err()
+            {
+                file = File::open(
+                    format!("../../../src/assets/maps/{}.json", level_name)
                 );
+            }
 
-                if file.is_err()
-                {
-                    file = File::open(
-                        format!("./assets/maps/{}.json", level_name)
-                    )
+            if file.is_ok()
+            {
+                let mut file_content = String::new();
+                match file.unwrap().read_to_string(&mut file_content) {
+                    Ok(_) => {
+                        let level_json = serde_json::from_str(&file_content)
+                            .expect(&format!("ERROR: Can't parse the {} map's JSON format", level_name));
+
+                        return parse_json_level(level_json, player_settings, render_pipeline_builder_kit);
+                    },
+                    Err(e) => {}
                 }
+            }
 
-                if file.is_err()
+            let json_level = get_preloaded_level(&level_name);
+
+            match json_level {
+                Some(level) =>
                 {
-                    file = File::open(
-                        format!("./src/assets/maps/{}.json", level_name)
-                    )
+                    let level_json = serde_json::from_str(level)
+                        .expect(&format!("ERROR: Can't parse the {} map's JSON format", level_name));
+                    
+                    return parse_json_level(level_json, player_settings, render_pipeline_builder_kit);
                 }
-
-                if file.is_err()
-                {
-                    file = File::open(
-                        format!("../../../src/assets/maps/{}.json", level_name)
-                    );
-                }
-
-                if file.is_ok()
-                {
-                    let mut file_content = String::new();
-                    match file.unwrap().read_to_string(&mut file_content) {
-                        Ok(_) => {
-                            serde_json::from_str(&file_content)
-                                .expect("ERROR: Can't parse the map's JSON format")
-                        },
-                        Err(e) => {
-
-                            // panic!("ERROR: the {}.json cannot be loaded, err: {}", level_name, e);
-                            match level_name.as_str() {
-                                "map" => 
-                                {
-                                    serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
-                                        .expect("Can't parse map.json file")
-                                }
-                                "map_2d_3d" =>
-                                {
-                                    serde_json::from_str(include_str!("../../../src/assets/maps/map_2d_3d.json"))
-                                        .expect("Can't parse map.json file")
-                                }
-                                _ =>
-                                {
-                                    panic!("incorrect level name");
-                                }
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    // panic!("ERROR: the {}.json cannot be loaded", level_name);
-                    match level_name.as_str() {
-                        "map" => 
-                        {
-                            serde_json::from_str(include_str!("../../../src/assets/maps/map.json"))
-                                .expect("Can't parse map.json file")
-                        }
-                        "map_2d_3d" =>
-                        {
-                            serde_json::from_str(include_str!("../../../src/assets/maps/map_2d_3d.json"))
-                                .expect("Can't parse map.json file")
-                        }
-                        _ =>
-                        {
-                            panic!("incorrect level name");
-                        }
-                    }
-                }
-            };
-
-            return parse_json_level(json_map);
+                None => {}
+            }
+            
+            panic!("Can not open {} level", level_name);
         }
     }
 }
@@ -259,8 +232,11 @@ impl Level {
 
 
 fn parse_json_level(
-    json: Value
-) -> (Level, Vec<ActorWrapper>) {
+    json: Value,
+    player_settings: PlayerSettings,
+    render_pipeline_builder_kit: Option<MainShaderRenderPipelineBuilderKit>,
+) -> Level
+{
     let json_level = json
     .as_object()
     .expect("Wrong JSON map format. Root json level value must be object");
@@ -282,51 +258,6 @@ fn parse_json_level(
             .expect("Wrong JSON map format. all_shapes_stickiness_radius value must be float number")
             as f32
     };
-
-    let red_spawns = {
-        let spawns_array = json_level
-            .get("red_spawns")
-            .expect("Wrong JSON map format. JSON level must have red_spawns property")
-            .as_array()
-            .expect("red_spawns is not an array");
-
-        let mut spawns = Vec::new();
-
-        for value in spawns_array {
-            let transform = parse_json_into_transform(value, "spawn_position");
-
-            let spawn = Spawn {
-                spawn_position: transform.get_position(),
-            };
-
-            spawns.push(spawn);
-        }
-
-        spawns  
-    };
-
-    let blue_spawns = {
-        let spawns_array = json_level
-            .get("blue_spawns")
-            .expect("Wrong JSON map format. JSON level must have blue_spawns property")
-            .as_array()
-            .expect("blue_spawns is not an array");
-
-        let mut spawns = Vec::new();
-
-        for value in spawns_array {
-            let transform = parse_json_into_transform(value, "spawn_position");
-
-            let spawn = Spawn {
-                spawn_position: transform.get_position(),
-            };
-
-            spawns.push(spawn);
-        }
-
-        spawns  
-    };
-
 
     let (visual_materials, materials_table) = {
         let json_visual_materials = json_level
@@ -360,22 +291,6 @@ fn parse_json_level(
         parse_players_visual_materials(json_players_visual_materials, &materials_table)
     };
 
-    // let w_cups_visual_materials = {
-    //     let json_players_visual_materials = json_level
-    //         .get("w_cups_visual_materials")
-    //         .expect("Wrong JSON map format. JSON level must have w_cups_visual_materials property");
-
-    //     parse_w_cups_visual_materials(json_players_visual_materials, &materials_table)
-    // };
-
-    // let (w_floor, w_roof) = {
-    //     let json_w_cups = json_level
-    //         .get("w_cups")
-    //         .expect("Wrong JSON map format. JSON level must have w_cups property");
-
-    //     parse_w_cups(json_w_cups)
-    // };
-
     let static_objects = {
         let json_static_objects = json_level
             .get("static_objects")
@@ -387,31 +302,23 @@ fn parse_json_level(
     let actors = {
         let json_actors = json_level
             .get("actors")
-            .expect("Wrong JSON map format. JSON level must have static_objects property");
+            .expect("Wrong JSON map format. JSON level must have actors property");
 
         parse_json_actors(json_actors, &default_settings, &materials_table)
     };
 
-    // let w_levels = {
-    //     let mut w_levels = Vec::new();
+    let main_actor = {
+        let json_main_actor = json_level
+            .get("main_actor")
+            .expect("Wrong JSON map format. JSON level must have main_actor property");
 
-    //     let array = json_level
-    //         .get("w_levels")
-    //         .expect("Wrong JSON map format. JSON level must have w_levels property")
-    //         .as_array()
-    //         .expect("Wrong JSON map format. JSON's w_levels property must be an array");
-
-    //     for value in array {
-    //         let w_level = value
-    //             .as_f64()
-    //             .expect("Wrong JSON map format. JSON's w_levels array's value is not a number")
-    //             as f32;
-            
-    //         w_levels.push(w_level);
-    //     }
-
-    //     w_levels
-    // };
+        parse_json_main_actor(
+            json_main_actor,
+            &default_settings,
+            &materials_table,
+            player_settings,
+        )
+    };
 
     let visual_settings_of_environment = {
         let json_visual_settings_of_environment = json_level
@@ -419,40 +326,6 @@ fn parse_json_level(
             .expect("Wrong JSON map format. JSON level must have visual_settings_of_environment property");
 
         parse_json_visual_settings_of_environment(json_visual_settings_of_environment)
-    };
-
-    // let blue_map_color_level = {
-    //     json_level
-    //         .get("blue_map_color_level")
-    //         .expect("Wrong JSON map format. JSON level must have blue_map_color_level property")
-    //         .as_f64()
-    //         .expect("Wrong JSON map format. JSON's blue_map_color_level property must be an number")
-    //         as f32
-    // };
-    
-    // let red_map_color_level = {
-    //     json_level
-    //         .get("red_map_color_level")
-    //         .expect("Wrong JSON map format. JSON level must have red_map_color_level property")
-    //         .as_f64()
-    //         .expect("Wrong JSON map format. JSON's red_map_color_level property must be an number")
-    //         as f32
-    // };
-    
-    let red_flag_base = {
-        let red_flag_base_json = json_level
-            .get("red_flag_base")
-            .expect("Wrong JSON map format. JSON level must have red_flag_base property");
-
-        parse_json_into_transform(red_flag_base_json, "red_flag_base")
-    };
-    
-    let blue_flag_base = {
-        let blue_flag_base_json = json_level
-            .get("blue_flag_base")
-            .expect("Wrong JSON map format. JSON level must have blue_flag_base property");
-
-        parse_json_into_transform(blue_flag_base_json, "blue_flag_base")
     };
 
     let red_base_position = {
@@ -470,78 +343,435 @@ fn parse_json_level(
 
         parse_json_into_transform(blue_base_position_json, "blue_base_position").get_position()
     };
-    
-    // let move_w_bonus_spot = {
-    //     let move_w_bonus_spot_json = json_level
-    //         .get("move_w_bonus_spot")
-    //         .expect("Wrong JSON map format. JSON level must have move_w_bonus_spot property");
 
-    //     parse_json_into_transform(move_w_bonus_spot_json, "move_w_bonus_spot")
-    // };
+    let is_generated_raymarch_shader = {
+        json_level
+            .get("generated_shader_with_bsp_tree")
+            .expect("Wrong JSON map format. JSON level must have generated_shader_with_bsp_tree property")
+            .as_bool()
+            .expect("Wrong JSON map format. generated_shader_with_bsp_tree property must boolean type")
+    };
 
-    // let blue_base_w_level = {
-    //     json_level
-    //         .get("blue_base_w_level")
-    //         .expect("Wrong JSON map format. JSON level must have blue_base_w_level property")
-    //         .as_f64()
-    //         .expect("Wrong JSON map format. JSON's blue_base_w_level property must be an number")
-    //         as f32
-    // };
-    // let red_base_w_level = {
-    //     json_level
-    //         .get("red_base_w_level")
-    //         .expect("Wrong JSON map format. JSON level must have red_base_w_level property")
-    //         .as_f64()
-    //         .expect("Wrong JSON map format. JSON's red_base_w_level property must be an number")
-    //         as f32
-    // };
+    let it_is_2d_3d_example = {
+        json_level
+            .get("it_is_2d_3d_example")
+            .expect("Wrong JSON map format. JSON level must have it_is_2d_3d_example property")
+            .as_bool()
+            .expect("Wrong JSON map format. it_is_2d_3d_example property must boolean type")
+    };
 
-    // let mover_w_list = {
-    //     let array = json_level
-    //         .get("mover_w_list")
-    //         .expect("Wrong JSON map format. JSON level must have mover_w_list property")
-    //         .as_array()
-    //         .expect("Wrong JSON map format. JSON's mover_w_list property must be an array");
+    let allowed_dyn_objects = {
+        let allowed_dynamic_objects_in_bsp_tree = json_level
+            .get("allowed_dynamic_objects_in_bsp_tree")
+            .expect("Wrong JSON map format. JSON level must have allowed_dynamic_objects_in_bsp_tree property");
 
-    //     let mut list = Vec::new();
+        parse_allowed_dynamic_objects_in_bsp_tree(&allowed_dynamic_objects_in_bsp_tree)
+    };
 
-    //     for json_obj in array
-    //     {
-    //         let mover_w = parse_mover_w(json_obj, &w_levels);
-
-    //         list.push(mover_w);
-    //     };
-
-    //     list
-    // };
-
-    let level = Level {
-        // blue_base_w_level,
-        // red_base_w_level,
+    let mut level = Level {
         level_name,
         static_objects,
-        red_spawns,
-        blue_spawns,
         all_shapes_stickiness_radius,
-        red_base_position,
-        blue_base_position,
-        // w_floor,
-        // w_roof,
         visual_materials,
         blue_players_visual_materials,
         red_players_visual_materials,
-        // w_cups_visual_materials,
-        // w_levels,
         visual_settings_of_environment,
-        red_flag_base,
-        blue_flag_base,
-        // red_map_color_level,
-        // blue_map_color_level,
-        // move_w_bonus_spot,
-        // mover_w_list,
+        actors: Some(actors),
+        main_actor,
+        main_shader_render_pipeline: None,
+        minimap_shader_render_pipeline: None,
+        is_generated_raymarch_shader,
+        red_base_position,
+        blue_base_position,
+        it_is_2d_3d_example,
     };
 
-    (level, actors)
+    let (main_render_pipeline, minimap_render_pipeline) = {
+        let shader_name = json_level
+            .get("main_shader")
+            .expect("Wrong JSON map format. JSON level must have main_shader property")
+            .as_str()
+            .expect("Wrong JSON map format. main_shader property must string type");
+
+        build_render_pipeline(
+            render_pipeline_builder_kit,
+            shader_name,
+            is_generated_raymarch_shader,
+            &allowed_dyn_objects,
+            &level
+        )
+    };
+
+    level.main_shader_render_pipeline = main_render_pipeline;
+    level.minimap_shader_render_pipeline = minimap_render_pipeline;
+
+    level
+}
+
+
+fn build_render_pipeline(
+    render_pipeline_builder_kit: Option<MainShaderRenderPipelineBuilderKit>,
+    shader_name: &str,
+    is_generated_raymarch_shader: bool,
+    allowed_dyn_objects: &AllowedDynamicObjectsInBspTreeTable,
+    level: &Level,
+) -> (Option<RenderPipeline>, Option<RenderPipeline>)
+{
+    if render_pipeline_builder_kit.is_none()
+    {
+        return (None, None);
+    }
+
+    let render_pipeline_builder_kit= render_pipeline_builder_kit.unwrap();
+    match shader_name
+    {
+        "raymarch_shader_obstacle_course" =>
+        {
+            let (main_shader, minimap_shader) = if is_generated_raymarch_shader
+            {
+                let mut static_render_data = StaticRenderData::new();
+
+                static_render_data.update(level);
+
+                let main_shader = generate_raymarch_shader_with_static_bsp_tree(
+                    include_str!("../render/shaders/raymarch_shader_obstacle_course.wgsl"),
+                    &static_render_data,
+                    false,
+                    allowed_dyn_objects
+                );
+
+                let minimap_shader = generate_raymarch_shader_with_static_bsp_tree(
+                    include_str!("../render/shaders/xwz_minimap_shader.wgsl"),
+                    &static_render_data,
+                    false,
+                    allowed_dyn_objects
+                );
+
+                (main_shader, minimap_shader)
+
+
+            }
+            else
+            {
+                (
+                    include_str!("../render/shaders/raymarch_shader_obstacle_course.wgsl").into(),
+                    include_str!("../render/shaders/xwz_minimap_shader.wgsl").into()
+                )
+            };
+
+            let raymarch_shader_obstacle_course = unsafe {
+                render_pipeline_builder_kit.device.create_shader_module_trusted(
+                wgpu::ShaderModuleDescriptor {
+                    label: Some("Raymarch Shader"),
+                    source: wgpu::ShaderSource::Wgsl(main_shader.into()),
+                },
+                ShaderRuntimeChecks::unchecked()
+            )};
+
+            let main_shader_render_pipeline = render_pipeline_builder_kit.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("main shader render pipeline"),
+                layout: Some(&render_pipeline_builder_kit.raymarch_render_pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &raymarch_shader_obstacle_course,
+                    entry_point: Some("vs_main"),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
+                    buffers: &[
+                        render_pipeline_builder_kit.vertex_desc.clone(),
+                    ],
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &raymarch_shader_obstacle_course,
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: render_pipeline_builder_kit.config.format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview: None,
+                cache: None,
+            });
+
+            let minimap_shader_obstacle_course = unsafe {
+                render_pipeline_builder_kit.device.create_shader_module_trusted(
+                wgpu::ShaderModuleDescriptor {
+                    label: Some("Raymarch Shader"),
+                    source: wgpu::ShaderSource::Wgsl(minimap_shader.into()),
+                },
+                ShaderRuntimeChecks::unchecked()
+            )};
+
+            let minimap_render_pipeline = render_pipeline_builder_kit.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("minimap shader render pipeline"),
+                layout: Some(&render_pipeline_builder_kit.raymarch_render_pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &minimap_shader_obstacle_course,
+                    entry_point: Some("vs_main"),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
+                    buffers: &[
+                        render_pipeline_builder_kit.vertex_desc,
+                    ],
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &minimap_shader_obstacle_course,
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: render_pipeline_builder_kit.config.format,
+                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview: None,
+                cache: None,
+            });
+
+            return (Some(main_shader_render_pipeline), Some(minimap_render_pipeline));
+        }
+
+        "raymarch_shader_obstacle_course_dithered" =>
+        {
+            let (main_shader, minimap_shader) = if is_generated_raymarch_shader
+            {
+                let mut static_render_data = StaticRenderData::new();
+
+                static_render_data.update(level);
+
+                let main_shader = generate_raymarch_shader_with_static_bsp_tree(
+                    include_str!("../render/shaders/raymarch_shader_obstacle_course_dithered.wgsl"),
+                    &static_render_data,
+                    false,
+                    allowed_dyn_objects
+                );
+
+                let minimap_shader = generate_raymarch_shader_with_static_bsp_tree(
+                    include_str!("../render/shaders/xwz_minimap_shader.wgsl"),
+                    &static_render_data,
+                    false,
+                    allowed_dyn_objects
+                );
+
+                (main_shader, minimap_shader)
+
+
+            }
+            else
+            {
+                (
+                    include_str!("../render/shaders/raymarch_shader_obstacle_course_dithered.wgsl").into(),
+                    include_str!("../render/shaders/xwz_minimap_shader.wgsl").into()
+                )
+            };
+
+            let raymarch_shader_obstacle_course = unsafe {
+                render_pipeline_builder_kit.device.create_shader_module_trusted(
+                wgpu::ShaderModuleDescriptor {
+                    label: Some("Raymarch Shader"),
+                    source: wgpu::ShaderSource::Wgsl(main_shader.into()),
+                },
+                ShaderRuntimeChecks::unchecked()
+            )};
+
+            let main_shader_render_pipeline = render_pipeline_builder_kit.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("main shader render pipeline"),
+                layout: Some(&render_pipeline_builder_kit.raymarch_render_pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &raymarch_shader_obstacle_course,
+                    entry_point: Some("vs_main"),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
+                    buffers: &[
+                        render_pipeline_builder_kit.vertex_desc.clone(),
+                    ],
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &raymarch_shader_obstacle_course,
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: render_pipeline_builder_kit.config.format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview: None,
+                cache: None,
+            });
+
+            let minimap_shader_obstacle_course = unsafe {
+                render_pipeline_builder_kit.device.create_shader_module_trusted(
+                wgpu::ShaderModuleDescriptor {
+                    label: Some("Raymarch Shader"),
+                    source: wgpu::ShaderSource::Wgsl(minimap_shader.into()),
+                },
+                ShaderRuntimeChecks::unchecked()
+            )};
+
+            let minimap_render_pipeline = render_pipeline_builder_kit.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("minimap shader render pipeline"),
+                layout: Some(&render_pipeline_builder_kit.raymarch_render_pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &minimap_shader_obstacle_course,
+                    entry_point: Some("vs_main"),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
+                    buffers: &[
+                        render_pipeline_builder_kit.vertex_desc,
+                    ],
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &minimap_shader_obstacle_course,
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: render_pipeline_builder_kit.config.format,
+                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview: None,
+                cache: None,
+            });
+
+            return (Some(main_shader_render_pipeline), Some(minimap_render_pipeline));
+        }
+        "raymarch_shader_slice_4d" =>
+        {
+            let main_shader = if is_generated_raymarch_shader
+            {
+                let mut static_render_data = StaticRenderData::new();
+
+                static_render_data.update(level);
+
+                let main_shader = generate_raymarch_shader_with_static_bsp_tree(
+                    include_str!("../render/shaders/raymarch_shader.wgsl"),
+                    &static_render_data,
+                    false,
+                    allowed_dyn_objects
+                );
+
+                main_shader
+
+
+            }
+            else
+            {
+                include_str!("../render/shaders/raymarch_shader.wgsl").into()
+            };
+
+            let raymarch_shader_slice_4d = unsafe {
+                render_pipeline_builder_kit.device.create_shader_module_trusted(
+                wgpu::ShaderModuleDescriptor {
+                    label: Some("Raymarch Shader"),
+                    source: wgpu::ShaderSource::Wgsl(main_shader.into()),
+                },
+                ShaderRuntimeChecks::unchecked()
+            )};
+
+            let main_shader_render_pipeline = render_pipeline_builder_kit.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("main shader render pipeline"),
+                layout: Some(&render_pipeline_builder_kit.raymarch_render_pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &raymarch_shader_slice_4d,
+                    entry_point: Some("vs_main"),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
+                    buffers: &[
+                        render_pipeline_builder_kit.vertex_desc.clone(),
+                    ],
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &raymarch_shader_slice_4d,
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: render_pipeline_builder_kit.config.format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview: None,
+                cache: None,
+            });
+
+            return (Some(main_shader_render_pipeline), None);
+        }
+
+        _ => unimplemented!()
+    }
 }
 
 
@@ -567,14 +797,6 @@ fn parse_json_visual_settings_of_environment(
     let obj = json
         .as_object()
         .expect("Wrong JSON map format. Root of visual_settings_of_environment property must be an object");
-
-    let sky_box_name = {
-        obj.get("sky_box")
-            .expect("Wrong JSON map format. visual_settings_of_environment have not an sky_box property")
-            .as_str()
-            .expect("Wrong JSON map format. visual_settings_of_environment's sky_box property is not a string")
-            .to_string()
-    };
 
     let sky_color = {
         let json_value = obj.get("sky_color")
@@ -657,7 +879,6 @@ fn parse_json_visual_settings_of_environment(
     };
 
     EnvirnomentVisualSettings {
-        sky_box_name,
         sky_color,
         sun_color,
         sun_direction,
@@ -1683,6 +1904,245 @@ fn parse_json_into_material_index(
 }
 
 
+fn parse_json_main_actor(
+    json: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>,
+    player_settings: PlayerSettings,
+) -> Option<ActorWrapper>
+{
+
+    let mut main_actor = None;
+
+    let main_actor_json_obj = json
+        .as_object()
+        .expect("Wrong JSON map format, main_actor property must be an object");
+    
+    for (actor_type, actor_value) in main_actor_json_obj {
+        match actor_type.as_str() {
+            "obstacle_course_free_movement_player" => {
+
+                let actor = parse_obstacle_course_free_movement_player(
+                    actor_value,
+                    player_settings.clone(),
+                );
+
+                main_actor = Some(ActorWrapper::ObstacleCourseFreeMovementPlayer(actor));
+            }
+
+            "main_player" => {
+
+                let actor = parse_main_player(
+                    actor_value,
+                    player_settings.clone(),
+                );
+
+                main_actor = Some(ActorWrapper::MainPlayer(actor));
+            }
+            _ => {panic!("Wrong JSON map format, {} it is worng main actor type", actor_type)}
+        }
+    }
+
+    main_actor
+}
+
+fn parse_allowed_dynamic_objects_in_bsp_tree(
+    obj: &Value
+) -> AllowedDynamicObjectsInBspTreeTable {
+
+    let obj = obj
+        .as_object()
+        .expect("Wrong JSON map format. A passed Value into parse_allowed_dynamic_objects_in_bsp_tree should be an object");
+
+    let cubes = obj.get("cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let spheres = obj.get("spheres")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have spheres property")
+        .as_bool()
+        .expect("Wrong JSON map format. spheres property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let sph_cubes = obj.get("sph_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have sph_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. sph_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let s_cubes = obj.get("stickiness_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have stickiness_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. stickiness_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let s_spheres = obj.get("stickiness_spheres")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have stickiness_spheres property")
+        .as_bool()
+        .expect("Wrong JSON map format. stickiness_spheres property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let s_sph_cubes = obj.get("stickiness_sph_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have stickiness_sph_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. stickiness_sph_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let neg_cubes = obj.get("negative_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have negative_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. negative_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let neg_spheres = obj.get("negative_spheres")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have negative_spheres property")
+        .as_bool()
+        .expect("Wrong JSON map format. negative_spheres property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let neg_sph_cubes = obj.get("negative_sph_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have negative_sph_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. negative_sph_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let s_neg_cubes = obj.get("sticiness_negative_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have stickiness_negative_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. stickiness_negative_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let s_neg_spheres = obj.get("sticiness_negative_spheres")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have stickiness_negative_spheres property")
+        .as_bool()
+        .expect("Wrong JSON map format. stickiness_negative_spheres property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let s_neg_sph_cubes = obj.get("sticiness_negative_sph_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have stickiness_negative_sph_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. stickiness_negative_sph_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let unbreakable_cubes = obj.get("undestroyable_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have undestroyable_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. undestroyable_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let unbreakable_spheres = obj.get("undestroyable_spheres")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have undestroyable_spheres property")
+        .as_bool()
+        .expect("Wrong JSON map format. undestroyable_spheres property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let unbreakable_sph_cubes = obj.get("undestroyable_sph_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have undestroyable_sph_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. undestroyable_sph_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let unbreakable_s_cubes = obj.get("undestroyable_stickiness_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have undestroyable_stickiness_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. undestroyable_stickiness_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let unbreakable_s_spheres = obj.get("undestroyable_stickiness_spheres")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have undestroyable_stickiness_spheres property")
+        .as_bool()
+        .expect("Wrong JSON map format. undestroyable_stickiness_spheres property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+    let unbreakable_s_sph_cubes = obj.get("undestroyable_stickiness_sph_cubes")
+        .expect("Wrong JSON map format. allowed_dynamic_objects_in_bsp_tree must have undestroyable_stickiness_sph_cubes property")
+        .as_bool()
+        .expect("Wrong JSON map format. undestroyable_stickiness_sph_cubes property of allowed_dynamic_objects_in_bsp_tree must be a boolean");
+
+
+    AllowedDynamicObjectsInBspTreeTable {
+        cubes,
+        spheres,
+        sph_cubes,
+        s_cubes,
+        s_spheres,
+        s_sph_cubes,
+        neg_cubes,
+        neg_spheres,
+        neg_sph_cubes,
+        s_neg_cubes,
+        s_neg_spheres,
+        s_neg_sph_cubes,
+        unbreakable_cubes,
+        unbreakable_spheres,
+        unbreakable_sph_cubes,
+        unbreakable_s_cubes,
+        unbreakable_s_spheres,
+        unbreakable_s_sph_cubes,
+    }
+}
+
+fn parse_main_player(
+    actor_value: &Value,
+    player_settings: PlayerSettings,
+) -> MainPlayer
+{
+    let actor_obj = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, main_player must be an json object");
+
+    let red_spawns_val = actor_obj
+        .get("red_spawns")
+        .expect("Wrong JSON map format, main_player must have a red_spawns property")
+        .as_array()
+        .expect("Wrong JSON map format, main_player's red_spawns property must be an array");
+
+    let mut red_spawns = Vec::with_capacity(red_spawns_val.len());
+
+    for spawn in red_spawns_val
+    {
+        let spawn_transform = parse_json_into_transform(spawn, "main_player's red_spawn's spawn");
+
+        red_spawns.push(spawn_transform.get_position());
+    }
+
+    let blue_spawns_val = actor_obj
+        .get("blue_spawns")
+        .expect("Wrong JSON map format, main_player must have a blue_spawns property")
+        .as_array()
+        .expect("Wrong JSON map format, main_player's blue_spawns property must be an array");
+
+    let mut blue_spawns = Vec::with_capacity(blue_spawns_val.len());
+
+    for spawn in blue_spawns_val
+    {
+        let spawn_transform = parse_json_into_transform(spawn, "main_player's blue_spawn's spawn");
+
+        blue_spawns.push(spawn_transform.get_position());
+    }
+
+    MainPlayer::new(player_settings, red_spawns, blue_spawns)
+}
+
+
+fn parse_obstacle_course_free_movement_player(
+    actor_value: &Value,
+    player_settings: PlayerSettings,
+) -> ObstacleCourseFreeMovementPlayer
+{
+
+    let spawn_transform_json = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, obstacle_course_free_movement_player must be an json object")
+        .get("spawn")
+        .expect("Wrong JSON map format, obstacle_course_free_movement_player must have an spawn property");
+    
+    let spawn_transform = parse_json_into_transform(
+        spawn_transform_json,
+        "obstacle_course_free_movement_player"
+    );
+
+    let with_rotator_tool = actor_value
+        .get("with_rotator_tool")
+        .expect("Wrong JSON map format, obstacle_course_free_movement_player must have with_rotator_tool property")
+        .as_bool()
+        .expect("Wrong JSON map format, with_rotator_tool in obstacle_course_free_movement_player must be boolean value");
+
+    ObstacleCourseFreeMovementPlayer::new(
+        InputMaster::LocalMaster(
+            LocalMaster::new(ActionsFrameState::empty()),
+        ),
+        player_settings,
+        spawn_transform.get_position(),
+        with_rotator_tool,
+    )
+}
+
 
 fn parse_json_actors(
     json: &Value,
@@ -1705,18 +2165,575 @@ fn parse_json_actors(
 
         for (actor_type, actor_value) in actor_json_object {
             match actor_type.as_str() {
-                "wandering_actor" => {
+                "ctf_session_controller" => {
+                    let actor = parse_ctf_session_controller_actor();
 
+                    actors.push(ActorWrapper::SessionController(actor));
+                }
+
+                "flag" => {
+                    let actor = parse_flag_actor(actor_value);
+
+                    actors.push(ActorWrapper::Flag(actor));
+                }
+
+                "flag_base" => {
+                    let actor = parse_flag_base_actor(actor_value);
+
+                    actors.push(ActorWrapper::FlagBase(actor));
+                }
+
+                "wandering_actor" => {
                     let actor = parse_wandering_actor(actor_value, defaults, materials_table);
 
                     actors.push(ActorWrapper::WonderingActor(actor));
                 }
+                "trigger" => {
+                    let actor = parse_trigger(actor_value, defaults, materials_table);
+
+                    actors.push(ActorWrapper::Trigger(actor));
+                }
+                "final_trigger" => {
+                    let actor = parse_final_trigger(actor_value, defaults, materials_table);
+
+                    actors.push(ActorWrapper::FinalTrigger(actor));
+                }
+                "trigger_orb" => {
+                    let actor = parse_trigger_orb(actor_value);
+
+                    actors.push(ActorWrapper::TriggerOrb(actor));
+                }
+                "triggering_wandering_actor" => {
+                    let actor = parse_triggering_wandering_actor(actor_value, defaults, materials_table);
+
+                    actors.push(ActorWrapper::TriggeringWanderingActor(actor));
+                }
+                "triggering_special_lift_actor" => {
+                    let actor = parse_triggering_special_lift_actor(actor_value, defaults, materials_table);
+
+                    actors.push(ActorWrapper::TriggeringSpecialLiftActor(actor));
+                }
+                "droped_rotator_tool" => {
+                    let actor = parse_droped_rotator_tool_actor(actor_value);
+
+                    actors.push(ActorWrapper::DropedRotatorTool(actor));
+                }
+                "new_spawn_area" => {
+                    let actor = parse_new_spawn_area_actor(actor_value);
+
+                    actors.push(ActorWrapper::NewSpawnArea(actor));
+                }
+
                 _ => {panic!("Wrong JSON map format, {} it is worng actor type", actor_type)}
             }
         }
     }
 
     actors
+}
+
+
+fn parse_new_spawn_area_actor(
+    actor_value: &Value,
+) -> NewSpawnArea {
+
+    let transform = parse_json_into_transform(actor_value, "new_spawn_area_actor");
+
+    let area_size = parse_json_into_size(actor_value, "new_spawn_area_actor");
+    
+    let new_spawn_position_val = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, new_spawn_area_actor must be an json object")
+        .get("new_spawn_position")
+        .expect("Wrong JSON map format, new_spawn_area_actor must have a new_spawn_position property");
+
+    let new_spawn_position = parse_json_into_transform(new_spawn_position_val, "new_spawn_area_actor/new_spawn_position").get_position();
+
+    NewSpawnArea::new(
+        transform,
+        area_size,
+        new_spawn_position
+    )
+}
+
+fn parse_droped_rotator_tool_actor(
+    actor_value: &Value,
+) -> DropedRotatorTool {
+
+    let transform = parse_json_into_transform(actor_value, "droped_rotator_tool_actor");
+
+    
+    DropedRotatorTool::new(
+        transform,
+    )
+}
+
+
+
+fn parse_triggering_special_lift_actor(
+    actor_value: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>
+) -> TriggeringSpecialLiftActor {
+
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, triggering_special_lift_actor must be an json object");
+
+    let target = actor_object
+        .get("target")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have target property");
+
+    let transform = parse_json_into_transform(actor_value, "triggering_special_lift_actor");
+
+    let second_target = parse_json_into_transform(target, "triggering_special_lift_actor, target");
+
+    let travel_time = actor_object
+        .get("travel_time")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have travel_time property")
+        .as_f64()
+        .expect("Wrong JSON map format, travel_time in triggering_special_lift_actor must be float number")
+        as f32;
+    
+    let stop_time = actor_object
+        .get("stop_time")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have stop_time property")
+        .as_f64()
+        .expect("Wrong JSON map format, stop_time in triggering_special_lift_actor must be float number")
+        as f32;
+    
+    let lift_door_open_time = actor_object
+        .get("lift_door_open_time")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have lift_door_open_time property")
+        .as_f64()
+        .expect("Wrong JSON map format, lift_door_open_time in triggering_special_lift_actor must be float number")
+        as f32;
+    
+    let lift_door_index = actor_object
+        .get("lift_door_index")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have lift_door_index property")
+        .as_u64()
+        .expect("Wrong JSON map format, lift_door_index in triggering_special_lift_actor must be unsigned integer")
+        as usize;
+
+    let movement_type = actor_object
+        .get("movement_type")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have movement_type property")
+        .as_str()
+        .expect("Wrong JSON map format, movement_type in triggering_special_lift_actor must be string value");
+
+    let movement_type = {
+        match movement_type {
+            "linear" => {
+                WanderingActorMovementType::Linear
+            },
+            "nonlinear" => {
+                WanderingActorMovementType::NonLinear
+            },
+            _ => {
+                panic!("Wrong JSON map format, {} it is not allowed movement_type in wandering actor", movement_type);
+            }
+        }
+    };
+
+    let static_objects_value = actor_object
+        .get("static_objects")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have static_objects property");
+
+    let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
+
+    let triggering_by_trigger = actor_object
+        .get("triggering_by_trigger")
+        .expect("Wrong JSON map format, triggering_special_lift_actor must have triggering_by_trigger property")
+        .as_str()
+        .expect("Wrong JSON map format, triggering_by_trigger in triggering_special_lift_actor must be string value")
+        .to_string();
+
+    TriggeringSpecialLiftActor::new(
+        transform,
+        second_target,
+        triggering_by_trigger,
+        static_objects,
+        lift_door_index,
+        lift_door_open_time,
+        travel_time,
+        stop_time,
+        movement_type
+    )
+}
+
+
+fn parse_trigger_orb(
+    actor_value: &Value
+) -> TriggerOrb
+{
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, trigger_orb must be an json object");
+
+    let target_trigger_name = actor_object
+        .get("target_trigger_name")
+        .expect("Wrong JSON map format, trigger_orb must have target_trigger_name property")
+        .as_str()
+        .expect("Wrong JSON map format, trigger_orb's target_trigger_name property must be string type")
+        .to_string();
+
+    let transform = parse_json_into_transform(actor_value, "trigger_orb_actor");
+
+    let radius = actor_object
+        .get("radius")
+        .expect("Wrong JSON map format, trigger_orb must have radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, radius in trigger_orb must be float number")
+        as f32;
+
+    let color = {
+        let json_value = actor_object.get("color")
+            .expect("Wrong JSON map format. trigger_orb have not an color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x,
+            color.y,
+            color.z,
+        )
+    };
+
+    TriggerOrb::new(
+        transform,
+        target_trigger_name,
+        color,
+        radius
+    )
+}
+
+
+fn parse_final_trigger(
+    actor_value: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>
+) -> FinalTrgger {
+
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, final_trgger must be an json object");
+
+    let next_level_name = actor_object
+        .get("next_level_name")
+        .expect("Wrong JSON map format, final_trgger must have next_level_name property")
+        .as_str()
+        .expect("Wrong JSON map format, final_trgger's next_level_name property must be string type")
+        .to_string();
+
+    let async_preload = actor_object
+        .get("async_preload")
+        .expect("Wrong JSON map format, final_trgger must have async_preload property")
+        .as_bool()
+        .expect("Wrong JSON map format, final_trgger's async_preload property must be boolean type");
+
+    let async_load = actor_object
+        .get("async_preload")
+        .expect("Wrong JSON map format, final_trgger must have async_load property")
+        .as_bool()
+        .expect("Wrong JSON map format, final_trgger's async_load property must be boolean type");
+
+    let transform = parse_json_into_transform(actor_value, "final_trgger_actor");
+
+    let trigger_area_radius = actor_object
+        .get("trigger_area_radius")
+        .expect("Wrong JSON map format, final_trgger must have trigger_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, trigger_area_radius in final_trgger must be float number")
+        as f32;
+    
+    let visual_area_radius = actor_object
+        .get("visual_area_radius")
+        .expect("Wrong JSON map format, final_trgger must have visual_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, visual_area_radius in final_trgger must be float number")
+        as f32;
+    
+    let coloring_area_radius = actor_object
+        .get("coloring_area_radius")
+        .expect("Wrong JSON map format, final_trgger must have coloring_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, coloring_area_radius in final_trgger must be float number")
+        as f32;
+
+    let static_objects_value = actor_object
+        .get("static_objects")
+        .expect("Wrong JSON map format, final_trgger must have static_objects property");
+
+    let visual_area_color = {
+        let json_value = actor_object.get("visual_area_color")
+            .expect("Wrong JSON map format. final_trgger have not an visual_area_color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x,
+            color.y,
+            color.z,
+        )
+    };
+
+    let coloring_area_color = {
+        let json_value = actor_object.get("coloring_area_color")
+            .expect("Wrong JSON map format. final_trgger have not an coloring_area_color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x,
+            color.y,
+            color.z,
+        )
+    };
+
+    let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
+
+    FinalTrgger::new(
+        transform,
+        next_level_name,
+        async_preload,
+        async_load,
+        trigger_area_radius,
+        visual_area_radius,
+        visual_area_color,
+        Vec4::ZERO,
+        coloring_area_radius,
+        coloring_area_color,
+        Vec4::ZERO,
+        static_objects
+    )
+}
+
+
+fn parse_ctf_session_controller_actor()-> SessionController
+{
+    SessionController::new()
+}
+
+fn parse_flag_actor(
+    actor_value: &Value,
+)-> Flag
+{
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, trigger must be an json object");
+
+    let transform_of_the_base = parse_json_into_transform(actor_value, "flag_actor");
+    
+    let flag_owned_by_team_str = actor_object
+        .get("team")
+        .expect("Wrong JSON map format, flag must have team property")
+        .as_str()
+        .expect("Wrong JSON map format, flag's team property must be a string type")
+        .to_string();
+
+    let flag_owned_by_team = match flag_owned_by_team_str.as_str()
+    {
+        "blue" => Team::Blue,
+
+        "red" => Team::Red,
+
+        _ => panic!("Wrong JSON map format, flag's team property must be an red or blue value")
+    };
+    
+    Flag::new(flag_owned_by_team, transform_of_the_base)
+}
+
+fn parse_flag_base_actor(
+    actor_value: &Value,
+)-> FlagBase
+{
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, trigger must be an json object");
+
+    let transform = parse_json_into_transform(actor_value, "flag_base_actor");
+    
+    let flag_owned_by_team_str = actor_object
+        .get("team")
+        .expect("Wrong JSON map format, flag_base must have team property")
+        .as_str()
+        .expect("Wrong JSON map format, flag_base's team property must be a string type")
+        .to_string();
+    
+    let owned_by_team = match flag_owned_by_team_str.as_str()
+    {
+        "blue" => Team::Blue,
+
+        "red" => Team::Red,
+
+        _ => panic!("Wrong JSON map format, flag_base's team property must be an red or blue value")
+    };
+
+    FlagBase::new(owned_by_team, transform)
+}
+
+fn parse_trigger(
+    actor_value: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>
+) -> Trigger {
+
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, trigger must be an json object");
+
+    let trigger_name = actor_object
+        .get("trigger_name")
+        .expect("Wrong JSON map format, trigger must have trigger_name property")
+        .as_str()
+        .expect("Wrong JSON map format, trigger's trigger_name property must be string type")
+        .to_string();
+
+    let transform = parse_json_into_transform(actor_value, "trigger_actor");
+
+    let trigger_area_radius = actor_object
+        .get("trigger_area_radius")
+        .expect("Wrong JSON map format, trigger must have trigger_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, trigger_area_radius in trigger must be float number")
+        as f32;
+    
+    let visual_area_radius = actor_object
+        .get("visual_area_radius")
+        .expect("Wrong JSON map format, trigger must have visual_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, visual_area_radius in trigger must be float number")
+        as f32;
+    
+    let coloring_area_radius = actor_object
+        .get("coloring_area_radius")
+        .expect("Wrong JSON map format, trigger must have coloring_area_radius property")
+        .as_f64()
+        .expect("Wrong JSON map format, coloring_area_radius in trigger must be float number")
+        as f32;
+
+    let static_objects_value = actor_object
+        .get("static_objects")
+        .expect("Wrong JSON map format, trigger must have static_objects property");
+
+    let visual_area_color = {
+        let json_value = actor_object.get("visual_area_color")
+            .expect("Wrong JSON map format. trigger have not an visual_area_color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x,
+            color.y,
+            color.z,
+        )
+    };
+
+    let coloring_area_color = {
+        let json_value = actor_object.get("coloring_area_color")
+            .expect("Wrong JSON map format. trigger have not an coloring_area_color property");
+
+        let color = parse_json_color_and_multiplier(json_value);
+
+        Vec3::new(
+            color.x,
+            color.y,
+            color.z,
+        )
+    };
+
+    let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
+
+    Trigger::new(
+        transform,
+        trigger_name,
+        trigger_area_radius,
+        visual_area_radius,
+        visual_area_color,
+        Vec4::ZERO,
+        coloring_area_radius,
+        coloring_area_color,
+        Vec4::ZERO,
+        static_objects
+    )
+}
+
+
+fn parse_triggering_wandering_actor(
+    actor_value: &Value,
+    defaults: &DefaultStaticObjectSettings,
+    materials_table: &HashMap<String, i32>
+) -> TriggeringWanderingActor {
+
+    let actor_object = actor_value
+        .as_object()
+        .expect("Wrong JSON map format, triggering_wandering_actor must be an json object");
+
+    let target = actor_object
+        .get("target")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have target property");
+
+    let transform = parse_json_into_transform(actor_value, "triggering_wandering_actor");
+
+    let second_target = parse_json_into_transform(target, "triggering_wandering_actor, target");
+
+    let travel_time = actor_object
+        .get("travel_time")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have travel_time property")
+        .as_f64()
+        .expect("Wrong JSON map format, travel_time in triggering_wandering_actor must be float number")
+        as f32;
+    
+    let movement_type = actor_object
+        .get("movement_type")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have movement_type property")
+        .as_str()
+        .expect("Wrong JSON map format, movement_type in triggering_wandering_actor must be string value");
+
+    let movement_type = {
+        match movement_type {
+            "linear" => {
+                WanderingActorMovementType::Linear
+            },
+            "nonlinear" => {
+                WanderingActorMovementType::NonLinear
+            },
+            _ => {
+                panic!("Wrong JSON map format, {} it is not allowed movement_type in wandering actor", movement_type);
+            }
+        }
+    };
+
+    let static_objects_value = actor_object
+        .get("static_objects")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have static_objects property");
+
+    let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
+
+
+    let triggering_by_trigger = actor_object
+        .get("triggering_by_trigger")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have triggering_by_trigger property")
+        .as_str()
+        .expect("Wrong JSON map format, triggering_by_trigger in triggering_wandering_actor must be string value")
+        .to_string();
+
+    let is_one_time_movement = actor_object
+        .get("is_one_time_movement")
+        .expect("Wrong JSON map format, triggering_wandering_actor must have is_one_time_movement property")
+        .as_bool()
+        .expect("Wrong JSON map format, is_one_time_movement in triggering_wandering_actor must be boolean value");
+
+    TriggeringWanderingActor::new(
+        transform,
+        second_target,
+        triggering_by_trigger,
+        is_one_time_movement,
+        static_objects,
+        travel_time,
+        movement_type
+    )
 }
 
 

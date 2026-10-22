@@ -1,26 +1,38 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use wgpu::Backend;
 
-pub fn read_args() -> Option<Backend>
+#[derive(Clone, Copy)]
+pub enum GameMode
+{
+    NORMAL,
+    OBSERVER,
+}
+
+impl Default for GameMode
+{
+    fn default() -> Self {
+        GameMode::OBSERVER
+    }
+}
+
+pub struct Args
+{
+    pub graphic_backend: Option<Backend>,
+    pub specific_level: Option<String>,
+    pub game_mode: GameMode,
+}
+
+pub fn read_args() -> Args
 {
     let args: Vec<String> = std::env::args().collect();
     let mut backend = None;
     let mut show_help = false;
+    let mut level = None;
+    let mut mode = GameMode::NORMAL;
 
     let mut i = 1;
     while i < args.len()
@@ -55,12 +67,58 @@ pub fn read_args() -> Option<Backend>
                 else
                 {
                     eprintln!("Missing argument for backend option");
+
+                    std::process::exit(0);
                 }
             }
 
             "--help" | "-help" | "help" | "-h" | "--usage" | "-usage" | "usage" =>
             {
                 show_help = true;
+            }
+
+            "-l" | "-level" | "--l" | "--level" =>
+            {
+                if i + 1 < args.len()
+                {
+                    level = Some(args[i + 1].to_string());
+                    i += 1;
+                }
+                else
+                {
+                    eprintln!("Missing argument for level option");
+
+                    std::process::exit(0);
+                }
+            }
+
+            "-m" | "-mode" | "--m" | "--mode" =>
+            {
+                if i + 1 < args.len()
+                {
+                    mode = match args[i + 1].to_lowercase().as_str()
+                    {
+                        "observer" => GameMode::OBSERVER,
+
+                        "normal" => GameMode::NORMAL,
+                        
+                        _ =>
+                        {
+                            eprintln!("Unknown game mode: {}", args[i + 1]);
+                            
+                            show_help = true;
+
+                            GameMode::OBSERVER
+                        }
+                    };
+                    i += 1;
+                }
+                else
+                {
+                    eprintln!("Missing argument for level option");
+
+                    std::process::exit(0);
+                }
             }
 
             "-v" | "--v" | "-version" | "--version" =>
@@ -90,11 +148,18 @@ pub fn read_args() -> Option<Backend>
         println!("  -b, --backend BACKEND        Set graphics backend (gl, dx12, vulkan, metal)");
         println!("  --help, -help, -h            Show this help message");
         println!("  -v --v -version, --version,  Show current game version");
+        println!("  -l --l -level, --level,  Load specific level");
+        println!("  -m --m -mode, --mode,  Load specific game mode (normal, observer)");
         println!();
         println!("If no backend is specified, the graphics backend will be selected automatically");
 
         std::process::exit(0);
     }
 
-    backend
+    Args
+    {
+        graphic_backend: backend,
+        specific_level: level,
+        game_mode: mode     
+    }
 }

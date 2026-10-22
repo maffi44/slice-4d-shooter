@@ -1,20 +1,10 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use client_server_protocol::Team;
+use rand::{Rng, thread_rng};
 
 use crate::{
     actor::{
@@ -63,7 +53,10 @@ pub struct Observer {
     pub master: InputMaster,
     screen_effects: PlayerScreenEffects,
 
-    free_movement_is_enabled: bool, 
+    free_movement_is_enabled: bool,
+
+    red_spawn_points: Vec<Vec4>,
+    blue_spawn_points: Vec<Vec4>,
 }
 
 impl Actor for Observer {
@@ -121,15 +114,16 @@ impl Actor for Observer {
                     PhysicsMessages::KinematicColliderMessage(message) => {
                         match message {
                             KinematicColliderMessage::ColliderIsStuckInsideObject =>
-                            {    
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                            {
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
                             _ => {}
                         }
@@ -151,14 +145,15 @@ impl Actor for Observer {
                                 self.inner_state.team = team;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
 
                             PlayerMessage::DataForProjection(
@@ -189,14 +184,15 @@ impl Actor for Observer {
                             {
                                 self.inner_state.team = team;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
 
                             }
 
@@ -206,14 +202,15 @@ impl Actor for Observer {
                             {
                                 self.inner_state.team = your_team;
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
-                                            self.get_id().expect("Player have not ActorID")
-                                        )
-                                    }
-                                );
+                                todo!("must impliment respawn for observer");
+                                // engine_handle.send_command(
+                                //     Command {
+                                //         sender: self.get_id().expect("Player have not ActorID"),
+                                //         command_type: CommandType::RespawnPlayer(
+                                //             self.get_id().expect("Player have not ActorID")
+                                //         )
+                                //     }
+                                // );
                             }
 
                             _ => {}
@@ -395,14 +392,15 @@ impl Actor for Observer {
 
         if self.inner_state.get_position().y < Y_DEATH_PLANE_LEVEL
         {
-            engine_handle.send_command(
-                Command {
-                    sender: self.get_id().expect("Player have not ActorID"),
-                    command_type: CommandType::RespawnPlayer(
-                        self.get_id().expect("Player have not ActorID")
-                    )
-                }
-            );
+            todo!("must impliment respawn for observer");
+            // engine_handle.send_command(
+            //     Command {
+            //         sender: self.get_id().expect("Player have not ActorID"),
+            //         command_type: CommandType::RespawnPlayer(
+            //             self.get_id().expect("Player have not ActorID")
+            //         )
+            //     }
+            // );
         }
         
         main_player::set_audio_listener_position
@@ -480,6 +478,8 @@ impl Observer {
         audio_system: &mut AudioSystem,
         blue_base_position: Vec4,
         red_base_position: Vec4,
+        red_spawn_points: Vec<Vec4>,
+        blue_spawn_points: Vec<Vec4>,
     ) -> Self {
         
         let screen_effects = PlayerScreenEffects {
@@ -495,6 +495,7 @@ impl Observer {
             player_projections_is_visible: false
         };
         
+        
         Observer {
             id: None,
 
@@ -503,11 +504,10 @@ impl Observer {
                 &player_settings,
                 false,
                 false,
-                blue_base_position,
-                red_base_position,
                 UP*0.6,
                 UP * player_settings.collider_radius * 0.2,
-                audio_system,
+                None,
+                None,
             ),
             
             player_settings,
@@ -516,7 +516,10 @@ impl Observer {
 
             screen_effects,
 
-            free_movement_is_enabled: false
+            free_movement_is_enabled: false,
+
+            red_spawn_points,
+            blue_spawn_points,
         }
     }
 }
@@ -547,13 +550,28 @@ impl ControlledActor for Observer
 
     fn spawn(
         &mut self,
-        spawns: &mut Vec<Spawn>,
         physics_system: &PhysicsSystem,
         ui_system: &mut UISystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
-        let current_spawn = spawns.last().expect("spawns in respawn function has zero length");
+        let spawns: &Vec<Vec4>;
+
+        match self.get_team()
+        {
+            Team::Red => 
+            {
+                spawns = &self.red_spawn_points;
+            },
+            Team::Blue =>
+            {
+                spawns = &self.blue_spawn_points;
+            },
+        }
+        let mut rng = thread_rng();
+
+        let rand_index: usize = rng.gen_range(0..spawns.len());
+        let mut current_spawn = *spawns.get(rand_index).expect("Main Player haven't spawn points");
 
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
@@ -575,8 +593,8 @@ impl ControlledActor for Observer
 
         self.inner_state.collider.reset_forces_and_velocity();
 
-        self.inner_state.transform = Transform::from_position(current_spawn.spawn_position);
+        self.inner_state.transform = Transform::from_position(current_spawn);
 
-        self.inner_state.player_previous_w_position = current_spawn.spawn_position.w;
+        self.inner_state.player_previous_w_position = current_spawn.w;
     }
 }

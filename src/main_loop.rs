@@ -1,26 +1,15 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{
-    actor::Actor,
-    engine::{ui::UIElementType, Engine},
+    actor::Actor, engine::{Engine, send_messages_and_process_commands, set_new_level, ui::UIElementType}, read_args::GameMode,
 };
 
 use web_time::Instant;
 use glam::Vec2;
+use gilrs;
 
 use wgpu::Backend;
 use winit::{
@@ -41,31 +30,31 @@ MainLoop {
 pub struct Slice4DShooter
 {
     systems: Option<Engine>,
-    init_level_closure: Option<Box<dyn FnOnce(&mut Engine)>>,
+    start_level: Option<String>,
     with_ui_renderer: bool,
-    it_is_2d_3d_example: bool,
-    with_generated_raymarch_shader: bool,
+    disable_net_system: bool,
     specific_backend: Option<Backend>,
+    game_mode: GameMode,
 }
 
 impl Slice4DShooter
 {
     pub fn new(
+        start_level: String,
         with_ui_renderer: bool,
-        it_is_2d_3d_example: bool,
-        with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>,
-        init_level: Box<dyn FnOnce(&mut Engine)>,
+        disable_net_system: bool,
+        game_mode: GameMode,
     ) -> Self
     {
 
         Slice4DShooter {
             systems: None,
-            init_level_closure: Some(init_level),
+            start_level: Some(start_level),
             with_ui_renderer,
-            it_is_2d_3d_example,
-            with_generated_raymarch_shader,
             specific_backend,
+            disable_net_system,
+            game_mode,
         }
     }
 }
@@ -91,15 +80,14 @@ impl ApplicationHandler for Slice4DShooter
                     pollster::block_on(
                     Engine::new(
                             window,
+                            self.start_level.take().unwrap(),
                             self.with_ui_renderer,
-                            self.it_is_2d_3d_example,
-                            self.with_generated_raymarch_shader,
+                            self.disable_net_system,
                             self.specific_backend,
+                            self.game_mode,
                         )
                     )
                 );
-
-                self.init_level_closure.take().unwrap()(self.systems.as_mut().unwrap());
                 
                 log::info!("main: Engine systems init");
 
@@ -108,6 +96,8 @@ impl ApplicationHandler for Slice4DShooter
                 event_loop.set_control_flow(ControlFlow::WaitUntil(
                     Instant::now() + self.systems.as_mut().unwrap().time.target_frame_duration
                 ));
+
+                println!("init");
             }
             StartCause::ResumeTimeReached {
                 start,
@@ -117,6 +107,8 @@ impl ApplicationHandler for Slice4DShooter
                 event_loop.set_control_flow(ControlFlow::WaitUntil(
                     Instant::now() + self.systems.as_mut().unwrap().time.target_frame_duration
                 ));
+
+                collect_gamepad_input(self.systems.as_mut().unwrap());
                 
                 main_loop_tick(self.systems.as_mut().unwrap());
 
@@ -147,6 +139,9 @@ impl ApplicationHandler for Slice4DShooter
                 self.systems.as_mut().unwrap().input.add_mouse_delta(Vec2::new(x as f32, y as f32))
 
             },
+            DeviceEvent::MouseWheel { delta } => {
+                self.systems.as_mut().unwrap().input.set_mouse_wheel_input(delta);
+            }
             _ => {}
         }
     }
@@ -317,21 +312,21 @@ impl MainLoop {
 
     pub async fn run(
         self,
+        start_level: String,
         with_ui_renderer: bool,
-        it_is_2d_3d_example: bool,
-        with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>,
-        init_level: Box<dyn FnOnce(&mut Engine)>,
+        disable_net_system: bool,
+        game_mode: GameMode
     ) {
         // #[cfg(target_arch="wasm32")]
         // let mut it_is_first_input_action = true;
 
         let mut slice_4d_shooter_app = Slice4DShooter::new(
+            start_level,
             with_ui_renderer,
-            it_is_2d_3d_example,
-            with_generated_raymarch_shader,
             specific_backend,
-            init_level,
+            disable_net_system,
+            game_mode,
         );
         
         let active_event_loop = self.event_loop.run_app(
@@ -341,11 +336,45 @@ impl MainLoop {
    
 }
 
+
+#[inline]
+fn collect_gamepad_input (
+    systems : &mut Engine,
+) {
+    systems.input.collect_gamepad_button_input();
+}
+
+
 #[inline]
 fn main_loop_tick(
     systems : &mut Engine,
 ) {
     systems.time.start_of_frame();
+
+    if systems.level_async_load_handler.is_some()
+    {
+        
+        if systems.level_async_load_handler.as_ref().unwrap().is_finished()
+        {
+            let handle = systems.level_async_load_handler.take().unwrap();
+
+            let level = systems.runtime.block_on(handle).unwrap();
+
+            systems.level_async_load_handler = set_new_level(
+                level,
+                &mut systems.engine_handle,
+                &mut systems.world,
+                &mut systems.net,
+                &mut Some(&mut systems.render),
+                &mut systems.physic,
+                &mut systems.audio,
+                &mut systems.ui,
+                &mut systems.time,
+                &mut systems.effects,
+                &mut systems.runtime,
+            );
+        }
+    }
 
     #[cfg(target_arch= "wasm32")]
     systems.net.tick(
@@ -373,14 +402,18 @@ fn main_loop_tick(
         &mut systems.effects,
     );
 
-    systems.world.send_messages_and_process_commands(
+    send_messages_and_process_commands(
+        &mut systems.world,
         &mut systems.net,
-        &systems.physic,
+        &mut systems.physic,
         &mut systems.audio,
         &mut systems.ui,
         &mut systems.engine_handle,
         &mut systems.time,
         &mut systems.effects,
+        &mut Some(&mut systems.render),
+        &mut systems.runtime,
+        &mut systems.level_async_load_handler,
     );
 
     systems.physic.process_physics(
@@ -389,14 +422,18 @@ fn main_loop_tick(
         &mut systems.engine_handle
     );
 
-    systems.world.send_messages_and_process_commands(
+    send_messages_and_process_commands(
+        &mut systems.world,
         &mut systems.net,
-        &systems.physic,
+        &mut systems.physic,
         &mut systems.audio,
         &mut systems.ui,
         &mut systems.engine_handle,
         &mut systems.time,
         &mut systems.effects,
+        &mut Some(&mut systems.render),
+        &mut systems.runtime,
+        &mut systems.level_async_load_handler,
     );
 
     systems.render.process_player_input(

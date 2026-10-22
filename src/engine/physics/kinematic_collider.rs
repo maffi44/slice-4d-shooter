@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{
     actor::{
@@ -52,6 +41,7 @@ pub struct KinematicCollider {
     pub forces: Vec<Vec4>,
     pub is_on_y_ground: bool,
     pub is_on_w_ground: bool,
+    pub is_on_w_upper_ground: bool,
     pub is_on_x_ground: bool,
     actor_id: Option<ActorID>,
 }
@@ -80,6 +70,7 @@ impl KinematicCollider {
             forces: Vec::with_capacity(10),
             is_on_y_ground: false,
             is_on_w_ground: false,
+            is_on_w_upper_ground: false,
             is_on_x_ground: false,
             actor_id: None,
         }
@@ -142,6 +133,7 @@ impl KinematicCollider {
     ) {
         self.is_on_y_ground = false;
         self.is_on_w_ground = false;
+        self.is_on_w_upper_ground = false;
         self.is_on_x_ground = false;
 
         while let Some(force) = self.forces.pop() {
@@ -219,6 +211,18 @@ impl KinematicCollider {
 
             if dist < self.collider_radius * 0.99 {
                 self.is_on_w_ground = true;
+            }
+
+            let w_upper_position = transform.get_position() + ((self.collider_radius * 0.1) * W_UP);
+
+            let dist = get_dist(
+                w_upper_position,
+                static_objects,
+                Some(self.actor_id.expect("Some KinematicCollider have not actors_id during physics tick"))
+            );
+
+            if dist < self.collider_radius * 0.99 {
+                self.is_on_w_upper_ground = true;
             }
 
             let x_bottom_position = transform.get_position() - ((self.collider_radius * 0.1) * Vec4::X);

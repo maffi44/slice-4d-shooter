@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::time::Duration;
 
@@ -119,12 +108,14 @@ pub struct NetSystem {
     it_is_2d_3d_example: bool,
     current_visible_ui_elem: UIElementType,
     connection_status_visible: bool,
+    disable_net_system: bool,
 }
 
 impl NetSystem {
     pub async fn new(
         settings: &PlayerSettings,
         it_is_2d_3d_example: bool,
+        disable_net_system: bool,
         #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime
     ) -> Self {
@@ -147,6 +138,7 @@ impl NetSystem {
             it_is_2d_3d_example,
             current_visible_ui_elem: UIElementType::TitlePressPToPlayOnline,
             connection_status_visible: false,
+            disable_net_system,
         }
     }
 
@@ -170,76 +162,79 @@ impl NetSystem {
         ui_system: &mut UISystem,
     ) {
 
-        match self.connection_state.take().expect("ERROR: connection state in Net system is None")
+        if !self.disable_net_system
         {
-            ConnectionState::WaitingForUsersRequest =>
+            match self.connection_state.take().expect("ERROR: connection state in Net system is None")
             {
-                self.connection_state = Some(
-                    self.handle_waiting_for_user_input(
-                        input,
-                        async_runtime,
-                        ui_system
+                ConnectionState::WaitingForUsersRequest =>
+                {
+                    self.connection_state = Some(
+                        self.handle_waiting_for_user_input(
+                            input,
+                            async_runtime,
+                            ui_system
+                        )
                     )
-                )
-            }
-
-            ConnectionState::ConnectionFailure(timer, reason) =>
-            {
-                self.connection_state = Some(
-                    self.handle_connection_failure(
-                        timer,
-                        reason,
-                        engine_handle,
-                        ui_system
+                }
+    
+                ConnectionState::ConnectionFailure(timer, reason) =>
+                {
+                    self.connection_state = Some(
+                        self.handle_connection_failure(
+                            timer,
+                            reason,
+                            engine_handle,
+                            ui_system
+                        )
                     )
-                )
-            }
-
-            ConnectionState::ConnectingToMatchmakingServer(
-                game_server_url_promise,
-                connection_attempts_counter
-            ) =>
-            {
-                self.connection_state = Some(
-                    self.handle_connecting_to_matchmaking_server_state(
-                        game_server_url_promise,
-                        connection_attempts_counter,
-                        async_runtime,
-                        ui_system
-                    )
-                );
-            }
-
-            ConnectionState::ConnectingToGameServer(
-                connection_timeout_counter,
-                connection_attempts_counter,
-                webrtc_socket
-            ) =>
-            {
-                self.connection_state = Some(
-                    self.handle_connecting_to_game_server_state(
-                        connection_timeout_counter,
-                        connection_attempts_counter,
-                        webrtc_socket,
-                        async_runtime,
-                        engine_handle,
-                        ui_system
-                    )
-                );
-            }
-
-            ConnectionState::ConnectedToGameServer(webrtc_socket, server_id, players_id) =>
-            {
-                self.connection_state = Some(
-                    self.handle_connected_to_game_server_state(
-                        webrtc_socket,
-                        server_id,
-                        players_id,
-                        engine_handle,
-                        audio_system,
-                        ui_system
-                    )
-                );
+                }
+    
+                ConnectionState::ConnectingToMatchmakingServer(
+                    game_server_url_promise,
+                    connection_attempts_counter
+                ) =>
+                {
+                    self.connection_state = Some(
+                        self.handle_connecting_to_matchmaking_server_state(
+                            game_server_url_promise,
+                            connection_attempts_counter,
+                            async_runtime,
+                            ui_system
+                        )
+                    );
+                }
+    
+                ConnectionState::ConnectingToGameServer(
+                    connection_timeout_counter,
+                    connection_attempts_counter,
+                    webrtc_socket
+                ) =>
+                {
+                    self.connection_state = Some(
+                        self.handle_connecting_to_game_server_state(
+                            connection_timeout_counter,
+                            connection_attempts_counter,
+                            webrtc_socket,
+                            async_runtime,
+                            engine_handle,
+                            ui_system
+                        )
+                    );
+                }
+    
+                ConnectionState::ConnectedToGameServer(webrtc_socket, server_id, players_id) =>
+                {
+                    self.connection_state = Some(
+                        self.handle_connected_to_game_server_state(
+                            webrtc_socket,
+                            server_id,
+                            players_id,
+                            engine_handle,
+                            audio_system,
+                            ui_system
+                        )
+                    );
+                }
             }
         }
     }

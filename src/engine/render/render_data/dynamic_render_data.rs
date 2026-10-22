@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{
     actor::{
@@ -554,8 +543,8 @@ impl DynamicRenderData {
         let mut unbreakable_spheres_start = 0u32;
         let mut unbreakable_spheres_amount = 0u32;
         
-        let mut unbreakable_inf_cubes_start = 0u32;
-        let mut unbreakable_inf_cubes_amount = 0u32;
+        // let mut unbreakable_inf_cubes_start = 0u32;
+        // let mut unbreakable_inf_cubes_amount = 0u32;
         
         let mut unbreakable_sph_cubes_start = 0u32;
         let mut unbreakable_sph_cubes_amount = 0u32;
@@ -1188,7 +1177,7 @@ impl DynamicRenderData {
         unbreakable_sph_cubes_amount = index as u32 - unbreakable_sph_cubes_start;
 
 
-        unbreakable_inf_cubes_start = index as u32;
+        // unbreakable_inf_cubes_start = index as u32;
 
         // for shape in &sd.inf_w_cubes {
         //     self.dynamic_shapes_data.normal[index] = shape.clone();
@@ -1200,7 +1189,7 @@ impl DynamicRenderData {
         //     index += 1;
         // }
 
-        unbreakable_inf_cubes_amount = index as u32 - inf_cubes_start;
+        // unbreakable_inf_cubes_amount = index as u32 - inf_cubes_start;
 
 
         // packing unbreakable stickiness shapes
@@ -1544,7 +1533,7 @@ impl DynamicRenderData {
 
             &main_camera,
             clip_planes,
-            world.level.all_shapes_stickiness_radius,
+            world.level.as_ref().unwrap().all_shapes_stickiness_radius,
             for_generated_raymarch_shader,
         );
 
@@ -1552,7 +1541,7 @@ impl DynamicRenderData {
             self.update_spherical_areas_and_get_meatadata(
                 &main_camera,
                 clip_planes,
-                world.level.all_shapes_stickiness_radius
+                world.level.as_ref().unwrap().all_shapes_stickiness_radius
             );
 
         let beams_areas_amount = self.update_beams_buffers_and_get_amount();
@@ -1560,7 +1549,7 @@ impl DynamicRenderData {
         let player_forms_amount = self.update_player_forms_buffers_and_get_amount(
             &main_camera,
             clip_planes,
-            world.level.all_shapes_stickiness_radius
+            world.level.as_ref().unwrap().all_shapes_stickiness_radius
         );
 
         let players_screen_effects = get_players_screen_effects(world);
@@ -1739,18 +1728,6 @@ impl OtherDynamicData {
             .expect("Main actor is not ControlledActor")
             .get_camera();
 
-        // if it is 2d-3d example: send 3d slice transform data into the raymarch shader
-        if let ActorWrapper::PlayerFor2d3dExample(player) = main_actor
-        {
-            self.additional_data = player.get_2d_slice_pos().to_array();
-            self.additional_data_2 = player.get_2d_slice_xz_rot().transpose().to_cols_array();
-            self.splited_screen_in_2d_3d_example = player.show_3d_example_current_value;
-        }
-        else if let ActorWrapper::MainPlayer(player) = main_actor
-        {
-            self.zx_player_rotation = player.get_xz_rotation();
-        }
-
         self.camera_data = CameraUniform {
             cam_pos: camera.get_position().to_array(),
             cam_zw_rot: camera.get_zw_rotation_matrix().transpose().to_cols_array(),
@@ -1812,6 +1789,32 @@ impl OtherDynamicData {
         else
         {
             self.shadows_enabled = 0;
+        }
+
+        // if it is 2d-3d example: send 3d slice transform data into the raymarch shader
+        if let ActorWrapper::PlayerFor2d3dExample(player) = main_actor
+        {
+            self.additional_data = player.get_2d_slice_pos().to_array();
+            self.additional_data_2 = player.get_2d_slice_xz_rot().transpose().to_cols_array();
+            self.splited_screen_in_2d_3d_example = player.show_3d_example_current_value;
+        }
+        else if let ActorWrapper::MainPlayer(player) = main_actor
+        {
+            self.zx_player_rotation = player.get_xz_rotation();
+        }
+        else if let ActorWrapper::ObstacleCourseFreeMovementPlayer(player) = main_actor
+        {
+            self.additional_data[0] = player.dithering_effect;
+
+            self.additional_data[1] = player.navigation_lines_mode as f32;
+
+            self.additional_data[2] = player.nav_slice_height;
+
+            self.additional_data[3] = player.nav_slice_is_visible;
+
+            self.additional_data_2 = player.xwz_slice_point.to_array();
+
+            self.w_scanner_radius = if player.rotator_tool_equiped {1.0} else {0.0};
         }
     }
 }
@@ -2144,10 +2147,10 @@ pub fn cube_is_above_or_intersect_the_plane
 ) -> bool
 {
     assert!(
-        cube_size.x > 0.0 &&
-        cube_size.y > 0.0 &&
-        cube_size.z > 0.0 &&
-        cube_size.w > 0.0
+        cube_size.x >= 0.0 &&
+        cube_size.y >= 0.0 &&
+        cube_size.z >= 0.0 &&
+        cube_size.w >= 0.0
     );
 
     (cube_pos + cube_size*Vec4::new(1.0, 1.0, 1.0, 1.0)).dot(plane) > 0.0

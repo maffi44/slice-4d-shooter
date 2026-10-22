@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod action;
 
@@ -30,13 +19,12 @@ use crate::{
 
 use self::action::Action;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::{Arc, Mutex}};
 
+use gilrs::{Button, Event, Gilrs};
 use winit::{
     event::{
-        ElementState,
-         MouseButton,
-         KeyEvent,
+        ElementState, KeyEvent, MouseButton, MouseScrollDelta
     },
     keyboard::{
         KeyCode,
@@ -68,6 +56,7 @@ pub struct ActionsFrameState {
     pub jump_w: Action,
     pub first_mouse: Action,
     pub second_mouse: Action,
+    pub middle_mouse: Action,
     pub w_aim: Action,
     pub increase_render_quality: Action,
     pub decrease_render_quality: Action,
@@ -79,10 +68,20 @@ pub struct ActionsFrameState {
     pub arrow_right: Action,
     pub move_camera_back_in_example: Action,
     pub mouse_axis: Vec2,
+    pub mouse_wheel_delta: Vec2,
+    pub gamepad_right_stick_axis_delta: Vec2,
+    pub gamepad_left_stick_axis_delta: Vec2,
+    
 }
 
 impl ActionsFrameState {
-    fn current(actions_table: &HashMap<SomeButton, (ButtonActions, Action)>, mouse_axis: Vec2) -> Self {
+    fn current(
+        actions_table: &HashMap<SomeButton, Arc<Mutex<(ButtonActions, Action, i32)>>>,
+        mouse_axis: Vec2,
+        mouse_wheel_delta: Vec2,
+        gamepad_right_stick_axis: Vec2,
+        gamepad_left_stick_axis: Vec2,
+    ) -> Self {
         let mut move_forward = Action::new();
         let mut move_backward = Action::new();
         let mut move_right = Action::new();
@@ -94,6 +93,7 @@ impl ActionsFrameState {
         let mut jump_w = Action::new();
         let mut first_mouse = Action::new();
         let mut second_mouse = Action::new();
+        let mut middle_mouse = Action::new();
         let mut activate_hand_slot_0 = Action::new();
         let mut activate_hand_slot_1 = Action::new();
         let mut activate_hand_slot_2 = Action::new();
@@ -112,8 +112,11 @@ impl ActionsFrameState {
         let mut anti_projection_mode = Action::new();
         let mouse_axis = mouse_axis;
         
-        for (_, (button_action, action)) in actions_table.iter() {
-            match button_action {
+        for (_, action_pair) in actions_table.iter() {
+            
+            let (action_type, action, _) = &mut *action_pair.lock().unwrap();
+
+            match action_type {
                 ButtonActions::MoveForward => move_forward = action.clone(),
                 ButtonActions::MoveBackward => move_backward = action.clone(),
                 ButtonActions::MoveRight => move_right = action.clone(),
@@ -127,6 +130,7 @@ impl ActionsFrameState {
                 ButtonActions::HandSlot3 => activate_hand_slot_3 = action.clone(),
                 ButtonActions::FirstMouse => first_mouse = action.clone(),
                 ButtonActions::SecondMouse => second_mouse = action.clone(),
+                ButtonActions::MiddleMouse => middle_mouse = action.clone(),
                 ButtonActions::WDown => w_down = action.clone(),
                 ButtonActions::WUp => w_up = action.clone(),
                 ButtonActions::EnableWAim => enable_w_aim = action.clone(),
@@ -160,6 +164,7 @@ impl ActionsFrameState {
             jump_w,
             first_mouse,
             second_mouse,
+            middle_mouse,
             mouse_axis,
             w_aim: enable_w_aim,
             increase_render_quality,
@@ -173,6 +178,9 @@ impl ActionsFrameState {
             arrow_right,
             move_camera_back_in_example,
             anti_projection_mode,
+            mouse_wheel_delta,
+            gamepad_left_stick_axis_delta: gamepad_left_stick_axis,
+            gamepad_right_stick_axis_delta: gamepad_right_stick_axis,
         }
     }
 
@@ -188,6 +196,7 @@ impl ActionsFrameState {
         let jump_w = Action::new();
         let first_mouse = Action::new();
         let second_mouse = Action::new();
+        let middle_mouse = Action::new();
         let activate_hand_slot_0 = Action::new();
         let activate_hand_slot_1 = Action::new();
         let activate_hand_slot_2 = Action::new();
@@ -205,6 +214,9 @@ impl ActionsFrameState {
         let move_camera_back_in_example = Action::new();
         let anti_projection_mode = Action::new();
         let mouse_axis = Vec2::ZERO;
+        let gamepad_left_stick_axis_delta = Vec2::ZERO;
+        let gamepad_right_stick_axis_delta = Vec2::ZERO;
+        let mouse_wheel_delta = Vec2::ZERO;
 
         ActionsFrameState {
             move_forward,
@@ -223,6 +235,7 @@ impl ActionsFrameState {
             show_hide_controls,
             first_mouse,
             second_mouse,
+            middle_mouse,
             w_aim,
             increase_render_quality,
             decrease_render_quality,
@@ -234,7 +247,10 @@ impl ActionsFrameState {
             arrow_right,
             move_camera_back_in_example,
             anti_projection_mode,
-            mouse_axis
+            mouse_axis,
+            gamepad_left_stick_axis_delta,
+            gamepad_right_stick_axis_delta,
+            mouse_wheel_delta,
         }
     }
 }
@@ -248,6 +264,7 @@ pub enum MouseAxis {
 pub enum SomeButton {
     MouseButton(MouseButton),
     KeyCode(KeyCode),
+    GamepadButton(Button)
 }
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
@@ -269,6 +286,7 @@ pub enum ButtonActions {
     WDown,
     FirstMouse,
     SecondMouse,
+    MiddleMouse,
     EnableWAim,
     IncreaseRenderQuality,
     DecreaseRenderQuality,
@@ -294,8 +312,12 @@ enum ButtonActionsLinkedKeys {
 
 
 pub struct InputSystem {
-    actions_table: HashMap<SomeButton, (ButtonActions, Action)>,
+    actions_table: HashMap<SomeButton, Arc<Mutex<(ButtonActions, Action, i32)>>>,
     mouse_axis: Vec2,
+    gamepad_left_stick_axis: Vec2,
+    gamepad_right_stick_axis: Vec2,
+    mouse_wheel_delta: Vec2,
+    gilrs: Gilrs,
 }
 
 impl InputSystem {
@@ -303,123 +325,210 @@ impl InputSystem {
     pub fn new() -> Self {
         let mut actions_table = HashMap::new();
 
+        let move_forward = Arc::new(Mutex::new((ButtonActions::MoveForward, Action::new(), 0)));
+        let move_backward = Arc::new(Mutex::new((ButtonActions::MoveBackward, Action::new(), 0)));
+        let move_right = Arc::new(Mutex::new((ButtonActions::MoveRight, Action::new(), 0)));
+        let move_letf = Arc::new(Mutex::new((ButtonActions::MoveLeft, Action::new(), 0)));
+        let jump_w = Arc::new(Mutex::new((ButtonActions::JumpW, Action::new(), 0)));
+        let jump = Arc::new(Mutex::new((ButtonActions::Jump, Action::new(), 0)));
+        let w_scanner = Arc::new(Mutex::new((ButtonActions::WScanner, Action::new(), 0)));
+        let anti_projection_mode = Arc::new(Mutex::new((ButtonActions::AntiProjectionMode, Action::new(), 0)));
+        let first_mouse = Arc::new(Mutex::new((ButtonActions::FirstMouse, Action::new(), 0)));
+        let second_mouse = Arc::new(Mutex::new((ButtonActions::SecondMouse, Action::new(), 0)));
+        let middle_mouse = Arc::new(Mutex::new((ButtonActions::MiddleMouse, Action::new(), 0)));
+        let hand_slot_0 = Arc::new(Mutex::new((ButtonActions::HandSlot0, Action::new(), 0)));
+        let hand_slot_1 = Arc::new(Mutex::new((ButtonActions::HandSlot1, Action::new(), 0)));
+        let enable_w_aim = Arc::new(Mutex::new((ButtonActions::EnableWAim, Action::new(), 0)));
+        let show_hide_controls = Arc::new(Mutex::new((ButtonActions::ShowHideControls, Action::new(), 0)));
+
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyW),
-            (ButtonActions::MoveForward, Action::new())
+            move_forward.clone(),
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyS),
-            (ButtonActions::MoveBackward, Action::new())
+            move_backward.clone(),
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyD),
-            (ButtonActions::MoveRight, Action::new())
+            move_right.clone(),
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyA),
-            (ButtonActions::MoveLeft, Action::new())
+            move_letf.clone(),
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::ShiftLeft),
-            (ButtonActions::JumpW, Action::new())
+            jump_w.clone(),
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::Space),
-            (ButtonActions::Jump, Action::new())
+            jump.clone(),
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyE),
-            (ButtonActions::WScanner, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyJ),
-            (ButtonActions::WUp, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyK),
-            (ButtonActions::WDown, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Digit1),
-            (ButtonActions::HandSlot0, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Digit2),
-            (ButtonActions::HandSlot1, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Digit3),
-            (ButtonActions::HandSlot2, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::Digit4),
-            (ButtonActions::HandSlot3, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyT),
-            (ButtonActions::ShowHideControls, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::MouseButton(MouseButton::Left),
-            (ButtonActions::FirstMouse, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::MouseButton(MouseButton::Right),
-            (ButtonActions::SecondMouse, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyR),
-            (ButtonActions::EnableWAim, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyI),
-            (ButtonActions::DecreaseRenderQuality, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyO),
-            (ButtonActions::IncreaseRenderQuality, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyP),
-            (ButtonActions::ShadowsToggle, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::KeyG),
-            (ButtonActions::ConnectToServer, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::ArrowUp),
-            (ButtonActions::ArrowUp, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::ArrowDown),
-            (ButtonActions::ArrowDown, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::ArrowLeft),
-            (ButtonActions::ArrowLeft, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::ArrowRight),
-            (ButtonActions::ArrowRight, Action::new())
-        );
-        actions_table.insert(
-            SomeButton::KeyCode(KeyCode::ControlRight),
-            (ButtonActions::MoveCameraBackInExample, Action::new())
+            w_scanner.clone(),
         );
         actions_table.insert(
             SomeButton::KeyCode(KeyCode::KeyQ),
-            (ButtonActions::AntiProjectionMode, Action::new())
+            anti_projection_mode.clone(),
         );
+        actions_table.insert(
+            SomeButton::MouseButton(MouseButton::Left),
+            first_mouse.clone(),
+        );
+        actions_table.insert(
+            SomeButton::MouseButton(MouseButton::Right),
+            second_mouse.clone(),
+        );
+        actions_table.insert(
+            SomeButton::MouseButton(MouseButton::Middle),
+            middle_mouse.clone(),
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Digit1),
+            hand_slot_0.clone(),
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Digit2),
+            hand_slot_1.clone(),
+        );
+
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::DPadUp),
+            move_forward.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::DPadDown),
+            move_backward.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::DPadRight),
+            move_right.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::DPadLeft),
+            move_letf.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::East),
+            jump_w.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::South),
+            jump.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::RightThumb),
+            jump.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::North),
+            w_scanner.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::West),
+            anti_projection_mode.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::East),
+            enable_w_aim.clone()
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::RightTrigger),
+            first_mouse.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::RightTrigger2),
+            second_mouse.clone(),
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::LeftTrigger),
+            hand_slot_0
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::LeftTrigger2),
+            hand_slot_1
+        );
+        actions_table.insert(
+            SomeButton::GamepadButton(Button::Start),
+            show_hide_controls.clone()
+        );
+
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyJ),
+            Arc::new(Mutex::new((ButtonActions::WUp, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyK),
+            Arc::new(Mutex::new((ButtonActions::WDown, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Digit3),
+            Arc::new(Mutex::new((ButtonActions::HandSlot2, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::Digit4),
+            Arc::new(Mutex::new((ButtonActions::HandSlot3, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyT),
+            show_hide_controls,
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyR),
+            enable_w_aim
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyI),
+            Arc::new(Mutex::new((ButtonActions::DecreaseRenderQuality, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyO),
+            Arc::new(Mutex::new((ButtonActions::IncreaseRenderQuality, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyP),
+            Arc::new(Mutex::new((ButtonActions::ShadowsToggle, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::KeyG),
+            Arc::new(Mutex::new((ButtonActions::ConnectToServer, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ArrowUp),
+            Arc::new(Mutex::new((ButtonActions::ArrowUp, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ArrowDown),
+            Arc::new(Mutex::new((ButtonActions::ArrowDown, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ArrowLeft),
+            Arc::new(Mutex::new((ButtonActions::ArrowLeft, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ArrowRight),
+            Arc::new(Mutex::new((ButtonActions::ArrowRight, Action::new(), 0)))
+        );
+        actions_table.insert(
+            SomeButton::KeyCode(KeyCode::ControlRight),
+            Arc::new(Mutex::new((ButtonActions::MoveCameraBackInExample, Action::new(), 0)))
+        );
+        
 
         InputSystem {
             actions_table,
             mouse_axis: Vec2::ZERO,
+            gamepad_right_stick_axis: Vec2::ZERO,
+            gamepad_left_stick_axis: Vec2::ZERO,
+            mouse_wheel_delta: Vec2::ZERO,
+            gilrs: Gilrs::new().unwrap(),
         }
     }
 
 
-    pub fn get_actions_table(&self) -> &HashMap<SomeButton, (ButtonActions, Action)>
+    pub fn get_actions_table(&self) -> &HashMap<SomeButton, Arc<Mutex<(ButtonActions, Action, i32)>>>
     {
         &self.actions_table
     }
@@ -437,7 +546,10 @@ impl InputSystem {
                         master.current_input =
                             ActionsFrameState::current(
                                 &self.actions_table,
-                                self.mouse_axis
+                                self.mouse_axis,
+                                self.mouse_wheel_delta,
+                                self.gamepad_right_stick_axis,
+                                self.gamepad_left_stick_axis,
                             );
                     }
                     RemoteMaster(master) => {
@@ -453,33 +565,51 @@ impl InputSystem {
     {
         ActionsFrameState::current(
             &self.actions_table,
-            self.mouse_axis
+            self.mouse_axis,
+            self.mouse_wheel_delta,
+            self.gamepad_right_stick_axis,
+            self.gamepad_left_stick_axis,
         )
     }
 
 
     pub fn reset_input(&mut self) {
 
-        for (_, (_, action)) in self.actions_table.iter_mut() {
-            action.is_action_just_pressed = false;
+        for (_, action_pair) in self.actions_table.iter_mut() {
+            action_pair.lock().unwrap().1.is_action_just_pressed = false;
         }
 
         self.mouse_axis = Vec2::ZERO;
+        // self.gamepad_right_stick_axis = Vec2::ZERO;
+        // self.gamepad_left_stick_axis = Vec2::ZERO;
+        self.mouse_wheel_delta = Vec2::ZERO;
     }
 
     pub fn add_mouse_delta(&mut self, delta: Vec2) {
         self.mouse_axis += delta * -MOUSE_SENSITIVITY;
     }
 
+    pub fn add_gamepad_right_stick_axis_delta(&mut self, delta: Vec2) {
+        self.gamepad_right_stick_axis += delta * -MOUSE_SENSITIVITY;
+    }
+
+    pub fn add_gamepad_left_stick_axis_delta(&mut self, delta: Vec2) {
+        self.gamepad_left_stick_axis += delta * -MOUSE_SENSITIVITY;
+    }
+
     pub fn set_keyboard_input(&mut self, input: &KeyEvent) {
 
         if let PhysicalKey::Code(keycode) = input.physical_key {
     
-            if let Some((_, action)) =
-                self.actions_table.get_mut(&SomeButton::KeyCode(keycode)) {
+            if let Some(action_pair) =
+            self.actions_table.get_mut(&SomeButton::KeyCode(keycode)) {
+
+                let (_,action,pressed_count) = &mut *action_pair.lock().unwrap();
 
                 match input.state {
                     ElementState::Pressed => {
+                        *pressed_count += 1;
+
                         if action.is_action_pressed {
                             action.is_action_just_pressed = false;
                         } else {
@@ -489,21 +619,31 @@ impl InputSystem {
                         action.is_action_pressed = true;
                     },
                     ElementState::Released => {
+                        *pressed_count -= 1;
+
                         action.is_action_just_pressed = false;
                         action.is_action_pressed = false;
+                        if *pressed_count <= 0
+                        {
+                            *pressed_count = 0;
+                        }
                     }
                 }
             }
         }
     }
 
-    pub fn set_keyboard_input_by_keycode(&mut self, keycode: KeyCode, state: ElementState) {
+    pub fn set_gamepad_input(&mut self, button: Button, state: ElementState) {
     
-        if let Some((_, action)) =
-            self.actions_table.get_mut(&SomeButton::KeyCode(keycode)) {
+        if let Some(action_pair) =
+        self.actions_table.get_mut(&SomeButton::GamepadButton(button)) {
+
+            let (_,action,pressed_count) = &mut *action_pair.lock().unwrap();
 
             match state {
                 ElementState::Pressed => {
+                    *pressed_count += 1;
+
                     if action.is_action_pressed {
                         action.is_action_just_pressed = false;
                     } else {
@@ -513,32 +653,95 @@ impl InputSystem {
                     action.is_action_pressed = true;
                 },
                 ElementState::Released => {
+                    *pressed_count -= 1;
+
                     action.is_action_just_pressed = false;
                     action.is_action_pressed = false;
+                    if *pressed_count <= 0
+                    {
+                        *pressed_count = 0;
+                    }
+                }
+             }
+        }
+    }
+
+    pub fn set_keyboard_input_by_keycode(&mut self, keycode: KeyCode, state: ElementState) {
+    
+        if let Some(action_pair) =
+        self.actions_table.get_mut(&SomeButton::KeyCode(keycode)) {
+
+            let (_,action,pressed_count) = &mut *action_pair.lock().unwrap();
+
+            match state {
+                ElementState::Pressed => {
+                    *pressed_count += 1;
+
+                    if action.is_action_pressed {
+                        action.is_action_just_pressed = false;
+                    } else {
+                        action.is_action_just_pressed = true;
+                    }
+                    
+                    action.is_action_pressed = true;
+                },
+                ElementState::Released => {
+                    *pressed_count -= 1;
+
+                    action.is_action_just_pressed = false;
+                    action.is_action_pressed = false;
+                    if *pressed_count <= 0
+                    {
+                        *pressed_count = 0;
+                    }
                 }
             }
+        }
+    }
+
+    pub fn set_mouse_wheel_input(&mut self, delta: MouseScrollDelta) {
+
+        match delta
+        {
+            MouseScrollDelta::LineDelta(x, y) => {
+                self.mouse_wheel_delta = Vec2::new(x,y);
+            },
+            MouseScrollDelta::PixelDelta(pos) => {
+                self.mouse_wheel_delta = Vec2::new(pos.x as f32, pos.y as f32);
+            },
         }
     }
 
     pub fn set_mouse_button_input(&mut self, button: &MouseButton, state: &ElementState) {
         match button {
             MouseButton::Left => {
-                if let Some((_,action)) =
-                    self.actions_table.get_mut(&SomeButton::MouseButton(MouseButton::Left)) {
-                    
+                if let Some(action_pair) =
+                self.actions_table.get_mut(&SomeButton::MouseButton(MouseButton::Left)) {
+
+                    let (_,action,pressed_count) = &mut *action_pair.lock().unwrap();
+
                     match state {
                         ElementState::Pressed => {
+                            *pressed_count += 1;
+
                             if action.is_action_pressed == false {
                                 action.is_action_just_pressed = true;
                                 action.is_action_pressed = true;
+
                             } else {
                                 action.is_action_just_pressed = false;
                                 action.is_action_pressed = true;
                             }
                         },
                         ElementState::Released => {
+                            *pressed_count -= 1;
+
                             action.is_action_just_pressed = false;
                             action.is_action_pressed = false;
+                            if *pressed_count <= 0
+                            {
+                                *pressed_count = 0;
+                            }
                         },
                     }
 
@@ -546,11 +749,15 @@ impl InputSystem {
                 }
             },
             MouseButton::Middle => {
-                if let Some((_,action)) =
-                    self.actions_table.get_mut(&SomeButton::MouseButton(MouseButton::Middle)) {
+                if let Some(action_pair) =
+                self.actions_table.get_mut(&SomeButton::MouseButton(MouseButton::Middle)) {
+                    
+                    let (_,action,pressed_count) = &mut *action_pair.lock().unwrap();
                     
                     match state {
                         ElementState::Pressed => {
+                            *pressed_count += 1;
+
                             if action.is_action_pressed == false {
                                 action.is_action_just_pressed = true;
                                 action.is_action_pressed = true;
@@ -560,19 +767,29 @@ impl InputSystem {
                             }
                         },
                         ElementState::Released => {
+                            *pressed_count -= 1;
+
                             action.is_action_just_pressed = false;
                             action.is_action_pressed = false;
+                            if *pressed_count <= 0
+                            {
+                                *pressed_count = 0;
+                            }
                         },
                     }
                     // action.already_captured = false;
                 }
             },
             MouseButton::Right => {
-                if let Some((_,action)) =
-                    self.actions_table.get_mut(&SomeButton::MouseButton(MouseButton::Right)) {
+                if let Some(action_pair) =
+                self.actions_table.get_mut(&SomeButton::MouseButton(MouseButton::Right)) {
                     
+                    let (_,action,pressed_count) = &mut *action_pair.lock().unwrap();
+
                     match state {
                         ElementState::Pressed => {
+                            *pressed_count += 1;
+
                             if action.is_action_pressed == false {
                                 action.is_action_just_pressed = true;
                                 action.is_action_pressed = true;
@@ -582,19 +799,29 @@ impl InputSystem {
                             }
                         },
                         ElementState::Released => {
+                            *pressed_count -= 1;
+
                             action.is_action_just_pressed = false;
                             action.is_action_pressed = false;
+                            if *pressed_count <= 0
+                            {
+                                *pressed_count = 0;
+                            }
                         },
                     }
                     // action.already_captured = false;
                 }
             },
             MouseButton::Other(code) => {
-                if let Some((_,action)) =
-                    self.actions_table.get_mut(&SomeButton::MouseButton(MouseButton::Other(*code))) {
-                    
+                if let Some(action_pair) =
+                self.actions_table.get_mut(&SomeButton::MouseButton(MouseButton::Other(*code))) {
+
+                    let (_,action,pressed_count) = &mut *action_pair.lock().unwrap();
+
                     match state {
                         ElementState::Pressed => {
+                            *pressed_count += 1;
+
                             if action.is_action_pressed == false {
                                 action.is_action_just_pressed = true;
                                 action.is_action_pressed = true;
@@ -604,8 +831,14 @@ impl InputSystem {
                             }
                         },
                         ElementState::Released => {
+                            *pressed_count -= 1;
+
                             action.is_action_just_pressed = false;
                             action.is_action_pressed = false;
+                            if *pressed_count <= 0
+                            {
+                                *pressed_count = 0;
+                            }
                         },
                     }
                     // action.already_captured = false;
@@ -613,6 +846,52 @@ impl InputSystem {
             },
             MouseButton::Back => {},
             MouseButton::Forward => {},
+        }
+    }
+
+    #[inline]
+    pub fn collect_gamepad_button_input(&mut self)
+    {
+        while let Some(Event {event, ..}) = self.gilrs.next_event()
+        {
+            match event
+            {
+                gilrs::EventType::ButtonPressed(button, code) =>
+                {
+                    self.set_gamepad_input(button, ElementState::Pressed);
+                }
+                gilrs::EventType::ButtonReleased(button, code) =>
+                {
+                    self.set_gamepad_input(button, ElementState::Released);
+
+                },
+                gilrs::EventType::AxisChanged(axis, delta, code) => {
+                    match axis
+                    {
+                        gilrs::Axis::LeftStickX =>
+                        {
+                            self.gamepad_left_stick_axis.x = delta;
+                        },
+                        gilrs::Axis::LeftStickY =>
+                        {
+                            self.gamepad_left_stick_axis.y = delta;
+                        },
+                        gilrs::Axis::RightStickX =>
+                        {
+                            self.gamepad_right_stick_axis.x = delta;
+                        },
+                        gilrs::Axis::RightStickY =>
+                        {
+                            self.gamepad_right_stick_axis.y = delta;
+                        },
+                        _ => {}
+                    }
+                },
+                gilrs::EventType::Disconnected => {
+
+                },
+                _ => {},
+            }
         }
     }
 }

@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod render_data;
 pub mod camera;
@@ -25,10 +14,9 @@ use std::{sync::{Arc, Mutex}, time::Duration};
 use crate::{
     engine::{
         render::renderer::RendererBuffers, time::TimeSystem, world::{
-            static_object::{
+            World, static_object::{
                 ColoringArea, StaticObject, VolumeArea
-            },
-            World
+            }
         }
     }, transform::Transform
 };
@@ -41,7 +29,7 @@ use self::{
 use client_server_protocol::Team;
 #[cfg(not(target_arch="wasm32"))]
 use tokio::runtime::Runtime;
-use wgpu::{Backend, Queue};
+use wgpu::{Backend, Device, PipelineLayout, Queue, RenderPipeline};
 use winit::{dpi::PhysicalSize, window::Window};
 
 use super::{input::ActionsFrameState, physics::dynamic_collider::PlayersDollCollider, ui::UISystem, world::static_object::VisualWave};
@@ -66,6 +54,14 @@ pub struct ChildVisualElement {
     pub player: Option<(PlayersDollCollider, Team)>,
 }
 
+#[derive(Clone)]
+pub struct MainShaderRenderPipelineBuilderKit
+{
+    pub device: Device,
+    pub vertex_desc: wgpu::VertexBufferLayout<'static>,
+    pub config: wgpu::SurfaceConfiguration,
+    pub raymarch_render_pipeline_layout: PipelineLayout,
+}
 
 pub struct RenderQualityData
 {
@@ -78,12 +74,11 @@ pub struct RenderSystem {
     renderer: Arc<Mutex<Renderer>>,
     renderer_queue: Arc<Queue>,
     buffers: RendererBuffers,
-
-    generated_raymarch_shader: bool,
-
+    main_raymarch_shader_pipeline: Arc<Mutex<(Option<RenderPipeline>, Option<RenderPipeline>)>>,
     render_quality_data: RenderQualityData,
-
     window_size: PhysicalSize<u32>,
+    is_generated_raymarch_shader: bool,
+    pub render_pipeline_builder_kit: MainShaderRenderPipelineBuilderKit,
 }
 
 
@@ -92,31 +87,28 @@ impl RenderSystem
 {
     pub async fn new(
         window: Window,
-        world: &World,
         time: &TimeSystem,
         ui: &mut UISystem,
         #[cfg(not(target_arch="wasm32"))]
         runtime: &mut Runtime,
-        it_is_2d_3d_example: bool,
         with_ui_renderer: bool,
-        with_generated_raymarch_shader: bool,
         specific_backend: Option<Backend>,
     ) -> Self
     {    
-        let render_data = RenderData::new(world, time, &window);
+        let render_data = RenderData::new(time, &window);
+
+        let main_raymarch_shader_pipeline = Arc::new(Mutex::new((None, None)));
         
-        let (renderer, buffers) = Renderer::new(
+        let (renderer, buffers, render_pipeline_builder_kit) = Renderer::new(
                 &window,
                 &render_data,
                 ui,
                 0.008,
                 // time.target_frame_duration.as_secs_f64(),
-                world.players_settings.screen_resolution_scale,
-                &world.level.visual_settings_of_environment.sky_box_name,
-                it_is_2d_3d_example,
+                1.0,
                 with_ui_renderer,
-                with_generated_raymarch_shader,
                 specific_backend,
+                main_raymarch_shader_pipeline.clone(),
             ).await;
 
         let renderer_queue = renderer.queue.clone();
@@ -197,14 +189,12 @@ impl RenderSystem
             renderer,
             renderer_queue,
             buffers,
-
             render_data,
-
-            generated_raymarch_shader: with_generated_raymarch_shader,
-
+            main_raymarch_shader_pipeline,
             render_quality_data,
-
             window_size,
+            is_generated_raymarch_shader: false,
+            render_pipeline_builder_kit,
         }
     }
 
@@ -247,7 +237,7 @@ impl RenderSystem
             time,
             self.window_size,
             &self.render_data.static_data.static_bounding_box.clone(),
-            self.generated_raymarch_shader,
+            self.is_generated_raymarch_shader,
             &self.render_quality_data,
         );
 
@@ -342,6 +332,26 @@ impl RenderSystem
             .lock()
             .unwrap()
             .resize(self.window_size);
+    }
+
+
+    pub fn set_new_level(&mut self, world: &mut World)
+    {
+        self.is_generated_raymarch_shader = world.level.as_ref().unwrap().is_generated_raymarch_shader;
+
+        self.render_data.static_data.update(world.level.as_ref().unwrap());
+
+        self.renderer_queue.write_buffer(
+            &self.buffers.other_static_data_buffer,
+            0,
+            bytemuck::cast_slice(&[self.render_data.static_data.other_static_data]),
+        );
+
+        *self.main_raymarch_shader_pipeline.lock().unwrap() =
+        (
+            world.level.as_mut().unwrap().main_shader_render_pipeline.take(),
+            world.level.as_mut().unwrap().minimap_shader_render_pipeline.take()
+        );
     }
 }
 

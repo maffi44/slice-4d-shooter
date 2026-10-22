@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod player_input_master;
 pub mod player_inner_state;
@@ -26,15 +15,14 @@ use client_server_protocol::{
     RemoteMessage,
     Team
 };
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{Rng, seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
         Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{
             Device, DeviceType, holegun::HoleGun, obstaclesgun::ObstaclesGun, shotgun::Shotgun
-        }, flag_base::FlagBaseMessage, obstaclesgun_shot::ObstaclesGunShot, players_doll::PlayerDollInputState
-    },
-    engine::{
+        }, flag_base::FlagBaseMessage, main_player::player_input_master::LocalMaster, obstaclesgun_shot::ObstaclesGunShot, players_doll::PlayerDollInputState
+    }, engine::{
         audio::{
             AudioSystem,
             Sound
@@ -50,8 +38,7 @@ use crate::{
         }, render::{VisualElement, camera::Camera}, time::TimeSystem, ui::{
             UIElement, UIElementType, UISystem
         }, world::{level::Spawn, static_object::VisualWave}
-    },
-    transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
+    }, transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
 };
 
 use self::{
@@ -790,12 +777,12 @@ pub struct MainPlayer {
 
     active_hands_slot: ActiveHandsSlot, 
 
-    hands_slot_0: Box<dyn Device>,
-    hands_slot_1: Option<Box<dyn Device>>,
-    hands_slot_2: Option<Box<dyn Device>>,
-    hands_slot_3: Option<Box<dyn Device>>,
+    hands_slot_0: Box<dyn Device + Send>,
+    hands_slot_1: Option<Box<dyn Device + Send>>,
+    hands_slot_2: Option<Box<dyn Device + Send>>,
+    hands_slot_3: Option<Box<dyn Device + Send>>,
 
-    devices: [Option<Box<dyn Device>>; 4],
+    devices: [Option<Box<dyn Device + Send>>; 4],
 
     pub player_settings: PlayerSettings,
 
@@ -804,6 +791,9 @@ pub struct MainPlayer {
     screen_effects: PlayerScreenEffects,
 
     w_scanner: WScanner,
+
+    red_spawn_points: Vec<Vec4>,
+    blue_spawn_points: Vec<Vec4>,
 }
 
 pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.012, 0.1, 0.7);
@@ -874,11 +864,43 @@ pub enum PlayerMessage {
     SetNewTeam(
         // new team you have joined
         Team, 
-    )
+    ),
 }
 
 
 impl Actor for MainPlayer {
+
+    fn on_level_loaded(
+        &mut self,
+        physic_system: &PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        audio_system: &mut AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
+    )
+    {
+        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::RotatingAroundW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
+        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
+            Sound::ShiftingAlongW,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
+        self.inner_state.rotating_around_w_sound_handle = rotating_around_w_sound_handle;
+        self.inner_state.shifting_along_w_sound_handle = shifting_along_w_sound_handle;
+    }
 
     fn get_actor_as_controlled(&self) -> Option<&dyn ControlledActor> {
         Some(self)
@@ -1150,7 +1172,7 @@ impl Actor for MainPlayer {
                                 engine_handle.send_command(
                                     Command {
                                         sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
+                                        command_type: CommandType::SpawnControlledActor(
                                             self.get_id().expect("Player have not ActorID")
                                         )
                                     }
@@ -1176,7 +1198,7 @@ impl Actor for MainPlayer {
                                 engine_handle.send_command(
                                     Command {
                                         sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
+                                        command_type: CommandType::SpawnControlledActor(
                                             self.get_id().expect("Player have not ActorID")
                                         )
                                     }
@@ -1202,7 +1224,7 @@ impl Actor for MainPlayer {
                                 engine_handle.send_command(
                                     Command {
                                         sender: self.get_id().expect("Player have not ActorID"),
-                                        command_type: CommandType::RespawnPlayer(
+                                        command_type: CommandType::SpawnControlledActor(
                                             self.get_id().expect("Player have not ActorID")
                                         )
                                     }
@@ -2611,10 +2633,11 @@ pub fn process_player_respawn(
 )
 {
     if inner_state.after_death_timer >= player_settings.max_respawn_timer {
+        
         engine_handle.send_command(
             Command {
                 sender: my_id,
-                command_type: CommandType::RespawnPlayer(
+                command_type: CommandType::SpawnControlledActor(
                     my_id
                 )
             }
@@ -2624,10 +2647,11 @@ pub fn process_player_respawn(
 
     if input.first_mouse.is_action_just_pressed() {
         if inner_state.after_death_timer >= player_settings.min_respawn_timer {
+            
             engine_handle.send_command(
                 Command {
                     sender: my_id,
-                    command_type: CommandType::RespawnPlayer(
+                    command_type: CommandType::SpawnControlledActor(
                         my_id
                     )
                 }
@@ -2703,11 +2727,11 @@ pub fn decrease_getting_damage_screen_effect
 pub fn process_devices_while_player_is_dead
 (
     active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
-    devices: &mut [Option<Box<dyn Device>>;4],
+    hands_slot_0: &mut Box<dyn Device + Send>,
+    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
+    devices: &mut [Option<Box<dyn Device + Send>>;4],
     inner_state: &mut PlayerInnerState,
     input: &ActionsFrameState,
     my_id: ActorID,
@@ -2754,11 +2778,11 @@ pub fn process_devices_while_player_is_dead
 pub fn process_active_devices_input
 (
     active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
-    devices: &mut [Option<Box<dyn Device>>;4],
+    hands_slot_0: &mut Box<dyn Device + Send>,
+    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
+    devices: &mut [Option<Box<dyn Device + Send>>;4],
     inner_state: &mut PlayerInnerState,
     screen_effects: &mut PlayerScreenEffects,
     input: &ActionsFrameState,
@@ -2836,10 +2860,10 @@ pub fn process_active_devices_input
 pub fn process_switch_active_hand_slot_input
 (
     active_hands_slot: &mut ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
+    hands_slot_0: &mut Box<dyn Device + Send>,
+    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
     inner_state: &mut PlayerInnerState,
     screen_effects: &mut PlayerScreenEffects,
     input: &ActionsFrameState,
@@ -3046,10 +3070,10 @@ pub fn deavctivate_previous_device
 (
     new_active_slot: ActiveHandsSlot,
     active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
+    hands_slot_0: &mut Box<dyn Device + Send>,
+    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
     inner_state: &mut PlayerInnerState,
     screen_effects: &mut PlayerScreenEffects,
     my_id: ActorID,
@@ -3124,13 +3148,13 @@ pub fn get_effected_by_base
 (
     inner_state: &mut PlayerInnerState,
     active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
+    hands_slot_0: &mut Box<dyn Device + Send>,
+    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
     w_scanner: &mut WScanner,
     screen_effects: &mut PlayerScreenEffects,
-    devices: &mut [Option<Box<dyn Device>>;4],
+    devices: &mut [Option<Box<dyn Device + Send>>;4],
     my_id: ActorID,
     player_settings: &PlayerSettings,
     physic_system: &PhysicsSystem,
@@ -3140,86 +3164,86 @@ pub fn get_effected_by_base
     delta: f32,
 )
 {
-    let base_coef = 
-    {
-        //temporary solution, I'll change it to projecting point onto a line approach
-        let pos = inner_state.get_position().z;
+    // let base_coef = 
+    // {
+    //     //temporary solution, I'll change it to projecting point onto a line approach
+    //     let pos = inner_state.get_position().z;
 
-        let mut coef = f32::clamp(
-            (pos - inner_state.blue_base_position.z) /
-            (inner_state.red_base_position.z - inner_state.blue_base_position.z),
-                0.0,
-                1.0
-        );
+    //     let mut coef = f32::clamp(
+    //         (pos - inner_state.blue_base_position.z) /
+    //         (inner_state.red_base_position.z - inner_state.blue_base_position.z),
+    //             0.0,
+    //             1.0
+    //     );
 
-        if inner_state.team == Team::Blue
-        {
-            coef = 1.0 - coef;
-        }
+    //     if inner_state.team == Team::Blue
+    //     {
+    //         coef = 1.0 - coef;
+    //     }
 
-        coef = (coef * 2.0) - 1.0;
+    //     coef = (coef * 2.0) - 1.0;
 
-        coef.max(0.0)
-    };
+    //     coef.max(0.0)
+    // };
 
-    inner_state.hp += BASE_EFFECT_HP_IMPACT_SPEED * delta * base_coef;
+    // inner_state.hp += BASE_EFFECT_HP_IMPACT_SPEED * delta * base_coef;
 
-    if inner_state.hp > PLAYER_MAX_HP
-    {
-        inner_state.hp = PLAYER_MAX_HP;
-    }
+    // if inner_state.hp > PLAYER_MAX_HP
+    // {
+    //     inner_state.hp = PLAYER_MAX_HP;
+    // }
 
-    let health_bar = match inner_state.team {
-        Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
-        Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
-    };
+    // let health_bar = match inner_state.team {
+    //     Team::Red => ui_system.get_mut_ui_element(&UIElementType::HeathBarRed), 
+    //     Team::Blue => ui_system.get_mut_ui_element(&UIElementType::HeathBarBlue), 
+    // };
 
-    if let UIElement::ProgressBar(bar) = health_bar {
-        let bar_value = {
-            (inner_state.hp as f32 / PLAYER_MAX_HP as f32)
-                .clamp(0.0, 1.0)
-        };
+    // if let UIElement::ProgressBar(bar) = health_bar {
+    //     let bar_value = {
+    //         (inner_state.hp as f32 / PLAYER_MAX_HP as f32)
+    //             .clamp(0.0, 1.0)
+    //     };
 
-        bar.set_bar_value(bar_value)
+    //     bar.set_bar_value(bar_value)
 
-    } else {
-        panic!("Health Bar is not Progress Bar")
-    }
+    // } else {
+    //     panic!("Health Bar is not Progress Bar")
+    // }
 
-    if inner_state.hp <= 0.0
-    {
-        die
-        (
-            inner_state,
-            active_hands_slot,
-            hands_slot_0,
-            hands_slot_1,
-            hands_slot_2,
-            hands_slot_3,
-            w_scanner,
-            screen_effects,
-            devices,
-            my_id,
-            player_settings,
-            physic_system,
-            audio_system,
-            ui_system,
-            engine_handle,
-        );
-    }
+    // if inner_state.hp <= 0.0
+    // {
+    //     die
+    //     (
+    //         inner_state,
+    //         active_hands_slot,
+    //         hands_slot_0,
+    //         hands_slot_1,
+    //         hands_slot_2,
+    //         hands_slot_3,
+    //         w_scanner,
+    //         screen_effects,
+    //         devices,
+    //         my_id,
+    //         player_settings,
+    //         physic_system,
+    //         audio_system,
+    //         ui_system,
+    //         engine_handle,
+    //     );
+    // }
 }
 
 
 pub fn check_if_touching_death_plane(
     inner_state: &mut PlayerInnerState,
     active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
+    hands_slot_0: &mut Box<dyn Device + Send>,
+    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
     w_scanner: &mut WScanner,
     screen_effects: &mut PlayerScreenEffects,
-    devices: &mut [Option<Box<dyn Device>>;4],
+    devices: &mut [Option<Box<dyn Device + Send>>;4],
     my_id: ActorID,
     player_settings: &PlayerSettings,
     physic_system: &PhysicsSystem,
@@ -3255,13 +3279,13 @@ pub fn die
 (
     inner_state: &mut PlayerInnerState,
     active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
+    hands_slot_0: &mut Box<dyn Device + Send>,
+    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
     w_scanner: &mut WScanner,
     screen_effects: &mut PlayerScreenEffects,
-    devices: &mut [Option<Box<dyn Device>>;4],
+    devices: &mut [Option<Box<dyn Device + Send>>;4],
     my_id: ActorID,
     player_settings: &PlayerSettings,
     physic_system: &PhysicsSystem,
@@ -3414,13 +3438,13 @@ pub fn telefraged
 (
     inner_state: &mut PlayerInnerState,
     active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
+    hands_slot_0: &mut Box<dyn Device + Send>,
+    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
     w_scanner: &mut WScanner,
     screen_effects: &mut PlayerScreenEffects,
-    devices: &mut [Option<Box<dyn Device>>;4],
+    devices: &mut [Option<Box<dyn Device + Send>>;4],
     my_id: ActorID,
     player_settings: &PlayerSettings,
     physic_system: &PhysicsSystem,
@@ -3665,12 +3689,12 @@ pub fn get_damage_and_add_force(
     screen_effects: &mut PlayerScreenEffects,
     inner_state: &mut PlayerInnerState,
     active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device>,
-    hands_slot_1: &mut Option<Box<dyn Device>>,
-    hands_slot_2: &mut Option<Box<dyn Device>>,
-    hands_slot_3: &mut Option<Box<dyn Device>>,
+    hands_slot_0: &mut Box<dyn Device + Send>,
+    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
     w_scanner: &mut WScanner,
-    devices: &mut [Option<Box<dyn Device>>;4],
+    devices: &mut [Option<Box<dyn Device + Send>>;4],
     my_id: ActorID,
     player_settings: &PlayerSettings,
     physic_system: &PhysicsSystem,
@@ -3752,10 +3776,10 @@ pub fn set_gun_to_slot(
 
 
 pub fn put_device_into_device_slot(
-    devices: &mut [Option<Box<dyn Device>>;4],
+    devices: &mut [Option<Box<dyn Device + Send>>;4],
     slot_number: PlayersDeviceSlotNumber,
-    device: Box<dyn Device>
-) -> Option<Box<dyn Device>> {
+    device: Box<dyn Device + Send>
+) -> Option<Box<dyn Device + Send>> {
 
     match device.get_device_type() {
         DeviceType::Device => {
@@ -3791,17 +3815,22 @@ pub fn put_device_into_device_slot(
 impl MainPlayer {
 
     pub fn new(
-        master: InputMaster,
+        // master: InputMaster,
         player_settings: PlayerSettings,
-        audio_system: &mut AudioSystem,
-        blue_base_position: Vec4,
-        red_base_position: Vec4,
+        // audio_system: &mut AudioSystem,
+
+        red_spawn_points: Vec<Vec4>,
+        blue_spawn_points: Vec<Vec4>,
     ) -> Self {
+
+        let master = InputMaster::LocalMaster(
+            LocalMaster::new(ActionsFrameState::empty())
+        );
         
         let screen_effects = PlayerScreenEffects::default();
 
         let w_scanner = WScanner::new(&player_settings);
-        
+
         MainPlayer {
             id: None,
 
@@ -3810,11 +3839,10 @@ impl MainPlayer {
                 &player_settings,
                 false,
                 false,
-                blue_base_position,
-                red_base_position,
                 RIGHT*0.6,
                 UP * player_settings.collider_radius * 0.2,
-                audio_system,
+                None,
+                None,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
 
@@ -3851,7 +3879,7 @@ impl MainPlayer {
                     0.0
                 ),
             ))),
-            hands_slot_3: Some(Box::new(ObstaclesGun::new(
+            hands_slot_3: None, /*Some(Box::new(ObstaclesGun::new(
                 player_settings.energy_gun_hole_size_mult, 
                 player_settings.energy_gun_add_force_mult, 
                 player_settings.energy_gun_damage_mult, 
@@ -3862,7 +3890,7 @@ impl MainPlayer {
                     -1.0,
                     0.0
                 ),
-            ))),
+            ))),*/
 
             devices: [None, None, None, None],
             
@@ -3874,6 +3902,8 @@ impl MainPlayer {
 
             w_scanner,
             
+            red_spawn_points,
+            blue_spawn_points,
         }
     }
 
@@ -3909,21 +3939,33 @@ impl ControlledActor for MainPlayer
 
     fn spawn(
         &mut self,
-        spawns: &mut Vec<Spawn>,
         physics_system: &PhysicsSystem,
         ui_system: &mut UISystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
-        let mut rng = thread_rng();
-        spawns.shuffle(&mut rng);
+        let spawns: &Vec<Vec4>;
 
-        let mut current_spawn = spawns.last().expect("spawns in respawn function has zero length");
+        match self.get_team()
+        {
+            Team::Red => 
+            {
+                spawns = &self.red_spawn_points;
+            },
+            Team::Blue =>
+            {
+                spawns = &self.blue_spawn_points;
+            },
+        }
+        let mut rng = thread_rng();
+
+        let rand_index: usize = rng.gen_range(0..spawns.len());
+        let mut current_spawn = *spawns.get(rand_index).expect("Main Player haven't spawn points");
 
         for spawn in spawns.iter()
         {
             let hits = physics_system.sphere_cast_on_dynamic_colliders(
-                spawn.spawn_position,
+                *spawn,
                 self.inner_state.get_collider_radius(),
                 Some(self.get_id().expect("Player hasn't ActorID"))
             );
@@ -3938,13 +3980,13 @@ impl ControlledActor for MainPlayer
                 }
             }
 
-            current_spawn = spawn;
+            current_spawn = *spawn;
             
             break;
         };
 
         let hits = physics_system.sphere_cast_on_dynamic_colliders(
-            current_spawn.spawn_position,
+            current_spawn,
             self.inner_state.get_collider_radius(),
             Some(self.get_id().expect("Player hasn't ActorID"))
         );
@@ -4079,11 +4121,11 @@ impl ControlledActor for MainPlayer
 
         self.inner_state.collider.reset_forces_and_velocity();
 
-        self.inner_state.transform = Transform::from_position(current_spawn.spawn_position);
+        self.inner_state.transform = Transform::from_position(current_spawn);
 
         // self.current_w_level = current_spawn.w_level;
 
-        self.inner_state.player_previous_w_position = current_spawn.spawn_position.w;
+        self.inner_state.player_previous_w_position = current_spawn.w;
 
         let player_doll_input_state = PlayerDollInputState {
             move_forward: false,

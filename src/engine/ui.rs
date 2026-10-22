@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::{
     collections::{
@@ -166,6 +155,8 @@ pub enum UIElementType {
     TitleConnectionFailedOldVersion,
     TitleConnectionFailedLostConnection,
     TutorialWindow,
+    RotatorDraft,
+    RotatorTutorialDraft,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
@@ -219,6 +210,8 @@ pub enum TextureType {
     TitleConnectionFailedOldVersion,
     TitleConnectionFailedLostConnection,
     TutorialWindow,
+    RotatorDraft,
+    RotatorTutorialDraft,
 }
 
 
@@ -430,6 +423,14 @@ impl UISystem {
         texture_sources.insert(
             TextureType::TutorialWindow,
             include_bytes!("../assets/textures/tutorial_window.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::RotatorDraft,
+            include_bytes!("../assets/textures/rotator_draft.png").as_slice()
+        );
+        texture_sources.insert(
+            TextureType::RotatorTutorialDraft,
+            include_bytes!("../assets/textures/rotator_tutorial_draft.png").as_slice()
         );
         
 
@@ -1796,6 +1797,52 @@ impl UISystem {
                 )
             )
         );
+        ui_elements.insert(
+            UIElementType::RotatorTutorialDraft,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::CenterCenter,
+                            position: Vec2::new(0.0, 0.0),
+                            size: RectSize::LockedHeight(
+                                1.0,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 3,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RotatorTutorialDraft
+                )
+            )
+        );
+        ui_elements.insert(
+            UIElementType::RotatorDraft,
+            UIElement::Image(
+                UIImage::new(
+                    UIData::new(
+                        UIRect {
+                            anchor: RectAnchor::DownRight,
+                            position: Vec2::new(1.0, -1.0),
+                            size: RectSize::LockedWight(
+                                0.35,
+                            ),
+                            rotation_around_rect_center: 0.0,
+                            transparency: 1.0,
+                            drawing_order: 1,
+                            transform_buffer: None,
+                        },
+                        false,
+                        None,
+                    ),
+                    TextureType::RotatorDraft
+                )
+            )
+        );
 
 
 
@@ -1854,7 +1901,7 @@ impl UISystem {
                         true => 1.0_f32,
                         false => 0.0_f32,
                     };
-                    
+
                     let parent_transform = {
                         match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
                             UIElement::Image(elem) => {
@@ -2224,7 +2271,7 @@ impl UIRect {
             return RectTransformUniform {
                 rotation_around_rect_center: self.rotation_around_rect_center,
                 rotation_around_screen_center: self.rotation_around_rect_center,
-                transparency: self.transparency,
+                transparency: self.transparency * is_visible_coef,
                 empty_bytes: 0.0,
                 scale,
                 translation,
