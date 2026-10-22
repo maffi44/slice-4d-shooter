@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod render;
 pub mod input;
@@ -49,14 +38,13 @@ use crate::{
             PlayerMessage,
             player_settings::PlayerSettings
         }
-    },
-    engine::{
+    }, engine::{
         engine_handle::{
             Command,
             CommandType
         },
         world::level::Level
-    }
+    }, read_args::GameMode
 };
 
 use self::{
@@ -138,9 +126,9 @@ impl Engine {
         window: Window,
         start_level: String,
         with_ui_renderer: bool,
-        it_is_2d_3d_example: bool,
         disable_net_system: bool,
         specific_backend: Option<Backend>,
+        game_mode: GameMode
     ) -> Engine
     {
         #[cfg(not(target_arch = "wasm32"))]
@@ -210,37 +198,35 @@ impl Engine {
         let mut audio = AudioSystem::new(false).await;
 
         let mut effects = EffectsSystem::new();
-
-        let net = NetSystem::new(
+        
+        let level = world::level::Level::load_level(
+            start_level,
+            world.players_settings.clone(),
+            Some(render.render_pipeline_builder_kit.clone())
+        ).await;
+        
+        let mut net = NetSystem::new(
             &world.players_settings,
-            it_is_2d_3d_example,
+            level.it_is_2d_3d_example,
             disable_net_system,
             #[cfg(not(target_arch = "wasm32"))]
             &mut runtime
         ).await;
         log::info!("engine systems: net init");
-
-        let level = {
-            runtime.block_on(
-                world::level::Level::load_level(
-                    start_level,
-                    world.players_settings.clone(),
-                    Some(render.render_pipeline_builder_kit.clone()),
-
-                )
-            )
-        };
-
-        set_new_level(
+        
+        let level_async_load_handler = set_new_level(
             level,
             &mut engine_handle,
             &mut world,
+            &mut net,
             &mut Some(&mut render),
             &mut physic,
             &mut audio,
             &mut initialized_ui,
             &mut time,
             &mut effects,
+            &mut runtime,
+            
         );
 
         Engine {
@@ -255,7 +241,7 @@ impl Engine {
             ui: initialized_ui,
             effects,
             settings,
-            level_async_load_handler: None,
+            level_async_load_handler,
             
             #[cfg(not(target_arch = "wasm32"))]
             runtime,
@@ -371,6 +357,30 @@ pub fn execute_command(
     let from = command.sender;
 
     match command.command_type {
+        CommandType::SpawnControlledActor(actor_id) =>
+        {
+            match world.actors.get_mut(&actor_id)
+            {
+                Some(actor) =>
+                {
+                    match actor.get_actor_as_controlled_mut()
+                    {
+                        Some(controlled_actor) =>
+                        {
+                            controlled_actor.spawn(physics_system, ui_system, audio_system, engine_handle);
+                        }
+                        None =>
+                        {
+                            log::warn!("The given Actor is not an ControlledActor on SpawnControlledActor command");
+                        }
+                    }
+                }
+                None =>
+                {
+                    log::warn!("No actor with given ActorID on SpawnControlledActor command");
+                }
+            }
+        }
         CommandType::ShowConnectionStatusUI =>
         {
             net_system.set_is_visible_for_connection_status(true);
@@ -550,16 +560,18 @@ pub fn execute_command(
                 level
             };
 
-            set_new_level(
+            *level_async_load_handler = set_new_level(
                 level,
                 engine_handle,
                 world,
+                net_system,
                 render_system,
                 physics_system,
                 audio_system,
                 ui_system,
                 time_system,
                 effects_system,
+                runtime,
             );
         },
 
@@ -662,7 +674,7 @@ pub fn send_messages_and_process_commands(
     engine_handle: &mut EngineHandle,
     time_system: &mut TimeSystem,
     effects_system: &mut EffectsSystem,
-    mut render_system: Option<&mut RenderSystem>,
+    mut render_system: &mut Option<&mut RenderSystem>,
     runtime: &mut Runtime,
     level_async_load_handler: &mut Option<JoinHandle<Level>>
 ) {
@@ -731,13 +743,15 @@ pub fn set_new_level (
     level: Level,
     engine_handle: &mut EngineHandle,
     world: &mut World,
+    net_system: &mut NetSystem,
     render_system: &mut Option<&mut RenderSystem>,
     physics_system: &mut PhysicsSystem,
     audio_system: &mut AudioSystem,
     ui_system: &mut UISystem,
     time_system: &mut TimeSystem,
     effects_system: &mut EffectsSystem,
-)
+    runtime: &mut Runtime,
+) -> Option<JoinHandle<Level>>
 {
     world.set_new_level(
         level,
@@ -755,4 +769,27 @@ pub fn set_new_level (
     {
         (*render_system).as_mut().unwrap().set_new_level(world);
     }
+
+    for (_, actor) in &mut world.actors
+    {
+        actor.on_level_loaded(physics_system, engine_handle, audio_system, ui_system, time_system, effects_system);
+    }
+
+    let mut level_async_load_handler = None;
+
+    send_messages_and_process_commands(
+        world,
+        net_system,
+        physics_system,
+        audio_system,
+        ui_system,
+        engine_handle,
+        time_system,
+        effects_system,
+        render_system,
+        runtime,
+        &mut  level_async_load_handler,
+    );
+
+    level_async_load_handler
 }

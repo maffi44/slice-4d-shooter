@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use client_server_protocol::Team;
 use fyrox_core::pool::Handle;
@@ -40,8 +29,6 @@ pub struct PlayerInnerState {
     pub zx_rotation: Mat4,
     pub is_time_after_some_team_win: bool,
     pub amount_of_move_w_bonuses_do_i_have: u32,
-    pub blue_base_position: Vec4,
-    pub red_base_position: Vec4,
     pub friction_on_air: f32,
     pub screen_effects: PlayerScreenEffects,
     pub show_crosshaier_hit_mark_timer: f32,
@@ -78,8 +65,6 @@ impl PlayerInnerState {
         player_settings: &PlayerSettings,
         is_alive: bool,
         is_enable: bool,
-        blue_base_position: Vec4,
-        red_base_position: Vec4,
         weapon_offset: Vec4,
         eyes_offset: Vec4,
         rotating_around_w_sound_handle: Option<Handle<SoundSource>>,
@@ -131,8 +116,6 @@ impl PlayerInnerState {
             is_time_after_some_team_win: false,
             amount_of_move_w_bonuses_do_i_have: 0u32,
 
-            blue_base_position,
-            red_base_position,
             friction_on_air: player_settings.friction_on_air,
             last_frame_zw_rotation: 0.0,
 

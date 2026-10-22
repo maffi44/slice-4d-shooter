@@ -1,22 +1,10 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{
-    actor::Actor,
-    engine::{Engine, send_messages_and_process_commands, set_new_level, ui::UIElementType},
+    actor::Actor, engine::{Engine, send_messages_and_process_commands, set_new_level, ui::UIElementType}, read_args::GameMode,
 };
 
 use web_time::Instant;
@@ -44,9 +32,9 @@ pub struct Slice4DShooter
     systems: Option<Engine>,
     start_level: Option<String>,
     with_ui_renderer: bool,
-    it_is_2d_3d_example: bool,
     disable_net_system: bool,
     specific_backend: Option<Backend>,
+    game_mode: GameMode,
 }
 
 impl Slice4DShooter
@@ -54,9 +42,9 @@ impl Slice4DShooter
     pub fn new(
         start_level: String,
         with_ui_renderer: bool,
-        it_is_2d_3d_example: bool,
         specific_backend: Option<Backend>,
         disable_net_system: bool,
+        game_mode: GameMode,
     ) -> Self
     {
 
@@ -64,9 +52,9 @@ impl Slice4DShooter
             systems: None,
             start_level: Some(start_level),
             with_ui_renderer,
-            it_is_2d_3d_example,
             specific_backend,
             disable_net_system,
+            game_mode,
         }
     }
 }
@@ -94,10 +82,9 @@ impl ApplicationHandler for Slice4DShooter
                             window,
                             self.start_level.take().unwrap(),
                             self.with_ui_renderer,
-                            self.it_is_2d_3d_example,
                             self.disable_net_system,
-
                             self.specific_backend,
+                            self.game_mode,
                         )
                     )
                 );
@@ -327,9 +314,9 @@ impl MainLoop {
         self,
         start_level: String,
         with_ui_renderer: bool,
-        it_is_2d_3d_example: bool,
         specific_backend: Option<Backend>,
         disable_net_system: bool,
+        game_mode: GameMode
     ) {
         // #[cfg(target_arch="wasm32")]
         // let mut it_is_first_input_action = true;
@@ -337,9 +324,9 @@ impl MainLoop {
         let mut slice_4d_shooter_app = Slice4DShooter::new(
             start_level,
             with_ui_renderer,
-            it_is_2d_3d_example,
             specific_backend,
             disable_net_system,
+            game_mode,
         );
         
         let active_event_loop = self.event_loop.run_app(
@@ -363,39 +350,31 @@ fn main_loop_tick(
     systems : &mut Engine,
 ) {
     systems.time.start_of_frame();
-    
-    // println!("PRE level_async_load_handler tick");
 
     if systems.level_async_load_handler.is_some()
     {
         
         if systems.level_async_load_handler.as_ref().unwrap().is_finished()
         {
-            // println!("PRE systems.runtime.block_on tick");
-
             let handle = systems.level_async_load_handler.take().unwrap();
 
             let level = systems.runtime.block_on(handle).unwrap();
 
-            set_new_level(
+            systems.level_async_load_handler = set_new_level(
                 level,
                 &mut systems.engine_handle,
                 &mut systems.world,
+                &mut systems.net,
                 &mut Some(&mut systems.render),
                 &mut systems.physic,
                 &mut systems.audio,
                 &mut systems.ui,
                 &mut systems.time,
-                &mut systems.effects
+                &mut systems.effects,
+                &mut systems.runtime,
             );
-
-            // println!("POST systems.runtime.block_on tick");
-
         }
     }
-
-    // println!("POST level_async_load_handler tick");
-
 
     #[cfg(target_arch= "wasm32")]
     systems.net.tick(
@@ -432,7 +411,7 @@ fn main_loop_tick(
         &mut systems.engine_handle,
         &mut systems.time,
         &mut systems.effects,
-        Some(&mut systems.render),
+        &mut Some(&mut systems.render),
         &mut systems.runtime,
         &mut systems.level_async_load_handler,
     );
@@ -452,7 +431,7 @@ fn main_loop_tick(
         &mut systems.engine_handle,
         &mut systems.time,
         &mut systems.effects,
-        Some(&mut systems.render),
+        &mut Some(&mut systems.render),
         &mut systems.runtime,
         &mut systems.level_async_load_handler,
     );

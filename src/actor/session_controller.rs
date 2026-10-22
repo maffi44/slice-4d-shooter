@@ -1,26 +1,14 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use client_server_protocol::Team;
 use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
 
 use crate::{
-    engine::{audio::Sound, effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{UIElementType, UISystem}},
-    transform::Transform
+    actor::session_controller::SessionControllerMessage::GiveMeFlagsPostitions, engine::{audio::Sound, effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{UIElementType, UISystem}}, transform::Transform
 };
 
 use super::{
@@ -60,7 +48,9 @@ pub enum SessionControllerMessage
         // blue team score
         u32
     ),
-    TeamWin(Team)
+    TeamWin(Team),
+    GiveMeFlagsPostitions,
+    ItIsFlagPosition(Team, Vec4),
 }
 
 
@@ -78,8 +68,8 @@ pub struct SessionController
     show_join_red_team_title_timer: f32,
     show_join_blue_team_title_timer: f32,
 
-    red_flag_base_position: Vec4,
-    blue_flag_base_position: Vec4,
+    red_flag_base_position: Option<Vec4>,
+    blue_flag_base_position: Option<Vec4>,
 
     observer_mode: bool,
 }
@@ -88,10 +78,7 @@ pub struct SessionController
 impl SessionController
 {
     pub fn new(
-        ui_system: &mut UISystem,
-        red_flag_base_position: Vec4,
-        blue_flag_base_position: Vec4,
-        observer_mode: bool,
+        
     ) -> Self
     {
         let session_controller = SessionController {
@@ -106,12 +93,14 @@ impl SessionController
             show_blue_team_win_title_timer: 0.0,
             show_join_red_team_title_timer: 0.0,
             show_join_blue_team_title_timer: 0.0,
-            red_flag_base_position,
-            blue_flag_base_position,
-            observer_mode,
+            red_flag_base_position: None,
+            blue_flag_base_position: None,
+
+            // temp
+            observer_mode: false
         };
 
-        session_controller.set_score_ui(ui_system);
+        
 
         session_controller
     }
@@ -283,6 +272,45 @@ impl SessionController
 
 impl Actor for SessionController
 {
+    fn on_level_loaded(
+        &mut self,
+        physic_system: &crate::engine::physics::PhysicsSystem,
+        engine_handle: &mut EngineHandle,
+        audio_system: &mut crate::engine::audio::AudioSystem,
+        ui_system: &mut UISystem,
+        time_system: &mut TimeSystem,
+        effects_system: &mut EffectsSystem,
+    )
+    {
+        engine_handle.send_boardcast_message(
+            Message {
+                from: self.id.unwrap(),
+                remote_sender: false,
+                message: MessageType::SpecificActorMessage(
+                    SpecificActorMessage::SessionControllerMessage(
+                        SessionControllerMessage::GiveMeFlagsPostitions
+                    )
+                )
+            }
+        );
+
+        engine_handle.send_boardcast_message(
+            Message {
+                from: self.id.unwrap(),
+                remote_sender: false,
+                message: MessageType::SpecificActorMessage(
+                    SpecificActorMessage::SessionControllerMessage(
+                        SessionControllerMessage::NewSessionStarted(Team::Blue)
+                    )
+                )
+            }
+        );
+
+        
+
+        self.set_score_ui(ui_system);
+    }
+
     fn get_mut_transform(&mut self) -> &mut Transform {
         &mut self.transform
     }
@@ -423,7 +451,7 @@ impl Actor for SessionController
                                 {
                                     effects_system.spawn_wave(
                                         engine_handle,
-                                        self.red_flag_base_position,
+                                        self.red_flag_base_position.expect("CTF Session Controller haven't a flag position"),
                                         vec![
                                             0.0,
                                             15.0,
@@ -485,7 +513,7 @@ impl Actor for SessionController
                                 {
                                     effects_system.spawn_wave(
                                         engine_handle,
-                                        self.blue_flag_base_position,
+                                        self.blue_flag_base_position.expect("CTF Session Controller haven't a flag position"),
                                         vec![
                                             0.0,
                                             15.0,
@@ -715,6 +743,22 @@ impl Actor for SessionController
                                 }
                                 self.set_score_ui(ui_system);
                             }
+
+                            SessionControllerMessage::ItIsFlagPosition(team, position) =>
+                            {
+                                match team
+                                {
+                                    Team::Blue =>
+                                    {
+                                        self.blue_flag_base_position = Some(position);
+                                    }
+                                    Team::Red =>
+                                    {
+                                        self.red_flag_base_position = Some(position);
+                                    }
+                                }
+                            }
+                            SessionControllerMessage::GiveMeFlagsPostitions => {}
                         }
                     }
 

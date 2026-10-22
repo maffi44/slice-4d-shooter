@@ -1,5 +1,5 @@
 # Slice 4D Shooter - the first multiplayer shooter set in 4D space
-# Copyright (C) 2023-2025  Timofei Molokov
+# Copyright (C) 2023-2026  Timofei Molokov
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@ workspace = { members = [ "game_server", "matchmaking_server", "matchbox_signali
 [package]
 name = "slice-4d-shooter"
 edition = "2021"
-license = "AGPL-3.0"
+license = "MIT"
 license-file = "LICENSE.txt"
 authors = ["Timofei Molokov"]
 
@@ -27,7 +27,7 @@ authors = ["Timofei Molokov"]
 ### When the version is changed (the counter is increased), 
 ### Windows game clients are updated worldwide for players.
 
-version = "0.5.8"
+version = "0.5.10"
 
 ###
 ###
@@ -78,20 +78,18 @@ web-sys = { version = "*", features = [
 winresource = "0.1.23"
 libloading = "0.8"
 
-[[bin]]
-name="obstacle-course-free-movement"
-path="src/obstacle_course_free_movement_main.rs"
-
-# Should to update other bin
+# [[bin]]
+# name="obstacle-course-free-movement"
+# path="src/obstacle_course_free_movement_main.rs"
 
 # [lib]
 # name="game_client_main_web"
 # path = "src/game_client_main_web.rs"
 # crate-type = ["cdylib", "rlib"]
 
-# [[bin]]
-# name="game-client"
-# path="src/game_client_main.rs"
+[[bin]]
+name="game-client"
+path="src/game_client_main.rs"
 
 # [[bin]]
 # name="obstacle-course-two-jumps"

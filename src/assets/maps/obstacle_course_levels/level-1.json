@@ -2,7 +2,32 @@
     "level_name" : "test_level",
     "main_shader" : "raymarch_shader_obstacle_course_dithered",
     "generated_shader_with_bsp_tree" : true,
-    "generated_shader_with_bsp_tree_with_dynamic_objects" : true,
+    
+    "allowed_dynamic_objects_in_bsp_tree" : {
+        "cubes" : true,
+        "spheres" : false,
+        "sph_cubes" : false,
+
+        "stickiness_cubes" : true,
+        "stickiness_spheres" : false,
+        "stickiness_sph_cubes" : false,
+
+        "negative_cubes" : false,
+        "negative_spheres" : false,
+        "negative_sph_cubes" : false,
+
+        "sticiness_negative_cubes" : false,
+        "sticiness_negative_spheres" : false,
+        "sticiness_negative_sph_cubes" : false,
+
+        "undestroyable_cubes" : false,
+        "undestroyable_spheres" : false,
+        "undestroyable_sph_cubes" : false,
+
+        "undestroyable_stickiness_cubes" : false,
+        "undestroyable_stickiness_spheres" : false,
+        "undestroyable_stickiness_sph_cubes" : false
+    },
 
     "defaults" : {
         "is_positive": true,

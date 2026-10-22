@@ -1,25 +1,14 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use std::f32::consts::PI;
 
 use client_server_protocol::{NetCommand, NetMessageToPlayer, RemoteMessage, Team};
 
 use fyrox_core::math::lerpf;
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{Rng, seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
@@ -782,8 +771,6 @@ impl ObstacleCourseFreeMovementPlayer {
             &player_settings,
             false,
             false,
-            Vec4::ZERO,
-            Vec4::ZERO,
             RIGHT*0.6,
             UP * player_settings.collider_radius * 0.2,
             None,
@@ -1626,61 +1613,11 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
 
     fn spawn(
         &mut self,
-        spawns: &mut Vec<Spawn>,
         physics_system: &PhysicsSystem,
         ui_system: &mut UISystem,
         audio_system: &mut AudioSystem,
         engine_handle: &mut EngineHandle,
     ) {
-        let mut rng = thread_rng();
-        spawns.shuffle(&mut rng);
-
-        let mut current_spawn = spawns.last().expect("spawns in respawn function has zero length");
-
-        for spawn in spawns.iter()
-        {
-            let hits = physics_system.sphere_cast_on_dynamic_colliders(
-                spawn.spawn_position,
-                self.inner_state.get_collider_radius(),
-                Some(self.get_id().expect("Player hasn't ActorID"))
-            );
-    
-            for hit in &hits {
-                if let Some(team) = hit.hited_actors_team
-                {
-                    if self.get_team() == team
-                    {
-                        continue;
-                    }
-                }
-            }
-
-            current_spawn = spawn;
-            
-            break;
-        };
-
-        let hits = physics_system.sphere_cast_on_dynamic_colliders(
-            current_spawn.spawn_position,
-            self.inner_state.get_collider_radius(),
-            Some(self.get_id().expect("Player hasn't ActorID"))
-        );
-
-        for hit in hits {
-            engine_handle.send_direct_message(
-                hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
-                Message {
-                    from: self.get_id().expect("Player have not ID in respawn func"),
-                    remote_sender: false,
-                    message: MessageType::SpecificActorMessage(
-                        SpecificActorMessage::PlayerMessage(
-                            PlayerMessage::Telefrag
-                        )
-                    )
-                }
-            )
-        }
-
         self.inner_state.saved_angle_of_rotation = Vec4::ZERO;
         self.base_xz_zw_xw_rotation = Mat4::IDENTITY;
         println!("123");
@@ -1798,11 +1735,11 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
 
         self.inner_state.collider.reset_forces_and_velocity();
 
-        self.inner_state.transform = Transform::from_position(current_spawn.spawn_position);
+        self.inner_state.transform = Transform::from_position(self.current_spawn);
 
         // self.current_w_level = current_spawn.w_level;
 
-        self.inner_state.player_previous_w_position = current_spawn.spawn_position.w;
+        self.inner_state.player_previous_w_position = self.current_spawn.w;
 
         let player_doll_input_state = PlayerDollInputState {
             move_forward: false,

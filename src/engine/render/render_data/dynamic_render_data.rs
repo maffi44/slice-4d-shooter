@@ -1,18 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{
     actor::{
@@ -554,8 +543,8 @@ impl DynamicRenderData {
         let mut unbreakable_spheres_start = 0u32;
         let mut unbreakable_spheres_amount = 0u32;
         
-        let mut unbreakable_inf_cubes_start = 0u32;
-        let mut unbreakable_inf_cubes_amount = 0u32;
+        // let mut unbreakable_inf_cubes_start = 0u32;
+        // let mut unbreakable_inf_cubes_amount = 0u32;
         
         let mut unbreakable_sph_cubes_start = 0u32;
         let mut unbreakable_sph_cubes_amount = 0u32;
@@ -1188,7 +1177,7 @@ impl DynamicRenderData {
         unbreakable_sph_cubes_amount = index as u32 - unbreakable_sph_cubes_start;
 
 
-        unbreakable_inf_cubes_start = index as u32;
+        // unbreakable_inf_cubes_start = index as u32;
 
         // for shape in &sd.inf_w_cubes {
         //     self.dynamic_shapes_data.normal[index] = shape.clone();
@@ -1200,7 +1189,7 @@ impl DynamicRenderData {
         //     index += 1;
         // }
 
-        unbreakable_inf_cubes_amount = index as u32 - inf_cubes_start;
+        // unbreakable_inf_cubes_amount = index as u32 - inf_cubes_start;
 
 
         // packing unbreakable stickiness shapes

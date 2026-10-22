@@ -1,6 +1,33 @@
 {
     "level_name" : "test_level",
+    "generated_shader_with_bsp_tree" : true,
+    "it_is_2d_3d_example" : true,
 
+    "allowed_dynamic_objects_in_bsp_tree" : {
+        "cubes" : false,
+        "spheres" : false,
+        "sph_cubes" : false,
+
+        "stickiness_cubes" : false,
+        "stickiness_spheres" : false,
+        "stickiness_sph_cubes" : false,
+
+        "negative_cubes" : false,
+        "negative_spheres" : true,
+        "negative_sph_cubes" : false,
+
+        "sticiness_negative_cubes" : false,
+        "sticiness_negative_spheres" : false,
+        "sticiness_negative_sph_cubes" : false,
+
+        "undestroyable_cubes" : false,
+        "undestroyable_spheres" : false,
+        "undestroyable_sph_cubes" : false,
+
+        "undestroyable_stickiness_cubes" : false,
+        "undestroyable_stickiness_spheres" : false,
+        "undestroyable_stickiness_sph_cubes" : false
+    },
 
     "defaults" : {
         "is_positive": true,

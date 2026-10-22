@@ -1,6 +1,34 @@
 {
     "level_name" : "test_level",
+    "main_shader" : "raymarch_shader_slice_4d",
+    "generated_shader_with_bsp_tree" : true,
+    "it_is_2d_3d_example" : false,
 
+    "allowed_dynamic_objects_in_bsp_tree" : {
+        "cubes" : false,
+        "spheres" : false,
+        "sph_cubes" : false,
+
+        "stickiness_cubes" : false,
+        "stickiness_spheres" : false,
+        "stickiness_sph_cubes" : false,
+
+        "negative_cubes" : false,
+        "negative_spheres" : true,
+        "negative_sph_cubes" : false,
+
+        "sticiness_negative_cubes" : false,
+        "sticiness_negative_spheres" : false,
+        "sticiness_negative_sph_cubes" : false,
+
+        "undestroyable_cubes" : false,
+        "undestroyable_spheres" : false,
+        "undestroyable_sph_cubes" : false,
+
+        "undestroyable_stickiness_cubes" : false,
+        "undestroyable_stickiness_spheres" : false,
+        "undestroyable_stickiness_sph_cubes" : false
+    },
 
     "defaults" : {
         "is_positive": true,
@@ -201,8 +229,6 @@
         "outer" : "gun_blue"
     },
 
-    "w_cups_visual_materials" : "gun_red",
-
     "all_shapes_stickiness_radius": 0.15,
 
     "red_base_position" :
@@ -229,121 +255,165 @@
         }
     },
 
-    "red_flag_base" :
-    {
-        "transform" : {
-            "position" : {
-                "x": -1,
-                "y": 7.1,
-                "z": -41.0,
-                "w": 0.49
-            }
+    
+    "main_actor" : {
+        "main_player" : {
+           "red_spawns" : [
+                {
+                    "transform" : {
+                        "position" : {
+                            "x": 0.0,
+                            "y": 1.5,
+                            "z": -35.0,
+                            "w": 1.5
+                        }
+                    }
+                },
+                {
+                    "transform" : {
+                        "position" : {
+                            "x": 11.0,
+                            "y": 3.5,
+                            "z": -31.0,
+                            "w": 1.5
+                        }
+                    }
+                },
+                {
+                    "transform" : {
+                        "position" : {
+                            "x": 4,
+                            "y": 2.2,
+                            "z": -36.2,
+                            "w": 2.5
+                        }
+                    }
+                },
+                {
+                    "transform" : {
+                        "position" : {
+                            "x": 4,
+                            "y": 3.4,
+                            "z": -37.75,
+                            "w": 4.0
+                        }
+                    }
+                }
+            ],
+            "blue_spawns" : [
+                {
+                    "transform" : {
+                        "position" : {
+                            "x": 0.0,
+                            "y": 1.5,
+                            "z": 35.0,
+                            "w": 1.5
+                        }
+                    }
+                },
+                {
+                    "transform" : {
+                        "position" : {
+                            "x": 11.0,
+                            "y": 3.5,
+                            "z": 31.0,
+                            "w": 1.5
+                        }
+                    }
+                },
+                {
+                    "transform" : {
+                        "position" : {
+                            "x": 4,
+                            "y": 2.2,
+                            "z": 36.2,
+                            "w": 2.5
+                        }
+                    }
+                },
+                {
+                    "transform" : {
+                        "position" : {
+                            "x": 4,
+                            "y": 3.4,
+                            "z": 37.75,
+                            "w": 4.0
+                        }
+                    }
+                }
+            ]
         }
     },
-
-    "blue_flag_base" :
-    {
-        "transform" : {
-            "position" : {
-                "x": -1,
-                "y": 7.1,
-                "z": 41.0,
-                "w": 0.49
-            }
-        }
-    },
-
-    "red_spawns" : [
-        {
-            "transform" : {
-                "position" : {
-                    "x": 0.0,
-                    "y": 1.5,
-                    "z": -35.0,
-                    "w": 1.5
-                }
-            }
-        },
-        {
-            "transform" : {
-                "position" : {
-                    "x": 11.0,
-                    "y": 3.5,
-                    "z": -31.0,
-                    "w": 1.5
-                }
-            }
-        },
-        {
-            "transform" : {
-                "position" : {
-                    "x": 4,
-                    "y": 2.2,
-                    "z": -36.2,
-                    "w": 2.5
-                }
-            }
-        },
-        {
-            "transform" : {
-                "position" : {
-                    "x": 4,
-                    "y": 3.4,
-                    "z": -37.75,
-                    "w": 4.0
-                }
-            }
-        }
-    ],
-
-    "blue_spawns" : [
-        {
-            "transform" : {
-                "position" : {
-                    "x": 0.0,
-                    "y": 1.5,
-                    "z": 35.0,
-                    "w": 1.5
-                }
-            }
-        },
-        {
-            "transform" : {
-                "position" : {
-                    "x": 11.0,
-                    "y": 3.5,
-                    "z": 31.0,
-                    "w": 1.5
-                }
-            }
-        },
-        {
-            "transform" : {
-                "position" : {
-                    "x": 4,
-                    "y": 2.2,
-                    "z": 36.2,
-                    "w": 2.5
-                }
-            }
-        },
-        {
-            "transform" : {
-                "position" : {
-                    "x": 4,
-                    "y": 3.4,
-                    "z": 37.75,
-                    "w": 4.0
-                }
-            }
-        }
-    ],
-
-    "w_cups" : {
-    },
-
 
     "actors" : [
+        {
+            "ctf_session_controller" : {
+                "red_flag_base_position" : {
+                    "x": -1,
+                    "y": 7.1,
+                    "z": -41.0,
+                    "w": 0.49
+                },
+                "blue_flag_base_position" : {
+                    "x": -1,
+                    "y": 7.1,
+                    "z": 41.0,
+                    "w": 0.49
+                }
+            }
+        },
+        {
+            "flag" : {
+                "team" : "red",
+                "transform" : {
+                    "position" : {
+                        "x": -1,
+                        "y": 7.1,
+                        "z": -41.0,
+                        "w": 0.49
+                    }
+                }
+            }
+        },
+        {
+            "flag" : {
+                "team" : "blue",
+                "transform" : {
+                    "position" : {
+                        "x": -1,
+                        "y": 7.1,
+                        "z": 41.0,
+                        "w": 0.49
+                    }
+                }
+            }
+        },
+        {
+            "flag_base" : {
+                "team" : "red",
+                "transform" : {
+                    "position" : {
+                        "x": -1,
+                        "y": 7.1,
+                        "z": -41.0,
+                        "w": 0.49
+                    }
+                }
+            }
+        },
+        {
+            "flag_base" : {
+                "team" : "blue",
+                "transform" : {
+                    "position" : {
+                        "x": -1,
+                        "y": 7.1,
+                        "z": 41.0,
+                        "w": 0.49
+                    }
+                }
+            }
+        }
     ],
     
     "static_objects": [

@@ -1,28 +1,16 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
-// Copyright (C) 2023-2025  Timofei Molokov
+// Copyright (C) 2023-2026  Timofei Molokov
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version.
 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use client_server_protocol::Team;
 use glam::Vec4;
 use rand::Rng;
 
 use crate::{
-    engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{SphericalVolumeArea, VolumeArea}
-    },
-    transform::Transform
+    actor::session_controller::SessionControllerMessage, engine::{
+        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{SphericalVolumeArea, VolumeArea}
+    }, transform::Transform
 };
 
 use super::{
@@ -219,6 +207,37 @@ impl Actor for FlagBase
                             AreaMessage::ActorIsContainedInsideArea(id) =>
                             {
 
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            MessageType::SpecificActorMessage(message) =>
+            {
+                match message {
+                    SpecificActorMessage::SessionControllerMessage(message) =>
+                    {
+                        match message {
+                            SessionControllerMessage::GiveMeFlagsPostitions =>
+                            {
+                                engine_handle.send_direct_message(
+                                    from,
+                                    Message {
+                                        from: self.id.unwrap(),
+                                        remote_sender: false,
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::SessionControllerMessage(
+                                                SessionControllerMessage::ItIsFlagPosition(
+                                                    self.owned_by_team,
+                                                    self.transform.get_position()
+                                                )
+                                            )
+                                        )
+                                    }
+                                );
                             }
                             _ => {}
                         }
