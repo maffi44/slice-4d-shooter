@@ -47,21 +47,11 @@ alkahest = { version = "*", features = [ "derive" ] }
 bincode = "*"
 console_error_panic_hook = "*"
 console_log = "*"
-wasm-bindgen = "*"
-wasm-bindgen-futures = "*"
 getrandom = { version = "*", features = [ "js" ] }
 matchbox_socket = "0.12.0"
 rustc-hash = "*"
 opener = "*"
 gilrs = "*"
-web-sys = { version = "*", features = [
-    "Document",
-    "Window",
-    "Element",
-    "console",
-    "Performance",
-    "Response"
-]}
 winresource = "0.1.23"
 libloading = "0.8"
 

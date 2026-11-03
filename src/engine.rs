@@ -15,17 +15,6 @@ pub mod audio;
 pub mod ui;
 pub mod settings;
 
-#[cfg(target_arch = "wasm32")]
-use std::{
-    future::Future,
-    pin::Pin,
-    rc::Rc,
-    task::{
-        Context,
-        Poll
-    }
-};
-
 use crate::{
     actor::{
         Actor,
@@ -66,10 +55,6 @@ use effects::EffectsSystem;
 use settings::Settings;
 use tokio::{runtime::Runtime, task::JoinHandle};
 use wgpu::Backend;
-#[cfg(target_arch = "wasm32")]
-use winit::platform::web::WindowBuilderExtWebSys;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::{closure::Closure, JsCast, JsValue};
 use winit::window::Window;
 
 pub struct Engine {
@@ -85,40 +70,7 @@ pub struct Engine {
     pub effects: EffectsSystem,
     pub settings: Settings,
     pub level_async_load_handler: Option<JoinHandle<Level>>,
-
-    #[cfg(not(target_arch = "wasm32"))]
     pub runtime: tokio::runtime::Runtime,
-}
-
-#[cfg(target_arch = "wasm32")]
-struct WindowReadyFuture<'a> {
-    window: &'a winit::window::Window
-}
-#[cfg(target_arch = "wasm32")]
-impl<'a> Future for WindowReadyFuture<'a> {
-    type Output = ();
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if self.window.inner_size().width == 0 || self.window.inner_size().height == 0 {
-            let wait_fn = {
-                let waker = Rc::new(cx.waker().clone());
-                Closure::wrap(Box::new(move || {
-                    waker.as_ref().clone().wake();
-                }) as Box<dyn Fn()>)
-            };
-            let _ = web_sys::window()
-                .unwrap()
-                .set_timeout_with_callback_and_timeout_and_arguments_0(
-                    wait_fn.as_ref().unchecked_ref(),
-                    50,
-                );
-            wait_fn.forget();
-
-            Poll::Pending
-        } else {
-            Poll::Ready(())
-        }
-    }
 }
 
 impl Engine {
@@ -131,30 +83,11 @@ impl Engine {
         game_mode: GameMode
     ) -> Engine
     {
-        #[cfg(not(target_arch = "wasm32"))]
         let mut runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(2)
             .enable_all()
             .build()
             .expect("Can't build tokio async runtime");
-
-        #[cfg(target_arch = "wasm32")]
-        {
-            let document = web_sys::window().unwrap().document().unwrap();
-            let canvas = document.get_element_by_id("game_canvas").unwrap();
-            let canvas: web_sys::HtmlCanvasElement = JsValue::from(canvas).into();
-    
-            let window_builder = WindowBuilder::new();
-            window = window_builder
-            
-                .with_canvas(Some(canvas))
-                .with_active(true)
-                .with_title("Slice: 4D Shooter")
-                // .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
-                // .with_inner_size(PhysicalSize::new(1200, 800))
-                .build(&client_main_loop.event_loop)
-                .unwrap();
-        }
 
         let mut engine_handle = EngineHandle::new();
         log::info!("engine systems:engine_handle init");
@@ -173,7 +106,6 @@ impl Engine {
             window,
             &time,
             &mut pre_initialized_ui,
-            #[cfg(not(target_arch = "wasm32"))]
             &mut runtime,
             with_ui_renderer,
             specific_backend,
@@ -209,7 +141,6 @@ impl Engine {
             &world.players_settings,
             level.it_is_2d_3d_example,
             disable_net_system,
-            #[cfg(not(target_arch = "wasm32"))]
             &mut runtime
         ).await;
         log::info!("engine systems: net init");
@@ -242,8 +173,6 @@ impl Engine {
             effects,
             settings,
             level_async_load_handler,
-            
-            #[cfg(not(target_arch = "wasm32"))]
             runtime,
         }
     }
@@ -262,8 +191,6 @@ pub struct HeadlessEngine
     pub ui: UISystem,
     pub effects: EffectsSystem,
     pub settings: Settings,
-
-    #[cfg(not(target_arch = "wasm32"))]
     pub runtime: tokio::runtime::Runtime,
 }
 
@@ -272,8 +199,6 @@ impl HeadlessEngine
     pub async fn new(
         disable_net_system: bool,
     ) -> HeadlessEngine {
-
-        #[cfg(not(target_arch = "wasm32"))]
         let mut runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(1)
             .enable_all()
@@ -314,7 +239,6 @@ impl HeadlessEngine
             &world.players_settings,
             false,
             disable_net_system,
-            #[cfg(not(target_arch = "wasm32"))]
             &mut runtime
         ).await;
         log::info!("engine systems: net init");
@@ -331,8 +255,6 @@ impl HeadlessEngine
             ui,
             effects,
             settings,
-            
-            #[cfg(not(target_arch = "wasm32"))]
             runtime,
         }
     }

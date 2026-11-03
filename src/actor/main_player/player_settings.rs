@@ -4,8 +4,6 @@
 
 
 use std::{fs::File, io::Read, sync::{Arc, Mutex}};
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen_futures::JsFuture;
 use serde_json::Value;
 
 #[derive(Clone)]
@@ -59,48 +57,6 @@ pub struct PlayerSettings {
 
 impl PlayerSettings {
     pub async fn load_player_settings() -> Self {
-
-        #[cfg(target_arch = "wasm32")]
-        {
-            let window = web_sys::window().unwrap();
-    
-            let target = "http://127.0.0.1:5500/src/assets/settings/settings.json";
-            
-            let promise = window.fetch_with_str(target);
-        
-            let result = JsFuture::from(promise).await;
-
-            let player_settings = match result {
-                Ok(val) => {
-                    let response: web_sys::Response = val.into();
-        
-                    let json_text = JsFuture::from(response.text().unwrap()).await;
-                    
-                    match json_text {
-                        Ok(text) => {
-                            let json_settings = serde_json::from_str(&text.as_string().unwrap()).unwrap();
-                            
-                            return parse_json_into_settings(json_settings);
-                        },
-                        Err(val) => {
-                            panic!(
-                                "ERROR: cannot converting map.json file into text, err is: {:?}",
-                                val
-                            );
-                        },
-                    }
-                },
-                Err(val) => {
-                    panic!(
-                        "ERROR: the player_settings cannot be loaded, err: {}",
-                        val.as_string().unwrap_or("".to_string())
-                    );
-                }  
-            };
-        }
-        
-
-        #[cfg(not(target_arch = "wasm32"))]
         {
             let mut file = File::open("./settings.json");
 

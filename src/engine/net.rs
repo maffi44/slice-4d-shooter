@@ -9,11 +9,8 @@ use fyrox_core::futures::{SinkExt, StreamExt};
 use glam::{Vec3, Vec4};
 use client_server_protocol::{ClientMessage, NetMessageToServer, ServerMessage, Team};
 
-#[cfg(not(target_arch = "wasm32"))]
 use tokio::runtime::Runtime;
 use tokio::task::JoinHandle;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::JsValue;
 
 use tokio_tungstenite::{
     connect_async,
@@ -116,7 +113,6 @@ impl NetSystem {
         settings: &PlayerSettings,
         it_is_2d_3d_example: bool,
         disable_net_system: bool,
-        #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime
     ) -> Self {
 
@@ -156,7 +152,6 @@ impl NetSystem {
         &mut self,
         input: ActionsFrameState,
         engine_handle: &mut EngineHandle,
-        #[cfg(not(target_arch = "wasm32"))]
         async_runtime: &mut Runtime,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
@@ -574,18 +569,6 @@ impl NetSystem {
                     .add_reliable_channel()
                     .add_unreliable_channel()
                     .build();
-
-                #[cfg(target_arch = "wasm32")]
-                {
-                    let promise = wasm_bindgen_futures::future_to_promise(async {
-                        let _ = socket_future.await;
-
-                        Result::Ok(JsValue::null())
-                    });
-
-                    let _ = wasm_bindgen_futures::JsFuture::from(promise);
-                }
-                #[cfg(not(target_arch = "wasm32"))]
                 async_runtime.spawn(socket_future);
                 
                 println!("INFO: Connecting to the game server");

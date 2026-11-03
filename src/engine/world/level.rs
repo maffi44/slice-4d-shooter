@@ -21,8 +21,6 @@ use crate::{
 };
 
 use client_server_protocol::Team;
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen_futures::JsFuture;
 use glam::{Vec4, Vec3};
 use serde_json::Value;
 use wgpu::{Device, RenderPipeline, ShaderRuntimeChecks};
@@ -130,47 +128,6 @@ impl Level {
         render_pipeline_builder_kit: Option<MainShaderRenderPipelineBuilderKit>
     ) -> Level
     {
-        #[cfg(target_arch = "wasm32")]
-        {
-            let window = web_sys::window().unwrap();
-        
-            let target = format!("http://127.0.0.1:5500/src/assets/maps/{}.json", level_name);
-            
-            let promise = window.fetch_with_str(target);
-        
-            let result = JsFuture::from(promise).await;
-        
-            let output = match result {
-                Ok(val) => {
-                    let response: web_sys::Response = val.into();
-        
-                    let json_text = JsFuture::from(response.text().unwrap()).await;
-                    
-                    match json_text {
-                        Ok(text) => {
-                            let json_map = serde_json::from_str(&text.as_string().unwrap()).unwrap();
-                            
-                            parse_json_level(json_map)
-                        },
-                        Err(val) => {
-                            panic!(
-                                "ERROR: cannot converting map.json file into text, err is: {:?}",
-                                val
-                            );
-                        },
-                    }
-                },
-                Err(val) => {
-                    panic!(
-                        "ERROR: the map cannot be loaded, err: {}",
-                        val.as_string().unwrap_or("".to_string())
-                    );
-                }  
-            };
-        
-            return output;
-        }
-        #[cfg(not(target_arch = "wasm32"))]
         {
             let mut file = File::open(
                 format!("./{}.json", level_name)
