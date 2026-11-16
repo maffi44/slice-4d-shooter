@@ -3,14 +3,16 @@
 
 
 
+use crate::actor::main_player::constants::*;
+
 use client_server_protocol::Team;
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{Mat4, Vec4};
 
-use crate::{actor::session_controller::DEFAULT_TEAM, engine::{audio::{AudioSystem, Sound}, physics::{dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider}, ui::{RectSize, UIElement, UIElementType, UISystem}}, transform::Transform};
+use crate::{actor::session_controller::DEFAULT_TEAM, engine::{world::physics::{dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider}, shared_systems::ui::{RectSize, UIElement, UIElementType, UISystem}}, engine::transform::Transform};
 
-use super::{player_settings::PlayerSettings, PlayerScreenEffects, CROSSHAIR_DECREASING_SPEED, CROSSHAIR_INCREASING_SPEED, CROSSHAIR_MAX_SIZE, CROSSHAIR_MIN_SIZE, CROSSHAIR_ROTATION_SPEED};
+use super::{PlayerScreenEffects, CROSSHAIR_DECREASING_SPEED, CROSSHAIR_INCREASING_SPEED, CROSSHAIR_MAX_SIZE, CROSSHAIR_MIN_SIZE, CROSSHAIR_ROTATION_SPEED};
 
 pub struct PlayerInnerState {
     pub team: Team,
@@ -44,14 +46,9 @@ pub struct PlayerInnerState {
     pub shifting_along_w_sound_pitch: f64,
     pub shifting_along_w_sound_gain: f32,
     pub jumped_to_w_on_current_action: bool,
-    pub jumped_to_wy_on_current_action: bool,
     pub flag_pivot_offset: Vec4,
-    pub base_effect_tick_timer: f32,
     pub w_aim_enabled: bool,
     pub w_aim_ui_frame_intensity: f32,
-    pub second_jump_is_charging: bool,
-    pub second_jump_charging_energy: f32,
-    pub charging_second_jump_sound_handle: Option<Option<Handle<SoundSource>>>,
     pub eyes_offset: Vec4,
     pub tutrial_window_was_open: bool,
     pub title_press_t_for_tutorial_toggle_timer: f32,
@@ -62,7 +59,6 @@ pub struct PlayerInnerState {
 impl PlayerInnerState {
     pub fn new(
         transform: Transform,
-        player_settings: &PlayerSettings,
         is_alive: bool,
         is_enable: bool,
         weapon_offset: Vec4,
@@ -76,9 +72,7 @@ impl PlayerInnerState {
             
             vec.push(PlayersDollCollider {
                 position: Vec4::ZERO,
-                radius: player_settings.collider_radius,
-                friction: 0_f32,
-                bounce_rate: 0_f32,
+                radius: PLAYER_COLLIDER_RADIUS,
                 actor_id: None,
                 weapon_offset,
                 actors_team: DEFAULT_TEAM,
@@ -86,16 +80,16 @@ impl PlayerInnerState {
             vec
         };
 
-        let player_radius = player_settings.collider_radius;
-        let after_death_timer =  player_settings.min_respawn_timer;
+        let player_radius = PLAYER_COLLIDER_RADIUS;
+        let after_death_timer =  MIN_RESPAWN_TIMER;
 
         PlayerInnerState {
             team: DEFAULT_TEAM,
             collider: KinematicCollider::new(
-                player_settings.max_speed,
-                player_settings.max_accel,
-                player_settings.collider_radius,
-                player_settings.friction_on_air,
+                PLAYER_MAX_SPEED,
+                PLAYER_MAX_ACCEL,
+                PLAYER_COLLIDER_RADIUS,
+                FRICTION_ON_AIR,
                 // settings.friction_on_ground,
             ),
             collider_for_others,
@@ -116,7 +110,7 @@ impl PlayerInnerState {
             is_time_after_some_team_win: false,
             amount_of_move_w_bonuses_do_i_have: 0u32,
 
-            friction_on_air: player_settings.friction_on_air,
+            friction_on_air: FRICTION_ON_AIR,
             last_frame_zw_rotation: 0.0,
 
             jumped_to_y_on_current_action: false,
@@ -136,13 +130,8 @@ impl PlayerInnerState {
             after_death_timer,
 
             jumped_to_w_on_current_action: false,
-            jumped_to_wy_on_current_action: false,
-            base_effect_tick_timer: 0.0,
             w_aim_enabled: true,
             w_aim_ui_frame_intensity: 0.0,
-            second_jump_is_charging: false,
-            charging_second_jump_sound_handle: None,
-            second_jump_charging_energy: 0.0,
             eyes_offset,
             tutrial_window_was_open: false,
             title_press_t_for_tutorial_toggle_timer: 0.0,
@@ -179,11 +168,6 @@ impl PlayerInnerState {
 
     pub fn get_zx_rotation_matrix(&self) -> Mat4 {
         self.zx_rotation
-    }
-
-    pub fn get_team(&self) -> Team
-    {
-        self.team
     }
 
     pub fn set_rotation_matrix(&mut self, new_rotation: Mat4) {

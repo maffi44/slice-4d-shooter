@@ -3,10 +3,13 @@
 
 
 
-use client_server_protocol::Team;
-use glam::{Vec3, Vec4};
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
 
-use crate::{actor::device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, engine::{audio::AudioSystem, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{physics_system_data::ShapeType, static_collider::StaticCollider}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}}, transform::Transform};
+use client_server_protocol::Team;
+use glam::Vec4;
+
+use crate::{actor::device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, engine::{world::messenger::{Command, CommandType}, world::physics::{physics_system_data::ShapeType, static_collider::StaticCollider}, shared_systems::render::VisualElement, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}}, engine::transform::Transform};
 
 use super::{Actor, ActorID};
 
@@ -99,7 +102,7 @@ impl Actor for PlayersDeathExplosion {
         self.id = Some(id);
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(
             VisualElement {
                 transform: &self.transform,
@@ -115,21 +118,19 @@ impl Actor for PlayersDeathExplosion {
 
     fn tick(
         &mut self,
-        physic_system: &crate::engine::physics::PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         if self.hole_target_size_reached {
     
             for obj in self.static_objects.iter_mut() {
                 obj.collider.size.x -= delta * 0.2;
     
                 if obj.collider.size.x <= 0.0 {
-                    engine_handle.send_command(
+                    messenger.send_command(
                         Command {
                             sender: self.id.expect("player death explosion have not ActorID"),
                             command_type: CommandType::RemoveActor(
@@ -157,7 +158,7 @@ impl Actor for PlayersDeathExplosion {
                 area.radius += delta*22.0;
 
                 if area.radius > 3.9 {
-                    let my_id = self.id.expect("PlayerDeathExplode have not ActorID");
+                    let _my_id = self.id.expect("PlayerDeathExplode have not ActorID");
                     
                     self.hole_target_size_reached = true;
                     

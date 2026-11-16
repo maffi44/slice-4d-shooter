@@ -3,6 +3,10 @@
 
 
 
+use crate::actor::session_controller::send_to_session_controller;
+use crate::actor::session_controller::SessionControllerMessage;
+use crate::engine::shared_systems::net::Reliability;
+
 use glam::{Mat4, Vec4};
 
 use crate::{
@@ -19,26 +23,26 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        audio::AudioSystem,
-        engine_handle::{
+        shared_systems::audio::AudioSystem,
+        world::messenger::{
             Command,
             CommandType,
-            EngineHandle
+            Messenger
         },
-        input::ActionsFrameState,
-        physics::PhysicsSystem,
-        render::ChildVisualElement,
-        ui::{
+        shared_systems::input::ActionsFrameState,
+        world::physics::PhysicsSystem,
+        shared_systems::render::ChildVisualElement,
+        shared_systems::ui::{
             UIElement,
             UIElementType,
             UISystem
         }
     },
-    transform::{Transform, FORWARD}
+    engine::transform::{Transform, FORWARD}
 };
 
 use client_server_protocol::{
-    NetCommand, NetMessageToPlayer, RemoteMessage, Team
+    NetMessageToPlayer, RemoteMessage, Team
 };
 
 use super::{Device, DeviceType};
@@ -55,7 +59,6 @@ pub struct MachineGun {
     temperature: f32,
     shooting_spread: f32,
     time_from_prev_shot: f32,
-    is_overheating: bool,
 
     shooted_from_pivot_point_dir: Vec4,
 
@@ -79,7 +82,6 @@ impl MachineGun {
             temperature: 0.0,
             shooting_spread: 0.0,
             time_from_prev_shot: 0.0,
-            is_overheating: false,
             shooted_from_pivot_point_dir,
 
             machinegun_damage,
@@ -101,13 +103,13 @@ impl MachineGun {
         &mut self,
         player_id: ActorID,
         player: &mut PlayerInnerState,
-        screen_effects: &mut PlayerScreenEffects,
+        _screen_effects: &mut PlayerScreenEffects,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
     ) {
         audio_system.spawn_non_spatial_sound(
-            crate::engine::audio::Sound::MachinegunShot,
+            crate::engine::shared_systems::audio::Sound::MachinegunShot,
             0.33,
             1.1,
             false,
@@ -158,15 +160,15 @@ impl MachineGun {
             let shooted_from = player.transform.get_position() + weapon_offset;
 
 
-            if let Some(hited_id) = hit.hited_actors_id {
+            if let Some(hited_id) = hit.hit_actors_id {
 
-                if let Some(hited_actors_team) = hit.hited_actors_team
+                if let Some(hit_actors_team) = hit.hit_actors_team
                 {
-                    if hited_actors_team != player.team
+                    if hit_actors_team != player.team
                     {                       
                         let force = hit.hit_normal * -self.machinegun_add_force;
             
-                        engine_handle.send_direct_message(
+                        messenger.send_direct_message(
                             hited_id,
                             Message {
                                 from: player_id,
@@ -196,7 +198,7 @@ impl MachineGun {
                 false,
             );
     
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
@@ -205,21 +207,19 @@ impl MachineGun {
                 }
             );
 
-            engine_handle.send_command(
-                Command {
-                    sender: player_id,
-                    command_type: CommandType::NetCommand(
-                        NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessageToPlayer::RemoteDirectMessage(
-                                player_id,
-                                RemoteMessage::SpawnMachineGunShot(
-                                    position.to_array(),
-                                    false,
-                                )
-                            )
+            send_to_session_controller(
+                messenger,
+                player_id,
+                SessionControllerMessage::SendToPlayers(
+                    NetMessageToPlayer::RemoteDirectMessage(
+                        player_id,
+                        RemoteMessage::SpawnMachineGunShot(
+                            position.to_array(),
+                            false,
                         )
-                    )
-                }
+                    ),
+                    Reliability::Reliable,
+                ),
             )
 
         } else {
@@ -235,7 +235,7 @@ impl MachineGun {
                 true,
             );
     
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
@@ -244,21 +244,19 @@ impl MachineGun {
                 }
             );
 
-            engine_handle.send_command(
-                Command {
-                    sender: player_id,
-                    command_type: CommandType::NetCommand(
-                        NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessageToPlayer::RemoteDirectMessage(
-                                player_id,
-                                RemoteMessage::SpawnMachineGunShot(
-                                    position_remote.to_array(),
-                                    true,
-                                )
-                            )   
+            send_to_session_controller(
+                messenger,
+                player_id,
+                SessionControllerMessage::SendToPlayers(
+                    NetMessageToPlayer::RemoteDirectMessage(
+                        player_id,
+                        RemoteMessage::SpawnMachineGunShot(
+                            position_remote.to_array(),
+                            true,
                         )
-                    )
-                }
+                    ),
+                    Reliability::Reliable,
+                ),
             )
         }
     }
@@ -269,7 +267,7 @@ impl Device for MachineGun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
+    fn get_visual_element<'a>(&'a self, _transform: &'a Transform) -> Option<&'a ChildVisualElement> {
         None
     }
 
@@ -282,7 +280,7 @@ impl Device for MachineGun {
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
         delta: f32,
     ) {
         if input.first_mouse.is_action_pressed() && self.temperature < MAX_TEMPERTURE {
@@ -293,7 +291,7 @@ impl Device for MachineGun {
                     screen_effects,
                     physic_system,
                     audio_system,
-                    engine_handle,
+                    messenger,
                 );
 
                 player.crosshair_target_size += CROSSHAIR_INCREASE_ON_SHOOT;
@@ -334,27 +332,27 @@ impl Device for MachineGun {
 
     fn process_while_player_is_not_alive(
             &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
-            delta: f32,
+            _player_id: ActorID,
+            _player: &mut PlayerInnerState,
+            _input: &ActionsFrameState,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
+            _ui_system: &mut UISystem,
+            _messenger: &mut Messenger,
+            _delta: f32,
         ) {
         
     }
 
     fn process_while_deactive(
             &mut self,
-            player_id: ActorID,
+            _player_id: ActorID,
             player: &mut PlayerInnerState,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
+            _input: &ActionsFrameState,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
             ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
+            _messenger: &mut Messenger,
             delta: f32,
         ) {
             self.cool_machinegun(delta);
@@ -377,13 +375,13 @@ impl Device for MachineGun {
 
     fn deactivate(
             &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
+            _player_id: ActorID,
+            _player: &mut PlayerInnerState,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
             ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
-            screen_effects: &mut PlayerScreenEffects,
+            _messenger: &mut Messenger,
+            _screen_effects: &mut PlayerScreenEffects,
         ) {
 
             let bar = ui_system.get_mut_ui_element(&UIElementType::MachinegunBarRed);
@@ -407,12 +405,12 @@ impl Device for MachineGun {
 
     fn activate(
             &mut self,
-            player_id: ActorID,
+            _player_id: ActorID,
             player: &mut PlayerInnerState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
             ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
+            _messenger: &mut Messenger,
         ) {
             let img = ui_system.get_mut_ui_element(&UIElementType::MachinegunImage);
 

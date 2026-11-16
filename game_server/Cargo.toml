@@ -1,7 +1,11 @@
+# Slice 4D Shooter - the first multiplayer shooter set in 4D space
+# Copyright (C) 2023-2026  Timofei Molokov
+
 [package]
 name = "game_server"
 version = "0.4.6"
 edition = "2021"
+license = "AGPL-3.0-or-later"
 
 [dependencies]
 tokio = { version = "*", features = [ "process", "sync", "time", "rt" ] }

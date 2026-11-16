@@ -3,715 +3,266 @@
 
 
 
-pub mod render;
-pub mod input;
-pub mod net;
-pub mod time;
-pub mod physics;
-pub mod effects;
+pub mod shared_systems;
 pub mod world;
-pub mod engine_handle;
-pub mod audio;
-pub mod ui;
-pub mod settings;
+pub mod transform;
+pub mod main_loop;
 
-use crate::{
-    actor::{
-        Actor,
-        ActorID,
-        ActorWrapper,
-        Message,
-        MessageType,
-        SpecificActorMessage,
-        main_player::{
-            PlayerMessage,
-            player_settings::PlayerSettings
-        }
-    }, engine::{
-        engine_handle::{
-            Command,
-            CommandType
-        },
-        world::level::Level
-    }, read_args::GameMode
-};
+use std::sync::Arc;
+
+use glam::UVec2;
+use tokio::task::JoinHandle;
+use wgpu::Backend;
+use winit::{dpi::PhysicalSize, window::Window};
 
 use self::{
-    render::RenderSystem,
-    input::InputSystem,
-    physics::PhysicsSystem,
-    time::TimeSystem,
-    world::World,
-    engine_handle::EngineHandle,
-    net::NetSystem,
-    audio::AudioSystem,
-    ui::UISystem
+    shared_systems::EngineSharedSystems,
+    world::{
+        world_descriptor::WorldDescriptor,
+        OuterWorldMessage,
+        World,
+        WorldConfig,
+        WorldRenderConfig,
+    },
 };
 
-use client_server_protocol::NetCommand;
-use effects::EffectsSystem;
-// use winit::window::WindowBuilder;
 
-use settings::Settings;
-use tokio::{runtime::Runtime, task::JoinHandle};
-use wgpu::Backend;
-use winit::window::Window;
+/// Output scale steps of the `i`/`O` keys (as before: 5% steps within 0.1..1.0).
+const OUTPUT_SCALE_STEP: f32 = 0.05;
+const MIN_OUTPUT_SCALE: f32 = 0.1;
+const MAX_OUTPUT_SCALE: f32 = 1.0;
 
-pub struct Engine {
-    pub render: RenderSystem,
-    pub input: InputSystem,
-    pub physic: PhysicsSystem,
-    pub time: TimeSystem,
-    pub world: World,
-    pub engine_handle: EngineHandle,
-    pub net: NetSystem,
-    pub audio: AudioSystem,
-    pub ui: UISystem,
-    pub effects: EffectsSystem,
-    pub settings: Settings,
-    pub level_async_load_handler: Option<JoinHandle<Level>>,
-    pub runtime: tokio::runtime::Runtime,
+
+/// The engine: the shared systems and the root world.
+///
+/// The engine knows only the root world. Nested worlds are owned and simulated by actors.
+///
+/// Usage (the entry point): `Engine::new(headless).run(initial_world, graphic_backend)`. `run` owns the
+/// main loop (`main_loop.rs`) and returns when the application quits. Headless = the same simulation
+/// without window, GPU, rendering and sound (a plain tick loop instead of winit).
+pub struct Engine
+{
+    // Field order = drop order: worlds first, then the shared systems (the RenderScheduler stops
+    // and joins the render thread in its Drop), the window last, so it's destroyed on the main thread
+    // after the render thread released it.
+    root_world: Option<World>,
+    /// The initial world's descriptor while it loads (the splash is shown meanwhile).
+    /// Loaded asynchronously so that winit's event handling isn't blocked (a blocked window is
+    /// marked "Not Responding" by the OS).
+    pending_root_world: Option<JoinHandle<WorldDescriptor>>,
+    pub shared: EngineSharedSystems,
+    window: Option<Arc<Window>>,
+    headless: bool,
+    quit_requested: bool,
 }
 
-impl Engine {
-    pub async fn new(
-        window: Window,
-        start_level: String,
-        with_ui_renderer: bool,
-        disable_net_system: bool,
-        specific_backend: Option<Backend>,
-        game_mode: GameMode
-    ) -> Engine
+
+impl Engine
+{
+    /// Creates the shared systems, except the GPU and the render loop (they need the window, created
+    /// by `run`). `headless`: no window, GPU, rendering or sound at all.
+    pub fn new(headless: bool) -> Engine
     {
-        let mut runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2)
-            .enable_all()
-            .build()
-            .expect("Can't build tokio async runtime");
+        let shared = EngineSharedSystems::new(headless);
 
-        let mut engine_handle = EngineHandle::new();
-        log::info!("engine systems:engine_handle init");
-
-        let global_players_settings = PlayerSettings::load_player_settings().await;
-        log::info!("engine systems: global_players_settings init");
-        
-        let settings = Settings::new(global_players_settings.clone());
-
-        let mut time = TimeSystem::new(60_u32);
-        log::info!("engine systems: time init");
-
-        let mut pre_initialized_ui = UISystem::new(); 
-
-        let mut render = RenderSystem::new(
-            window,
-            &time,
-            &mut pre_initialized_ui,
-            &mut runtime,
-            with_ui_renderer,
-            specific_backend,
-        ).await;
-        log::info!("engine systems: render init");
-
-        let mut initialized_ui = pre_initialized_ui;
-
-        let mut world = World::new(
-            &mut engine_handle,
-            global_players_settings,
-            // start_level,
-        ).await;
-        log::info!("engine systems: world init");
-        
-        let mut physic = PhysicsSystem::new();
-        log::info!("engine systems: physic init");
-
-        let input = InputSystem::new();
-        log::info!("engine systems: input init");
-
-        let mut audio = AudioSystem::new(false).await;
-
-        let mut effects = EffectsSystem::new();
-        
-        let level = world::level::Level::load_level(
-            start_level,
-            world.players_settings.clone(),
-            Some(render.render_pipeline_builder_kit.clone())
-        ).await;
-        
-        let mut net = NetSystem::new(
-            &world.players_settings,
-            level.it_is_2d_3d_example,
-            disable_net_system,
-            &mut runtime
-        ).await;
-        log::info!("engine systems: net init");
-        
-        let level_async_load_handler = set_new_level(
-            level,
-            &mut engine_handle,
-            &mut world,
-            &mut net,
-            &mut Some(&mut render),
-            &mut physic,
-            &mut audio,
-            &mut initialized_ui,
-            &mut time,
-            &mut effects,
-            &mut runtime,
-            
-        );
+        log::info!("engine: init");
 
         Engine {
-            physic,
-            input,
-            render,
-            time,
-            world,
-            engine_handle,
-            net,
-            audio,
-            ui: initialized_ui,
-            effects,
-            settings,
-            level_async_load_handler,
-            runtime,
+            root_world: None,
+            pending_root_world: None,
+            shared,
+            window: None,
+            headless,
+            quit_requested: false,
         }
     }
-}
 
 
-pub struct HeadlessEngine
-{
-    pub input: InputSystem,
-    pub physic: PhysicsSystem,
-    pub time: TimeSystem,
-    pub world: World,
-    pub engine_handle: EngineHandle,
-    pub net: NetSystem,
-    pub audio: AudioSystem,
-    pub ui: UISystem,
-    pub effects: EffectsSystem,
-    pub settings: Settings,
-    pub runtime: tokio::runtime::Runtime,
-}
-
-impl HeadlessEngine
-{
-    pub async fn new(
-        disable_net_system: bool,
-    ) -> HeadlessEngine {
-        let mut runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(1)
-            .enable_all()
-            .build()
-            .expect("Can't build tokio async runtime");
-
-        let mut engine_handle = EngineHandle::new();
-        log::info!("engine systems:engine_handle init");
-
-        let global_players_settings = PlayerSettings::load_player_settings().await;
-        log::info!("engine systems: global_players_settings init");
-        
-        let settings = Settings::new(global_players_settings.clone());
-
-        let world = World::new(
-            &mut engine_handle,
-            global_players_settings,
-            // "map".to_string()
-        ).await;
-        log::info!("engine systems: world init");
-        
-        let physic = PhysicsSystem::new();
-        log::info!("engine systems: physic init");
-
-        let input = InputSystem::new();
-        log::info!("engine systems: input init");
-
-        let time = TimeSystem::new(60_u32);
-        log::info!("engine systems: time init");
-
-        let ui = UISystem::new(); 
-
-        let audio = AudioSystem::new(true).await;
-
-        let effects = EffectsSystem::new();
-
-        let net = NetSystem::new(
-            &world.players_settings,
-            false,
-            disable_net_system,
-            &mut runtime
-        ).await;
-        log::info!("engine systems: net init");
-
-
-        HeadlessEngine {
-            physic,
-            input,
-            time,
-            world,
-            engine_handle,
-            net,
-            audio,
-            ui,
-            effects,
-            settings,
-            runtime,
-        }
-    }
-}
-
-#[inline]
-pub fn execute_command(
-    command: Command,
-    world: &mut World,
-    net_system: &mut NetSystem,
-    physics_system: &mut PhysicsSystem,
-    engine_handle: &mut EngineHandle,
-    audio_system: &mut AudioSystem,
-    ui_system: &mut UISystem,
-    time_system: &mut TimeSystem,
-    render_system: &mut Option<&mut RenderSystem>,
-    effects_system: &mut EffectsSystem,
-    runtime: &mut Runtime,
-    player_settings: PlayerSettings,
-    level_async_load_handler: &mut Option<JoinHandle<Level>>
-) {
-    let from = command.sender;
-
-    match command.command_type {
-        CommandType::SpawnControlledActor(actor_id) =>
-        {
-            match world.actors.get_mut(&actor_id)
-            {
-                Some(actor) =>
-                {
-                    match actor.get_actor_as_controlled_mut()
-                    {
-                        Some(controlled_actor) =>
-                        {
-                            controlled_actor.spawn(physics_system, ui_system, audio_system, engine_handle);
-                        }
-                        None =>
-                        {
-                            log::warn!("The given Actor is not an ControlledActor on SpawnControlledActor command");
-                        }
-                    }
-                }
-                None =>
-                {
-                    log::warn!("No actor with given ActorID on SpawnControlledActor command");
-                }
-            }
-        }
-        CommandType::ShowConnectionStatusUI =>
-        {
-            net_system.set_is_visible_for_connection_status(true);
-        }
-        CommandType::RemoveAllHolesAndEffects =>
-        {
-            let mut keys_for_remove = Vec::new();
-
-            for (key, actor) in world.actors.iter()
-            {
-                match actor {
-                    ActorWrapper::Hole(_) =>
-                    {
-                        keys_for_remove.push(*key);
-                    }
-
-                    ActorWrapper::HoleGunMiss(_) =>
-                    {
-                        keys_for_remove.push(*key);
-                    }
-
-                    ActorWrapper::MachinegunShot(_) =>
-                    {
-                        keys_for_remove.push(*key);
-                    }
-
-                    ActorWrapper::PlayersDeathExplosion(_) =>
-                    {
-                        keys_for_remove.push(*key);
-                    }
-
-                    ActorWrapper::HoleGunShot(_) =>
-                    {
-                        keys_for_remove.push(*key);
-                    }
-
-                    ActorWrapper::ShootingImpact(_) =>
-                    {
-                        keys_for_remove.push(*key);
-                    }
-
-                    _ => {}
-                }
-            }
-
-            for key in keys_for_remove
-            {
-                world.actors.remove(&key);
-            }
-        }
-        CommandType::SpawnEffect(_) => {}
-        CommandType::SpawnActor(actor) =>
-        {
-            world.add_actor_to_world(
-                actor,
-                engine_handle,
-                physics_system,
-                audio_system,
-                ui_system,
-                time_system,
-                effects_system,
-            );
-        }
-        CommandType::RemoveActor(id) =>
-        {
-            world.remove_actor_from_world(id);
-        }
-        CommandType::NetCommand(command) =>
-        {
-            match command {
-                NetCommand::SetServerTime(server_time) => {
-                    time_system.set_server_time(server_time);
-                },
-                NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id) => {
-                    world.change_actor_id(world.main_actor_id, new_id, engine_handle);
-
-                    world.main_actor_id = new_id;                       
-                },
-                NetCommand::SendBoardcastNetMessageReliable(message) => {
-                    net_system.send_boardcast_message_reliable(message);
-                },
-
-                NetCommand::SendBoardcastNetMessageUnreliable(message) => {
-                    net_system.send_boardcast_message_unreliable(message);
-                },
-
-                NetCommand::SendDirectNetMessageReliable(message, peer) => {
-                    net_system.send_direct_message_reliable(message, peer);
-                },
-
-                NetCommand::SendDirectNetMessageUnreliable(message, peer) => {
-                    net_system.send_direct_message_unreliable(message, peer);
-                },
-
-                NetCommand::PeerConnected(peer_id) => {
-                    engine_handle.send_boardcast_message(
-                        Message {
-                            from: 0u128,
-                            remote_sender: false,
-                            message: MessageType::SpecificActorMessage(
-                                SpecificActorMessage::PlayerMessage(
-                                    PlayerMessage::NewPeerConnected(peer_id)
-                                )
-                            )
-                        }
-                    )
-                },
-
-                NetCommand::SendMessageToServer(message) =>
-                {
-                    net_system.send_message_to_game_server(message);
-                }
-
-                NetCommand::PeerDisconnected(id) => {
-                    world.remove_actor_from_world(id);
-                }
-            }
-        }
-
-        CommandType::PreloadNewLevelAsync(level_name) => 
-        {
-            let render_pipeline_builder_kit =
-            {
-                if render_system.is_some()
-                {
-                    Some(render_system.as_ref().unwrap().render_pipeline_builder_kit.clone())
-                }
-                else
-                {
-                    None
-                }
-            };
-            
-            let preloaded_level_handle = runtime.spawn(
-        Level::load_level(
-                    level_name.clone(),
-                    player_settings,
-                    render_pipeline_builder_kit
-                )
-            );
-
-            world.preloaded_levels.insert(level_name, preloaded_level_handle);
-        },
-
-        CommandType::LoadNewLevelSync(level_name) =>
-        {
-            let level= if world.preloaded_levels.contains_key(&level_name)
-            {
-                runtime.block_on(
-                    world.preloaded_levels.remove(&level_name).unwrap()
-                ).unwrap()
-            }
-            else
-            {
-                let render_pipeline_builder_kit =
-                {
-                    if render_system.is_some()
-                    {
-                        Some(render_system.as_ref().unwrap().render_pipeline_builder_kit.clone())
-                    }
-                    else
-                    {
-                        None
-                    }
-                };
-
-                let level = {
-                    runtime.block_on(
-                        Level::load_level(
-                            level_name,
-                            player_settings,
-                            render_pipeline_builder_kit
-                        )
-                    )
-                };
-
-                level
-            };
-
-            *level_async_load_handler = set_new_level(
-                level,
-                engine_handle,
-                world,
-                net_system,
-                render_system,
-                physics_system,
-                audio_system,
-                ui_system,
-                time_system,
-                effects_system,
-                runtime,
-            );
-        },
-
-        CommandType::LoadNewLevelAsync(level_name) => 
-        {
-            let level_task = if world.preloaded_levels.contains_key(&level_name)
-            {
-                world.preloaded_levels.remove(&level_name)
-            }
-            else
-            {
-                let render_pipeline_builder_kit =
-                {
-                    if render_system.is_some()
-                    {
-                        Some(render_system.as_ref().unwrap().render_pipeline_builder_kit.clone())
-                    }
-                    else
-                    {
-                        None
-                    }
-                };
-
-                Some(runtime.spawn(
-            Level::load_level(
-                        level_name,
-                        player_settings,
-                        render_pipeline_builder_kit
-                    )
-                ))
-            };
-
-            *level_async_load_handler = level_task;
-        },
-    }
-}
-
-#[inline]
-pub fn send_direct_messages(
-    to: ActorID,
-    message: Message,
-    engine_handle: &mut EngineHandle,
-    world: &mut World,
-    physics_system: &PhysicsSystem,
-    audio_system: &mut AudioSystem,
-    ui_system: &mut UISystem,
-    time_system: &TimeSystem,
-    effects_system: &mut EffectsSystem,
-
-) {
-    if let Some(actor) = world.actors.get_mut(&to)
+    /// Called by the main loop at startup. `window: Some` → creates the GPU context and the render loop;
+    /// `None` → headless (no GPU, no rendering; game logic is the same).
+    /// Then starts loading the initial world asynchronously (the splash is shown meanwhile).
+    fn start(&mut self, window: Option<Window>, initial_world: String, graphic_backend: Option<Backend>)
     {
-        actor.recieve_message(
-            message,
-            engine_handle,
-            physics_system,
-            audio_system,
-            ui_system,
-            time_system,
-            effects_system,
+        if let Some(window) = window
+        {
+            let window = Arc::new(window);
+
+            self.shared.create_gpu_and_render(window.clone(), graphic_backend);
+            self.window = Some(window);
+        }
+
+        let gpu = self.shared.gpu.clone();
+
+        log::info!("engine: initial world '{}' is loading", initial_world);
+
+        self.pending_root_world = Some(self.shared.runtime.spawn_blocking(move || {
+            WorldDescriptor::load(&initial_world, gpu)
+        }));
+
+        self.shared.time.init();
+    }
+
+
+    pub fn window(&self) -> Option<&Arc<Window>>
+    {
+        self.window.as_ref()
+    }
+
+
+    /// One engine tick.
+    pub fn tick(&mut self)
+    {
+        self.shared.pre_simulate();
+
+        self.poll_pending_root_world();
+
+        if let Some(root_world) = &mut self.root_world
+        {
+            root_world.simulate(&mut self.shared);
+        }
+
+        // One message at a time: handling one needs `&mut self` (e.g. replacing the root world),
+        // so the world can't stay borrowed by an iterator. `pop` doesn't reallocate.
+        while let Some(message) = self.root_world.as_mut().and_then(|world| world.pop_outer_world_message())
+        {
+            self.handle_outer_world_message(message);
+        }
+
+        self.process_render_hotkeys();
+
+        self.shared.post_simulate();
+    }
+
+
+    pub fn quit_requested(&self) -> bool
+    {
+        self.quit_requested
+    }
+
+
+    pub fn on_window_resized(&mut self, size: PhysicalSize<u32>)
+    {
+        if let Some(render) = &mut self.shared.render
+        {
+            render.resize_surface(size);
+        }
+
+        if size.width > 0 && size.height > 0
+        {
+            if let Some(root_world) = &self.root_world
+            {
+                root_world.set_output_resolution(UVec2::new(size.width, size.height));
+            }
+        }
+    }
+
+
+    fn poll_pending_root_world(&mut self)
+    {
+        if self.pending_root_world.as_ref().is_some_and(|handle| handle.is_finished())
+        {
+            let handle = self.pending_root_world.take().unwrap();
+
+            let descriptor = self.shared.runtime
+                .block_on(handle)
+                .expect("ERROR: the initial world loading task failed");
+
+            self.set_root_world(Arc::new(descriptor));
+        }
+    }
+
+
+    /// Replaces the root world (also used for the initial world). `World::new` is cheap.
+    fn set_root_world(&mut self, descriptor: Arc<WorldDescriptor>)
+    {
+        let render_config = self.window.as_ref().map(|window| {
+            let size = window.inner_size();
+
+            WorldRenderConfig {
+                resolution: UVec2::new(size.width.max(1), size.height.max(1)),
+                scale: self.shared.global_settings.user.screen_resolution_scale
+                    .clamp(MIN_OUTPUT_SCALE, MAX_OUTPUT_SCALE),
+                render_rate: 1,
+            }
+        });
+
+        let new_world = World::new(
+            &descriptor,
+            WorldConfig { render: render_config },
+            &mut self.shared,
         );
+
+        if let Some(render) = &self.shared.render
+        {
+            render.present_world(new_world.output_texture_id());
+        }
+
+        // the old world (if any) is dropped here: its actors, nested worlds and render slot
+        let _old_world = self.root_world.replace(new_world);
+
+        log::info!("engine: root world is '{}'", descriptor.name);
     }
-}
 
-#[inline]
-pub fn send_boardcast_messages(
-    message: Message,
-    engine_handle: &mut EngineHandle,
-    world: &mut World,
-    physics_system: &PhysicsSystem,
-    audio_system: &mut AudioSystem,
-    ui_system: &mut UISystem,
-    time_system: &TimeSystem,
-    effects_system: &mut EffectsSystem,
-) {
-    for (_, actor) in world.actors.iter_mut() {
-        if actor.get_id().expect("actor does not have id") != message.from
-        {
-            actor.recieve_message
-            (
-                message.clone(),
-                engine_handle,
-                physics_system,
-                audio_system,
-                ui_system,
-                time_system,
-                effects_system
-            );
-        } 
-    }
-}
 
-#[inline]
-pub fn send_messages_and_process_commands(
-    world: &mut World,
-    net_system: &mut NetSystem,
-    physics_system: &mut PhysicsSystem,
-    audio_system: &mut AudioSystem,
-    ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
-    time_system: &mut TimeSystem,
-    effects_system: &mut EffectsSystem,
-    mut render_system: &mut Option<&mut RenderSystem>,
-    runtime: &mut Runtime,
-    level_async_load_handler: &mut Option<JoinHandle<Level>>
-) {
-
-    let player_settings = world.players_settings.clone();
-    
-    loop {
-        while let Some(message) = engine_handle.boardcast_message_buffer.pop()
-        {
-            send_boardcast_messages(
-                message,
-                engine_handle,
-                world,
-                physics_system,
-                audio_system,
-                ui_system,
-                time_system,
-                effects_system,
-            )                
-        }
-
-        while let Some((to, message)) = engine_handle.direct_message_buffer.pop()
-        {
-            send_direct_messages(
-                to,
-                message,
-                engine_handle,
-                world,
-                physics_system,
-                audio_system,
-                ui_system,
-                time_system,
-                effects_system,
-            )                
-        }
-
-        while let Some(command) = engine_handle.command_buffer.pop()
-        {
-            execute_command(
-                command,
-                world,
-                net_system,
-                physics_system,
-                engine_handle,
-                audio_system,
-                ui_system,
-                time_system,
-                &mut render_system,
-                effects_system,
-                runtime,
-                player_settings.clone(),
-                level_async_load_handler,
-            );
-        }
-
-        if engine_handle.direct_message_buffer.is_empty() &&
-            engine_handle.boardcast_message_buffer.is_empty() &&
-            engine_handle.command_buffer.is_empty()
-        {   
-            return;
-        }
-    }
-}
-
-pub fn set_new_level (
-    level: Level,
-    engine_handle: &mut EngineHandle,
-    world: &mut World,
-    net_system: &mut NetSystem,
-    render_system: &mut Option<&mut RenderSystem>,
-    physics_system: &mut PhysicsSystem,
-    audio_system: &mut AudioSystem,
-    ui_system: &mut UISystem,
-    time_system: &mut TimeSystem,
-    effects_system: &mut EffectsSystem,
-    runtime: &mut Runtime,
-) -> Option<JoinHandle<Level>>
-{
-    world.set_new_level(
-        level,
-        engine_handle,
-        physics_system,
-        audio_system,
-        ui_system,
-        time_system,
-        effects_system,
-    );
- 
-    physics_system.set_new_level(world);
-
-    if render_system.is_some()
+    fn handle_outer_world_message(&mut self, message: OuterWorldMessage)
     {
-        (*render_system).as_mut().unwrap().set_new_level(world);
+        match message
+        {
+            OuterWorldMessage::QuitApplication =>
+            {
+                self.quit_requested = true;
+            }
+            OuterWorldMessage::ReplaceRootWorld(descriptor) =>
+            {
+                self.set_root_world(descriptor);
+            }
+            OuterWorldMessage::WorldFinished =>
+            {
+                self.quit_requested = true;
+            }
+            OuterWorldMessage::Specific(_) => {}
+        }
     }
 
-    for (_, actor) in &mut world.actors
+
+    /// `i`/`O`: root world output scale, `P`: shadows (input actions; persisted in user settings).
+    fn process_render_hotkeys(&mut self)
     {
-        actor.on_level_loaded(physics_system, engine_handle, audio_system, ui_system, time_system, effects_system);
+        let actions = self.shared.input.actions();
+
+        let increase = actions.increase_render_quality.is_action_just_pressed();
+        let decrease = actions.decrease_render_quality.is_action_just_pressed();
+        let toggle_shadows = actions.shadows_toggle.is_action_just_pressed();
+
+        if increase || decrease
+        {
+            if let Some(root_world) = &self.root_world
+            {
+                if let Some(scale) = root_world.output_scale()
+                {
+                    let new_scale = if increase
+                    {
+                        if scale > 0.995 {scale} else {(scale + OUTPUT_SCALE_STEP).clamp(MIN_OUTPUT_SCALE, MAX_OUTPUT_SCALE)}
+                    }
+                    else
+                    {
+                        if scale < 0.105 {scale} else {(scale - OUTPUT_SCALE_STEP).clamp(MIN_OUTPUT_SCALE, MAX_OUTPUT_SCALE)}
+                    };
+
+                    root_world.set_output_scale(new_scale);
+
+                    self.shared.global_settings.user.screen_resolution_scale = new_scale;
+                    self.shared.global_settings.save();
+                }
+            }
+        }
+
+        if toggle_shadows
+        {
+            let user_settings = &mut self.shared.global_settings.user;
+            user_settings.shadows_enabled = !user_settings.shadows_enabled;
+
+            self.shared.global_settings.save();
+        }
     }
-
-    let mut level_async_load_handler = None;
-
-    send_messages_and_process_commands(
-        world,
-        net_system,
-        physics_system,
-        audio_system,
-        ui_system,
-        engine_handle,
-        time_system,
-        effects_system,
-        render_system,
-        runtime,
-        &mut  level_async_load_handler,
-    );
-
-    level_async_load_handler
 }

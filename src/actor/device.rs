@@ -14,15 +14,13 @@ use crate::{
         main_player::player_inner_state::PlayerInnerState,
         ActorID,
     }, engine::{
-        audio::AudioSystem, engine_handle::EngineHandle, input::ActionsFrameState, physics::PhysicsSystem, render::ChildVisualElement, ui::UISystem
-    }, transform::Transform
+        shared_systems::audio::AudioSystem, world::messenger::Messenger, shared_systems::input::ActionsFrameState, world::physics::PhysicsSystem, shared_systems::render::ChildVisualElement, shared_systems::ui::UISystem
+    }, engine::transform::Transform
 };
 
 use super::main_player::PlayerScreenEffects;
 
 
-
-const DEFAULT_PISTOL_DAMAGE: u32 = 5;
 
 pub struct EmptyHand {
 }
@@ -40,15 +38,15 @@ impl Device for EmptyHand {
 
     fn process_input(
             &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            screen_effects: &mut PlayerScreenEffects,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
-            delta: f32,
+            _player_id: ActorID,
+            _player: &mut PlayerInnerState,
+            _screen_effects: &mut PlayerScreenEffects,
+            _input: &ActionsFrameState,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
+            _ui_system: &mut UISystem,
+            _messenger: &mut Messenger,
+            _delta: f32,
     ) {
     }
 }
@@ -59,6 +57,7 @@ impl Device for EmptyHand {
 
 pub enum DeviceType {
     Gun,
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     Device,
     RotatorTool,
 }
@@ -74,58 +73,58 @@ pub trait Device {
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
         delta: f32,
     );
 
     fn get_device_type(&self) -> DeviceType;
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
+    fn get_visual_element<'a>(&'a self, _transform: &'a Transform) -> Option<&'a ChildVisualElement> {
         None
     }
 
     fn deactivate(
         &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-        screen_effects: &mut PlayerScreenEffects,
+        _player_id: ActorID,
+        _player: &mut PlayerInnerState,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
+        _ui_system: &mut UISystem,
+        _messenger: &mut Messenger,
+        _screen_effects: &mut PlayerScreenEffects,
     ) {}
 
     fn activate(
         &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        _player_id: ActorID,
+        _player: &mut PlayerInnerState,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
+        _ui_system: &mut UISystem,
+        _messenger: &mut Messenger,
     ) {}
 
     fn process_while_player_is_not_alive(
         &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        input: &ActionsFrameState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-        delta: f32,
+        _player_id: ActorID,
+        _player: &mut PlayerInnerState,
+        _input: &ActionsFrameState,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
+        _ui_system: &mut UISystem,
+        _messenger: &mut Messenger,
+        _delta: f32,
     ) {}
 
 fn process_while_deactive(
         &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        input: &ActionsFrameState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-        delta: f32,
+        _player_id: ActorID,
+        _player: &mut PlayerInnerState,
+        _input: &ActionsFrameState,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
+        _ui_system: &mut UISystem,
+        _messenger: &mut Messenger,
+        _delta: f32,
     ) {}
 }

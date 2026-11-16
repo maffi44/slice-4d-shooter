@@ -3,17 +3,20 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use client_server_protocol::Team;
 use glam::Vec4;
 use fyrox_core::rand::{Rng, SeedableRng};
 use fyrox_core::rand::prelude::StdRng;
 
-use crate::engine::audio::AudioSystem;
-use crate::engine::engine_handle::{Command, CommandType, EngineHandle};
-use crate::engine::physics::PhysicsSystem;
-use crate::engine::render::VisualElement;
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::world::messenger::{Command, CommandType, Messenger};
+use crate::engine::world::physics::PhysicsSystem;
+use crate::engine::shared_systems::render::VisualElement;
 use crate::engine::world::static_object::{SphericalVolumeArea, VolumeArea};
-use crate::transform::Transform;
+use crate::engine::transform::Transform;
 
 use super::device::shotgun::{
     SHOTGUN_LASER_SHOTS_AMOUNT, SHOTGUN_LASER_SHOTS_AMOUNT_WITHOUT_W_SPREAD, SHOTGUN_LASER_SHOT_COLOR, SHOTGUN_LASER_SHOT_MAX_DISTANCE, SHOTGUN_SHOTS_SPREAD, SHOTGUN_SHOTS_SPREAD_ALONG_W, SHOTGUN_SHOT_FLASH_EXPLAND_SPEED, SHOTGUN_SHOT_FLASH_FADE_SPEED, SHOTGUN_SHOT_FLASH_MAX_RADIUS
@@ -46,7 +49,7 @@ impl ShotgunShotSource
         damage_dealer_team: Team,
         beam_and_flash_size_mult: f32,
         it_is_for_2d_3d_example: bool,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
     ) -> Self
@@ -54,7 +57,7 @@ impl ShotgunShotSource
         if is_replicated
         {
             audio_system.spawn_spatial_sound(
-                crate::engine::audio::Sound::ShotgunShot,
+                crate::engine::shared_systems::audio::Sound::ShotgunShot,
                 0.25,
                 1.0,
                 false,
@@ -69,7 +72,7 @@ impl ShotgunShotSource
         else
         {
             audio_system.spawn_non_spatial_sound(
-                crate::engine::audio::Sound::ShotgunShot,
+                crate::engine::shared_systems::audio::Sound::ShotgunShot,
                 0.36,
                 1.0,
                 false,
@@ -176,7 +179,7 @@ impl ShotgunShotSource
                 beam_and_flash_size_mult
             );
 
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: damage_dealer_id,
                     command_type: CommandType::SpawnActor(
@@ -226,7 +229,7 @@ impl Actor for ShotgunShotSource
         self.id = Some(id);
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(VisualElement {
             transform: &self.transform,
             static_objects: None,
@@ -240,15 +243,13 @@ impl Actor for ShotgunShotSource
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut crate::engine::audio::AudioSystem,
-        ui_system: &mut crate::engine::ui::UISystem,
-        time_system: &mut crate::engine::time::TimeSystem,
-        effects_system: &mut crate::engine::effects::EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     )
     {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         if self.flash_max_size_reached
         {
             if let VolumeArea::SphericalVolumeArea(flash) =
@@ -260,7 +261,7 @@ impl Actor for ShotgunShotSource
                 {
                     let my_id = self.id.expect("Shotgun shot source havn't ActorID");
                     
-                    engine_handle.send_command(
+                    messenger.send_command(
                         Command {
                             sender: my_id,
                             command_type: CommandType::RemoveActor(my_id)

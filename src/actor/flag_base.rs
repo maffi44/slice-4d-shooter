@@ -3,14 +3,16 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use client_server_protocol::Team;
 use glam::Vec4;
-use rand::Rng;
 
 use crate::{
     actor::session_controller::SessionControllerMessage, engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{SphericalVolumeArea, VolumeArea}
-    }, transform::Transform
+        world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}
+    }, engine::transform::Transform
 };
 
 use super::{
@@ -23,19 +25,6 @@ pub enum FlagBaseMessage
     YouInteractingWithFlagBase(Team),
 }
 
-fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
-{
-    assert!(range_min < range_max);
-
-    let mut rng = rand::thread_rng();
-    let x = rng.gen_range(range_min..=range_max);
-    let y = rng.gen_range(range_min..=range_max);
-    let z = rng.gen_range(range_min..=range_max);
-    let w = rng.gen_range(range_min..=range_max);
-
-    return Vec4::new(x, y, z, w);
-}
-
 pub const FLAG_BASE_AREA_VISUAL_RADIUS: f32 = 0.7;
 pub const FLAG_BASE_AREA_PHYSICAL_RADIUS: f32 = 1.5;
 
@@ -46,7 +35,6 @@ pub struct FlagBase
     area: Area,
     owned_by_team: Team,
     visual_areas: Vec<VolumeArea>,
-    radius_mult: f32,
 }
 
 impl FlagBase
@@ -95,7 +83,6 @@ impl FlagBase
             owned_by_team,
             area,
             visual_areas,
-            radius_mult: 1.0,
         }
     }
 }
@@ -103,16 +90,12 @@ impl FlagBase
 impl Actor for FlagBase
 {
     fn tick(
-            &mut self,
-            physic_system: &crate::engine::physics::PhysicsSystem,
-            engine_handle: &mut EngineHandle,
-            audio_system: &mut crate::engine::audio::AudioSystem,
-            ui_system: &mut crate::engine::ui::UISystem,
-            time_system: &mut crate::engine::time::TimeSystem,
-            effects_system: &mut EffectsSystem,
-            delta: f32
-        )
+        &mut self,
+        _world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
+    )
     {
+
 
     }
 
@@ -120,7 +103,7 @@ impl Actor for FlagBase
         &mut self.transform
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement>
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>>
     {
         Some(
             PhysicalElement
@@ -137,7 +120,7 @@ impl Actor for FlagBase
     }
 
 
-    fn get_visual_element(&self) -> Option<VisualElement>
+    fn get_visual_element(&self) -> Option<VisualElement<'_>>
     {
         Some(
             VisualElement
@@ -166,15 +149,13 @@ impl Actor for FlagBase
     }
 
     fn recieve_message(
-            &mut self,
-            message: Message,
-            engine_handle: &mut EngineHandle,
-            physics_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            time_system: &TimeSystem,
-            effects_system: &mut EffectsSystem,
-        ) {
+        &mut self,
+        message: Message,
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
+    ) {
+        let messenger = &mut *world.messenger;
+
         
         let from = message.from;
 
@@ -189,7 +170,7 @@ impl Actor for FlagBase
                         {
                             AreaMessage::ActorEnterArea(id) =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     id,
                                     Message {
                                         from: self.id.expect("Flag have not ActorID"),
@@ -204,7 +185,7 @@ impl Actor for FlagBase
                                     }
                                 );
                             }
-                            AreaMessage::ActorIsContainedInsideArea(id) =>
+                            AreaMessage::ActorIsContainedInsideArea(_id) =>
                             {
 
                             }
@@ -223,7 +204,7 @@ impl Actor for FlagBase
                         match message {
                             SessionControllerMessage::GiveMeFlagsPostitions =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     from,
                                     Message {
                                         from: self.id.unwrap(),

@@ -3,6 +3,10 @@
 
 
 
+use crate::actor::session_controller::send_to_session_controller;
+use crate::actor::session_controller::SessionControllerMessage;
+use crate::engine::shared_systems::net::Reliability;
+
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{Vec3, Vec4};
@@ -26,19 +30,19 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        audio::{
+        shared_systems::audio::{
             AudioSystem,
             Sound
         },
-        engine_handle::{
+        world::messenger::{
             Command,
             CommandType,
-            EngineHandle,
+            Messenger,
         },
-        input::ActionsFrameState,
-        physics::PhysicsSystem,
-        render::ChildVisualElement,
-        ui::{
+        shared_systems::input::ActionsFrameState,
+        world::physics::PhysicsSystem,
+        shared_systems::render::ChildVisualElement,
+        shared_systems::ui::{
             UIElement,
             UIElementType,
             UISystem
@@ -48,11 +52,11 @@ use crate::{
             VolumeArea
         }
     },
-    transform::{Transform, FORWARD}
+    engine::transform::{Transform, FORWARD}
 };
 
 use client_server_protocol::{
-    NetCommand, NetMessageToPlayer, RemoteMessage, Team
+    NetMessageToPlayer, RemoteMessage, Team
 };
 
 pub struct HoleGun {
@@ -125,8 +129,8 @@ impl HoleGun {
         player: &mut PlayerInnerState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
-        screen_effects: &mut PlayerScreenEffects,
+        messenger: &mut Messenger,
+        _screen_effects: &mut PlayerScreenEffects,
         charging_energy: f32,
         color: Vec3,
     ) {
@@ -185,9 +189,9 @@ impl HoleGun {
 
             for hit in hited_players {
 
-                if let Some(hited_id) = hit.hited_actors_id
+                if let Some(hited_id) = hit.hit_actors_id
                 {
-                    if let Some(hited_team) = hit.hited_actors_team
+                    if let Some(hited_team) = hit.hit_actors_team
                     {
                         if hited_team != player.team
                         {                            
@@ -201,7 +205,7 @@ impl HoleGun {
                             let force = (hit.hit_normal * damage / -4.5) *
                                 self.energy_gun_add_force_mult;
             
-                            engine_handle.send_direct_message(
+                            messenger.send_direct_message(
                                 hited_id,
                                 Message {
                                     from: player_id,
@@ -233,7 +237,7 @@ impl HoleGun {
                 1.0,
             );
     
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
@@ -242,24 +246,22 @@ impl HoleGun {
                 }
             );
 
-            engine_handle.send_command(
-                Command {
-                    sender: player_id,
-                    command_type: CommandType::NetCommand(
-                        NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessageToPlayer::RemoteDirectMessage(
-                                player_id,
-                                RemoteMessage::SpawnHoleGunShotActor(
-                                    position.to_array(),
-                                    shooted_from.to_array(),
-                                    radius.abs(),//*base_coef,
-                                    color.to_array(),
-                                    volume_area_radius.abs(),
-                                )
-                            )
+            send_to_session_controller(
+                messenger,
+                player_id,
+                SessionControllerMessage::SendToPlayers(
+                    NetMessageToPlayer::RemoteDirectMessage(
+                        player_id,
+                        RemoteMessage::SpawnHoleGunShotActor(
+                            position.to_array(),
+                            shooted_from.to_array(),
+                            radius.abs(),//*base_coef,
+                            color.to_array(),
+                            volume_area_radius.abs(),
                         )
-                    )
-                }
+                    ),
+                    Reliability::Reliable,
+                ),
             )
 
         } else {
@@ -277,7 +279,7 @@ impl HoleGun {
                 1.0,
             );
 
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
@@ -286,24 +288,22 @@ impl HoleGun {
                 }
             );
 
-            engine_handle.send_command(
-                Command {
-                    sender: player_id,
-                    command_type: CommandType::NetCommand(
-                        NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessageToPlayer::RemoteDirectMessage(
-                                player_id,
-                                RemoteMessage::SpawHoleGunMissActor(
-                                    position_remote.to_array(),
-                                    shooted_from.to_array(),
-                                    radius.abs(),
-                                    color.to_array(),
-                                    volume_area_radius.abs(),
-                                )
-                            )
+            send_to_session_controller(
+                messenger,
+                player_id,
+                SessionControllerMessage::SendToPlayers(
+                    NetMessageToPlayer::RemoteDirectMessage(
+                        player_id,
+                        RemoteMessage::SpawHoleGunMissActor(
+                            position_remote.to_array(),
+                            shooted_from.to_array(),
+                            radius.abs(),
+                            color.to_array(),
+                            volume_area_radius.abs(),
                         )
-                    )
-                }
+                    ),
+                    Reliability::Reliable,
+                ),
             )
         }
     }
@@ -315,7 +315,7 @@ impl Device for HoleGun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
+    fn get_visual_element<'a>(&'a self, _transform: &'a Transform) -> Option<&'a ChildVisualElement> {
         Some(
             &self.visual_element
         )
@@ -323,14 +323,14 @@ impl Device for HoleGun {
 
     fn process_while_player_is_not_alive(
             &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
-            delta: f32,
+            _player_id: ActorID,
+            _player: &mut PlayerInnerState,
+            _input: &ActionsFrameState,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
+            _ui_system: &mut UISystem,
+            _messenger: &mut Messenger,
+            _delta: f32,
         ) {
         
     }
@@ -344,7 +344,7 @@ impl Device for HoleGun {
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
         delta: f32,
     )
     {
@@ -368,7 +368,7 @@ impl Device for HoleGun {
                     // start charging
 
                     self.charging_sound = Some(audio_system.spawn_non_spatial_sound(
-                        crate::engine::audio::Sound::HolegunCharging,
+                        crate::engine::shared_systems::audio::Sound::HolegunCharging,
                         0.38,
                         1.2,
                         false,
@@ -398,18 +398,16 @@ impl Device for HoleGun {
                         .expect("Hole gun have not bolume areas in visual element")
                         .push(volume_area);
 
-                    engine_handle.send_command(
-                        Command {
-                            sender: player_id,
-                            command_type: CommandType::NetCommand(
-                                NetCommand::SendBoardcastNetMessageReliable(
-                                    NetMessageToPlayer::RemoteDirectMessage(
-                                        player_id,
-                                        RemoteMessage::HoleGunStartCharging
-                                    )
-                                )
-                            )
-                        }
+                    send_to_session_controller(
+                        messenger,
+                        player_id,
+                        SessionControllerMessage::SendToPlayers(
+                            NetMessageToPlayer::RemoteDirectMessage(
+                                player_id,
+                                RemoteMessage::HoleGunStartCharging
+                            ),
+                            Reliability::Reliable,
+                        ),
                     )
                 }
 
@@ -460,7 +458,7 @@ impl Device for HoleGun {
                         player,
                         physic_system,
                         audio_system,
-                        engine_handle,
+                        messenger,
                         screen_effects,
                         self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                         color,
@@ -489,7 +487,7 @@ impl Device for HoleGun {
                         player,
                         physic_system,
                         audio_system,
-                        engine_handle,
+                        messenger,
                         screen_effects,
                         self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                         color,
@@ -505,7 +503,7 @@ impl Device for HoleGun {
                         self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
                     );
             
-                    let volume_area = self
+                    let _volume_area = self
                         .visual_element
                         .volume_areas
                         .as_mut()
@@ -537,13 +535,13 @@ impl Device for HoleGun {
 
     fn process_while_deactive(
             &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
+            _player_id: ActorID,
+            _player: &mut PlayerInnerState,
+            _input: &ActionsFrameState,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
+            _ui_system: &mut UISystem,
+            _messenger: &mut Messenger,
             delta: f32,
         ) {
             self.energy += delta*self.energy_gun_restoring_speed;
@@ -559,7 +557,7 @@ impl Device for HoleGun {
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
         screen_effects: &mut PlayerScreenEffects,
     ) {
         let color = match player.team {
@@ -577,7 +575,7 @@ impl Device for HoleGun {
                     player,
                     physic_system,
                     audio_system,
-                    engine_handle,
+                    messenger,
                     screen_effects,
                     self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                     color,
@@ -619,12 +617,12 @@ impl Device for HoleGun {
 
     fn activate(
         &mut self,
-        player_id: ActorID,
+        _player_id: ActorID,
         player: &mut PlayerInnerState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        _messenger: &mut Messenger,
     ) {
         let img = ui_system.get_mut_ui_element(&UIElementType::EnergyGunImage);
 

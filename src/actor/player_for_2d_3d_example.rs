@@ -3,16 +3,20 @@
 
 
 
+use crate::actor::main_player::constants::*;
+
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+use crate::actor::session_controller::send_to_session_controller;
+use crate::engine::shared_systems::net::Reliability;
+
 use client_server_protocol::{
-    NetCommand,
     NetMessageToPlayer,
-    NetMessageToServer,
     RemoteCommand,
     RemoteMessage,
     Team
 };
-use fyrox_core::math::lerpf;
-use rand::{Rng, seq::SliceRandom, thread_rng};
+use rand::Rng;
 
 use crate::{
     actor::{
@@ -20,7 +24,7 @@ use crate::{
             holegun::HoleGun,
             Device,
         },
-        main_player::{player_inner_state::PlayerInnerState, player_input_master, player_settings, PlayerMessage, PlayerScreenEffects, PlayersProjections},
+        main_player::{player_inner_state::PlayerInnerState, PlayerMessage, PlayerScreenEffects, PlayersProjections},
         players_doll::PlayerDollInputState,
         Actor,
         ActorID,
@@ -30,28 +34,20 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        audio::{
+        shared_systems::audio::{
             AudioSystem,
             Sound
-        }, effects::EffectsSystem, engine_handle::{
-            Command,
-            CommandType,
-            EngineHandle
-        }, input::ActionsFrameState, physics::{
+        }, shared_systems::input::ActionsFrameState, world::physics::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicColliderMessage,
             PhysicsSystem
-        }, render::{camera::Camera, VisualElement}, time::TimeSystem, ui::{
-            UIElement, UIElementType, UISystem
-        }, world::{level::Spawn, static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea},}
+        }, shared_systems::render::{camera::Camera, VisualElement}, shared_systems::ui::{
+            UIElement, UIElementType
+        }, world::static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea}
     },
-    transform::{Transform, BACKWARD, DOWN, FORWARD, UP},
+    engine::transform::{Transform, BACKWARD, DOWN, FORWARD, UP},
 };
 
-use self::{
-    player_input_master::InputMaster,
-    player_settings::PlayerSettings,
-};
 
 use core::panic;
 use std::f32::consts::PI;
@@ -78,10 +74,6 @@ pub struct PlayerFor2d3dExample {
     hands_slot_3: Option<Box<dyn Device + Send>>,
 
     devices: [Option<Box<dyn Device + Send>>; 4],
-
-    pub player_settings: PlayerSettings,
-
-    pub master: InputMaster,
 
     screen_effects: PlayerScreenEffects,
 
@@ -122,13 +114,15 @@ impl Actor for PlayerFor2d3dExample {
     fn recieve_message(
         &mut self,
         message: Message,
-        engine_handle: &mut EngineHandle,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let physic_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+        let ui_system = &mut shared.ui;
+        let _time_system = &shared.time;
+
         let from = message.from;
 
         let message = message.message;
@@ -153,7 +147,7 @@ impl Actor for PlayerFor2d3dExample {
                     {
                         self.inner_state.transform.increment_position(increment);
                     },
-                    CommonActorsMessage::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::IWasChangedMyId(_new_id) => {}
                     CommonActorsMessage::ClientDisconnectedFromGameServer => {}
                 }
             }
@@ -178,14 +172,12 @@ impl Actor for PlayerFor2d3dExample {
                                     &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
-                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
-                            _ => {}
                         }
                     }
                     _ => {}
@@ -248,11 +240,10 @@ impl Actor for PlayerFor2d3dExample {
                                     &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
-                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
 
@@ -271,11 +262,10 @@ impl Actor for PlayerFor2d3dExample {
                                     &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
-                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
 
@@ -294,11 +284,10 @@ impl Actor for PlayerFor2d3dExample {
                                     &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
-                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
 
@@ -319,7 +308,7 @@ impl Actor for PlayerFor2d3dExample {
                                         self.get_id().expect("Player for Example have not ActorID"),
                                         false,
                                         audio_system,
-                                        engine_handle,
+                                        messenger,
                                     );
 
                                     let my_id = self.get_id().expect("Player Have not ActorID");
@@ -337,34 +326,34 @@ impl Actor for PlayerFor2d3dExample {
                                         &mut self.w_scanner,
                                         &mut self.devices,
                                         my_id,
-                                        &mut self.player_settings,
                                         physic_system,
                                         audio_system,
                                         ui_system,
-                                        engine_handle,
+                                        messenger,
                                     );
                                 }
                             }
 
+                            PlayerMessage::ChangeYourId(_) => {}
+
+
                             PlayerMessage::NewPeerConnected(peer_id) =>
                             {
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.id.unwrap(),
-                                        command_type: CommandType::NetCommand(
-                                            NetCommand::SendDirectNetMessageReliable(
-                                                NetMessageToPlayer::RemoteCommand(
-                                                    RemoteCommand::SpawnPlayersDollActor(
-                                                        self.get_transform().to_serializable_transform(),
-                                                        self.inner_state.collider.get_collider_radius(),
-                                                        self.inner_state.is_alive,
-                                                        self.inner_state.team
-                                                    )
-                                                ),
-                                                peer_id,
+                                send_to_session_controller(
+                                    messenger,
+                                    self.id.unwrap(),
+                                    SessionControllerMessage::SendToPlayer(
+                                        NetMessageToPlayer::RemoteCommand(
+                                            RemoteCommand::SpawnPlayersDollActor(
+                                                self.get_transform().to_serializable_transform(),
+                                                self.inner_state.collider.get_collider_radius(),
+                                                self.inner_state.is_alive,
+                                                self.inner_state.team
                                             )
-                                        )
-                                    }
+                                        ),
+                                        peer_id,
+                                        Reliability::Reliable,
+                                    ),
                                 )
                             }
 
@@ -379,7 +368,7 @@ impl Actor for PlayerFor2d3dExample {
                                 );
 
                                 todo!("must impliment respawn for observer");
-                                // engine_handle.send_command(
+                                // messenger.send_command(
                                 //     Command {
                                 //         sender: self.get_id().expect("Player have not ActorID"),
                                 //         command_type: CommandType::RespawnPlayer(
@@ -406,7 +395,7 @@ impl Actor for PlayerFor2d3dExample {
                                 );
 
                                 todo!("must impliment respawn for observer");
-                                // engine_handle.send_command(
+                                // messenger.send_command(
                                 //     Command {
                                 //         sender: self.get_id().expect("Player have not ActorID"),
                                 //         command_type: CommandType::RespawnPlayer(
@@ -433,7 +422,7 @@ impl Actor for PlayerFor2d3dExample {
                                 );
 
                                 todo!("must impliment respawn for observer");
-                                // engine_handle.send_command(
+                                // messenger.send_command(
                                 //     Command {
                                 //         sender: self.get_id().expect("Player have not ActorID"),
                                 //         command_type: CommandType::RespawnPlayer(
@@ -443,7 +432,7 @@ impl Actor for PlayerFor2d3dExample {
                                 // );
                             }
 
-                            SessionControllerMessage::TeamWin(team) =>
+                            SessionControllerMessage::TeamWin(_team) =>
                             {
                                 self.inner_state.is_time_after_some_team_win = true;
                             }
@@ -471,7 +460,7 @@ impl Actor for PlayerFor2d3dExample {
                                     }
                                 }
 
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     from,
                                     Message {
                                         from: self.get_id().expect("Player have not ActorID"),
@@ -497,33 +486,19 @@ impl Actor for PlayerFor2d3dExample {
                                     match flag_status {
                                         FlagStatus::Missed(_) =>
                                         {
-                                            engine_handle.send_command(
-                                                Command {
-                                                    sender: self.get_id().expect("Player have not ActorID"),
-                                                    command_type: CommandType::NetCommand(
-                                                        NetCommand::SendMessageToServer(
-                                                            NetMessageToServer::TryToReturnMyFlag(
-                                                                time_system.get_server_time()
-                                                            )
-                                                        )
-                                                    )
-                                                }
+                                            send_to_session_controller(
+                                                messenger,
+                                                self.get_id().expect("Player have not ActorID"),
+                                                SessionControllerMessage::TryToReturnMyFlag,
                                             );   
                                         }
 
                                         FlagStatus::OnTheBase =>
                                         {
-                                            engine_handle.send_command(
-                                                Command {
-                                                    sender: self.get_id().expect("Player have not ActorID"),
-                                                    command_type: CommandType::NetCommand(
-                                                        NetCommand::SendMessageToServer(
-                                                            NetMessageToServer::TryToGetScore(
-                                                                time_system.get_server_time()
-                                                            )
-                                                        )
-                                                    )
-                                                }
+                                            send_to_session_controller(
+                                                messenger,
+                                                self.get_id().expect("Player have not ActorID"),
+                                                SessionControllerMessage::TryToGetScore,
                                             ); 
                                         }
 
@@ -532,17 +507,10 @@ impl Actor for PlayerFor2d3dExample {
                                 }
                                 else
                                 {
-                                    engine_handle.send_command(
-                                        Command {
-                                            sender: self.get_id().expect("Player have not ActorID"),
-                                            command_type: CommandType::NetCommand(
-                                                NetCommand::SendMessageToServer(
-                                                    NetMessageToServer::TryToGetOpponentsFlag(
-                                                        time_system.get_server_time()
-                                                    )
-                                                )
-                                            )
-                                        }
+                                    send_to_session_controller(
+                                        messenger,
+                                        self.get_id().expect("Player have not ActorID"),
+                                        SessionControllerMessage::TryToGetOpponentsFlag,
                                     );
                                 }
                             }
@@ -579,18 +547,12 @@ impl Actor for PlayerFor2d3dExample {
                             {
                                 if self.inner_state.amount_of_move_w_bonuses_do_i_have < MAX_MOVE_W_BONUSES_I_CAN_HAVE
                                 {
-                                    engine_handle.send_command(
-                                        Command {
-                                            sender: self.get_id().expect("Player have not ActorID"),
-                                            command_type: CommandType::NetCommand(
-                                                NetCommand::SendMessageToServer(
-                                                    NetMessageToServer::TryToGetMoveWBonus(
-                                                        time_system.get_server_time(),
-                                                        index
-                                                    )
-                                                )
-                                            )
-                                        }
+                                    send_to_session_controller(
+                                        messenger,
+                                        self.get_id().expect("Player have not ActorID"),
+                                        SessionControllerMessage::TryToGetMoveWBonus(
+                                            index,
+                                        ),
                                     );
                                 }
                             }
@@ -612,7 +574,7 @@ impl Actor for PlayerFor2d3dExample {
                                     self.get_id().expect("Player for Example have not ActorID"),
                                     false,
                                     audio_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
 
@@ -647,7 +609,7 @@ impl Actor for PlayerFor2d3dExample {
         self.id
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         if self.inner_state.is_enable
         {
             let collider_container = PhysicalElement {
@@ -665,7 +627,7 @@ impl Actor for PlayerFor2d3dExample {
             None
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         if self.inner_state.is_enable {
             let child_visual_elem = match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
@@ -725,23 +687,18 @@ impl Actor for PlayerFor2d3dExample {
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let physic_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+        let ui_system = &mut shared.ui;
+        let _time_system = &shared.time;
 
-        let input = match &self.master {
-            InputMaster::LocalMaster(master) => {
-                master.current_input.clone()
-            }
-            InputMaster::RemoteMaster(master) => {
-               master.current_input.clone()
-            }   
-        };
+
+        let input = shared.input.actions().clone();
 
         let mut player_doll_input_state = PlayerDollInputState {
             move_forward: false,
@@ -769,7 +726,7 @@ impl Actor for PlayerFor2d3dExample {
 
             process_player_for_example_rotation(
                 &input,
-                &self.player_settings,
+                shared.global_settings.user.mouse_sensitivity,
                 &mut self.inner_state,
                 &self.screen_effects,
                 &mut self.volume_beam_pointer,
@@ -807,7 +764,7 @@ impl Actor for PlayerFor2d3dExample {
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 delta,
             );
 
@@ -825,7 +782,7 @@ impl Actor for PlayerFor2d3dExample {
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
             );
 
             // if input.show_hide_controls.is_action_just_pressed()
@@ -844,7 +801,6 @@ impl Actor for PlayerFor2d3dExample {
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
-                &self.player_settings,
                 self.current_w_position_target,
                 &mut self.model_has_left_orientation,
                 &mut self.screen_effects,
@@ -858,13 +814,11 @@ impl Actor for PlayerFor2d3dExample {
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
-                &self.player_settings,
             );
 
             main_player::process_player_second_jump_input(
                 &input,
                 &mut self.inner_state,
-                &self.player_settings,
                 audio_system,
                 false,
                 delta,
@@ -873,20 +827,19 @@ impl Actor for PlayerFor2d3dExample {
             main_player::process_w_scanner(
                 &input,
                 &mut self.inner_state,
-                &self.player_settings,
                 &mut self.screen_effects,
                 &mut self.w_scanner,
                 physic_system,
                 ui_system,
                 audio_system,
-                engine_handle,
+                messenger,
                 my_id,
                 delta,
             );
 
             self.screen_effects.player_projections.projections_tick(
                 my_id,
-                engine_handle,
+                messenger,
                 audio_system,
                 delta
             );
@@ -902,11 +855,10 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.screen_effects,
                 &mut self.devices,
                 my_id,
-                &self.player_settings,
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 delta,
             );
 
@@ -921,11 +873,10 @@ impl Actor for PlayerFor2d3dExample {
                 &mut self.screen_effects,
                 &mut self.devices,
                 my_id,
-                &self.player_settings,
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
             );
 
         } else {
@@ -955,13 +906,12 @@ impl Actor for PlayerFor2d3dExample {
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 delta,
             );
 
             main_player::process_player_respawn(
-                engine_handle,
-                &self.player_settings,
+                messenger,
                 &input,
                 &self.inner_state,
                 my_id,
@@ -1005,8 +955,7 @@ impl Actor for PlayerFor2d3dExample {
             player_doll_input_state,
             &self.inner_state,
             my_id,
-            time_system,
-            engine_handle,
+            messenger,
         );
     }
 }
@@ -1014,14 +963,14 @@ impl Actor for PlayerFor2d3dExample {
 
 fn process_player_for_example_rotation(
     input: &ActionsFrameState,
-    player_settings: &PlayerSettings,
+    mouse_sensitivity: f32,
     inner_state: &mut PlayerInnerState,
     screen_effects: &PlayerScreenEffects,
     volume_beam_pointer: &mut Vec<VolumeArea>,
     model_has_left_orientation: bool,
     physic_system: &PhysicsSystem,
     my_id: ActorID,
-    delta: f32,
+    _delta: f32,
 )
 {
     let mut xz = inner_state.saved_angle_of_rotation.x;
@@ -1033,18 +982,16 @@ fn process_player_for_example_rotation(
     if input.second_mouse.is_action_pressed() {
         xz = 
             input.mouse_axis.x *
-            *player_settings.mouse_sensivity.lock().unwrap() +
+            mouse_sensitivity +
             xz;
         
-        yz = (
-            input.mouse_axis.y *
-            *player_settings.mouse_sensivity.lock().unwrap() +
-            yz
-        );
+        yz = input.mouse_axis.y *
+            mouse_sensitivity +
+            yz;
         
     } else {
 
-        let (target_zw_angle, rotation_speed) = {
+        let (_target_zw_angle, _rotation_speed) = {
             if inner_state.w_aim_enabled
             {
                 let active_projection = screen_effects
@@ -1114,7 +1061,7 @@ fn process_player_for_example_rotation(
 
         yz = (
             input.mouse_axis.y *
-            *player_settings.mouse_sensivity.lock().unwrap() +
+            mouse_sensitivity +
             yz
         ).clamp(-PI/2.0, PI/2.0);
     }
@@ -1173,9 +1120,8 @@ fn process_player_for_example_rotation(
 
 fn process_player_for_example_movement_input(
     input: &ActionsFrameState,
-    player_doll_input_state: &mut PlayerDollInputState,
+    _player_doll_input_state: &mut PlayerDollInputState,
     inner_state: &mut PlayerInnerState,
-    player_settings: &PlayerSettings,
     current_w_position_target: f32,
     model_has_left_orientation: &mut bool,
     screen_effects: &mut PlayerScreenEffects,
@@ -1183,7 +1129,7 @@ fn process_player_for_example_movement_input(
     delta: f32,
 )
 {
-    let mut model_has_left_orientation_current = *model_has_left_orientation;
+    let model_has_left_orientation_current = *model_has_left_orientation;
     let mut movement_vec = Vec4::ZERO;
 
     if input.move_right.is_action_pressed() {
@@ -1233,13 +1179,13 @@ fn process_player_for_example_movement_input(
     // lock player on w axis 
     let w_dif = current_w_position_target - inner_state.get_position().w;
     inner_state.collider.current_velocity.w = (w_dif*1.5).clamp(
-        -player_settings.gravity_w_speed*25.0,
-        player_settings.gravity_w_speed*25.0
+        -GRAVITY_W_SPEED*25.0,
+        GRAVITY_W_SPEED*25.0
     );
 
-    // inner_state.collider.add_force(Vec4::NEG_X * player_settings.gravity_w_speed * delta);
+    // inner_state.collider.add_force(Vec4::NEG_X * GRAVITY_W_SPEED * delta);
 
-    inner_state.collider.add_force(DOWN * player_settings.gravity_y_speed * delta);
+    inner_state.collider.add_force(DOWN * GRAVITY_Y_SPEED * delta);
 
     if inner_state.collider.is_on_y_ground {
         inner_state.collider.set_wish_direction(
@@ -1249,7 +1195,7 @@ fn process_player_for_example_movement_input(
     } else {
         inner_state.collider.set_wish_direction(
             movement_vec,
-            player_settings.air_speed_mult
+            AIR_SPEED_MULT
         );
     }
 
@@ -1261,12 +1207,11 @@ fn process_player_for_example_movement_input(
 
 impl PlayerFor2d3dExample {
 
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn new(
-        master: InputMaster,
-        player_settings: PlayerSettings,
         audio_system: &mut AudioSystem,
-        blue_base_position: Vec4,
-        red_base_position: Vec4,
+        _blue_base_position: Vec4,
+        _red_base_position: Vec4,
         red_spawn_points: Vec<Vec4>,
         blue_spawn_points: Vec<Vec4>,
     ) -> Self {
@@ -1274,7 +1219,7 @@ impl PlayerFor2d3dExample {
         let screen_effects = PlayerScreenEffects {
             w_scanner_is_active: false,
             w_scanner_radius: 0.0,
-            w_scanner_ring_intesity: 0.0,
+            w_scanner_ring_intensity: 0.0,
             w_scanner_enemies_intesity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
@@ -1284,7 +1229,7 @@ impl PlayerFor2d3dExample {
             player_projections_is_visible: false
         };
 
-        let w_scanner = WScanner::new(&player_settings);
+        let w_scanner = WScanner::new();
 
         // let camera3d_rotation_zy = Mat4::from_rotation_x(-PI*0.1);
         // let camera3d_rotation_zx = Mat4::from_rotation_y(PI*0.6);
@@ -1341,7 +1286,6 @@ impl PlayerFor2d3dExample {
 
             inner_state: PlayerInnerState::new(
                 Transform::new(),
-                &player_settings,
                 false,
                 false,
                 UP*0.6,
@@ -1352,10 +1296,10 @@ impl PlayerFor2d3dExample {
             active_hands_slot: ActiveHandsSlot::Zero,
 
             hands_slot_0: Box::new(MachineGun::new(
-                player_settings.machinegun_damage,
-                player_settings.machinegun_add_force, 
-                player_settings.machinegun_heat_add_on_shot, 
-                player_settings.machinegun_cooling_speed,
+                MACHINEGUN_DAMAGE,
+                MACHINEGUN_ADD_FORCE, 
+                MACHINEGUN_HEAT_ADD_ON_SHOT, 
+                MACHINEGUN_COOLING_SPEED,
                 Vec4::new(
                     0.0,
                     1.0,
@@ -1373,10 +1317,10 @@ impl PlayerFor2d3dExample {
                 true,
             ))),
             hands_slot_2: Some(Box::new(HoleGun::new(
-                player_settings.energy_gun_hole_size_mult, 
-                player_settings.energy_gun_add_force_mult, 
-                player_settings.energy_gun_damage_mult, 
-                player_settings.energy_gun_restoring_speed,
+                ENERGY_GUN_HOLE_SIZE_MULT, 
+                ENERGY_GUN_ADD_FORCE_MULT, 
+                ENERGY_GUN_DAMAGE_MULT, 
+                ENERGY_GUN_RESTORING_SPEED,
                 Vec4::new(
                     0.0,
                     1.0,
@@ -1387,10 +1331,6 @@ impl PlayerFor2d3dExample {
             hands_slot_3: None,
 
             devices: [None, None, None, None],
-            
-            player_settings,
-
-            master,
 
             screen_effects,
 
@@ -1534,17 +1474,16 @@ impl ControlledActor for PlayerFor2d3dExample
         self.inner_state.team
     }
 
-    fn get_input_master(&mut self) -> &mut InputMaster {
-        &mut self.master
-    }
-
     fn spawn(
         &mut self,
-        physics_system: &PhysicsSystem,
-        ui_system: &mut UISystem,
-        audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let physics_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let ui_system = &mut shared.ui;
+        let audio_system = &mut shared.audio;
+
         let spawns: &Vec<Vec4>;
 
         match self.get_team()
@@ -1558,9 +1497,9 @@ impl ControlledActor for PlayerFor2d3dExample
                 spawns = &self.blue_spawn_points;
             },
         }
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
 
-        let rand_index: usize = rng.gen_range(0..spawns.len());
+        let rand_index: usize = rng.random_range(0..spawns.len());
         let mut current_spawn = *spawns.get(rand_index).expect("Main Player haven't spawn points");
 
         for spawn in spawns.iter()
@@ -1571,8 +1510,8 @@ impl ControlledActor for PlayerFor2d3dExample
                 Some(self.get_id().expect("Player hasn't ActorID"))
             );
     
-            for hit in &hits {
-                if let Some(team) = hit.hited_actors_team
+            for hit in hits {
+                if let Some(team) = hit.hit_actors_team
                 {
                     if self.get_team() == team
                     {
@@ -1593,8 +1532,8 @@ impl ControlledActor for PlayerFor2d3dExample
         );
 
         for hit in hits {
-            engine_handle.send_direct_message(
-                hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
+            messenger.send_direct_message(
+                hit.hit_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     remote_sender: false,
@@ -1614,7 +1553,7 @@ impl ControlledActor for PlayerFor2d3dExample
 
         self.inner_state.saved_angle_of_rotation = Vec4::ZERO;
 
-        self.w_scanner.restore_scanner_values(&self.player_settings);
+        self.w_scanner.restore_scanner_values();
 
         self.inner_state.restore_w_shift_and_rotate_values();
 
@@ -1654,7 +1593,7 @@ impl ControlledActor for PlayerFor2d3dExample
                     physics_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
 
             },
@@ -1666,7 +1605,7 @@ impl ControlledActor for PlayerFor2d3dExample
                         physics_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -1679,7 +1618,7 @@ impl ControlledActor for PlayerFor2d3dExample
                         physics_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -1692,7 +1631,7 @@ impl ControlledActor for PlayerFor2d3dExample
                         physics_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -1707,15 +1646,15 @@ impl ControlledActor for PlayerFor2d3dExample
                     physics_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
             }
         }
 
-        self.screen_effects.w_scanner_ring_intesity = 0.0;
+        self.screen_effects.w_scanner_ring_intensity = 0.0;
         self.screen_effects.w_scanner_radius = 0.0;
         self.screen_effects.w_scanner_is_active = false;
-        self.w_scanner.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
+        self.w_scanner.w_scanner_reloading_time = SCANNER_RELOADING_TIME;
 
         self.inner_state.collider.reset_forces_and_velocity();
 
@@ -1731,23 +1670,21 @@ impl ControlledActor for PlayerFor2d3dExample
             will_jump: false,
         };
 
-        engine_handle.send_command(
-            Command {
-                sender: self.get_id().expect("Player have not ActorID"),
-                command_type: CommandType::NetCommand(
-                    NetCommand::SendBoardcastNetMessageReliable(
-                        NetMessageToPlayer::RemoteDirectMessage(
-                            self.get_id().expect("Player have not ActorID"),
-                            RemoteMessage::PlayerRespawn(
-                                self.inner_state.transform.to_serializable_transform(),
-                                player_doll_input_state.serialize(),
-                                Vec4::ZERO.to_array(),
-                                self.inner_state.team
-                            )
-                        )
+        send_to_session_controller(
+            messenger,
+            self.get_id().expect("Player have not ActorID"),
+            SessionControllerMessage::SendToPlayers(
+                NetMessageToPlayer::RemoteDirectMessage(
+                    self.get_id().expect("Player have not ActorID"),
+                    RemoteMessage::PlayerRespawn(
+                        self.inner_state.transform.to_serializable_transform(),
+                        player_doll_input_state.serialize(),
+                        Vec4::ZERO.to_array(),
+                        self.inner_state.team
                     )
-                )
-            }
+                ),
+                Reliability::Reliable,
+            ),
         )
     }
 }

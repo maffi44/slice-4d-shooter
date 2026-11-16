@@ -3,9 +3,12 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use glam::{FloatExt, Vec3, Vec4};
 
-use crate::{engine::{audio::AudioSystem, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::PhysicsSystem, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::VisualWave}, transform::Transform};
+use crate::{engine::{world::messenger::{Command, CommandType}, shared_systems::render::VisualElement, world::static_object::VisualWave}, engine::transform::Transform};
 
 use super::{Actor, ActorID};
 
@@ -81,18 +84,16 @@ impl Actor for Wave
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     )
     {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         if self.time_segments.len() == 0
         {
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: self.id.expect("Wave is not have ActorID"),
                     command_type: CommandType::RemoveActor(
@@ -115,7 +116,7 @@ impl Actor for Wave
 
             if self.time_segments.len() == 0
             {
-                engine_handle.send_command(
+                messenger.send_command(
                     Command {
                         sender: self.id.expect("Wave is not have ActorID"),
                         command_type: CommandType::RemoveActor(
@@ -136,7 +137,7 @@ impl Actor for Wave
         self.visual_waves[0].radius = radius;
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(VisualElement {
             transform: &self.transform,
             static_objects: None,

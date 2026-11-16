@@ -4,256 +4,265 @@
 
 
 pub mod static_object;
-pub mod level;
+pub mod world_descriptor;
+pub mod actors;
+pub mod messenger;
+pub mod time;
+pub mod physics;
+pub mod effects;
 
-use self::level::Level;
+use std::sync::Arc;
+
+use glam::UVec2;
 
 use crate::{
-    actor::{
-        Actor, ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage, main_player::{
-            PlayerMessage, player_settings::PlayerSettings
-        }
-    },
+    actor::{Actor, ActorID, Message, MessageType},
     engine::{
-        engine_handle::{
-            CommandType,
-            EngineHandle,
-        },
-        physics::PhysicsSystem, render::RenderSystem
+        world::physics::PhysicsSystem,
+        shared_systems::EngineSharedSystems,
     },
 };
 
-use core::panic;
-use std::collections::HashMap;
-
-use super::{
-    audio::AudioSystem, effects::EffectsSystem, engine_handle::Command, net::NetSystem, time::TimeSystem, ui::UISystem
+use self::{
+    actors::Actors,
+    messenger::{Messenger, OUTER_WORLD_SENDER_ID},
+    time::WorldTimeSystem,
+    world_descriptor::WorldDescriptor,
 };
 
-use client_server_protocol::{NetCommand, Team};
-use tokio::task::JoinHandle;
 
-pub struct World {
-    pub level: Option<Level>,
-    pub actors: HashMap<ActorID, ActorWrapper>,
-    pub main_actor_id: ActorID,
-    pub players_settings: PlayerSettings,
-    pub preloaded_levels: HashMap<String, JoinHandle<Level>>
+/// One isolated simulation: its actors, message bus, physics, time and render data.
+///
+/// The Engine owns the root world; nested worlds are owned by actors, which decide when to
+/// simulate them (`simulate(shared)` inside their own `tick`). The Engine doesn't track worlds.
+pub struct World
+{
+    actors: Actors,
+    messenger: Messenger,
+    physics: PhysicsSystem,
+    time: WorldTimeSystem,
+    render: Option<WorldRenderSystem>,
 }
 
-impl World {
 
-    pub async fn new(
-        engine_handle: &mut EngineHandle,
-        players_settings: PlayerSettings,
-        // level_name: String
-    ) -> Self
+pub struct WorldConfig
+{
+    /// `None`: the world is never rendered (also forced in headless mode).
+    pub render: Option<WorldRenderConfig>,
+}
+
+
+#[derive(Clone, Copy, Debug)]
+pub struct WorldRenderConfig
+{
+    /// Output texture resolution (any aspect ratio, independent of the window and the parent world).
+    pub resolution: UVec2,
+    /// Output texture scale factor (the texture is `resolution * scale` pixels).
+    pub scale: f32,
+    /// 0 = paused, 1 = every render frame, N = every Nth render frame.
+    pub render_rate: u32,
+}
+
+
+/// The per-world part passed to actor callbacks (together with `&mut EngineSharedSystems`).
+pub struct WorldContext<'a>
+{
+    pub messenger: &'a mut Messenger,
+    pub physics: &'a PhysicsSystem,
+    pub time: &'a WorldTimeSystem,
+    /// The world's main (camera) actor.
+    pub main_actor_id: ActorID,
+}
+
+
+/// Requests from a world to its owner: the Engine for the root world, the owner actor for a nested world.
+/// The receiver decides what to do.
+pub enum OuterWorldMessage
+{
+    /// Close the application. Root: the engine exits. Nested: the owner may forward it outward.
+    #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
+    QuitApplication,
+    /// Replace the root world with a prepared one. Root: the engine does it.
+    /// Nested: the owner may forward it to its own world's outer mailbox.
+    ReplaceRootWorld(Arc<WorldDescriptor>),
+    /// This world has finished its job; the owner may drop it. Root: ignored.
+    #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
+    WorldFinished,
+    /// Game-specific messages for owner actors. The engine ignores them.
+    #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
+    Specific(SpecificOuterWorldMessage),
+}
+
+
+/// Hand-written, like `SpecificActorMessage`; extended as game mechanics need it.
+pub enum SpecificOuterWorldMessage
+{
+    #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
+    TutorialDemoFinished,
+}
+
+
+impl World
+{
+    /// Creates a world instance from a prepared descriptor. Cheap: the slow work (shaders,
+    /// pipelines) is already in the descriptor. All per-instance creation happens here:
+    /// own systems, actors, render registration, initial messages.
+    pub fn new(
+        descriptor: &WorldDescriptor,
+        config: WorldConfig,
+        shared: &mut EngineSharedSystems,
+    ) -> World
     {
-        
-        // 0 it is id of engine
-        // in case when engine send message to the some actor
-        // sender property will be 0      
+        let physics = PhysicsSystem::new(descriptor);
 
-        log::info!("world system: level downloaded and init");
-
-        let world = World {
-            actors: HashMap::new(),
-            players_settings,
-            level: None,
-            main_actor_id: 0,
-            preloaded_levels: HashMap::with_capacity(2)
+        let render = match config.render
+        {
+            Some(render_config) => WorldRenderSystem::new(descriptor, render_config, shared),
+            None => None,
         };
 
-        // engine_handle.send_command(
-        //     Command {
-        //         sender: 0u128,
-        //         command_type: CommandType::LoadNewLevelSync(level_name),
-        //     }
-        // );
+        let mut world = World {
+            actors: Actors::new(),
+            messenger: Messenger::new(),
+            physics,
+            time: WorldTimeSystem::new(),
+            render,
+        };
+
+        let (main_actor, actors) = descriptor.create_actors();
+
+        world.messenger.add_main_actor(main_actor, &mut world.actors, &world.physics, &world.time, shared);
+        world.messenger.add_actors(actors, &mut world.actors, &world.physics, &world.time, shared);
+        world.messenger.start_world(&mut world.actors, &world.physics, &world.time, shared);
+        world.messenger.process_messages(&mut world.actors, &world.physics, &world.time, shared);
 
         world
     }
 
-    pub fn change_actor_id(&mut self, old_id: ActorID, new_id: ActorID, engine_handle: &mut EngineHandle) {
-        if let Some(mut actor) = self.remove_actor_from_world(old_id) {
-            actor.change_id(new_id, engine_handle);
 
-            if let Some(mut swaped_actor) = self.actors.insert(new_id, actor) {
-                
-                let new_id_for_swaped_actor = self.get_new_random_uniq_id();
+    /// One full tick of this world: actors, messages, physics, messages, render data.
+    pub fn simulate(&mut self, shared: &mut EngineSharedSystems)
+    {
+        self.time.begin_simulate(&shared.time);
 
-                swaped_actor.change_id(new_id_for_swaped_actor, engine_handle);
+        {
+            let mut world = WorldContext {
+                main_actor_id: self.actors.main_actor_id(),
+                messenger: &mut self.messenger,
+                physics: &self.physics,
+                time: &self.time,
+            };
 
-                self.actors.insert(new_id_for_swaped_actor, swaped_actor);
+            for (_, actor) in self.actors.iter_mut()
+            {
+                actor.tick(&mut world, shared);
             }
         }
-    }
 
-    pub fn set_new_level(
-        &mut self,
-        mut level: Level,
-        engine_handle: &mut EngineHandle,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem
-    )
-    {
-        self.actors.clear();
+        self.messenger.process_messages(&mut self.actors, &self.physics, &self.time, shared);
 
-        self.add_main_actor_to_world(
-            level.main_actor.take().expect("level have not main actor"),
-            engine_handle,
-            physic_system,
-            audio_system ,
-            ui_system ,
-            time_system,
-            effects_system
-        );
+        self.physics.process_physics(&mut self.actors, self.time.delta(), &mut self.messenger);
 
-        for actor in level.actors.take().unwrap() {
-            self.add_actor_to_world(
-                actor,
-                engine_handle,
-                physic_system,
-                audio_system ,
-                ui_system ,
-                time_system,
-                effects_system
-            );
-        }
+        self.messenger.process_messages(&mut self.actors, &self.physics, &self.time, shared);
 
-        self.level = Some(level);
-    }
-
-    pub fn add_actor_to_world(
-        &mut self,
-        mut actor: ActorWrapper,
-        engine_handle: &mut EngineHandle,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem
-    ) -> ActorID {
-
-        let id = match actor.get_id() {
-            Some(id) => id,
-            None => {
-                let new_id = self.get_new_random_uniq_id();
-
-                actor.set_id(new_id);
-
-                new_id
-            },
-        };
-
-        if let Some(mut swaped_actor) = self.actors.insert(id, actor) {
-                
-            let new_id_for_swaped_actor = self.get_new_random_uniq_id();
-
-            swaped_actor.change_id(new_id_for_swaped_actor, engine_handle);
-
-            self.actors.insert(new_id_for_swaped_actor, swaped_actor);
-        }
-
-        self.actors.get_mut(&id).expect("world have not actor after added it")
-            .on_added_to_world(
-                physic_system,
-                engine_handle,
-                audio_system,
-                ui_system,
-                time_system,
-                effects_system
-            );
-
-        id
-    }
-
-    pub fn add_main_actor_to_world(
-        &mut self,
-        actor: ActorWrapper,
-        engine_handle: &mut EngineHandle,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem
-    ) -> ActorID {
-
-        let id = self.add_actor_to_world(
-            actor,
-            engine_handle,
-            physic_system,
-            audio_system ,
-            ui_system ,
-            time_system,
-            effects_system
-        );
-
-        self.main_actor_id = id;
-
-        id
-    }
-
-    pub fn remove_actor_from_world(&mut self, id: ActorID) -> Option<ActorWrapper> {
-
-        self.actors.remove(&id)
-    }
-
-    pub fn tick(
-        &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-    ) {
-        let delta = time_system.get_prev_frame_duration();
-
-        for (_, actor) in self.actors.iter_mut()
+        if let Some(render) = &mut self.render
         {
-            actor.tick(
-                physic_system,
-                engine_handle,
-                audio_system,
-                ui_system,
-                time_system,
-                effects_system,
-                delta
-            );
+            render.update(&self.actors, &self.time, shared);
         }
-
     }
 
-    fn get_new_random_uniq_id(&self) -> ActorID {
-        let mut new_id = get_random_non_zero_id();
 
-        while self.actors.contains_key(&new_id) {
-            new_id = get_random_non_zero_id();
-        }
+    // ---- rendering control (atomics; callable any time) ----
 
-        new_id
+    pub fn output_texture_id(&self) -> Option<WorldTextureId>
+    {
+        self.render.as_ref().map(|render| render.texture_id())
     }
 
+    #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
+    pub fn set_render_rate(&self, render_rate: u32)
+    {
+        if let Some(render) = &self.render
+        {
+            render.set_render_rate(render_rate);
+        }
+    }
+
+    pub fn set_output_resolution(&self, resolution: UVec2)
+    {
+        if let Some(render) = &self.render
+        {
+            render.set_output_resolution(resolution);
+        }
+    }
+
+    pub fn set_output_scale(&self, scale: f32)
+    {
+        if let Some(render) = &self.render
+        {
+            render.set_output_scale(scale);
+        }
+    }
+
+    #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
+    pub fn set_output_resolution_and_scale(&self, resolution: UVec2, scale: f32)
+    {
+        if let Some(render) = &self.render
+        {
+            render.set_output_resolution_and_scale(resolution, scale);
+        }
+    }
+
+    pub fn output_scale(&self) -> Option<f32>
+    {
+        self.render.as_ref().map(|render| render.output_scale())
+    }
+
+
+    // ---- owner → world (sender id 0) ----
+
+    #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
+    pub fn send_broadcast_message(&mut self, message: MessageType)
+    {
+        self.messenger.send_broadcast_message(
+            Message {
+                from: OUTER_WORLD_SENDER_ID,
+                remote_sender: false,
+                message,
+            }
+        );
+    }
+
+    #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
+    pub fn send_direct_message(&mut self, to: ActorID, message: MessageType)
+    {
+        self.messenger.send_direct_message(
+            to,
+            Message {
+                from: OUTER_WORLD_SENDER_ID,
+                remote_sender: false,
+                message,
+            }
+        );
+    }
+
+
+    // ---- world → owner ----
+
+    /// The world's requests to its owner, taken one by one (`pop`, no reallocation).
+    #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
+    pub fn take_outer_world_messages(&mut self) -> impl Iterator<Item = OuterWorldMessage> + '_
+    {
+        self.messenger.take_outer_world_messages()
+    }
+
+    /// Takes one request to the owner. Useful when the owner needs `&mut self` while handling it
+    /// (the iterator would keep the world borrowed).
+    pub fn pop_outer_world_message(&mut self) -> Option<OuterWorldMessage>
+    {
+        self.messenger.pop_outer_world_message()
+    }
 }
 
-fn get_random_non_zero_id() -> ActorID {
-    let mut bytes : [u8;16] = [0;16];
-    let res = getrandom::getrandom(&mut bytes);
-    
-    if let Err(err) = res {
-        panic!("Can't make random u128 in get_random_id function");
-    }
 
-    let mut id: u128 = u128::from_be_bytes(bytes);
-
-    // 0 is reserved ID for the Engine itself
-    while id == 0u128 {
-        id = get_random_non_zero_id();
-    }
-
-    id
-}
+use crate::engine::shared_systems::render::{WorldRenderSystem, WorldTextureId};

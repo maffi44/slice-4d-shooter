@@ -16,12 +16,12 @@ use matchmaking_server_protocol::{
 
 use core::panic;
 use std::{
-    env, io::{Read, Write}, net::Ipv4Addr, os::linux::raw::stat, process::Stdio, str::FromStr, sync::Arc, time::Duration
+    env, net::Ipv4Addr, process::Stdio, str::FromStr, sync::Arc, time::Duration
 };
 use tokio::{
     fs::File, io::{
         AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, Lines
-    }, net::{TcpListener, TcpSocket, TcpStream}, process::{
+    }, net::{TcpListener, TcpStream}, process::{
         Child,
         ChildStderr,
         ChildStdout,
@@ -45,6 +45,7 @@ use crate::matchmaking_server_protocol::GameType;
 #[derive(Clone, Debug)]
 struct Config
 {
+    #[allow(dead_code)] // read from the config file, not used by the server yet
     pub matchmaking_server_ip: Ipv4Addr,
     pub matchmaking_server_port_for_clients: u16,
     pub matchmaking_server_port_for_servers: u16,
@@ -68,19 +69,6 @@ struct Config
     pub max_game_sessions: u32,
 
     pub max_players_per_game_session: u32,
-}
-
-trait ToOption<T> {
-    fn none_if_zero(self) -> Option<T>;
-}
-
-impl ToOption<String> for String {
-    fn none_if_zero(self) -> Option<String>
-    {
-        if self == "" {return None;}
-
-        Some(self)
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -470,7 +458,7 @@ async fn spawn_game_server(
 
     let mut server_process = match server_process {
         Ok(server_process) => server_process,
-        Err(e) => return Err(()), 
+        Err(_e) => return Err(()), 
     };
 
     let server_stdout = server_process.stdout.take().unwrap();
@@ -529,7 +517,7 @@ async fn spawn_game_server(
 
 
 async fn keep_server_process(
-    server_process: Child,
+    _server_process: Child,
     mut server_stdout_reader: Lines<BufReader<ChildStdout>>,
     mut server_stderr: ChildStderr,
     server_index: u16,

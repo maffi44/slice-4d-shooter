@@ -3,6 +3,9 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use std::f32::consts::PI;
 
 use fyrox_sound::source::Status;
@@ -10,8 +13,8 @@ use glam::{Vec3, Vec4};
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
-    }, transform::Transform
+        shared_systems::audio::Sound, world::messenger::{Command, CommandType}, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider}, shared_systems::render::VisualElement, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
+    }, engine::transform::Transform
 };
 
 use super::{
@@ -31,8 +34,8 @@ pub struct DropedRotatorTool
     transform: Transform,
     id: Option<ActorID>,
     area: Area,
-    static_objects: Vec<StaticObject>,
-    coloring_areas: Vec<ColoringArea>,
+    _static_objects: Vec<StaticObject>,
+    _coloring_areas: Vec<ColoringArea>,
     volume_areas: Vec<VolumeArea>,
     pulse_timer: f32,
 }
@@ -95,8 +98,8 @@ impl DropedRotatorTool
             transform,
             id: None,
             area,
-            static_objects,
-            coloring_areas,
+            _static_objects: static_objects,
+            _coloring_areas: coloring_areas,
             pulse_timer: 0.0,
             volume_areas,
         }
@@ -107,15 +110,12 @@ impl Actor for DropedRotatorTool
 {
     fn tick(
         &mut self,
-        physic_system: &crate::engine::physics::PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut crate::engine::audio::AudioSystem,
-        ui_system: &mut crate::engine::ui::UISystem,
-        time_system: &mut crate::engine::time::TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     )
     {
+        let delta = world.time.delta();
+
         self.pulse_timer += delta*2.0; 
         if self.pulse_timer >= PI*2.0 {self.pulse_timer -= PI*2.0}
         let pulse = f32::sin(self.pulse_timer);
@@ -126,7 +126,7 @@ impl Actor for DropedRotatorTool
         &mut self.transform
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement>
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>>
     {
         Some(
             PhysicalElement
@@ -172,17 +172,16 @@ impl Actor for DropedRotatorTool
     }
 
     fn recieve_message(
-            &mut self,
-            message: Message,
-            engine_handle: &mut EngineHandle,
-            physics_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            time_system: &TimeSystem,
-            effects_system: &mut EffectsSystem,
-        ) {
+        &mut self,
+        message: Message,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    ) {
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+
         
-        let from = message.from;
+        let _from = message.from;
 
         match message.message
         {
@@ -208,7 +207,7 @@ impl Actor for DropedRotatorTool
                                     15.0
                                 );
 
-                                engine_handle.send_command(
+                                messenger.send_command(
                                     Command {
                                         sender: self.get_id().expect("Droped Rotator Tool havn't ActorID"),
                                         command_type: CommandType::RemoveActor(
@@ -233,7 +232,7 @@ impl Actor for DropedRotatorTool
                     }
                     CommonActorsMessage::ClientDisconnectedFromGameServer =>
                     {
-                        // self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
+                        // self.set_flag_on_base_status(effects_system, audio_system, messenger);
                     }
                     _ => {}
                 }
@@ -247,7 +246,7 @@ impl Actor for DropedRotatorTool
                         {
                             AreaMessage::ActorEnterArea(id) =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     id,
                                     Message {
                                         from: self.get_id().expect("Droped Rotator Tool havn't ActorID"),
@@ -260,7 +259,7 @@ impl Actor for DropedRotatorTool
                                     }
                                 );
                             }
-                            AreaMessage::ActorIsContainedInsideArea(id) =>
+                            AreaMessage::ActorIsContainedInsideArea(_id) =>
                             {
 
                             }

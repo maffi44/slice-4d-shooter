@@ -3,20 +3,22 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use glam::{FloatExt, Vec3, Vec4};
 
 use crate::{
     engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::{
+        world::messenger::{
             Command,
-            CommandType,
-            EngineHandle
-        }, physics::PhysicsSystem, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
+            CommandType
+        }, shared_systems::render::VisualElement, world::static_object::{
             SphericalVolumeArea,
             VolumeArea
         }
     },
-    transform::Transform
+    engine::transform::Transform
 };
 
 use super::{
@@ -77,7 +79,7 @@ impl Actor for ShootingImpact {
         self.id = Some(id);
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(
             VisualElement {
                 transform: &self.transform,
@@ -93,14 +95,12 @@ impl Actor for ShootingImpact {
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         if let VolumeArea::SphericalVolumeArea(area) = &mut self.volume_areas[0] {
             area.radius += delta*9.0*(1.0+area.radius*3.0);
 
@@ -108,7 +108,7 @@ impl Actor for ShootingImpact {
             if area.radius > self.max_radius {
                 let my_id = self.id.expect("PlayerDeathExplode have not ActorID");
                 
-                engine_handle.send_command(
+                messenger.send_command(
                     Command {
                         sender: my_id,
                         command_type: CommandType::RemoveActor(

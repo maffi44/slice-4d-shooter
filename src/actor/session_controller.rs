@@ -3,13 +3,25 @@
 
 
 
-use client_server_protocol::Team;
+mod net_session;
+
+use client_server_protocol::{NetMessageToPlayer, NetMessageToServer, RemoteMessage, Team};
 use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
 
 use crate::{
-    actor::session_controller::SessionControllerMessage::GiveMeFlagsPostitions, engine::{audio::Sound, effects::EffectsSystem, engine_handle::EngineHandle, time::TimeSystem, ui::{UIElementType, UISystem}}, transform::Transform
+    engine::{
+        shared_systems::audio::Sound,
+        world::effects,
+        shared_systems::net::Reliability,
+        shared_systems::EngineSharedSystems,
+        shared_systems::ui::{UIElementType, UISystem},
+        world::{messenger::Messenger, WorldContext},
+    },
+    engine::transform::Transform
 };
+
+use self::net_session::NetSession;
 
 use super::{
     flag::FlagStatus, main_player::{PlayerMessage, BLUE_TEAM_COLOR, RED_TEAM_COLOR}, move_w_bonus::BonusSpotStatus, Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage
@@ -51,6 +63,49 @@ pub enum SessionControllerMessage
     TeamWin(Team),
     GiveMeFlagsPostitions,
     ItIsFlagPosition(Team, Vec4),
+
+    // Network data from other actors (V1: all game traffic goes through SessionController).
+    // Messages that carry the session (server) time are stamped by SessionController.
+    TryToGetOpponentsFlag,
+    TryToGetScore,
+    TryToReturnMyFlag,
+    TryToGetMoveWBonus(
+        // index of bonus spot
+        u32
+    ),
+    SendToServer(NetMessageToServer),
+    SendToPlayers(NetMessageToPlayer, Reliability),
+    SendToPlayer(NetMessageToPlayer, ActorID, Reliability),
+    SendPlayerDollState(
+        // player's transform (serializable form)
+        ([f32; 4], [f32; 16]),
+        // simple input state (for extrapolation)
+        (bool,bool,bool,bool,bool),
+        // player's velocity
+        [f32;4],
+    ),
+    ShowConnectionStatusUI,
+}
+
+
+/// Sends a message to the world's SessionController.
+/// It's broadcast, so senders don't need to know the SessionController's id (and devices,
+/// which aren't actors, can use it too). A world without a SessionController has no network.
+pub fn send_to_session_controller(
+    messenger: &mut Messenger,
+    from: ActorID,
+    message: SessionControllerMessage,
+)
+{
+    messenger.send_broadcast_message(
+        Message {
+            from,
+            remote_sender: false,
+            message: MessageType::SpecificActorMessage(
+                SpecificActorMessage::SessionControllerMessage(message)
+            )
+        }
+    );
 }
 
 
@@ -72,13 +127,17 @@ pub struct SessionController
     blue_flag_base_position: Option<Vec4>,
 
     observer_mode: bool,
+
+    /// The game-session networking (formerly in NetSystem).
+    net: NetSession,
+    it_is_2d_3d_example: bool,
 }
 
 
 impl SessionController
 {
     pub fn new(
-        
+        it_is_2d_3d_example: bool,
     ) -> Self
     {
         let session_controller = SessionController {
@@ -97,7 +156,10 @@ impl SessionController
             blue_flag_base_position: None,
 
             // temp
-            observer_mode: false
+            observer_mode: false,
+
+            net: NetSession::new(),
+            it_is_2d_3d_example,
         };
 
         
@@ -270,19 +332,88 @@ impl SessionController
 }
 
 
+impl SessionController
+{
+    /// Network data sent by other actors. Returns true if the message was one of them.
+    fn handle_outgoing_net_message(
+        &mut self,
+        from: ActorID,
+        message: &SessionControllerMessage,
+        shared: &mut EngineSharedSystems,
+    ) -> bool
+    {
+        let server_time = self.net.server_time();
+
+        match message
+        {
+            SessionControllerMessage::TryToGetOpponentsFlag =>
+            {
+                self.net.send_to_server(NetMessageToServer::TryToGetOpponentsFlag(server_time), &mut shared.net);
+            }
+            SessionControllerMessage::TryToGetScore =>
+            {
+                self.net.send_to_server(NetMessageToServer::TryToGetScore(server_time), &mut shared.net);
+            }
+            SessionControllerMessage::TryToReturnMyFlag =>
+            {
+                self.net.send_to_server(NetMessageToServer::TryToReturnMyFlag(server_time), &mut shared.net);
+            }
+            SessionControllerMessage::TryToGetMoveWBonus(index) =>
+            {
+                self.net.send_to_server(NetMessageToServer::TryToGetMoveWBonus(server_time, *index), &mut shared.net);
+            }
+            SessionControllerMessage::SendToServer(message) =>
+            {
+                self.net.send_to_server(message.clone(), &mut shared.net);
+            }
+            SessionControllerMessage::SendToPlayers(message, reliability) =>
+            {
+                self.net.send_to_players(message.clone(), *reliability, &mut shared.net);
+            }
+            SessionControllerMessage::SendToPlayer(message, peer, reliability) =>
+            {
+                self.net.send_to_player(message.clone(), *peer, *reliability, &mut shared.net);
+            }
+            SessionControllerMessage::SendPlayerDollState(transform, input_state, velocity) =>
+            {
+                self.net.send_to_players(
+                    NetMessageToPlayer::RemoteDirectMessage(
+                        from,
+                        RemoteMessage::SetPlayerDollState(
+                            transform.clone(),
+                            *input_state,
+                            *velocity,
+                            server_time,
+                        )
+                    ),
+                    Reliability::Unreliable,
+                    &mut shared.net,
+                );
+            }
+            SessionControllerMessage::ShowConnectionStatusUI =>
+            {
+                self.net.set_connection_status_visible(true);
+            }
+            _ => return false,
+        }
+
+        true
+    }
+}
+
+
 impl Actor for SessionController
 {
-    fn on_level_loaded(
+    fn on_world_started(
         &mut self,
-        physic_system: &crate::engine::physics::PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut crate::engine::audio::AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     )
     {
-        engine_handle.send_boardcast_message(
+        let messenger = &mut *world.messenger;
+        let ui_system = &mut shared.ui;
+
+        messenger.send_broadcast_message(
             Message {
                 from: self.id.unwrap(),
                 remote_sender: false,
@@ -294,7 +425,7 @@ impl Actor for SessionController
             }
         );
 
-        engine_handle.send_boardcast_message(
+        messenger.send_broadcast_message(
             Message {
                 from: self.id.unwrap(),
                 remote_sender: false,
@@ -328,15 +459,13 @@ impl Actor for SessionController
     }
 
     fn tick(
-            &mut self,
-            physic_system: &crate::engine::physics::PhysicsSystem,
-            engine_handle: &mut EngineHandle,
-            audio_system: &mut crate::engine::audio::AudioSystem,
-            ui_system: &mut UISystem,
-            time_system: &mut TimeSystem,
-            effects_system: &mut EffectsSystem,
-            delta: f32
-        ) {
+        &mut self,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    ) {
+        let delta = world.time.delta();
+        let ui_system = &mut shared.ui;
+
         
         process_ui_animation(
             &mut self.show_red_team_backlight_timer,
@@ -379,19 +508,33 @@ impl Actor for SessionController
             delta,
             ui_system,
         );
-        
+
+        self.net.tick(
+            self.id.expect("SessionController have not ActorID"),
+            self.it_is_2d_3d_example,
+            world,
+            shared,
+        );
     }
 
     fn recieve_message(
-            &mut self,
-            message: Message,
-            engine_handle: &mut EngineHandle,
-            physics_system: &crate::engine::physics::PhysicsSystem,
-            audio_system: &mut crate::engine::audio::AudioSystem,
-            ui_system: &mut crate::engine::ui::UISystem,
-            time_system: &TimeSystem,
-            effects_system: &mut EffectsSystem,
-        ) {
+        &mut self,
+        message: Message,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    ) {
+        if let MessageType::SpecificActorMessage(SpecificActorMessage::SessionControllerMessage(session_message)) = &message.message
+        {
+            if self.handle_outgoing_net_message(message.from, session_message, shared)
+            {
+                return;
+            }
+        }
+
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+        let ui_system = &mut shared.ui;
+
         
         match message.message {
             MessageType::SpecificActorMessage(message) =>
@@ -449,8 +592,8 @@ impl Actor for SessionController
                             {
                                 if new_red_team_score > self.red_team_score
                                 {
-                                    effects_system.spawn_wave(
-                                        engine_handle,
+                                    effects::spawn_wave(
+                                        messenger,
                                         self.red_flag_base_position.expect("CTF Session Controller haven't a flag position"),
                                         vec![
                                             0.0,
@@ -511,8 +654,8 @@ impl Actor for SessionController
                                 }
                                 if new_blue_team_score > self.blue_team_score
                                 {
-                                    effects_system.spawn_wave(
-                                        engine_handle,
+                                    effects::spawn_wave(
+                                        messenger,
                                         self.blue_flag_base_position.expect("CTF Session Controller haven't a flag position"),
                                         vec![
                                             0.0,
@@ -693,9 +836,9 @@ impl Actor for SessionController
 
                             SessionControllerMessage::JoinedToSession(
                                 your_team,
-                                red_flag_status,
-                                blue_flag_status,
-                                bonus_spot_status,
+                                _red_flag_status,
+                                _blue_flag_status,
+                                _bonus_spot_status,
                                 red_team_score,
                                 blue_team_score,
                             ) =>
@@ -759,6 +902,7 @@ impl Actor for SessionController
                                 }
                             }
                             SessionControllerMessage::GiveMeFlagsPostitions => {}
+                            _ => {}
                         }
                     }
 

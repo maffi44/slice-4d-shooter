@@ -4,8 +4,6 @@
 **/target/
 **/www/
 
-pkg/*
-!pkg/index.html
 .vscode/
 .VSCodeCounter/
 
@@ -24,3 +22,6 @@ pkg/*
 
 # WinSparkle
 Output/*
+
+# Agent instructions live in AGENTS.md; CLAUDE.md only imports it locally
+CLAUDE.md

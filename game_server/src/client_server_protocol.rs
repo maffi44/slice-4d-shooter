@@ -383,17 +383,3 @@ impl PartialEq for Team
         }
     }
 }
-
-pub enum NetCommand {
-    NetSystemIsConnectedAndGetNewPeerID(u128),
-    PeerConnected(u128),
-    PeerDisconnected(u128),
-    SetServerTime(u128),
-
-    SendMessageToServer(NetMessageToServer),
-
-    SendDirectNetMessageReliable(NetMessageToPlayer, u128),
-    SendDirectNetMessageUnreliable(NetMessageToPlayer, u128),
-    SendBoardcastNetMessageReliable(NetMessageToPlayer),
-    SendBoardcastNetMessageUnreliable(NetMessageToPlayer),
-}

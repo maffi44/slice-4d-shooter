@@ -3,19 +3,22 @@
 
 
 
-use client_server_protocol::{NetCommand, NetMessageToServer, Team};
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+use crate::engine::world::effects;
+
 use fyrox_sound::source::Status;
 use glam::{FloatExt, Vec3, Vec4};
 use rand::Rng;
 
 use crate::{
     actor::trigger::TriggerMessage, engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
-    }, transform::Transform
+        shared_systems::audio::Sound, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
+    }, engine::transform::Transform
 };
 
 use super::{
-    main_player::{BLUE_TEAM_COLOR, RED_TEAM_COLOR}, session_controller::SessionControllerMessage, Actor, ActorID, CommonActorsMessage, Message, MessageType, PhysicsMessages, SpecificActorMessage
+    Actor, ActorID, CommonActorsMessage, Message, MessageType, PhysicsMessages, SpecificActorMessage
 };
 
 #[derive(Clone)]
@@ -39,7 +42,6 @@ pub enum TrggerOrbStatus
 
 const TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION: f32 = 0.8;
 const FLAG_SWING_RANGE: f32 = 0.07;
-const FLAG_UI_TICK_TIME: f32 = 0.5;
 
 const WAVE_TICK_TIME: f32 = 1.5;
 const WAVE_TARGET_RADIUS: f32 = 2.0;
@@ -48,11 +50,11 @@ fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
 {
     assert!(range_min < range_max);
 
-    let mut rng = rand::thread_rng();
-    let x = rng.gen_range(range_min..=range_max);
-    let y = rng.gen_range(range_min..=range_max);
-    let z = rng.gen_range(range_min..=range_max);
-    let w = rng.gen_range(range_min..=range_max);
+    let mut rng = rand::rng();
+    let x = rng.random_range(range_min..=range_max);
+    let y = rng.random_range(range_min..=range_max);
+    let z = rng.random_range(range_min..=range_max);
+    let w = rng.random_range(range_min..=range_max);
 
     return Vec4::new(x, y, z, w);
 }
@@ -155,7 +157,7 @@ impl TriggerOrb
     //     &mut self,
     //     effects_system: &mut EffectsSystem,
     //     audio_system: &mut AudioSystem,
-    //     engine_handle: &mut EngineHandle,
+    //     messenger: &mut Messenger,
     // )
     // {
 
@@ -166,8 +168,8 @@ impl TriggerOrb
     //     {
     //         TrggerOrbStatus::Missed(_) =>
     //         {
-    //             // effects_system.spawn_wave(
-    //             //     engine_handle,
+    //             // effects::spawn_wave(
+    //             //     messenger,
     //             //     self.transform.get_position(),
     //             //     vec![
     //             //         0.0,
@@ -201,12 +203,12 @@ impl TriggerOrb
     //     &mut self,
     //     pos: Vec4,
     //     effects_system: &mut EffectsSystem,
-    //     engine_handle: &mut EngineHandle,
+    //     messenger: &mut Messenger,
     // )
     // {
     //     self.target_position = pos;
-    //     // effects_system.spawn_wave(
-    //     //     engine_handle,
+    //     // effects::spawn_wave(
+    //     //     messenger,
     //     //     self.transform.get_position(),
     //     //     vec![
     //     //         0.0,
@@ -226,14 +228,14 @@ impl TriggerOrb
     // pub fn set_flag_captured_status(
     //     &mut self,
     //     captured_by: ActorID,
-    //     engine_handle: &mut EngineHandle,
+    //     messenger: &mut Messenger,
     //     effects_system: &mut EffectsSystem,
     //     audio_system: &mut AudioSystem,
     // )
     // {
     //     self.area.clear_containing_colliders_list();
         
-    //     engine_handle.send_direct_message(
+    //     messenger.send_direct_message(
     //         captured_by,
     //         Message {
     //             from: self.id.expect("Flag has no ActorID"),
@@ -246,8 +248,8 @@ impl TriggerOrb
     //         }
     //     );
 
-    //     effects_system.spawn_wave(
-    //         engine_handle,
+    //     effects::spawn_wave(
+    //         messenger,
     //         self.transform.get_position(),
     //         vec![
     //             0.0,
@@ -266,7 +268,7 @@ impl TriggerOrb
     //     );
         
     //     audio_system.spawn_spatial_sound(
-    //         Sound::FlagCuptured,
+    //         Sound::FlagCaptured,
     //         1.0,
     //         1.0,
     //         false,
@@ -286,15 +288,14 @@ impl Actor for TriggerOrb
 {
     fn tick(
         &mut self,
-        physic_system: &crate::engine::physics::PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut crate::engine::audio::AudioSystem,
-        ui_system: &mut crate::engine::ui::UISystem,
-        time_system: &mut crate::engine::time::TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     )
     {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+
         match self.status
         {
             TrggerOrbStatus::Captured(_) | TrggerOrbStatus::MovingToTrigger(_) =>
@@ -340,7 +341,7 @@ impl Actor for TriggerOrb
         {
             TrggerOrbStatus::Captured(id) =>
             {
-                engine_handle.send_direct_message(
+                messenger.send_direct_message(
                     id,
                     Message {
                         from: self.id.expect("TriggerOrb has no ActorID"),
@@ -357,7 +358,7 @@ impl Actor for TriggerOrb
             {
                 if self.transform.get_position().distance(self.target_position) < 1.9
                 {
-                    engine_handle.send_direct_message(
+                    messenger.send_direct_message(
                         trigger_id,
                         Message {
                             from: self.id.expect("TriggerOrb has no ActorID"),
@@ -372,8 +373,8 @@ impl Actor for TriggerOrb
 
                     self.status = TrggerOrbStatus::OnTheTrigger;
 
-                    effects_system.spawn_wave(
-                        engine_handle,
+                    effects::spawn_wave(
+                        messenger,
                         self.transform.get_position(),
                         vec![
                             0.0,
@@ -459,7 +460,7 @@ impl Actor for TriggerOrb
         &mut self.transform
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement>
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>>
     {
         match self.status
         {
@@ -488,7 +489,7 @@ impl Actor for TriggerOrb
     }
 
 
-    fn get_visual_element(&self) -> Option<VisualElement>
+    fn get_visual_element(&self) -> Option<VisualElement<'_>>
     {
         Some(
             VisualElement
@@ -517,15 +518,14 @@ impl Actor for TriggerOrb
     }
 
     fn recieve_message(
-            &mut self,
-            message: Message,
-            engine_handle: &mut EngineHandle,
-            physics_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            time_system: &TimeSystem,
-            effects_system: &mut EffectsSystem,
-        ) {
+        &mut self,
+        message: Message,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    ) {
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+
         
         let from = message.from;
 
@@ -558,7 +558,7 @@ impl Actor for TriggerOrb
                                 self.status = TrggerOrbStatus::Captured(player_id);
 
                                 audio_system.spawn_spatial_sound(
-                                    Sound::FlagCuptured,
+                                    Sound::FlagCaptured,
                                     1.0,
                                     1.0,
                                     false,
@@ -607,7 +607,7 @@ impl Actor for TriggerOrb
                     }
                     CommonActorsMessage::ClientDisconnectedFromGameServer =>
                     {
-                        // self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
+                        // self.set_flag_on_base_status(effects_system, audio_system, messenger);
                     }
                     _ => {}
                 }
@@ -621,7 +621,7 @@ impl Actor for TriggerOrb
                         {
                             AreaMessage::ActorEnterArea(id) =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     id,
                                     Message {
                                         from: self.id.expect("Flag have not ActorID"),
@@ -634,7 +634,7 @@ impl Actor for TriggerOrb
                                     }
                                 );
                             }
-                            AreaMessage::ActorIsContainedInsideArea(id) =>
+                            AreaMessage::ActorIsContainedInsideArea(_id) =>
                             {
 
                             }

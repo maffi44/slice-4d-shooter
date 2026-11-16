@@ -3,7 +3,10 @@
 
 
 
-use crate::{engine::{audio::AudioSystem, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, StaticObject}}, transform::Transform};
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
+use crate::{engine::{world::messenger::{Command, CommandType}, world::physics::{colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider}, shared_systems::render::VisualElement, world::static_object::{ColoringArea, StaticObject}}, engine::transform::Transform};
 
 use super::{Actor, ActorID};
 
@@ -19,7 +22,6 @@ pub struct Hole
     target_size_reached: bool,
     explode_current_time: f32,
     explode_final_time: f32,
-    color: Vec3,
     coloring_areas: Vec<ColoringArea>,
     static_objects: Vec<StaticObject>,
 }
@@ -75,7 +77,6 @@ impl Hole
             target_size_reached,
             explode_current_time,
             explode_final_time,
-            color,
             static_objects,
             coloring_areas,
         }
@@ -102,14 +103,12 @@ impl Actor for Hole
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         if self.target_size_reached {
             
             for area in self.coloring_areas.iter_mut() {
@@ -120,7 +119,7 @@ impl Actor for Hole
                 obj.collider.size.x -= delta * 0.2;
     
                 if obj.collider.size.x <= 0.0 {
-                    engine_handle.send_command(
+                    messenger.send_command(
                         Command {
                             sender: self.id.expect("HoleGun's Hole have not ActorID"),
                             command_type: CommandType::RemoveActor(
@@ -157,7 +156,7 @@ impl Actor for Hole
         }
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(
             VisualElement {
                 transform: &self.transform,
@@ -171,7 +170,7 @@ impl Actor for Hole
         )
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         Some(
             PhysicalElement
             {

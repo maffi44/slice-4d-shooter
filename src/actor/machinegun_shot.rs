@@ -3,6 +3,9 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use glam::{Vec3, Vec4};
 
 use crate::{
@@ -11,16 +14,14 @@ use crate::{
         ActorID,
     },
     engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::{
+        world::messenger::{
             Command,
-            CommandType,
-            EngineHandle
-        }, physics::{
+            CommandType
+        }, world::physics::{
             colliders_container::PhysicalElement,
             physics_system_data::ShapeType,
-            static_collider::StaticCollider,
-            PhysicsSystem
-        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
+            static_collider::StaticCollider
+        }, shared_systems::render::VisualElement, world::static_object::{
             BeamVolumeArea,
             ColoringArea,
             SphericalVolumeArea,
@@ -28,7 +29,7 @@ use crate::{
             VolumeArea
         }
     },
-    transform::Transform,
+    engine::transform::Transform,
 };
 
 
@@ -38,7 +39,6 @@ const SHOT_HOLE_GROWING_SPEED: f32 = 1.5;
 const SHOT_HOLE_REDUCTION_SPEED: f32 = 0.5;
 
 const SHOT_EXPLOSION_START_RADIUS: f32 = 0.34;
-const SHOT_EXPLOSION_FINAL_RADIUS: f32 = 0.6;
 const SHOT_EXPLOSION_GROWNIG_SPEED: f32 = 3.0;
 
 const GUN_FLASH_START_RADIUS: f32 = 0.05;
@@ -46,7 +46,6 @@ const GUN_FLASH_FINAL_RADIUS: f32 = 0.10;
 const GUN_FLASH_GROWNIG_SPEED: f32 = 2.1;
 
 const BEAM_START_RADIUS: f32 = 0.007;
-const BEAM_FINAL_RADIUS: f32 = 0.06;
 const BEAM_GROWING_SPEED: f32 = 1.5;
 
 const COLOR: Vec3 = Vec3::new(5.0, 0.8, 5.0);
@@ -151,9 +150,6 @@ impl MachinegunShot {
     }
 
 
-    pub fn set_transform(&mut self, transform: Transform) {
-        self.transform = transform
-    }
 }
 
 impl Actor for MachinegunShot {
@@ -175,14 +171,12 @@ impl Actor for MachinegunShot {
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         if self.hole_target_size_reached {
             
             for area in self.coloring_areas.iter_mut() {
@@ -195,7 +189,7 @@ impl Actor for MachinegunShot {
 
                 if obj.collider.size.x <= 0.01 {
                     
-                    engine_handle.send_command(
+                    messenger.send_command(
                         Command {
                             sender: self.id.expect("MachinegunShot have not ActorID"),
                             command_type: CommandType::RemoveActor(
@@ -261,7 +255,7 @@ impl Actor for MachinegunShot {
         }
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(
             VisualElement {
                 transform: &self.transform,
@@ -275,7 +269,7 @@ impl Actor for MachinegunShot {
         )
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         Some(
             PhysicalElement
             {

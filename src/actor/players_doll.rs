@@ -3,12 +3,19 @@
 
 
 
+use crate::actor::main_player::constants::*;
+
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+use crate::actor::session_controller::send_to_session_controller;
+use crate::engine::shared_systems::net::Reliability;
+use crate::engine::world::effects;
+
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Vec3, Vec4};
 
 use client_server_protocol::{
-    NetCommand,
     NetMessageToPlayer,
     RemoteMessage,
     Team
@@ -16,21 +23,20 @@ use client_server_protocol::{
 
 use crate::{
     actor::{main_player, obstaclesgun_shot::ObstaclesGunShot}, engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{
+        shared_systems::audio::{AudioSystem, Sound}, world::messenger::{
             Command,
             CommandType,
-            EngineHandle
-        }, physics::{
+            Messenger
+        }, world::physics::{
             PhysicsSystem, colliders_container::PhysicalElement, dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider
-        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
+        }, shared_systems::render::VisualElement, world::static_object::{
             SphericalVolumeArea, VisualWave, VolumeArea
         }
-    }, transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN}
+    }, engine::transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN}
 };
 
 use super::{
-    device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, main_player::{
-        player_settings::PlayerSettings, PlayerMessage, BLUE_SCANNER_WAVE_COLOR, PLAYER_MAX_HP, RED_SCANNER_WAVE_COLOR, TIME_TO_DIE_SLOWLY, W_SCANNER_EXPANDING_SPEED, W_SCANNER_MAX_RADIUS
+    device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, flag::FlagMessage, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, machinegun_shot::MachinegunShot, main_player::{ PlayerMessage, BLUE_SCANNER_WAVE_COLOR, PLAYER_MAX_HP, RED_SCANNER_WAVE_COLOR, TIME_TO_DIE_SLOWLY, W_SCANNER_EXPANDING_SPEED, W_SCANNER_MAX_RADIUS
     }, mover_w::MoverWMessage, players_death_explosion::PlayersDeathExplosion, session_controller::SessionControllerMessage, shooting_impact::ShootingImpact, shotgun_shot_source::ShotgunShotSource, Actor, ActorID, ActorWrapper, CommonActorsMessage, Message, MessageType, SpecificActorMessage
 };
 
@@ -72,7 +78,6 @@ impl PlayerDollInputState {
 }
 
 
-const PLAYERS_DOLL_COLOR: Vec3 = Vec3::new(0.8, 0.8, 0.8);
 pub struct PlayerDoll {
     team: Team,
     id: Option<ActorID>,
@@ -95,19 +100,16 @@ pub struct PlayerDoll {
     die_slowly_timer: f32,
 
     holegun_charge_sound: Option<Option<Handle<SoundSource>>>,
-
-    player_settings: PlayerSettings,
     radius: f32,
     my_color: Vec3,
 
     on_way_to_next_w_level: bool,
-    current_w_level_prev_frame: u32,
 
     player_doll_for_2d_3d_example: bool,
 
     w_scanner_enable: bool,
     w_scanner_radius: f32,
-    w_scanner_ring_intesity: f32,
+    w_scanner_ring_intensity: f32,
     visual_wave: Vec<VisualWave>,
 
     anti_projection_mode_enabled_timer: f32, 
@@ -171,6 +173,7 @@ pub enum PlayersDollMessage{
         // team of respawned player
         Team,
     ),
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     SetNewTeamAndPosition(
         // team player joined to
         Team,
@@ -187,6 +190,7 @@ pub enum PlayersDollMessage{
     ),
     YouHitedMe(
         //damage
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
         u32,
         //my position
         Vec4,
@@ -206,8 +210,7 @@ impl PlayerDoll {
         player_sphere_radius: f32,
         transform: Transform,
         is_alive: bool,
-        audio_system: &mut AudioSystem,
-        player_settings: PlayerSettings,
+        _audio_system: &mut AudioSystem,
         team: Team,
         player_doll_for_2d_3d_example: bool,
     ) -> Self {
@@ -249,8 +252,6 @@ impl PlayerDoll {
             vec.push(PlayersDollCollider {
                 position: Vec4::ZERO,
                 radius: player_sphere_radius,
-                friction: 0.0,
-                bounce_rate: 0.0,
                 actor_id: Some(id),
                 weapon_offset,
                 actors_team: team,
@@ -259,10 +260,10 @@ impl PlayerDoll {
         };
 
         let interpolated_model_target = KinematicCollider::new(
-            player_settings.max_speed,
-            player_settings.max_accel,
+            PLAYER_MAX_SPEED,
+            PLAYER_MAX_ACCEL,
             player_sphere_radius,
-            player_settings.friction_on_air
+            FRICTION_ON_AIR
         );
 
         let weapon_shooting_point = weapon_offset + FORWARD * (player_sphere_radius * 0.49);
@@ -278,7 +279,6 @@ impl PlayerDoll {
 
         PlayerDoll {
             input_state,
-            current_w_level_prev_frame: 0u32,
             weapon_shooting_point,
             id: Some(id),
             target_transform: transform.clone(),
@@ -293,14 +293,13 @@ impl PlayerDoll {
             need_to_die_slowly: false,
             die_slowly_timer: 0.0,
             holegun_charge_sound: None,
-            player_settings,
             team,
             radius: player_sphere_radius,
             my_color,
             on_way_to_next_w_level: false,
             w_scanner_enable: false,
             w_scanner_radius: 0.0,
-            w_scanner_ring_intesity: 0.0,
+            w_scanner_ring_intensity: 0.0,
             visual_wave: Vec::with_capacity(1),
             player_doll_for_2d_3d_example,
             anti_projection_mode_enabled_timer: 0.0,
@@ -309,7 +308,7 @@ impl PlayerDoll {
 
 
 
-    fn die_immediately(&mut self, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
+    fn die_immediately(&mut self, messenger: &mut Messenger, audio_system: &mut AudioSystem) {
         if self.is_alive {
 
             self.w_scanner_enable = false;
@@ -321,19 +320,19 @@ impl PlayerDoll {
             self.is_enable = false;
             self.need_to_die_slowly = false;
 
-            self.play_die_effects(engine_handle, audio_system);
+            self.play_die_effects(messenger, audio_system);
         }
     }
 
 
 
-    fn play_die_effects(&mut self, engine_handle: &mut EngineHandle, audio_system: &mut AudioSystem) {
+    fn play_die_effects(&mut self, messenger: &mut Messenger, audio_system: &mut AudioSystem) {
         let players_death_explode = PlayersDeathExplosion::new(
             self.get_transform().get_position(),
             self.team
         );
         
-        engine_handle.send_command(
+        messenger.send_command(
             Command {
                 sender: self.get_id().expect("Player have not ActorID"),
                 command_type: CommandType::SpawnActor(
@@ -371,7 +370,7 @@ impl PlayerDoll {
 
 
 
-    fn die_slowly(&mut self, engine_handle: &mut EngineHandle) {
+    fn die_slowly(&mut self, _messenger: &mut Messenger) {
         if self.is_alive {
 
             self.volume_area.clear();
@@ -393,7 +392,7 @@ impl PlayerDoll {
         team: Team,
         physics_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
     ) {
         audio_system.spawn_spatial_sound(
             Sound::PlayerRespawned,
@@ -418,8 +417,8 @@ impl PlayerDoll {
         );
 
         for hit in hits {
-            engine_handle.send_direct_message(
-                hit.hited_actors_id.expect("In respawn func in death on resapwn hit have not ActorID"),
+            messenger.send_direct_message(
+                hit.hit_actors_id.expect("In respawn func in death on resapwn hit have not ActorID"),
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     remote_sender: false,
@@ -443,12 +442,12 @@ impl PlayerDoll {
         self.interpolating_model_target.current_velocity = velocity;
         self.w_scanner_enable = false;
         self.w_scanner_radius = 0.0;
-        self.w_scanner_ring_intesity = 0.0;
+        self.w_scanner_ring_intensity = 0.0;
         self.visual_wave.clear();
     }
 
 
-    fn extrapolate_interpolatating_model_target(&mut self, delta: f32, audio_system: &mut AudioSystem)
+    fn extrapolate_interpolatating_model_target(&mut self, delta: f32, _audio_system: &mut AudioSystem)
     {
         let movement_vec = if self.player_doll_for_2d_3d_example
         {
@@ -478,13 +477,13 @@ impl PlayerDoll {
             // lock player on w axis 
             let w_dif = -self.target_transform.get_position().w;
             self.interpolating_model_target.current_velocity.w = (w_dif*1.5).clamp(
-                -self.player_settings.gravity_w_speed*25.0,
-                self.player_settings.gravity_w_speed*25.0
+                -GRAVITY_W_SPEED*25.0,
+                GRAVITY_W_SPEED*25.0
             );
         
-            self.interpolating_model_target.add_force(Vec4::NEG_X * self.player_settings.gravity_w_speed * delta);
+            self.interpolating_model_target.add_force(Vec4::NEG_X * GRAVITY_W_SPEED * delta);
         
-            self.interpolating_model_target.add_force(DOWN * self.player_settings.gravity_y_speed * delta);
+            self.interpolating_model_target.add_force(DOWN * GRAVITY_Y_SPEED * delta);
 
             movement_vec
         }
@@ -511,7 +510,7 @@ impl PlayerDoll {
             if self.input_state.will_jump {
 
                 if self.interpolating_model_target.is_on_y_ground {
-                    self.interpolating_model_target.add_force(UP * self.player_settings.jump_y_speed);
+                    self.interpolating_model_target.add_force(UP * JUMP_Y_SPEED);
 
                     self.input_state.will_jump = false;
                 }
@@ -528,9 +527,9 @@ impl PlayerDoll {
                 None => movement_vec = Vec4::ZERO,
             }
 
-            self.interpolating_model_target.add_force(DOWN * self.player_settings.gravity_y_speed * delta);
+            self.interpolating_model_target.add_force(DOWN * GRAVITY_Y_SPEED * delta);
 
-            self.interpolating_model_target.add_force(W_DOWN * self.player_settings.gravity_w_speed * delta);
+            self.interpolating_model_target.add_force(W_DOWN * GRAVITY_W_SPEED * delta);
 
             movement_vec
         };
@@ -544,12 +543,12 @@ impl PlayerDoll {
         } else {
             self.interpolating_model_target.set_wish_direction(
                 movement_vec,
-                self.player_settings.air_speed_mult
+                AIR_SPEED_MULT
             );
         }
 
         self.interpolating_model_target.set_friction_on_air(
-            self.player_settings.friction_on_air
+            FRICTION_ON_AIR
         );
     }
 
@@ -570,7 +569,7 @@ impl PlayerDoll {
         if self.w_scanner_enable {
             self.w_scanner_radius += delta * W_SCANNER_EXPANDING_SPEED;
 
-            self.w_scanner_ring_intesity = {
+            self.w_scanner_ring_intensity = {
                 let mut intensity = W_SCANNER_MAX_RADIUS - self.w_scanner_radius;
         
                 intensity /= W_SCANNER_MAX_RADIUS/3.0;
@@ -583,11 +582,11 @@ impl PlayerDoll {
             self.visual_wave[0].color = match self.team
             {
                 Team::Blue => {
-                    BLUE_SCANNER_WAVE_COLOR * self.w_scanner_ring_intesity
+                    BLUE_SCANNER_WAVE_COLOR * self.w_scanner_ring_intensity
                 },
                 Team::Red =>
                 {
-                    RED_SCANNER_WAVE_COLOR * self.w_scanner_ring_intesity
+                    RED_SCANNER_WAVE_COLOR * self.w_scanner_ring_intensity
                 }
             };
     
@@ -613,13 +612,13 @@ impl Actor for PlayerDoll {
     fn recieve_message(
         &mut self,
         message: Message,
-        engine_handle: &mut EngineHandle,
-        physics_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let physics_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+
         let from = message.from;
 
         let message = message.message;
@@ -637,10 +636,10 @@ impl Actor for PlayerDoll {
                     CommonActorsMessage::IncrementPosition(increment) => {
                         self.transform.increment_position(increment);
                     },
-                    CommonActorsMessage::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::IWasChangedMyId(_new_id) => {}
                     CommonActorsMessage::ClientDisconnectedFromGameServer =>
                     {
-                        engine_handle.send_command(
+                        messenger.send_command(
                             Command {
                                 sender: self.get_id().expect("Player Doll have not ActorID"),
                                 command_type: CommandType::RemoveActor(
@@ -683,6 +682,52 @@ impl Actor for PlayerDoll {
                                 // self.prev_interpolating_model_set_target_time = 0u128;
                             }
 
+                            SessionControllerMessage::TeamWin(team) =>
+                            {
+                                if self.team == team
+                                {
+                                    match team
+                                    {
+                                        Team::Red =>
+                                        {
+                                            effects::spawn_wave(
+                                                messenger,
+                                                self.transform.get_position(),
+                                                vec![
+                                                    0.0,
+                                                    12.0,
+                                                ],
+                                                vec![
+                                                    self.my_color,
+                                                    Vec3::ZERO
+                                                ],
+                                                vec![
+                                                    1.5,
+                                                ]
+                                            );
+                                        }
+                                        Team::Blue =>
+                                        {
+                                            effects::spawn_wave(
+                                                messenger,
+                                                self.transform.get_position(),
+                                                vec![
+                                                    0.0,
+                                                    12.0,
+                                                ],
+                                                vec![
+                                                    self.my_color,
+                                                    Vec3::ZERO
+                                                ],
+                                                vec![
+                                                    1.5,
+                                                ]
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+
                             _ => {}
                         }
                     }
@@ -696,7 +741,7 @@ impl Actor for PlayerDoll {
                                 self.anti_projection_mode_enabled_timer = main_player::ANTI_PROJECTION_MODE_DURATION;
 
                                 audio_system.spawn_spatial_sound(
-                                    crate::engine::audio::Sound::AntiProjectionModeEnabledSound,
+                                    crate::engine::shared_systems::audio::Sound::AntiProjectionModeEnabledSound,
                                     0.68,
                                     1.0,
                                     false,
@@ -712,7 +757,7 @@ impl Actor for PlayerDoll {
                             PlayerMessage::YouWasScanned => {},
 
                             PlayerMessage::GiveMeDataForProjection => {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     from,
                                     Message {
                                         from: self.get_id().expect("Player Doll have not ActorID"),
@@ -721,7 +766,7 @@ impl Actor for PlayerDoll {
                                             SpecificActorMessage::PlayerMessage(
                                                 PlayerMessage::DataForProjection(
                                                     self.transform.get_position(),
-                                                    self.player_settings.collider_radius,
+                                                    PLAYER_COLLIDER_RADIUS,
                                                     self.anti_projection_mode_enabled_timer > 0.0,
                                                     self.is_alive,
                                                 )
@@ -735,32 +780,30 @@ impl Actor for PlayerDoll {
 
                             PlayerMessage::Telefrag =>
                             {
-                                self.die_immediately(engine_handle, audio_system);
+                                self.die_immediately(messenger, audio_system);
 
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.id.expect("Player's Doll have not Actor's ID"),
-                                        command_type: CommandType::NetCommand(
-                                            NetCommand::SendDirectNetMessageReliable(
-                                                NetMessageToPlayer::RemoteDirectMessage(
-                                                    self.id.expect("Player's Doll have not Actor's ID"),
-                                                    RemoteMessage::DieImmediately
-                                                ),
-                                                self.id.unwrap()
-                                            )
-                                        )
-                                    }
+                                send_to_session_controller(
+                                    messenger,
+                                    self.id.expect("Player's Doll have not Actor's ID"),
+                                    SessionControllerMessage::SendToPlayer(
+                                        NetMessageToPlayer::RemoteDirectMessage(
+                                            self.id.expect("Player's Doll have not Actor's ID"),
+                                            RemoteMessage::DieImmediately
+                                        ),
+                                        self.id.unwrap(),
+                                        Reliability::Reliable,
+                                    ),
                                 )
                             }
 
                             PlayerMessage::DieImmediately =>
                             {
-                                self.die_immediately(engine_handle, audio_system);
+                                self.die_immediately(messenger, audio_system);
                             }
 
                             PlayerMessage::DieSlowly =>
                             {
-                                self.die_slowly(engine_handle);
+                                self.die_slowly(messenger);
                             }
 
                             PlayerMessage::GetDamageAndForce(
@@ -773,27 +816,25 @@ impl Actor for PlayerDoll {
                             {
                                 if team != self.team && damage > 0
                                 {
-                                    engine_handle.send_command(
-                                        Command {
-                                            sender: self.id.expect("Player's Doll have not Actor's ID"),
-                                            command_type: CommandType::NetCommand(
-                                                NetCommand::SendDirectNetMessageReliable(
-                                                    NetMessageToPlayer::RemoteDirectMessage(
-                                                        self.id.expect("Player's Doll have not Actor's ID"),
-                                                        RemoteMessage::DealDamageAndForce(
-                                                            damage,
-                                                            force.to_array(),
-                                                            impact_pos.to_array(),
-                                                            team
-                                                        )
-                                                    ),
-                                                    self.id.unwrap()
+                                    send_to_session_controller(
+                                        messenger,
+                                        self.id.expect("Player's Doll have not Actor's ID"),
+                                        SessionControllerMessage::SendToPlayer(
+                                            NetMessageToPlayer::RemoteDirectMessage(
+                                                self.id.expect("Player's Doll have not Actor's ID"),
+                                                RemoteMessage::DealDamageAndForce(
+                                                    damage,
+                                                    force.to_array(),
+                                                    impact_pos.to_array(),
+                                                    team
                                                 )
-                                            )
-                                        }
+                                            ),
+                                            self.id.unwrap(),
+                                            Reliability::Reliable,
+                                        ),
                                     );
     
-                                    engine_handle.send_command(Command {
+                                    messenger.send_command(Command {
                                         sender: 0u128,
                                         command_type: CommandType::SpawnActor(
                                             ActorWrapper::ShootingImpact(
@@ -802,7 +843,7 @@ impl Actor for PlayerDoll {
                                         )
                                     });
     
-                                    engine_handle.send_direct_message(
+                                    messenger.send_direct_message(
                                         damage_dealer_id,
                                         Message {
                                             from: self.get_id().expect("Player Doll have not ActorID"),
@@ -835,6 +876,8 @@ impl Actor for PlayerDoll {
                                 self.team = team;
                             }
 
+                            PlayerMessage::ChangeYourId(_) => {}
+
                             PlayerMessage::NewPeerConnected(_) => {}
                         }
                     },
@@ -847,7 +890,7 @@ impl Actor for PlayerDoll {
                             {
                                 self.w_scanner_enable = true;
                 
-                                self.w_scanner_radius = self.player_settings.collider_radius + 0.1;
+                                self.w_scanner_radius = PLAYER_COLLIDER_RADIUS + 0.1;
 
                                 self.visual_wave.push(
                                     VisualWave {
@@ -861,7 +904,7 @@ impl Actor for PlayerDoll {
                                 );
 
                                 audio_system.spawn_spatial_sound(
-                                    crate::engine::audio::Sound::ScannerSound,
+                                    crate::engine::shared_systems::audio::Sound::ScannerSound,
                                     0.7,
                                     1.0,
                                     false,
@@ -894,12 +937,12 @@ impl Actor for PlayerDoll {
                                     damage_dealer_team,
                                     1.25,
                                     false,
-                                    engine_handle,
+                                    messenger,
                                     physics_system,
                                     audio_system,
                                 );
 
-                                engine_handle.send_command(Command {
+                                messenger.send_command(Command {
                                     sender: 0u128,
                                     command_type: CommandType::SpawnActor(
                                         ActorWrapper::ShotgunShotSource(shotgun_shot_source)
@@ -976,7 +1019,7 @@ impl Actor for PlayerDoll {
                                     team,
                                     physics_system,
                                     audio_system,
-                                    engine_handle
+                                    messenger
                                 );
                             }
 
@@ -1028,7 +1071,7 @@ impl Actor for PlayerDoll {
     
                                 let actor = ActorWrapper::HoleGunShot(holegun_shot);
     
-                                engine_handle.send_command(Command {
+                                messenger.send_command(Command {
                                     sender: 0u128,
                                     command_type: CommandType::SpawnActor(actor)
                                 })
@@ -1082,7 +1125,7 @@ impl Actor for PlayerDoll {
     
                                 let actor = ActorWrapper::ObstaclesGunShot(obstacle_gun_shot);
     
-                                engine_handle.send_command(Command {
+                                messenger.send_command(Command {
                                     sender: 0u128,
                                     command_type: CommandType::SpawnActor(actor)
                                 })
@@ -1136,7 +1179,7 @@ impl Actor for PlayerDoll {
 
                                 let actor = ActorWrapper::HoleGunMiss(holegun_miss);
 
-                                engine_handle.send_command(Command {
+                                messenger.send_command(Command {
                                     sender: 0u128,
                                     command_type: CommandType::SpawnActor(actor)
                                 })
@@ -1168,7 +1211,7 @@ impl Actor for PlayerDoll {
 
                                 let actor = ActorWrapper::MachinegunShot(machinegun_shot);
 
-                                engine_handle.send_command(Command {
+                                messenger.send_command(Command {
                                     sender: 0u128,
                                     command_type: CommandType::SpawnActor(actor)
                                 })
@@ -1202,7 +1245,7 @@ impl Actor for PlayerDoll {
                         {
                             FlagMessage::GiveMeTargetPosition =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     from,
                                     Message {
                                         from: self.id.expect("PlayerDoll have not ActorID"),
@@ -1223,59 +1266,6 @@ impl Actor for PlayerDoll {
                     }
 
                     SpecificActorMessage::FlagBaseMessage(_) => {}
-                    
-                    SpecificActorMessage::SessionControllerMessage(message) =>
-                    {
-                        match message
-                        {
-                            SessionControllerMessage::TeamWin(team) =>
-                            {
-                                if self.team == team
-                                {
-                                    match team
-                                    {
-                                        Team::Red =>
-                                        {
-                                            effects_system.spawn_wave(
-                                                engine_handle,
-                                                self.transform.get_position(),
-                                                vec![
-                                                    0.0,
-                                                    12.0,
-                                                ],
-                                                vec![
-                                                    self.my_color,
-                                                    Vec3::ZERO
-                                                ],
-                                                vec![
-                                                    1.5,
-                                                ]
-                                            );
-                                        }
-                                        Team::Blue =>
-                                        {
-                                            effects_system.spawn_wave(
-                                                engine_handle,
-                                                self.transform.get_position(),
-                                                vec![
-                                                    0.0,
-                                                    12.0,
-                                                ],
-                                                vec![
-                                                    self.my_color,
-                                                    Vec3::ZERO
-                                                ],
-                                                vec![
-                                                    1.5,
-                                                ]
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
 
                     SpecificActorMessage::MoveWBonusSpotMessage(_) => {}
 
@@ -1307,7 +1297,7 @@ impl Actor for PlayerDoll {
         self.id
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         if self.is_enable {
             Some(
                 PhysicalElement {
@@ -1325,7 +1315,7 @@ impl Actor for PlayerDoll {
         }
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         if self.is_enable {
             Some(
                 VisualElement {
@@ -1345,14 +1335,13 @@ impl Actor for PlayerDoll {
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+
         if self.is_alive {
 
             self.process_player_doll_w_scanner(delta);
@@ -1404,7 +1393,7 @@ impl Actor for PlayerDoll {
                 if self.die_slowly_timer >= TIME_TO_DIE_SLOWLY {
                     self.is_enable = false;
                     self.need_to_die_slowly = false;
-                    self.play_die_effects(engine_handle, audio_system);
+                    self.play_die_effects(messenger, audio_system);
                 }
             }
         }

@@ -38,16 +38,13 @@ use std::fmt::Display;
 
 use crate::{
     actor::{droped_rotator_tool::{DropedRotatorTool, DropedRotatorToolMessage}, final_trigger::{FinalTrgger, FinalTrggerMessage}, flag_base::{FlagBase, FlagBaseMessage}, new_spawn_area::{NewSpawnArea, NewSpawnAreaMessage}, obstacle_course_free_movement_player::ObstacleCourseFreeMovementPlayer, obstaclesgun_shot::ObstaclesGunShot, trgger_orb::{TriggerOrb, TriggerOrbMessage}, trigger::{Trigger, TriggerMessage}, triggering_special_lift::TriggeringSpecialLiftActor, triggering_wandering_actor::TriggeringWanderingActor}, engine::{
-        audio::AudioSystem,
-        effects::EffectsSystem,
-        engine_handle::EngineHandle,
-        physics::{
-            PhysicsSystem, area::AreaMessage, colliders_container::PhysicalElement, dynamic_collider::DynamicColliderMessage, kinematic_collider::KinematicColliderMessage, static_collider::StaticColliderMessage
+        world::physics::{
+            area::AreaMessage, colliders_container::PhysicalElement, dynamic_collider::DynamicColliderMessage, kinematic_collider::KinematicColliderMessage, static_collider::StaticColliderMessage
         },
-        render::{VisualElement, camera::Camera},
-        time::TimeSystem,
-        ui::UISystem, world::level::Spawn
-    }, transform::Transform
+        shared_systems::render::{VisualElement, camera::Camera},
+        shared_systems::EngineSharedSystems,
+        world::{messenger::Messenger, WorldContext},
+    }, engine::transform::Transform
 };
 
 use self::{
@@ -72,6 +69,8 @@ use self::{
 
 pub type ActorID = u128;
 
+/// An actor of a World. Every callback gets the actor's own world (`WorldContext`: messenger,
+/// physics, world time) and the Engine Shared Systems (input, audio, UI, net, settings, GPU, ...).
 pub trait Actor {
 
     fn get_actor_as_controlled(&self) -> Option<&dyn ControlledActor>
@@ -86,39 +85,31 @@ pub trait Actor {
 
     fn recieve_message(
         &mut self,
-        message: Message,
-        engine_handle: &mut EngineHandle,
-        physics_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
+        _message: Message,
+        _world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {}
 
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     fn get_mut_transform(&mut self) -> &mut Transform;
     
     fn get_transform(&self) -> &Transform;
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        _world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {}
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {None}
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {None}
 
-    fn get_visual_element(&self) -> Option<VisualElement> {None}
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {None}
 
     fn get_id(&self) -> Option<ActorID>;
         
     fn set_id(&mut self, id: ActorID);
 
-    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
+    fn change_id(&mut self, id: ActorID, messenger: &mut Messenger) {
         let prev_id = match self.get_id() {
             Some(id) =>
             {
@@ -131,7 +122,7 @@ pub trait Actor {
             }
         };
 
-        engine_handle.send_boardcast_message(
+        messenger.send_broadcast_message(
             Message {
                 from: prev_id,
                 remote_sender: false,
@@ -146,1327 +137,203 @@ pub trait Actor {
 
     fn on_added_to_world(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
+        _world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {}
 
-    fn on_level_loaded(
+    /// Called once on every actor at the end of `World::new` (formerly `on_level_loaded`).
+    fn on_world_started(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
+        _world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {}
-
 }
 
-pub enum ActorWrapper {
-    MainPlayer(MainPlayer),
-    PlayerFor2d3dExample(PlayerFor2d3dExample),
-    WonderingActor(WanderingActor),
-    HoleGunShot(HoleGunShot),
-    ObstaclesGunShot(ObstaclesGunShot),
-    HoleGunMiss(HoleGunMiss),
-    PlayersDoll(PlayerDoll),
-    PlayersDeathExplosion(PlayersDeathExplosion),
-    MachinegunShot(MachinegunShot),
-    ShootingImpact(ShootingImpact),
-    Flag(Flag),
-    FlagBase(FlagBase),
-    Hole(Hole),
-    MoveWBonusSpot(MoveWBonusSpot),
-    SessionController(SessionController),
-    Wave(Wave),
-    MoverW(MoverW),
-    ShotgunShotSource(ShotgunShotSource),
-    ShotgunLaserShot(ShotgunLaserShot),
-    Observer(Observer),
-    Diamond,
-    Exit,
-    ObstacleCourseFreeMovementPlayer(ObstacleCourseFreeMovementPlayer),
-    Trigger(Trigger),
-    FinalTrigger(FinalTrgger),
-    TriggeringWanderingActor(TriggeringWanderingActor),
-    TriggeringSpecialLiftActor(TriggeringSpecialLiftActor),
-    TriggerOrb(TriggerOrb),
-    DropedRotatorTool(DropedRotatorTool),
-    NewSpawnArea(NewSpawnArea),
-}
 
-impl Display for ActorWrapper
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let actor_type = match self
+/// Generates `enum ActorWrapper`, its `Display` and the static-dispatch `impl Actor for ActorWrapper`.
+/// To add an actor type, add one line to the `actor_wrapper!` invocation below.
+/// `markers` are variants without an actor value (not dispatchable).
+/// Attributes before a line (e.g. `#[allow(dead_code)]`) go to that `ActorWrapper` variant.
+macro_rules! actor_wrapper {
+    (
+        actors { $( $(#[$variant_meta:meta])* $variant:ident ( $actor_type:ty ) ),* $(,)? }
+        markers { $( $(#[$marker_meta:meta])* $marker:ident ),* $(,)? }
+    ) => {
+        pub enum ActorWrapper {
+            $( $(#[$variant_meta])* $variant($actor_type), )*
+            $( $(#[$marker_meta])* $marker, )*
+        }
+
+        impl Display for ActorWrapper
         {
-            ActorWrapper::MainPlayer(_) => "MainPlayer",
-            ActorWrapper::PlayerFor2d3dExample(_) => "PlayerFor2d3dExample",
-            ActorWrapper::WonderingActor(_) => "WonderingActor",
-            ActorWrapper::HoleGunShot(_) => "HoleGunShot",
-            ActorWrapper::ObstaclesGunShot(_) => "ObstaclesGunShot",
-            ActorWrapper::HoleGunMiss(_) => "HoleGunMiss",
-            ActorWrapper::PlayersDoll(_) => "PlayersDoll",
-            ActorWrapper::PlayersDeathExplosion(_) => "PlayersDeathExplosion",
-            ActorWrapper::MachinegunShot(_) => "MachinegunShot",
-            ActorWrapper::ShootingImpact(_) => "ShootingImpact",
-            ActorWrapper::Flag(_) => "Flag",
-            ActorWrapper::FlagBase(_) => "FlagBase",
-            ActorWrapper::Hole(_) => "Hole",
-            ActorWrapper::MoveWBonusSpot(_) => "MoveWBonusSpot",
-            ActorWrapper::SessionController(_) => "SessionController",
-            ActorWrapper::Wave(_) => "Wave",
-            ActorWrapper::MoverW(_) => "MoverW",
-            ActorWrapper::ShotgunShotSource(_) => "ShotgunShotSource",
-            ActorWrapper::ShotgunLaserShot(_) => "ShotgunLaserShot",
-            ActorWrapper::Observer(_) => "Observer",
-            ActorWrapper::Diamond => "Diamond",
-            ActorWrapper::Exit => "Exit",
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(_) => "ObstacleCourseFreeMovementPlayer",
-            ActorWrapper::Trigger(_) => "Trigger",
-            ActorWrapper::FinalTrigger(_) => "FinalTrgger",
-            ActorWrapper::TriggeringWanderingActor(_) => "TriggeringWanderingActor",
-            ActorWrapper::TriggeringSpecialLiftActor(_) => "TriggeringSpecialLiftActor",
-            ActorWrapper::TriggerOrb(_) => "TriggerOrb",
-            ActorWrapper::DropedRotatorTool(_) => "DropedRotatorTool",
-            ActorWrapper::NewSpawnArea(_) => "NewSpawnArea",
-        };
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let actor_type = match self
+                {
+                    $( ActorWrapper::$variant(_) => stringify!($variant), )*
+                    $( ActorWrapper::$marker => stringify!($marker), )*
+                };
 
-        write!(f, "Actor: {}", actor_type)
-    }
+                write!(f, "Actor: {}", actor_type)
+            }
+        }
+
+        impl Actor for ActorWrapper {
+
+            fn get_actor_as_controlled(&self) -> Option<&dyn ControlledActor>
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.get_actor_as_controlled(), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn get_actor_as_controlled_mut(&mut self) -> Option<&mut dyn ControlledActor>
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.get_actor_as_controlled_mut(), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn recieve_message(&mut self, message: Message, world: &mut WorldContext, shared: &mut EngineSharedSystems)
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.recieve_message(message, world, shared), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn get_mut_transform(&mut self) -> &mut Transform
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.get_mut_transform(), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn get_transform(&self) -> &Transform
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.get_transform(), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn tick(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems)
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.tick(world, shared), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>>
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.get_physical_element(), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn get_visual_element(&self) -> Option<VisualElement<'_>>
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.get_visual_element(), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn get_id(&self) -> Option<ActorID>
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.get_id(), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn set_id(&mut self, id: ActorID)
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.set_id(id), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn change_id(&mut self, id: ActorID, messenger: &mut Messenger)
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.change_id(id, messenger), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn on_added_to_world(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems)
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.on_added_to_world(world, shared), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+
+            fn on_world_started(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems)
+            {
+                match self {
+                    $( ActorWrapper::$variant(actor) => actor.on_world_started(world, shared), )*
+                    $( ActorWrapper::$marker => unreachable!(concat!("try to get access to ", stringify!($marker))), )*
+                }
+            }
+        }
+    };
 }
 
-impl Actor for ActorWrapper {
 
-    fn on_level_loaded(
-        &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-    )
-    {
-        match  self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.on_level_loaded(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
+actor_wrapper! {
+    actors {
+        MainPlayer(MainPlayer),
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
+        PlayerFor2d3dExample(PlayerFor2d3dExample),
+        WonderingActor(WanderingActor),
+        HoleGunShot(HoleGunShot),
+        ObstaclesGunShot(ObstaclesGunShot),
+        HoleGunMiss(HoleGunMiss),
+        PlayersDoll(PlayerDoll),
+        PlayersDeathExplosion(PlayersDeathExplosion),
+        MachinegunShot(MachinegunShot),
+        ShootingImpact(ShootingImpact),
+        Flag(Flag),
+        FlagBase(FlagBase),
+        Hole(Hole),
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
+        MoveWBonusSpot(MoveWBonusSpot),
+        SessionController(SessionController),
+        Wave(Wave),
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
+        MoverW(MoverW),
+        ShotgunShotSource(ShotgunShotSource),
+        ShotgunLaserShot(ShotgunLaserShot),
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
+        Observer(Observer),
+        ObstacleCourseFreeMovementPlayer(ObstacleCourseFreeMovementPlayer),
+        Trigger(Trigger),
+        FinalTrigger(FinalTrgger),
+        TriggeringWanderingActor(TriggeringWanderingActor),
+        TriggeringSpecialLiftActor(TriggeringSpecialLiftActor),
+        TriggerOrb(TriggerOrb),
+        DropedRotatorTool(DropedRotatorTool),
+        NewSpawnArea(NewSpawnArea),
     }
-    fn get_transform(&self) -> &Transform {
-        match self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.get_transform()
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::SessionController(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.get_transform()
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn get_mut_transform(&mut self) -> &mut Transform {
-        match  self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.get_mut_transform()
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.get_mut_transform()
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.get_mut_transform()
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.get_mut_transform()
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.get_mut_transform()
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.get_mut_transform()
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.get_mut_transform()
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.get_mut_transform()
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.get_mut_transform()
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn recieve_message(
-        &mut self,
-        message: Message,
-        engine_handle: &mut EngineHandle,
-        physics_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
-    ) {
-        match  self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.recieve_message(message, engine_handle, physics_system, audio_system,  ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn tick(
-        &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
-    ) {
-        match  self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.tick(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system, delta)
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
-        match  self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.get_physical_element()
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.get_physical_element()
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.get_physical_element()
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.get_physical_element()
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.get_physical_element()
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.get_physical_element()
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.get_physical_element()
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.get_physical_element()
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.get_physical_element()
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn get_visual_element(&self) -> Option<VisualElement>{
-        match self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.get_visual_element()
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.get_visual_element()
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.get_visual_element()
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.get_visual_element()
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.get_visual_element()
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.get_visual_element()
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.get_visual_element()
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.get_visual_element()
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.get_visual_element()
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn get_id(&self) -> Option<ActorID> {
-        match self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.get_id()
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.get_id()
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.get_id()
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.get_id()
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.get_id()
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.get_id()
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.get_id()
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.get_id()
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.get_id()
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn change_id(&mut self, id: ActorID, engine_handle: &mut EngineHandle) {
-        match self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.change_id(id, engine_handle)
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.change_id(id, engine_handle)
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.change_id(id, engine_handle)
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.change_id(id, engine_handle)
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.change_id(id, engine_handle)
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.change_id(id, engine_handle)
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.change_id(id, engine_handle)
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.change_id(id, engine_handle)
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.change_id(id, engine_handle)
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn set_id(&mut self, id: ActorID) {
-        match  self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.set_id(id)
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.set_id(id)
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.set_id(id)
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.set_id(id)
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.set_id(id)
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.set_id(id)
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.set_id(id)
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.set_id(id)
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.set_id(id)
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn get_actor_as_controlled(&self) -> Option<&dyn ControlledActor>
-    {
-        match  self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.get_actor_as_controlled()
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.get_actor_as_controlled()
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.get_actor_as_controlled()
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.get_actor_as_controlled()
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.get_actor_as_controlled()
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.get_actor_as_controlled()
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.get_actor_as_controlled()
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.get_actor_as_controlled()
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.get_actor_as_controlled()
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-    fn get_actor_as_controlled_mut(&mut self) -> Option<&mut dyn ControlledActor>
-    {
-        match  self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.get_actor_as_controlled_mut()
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.get_actor_as_controlled_mut()
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.get_actor_as_controlled_mut()
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.get_actor_as_controlled_mut()
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.get_actor_as_controlled_mut()
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.get_actor_as_controlled_mut()
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.get_actor_as_controlled_mut()
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.get_actor_as_controlled_mut()
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.get_actor_as_controlled_mut()
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
-    }
-
-
-    fn on_added_to_world(
-        &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-    )
-    {
-        match  self {
-            ActorWrapper::MainPlayer(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::WonderingActor(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::HoleGunShot(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::HoleGunMiss(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::PlayersDoll(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::PlayersDeathExplosion(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::MachinegunShot(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::ShootingImpact(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            },
-            ActorWrapper::SessionController(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Flag(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Hole(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::MoveWBonusSpot(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Wave(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::MoverW(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::PlayerFor2d3dExample(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ShotgunShotSource(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ShotgunLaserShot(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Observer(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::FlagBase(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ObstaclesGunShot(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::ObstacleCourseFreeMovementPlayer(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Trigger(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::TriggerOrb(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::TriggeringWanderingActor(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::FinalTrigger(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::TriggeringSpecialLiftActor(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::DropedRotatorTool(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::NewSpawnArea(actor) => {
-                actor.on_added_to_world(physic_system, engine_handle, audio_system, ui_system, time_system, effects_system)
-            }
-            ActorWrapper::Diamond => {unreachable!("try to get access to diamond")},
-            ActorWrapper::Exit => {unreachable!("try to get access to exit")},
-        }
+    markers {
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
+        Diamond,
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
+        Exit,
     }
 }
 
 #[derive(Clone)]
 pub struct Message {
     pub from: ActorID,
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub remote_sender: bool,
     pub message: MessageType,
 }
@@ -1484,7 +351,7 @@ use glam::Vec4;
 use hole::Hole;
 use move_w_bonus::{MoveWBonusSpot, MoveWBonusSpotMessage};
 use mover_w::{MoverW, MoverWMessage};
-use main_player::{player_input_master::InputMaster, PlayerScreenEffects};
+use main_player::PlayerScreenEffects;
 use observer::Observer;
 use player_for_2d_3d_example::PlayerFor2d3dExample;
 use session_controller::SessionController;
@@ -1496,6 +363,7 @@ use wave::Wave;
 pub enum CommonActorsMessage {
     SetTransform(Transform),
     Enable(bool),
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     IncrementPosition(Vec4),
     IWasChangedMyId(ActorID),
     ClientDisconnectedFromGameServer,
@@ -1520,7 +388,9 @@ pub enum SpecificActorMessage {
 #[derive(Clone)]
 pub enum PhysicsMessages {
     KinematicColliderMessage(KinematicColliderMessage),
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     DynamicColliderMessage(DynamicColliderMessage),
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     StaticColliderMessage(StaticColliderMessage),
     AreaMessage(AreaMessage),
 }
@@ -1532,14 +402,10 @@ pub trait ControlledActor {
 
     fn get_team(&self) -> Team;
 
-    fn get_input_master(&mut self) -> &mut InputMaster;
-
     fn spawn(
         &mut self,
-        physics_system: &PhysicsSystem,
-        ui_system: &mut UISystem,
-        audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     );
 }
 

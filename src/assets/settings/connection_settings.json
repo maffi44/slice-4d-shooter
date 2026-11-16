@@ -1,0 +1,8 @@
+{
+    "matchmaking_server_url" : "ws://matchmaking.slice4d.info:8080/",
+
+    "ice_servers" : [],
+
+    "turn_server_username" : "",
+    "turn_server_credential" : ""
+}

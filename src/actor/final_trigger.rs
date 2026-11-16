@@ -3,34 +3,28 @@
 
 
 
-use std::f32::consts::PI;
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+use crate::engine::world::effects;
+
+use std::{f32::consts::PI, sync::Arc};
+
+use tokio::task::JoinHandle;
+
+use crate::engine::world::{world_descriptor::WorldDescriptor, OuterWorldMessage};
 
 use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
-use rand::Rng;
 
 use crate::{
     actor::{trgger_orb::TriggerOrbMessage, trigger::TriggerMessage}, engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
-    }, transform::Transform
+        shared_systems::audio::Sound, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
+    }, engine::transform::Transform
 };
 
 use super::{
     Actor, ActorID, Message, MessageType, PhysicsMessages, SpecificActorMessage
 };
-
-fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
-{
-    assert!(range_min < range_max);
-
-    let mut rng = rand::thread_rng();
-    let x = rng.gen_range(range_min..=range_max);
-    let y = rng.gen_range(range_min..=range_max);
-    let z = rng.gen_range(range_min..=range_max);
-    let w = rng.gen_range(range_min..=range_max);
-
-    return Vec4::new(x, y, z, w);
-}
 
 #[derive(Clone)]
 pub enum FinalTrggerMessage
@@ -52,6 +46,9 @@ pub struct FinalTrgger
     async_preload: bool,
     async_load: bool,
     async_load_command_sended: bool,
+    /// The next world's descriptor, loading in the background (preload).
+    /// Later this will be a Resource System handle.
+    next_world: Option<JoinHandle<WorldDescriptor>>,
     pulse_timer: f32,
     orginal_visual_area_radius: f32,
     orginal_visual_area_color: Vec3,
@@ -61,6 +58,16 @@ pub struct FinalTrgger
 
 impl FinalTrgger
 {
+    fn start_loading_next_world(&mut self, shared: &mut EngineSharedSystems)
+    {
+        let name = self.next_level_name.clone();
+        let gpu = shared.gpu.clone();
+
+        self.next_world = Some(shared.runtime.spawn_blocking(move || {
+            WorldDescriptor::load(&name, gpu)
+        }));
+    }
+
     pub fn new(
         transform: Transform,
         next_level_name: String,
@@ -113,6 +120,7 @@ impl FinalTrgger
             async_preload,
             async_load,
             async_load_command_sended: false,
+            next_world: None,
             id: None,
             area,
             visual_areas,
@@ -137,16 +145,14 @@ const COLORING_AREA_COLOR_PULSE_MULT: f32 = 0.208;
 impl Actor for FinalTrgger
 {
     fn tick(
-            &mut self,
-            physic_system: &crate::engine::physics::PhysicsSystem,
-            engine_handle: &mut EngineHandle,
-            audio_system: &mut crate::engine::audio::AudioSystem,
-            ui_system: &mut crate::engine::ui::UISystem,
-            time_system: &mut crate::engine::time::TimeSystem,
-            effects_system: &mut EffectsSystem,
-            delta: f32
-        )
+        &mut self,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    )
     {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         self.pulse_timer += delta; 
         if self.pulse_timer >= PI {self.pulse_timer -= PI}
 
@@ -166,12 +172,7 @@ impl Actor for FinalTrgger
 
         if self.async_preload
         {
-            engine_handle.send_command(
-                Command {
-                    sender: self.get_id().expect("Final Trgger have not ActorID"),
-                    command_type: CommandType::PreloadNewLevelAsync(self.next_level_name.clone())
-                }
-            );
+            self.start_loading_next_world(shared);
             
             self.async_preload = false;
         }
@@ -182,7 +183,7 @@ impl Actor for FinalTrgger
 
             if self.level_transition_timer > 3.0
             {
-                engine_handle.send_boardcast_message(
+                messenger.send_broadcast_message(
                     Message {
                         from: self.id.expect("Flag have not ActorID"),
                         remote_sender: false,
@@ -195,30 +196,31 @@ impl Actor for FinalTrgger
                 );
             }
 
-            if self.level_transition_timer > 5.0
+            if self.level_transition_timer > 5.0 && !self.async_load_command_sended
             {
-                if self.async_load
+                if self.next_world.is_none()
                 {
-                    if !self.async_load_command_sended
-                    {
-                        engine_handle.send_command(
-                            Command {
-                                sender: self.get_id().expect("Final Trgger have not ActorID"),
-                                command_type: CommandType::LoadNewLevelAsync(self.next_level_name.clone())
-                            }
-                        );
-    
-                        self.async_load_command_sended = true;
-                    }
+                    self.start_loading_next_world(shared);
                 }
-                else
+
+                let next_world_is_ready = self.next_world
+                    .as_ref()
+                    .is_some_and(|handle| handle.is_finished());
+
+                // async: wait (keep playing) until the descriptor is ready; sync: block until it's ready
+                if next_world_is_ready || !self.async_load
                 {
-                    engine_handle.send_command(
-                        Command {
-                            sender: self.get_id().expect("Final Trgger have not ActorID"),
-                            command_type: CommandType::LoadNewLevelSync(self.next_level_name.clone())
-                        }
+                    let handle = self.next_world.take().unwrap();
+
+                    let descriptor = shared.runtime
+                        .block_on(handle)
+                        .expect("ERROR: next world loading task failed");
+
+                    messenger.send_to_outer_world(
+                        OuterWorldMessage::ReplaceRootWorld(Arc::new(descriptor))
                     );
+
+                    self.async_load_command_sended = true;
                 }
             }
         }
@@ -274,17 +276,16 @@ impl Actor for FinalTrgger
     }
 
     fn recieve_message(
-            &mut self,
-            message: Message,
-            engine_handle: &mut EngineHandle,
-            physics_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            time_system: &TimeSystem,
-            effects_system: &mut EffectsSystem,
-        ) {
+        &mut self,
+        message: Message,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    ) {
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+
         
-        let from = message.from;
+        let _from = message.from;
 
         match message.message
         {
@@ -299,7 +300,7 @@ impl Actor for FinalTrgger
                             {
                                 if !self.is_triggered
                                 {
-                                    engine_handle.send_boardcast_message(
+                                    messenger.send_broadcast_message(
                                         Message {
                                             from: self.id.expect("Flag have not ActorID"),
                                             remote_sender: false,
@@ -317,7 +318,7 @@ impl Actor for FinalTrgger
                                     );
                                 }
                             }
-                            AreaMessage::ActorIsContainedInsideArea(id) =>
+                            AreaMessage::ActorIsContainedInsideArea(_id) =>
                             {
 
                             }
@@ -353,8 +354,8 @@ impl Actor for FinalTrgger
                                         15.0
                                     );
 
-                                    effects_system.spawn_wave(
-                                        engine_handle,
+                                    effects::spawn_wave(
+                                        messenger,
                                         self.transform.get_position(),
                                         vec![
                                             0.0,

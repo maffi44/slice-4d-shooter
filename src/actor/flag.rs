@@ -3,16 +3,21 @@
 
 
 
-use client_server_protocol::{NetCommand, NetMessageToServer, Team};
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+use crate::actor::session_controller::send_to_session_controller;
+use crate::engine::world::effects;
+
+use client_server_protocol::{NetMessageToServer, Team};
 use fyrox_sound::source::Status;
 use glam::{FloatExt, Vec3, Vec4};
 use rand::Rng;
 
 use crate::{
     engine::{
-        audio::{AudioSystem, Sound}, effects::EffectsSystem, engine_handle::{Command, CommandType, EngineHandle}, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, PhysicsSystem}, render::VisualElement, time::TimeSystem, ui::{UIElementType, UISystem}, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
+        shared_systems::audio::{AudioSystem, Sound}, world::messenger::Messenger, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, shared_systems::ui::UIElementType, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
     },
-    transform::Transform
+    engine::transform::Transform
 };
 
 use super::{
@@ -72,11 +77,11 @@ fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
 {
     assert!(range_min < range_max);
 
-    let mut rng = rand::thread_rng();
-    let x = rng.gen_range(range_min..=range_max);
-    let y = rng.gen_range(range_min..=range_max);
-    let z = rng.gen_range(range_min..=range_max);
-    let w = rng.gen_range(range_min..=range_max);
+    let mut rng = rand::rng();
+    let x = rng.random_range(range_min..=range_max);
+    let y = rng.random_range(range_min..=range_max);
+    let z = rng.random_range(range_min..=range_max);
+    let w = rng.random_range(range_min..=range_max);
 
     return Vec4::new(x, y, z, w);
 }
@@ -206,9 +211,8 @@ impl Flag
 
     pub fn set_flag_on_base_status(
         &mut self,
-        effects_system: &mut EffectsSystem,
         audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
     )
     {
 
@@ -219,8 +223,8 @@ impl Flag
         {
             FlagStatus::Missed(_) =>
             {
-                effects_system.spawn_wave(
-                    engine_handle,
+                effects::spawn_wave(
+                    messenger,
                     self.transform.get_position(),
                     vec![
                         0.0,
@@ -253,13 +257,12 @@ impl Flag
     pub fn set_flag_missed_status(
         &mut self,
         pos: Vec4,
-        effects_system: &mut EffectsSystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
     )
     {
         self.target_position = pos;
-        effects_system.spawn_wave(
-            engine_handle,
+        effects::spawn_wave(
+            messenger,
             self.transform.get_position(),
             vec![
                 0.0,
@@ -279,14 +282,13 @@ impl Flag
     pub fn set_flag_captured_status(
         &mut self,
         captured_by: ActorID,
-        engine_handle: &mut EngineHandle,
-        effects_system: &mut EffectsSystem,
+        messenger: &mut Messenger,
         audio_system: &mut AudioSystem,
     )
     {
         self.area.clear_containing_colliders_list();
         
-        engine_handle.send_direct_message(
+        messenger.send_direct_message(
             captured_by,
             Message {
                 from: self.id.expect("Flag has no ActorID"),
@@ -299,8 +301,8 @@ impl Flag
             }
         );
 
-        effects_system.spawn_wave(
-            engine_handle,
+        effects::spawn_wave(
+            messenger,
             self.transform.get_position(),
             vec![
                 0.0,
@@ -319,7 +321,7 @@ impl Flag
         );
         
         audio_system.spawn_spatial_sound(
-            Sound::FlagCuptured,
+            Sound::FlagCaptured,
             1.0,
             1.0,
             false,
@@ -338,16 +340,15 @@ impl Flag
 impl Actor for Flag
 {
     fn tick(
-            &mut self,
-            physic_system: &crate::engine::physics::PhysicsSystem,
-            engine_handle: &mut EngineHandle,
-            audio_system: &mut crate::engine::audio::AudioSystem,
-            ui_system: &mut crate::engine::ui::UISystem,
-            time_system: &mut crate::engine::time::TimeSystem,
-            effects_system: &mut EffectsSystem,
-            delta: f32
-        )
+        &mut self,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    )
         {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+        let ui_system = &mut shared.ui;
+
 
         match self.status
         {
@@ -430,7 +431,7 @@ impl Actor for Flag
         {
             FlagStatus::Captured(id) =>
             {
-                engine_handle.send_direct_message(
+                messenger.send_direct_message(
                     id,
                     Message {
                         from: self.get_id().expect("Flag have not ActorID"),
@@ -497,7 +498,7 @@ impl Actor for Flag
         &mut self.transform
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement>
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>>
     {
         match self.status
         {
@@ -526,7 +527,7 @@ impl Actor for Flag
     }
 
 
-    fn get_visual_element(&self) -> Option<VisualElement>
+    fn get_visual_element(&self) -> Option<VisualElement<'_>>
     {
         Some(
             VisualElement
@@ -555,15 +556,14 @@ impl Actor for Flag
     }
 
     fn recieve_message(
-            &mut self,
-            message: Message,
-            engine_handle: &mut EngineHandle,
-            physics_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            time_system: &TimeSystem,
-            effects_system: &mut EffectsSystem,
-        ) {
+        &mut self,
+        message: Message,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    ) {
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+
         
         let from = message.from;
 
@@ -584,19 +584,16 @@ impl Actor for Flag
                                     {
                                         if from == id
                                         {
-                                            engine_handle.send_command(
-                                                Command {
-                                                    sender: self.get_id().expect("Player have not ActorID"),
-                                                    command_type: CommandType::NetCommand(
-                                                        NetCommand::SendMessageToServer(
-                                                            NetMessageToServer::DropedFlag(
-                                                                self.owned_by_team,
-                                                                self.get_transform().get_position().to_array(),
-                                                                in_space,
-                                                            )
-                                                        )
-                                                    )
-                                                }
+                                            send_to_session_controller(
+                                                messenger,
+                                                self.get_id().expect("Player have not ActorID"),
+                                                SessionControllerMessage::SendToServer(
+                                                    NetMessageToServer::DropedFlag(
+                                                        self.owned_by_team,
+                                                        self.get_transform().get_position().to_array(),
+                                                        in_space,
+                                                    ),
+                                                ),
                                             );
                                         }
                                     }
@@ -613,15 +610,15 @@ impl Actor for Flag
                                     match status {
                                         FlagStatus::OnTheBase =>
                                         {
-                                            self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
+                                            self.set_flag_on_base_status(audio_system, messenger);
                                         }
                                         FlagStatus::Missed(pos) =>
                                         {
-                                            self.set_flag_missed_status(pos, effects_system, engine_handle);
+                                            self.set_flag_missed_status(pos, messenger);
                                         }
                                         FlagStatus::Captured(captured_by) =>
                                         {
-                                            self.set_flag_captured_status(captured_by, engine_handle, effects_system, audio_system);
+                                            self.set_flag_captured_status(captured_by, messenger, audio_system);
                                         }
                                     }
                                 }
@@ -649,15 +646,15 @@ impl Actor for Flag
                         match message {
                             SessionControllerMessage::NewSessionStarted(_) =>
                             {
-                                self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
+                                self.set_flag_on_base_status(audio_system, messenger);
                             }
                             SessionControllerMessage::TeamWin(team) =>
                             {
                                 match team {
                                     Team::Red =>
                                     {
-                                        effects_system.spawn_wave(
-                                            engine_handle,
+                                        effects::spawn_wave(
+                                            messenger,
                                             self.transform.get_position(),
                                             vec![
                                                 0.0,
@@ -695,8 +692,8 @@ impl Actor for Flag
                                     }
                                     Team::Blue =>
                                     {
-                                        effects_system.spawn_wave(
-                                            engine_handle,
+                                        effects::spawn_wave(
+                                            messenger,
                                             self.transform.get_position(),
                                             vec![
                                                 0.0,
@@ -751,17 +748,17 @@ impl Actor for Flag
                                         {
                                             FlagStatus::OnTheBase =>
                                             {
-                                                self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
+                                                self.set_flag_on_base_status(audio_system, messenger);
                                             }
 
                                             FlagStatus::Missed(pos) =>
                                             {
-                                                self.set_flag_missed_status(pos, effects_system, engine_handle);
+                                                self.set_flag_missed_status(pos, messenger);
                                             }
 
                                             FlagStatus::Captured(id) =>
                                             {
-                                                self.set_flag_captured_status(id, engine_handle, effects_system, audio_system);
+                                                self.set_flag_captured_status(id, messenger, audio_system);
                                             }
                                         }
                                     }
@@ -771,17 +768,17 @@ impl Actor for Flag
                                         {
                                             FlagStatus::OnTheBase =>
                                             {
-                                                self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
+                                                self.set_flag_on_base_status(audio_system, messenger);
                                             }
 
                                             FlagStatus::Missed(pos) =>
                                             {
-                                                self.set_flag_missed_status(pos, effects_system, engine_handle);
+                                                self.set_flag_missed_status(pos, messenger);
                                             }
 
                                             FlagStatus::Captured(id) =>
                                             {
-                                                self.set_flag_captured_status(id, engine_handle, effects_system, audio_system);
+                                                self.set_flag_captured_status(id, messenger, audio_system);
                                             }
                                         }
                                     }
@@ -803,7 +800,7 @@ impl Actor for Flag
                     }
                     CommonActorsMessage::ClientDisconnectedFromGameServer =>
                     {
-                        self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
+                        self.set_flag_on_base_status(audio_system, messenger);
                     }
                     _ => {}
                 }
@@ -817,7 +814,7 @@ impl Actor for Flag
                         {
                             AreaMessage::ActorEnterArea(id) =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     id,
                                     Message {
                                         from: self.id.expect("Flag have not ActorID"),
@@ -833,7 +830,7 @@ impl Actor for Flag
                                     }
                                 );
                             }
-                            AreaMessage::ActorIsContainedInsideArea(id) =>
+                            AreaMessage::ActorIsContainedInsideArea(_id) =>
                             {
 
                             }

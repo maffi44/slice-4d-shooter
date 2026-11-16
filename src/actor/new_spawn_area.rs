@@ -3,13 +3,14 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use glam::Vec4;
 
 use crate::{
-    engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{PhysicsSystem, area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, time::TimeSystem, ui::UISystem,
-    },
-    transform::Transform
+    engine::world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType},
+    engine::transform::Transform
 };
 
 use super::{
@@ -59,20 +60,16 @@ impl Actor for NewSpawnArea
 {
     fn tick(
         &mut self,
-        physic_system: &crate::engine::physics::PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut crate::engine::audio::AudioSystem,
-        ui_system: &mut crate::engine::ui::UISystem,
-        time_system: &mut crate::engine::time::TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
-    ) {}
+        _world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
+    ) {
+}
 
     fn get_mut_transform(&mut self) -> &mut Transform {
         &mut self.transform
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement>
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>>
     {
         Some(
             PhysicalElement
@@ -101,21 +98,20 @@ impl Actor for NewSpawnArea
     }
 
     fn recieve_message(
-            &mut self,
-            message: Message,
-            engine_handle: &mut EngineHandle,
-            physics_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            time_system: &TimeSystem,
-            effects_system: &mut EffectsSystem,
-        ) {
+        &mut self,
+        message: Message,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    ) {
+        let messenger = &mut *world.messenger;
+        let _audio_system = &mut shared.audio;
+
         
-        let from = message.from;
+        let _from = message.from;
 
         match message.message
         {
-            MessageType::SpecificActorMessage(message) => {}
+            MessageType::SpecificActorMessage(_message) => {}
 
             MessageType::CommonActorsMessages(message) =>
             {
@@ -126,7 +122,7 @@ impl Actor for NewSpawnArea
                     }
                     CommonActorsMessage::ClientDisconnectedFromGameServer =>
                     {
-                        // self.set_flag_on_base_status(effects_system, audio_system, engine_handle);
+                        // self.set_flag_on_base_status(effects_system, audio_system, messenger);
                     }
                     _ => {}
                 }
@@ -140,7 +136,7 @@ impl Actor for NewSpawnArea
                         {
                             AreaMessage::ActorEnterArea(id) =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     id,
                                     Message {
                                         from: self.get_id().expect("Droped Rotator Tool havn't ActorID"),
@@ -153,7 +149,7 @@ impl Actor for NewSpawnArea
                                     }
                                 );
                             }
-                            AreaMessage::ActorIsContainedInsideArea(id) =>
+                            AreaMessage::ActorIsContainedInsideArea(_id) =>
                             {
 
                             }

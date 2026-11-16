@@ -5,25 +5,12 @@
 
 use wgpu::Backend;
 
-#[derive(Clone, Copy)]
-pub enum GameMode
-{
-    NORMAL,
-    OBSERVER,
-}
-
-impl Default for GameMode
-{
-    fn default() -> Self {
-        GameMode::OBSERVER
-    }
-}
-
 pub struct Args
 {
     pub graphic_backend: Option<Backend>,
     pub specific_level: Option<String>,
-    pub game_mode: GameMode,
+    /// `--headless`: no window, GPU, rendering or sound.
+    pub headless: bool,
 }
 
 pub fn read_args() -> Args
@@ -32,7 +19,7 @@ pub fn read_args() -> Args
     let mut backend = None;
     let mut show_help = false;
     let mut level = None;
-    let mut mode = GameMode::NORMAL;
+    let mut headless = false;
 
     let mut i = 1;
     while i < args.len()
@@ -92,33 +79,9 @@ pub fn read_args() -> Args
                 }
             }
 
-            "-m" | "-mode" | "--m" | "--mode" =>
+            "--headless" | "-headless" =>
             {
-                if i + 1 < args.len()
-                {
-                    mode = match args[i + 1].to_lowercase().as_str()
-                    {
-                        "observer" => GameMode::OBSERVER,
-
-                        "normal" => GameMode::NORMAL,
-                        
-                        _ =>
-                        {
-                            eprintln!("Unknown game mode: {}", args[i + 1]);
-                            
-                            show_help = true;
-
-                            GameMode::OBSERVER
-                        }
-                    };
-                    i += 1;
-                }
-                else
-                {
-                    eprintln!("Missing argument for level option");
-
-                    std::process::exit(0);
-                }
+                headless = true;
             }
 
             "-v" | "--v" | "-version" | "--version" =>
@@ -149,7 +112,7 @@ pub fn read_args() -> Args
         println!("  --help, -help, -h            Show this help message");
         println!("  -v --v -version, --version,  Show current game version");
         println!("  -l --l -level, --level,  Load specific level");
-        println!("  -m --m -mode, --mode,  Load specific game mode (normal, observer)");
+        println!("  --headless, -headless    Run without window, rendering and sound");
         println!();
         println!("If no backend is specified, the graphics backend will be selected automatically");
 
@@ -160,6 +123,6 @@ pub fn read_args() -> Args
     {
         graphic_backend: backend,
         specific_level: level,
-        game_mode: mode     
+        headless,
     }
 }

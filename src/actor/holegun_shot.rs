@@ -3,6 +3,9 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use glam::{Vec3, Vec4, FloatExt};
 
 use crate::{
@@ -11,20 +14,18 @@ use crate::{
         ActorID,
     },
     engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::{
+        world::messenger::{
             Command,
-            CommandType,
-            EngineHandle
-        }, physics::{
+            CommandType
+        }, world::physics::{
             colliders_container::PhysicalElement,
             physics_system_data::ShapeType,
-            static_collider::StaticCollider,
-            PhysicsSystem
-        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
+            static_collider::StaticCollider
+        }, shared_systems::render::VisualElement, world::static_object::{
             BeamVolumeArea, ColoringArea, SphericalVolumeArea, StaticObject, VisualWave, VolumeArea
         }
     },
-    transform::Transform,
+    engine::transform::Transform,
 };
 
 const EXPLODE_TIME: f32 = 0.25;
@@ -141,9 +142,6 @@ impl HoleGunShot {
     }
 
 
-    pub fn set_transform(&mut self, transform: Transform) {
-        self.transform = transform
-    }
 }
 
 impl Actor for HoleGunShot {
@@ -165,14 +163,12 @@ impl Actor for HoleGunShot {
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         if self.target_size_reached {
             
             for area in self.coloring_areas.iter_mut() {
@@ -221,7 +217,7 @@ impl Actor for HoleGunShot {
                 obj.collider.size.x -= delta * 0.2;
     
                 if obj.collider.size.x <= 0.0 {
-                    engine_handle.send_command(
+                    messenger.send_command(
                         Command {
                             sender: self.id.expect("HoleGun's Hole have not ActorID"),
                             command_type: CommandType::RemoveActor(
@@ -300,7 +296,7 @@ impl Actor for HoleGunShot {
         }
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(
             VisualElement {
                 transform: &self.transform,
@@ -314,7 +310,7 @@ impl Actor for HoleGunShot {
         )
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         Some(
             PhysicalElement
             {

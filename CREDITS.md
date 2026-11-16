@@ -3,7 +3,7 @@
 This document outlines the copyright and licensing information for the various components of the Slice: 4D Shooter project.
 ## 1. Source Code
 
-The entire source code of the Slice: 4D Shooter project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+The project's original source code, including the client and servers, is licensed under the GNU Affero General Public License, version 3 or later (`AGPL-3.0-or-later`). Third-party code retains the licenses described below and in its own notices.
 
     This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -11,7 +11,7 @@ The entire source code of the Slice: 4D Shooter project is licensed under the GN
 
     You should have received a copy of the GNU Affero General Public License along with this program. If not, see https://www.gnu.org/licenses/.
 
-A full copy of the license is available in the project's root directory in the file LICENSE.txt.
+A full copy of the license is available in the project's root directory in [LICENSE.txt](LICENSE.txt).
 
 ## 2. Third-Party Libraries
 
@@ -61,7 +61,7 @@ The sound effects listed below are used under their respective Creative Commons 
 
 | File Path | Author | Source | License | Modifications |
 | :--- | :--- | :--- | :--- | :--- |
-| `src/assets/sounds/shifting_along_w.wav` | MrJmix | [Link](https://freesound.org/people/MrJmix/sounds/331078/) | CC BY 1.0 | Trimmed, fade out applied. |
+| `src/assets/sounds/shifting_along_w.wav` | MrJmix | [Link](https://freesound.org/people/MrJmix/sounds/331078/) | CC0 1.0 | Trimmed, fade out applied. |
 | `src/assets/sounds/player_died.wav` | PJ_Bear, thehorriblejoke | [Link](https://freesound.org/people/PJ_Bear/sounds/708967/), [Link](https://freesound.org/people/thehorriblejoke/sounds/505751/) | CC0 1.0, CC0 1.0 | Trimmed, fade out applied, combined. |
 | `src/assets/sounds/player_hit_signal.wav` | Sojan | [Link](https://freesound.org/people/Sojan/sounds/334298/) | CC0 1.0 | Combined. |
 | `src/assets/sounds/rotating_around_w.wav` | vumseplutten1709 | [Link](https://freesound.org/people/vumseplutten1709/sounds/237269/) | CC BY 3.0 | Trimmed, fade out applied. |
@@ -87,15 +87,14 @@ The sound effects listed below are used under their respective Creative Commons 
 | `src/assets/sounds/charging_w_jump.wav` | KVV_Audio, Tim_Verberne | [Link](https://freesound.org/people/KVV_Audio/sounds/741272/), [Link](https://freesound.org/people/Tim_Verberne/sounds/514082/) | CC BY 4.0, CC0 1.0 | Mixed, trimmed, reverb applied, amplified. |
 | `src/assets/sounds/w_jump.wav` | Funky_Audio | [Link](https://freesound.org/people/Funky_Audio/sounds/729389/) | CC0 1.0 | Trimmed, reverb applied, amplified, speed changed. |
 | `src/assets/sounds/projection_captured.wav` | anthonychartier2020 | [Link](https://freesound.org/people/anthonychartier2020/sounds/560188/) | CC BY 4.0 | Speed changed, pitch shifted, fade in/out applied. |
-| `src/assets/sounds/player_respawned.wav` | colorsCrimsonTears | [Link](https://freesound.org/people/colorsCrimsonTears/sounds/562292/) | CC0 1.0 | — |
 
-    CC0 1.0 Universal is a public domain dedication. You can copy, modify, and distribute the sound, even for commercial purposes, without asking permission. See the license deed.
+CC0 1.0 Universal is a public domain dedication. You can copy, modify, and distribute the sound, even for commercial purposes, without asking permission. See the [CC0 1.0 deed](https://creativecommons.org/publicdomain/zero/1.0/).
 
-    CC BY 3.0/4.0 requires attribution to the creator. You must give appropriate credit, provide a link to the license, and indicate if changes were made. See the CC BY 4.0 deed or CC BY 3.0 deed.
+CC BY 3.0/4.0 requires attribution to the creator. You must give appropriate credit, provide a link to the license, and indicate if changes were made. See the [CC BY 4.0 deed](https://creativecommons.org/licenses/by/4.0/) or [CC BY 3.0 deed](https://creativecommons.org/licenses/by/3.0/).
 
 ### 3.2. Original Project Assets
 
-All other assets in this project, including but not limited to textures, graphics, and original sound effects not listed in the "Third-Party Audio" section above, are original works created by Molokov Timofei.
+Original project assets by Molokov Timofei include textures, graphics and original sound effects not listed in the "Third-Party Audio" section above. Third-party components retain their own licenses; the `media/` exclusion is stated below.
 
 These original assets are licensed under the Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) license.
 
@@ -125,7 +124,7 @@ These trademarks are not licensed under the AGPL-3.0 or CC BY-SA 4.0 licenses. U
 
 | Component | License | Copyright Holder |
 | :--- | :--- | :--- |
-| Source Code | GNU AGPLv3 | Molokov Timofei |
+| Original Source Code | AGPL-3.0-or-later | Molokov Timofei |
 | Original Assets (Textures, Sounds) | CC BY-SA 4.0 | Molokov Timofei |
 | `./media/` directory assets | All Rights Reserved | Molokov Timofei |
 | Third-Party Sounds | CC0 / CC BY 3.0 / CC BY 4.0 | Various (see table) |

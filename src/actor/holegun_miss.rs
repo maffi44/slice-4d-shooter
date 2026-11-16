@@ -3,6 +3,9 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use glam::{Vec3, Vec4};
 
 use crate::{
@@ -11,19 +14,15 @@ use crate::{
         ActorID,
     },
     engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::{
+        world::messenger::{
             Command,
-            CommandType,
-            EngineHandle
-        }, physics::{
-            colliders_container::PhysicalElement,
-            PhysicsSystem
-        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::{
+            CommandType
+        }, world::physics::colliders_container::PhysicalElement, shared_systems::render::VisualElement, world::static_object::{
             BeamVolumeArea,
             VolumeArea
         }
     },
-    transform::Transform,
+    engine::transform::Transform,
 };
 
 const EXPLODE_TIME: f32 = 0.25;
@@ -35,7 +34,6 @@ pub struct HoleGunMiss {
 
     explode_current_time: f32,
     explode_final_time: f32,
-    target_size: f32,
     target_size_reached: bool
 }
 
@@ -79,7 +77,6 @@ impl HoleGunMiss {
             id: None,
             transform,
             volume_areas,
-            target_size: radius.abs(),
             target_size_reached: false,
             explode_current_time: 0.0,
             explode_final_time: EXPLODE_TIME * (radius.abs()*0.3),
@@ -87,9 +84,6 @@ impl HoleGunMiss {
     }
 
 
-    pub fn set_transform(&mut self, transform: Transform) {
-        self.transform = transform
-    }
 }
 
 impl Actor for HoleGunMiss {
@@ -111,14 +105,12 @@ impl Actor for HoleGunMiss {
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         if self.target_size_reached {
             for volume_area in self.volume_areas.iter_mut() {
                 
@@ -131,7 +123,7 @@ impl Actor for HoleGunMiss {
                         area.radius *= 1.0 - delta*30.0;
                         
                         if area.radius < 0.01 {
-                            engine_handle.send_command(
+                            messenger.send_command(
                                 Command {
                                     sender: self.id.expect("HoleGun's Hole have not ActorID"),
                                     command_type: CommandType::RemoveActor(
@@ -169,7 +161,7 @@ impl Actor for HoleGunMiss {
         }
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(
             VisualElement {
                 transform: &self.transform,
@@ -183,7 +175,7 @@ impl Actor for HoleGunMiss {
         )
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         None
     } 
 }

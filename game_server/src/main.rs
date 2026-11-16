@@ -3,8 +3,6 @@
 
 
 
-mod client_server_protocol;
-
 use std::{
     collections::HashMap,
     env,
@@ -28,10 +26,7 @@ use client_server_protocol::{
     BonusSpotStatus, ClientMessage, FlagStatus, NetMessageToPlayer, NetMessageToServer, RemoteMessage, ServerMessage, Team
 };
 
-use fyrox_core::{
-    futures::SinkExt,
-    rand::seq::SliceRandom
-};
+use fyrox_core::rand::seq::SliceRandom;
 use matchbox_signaling::SignalingServer;
 use matchbox_socket::{
     PeerId,
@@ -44,17 +39,11 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt}, net::TcpListener, runtime::{
         Builder,
         Runtime
-    }, sync::mpsc::{
-        channel,
-        Receiver,
-        Sender
-    }, task::JoinHandle
+    }
 };
 
 use glam::FloatExt;
 
-use tokio_tungstenite::connect_async;
-use tokio_tungstenite::tungstenite::Message;
 
 
 #[derive(Clone, Debug)]
@@ -64,9 +53,12 @@ struct GameServerConfig {
     game_servers_max_port_for_signaling_servers: u16,
     game_servers_min_port_for_tcp_listener: u16,
     game_servers_max_port_for_tcp_listener: u16,
+    #[allow(dead_code)] // read from the config file, not used by the server yet
     matchmaking_server_ip: Ipv4Addr,
+    #[allow(dead_code)] // read from the config file, not used by the server yet
     matchmaking_server_port: u16,
     max_players: u32,
+    #[allow(dead_code)] // read from the config file, not used by the server yet
     game_server_index: u16,
     ice_urls: Vec<String>,
     username: Option<String>,
@@ -191,7 +183,11 @@ impl GameServerConfig {
     }
 }
 
+// Not in the test harness: GlobalBlinkAlloc's direct-mode realloc calls grow/shrink the wrong way round
+// (blink-alloc 0.3.1 and 0.4.0), which trips allocator-api2's debug assertion.
+#[cfg(not(test))]
 use blink_alloc::GlobalBlinkAlloc;
+#[cfg(not(test))]
 #[global_allocator]
 static GLOBAL_ALLOC: GlobalBlinkAlloc = GlobalBlinkAlloc::new();
 
@@ -796,6 +792,7 @@ impl GameSessionState {
         }
     }
 
+    #[allow(dead_code)] // game state API, not used by the server yet
     pub fn spawn_new_hole(
         &mut self,
         position: [f32; 4],
@@ -828,6 +825,7 @@ impl GameSessionState {
 
     }
 
+    #[allow(dead_code)] // game state API, not used by the server yet
     pub fn remove_player(
         &mut self,
         id: u128,
@@ -843,6 +841,7 @@ struct Flag
 {
     get_previous_status_time: u128,
     status: FlagStatus,
+    #[allow(dead_code)] // kept for game state completeness
     team: Team,
 }
 
@@ -1044,7 +1043,7 @@ fn update_states_for_players(
     }
 }
 
-use rand::{thread_rng, Rng};
+use rand::Rng;
 
 fn shuffle_teams(players_state: &mut GameSessionState)
 {
@@ -1100,9 +1099,9 @@ fn choose_team_for_new_player(
     {
         return Team::Blue;
     }
-    let mut rng = thread_rng();
+    let mut rng = rand::rng();
 
-    if rng.gen_bool(0.5)
+    if rng.random_bool(0.5)
     {
         return Team::Red;
     }
@@ -1115,7 +1114,7 @@ fn choose_team_for_new_player(
 
 
 async fn handle_player_connection(
-    config: &GameServerConfig,
+    _config: &GameServerConfig,
     server_start_time: &Instant,
     channel: &mut WebRtcChannel,
     game_session_state: &mut GameSessionState,
@@ -1314,7 +1313,7 @@ fn make_teams_equal(
 }
 
 async fn handle_player_disconnection(
-    config: &GameServerConfig,
+    _config: &GameServerConfig,
     server_start_time: &Instant,
     relaible_channel: &mut WebRtcChannel,
     game_session_state: &mut GameSessionState,
@@ -1356,7 +1355,7 @@ async fn handle_player_disconnection(
     
     if disconnected_player.is_some()
     {
-        let disconnected_player = disconnected_player.unwrap();
+        let _disconnected_player = disconnected_player.unwrap();
 
         game_session_state.red_team.remove(&disconnected_player_id.0.as_u128());
         game_session_state.blue_team.remove(&disconnected_player_id.0.as_u128());
@@ -1767,13 +1766,6 @@ fn process_player_message(
     }
 }
 
-enum PlayerAmountChangedEvent
-{
-    PlayerConnected(PeerId),
-    PlayerDisconnected(PeerId),
-}
-
-
 async fn create_matchmaking_server_listener(config: GameServerConfig) -> Option<(TcpListener, u16)> {
     for port in config.game_servers_min_port_for_tcp_listener..=config.game_servers_max_port_for_tcp_listener
     {
@@ -1863,7 +1855,7 @@ async fn  run_signaling_server(
             )
         )
 
-        .on_connection_request(move |connection| {
+        .on_connection_request(move |_connection| {
             if *players_amount_1.lock().unwrap() >= max_players {
                 Ok(false)
             } else {
@@ -1875,11 +1867,11 @@ async fn  run_signaling_server(
             |_| println!("host connected")
         )
 
-        .on_client_connected(move |id| {
+        .on_client_connected(move |_id| {
             *players_amount_2.lock().unwrap() += 1;
         })
 
-        .on_client_disconnected(move |id| {
+        .on_client_disconnected(move |_id| {
             *players_amount_3.lock().unwrap() -= 1;
         })
         
@@ -1906,7 +1898,7 @@ async fn  run_signaling_server(
                     )
                 )
 
-                .on_connection_request(move |connection| {
+                .on_connection_request(move |_connection| {
                     if *players_amount_1.lock().unwrap() >= max_players {
                         Ok(false)
                     } else {
@@ -1918,11 +1910,11 @@ async fn  run_signaling_server(
                     |_| println!("host connected")
                 )
 
-                .on_client_connected(move |id| {
+                .on_client_connected(move |_id| {
                     *players_amount_2.lock().unwrap() += 1;
                 })
 
-                .on_client_disconnected(move |id| {
+                .on_client_disconnected(move |_id| {
                     *players_amount_3.lock().unwrap() -= 1;
                 })
 

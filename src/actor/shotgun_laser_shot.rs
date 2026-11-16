@@ -3,16 +3,19 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use client_server_protocol::Team;
 use glam::Vec4;
 
 use crate::{
     engine::{
-        engine_handle::{Command, CommandType}, physics::{
+        world::messenger::{Command, CommandType}, world::physics::{
             colliders_container::PhysicalElement,
             physics_system_data::ShapeType,
             static_collider::StaticCollider
-        }, render::VisualElement, world::static_object::{
+        }, shared_systems::render::VisualElement, world::static_object::{
             BeamVolumeArea,
             ColoringArea,
             SphericalVolumeArea,
@@ -20,7 +23,7 @@ use crate::{
             VolumeArea
         }
     },
-    transform::Transform
+    engine::transform::Transform
 };
 
 use super::{
@@ -41,9 +44,7 @@ pub struct ShotgunLaserShot
 {
     transform: Transform,
     id: Option<ActorID>,
-    real_start_position: Vec4,
     visible_start_position: Vec4,
-    possible_destination: Vec4,
     real_shot_direction: Vec4,
     visible_shot_direction: Vec4,
     damage_dealer_id: ActorID,
@@ -111,9 +112,7 @@ impl ShotgunLaserShot
         {
             transform,
             id: None,
-            real_start_position,
             visible_start_position,
-            possible_destination,
             damage_dealer_id,
             damage_dealer_team,
             real_shot_direction,
@@ -204,7 +203,7 @@ impl Actor for ShotgunLaserShot
         self.id = Some(id);
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(VisualElement {
             transform: &self.transform,
             static_objects: Some(&self.static_objects),
@@ -216,7 +215,7 @@ impl Actor for ShotgunLaserShot
         })
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         Some(PhysicalElement {
             id: self.id.expect("Shotgun Laser Shot have not ActorID"),
             transform: &mut self.transform,
@@ -230,20 +229,20 @@ impl Actor for ShotgunLaserShot
 
     fn tick(
         &mut self,
-        physic_system: &crate::engine::physics::PhysicsSystem,
-        engine_handle: &mut crate::engine::engine_handle::EngineHandle,
-        audio_system: &mut crate::engine::audio::AudioSystem,
-        ui_system: &mut crate::engine::ui::UISystem,
-        time_system: &mut crate::engine::time::TimeSystem,
-        effects_system: &mut crate::engine::effects::EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let physic_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+
         if self.static_objects.len() == 0 &&
             self.volume_areas.len() == 0 &&
             self.coloring_areas.len() == 0
         {
             let my_id = self.id.expect("Shotgun Laser Shot have not ActorID");
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: my_id,
                     command_type: CommandType::RemoveActor(my_id)
@@ -358,12 +357,12 @@ impl Actor for ShotgunLaserShot
                 Some(self.damage_dealer_id)
             )
             {
-                if let Some(hited_id) = hit.hited_actors_id
+                if let Some(hited_id) = hit.hit_actors_id
                 {
                     if !self.is_replicated
                     {
                         audio_system.spawn_spatial_sound(
-                            crate::engine::audio::Sound::ShotgunShotImpact,
+                            crate::engine::shared_systems::audio::Sound::ShotgunShotImpact,
                             0.1,
                             1.0,
                             false,
@@ -375,7 +374,7 @@ impl Actor for ShotgunLaserShot
                             50.0
                         );
 
-                        engine_handle.send_direct_message(
+                        messenger.send_direct_message(
                             hited_id,
                             Message {
                                 from: self.id.expect("Shotgun Laser Shot havn't ActorID "),

@@ -3,36 +3,34 @@
 
 
 
+use crate::actor::main_player::constants::*;
+
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+use crate::actor::session_controller::send_to_session_controller;
+use crate::engine::shared_systems::net::Reliability;
+
 use std::f32::consts::PI;
 
-use client_server_protocol::{NetCommand, NetMessageToPlayer, RemoteMessage, Team};
+use client_server_protocol::{NetMessageToPlayer, RemoteMessage, Team};
 
 use fyrox_core::math::lerpf;
-use rand::{Rng, seq::SliceRandom, thread_rng};
 
 use crate::{
     actor::{
-        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, EmptyHand, holegun::HoleGun, machinegun::MachineGun, obstaclesgun::ObstaclesGun, rotator::RotatorTool}, droped_rotator_tool::DropedRotatorToolMessage, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState, player_input_master, player_settings}, new_spawn_area::NewSpawnAreaMessage, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
+        Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, EmptyHand, rotator::RotatorTool}, droped_rotator_tool::DropedRotatorToolMessage, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState}, new_spawn_area::NewSpawnAreaMessage, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
     },
     engine::{
-        audio::{
+        shared_systems::audio::{
             AudioSystem,
             Sound
-        }, effects::EffectsSystem, engine_handle::{
-            Command,
-            CommandType,
-            EngineHandle
-        }, input::{self, ActionsFrameState}, physics::{
+        }, world::messenger::Messenger, shared_systems::input::ActionsFrameState, world::physics::{
             PhysicsSystem, colliders_container::PhysicalElement, kinematic_collider::KinematicColliderMessage
-        }, render::{VisualElement, camera::Camera}, time::TimeSystem, ui::{UIElement, UIElementType, UISystem}, world::{level::Spawn, static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea}}
+        }, shared_systems::render::{VisualElement, camera::Camera}, shared_systems::ui::{UIElement, UIElementType, UISystem}, world::static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea}
     },
-    transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
+    engine::transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
 };
 
-use self::{
-    player_input_master::InputMaster,
-    player_settings::PlayerSettings,
-};
 
 use glam::{FloatExt, Mat4, Vec2, Vec3, Vec4};
 
@@ -46,8 +44,6 @@ const DITHERING_EFFET_FOV: f32 = 1.1;
 pub struct ObstacleCourseFreeMovementPlayer {
     id: Option<ActorID>,
     inner_state: PlayerInnerState,
-    pub player_settings: PlayerSettings,
-    pub master: InputMaster,
     screen_effects: PlayerScreenEffects,
 
     active_hands_slot: ActiveHandsSlot, 
@@ -75,7 +71,7 @@ pub struct ObstacleCourseFreeMovementPlayer {
     volume_areas: Vec<VolumeArea>,
 
     zw_rotation_enabled: bool,
-    pub rotator_tool_equiped: bool,
+    pub rotator_tool_equipped: bool,
     show_tutorial_widndow_timer: f32,
 
     base_xz_zw_xw_rotation: Mat4,
@@ -139,13 +135,14 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
     fn recieve_message(
         &mut self,
         message: Message,
-        engine_handle: &mut EngineHandle,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let physic_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+        let ui_system = &mut shared.ui;
+
         let from = message.from;
 
         let message = message.message;
@@ -170,7 +167,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                     {
                         self.inner_state.transform.increment_position(increment);
                     },
-                    CommonActorsMessage::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::IWasChangedMyId(_new_id) => {}
                     CommonActorsMessage::ClientDisconnectedFromGameServer => {}
                 }
             }
@@ -186,10 +183,9 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                                     physic_system,
                                     ui_system,
                                     audio_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
-                            _ => {}
                         }
                     }
                     _ => {}
@@ -216,7 +212,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                         {
                             DropedRotatorToolMessage::YouInteractingWithDropedRotatorTool =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     from,
                                     Message {
                                         from: self.get_id().expect("Player for obstacle course have not ActorID"),
@@ -240,7 +236,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                                     physic_system,
                                     audio_system,
                                     ui_system,
-                                    engine_handle,
+                                    messenger,
                                 );
 
                                 self.dithering_effect_target = DITHERING_EFFET_FOV;
@@ -270,7 +266,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                                     physic_system,
                                     ui_system,
                                     audio_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
 
@@ -306,7 +302,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                                     physic_system,
                                     ui_system,
                                     audio_system,
-                                    engine_handle,
+                                    messenger,
                                 );
 
                                 set_right_team_hud(
@@ -326,7 +322,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                                     physic_system,
                                     ui_system,
                                     audio_system,
-                                    engine_handle,
+                                    messenger,
                                 );
 
                                 set_right_team_hud(
@@ -376,7 +372,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                         match message {
                             TriggerOrbMessage::YouInteractingWithTriggerOrb =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     from,
                                     Message {
                                         from: self.get_id().expect("Obstacle course player have not ActorID"),
@@ -394,7 +390,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
 
                             TriggerOrbMessage::GiveMeTargetPosition => 
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     from,
                                     Message {
                                         from: self.get_id().expect("Obstacle course player have not ActorID"),
@@ -443,7 +439,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
         self.id
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         if self.inner_state.is_enable
         {
             let collider_container = PhysicalElement {
@@ -463,23 +459,18 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let physic_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+        let ui_system = &mut shared.ui;
+        let _time_system = &shared.time;
 
-        let input = match &self.master {
-            InputMaster::LocalMaster(master) => {
-                master.current_input.clone()
-            }
-            InputMaster::RemoteMaster(master) => {
-               master.current_input.clone()
-            }   
-        };
+
+        let input = shared.input.actions().clone();
 
         let mut player_doll_input_state = PlayerDollInputState {
             move_forward: false,
@@ -515,6 +506,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
             self.process_player_rotation(
                 &input,
                 ui_system,
+                shared.global_settings.user.mouse_sensitivity,
                 delta
             );
 
@@ -540,7 +532,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 delta,
             );
 
@@ -558,14 +550,13 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
             );
 
             process_player_movement_input(
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
-                &self.player_settings,
                 delta,
             );
 
@@ -573,7 +564,6 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
-                &self.player_settings,
             );
 
             // process_dash(
@@ -586,7 +576,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
 
             self.screen_effects.player_projections.projections_tick(
                 my_id,
-                engine_handle,
+                messenger,
                 audio_system,
                 delta
             );
@@ -597,7 +587,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                     physic_system,
                     ui_system,
                     audio_system,
-                    engine_handle,
+                    messenger,
                 );
             }
 
@@ -629,7 +619,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 delta,
             );
 
@@ -637,7 +627,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
                 physic_system,
                 ui_system,
                 audio_system,
-                engine_handle,
+                messenger,
                 &input,
             );
         }
@@ -667,29 +657,29 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
             player_doll_input_state,
             &self.inner_state,
             my_id,
-            time_system,
-            engine_handle,
+            messenger,
         );
     }
 
     fn on_added_to_world(
-            &mut self,
-            physic_system: &PhysicsSystem,
-            engine_handle: &mut EngineHandle,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            time_system: &mut TimeSystem,
-            effects_system: &mut EffectsSystem,
-        ) {
-        self.respawn(physic_system, ui_system, audio_system, engine_handle);
+        &mut self,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
+    ) {
+        let physic_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+        let ui_system = &mut shared.ui;
+
+        self.respawn(physic_system, ui_system, audio_system, messenger);
     }
 }
 
+#[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
 fn process_free_movement_input(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
-    player_settings: &PlayerSettings,
-    delta: f32,
+    _delta: f32,
 )
 {
     let mut movement_vec = Vec4::ZERO;
@@ -747,8 +737,6 @@ fn process_free_movement_input(
 impl ObstacleCourseFreeMovementPlayer {
 
     pub fn new(
-        master: InputMaster,
-        player_settings: PlayerSettings,
         spawn: Vec4,
         with_rotator_tool: bool,
     ) -> Self {
@@ -756,7 +744,7 @@ impl ObstacleCourseFreeMovementPlayer {
         let screen_effects = PlayerScreenEffects {
             w_scanner_is_active: false,
             w_scanner_radius: 0.0,
-            w_scanner_ring_intesity: 0.0,
+            w_scanner_ring_intensity: 0.0,
             w_scanner_enemies_intesity: 0.0,
             death_screen_effect: 1.0,
             getting_damage_screen_effect: 0.0,
@@ -768,11 +756,10 @@ impl ObstacleCourseFreeMovementPlayer {
 
         let mut inner_state = PlayerInnerState::new(
             Transform::new(),
-            &player_settings,
             false,
             false,
             RIGHT*0.6,
-            UP * player_settings.collider_radius * 0.2,
+            UP * PLAYER_COLLIDER_RADIUS * 0.2,
             None,
             None,
         );
@@ -792,7 +779,7 @@ impl ObstacleCourseFreeMovementPlayer {
         let volume_areas = Vec::with_capacity(3);
 
         let dithering_effect = if with_rotator_tool {1.0} else {0.0};
-        let dithering_effect_target = dithering_effect;
+        let _dithering_effect_target = dithering_effect;
 
         ObstacleCourseFreeMovementPlayer {
             id: None,
@@ -807,10 +794,6 @@ impl ObstacleCourseFreeMovementPlayer {
             hands_slot_3: None,
 
             devices: [None, None, None, None],
-            
-            player_settings,
-
-            master,
 
             screen_effects,
 
@@ -826,7 +809,7 @@ impl ObstacleCourseFreeMovementPlayer {
             xwz_slice_point: Vec4::new(-9999.0,-9999.0,-9999.0,-9999.0),
             volume_areas,
             zw_rotation_enabled: true,
-            rotator_tool_equiped: with_rotator_tool,
+            rotator_tool_equipped: with_rotator_tool,
             show_tutorial_widndow_timer: 0.0,
             base_xz_zw_xw_rotation: Mat4::IDENTITY,
         }
@@ -1105,7 +1088,7 @@ impl ObstacleCourseFreeMovementPlayer {
         physic_system: &PhysicsSystem,
         ui_system: &mut UISystem,
         audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
     ) {
 
         set_right_team_hud(
@@ -1121,8 +1104,8 @@ impl ObstacleCourseFreeMovementPlayer {
         );
 
         for hit in hits {
-            engine_handle.send_direct_message(
-                hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
+            messenger.send_direct_message(
+                hit.hit_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     remote_sender: false,
@@ -1184,7 +1167,7 @@ impl ObstacleCourseFreeMovementPlayer {
                     physic_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
 
             },
@@ -1196,7 +1179,7 @@ impl ObstacleCourseFreeMovementPlayer {
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -1209,7 +1192,7 @@ impl ObstacleCourseFreeMovementPlayer {
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -1222,7 +1205,7 @@ impl ObstacleCourseFreeMovementPlayer {
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -1237,12 +1220,12 @@ impl ObstacleCourseFreeMovementPlayer {
                     physic_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
             }
         }
 
-        self.screen_effects.w_scanner_ring_intesity = 0.0;
+        self.screen_effects.w_scanner_ring_intensity = 0.0;
         self.screen_effects.w_scanner_radius = 0.0;
         self.screen_effects.w_scanner_is_active = false;
 
@@ -1263,23 +1246,21 @@ impl ObstacleCourseFreeMovementPlayer {
             // player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
-        engine_handle.send_command(
-            Command {
-                sender: self.get_id().expect("Player have not ActorID"),
-                command_type: CommandType::NetCommand(
-                    NetCommand::SendBoardcastNetMessageReliable(
-                        NetMessageToPlayer::RemoteDirectMessage(
-                            self.get_id().expect("Player have not ActorID"),
-                            RemoteMessage::PlayerRespawn(
-                                self.inner_state.transform.to_serializable_transform(),
-                                player_doll_input_state.serialize(),
-                                Vec4::ZERO.to_array(),
-                                self.inner_state.team
-                            )
-                        )
+        send_to_session_controller(
+            messenger,
+            self.get_id().expect("Player have not ActorID"),
+            SessionControllerMessage::SendToPlayers(
+                NetMessageToPlayer::RemoteDirectMessage(
+                    self.get_id().expect("Player have not ActorID"),
+                    RemoteMessage::PlayerRespawn(
+                        self.inner_state.transform.to_serializable_transform(),
+                        player_doll_input_state.serialize(),
+                        Vec4::ZERO.to_array(),
+                        self.inner_state.team
                     )
-                )
-            }
+                ),
+                Reliability::Reliable,
+            ),
         )
     }
 
@@ -1289,22 +1270,22 @@ impl ObstacleCourseFreeMovementPlayer {
         physic_system: &PhysicsSystem,
         ui_system: &mut UISystem,
         audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
         input: &ActionsFrameState,
     )
     {
-        if self.inner_state.after_death_timer >= self.player_settings.max_respawn_timer
+        if self.inner_state.after_death_timer >= MAX_RESPAWN_TIMER
         {
-            self.respawn(physic_system, ui_system, audio_system, engine_handle);
+            self.respawn(physic_system, ui_system, audio_system, messenger);
 
             return;
         }
 
         if input.first_mouse.is_action_just_pressed()
         {
-            if self.inner_state.after_death_timer >= self.player_settings.min_respawn_timer {
+            if self.inner_state.after_death_timer >= MIN_RESPAWN_TIMER {
                 
-                self.respawn(physic_system, ui_system, audio_system, engine_handle);
+                self.respawn(physic_system, ui_system, audio_system, messenger);
                 
                 return;
             }
@@ -1315,6 +1296,7 @@ impl ObstacleCourseFreeMovementPlayer {
         &mut self,
         input: &ActionsFrameState,
         ui: &mut UISystem,
+        mouse_sensitivity: f32,
         delta: f32,
     )
     {
@@ -1404,7 +1386,7 @@ impl ObstacleCourseFreeMovementPlayer {
             }
         }
 
-        self.rotator_tool_equiped = with_rotator_tool;
+        self.rotator_tool_equipped = with_rotator_tool;
 
         let mut xz = self.inner_state.saved_angle_of_rotation.x;
         let mut yz = self.inner_state.saved_angle_of_rotation.y;
@@ -1455,13 +1437,13 @@ impl ObstacleCourseFreeMovementPlayer {
 
                 if self.zw_rotation_enabled
                 {
-                    zw = (input.mouse_axis.y *
-                        *self.player_settings.mouse_sensivity.lock().unwrap() +
-                        zw);
+                    zw = input.mouse_axis.y *
+                        mouse_sensitivity +
+                        zw;
                     
-                    zw = (input.gamepad_right_stick_axis_delta.y *
-                        *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
-                        zw);
+                    zw = input.gamepad_right_stick_axis_delta.y *
+                        mouse_sensitivity*GAMEPAD_STICK_SENSIVITY_MULT +
+                        zw;
                 }
                 else
                 {
@@ -1470,12 +1452,12 @@ impl ObstacleCourseFreeMovementPlayer {
                 
                 
                 xw = input.mouse_axis.x *
-                    *self.player_settings.mouse_sensivity.lock().unwrap() +
+                    mouse_sensitivity +
                     xw;
 
                 
                 xw = input.gamepad_right_stick_axis_delta.x *
-                    *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                    mouse_sensitivity*-GAMEPAD_STICK_SENSIVITY_MULT +
                     xw;
                 
             }
@@ -1483,31 +1465,31 @@ impl ObstacleCourseFreeMovementPlayer {
             {
                 xz =
                     input.mouse_axis.x *
-                    *self.player_settings.mouse_sensivity.lock().unwrap() +
+                    mouse_sensitivity +
                     xz;
 
                 yz = (
                     input.mouse_axis.y *
-                    *self.player_settings.mouse_sensivity.lock().unwrap() +
+                    mouse_sensitivity +
                     yz
                 ).clamp(-PI/2.0, PI/2.0);
 
                 xz = input.gamepad_right_stick_axis_delta.x *
-                    *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                    mouse_sensitivity*-GAMEPAD_STICK_SENSIVITY_MULT +
                     xz;
 
                 yz = (
                     input.gamepad_right_stick_axis_delta.y *
-                    *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                    mouse_sensitivity*GAMEPAD_STICK_SENSIVITY_MULT +
                     yz
                 ).clamp(-PI/2.0, PI/2.0);
             }
 
             if self.zw_rotation_enabled
             {
-                zw = (input.gamepad_left_stick_axis_delta.y *
-                    *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT*0.7 +
-                    zw);
+                zw = input.gamepad_left_stick_axis_delta.y *
+                    mouse_sensitivity*GAMEPAD_STICK_SENSIVITY_MULT*0.7 +
+                    zw;
                 
             }
             else
@@ -1518,7 +1500,7 @@ impl ObstacleCourseFreeMovementPlayer {
             }
 
             xw = input.gamepad_left_stick_axis_delta.x *
-                *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT*0.7 +
+                mouse_sensitivity*-GAMEPAD_STICK_SENSIVITY_MULT*0.7 +
                 xw;
 
         }
@@ -1526,22 +1508,22 @@ impl ObstacleCourseFreeMovementPlayer {
         {
             xz =
                 input.mouse_axis.x *
-                *self.player_settings.mouse_sensivity.lock().unwrap() +
+                mouse_sensitivity +
                 xz;
 
             yz = (
                 input.mouse_axis.y *
-                *self.player_settings.mouse_sensivity.lock().unwrap() +
+                mouse_sensitivity +
                 yz
             ).clamp(-PI/2.0, PI/2.0);
 
             xz = input.gamepad_right_stick_axis_delta.x *
-                *self.player_settings.mouse_sensivity.lock().unwrap()*-GAMEPAD_STICK_SENSIVITY_MULT +
+                mouse_sensitivity*-GAMEPAD_STICK_SENSIVITY_MULT +
                 xz;
 
             yz = (
                 input.gamepad_right_stick_axis_delta.y *
-                *self.player_settings.mouse_sensivity.lock().unwrap()*GAMEPAD_STICK_SENSIVITY_MULT +
+                mouse_sensitivity*GAMEPAD_STICK_SENSIVITY_MULT +
                 yz
             ).clamp(-PI/2.0, PI/2.0);
         }
@@ -1607,17 +1589,16 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
         self.inner_state.team
     }
 
-    fn get_input_master(&mut self) -> &mut InputMaster {
-        &mut self.master
-    }
-
     fn spawn(
         &mut self,
-        physics_system: &PhysicsSystem,
-        ui_system: &mut UISystem,
-        audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let physics_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let ui_system = &mut shared.ui;
+        let audio_system = &mut shared.audio;
+
         self.inner_state.saved_angle_of_rotation = Vec4::ZERO;
         self.base_xz_zw_xw_rotation = Mat4::IDENTITY;
         println!("123");
@@ -1630,7 +1611,7 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
         //     PlayerMovingState::MovingPerpendicularW(self.w_levels_of_map[current_spawn.w_level]);
 
 
-        // self.w_scanner.restore_scanner_values(&self.player_settings);
+        // self.w_scanner.restore_scanner_values();
 
         self.inner_state.restore_w_shift_and_rotate_values();
 
@@ -1670,7 +1651,7 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
                     physics_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
 
             },
@@ -1682,7 +1663,7 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
                         physics_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -1695,7 +1676,7 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
                         physics_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -1708,7 +1689,7 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
                         physics_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -1723,15 +1704,15 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
                     physics_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
             }
         }
 
-        self.screen_effects.w_scanner_ring_intesity = 0.0;
+        self.screen_effects.w_scanner_ring_intensity = 0.0;
         self.screen_effects.w_scanner_radius = 0.0;
         self.screen_effects.w_scanner_is_active = false;
-        // self.w_scanner.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
+        // self.w_scanner.w_scanner_reloading_time = SCANNER_RELOADING_TIME;
 
         self.inner_state.collider.reset_forces_and_velocity();
 
@@ -1750,23 +1731,21 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
             // player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
-        engine_handle.send_command(
-            Command {
-                sender: self.get_id().expect("Player have not ActorID"),
-                command_type: CommandType::NetCommand(
-                    NetCommand::SendBoardcastNetMessageReliable(
-                        NetMessageToPlayer::RemoteDirectMessage(
-                            self.get_id().expect("Player have not ActorID"),
-                            RemoteMessage::PlayerRespawn(
-                                self.inner_state.transform.to_serializable_transform(),
-                                player_doll_input_state.serialize(),
-                                Vec4::ZERO.to_array(),
-                                self.inner_state.team
-                            )
-                        )
+        send_to_session_controller(
+            messenger,
+            self.get_id().expect("Player have not ActorID"),
+            SessionControllerMessage::SendToPlayers(
+                NetMessageToPlayer::RemoteDirectMessage(
+                    self.get_id().expect("Player have not ActorID"),
+                    RemoteMessage::PlayerRespawn(
+                        self.inner_state.transform.to_serializable_transform(),
+                        player_doll_input_state.serialize(),
+                        Vec4::ZERO.to_array(),
+                        self.inner_state.team
                     )
-                )
-            }
+                ),
+                Reliability::Reliable,
+            ),
         )
     }
 }
@@ -1805,10 +1784,10 @@ fn set_right_team_hud(
             // let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayRed);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayRed);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
             // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
@@ -1817,10 +1796,10 @@ fn set_right_team_hud(
             // let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayBlue);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayBlue);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
         }
 
@@ -1834,10 +1813,10 @@ fn set_right_team_hud(
             // let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayRed);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayRed);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
             // let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
@@ -1846,34 +1825,34 @@ fn set_right_team_hud(
             // let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayBlue);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
+            // let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayBlue);
             // *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
         }
     }
 }
 
+#[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
 fn process_dash(
 input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
-    player_settings: &PlayerSettings,
-    audio_system: &mut AudioSystem,
-    delta: f32,
+    _audio_system: &mut AudioSystem,
+    _delta: f32,
 )
 {
     if input.jump_w.is_action_just_pressed()
     {
-        inner_state.collider.add_force(inner_state.get_rotation_matrix()*FORWARD * player_settings.jump_y_speed);
+        inner_state.collider.add_force(inner_state.get_rotation_matrix()*FORWARD * JUMP_Y_SPEED);
 
         // if inner_state.collider.is_on_y_ground
         // {
-        //     inner_state.collider.add_force(inner_state.get_rotation_matrix()*FORWARD * player_settings.jump_w_speed*2.2);
+        //     inner_state.collider.add_force(inner_state.get_rotation_matrix()*FORWARD * JUMP_W_SPEED*2.2);
         // }
         // else
         // {
-        //     inner_state.collider.add_force(inner_state.get_rotation_matrix()*FORWARD * player_settings.jump_w_speed);
+        //     inner_state.collider.add_force(inner_state.get_rotation_matrix()*FORWARD * JUMP_W_SPEED);
         // }
     }
 }
@@ -1882,7 +1861,6 @@ pub fn process_player_movement_input(
     input: &ActionsFrameState,
     player_doll_input_state: &mut PlayerDollInputState,
     inner_state: &mut PlayerInnerState,
-    player_settings: &PlayerSettings,
     delta: f32,
 )
 {
@@ -1930,17 +1908,17 @@ pub fn process_player_movement_input(
     // add w gravity
     // inner_state.collider.add_force(
     //     W_DOWN *
-    //     (inner_state.get_position().w*25.0).clamp(-player_settings.gravity_w_speed, player_settings.gravity_w_speed)
+    //     (inner_state.get_position().w*25.0).clamp(-GRAVITY_W_SPEED, GRAVITY_W_SPEED)
     //     * delta
     // );
 
     // println!("added w force {}", W_DOWN *
-    //     (inner_state.get_position().w*25.0).clamp(-player_settings.gravity_w_speed, player_settings.gravity_w_speed)
+    //     (inner_state.get_position().w*25.0).clamp(-GRAVITY_W_SPEED, GRAVITY_W_SPEED)
     //     * delta
     // );
     
     // add y gravity
-    inner_state.collider.add_force(DOWN * player_settings.gravity_y_speed * delta);
+    inner_state.collider.add_force(DOWN * GRAVITY_Y_SPEED * delta);
 
     if inner_state.collider.is_on_y_ground {
         inner_state.collider.set_wish_direction(
@@ -1950,7 +1928,7 @@ pub fn process_player_movement_input(
     } else {
         inner_state.collider.set_wish_direction(
             movement_vec,
-            player_settings.air_speed_mult
+            AIR_SPEED_MULT
         );
     }
 
@@ -1960,12 +1938,13 @@ pub fn process_player_movement_input(
 }
 
 
+#[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
 pub fn process_w_scanner_ui(
     ui_system: &mut UISystem,
     inner_state: &PlayerInnerState,
 )
 {
-    let xz = inner_state.saved_angle_of_rotation.x;
+    let _xz = inner_state.saved_angle_of_rotation.x;
     let zw = inner_state.saved_angle_of_rotation.w;
 
     let zw_arrow = ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrow);

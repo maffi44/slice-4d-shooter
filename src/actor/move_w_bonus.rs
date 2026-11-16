@@ -3,13 +3,16 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use glam::{Vec3, Vec4};
 
 use crate::{
     engine::{
-        effects::EffectsSystem, physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, time::TimeSystem, world::static_object::{SphericalVolumeArea, VolumeArea}
+        world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}
     },
-    transform::Transform
+    engine::transform::Transform
 };
 
 use super::{
@@ -66,7 +69,8 @@ impl From<client_server_protocol::BonusSpotStatus> for BonusSpotStatus
     }
 }
 
-pub const MoveWBonusAreaRadius: f32 = 0.4;
+#[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
+pub const MOVE_WBONUS_AREA_RADIUS: f32 = 0.4;
 
 pub struct MoveWBonusSpot
 {
@@ -81,13 +85,14 @@ pub struct MoveWBonusSpot
 impl MoveWBonusSpot
 {
     
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn new(transform: Transform, index: u32) -> Self
     {
         let area = Area::new(
             Vec4::ZERO,
             ShapeType::Sphere,
             Vec4::new(
-                MoveWBonusAreaRadius,
+                MOVE_WBONUS_AREA_RADIUS,
                 0.0, 0.0, 0.0
             )
         );
@@ -96,7 +101,7 @@ impl MoveWBonusSpot
 
         let test_visual_area =  VolumeArea::SphericalVolumeArea(
             SphericalVolumeArea {
-                radius: MoveWBonusAreaRadius,
+                radius: MOVE_WBONUS_AREA_RADIUS,
                 translation: Vec4::ZERO,
                 color: Vec3::ONE,
             }
@@ -137,7 +142,7 @@ impl Actor for MoveWBonusSpot
     }
 
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement>
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>>
     {
         match self.status
         {
@@ -166,7 +171,7 @@ impl Actor for MoveWBonusSpot
     }
 
 
-    fn get_visual_element(&self) -> Option<VisualElement>
+    fn get_visual_element(&self) -> Option<VisualElement<'_>>
     {
         match self.status
         {
@@ -195,19 +200,17 @@ impl Actor for MoveWBonusSpot
 
 
     fn recieve_message(
-            &mut self,
-            message: Message,
-            engine_handle: &mut crate::engine::engine_handle::EngineHandle,
-            physics_system: &crate::engine::physics::PhysicsSystem,
-            audio_system: &mut crate::engine::audio::AudioSystem,
-            ui_system: &mut crate::engine::ui::UISystem,
-            time_system: &TimeSystem,
-            effects_system: &mut EffectsSystem,
-        ) {
+        &mut self,
+        message: Message,
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
+    ) {
+        let messenger = &mut *world.messenger;
+
         
         let Message {
             from,
-            remote_sender,
+            remote_sender: _,
             message
         } = message;
 
@@ -241,7 +244,7 @@ impl Actor for MoveWBonusSpot
                         self.transform.increment_position(incr);
                     }
 
-                    CommonActorsMessage::Enable(switch) =>
+                    CommonActorsMessage::Enable(_switch) =>
                     {
 
                     }
@@ -311,7 +314,7 @@ impl Actor for MoveWBonusSpot
                         match message {
                             AreaMessage::ActorEnterArea(id) =>
                             {
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     id,
                                     Message {
                                         from: self.get_id().expect("move w bonus spot have not ActorId"),
@@ -325,7 +328,7 @@ impl Actor for MoveWBonusSpot
                                 );
                             }
 
-                            AreaMessage::ActorIsContainedInsideArea(id) =>
+                            AreaMessage::ActorIsContainedInsideArea(_id) =>
                             {
 
                             }

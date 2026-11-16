@@ -3,37 +3,24 @@
 
 
 
-use glam::{Vec3, Vec4};
-
 use crate::{
     actor::{
         main_player::{
             player_inner_state::PlayerInnerState,
             PlayerScreenEffects,
-        }, shotgun_shot_source::ShotgunShotSource, ActorID, ActorWrapper
+        }, ActorID
     },
     engine::{
-        audio::AudioSystem,
-        engine_handle::{
-            Command,
-            CommandType,
-            EngineHandle
-        },
-        input::ActionsFrameState,
-        physics::PhysicsSystem,
-        render::ChildVisualElement,
-        ui::{
-            UIElement,
-            UIElementType,
-            UISystem
-        }
+        shared_systems::audio::AudioSystem,
+        world::messenger::Messenger,
+        shared_systems::input::ActionsFrameState,
+        world::physics::PhysicsSystem,
+        shared_systems::render::ChildVisualElement,
+        shared_systems::ui::UISystem
     },
-    transform::{Transform, FORWARD}
+    engine::transform::Transform
 };
 
-use client_server_protocol::{
-    NetCommand, NetMessageToPlayer, RemoteMessage, Team
-};
 
 use super::{Device, DeviceType};
 
@@ -51,58 +38,58 @@ impl Device for RotatorTool {
         DeviceType::RotatorTool
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
+    fn get_visual_element<'a>(&'a self, _transform: &'a Transform) -> Option<&'a ChildVisualElement> {
         None
     }
 
     fn process_input(
         &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        screen_effects: &mut PlayerScreenEffects,
-        input: &ActionsFrameState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-        delta: f32,
+        _player_id: ActorID,
+        _player: &mut PlayerInnerState,
+        _screen_effects: &mut PlayerScreenEffects,
+        _input: &ActionsFrameState,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
+        _ui_system: &mut UISystem,
+        _messenger: &mut Messenger,
+        _delta: f32,
     ) {}
 
     fn process_while_player_is_not_alive(
             &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
-            delta: f32,
+            _player_id: ActorID,
+            _player: &mut PlayerInnerState,
+            _input: &ActionsFrameState,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
+            _ui_system: &mut UISystem,
+            _messenger: &mut Messenger,
+            _delta: f32,
         ) {
         
     }
 
     fn process_while_deactive(
         &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        input: &ActionsFrameState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-        delta: f32,
+        _player_id: ActorID,
+        _player: &mut PlayerInnerState,
+        _input: &ActionsFrameState,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
+        _ui_system: &mut UISystem,
+        _messenger: &mut Messenger,
+        _delta: f32,
     ) {}
 
     fn deactivate(
         &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
-        screen_effects: &mut PlayerScreenEffects,
+        _player_id: ActorID,
+        _player: &mut PlayerInnerState,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
+        _ui_system: &mut UISystem,
+        _messenger: &mut Messenger,
+        _screen_effects: &mut PlayerScreenEffects,
     ) {
         // let img = ui_system.get_mut_ui_element(&UIElementType::RotatorDraft);
 
@@ -114,12 +101,12 @@ impl Device for RotatorTool {
 
     fn activate(
         &mut self,
-        player_id: ActorID,
-        player: &mut PlayerInnerState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        _player_id: ActorID,
+        _player: &mut PlayerInnerState,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
+        _ui_system: &mut UISystem,
+        _messenger: &mut Messenger,
     )
     {
         // let img = ui_system.get_mut_ui_element(&UIElementType::RotatorDraft);

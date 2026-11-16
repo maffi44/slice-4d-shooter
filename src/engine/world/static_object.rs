@@ -3,7 +3,7 @@
 
 
 
-use crate::engine::physics::static_collider::StaticCollider;
+use crate::engine::world::physics::static_collider::StaticCollider;
 use glam::{Vec3, Vec4};
 
 #[derive(Debug, Clone, Copy)]
@@ -27,12 +27,14 @@ pub struct  StaticObject {
     pub material_index: i32,
 }
 
+#[allow(dead_code)] // game content (W floors/roofs from maps), not wired into the current maps; kept for later
 #[derive(Clone)]
 pub struct WFloor {
     pub w_pos: f32 
 }
 
 
+#[allow(dead_code)] // game content (W floors/roofs from maps), not wired into the current maps; kept for later
 #[derive(Clone)]
 pub struct WRoof {
     pub w_pos: f32 

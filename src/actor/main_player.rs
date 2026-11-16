@@ -3,47 +3,48 @@
 
 
 
-pub mod player_input_master;
+use crate::actor::main_player::constants::*;
+
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+use crate::actor::session_controller::send_to_session_controller;
+use crate::engine::shared_systems::net::Reliability;
+
 pub mod player_inner_state;
-pub mod player_settings;
+pub mod constants;
 
 use client_server_protocol::{
-    NetCommand,
     NetMessageToPlayer,
-    NetMessageToServer,
     RemoteCommand,
     RemoteMessage,
     Team
 };
-use rand::{Rng, seq::SliceRandom, thread_rng};
+use rand::Rng;
 
 use crate::{
     actor::{
         Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{
-            Device, DeviceType, holegun::HoleGun, obstaclesgun::ObstaclesGun, shotgun::Shotgun
-        }, flag_base::FlagBaseMessage, main_player::player_input_master::LocalMaster, obstaclesgun_shot::ObstaclesGunShot, players_doll::PlayerDollInputState
+            Device, DeviceType, holegun::HoleGun, shotgun::Shotgun
+        }, flag_base::FlagBaseMessage, players_doll::PlayerDollInputState
     }, engine::{
-        audio::{
+        shared_systems::audio::{
             AudioSystem,
             Sound
         },
-        effects::EffectsSystem,
-        engine_handle::{
+        world::messenger::{
             Command,
             CommandType,
-            EngineHandle
+            Messenger
         },
-        input::ActionsFrameState, physics::{
+        shared_systems::input::ActionsFrameState, world::physics::{
             PhysicsSystem, colliders_container::PhysicalElement, kinematic_collider::KinematicColliderMessage
-        }, render::{VisualElement, camera::Camera}, time::TimeSystem, ui::{
+        }, shared_systems::render::{VisualElement, camera::Camera}, shared_systems::ui::{
             UIElement, UIElementType, UISystem
-        }, world::{level::Spawn, static_object::VisualWave}
-    }, transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
+        }, world::static_object::VisualWave
+    }, engine::transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
 };
 
 use self::{
-    player_input_master::InputMaster,
-    player_settings::PlayerSettings,
     player_inner_state::PlayerInnerState,
 };
 
@@ -59,17 +60,14 @@ use super::{
     device::machinegun::MachineGun, flag::{FlagMessage, FlagStatus}, move_w_bonus::{BonusSpotStatus, MoveWBonusSpotMessage}, players_death_explosion::PlayersDeathExplosion, players_doll::PlayersDollMessage, session_controller::SessionControllerMessage, ControlledActor, PhysicsMessages
 };
 
-#[derive(Clone)]
-pub enum PlayerMovingState
-{
-    // f32 - lock position on w axis
-    MovingPerpendicularW(f32),
-    // f32 - lock position on z axis
-    MovingParallelW(f32),
-    // f32 - how much time moving free player have
-    MovingFree(f32)
-}
 
+#[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
+pub enum PlayersDeviceSlotNumber {
+    First,
+    Second,
+    Third,
+    Fourth,
+}
 
 #[derive(PartialEq)]
 pub enum ActiveHandsSlot {
@@ -80,17 +78,10 @@ pub enum ActiveHandsSlot {
 }
 
 
-pub enum PlayersDeviceSlotNumber {
-    First,
-    Second,
-    Third,
-    Fourth,
-}
-
 pub struct PlayerScreenEffects {
     pub w_scanner_is_active: bool,
     pub w_scanner_radius: f32,
-    pub w_scanner_ring_intesity: f32,
+    pub w_scanner_ring_intensity: f32,
     pub w_scanner_enemies_intesity: f32,
 
     pub w_shift_coef: f32,
@@ -248,7 +239,7 @@ impl PlayersProjections
         my_id: ActorID,
         projection_by_scanner: bool,
         audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
     )
     {
         let player_projection = self.find_projection_mut(
@@ -265,24 +256,22 @@ impl PlayersProjections
             {
                 if projection_by_scanner
                 {
-                    engine_handle.send_command(
-                        Command {
-                            sender: my_id,
-                            command_type: CommandType::NetCommand(
-                                NetCommand::SendDirectNetMessageReliable(
-                                    NetMessageToPlayer::RemoteDirectMessage(
-                                        projection_id,
-                                        RemoteMessage::YouWasScanned
-                                    ),
-                                    projection_id
-                                )
-                            )
-                        }
+                    send_to_session_controller(
+                        messenger,
+                        my_id,
+                        SessionControllerMessage::SendToPlayer(
+                            NetMessageToPlayer::RemoteDirectMessage(
+                                projection_id,
+                                RemoteMessage::YouWasScanned
+                            ),
+                            projection_id,
+                            Reliability::Reliable,
+                        ),
                     );
                 }
 
                 audio_system.spawn_non_spatial_sound(
-                    Sound::NewProjecion,
+                    Sound::NewProjection,
                     0.7,
                     1.0,
                     false,
@@ -304,7 +293,7 @@ impl PlayersProjections
     pub fn projections_tick(
         &mut self,
         my_id: ActorID,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
         audio_system: &mut AudioSystem,
         delta: f32,
     )
@@ -421,7 +410,7 @@ impl PlayersProjections
                 };
             }
 
-            engine_handle.send_direct_message(
+            messenger.send_direct_message(
                 projection.id,
                 Message {
                     from: my_id,
@@ -438,6 +427,7 @@ impl PlayersProjections
         });
     }
 
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn find_projection(&self, id: ActorID) -> Option<&PlayerProjection>
     {
         for projection in &self.projections
@@ -474,6 +464,7 @@ impl PlayersProjections
         None
     }
 
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn get_active_projection_mut(&mut self) -> Option<&mut PlayerProjection>
     {
         for projection in &mut self.projections
@@ -719,7 +710,7 @@ impl Default for PlayerScreenEffects
         PlayerScreenEffects {
             w_scanner_is_active: false,
             w_scanner_radius: 0.0,
-            w_scanner_ring_intesity: 0.0,
+            w_scanner_ring_intensity: 0.0,
             w_scanner_enemies_intesity: 0.0,
             w_shift_coef: 0.0,
             w_shift_intensity: 0.0,
@@ -744,12 +735,10 @@ pub struct WScanner
 
 impl WScanner
 {
-    pub fn new(
-        player_settings: &PlayerSettings
-    ) -> WScanner
+    pub fn new() -> WScanner
     {
-        let w_scanner_reloading_time =  player_settings.scanner_reloading_time;
-        let w_scanner_enemies_show_time =  player_settings.scanner_show_enemies_time;
+        let w_scanner_reloading_time =  SCANNER_RELOADING_TIME;
+        let w_scanner_enemies_show_time =  SCANNER_SHOW_ENEMIES_TIME;
 
         WScanner {
             w_scanner_enable: false,
@@ -761,11 +750,11 @@ impl WScanner
         }
     }
 
-    pub fn restore_scanner_values(&mut self, player_settings: &PlayerSettings) {
+    pub fn restore_scanner_values(&mut self) {
         self.w_scanner_enable = false;
         self.w_scanner_radius = 0.0;
-        self.w_scanner_reloading_time = player_settings.scanner_reloading_time;
-        self.w_scanner_enemies_show_time = player_settings.scanner_show_enemies_time;
+        self.w_scanner_reloading_time = SCANNER_RELOADING_TIME;
+        self.w_scanner_enemies_show_time = SCANNER_SHOW_ENEMIES_TIME;
     }
 }
 
@@ -784,10 +773,6 @@ pub struct MainPlayer {
 
     devices: [Option<Box<dyn Device + Send>>; 4],
 
-    pub player_settings: PlayerSettings,
-
-    pub master: InputMaster,
-
     screen_effects: PlayerScreenEffects,
 
     w_scanner: WScanner,
@@ -800,14 +785,11 @@ pub const BLUE_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.012, 0.1, 0.7);
 pub const RED_SCANNER_WAVE_COLOR: Vec3 = Vec3::new(0.7, 0.1, 0.012);
 pub const Y_DEATH_PLANE_LEVEL: f32 = -20.0;
 pub const PLAYER_MAX_HP: f32 = 100.0;
-pub const MIN_TIME_BEFORE_RESPAWN: f32 = 1.5;
-pub const MAX_TIME_BEFORE_RESPAWN: f32 = 5.0;
 pub const W_SCANNER_MAX_RADIUS: f32 = 21.0;
 pub const W_SCANNER_EXPANDING_SPEED: f32 = 17.0;
 pub const TIME_TO_DIE_SLOWLY: f32 = 0.5;
 pub const CROSSHAIR_ROTATION_SPEED: f32 = -19.0;
 pub const CROSSHAIR_CHANGE_WEAPON_TARGET_ROTATION: f32 = -PI*0.5;
-pub const CROSSHAIR_CHANGE_WEAPON_TARGET_SIZE: f32 = 0.1;
 pub const CROSSHAIR_INCREASING_SPEED: f32 = 0.35f32;
 pub const CROSSHAIR_DECREASING_SPEED: f32 = 0.04f32;
 pub const CROSSHAIR_MAX_SIZE: f32 = 0.038;
@@ -819,12 +801,10 @@ pub const SHOW_CROSSHAIER_HIT_MARK_TIME: f32 = 0.3;
 pub const RED_TEAM_COLOR: Vec3 = Vec3::new(3.5, 0.7, 0.08);
 pub const BLUE_TEAM_COLOR: Vec3 = Vec3::new(0.08, 0.7, 3.5);
 pub const MAX_MOVE_W_BONUSES_I_CAN_HAVE: u32 = 1;
-pub const BASE_EFFECT_HP_IMPACT_SPEED: f32 = 2.6;
 pub const PROJECTION_ACTIVE_TIME: f32 = 1.0;
 pub const DEFAULT_ZW_ROTATION_TARGET_IN_RADS: f32 = 0.0;
 pub const PLAYER_PROJECTION_DISPLAY_TIME: f32 = 3.4;
 pub const GET_DAMAGE_PROJECTION_INTENSITY: f32 = 1.2;
-pub const SECOND_JUMP_CHARGING_SPEED: f32 = 10.0;
 pub const ANTI_PROJECTION_MODE_DURATION: f32 = 0.55;
 pub const ANTI_PROJECTION_MODE_TICK_COUNTS: u32 = 4;
 pub const ANTI_PROJECTION_MODE_VISIBLE_TICK_TIME: f32 = 0.08;
@@ -858,6 +838,9 @@ pub enum PlayerMessage {
         bool,
     ),
     NewPeerConnected(u128),
+    /// From SessionController: the player's id becomes its network peer id.
+    /// The player changes its own id (`CommandType::ChangeMyId`).
+    ChangeYourId(u128),
     Telefrag,
     DieImmediately,
     DieSlowly,
@@ -870,16 +853,14 @@ pub enum PlayerMessage {
 
 impl Actor for MainPlayer {
 
-    fn on_level_loaded(
+    fn on_world_started(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
+        _world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     )
     {
+        let audio_system = &mut shared.audio;
+
         let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
             Sound::RotatingAroundW,
             0.0,
@@ -913,13 +894,15 @@ impl Actor for MainPlayer {
     fn recieve_message(
         &mut self,
         message: Message,
-        engine_handle: &mut EngineHandle,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let physic_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+        let ui_system = &mut shared.ui;
+        let _time_system = &shared.time;
+
         let from = message.from;
 
         let message = message.message;
@@ -944,7 +927,7 @@ impl Actor for MainPlayer {
                     {
                         self.inner_state.transform.increment_position(increment);
                     },
-                    CommonActorsMessage::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::IWasChangedMyId(_new_id) => {}
                     CommonActorsMessage::ClientDisconnectedFromGameServer => {}
                 }
             }
@@ -969,14 +952,12 @@ impl Actor for MainPlayer {
                                     &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
-                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
-                            _ => {}
                         }
                     }
                     _ => {}
@@ -1039,11 +1020,10 @@ impl Actor for MainPlayer {
                                     &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
-                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
 
@@ -1062,11 +1042,10 @@ impl Actor for MainPlayer {
                                     &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
-                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
 
@@ -1085,11 +1064,10 @@ impl Actor for MainPlayer {
                                     &mut self.screen_effects,
                                     &mut self.devices,
                                     my_id,
-                                    &mut self.player_settings,
                                     physic_system,
                                     audio_system,
                                     ui_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
 
@@ -1110,7 +1088,7 @@ impl Actor for MainPlayer {
                                         self.get_id().expect("Player have not ActorID"),
                                         false,
                                         audio_system,
-                                        engine_handle,
+                                        messenger,
                                     );
 
                                     let my_id = self.get_id().expect("Player Have not ActorID");
@@ -1128,34 +1106,41 @@ impl Actor for MainPlayer {
                                         &mut self.w_scanner,
                                         &mut self.devices,
                                         my_id,
-                                        &mut self.player_settings,
                                         physic_system,
                                         audio_system,
                                         ui_system,
-                                        engine_handle,
+                                        messenger,
                                     );
                                 }
                             }
 
+                            PlayerMessage::ChangeYourId(new_id) =>
+                            {
+                                messenger.send_command(
+                                    Command {
+                                        sender: self.id.expect("Player have not ActorID"),
+                                        command_type: CommandType::ChangeMyId(new_id),
+                                    }
+                                );
+                            }
+
                             PlayerMessage::NewPeerConnected(peer_id) =>
                             {
-                                engine_handle.send_command(
-                                    Command {
-                                        sender: self.id.unwrap(),
-                                        command_type: CommandType::NetCommand(
-                                            NetCommand::SendDirectNetMessageReliable(
-                                                NetMessageToPlayer::RemoteCommand(
-                                                    RemoteCommand::SpawnPlayersDollActor(
-                                                        self.get_transform().to_serializable_transform(),
-                                                        self.inner_state.collider.get_collider_radius(),
-                                                        self.inner_state.is_alive,
-                                                        self.inner_state.team
-                                                    )
-                                                ),
-                                                peer_id,
+                                send_to_session_controller(
+                                    messenger,
+                                    self.id.unwrap(),
+                                    SessionControllerMessage::SendToPlayer(
+                                        NetMessageToPlayer::RemoteCommand(
+                                            RemoteCommand::SpawnPlayersDollActor(
+                                                self.get_transform().to_serializable_transform(),
+                                                self.inner_state.collider.get_collider_radius(),
+                                                self.inner_state.is_alive,
+                                                self.inner_state.team
                                             )
-                                        )
-                                    }
+                                        ),
+                                        peer_id,
+                                        Reliability::Reliable,
+                                    ),
                                 )
                             }
 
@@ -1169,7 +1154,7 @@ impl Actor for MainPlayer {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
+                                messenger.send_command(
                                     Command {
                                         sender: self.get_id().expect("Player have not ActorID"),
                                         command_type: CommandType::SpawnControlledActor(
@@ -1195,7 +1180,7 @@ impl Actor for MainPlayer {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
+                                messenger.send_command(
                                     Command {
                                         sender: self.get_id().expect("Player have not ActorID"),
                                         command_type: CommandType::SpawnControlledActor(
@@ -1221,7 +1206,7 @@ impl Actor for MainPlayer {
                                     ui_system
                                 );
 
-                                engine_handle.send_command(
+                                messenger.send_command(
                                     Command {
                                         sender: self.get_id().expect("Player have not ActorID"),
                                         command_type: CommandType::SpawnControlledActor(
@@ -1231,7 +1216,7 @@ impl Actor for MainPlayer {
                                 );
                             }
 
-                            SessionControllerMessage::TeamWin(team) =>
+                            SessionControllerMessage::TeamWin(_team) =>
                             {
                                 self.inner_state.is_time_after_some_team_win = true;
                             }
@@ -1259,7 +1244,7 @@ impl Actor for MainPlayer {
                                 //     }
                                 // }
 
-                                engine_handle.send_direct_message(
+                                messenger.send_direct_message(
                                     from,
                                     Message {
                                         from: self.get_id().expect("Player have not ActorID"),
@@ -1285,17 +1270,10 @@ impl Actor for MainPlayer {
                                     match flag_status {
                                         FlagStatus::Missed(_) =>
                                         {
-                                            engine_handle.send_command(
-                                                Command {
-                                                    sender: self.get_id().expect("Player have not ActorID"),
-                                                    command_type: CommandType::NetCommand(
-                                                        NetCommand::SendMessageToServer(
-                                                            NetMessageToServer::TryToReturnMyFlag(
-                                                                time_system.get_server_time()
-                                                            )
-                                                        )
-                                                    )
-                                                }
+                                            send_to_session_controller(
+                                                messenger,
+                                                self.get_id().expect("Player have not ActorID"),
+                                                SessionControllerMessage::TryToReturnMyFlag,
                                             );   
                                         }
 
@@ -1304,17 +1282,10 @@ impl Actor for MainPlayer {
                                 }
                                 else
                                 {
-                                    engine_handle.send_command(
-                                        Command {
-                                            sender: self.get_id().expect("Player have not ActorID"),
-                                            command_type: CommandType::NetCommand(
-                                                NetCommand::SendMessageToServer(
-                                                    NetMessageToServer::TryToGetOpponentsFlag(
-                                                        time_system.get_server_time()
-                                                    )
-                                                )
-                                            )
-                                        }
+                                    send_to_session_controller(
+                                        messenger,
+                                        self.get_id().expect("Player have not ActorID"),
+                                        SessionControllerMessage::TryToGetOpponentsFlag,
                                     );
                                 }
                             }
@@ -1330,17 +1301,10 @@ impl Actor for MainPlayer {
                             {
                                 if team_of_base == self.inner_state.team
                                 {
-                                    engine_handle.send_command(
-                                        Command {
-                                            sender: self.get_id().expect("Player have not ActorID"),
-                                            command_type: CommandType::NetCommand(
-                                                NetCommand::SendMessageToServer(
-                                                    NetMessageToServer::TryToGetScore(
-                                                        time_system.get_server_time()
-                                                    )
-                                                )
-                                            )
-                                        }
+                                    send_to_session_controller(
+                                        messenger,
+                                        self.get_id().expect("Player have not ActorID"),
+                                        SessionControllerMessage::TryToGetScore,
                                     );
                                 }
                             }
@@ -1375,18 +1339,12 @@ impl Actor for MainPlayer {
                             {
                                 if self.inner_state.amount_of_move_w_bonuses_do_i_have < MAX_MOVE_W_BONUSES_I_CAN_HAVE
                                 {
-                                    engine_handle.send_command(
-                                        Command {
-                                            sender: self.get_id().expect("Player have not ActorID"),
-                                            command_type: CommandType::NetCommand(
-                                                NetCommand::SendMessageToServer(
-                                                    NetMessageToServer::TryToGetMoveWBonus(
-                                                        time_system.get_server_time(),
-                                                        index
-                                                    )
-                                                )
-                                            )
-                                        }
+                                    send_to_session_controller(
+                                        messenger,
+                                        self.get_id().expect("Player have not ActorID"),
+                                        SessionControllerMessage::TryToGetMoveWBonus(
+                                            index,
+                                        ),
                                     );
                                 }
                             }
@@ -1397,7 +1355,7 @@ impl Actor for MainPlayer {
                     {
                         match message
                         {
-                            PlayersDollMessage::YouHitedMe(_,position, radius) =>
+                            PlayersDollMessage::YouHitedMe(_,_position, _radius) =>
                             {
                                 self.inner_state.show_crosshaier_hit_mark_timer = SHOW_CROSSHAIER_HIT_MARK_TIME;
 
@@ -1408,7 +1366,7 @@ impl Actor for MainPlayer {
                                     self.get_id().expect("Main Player havn't ActorID"),
                                     false,
                                     audio_system,
-                                    engine_handle,
+                                    messenger,
                                 );
                             }
 
@@ -1443,7 +1401,7 @@ impl Actor for MainPlayer {
         self.id
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         if self.inner_state.is_enable
         {
             let collider_container = PhysicalElement {
@@ -1461,7 +1419,7 @@ impl Actor for MainPlayer {
             None
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         if self.inner_state.is_enable {
             let device_visual_elem = match self.active_hands_slot {
                 ActiveHandsSlot::Zero => {
@@ -1508,23 +1466,18 @@ impl Actor for MainPlayer {
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let physic_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
+        let ui_system = &mut shared.ui;
+        let _time_system = &shared.time;
 
-        let input = match &self.master {
-            InputMaster::LocalMaster(master) => {
-                master.current_input.clone()
-            }
-            InputMaster::RemoteMaster(master) => {
-               master.current_input.clone()
-            }   
-        };
+
+        let input = shared.input.actions().clone();
 
         let mut player_doll_input_state = PlayerDollInputState {
             move_forward: false,
@@ -1559,7 +1512,7 @@ impl Actor for MainPlayer {
 
             process_player_rotation(
                 &input,
-                &self.player_settings,
+                shared.global_settings.user.mouse_sensitivity,
                 &mut self.inner_state,
                 &self.screen_effects,
                 delta
@@ -1585,7 +1538,7 @@ impl Actor for MainPlayer {
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 delta,
             );
 
@@ -1603,14 +1556,13 @@ impl Actor for MainPlayer {
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
             );
 
             process_player_movement_input(
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
-                &self.player_settings,
                 delta,
             );
 
@@ -1618,13 +1570,11 @@ impl Actor for MainPlayer {
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
-                &self.player_settings,
             );
 
             process_player_second_jump_input(
                 &input,
                 &mut self.inner_state,
-                &self.player_settings,
                 audio_system,
                 true,
                 delta,
@@ -1633,20 +1583,19 @@ impl Actor for MainPlayer {
             process_w_scanner(
                 &input,
                 &mut self.inner_state,
-                &self.player_settings,
                 &mut self.screen_effects,
                 &mut self.w_scanner,
                 physic_system,
                 ui_system,
                 audio_system,
-                engine_handle,
+                messenger,
                 my_id,
                 delta,
             );
 
             self.screen_effects.player_projections.projections_tick(
                 my_id,
-                engine_handle,
+                messenger,
                 audio_system,
                 delta
             );
@@ -1662,11 +1611,10 @@ impl Actor for MainPlayer {
                 &mut self.screen_effects,
                 &mut self.devices,
                 my_id,
-                &self.player_settings,
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 delta,
             );
 
@@ -1681,11 +1629,10 @@ impl Actor for MainPlayer {
                 &mut self.screen_effects,
                 &mut self.devices,
                 my_id,
-                &self.player_settings,
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
             );
 
         } else {
@@ -1716,13 +1663,12 @@ impl Actor for MainPlayer {
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 delta,
             );
 
             process_player_respawn(
-                engine_handle,
-                &self.player_settings,
+                messenger,
                 &input,
                 &self.inner_state,
                 my_id,
@@ -1733,7 +1679,7 @@ impl Actor for MainPlayer {
             &input,
             &mut self.inner_state,
             ui_system,
-            engine_handle,
+            messenger,
             my_id,
             delta,
         );
@@ -1775,8 +1721,7 @@ impl Actor for MainPlayer {
             player_doll_input_state,
             &self.inner_state,
             my_id,
-            time_system,
-            engine_handle,
+            messenger,
         );
     }
 }
@@ -1860,7 +1805,7 @@ fn get_sphere_intersection(
 
 pub fn process_player_rotation(
     input: &ActionsFrameState,
-    player_settings: &PlayerSettings,
+    mouse_sensitivity: f32,
     inner_state: &mut PlayerInnerState,
     screen_effects: &PlayerScreenEffects,
     delta: f32,
@@ -1877,13 +1822,13 @@ pub fn process_player_rotation(
     if input.second_mouse.is_action_pressed() {
         zw = (
             input.mouse_axis.y *
-            *player_settings.mouse_sensivity.lock().unwrap() +
+            mouse_sensitivity +
             zw
         ).clamp(-PI/2.0, PI/2.0);
         
         xz = 
             input.mouse_axis.x *
-            *player_settings.mouse_sensivity.lock().unwrap() +
+            mouse_sensitivity +
             xz;
         
     }
@@ -1932,12 +1877,12 @@ pub fn process_player_rotation(
 
         xz =
             input.mouse_axis.x *
-            *player_settings.mouse_sensivity.lock().unwrap() +
+            mouse_sensitivity +
             xz;
 
         yz = (
             input.mouse_axis.y *
-            *player_settings.mouse_sensivity.lock().unwrap() +
+            mouse_sensitivity +
             yz
         ).clamp(-PI/2.0, PI/2.0);
     }
@@ -1974,7 +1919,7 @@ pub fn process_w_scanner_ui(
     inner_state: &PlayerInnerState,
 )
 {
-    let xz = inner_state.saved_angle_of_rotation.x;
+    let _xz = inner_state.saved_angle_of_rotation.x;
     let zw = inner_state.saved_angle_of_rotation.w;
 
     let zw_arrow = ui_system.get_mut_ui_element(&UIElementType::ZWScannerArrow);
@@ -2052,7 +1997,7 @@ pub fn process_ui_tutorial_window_input(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
     ui: &mut UISystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
     my_id: ActorID,
     delta: f32,
 )
@@ -2095,11 +2040,10 @@ pub fn process_ui_tutorial_window_input(
     {
         if inner_state.tutrial_window_was_open == false
         {
-            engine_handle.send_command(
-                Command {
-                    sender: my_id,
-                    command_type: CommandType::ShowConnectionStatusUI,
-                }
+            send_to_session_controller(
+                messenger,
+                my_id,
+                SessionControllerMessage::ShowConnectionStatusUI,
             );
 
             inner_state.tutrial_window_was_open = true;
@@ -2193,7 +2137,6 @@ pub fn process_player_movement_input(
     input: &ActionsFrameState,
     player_doll_input_state: &mut PlayerDollInputState,
     inner_state: &mut PlayerInnerState,
-    player_settings: &PlayerSettings,
     delta: f32,
 )
 {
@@ -2240,10 +2183,10 @@ pub fn process_player_movement_input(
     }
 
     // add w gravity
-    inner_state.collider.add_force(W_DOWN * player_settings.gravity_w_speed * delta);
+    inner_state.collider.add_force(W_DOWN * GRAVITY_W_SPEED * delta);
     
     // add y gravity
-    inner_state.collider.add_force(DOWN * player_settings.gravity_y_speed * delta);
+    inner_state.collider.add_force(DOWN * GRAVITY_Y_SPEED * delta);
 
     if inner_state.collider.is_on_y_ground {
         inner_state.collider.set_wish_direction(
@@ -2253,7 +2196,7 @@ pub fn process_player_movement_input(
     } else {
         inner_state.collider.set_wish_direction(
             movement_vec,
-            player_settings.air_speed_mult
+            AIR_SPEED_MULT
         );
     }
 
@@ -2267,7 +2210,6 @@ pub fn process_player_primary_jump_input(
     input: &ActionsFrameState,
     player_doll_input_state: &mut PlayerDollInputState,
     inner_state: &mut PlayerInnerState,
-    player_settings: &PlayerSettings,
 )
 {
     if input.jump.is_action_just_pressed() {
@@ -2280,7 +2222,7 @@ pub fn process_player_primary_jump_input(
 
             inner_state.collider.current_velocity.y = inner_state.collider.current_velocity.y.max(0.0);
 
-            inner_state.collider.add_force(UP * player_settings.jump_y_speed);
+            inner_state.collider.add_force(UP * JUMP_Y_SPEED);
 
             inner_state.jumped_to_y_on_current_action = true;
             
@@ -2294,7 +2236,7 @@ pub fn process_player_primary_jump_input(
 
                 inner_state.collider.current_velocity.y = inner_state.collider.current_velocity.y.max(0.0);
 
-                inner_state.collider.add_force(UP * player_settings.jump_y_speed);
+                inner_state.collider.add_force(UP * JUMP_Y_SPEED);
 
                 inner_state.jumped_to_y_on_current_action = true;
                 
@@ -2309,10 +2251,9 @@ pub fn process_player_primary_jump_input(
 pub fn process_player_second_jump_input(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
-    player_settings: &PlayerSettings,
-    audio_system: &mut AudioSystem,
+    _audio_system: &mut AudioSystem,
     jump_along_w: bool,
-    delta: f32,
+    _delta: f32,
 )
 {
     if input.jump_w.is_action_just_pressed() {
@@ -2325,7 +2266,7 @@ pub fn process_player_second_jump_input(
             {
                 inner_state.collider.current_velocity.w = inner_state.collider.current_velocity.w.max(0.0);
 
-                inner_state.collider.add_force(W_UP * player_settings.jump_w_speed);
+                inner_state.collider.add_force(W_UP * JUMP_W_SPEED);
     
                 inner_state.jumped_to_w_on_current_action = true;
             }
@@ -2336,7 +2277,7 @@ pub fn process_player_second_jump_input(
             {
                 inner_state.collider.current_velocity.x = inner_state.collider.current_velocity.x.max(0.0);
 
-                inner_state.collider.add_force(Vec4::X * player_settings.jump_w_speed);
+                inner_state.collider.add_force(Vec4::X * JUMP_W_SPEED);
     
                 inner_state.jumped_to_w_on_current_action = true;
             }
@@ -2353,7 +2294,7 @@ pub fn process_player_second_jump_input(
                 {
                     inner_state.collider.current_velocity.w = inner_state.collider.current_velocity.w.max(0.0);
 
-                    inner_state.collider.add_force(W_UP * player_settings.jump_w_speed);
+                    inner_state.collider.add_force(W_UP * JUMP_W_SPEED);
         
                     inner_state.jumped_to_w_on_current_action = true;
                 }
@@ -2364,7 +2305,7 @@ pub fn process_player_second_jump_input(
                 {
                     inner_state.collider.current_velocity.x = inner_state.collider.current_velocity.x.max(0.0);
 
-                    inner_state.collider.add_force(Vec4::X * player_settings.jump_w_speed);
+                    inner_state.collider.add_force(Vec4::X * JUMP_W_SPEED);
         
                     inner_state.jumped_to_w_on_current_action = true;
                 }
@@ -2378,35 +2319,32 @@ pub fn process_player_second_jump_input(
 pub fn process_w_scanner(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
-    player_settings: &PlayerSettings,
     screen_effects: &mut PlayerScreenEffects,
     w_scanner: &mut WScanner,
     physic_system: &PhysicsSystem,
     ui_system: &mut UISystem,
     audio_system: &mut AudioSystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
     my_id: ActorID,
     delta: f32,
 )
 {
     if input.w_scanner.is_action_just_pressed() {
         if !w_scanner.w_scanner_enable {
-            if w_scanner.w_scanner_reloading_time >= player_settings.scanner_reloading_time {
+            if w_scanner.w_scanner_reloading_time >= SCANNER_RELOADING_TIME {
 
                 inner_state.w_aim_enabled = true;
 
-                engine_handle.send_command(
-                    Command {
-                        sender: my_id,
-                        command_type: CommandType::NetCommand(
-                            NetCommand::SendBoardcastNetMessageReliable(
-                                NetMessageToPlayer::RemoteDirectMessage(
-                                    my_id,
-                                    RemoteMessage::ScannerTurnedOn
-                                ),
-                            )
-                        )
-                    }
+                send_to_session_controller(
+                    messenger,
+                    my_id,
+                    SessionControllerMessage::SendToPlayers(
+                        NetMessageToPlayer::RemoteDirectMessage(
+                            my_id,
+                            RemoteMessage::ScannerTurnedOn
+                        ),
+                        Reliability::Reliable,
+                    ),
                 );
 
                 w_scanner.visual_wave.push(
@@ -2421,7 +2359,7 @@ pub fn process_w_scanner(
                 );
 
                 audio_system.spawn_non_spatial_sound(
-                    crate::engine::audio::Sound::ScannerSound,
+                    crate::engine::shared_systems::audio::Sound::ScannerSound,
                     0.9,
                     1.0,
                     false,
@@ -2441,26 +2379,24 @@ pub fn process_w_scanner(
     }
 
     if input.anti_projection_mode.is_action_just_pressed() {
-        if w_scanner.w_scanner_reloading_time >= player_settings.scanner_reloading_time {
+        if w_scanner.w_scanner_reloading_time >= SCANNER_RELOADING_TIME {
 
             inner_state.anti_projection_mode_enabled_timer = ANTI_PROJECTION_MODE_DURATION;
 
-            engine_handle.send_command(
-                Command {
-                    sender: my_id,
-                    command_type: CommandType::NetCommand(
-                        NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessageToPlayer::RemoteDirectMessage(
-                                my_id,
-                                RemoteMessage::AntiProjectionModeTurnedOn
-                            ),
-                        )
-                    )
-                }
+            send_to_session_controller(
+                messenger,
+                my_id,
+                SessionControllerMessage::SendToPlayers(
+                    NetMessageToPlayer::RemoteDirectMessage(
+                        my_id,
+                        RemoteMessage::AntiProjectionModeTurnedOn
+                    ),
+                    Reliability::Reliable,
+                ),
             );
 
             audio_system.spawn_non_spatial_sound(
-                crate::engine::audio::Sound::AntiProjectionModeEnabledSound,
+                crate::engine::shared_systems::audio::Sound::AntiProjectionModeEnabledSound,
                 0.81,
                 1.0,
                 false,
@@ -2489,11 +2425,11 @@ pub fn process_w_scanner(
         w_scanner.visual_wave[0].color = match inner_state.team
         {
             Team::Blue => {
-                BLUE_SCANNER_WAVE_COLOR * screen_effects.w_scanner_ring_intesity
+                BLUE_SCANNER_WAVE_COLOR * screen_effects.w_scanner_ring_intensity
             },
             Team::Red =>
             {
-                RED_SCANNER_WAVE_COLOR * screen_effects.w_scanner_ring_intesity
+                RED_SCANNER_WAVE_COLOR * screen_effects.w_scanner_ring_intensity
             }
         };
 
@@ -2510,14 +2446,14 @@ pub fn process_w_scanner(
 
     if !w_scanner.w_scanner_enable {
 
-        if w_scanner.w_scanner_reloading_time < player_settings.scanner_reloading_time {
+        if w_scanner.w_scanner_reloading_time < SCANNER_RELOADING_TIME {
             w_scanner.w_scanner_reloading_time += delta;
         }
     }
 
     screen_effects.w_scanner_is_active = w_scanner.w_scanner_enable;
     screen_effects.w_scanner_radius = w_scanner.w_scanner_radius;
-    screen_effects.w_scanner_ring_intesity = {
+    screen_effects.w_scanner_ring_intensity = {
         let mut intensity = W_SCANNER_MAX_RADIUS - w_scanner.w_scanner_radius;
 
         intensity /= W_SCANNER_MAX_RADIUS/3.0;
@@ -2525,7 +2461,7 @@ pub fn process_w_scanner(
         intensity.clamp(0.0, 1.0)
     };
     screen_effects.w_scanner_enemies_intesity = {
-        let intensity = player_settings.scanner_show_enemies_time - w_scanner.w_scanner_enemies_show_time;
+        let intensity = SCANNER_SHOW_ENEMIES_TIME - w_scanner.w_scanner_enemies_show_time;
 
         intensity.clamp(0.0, 1.0)
     };
@@ -2541,12 +2477,12 @@ pub fn process_w_scanner(
 
         for hit in hits
         {
-            let team = hit.hited_actors_team
+            let team = hit.hit_actors_team
                 .expect("scanned by W Scanner dynamic collider have not Team");
 
             if team != inner_state.team
             {
-                let projection_id = hit.hited_actors_id
+                let projection_id = hit.hit_actors_id
                     .expect("scanned by W Scanner dynamic collider have not ActorID");
 
                 screen_effects.player_projections.update_or_add_projection(
@@ -2557,7 +2493,7 @@ pub fn process_w_scanner(
 
                     true,
                     audio_system,
-                    engine_handle,
+                    messenger,
                 );
             }
         }
@@ -2570,7 +2506,7 @@ pub fn process_w_scanner(
 
     if let UIElement::ProgressBar(bar) = scanner_ui {
         let bar_value = {
-            (w_scanner.w_scanner_reloading_time / player_settings.scanner_reloading_time)
+            (w_scanner.w_scanner_reloading_time / SCANNER_RELOADING_TIME)
                 .clamp(0.0, 1.0)
         };
 
@@ -2625,16 +2561,15 @@ pub fn process_screen_effects_while_alive
 
 
 pub fn process_player_respawn(
-    engine_handle: &mut EngineHandle,
-    player_settings: &PlayerSettings,
+    messenger: &mut Messenger,
     input: &ActionsFrameState,
     inner_state: &PlayerInnerState,
     my_id: ActorID,
 )
 {
-    if inner_state.after_death_timer >= player_settings.max_respawn_timer {
+    if inner_state.after_death_timer >= MAX_RESPAWN_TIMER {
         
-        engine_handle.send_command(
+        messenger.send_command(
             Command {
                 sender: my_id,
                 command_type: CommandType::SpawnControlledActor(
@@ -2646,9 +2581,9 @@ pub fn process_player_respawn(
     }
 
     if input.first_mouse.is_action_just_pressed() {
-        if inner_state.after_death_timer >= player_settings.min_respawn_timer {
+        if inner_state.after_death_timer >= MIN_RESPAWN_TIMER {
             
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: my_id,
                     command_type: CommandType::SpawnControlledActor(
@@ -2680,8 +2615,7 @@ pub fn send_player_state_to_remote_player_doll
     player_doll_input_state: PlayerDollInputState,
     inner_state: &PlayerInnerState,
     my_id: ActorID,
-    time_system: &TimeSystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
 )
 {
     let remote_velocity = {
@@ -2694,22 +2628,15 @@ pub fn send_player_state_to_remote_player_doll
         v.to_array()
     };
 
-    engine_handle.send_command(Command{
-        sender: my_id,
-        command_type: CommandType::NetCommand(
-            NetCommand::SendBoardcastNetMessageUnreliable(
-                NetMessageToPlayer::RemoteDirectMessage(
-                    my_id,
-                    RemoteMessage::SetPlayerDollState(
-                        inner_state.transform.to_serializable_transform(),
-                        player_doll_input_state.serialize(),
-                        remote_velocity,
-                        time_system.get_server_time()
-                    )
-                )
-            )
-        )
-    });
+    send_to_session_controller(
+        messenger,
+        my_id,
+        SessionControllerMessage::SendPlayerDollState(
+            inner_state.transform.to_serializable_transform(),
+            player_doll_input_state.serialize(),
+            remote_velocity,
+        ),
+    );
 }
 
 
@@ -2738,30 +2665,30 @@ pub fn process_devices_while_player_is_dead
     physic_system: &PhysicsSystem,
     audio_system: &mut AudioSystem,
     ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
     delta: f32,
 )
 {
     match active_hands_slot {
         ActiveHandsSlot::Zero => {
-            hands_slot_0.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+            hands_slot_0.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
 
         },
         ActiveHandsSlot::First => {
             if let Some(device) = hands_slot_1.as_mut() {
-                device.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
 
         },
         ActiveHandsSlot::Second => {
             if let Some(device) = hands_slot_2.as_mut() {
-                device.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
 
         },
         ActiveHandsSlot::Third => {
             if let Some(device) = hands_slot_3.as_mut() {
-                device.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
 
         }
@@ -2769,7 +2696,7 @@ pub fn process_devices_while_player_is_dead
 
     for device in devices.iter_mut() {
         if let Some(device) = device {
-            device.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+            device.process_while_player_is_not_alive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
         }
     }
 }
@@ -2790,68 +2717,68 @@ pub fn process_active_devices_input
     physic_system: &PhysicsSystem,
     audio_system: &mut AudioSystem,
     ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
     delta: f32,
 )
 {
     match active_hands_slot {
         ActiveHandsSlot::Zero => {
-            hands_slot_0.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
+            hands_slot_0.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, messenger, delta);
 
             if let Some(device) = hands_slot_1 {
-                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
             if let Some(device) = hands_slot_2 {
-                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
             if let Some(device) = hands_slot_3 {
-                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
         },
         ActiveHandsSlot::First => {
             if let Some(device) = hands_slot_1.as_mut() {
-                device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, messenger, delta);
             }
 
-            hands_slot_0.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+            hands_slot_0.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             if let Some(device) = hands_slot_2 {
-                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
             if let Some(device) = hands_slot_3 {
-                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
         },
         ActiveHandsSlot::Second => {
             if let Some(device) = hands_slot_2.as_mut() {
-                device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, messenger, delta);
             }
 
-            hands_slot_0.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+            hands_slot_0.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             if let Some(device) = hands_slot_1 {
-                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
             if let Some(device) = hands_slot_3 {
-                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
         },
         ActiveHandsSlot::Third => {
             if let Some(device) = hands_slot_3.as_mut() {
-                device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, messenger, delta);
             }
 
-            hands_slot_0.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+            hands_slot_0.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             if let Some(device) = hands_slot_1 {
-                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
             if let Some(device) = hands_slot_2 {
-                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, engine_handle, delta);
+                device.process_while_deactive(my_id, inner_state, input, physic_system, audio_system, ui_system, messenger, delta);
             }
         }
     }
 
     for device in devices.iter_mut() {
         if let Some(device) = device {
-            device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, engine_handle, delta);
+            device.process_input(my_id, inner_state, screen_effects, input, physic_system, audio_system, ui_system, messenger, delta);
         }
     }
 }
@@ -2871,7 +2798,7 @@ pub fn process_switch_active_hand_slot_input
     physic_system: &PhysicsSystem,
     audio_system: &mut AudioSystem,
     ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
 )
 {
     if input.activate_hand_slot_0.is_action_just_pressed() {
@@ -2904,7 +2831,7 @@ pub fn process_switch_active_hand_slot_input
                     physic_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
                 *active_hands_slot = ActiveHandsSlot::Zero;
         
@@ -2914,7 +2841,7 @@ pub fn process_switch_active_hand_slot_input
                     physic_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
             }
         }
@@ -2951,7 +2878,7 @@ pub fn process_switch_active_hand_slot_input
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                     *active_hands_slot = ActiveHandsSlot::First;
         
@@ -2961,7 +2888,7 @@ pub fn process_switch_active_hand_slot_input
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
             }
@@ -2999,7 +2926,7 @@ pub fn process_switch_active_hand_slot_input
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                     *active_hands_slot = ActiveHandsSlot::Second;
         
@@ -3009,7 +2936,7 @@ pub fn process_switch_active_hand_slot_input
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
             }
@@ -3047,7 +2974,7 @@ pub fn process_switch_active_hand_slot_input
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                     *active_hands_slot = ActiveHandsSlot::Third;
         
@@ -3057,7 +2984,7 @@ pub fn process_switch_active_hand_slot_input
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
             }
@@ -3080,7 +3007,7 @@ pub fn deavctivate_previous_device
     physic_system: &PhysicsSystem,
     audio_system: &mut AudioSystem,
     ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
 )
 {
     match active_hands_slot {
@@ -3093,7 +3020,7 @@ pub fn deavctivate_previous_device
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                         screen_effects,
                     );
             }
@@ -3107,7 +3034,7 @@ pub fn deavctivate_previous_device
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                         screen_effects,
                     );
             }
@@ -3121,7 +3048,7 @@ pub fn deavctivate_previous_device
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                         screen_effects,
                     );
             }
@@ -3135,7 +3062,7 @@ pub fn deavctivate_previous_device
                         physic_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                         screen_effects,
                     );
             }
@@ -3146,22 +3073,21 @@ pub fn deavctivate_previous_device
 
 pub fn get_effected_by_base
 (
-    inner_state: &mut PlayerInnerState,
-    active_hands_slot: &ActiveHandsSlot,
-    hands_slot_0: &mut Box<dyn Device + Send>,
-    hands_slot_1: &mut Option<Box<dyn Device + Send>>,
-    hands_slot_2: &mut Option<Box<dyn Device + Send>>,
-    hands_slot_3: &mut Option<Box<dyn Device + Send>>,
-    w_scanner: &mut WScanner,
-    screen_effects: &mut PlayerScreenEffects,
-    devices: &mut [Option<Box<dyn Device + Send>>;4],
-    my_id: ActorID,
-    player_settings: &PlayerSettings,
-    physic_system: &PhysicsSystem,
-    audio_system: &mut AudioSystem,
-    ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
-    delta: f32,
+    _inner_state: &mut PlayerInnerState,
+    _active_hands_slot: &ActiveHandsSlot,
+    _hands_slot_0: &mut Box<dyn Device + Send>,
+    _hands_slot_1: &mut Option<Box<dyn Device + Send>>,
+    _hands_slot_2: &mut Option<Box<dyn Device + Send>>,
+    _hands_slot_3: &mut Option<Box<dyn Device + Send>>,
+    _w_scanner: &mut WScanner,
+    _screen_effects: &mut PlayerScreenEffects,
+    _devices: &mut [Option<Box<dyn Device + Send>>;4],
+    _my_id: ActorID,
+    _physic_system: &PhysicsSystem,
+    _audio_system: &mut AudioSystem,
+    _ui_system: &mut UISystem,
+    _messenger: &mut Messenger,
+    _delta: f32,
 )
 {
     // let base_coef = 
@@ -3228,7 +3154,7 @@ pub fn get_effected_by_base
     //         physic_system,
     //         audio_system,
     //         ui_system,
-    //         engine_handle,
+    //         messenger,
     //     );
     // }
 }
@@ -3245,11 +3171,10 @@ pub fn check_if_touching_death_plane(
     screen_effects: &mut PlayerScreenEffects,
     devices: &mut [Option<Box<dyn Device + Send>>;4],
     my_id: ActorID,
-    player_settings: &PlayerSettings,
     physic_system: &PhysicsSystem,
     audio_system: &mut AudioSystem,
     ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
 )
 {
     if inner_state.get_position().y < Y_DEATH_PLANE_LEVEL {
@@ -3264,11 +3189,10 @@ pub fn check_if_touching_death_plane(
             screen_effects,
             devices,
             my_id,
-            player_settings,
             physic_system,
             audio_system,
             ui_system,
-            engine_handle,
+            messenger,
         );
     }
 }
@@ -3287,11 +3211,10 @@ pub fn die
     screen_effects: &mut PlayerScreenEffects,
     devices: &mut [Option<Box<dyn Device + Send>>;4],
     my_id: ActorID,
-    player_settings: &PlayerSettings,
     physic_system: &PhysicsSystem,
     audio_system: &mut AudioSystem,
     ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
 )
 {
     match active_hands_slot {
@@ -3302,7 +3225,7 @@ pub fn die
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 screen_effects,
             );
 
@@ -3315,7 +3238,7 @@ pub fn die
                     physic_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                     screen_effects,
                 );
             }
@@ -3329,7 +3252,7 @@ pub fn die
                     physic_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                     screen_effects,
                 );
             }
@@ -3343,7 +3266,7 @@ pub fn die
                     physic_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                     screen_effects,
                 );
             }
@@ -3355,7 +3278,7 @@ pub fn die
         inner_state.get_position().y < Y_DEATH_PLANE_LEVEL+1.0
     };
 
-    engine_handle.send_boardcast_message(
+    messenger.send_broadcast_message(
         Message {
             from: my_id,
             remote_sender: false,
@@ -3375,13 +3298,13 @@ pub fn die
                 physic_system,
                 audio_system,
                 ui_system,
-                engine_handle,
+                messenger,
                 screen_effects,
             );
         }
     }
 
-    w_scanner.restore_scanner_values(player_settings);
+    w_scanner.restore_scanner_values();
     inner_state.restore_w_shift_and_rotate_values();
     screen_effects.player_projections.clear();
 
@@ -3408,7 +3331,7 @@ pub fn die
         inner_state.screen_effects.death_screen_effect = 0.0;
         inner_state.screen_effects.getting_damage_screen_effect = 1.0;
 
-        engine_handle.send_command(
+        messenger.send_command(
             Command {
                 sender: my_id,
                 command_type: CommandType::SpawnActor(
@@ -3417,23 +3340,22 @@ pub fn die
             }
         );
 
-        engine_handle.send_command(
-            Command {
-                sender: my_id,
-                command_type: CommandType::NetCommand(
-                    NetCommand::SendBoardcastNetMessageReliable(
-                        NetMessageToPlayer::RemoteDirectMessage(
-                            my_id,
-                            RemoteMessage::DieImmediately
-                        )
-                    )
-                )
-            }
+        send_to_session_controller(
+            messenger,
+            my_id,
+            SessionControllerMessage::SendToPlayers(
+                NetMessageToPlayer::RemoteDirectMessage(
+                    my_id,
+                    RemoteMessage::DieImmediately
+                ),
+                Reliability::Reliable,
+            ),
         );
     }
 }
 
 
+#[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
 pub fn telefraged
 (
     inner_state: &mut PlayerInnerState,
@@ -3446,11 +3368,10 @@ pub fn telefraged
     screen_effects: &mut PlayerScreenEffects,
     devices: &mut [Option<Box<dyn Device + Send>>;4],
     my_id: ActorID,
-    player_settings: &PlayerSettings,
     physic_system: &PhysicsSystem,
     audio_system: &mut AudioSystem,
     ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
 )
 {
     die
@@ -3465,11 +3386,10 @@ pub fn telefraged
         screen_effects,
         devices,
         my_id,
-        player_settings,
         physic_system,
         audio_system,
         ui_system,
-        engine_handle,
+        messenger,
     );
 }
 
@@ -3562,10 +3482,10 @@ pub fn make_hud_transparency_as_death_screen_effect(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ShotgunBarRed);
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayRed);
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayRed);
             hud_elem.get_ui_data_mut().rect.transparency = a;
         }
 
@@ -3588,10 +3508,10 @@ pub fn make_hud_transparency_as_death_screen_effect(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ShotgunBarBlue);
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayBlue);
             hud_elem.get_ui_data_mut().rect.transparency = a;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayBlue);
             hud_elem.get_ui_data_mut().rect.transparency = a;
         }
     }
@@ -3632,10 +3552,10 @@ pub fn set_right_team_hud(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayRed);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayRed);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
@@ -3644,10 +3564,10 @@ pub fn set_right_team_hud(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayBlue);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayBlue);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
         }
 
@@ -3661,10 +3581,10 @@ pub fn set_right_team_hud(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarRed);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayRed);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayRed);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayRed);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayRed);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = false;
 
             let hud_elem = ui.get_mut_ui_element(&UIElementType::ScannerBlue);
@@ -3673,10 +3593,10 @@ pub fn set_right_team_hud(
             let hud_elem = ui.get_mut_ui_element(&UIElementType::HeathBarBlue);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDsiplayBlue);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::LeftScannerDisplayBlue);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
 
-            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDsiplayBlue);
+            let hud_elem = ui.get_mut_ui_element(&UIElementType::RightScannerDisplayBlue);
             *hud_elem.get_ui_data_mut().get_is_visible_mut() = true;
         }
     }
@@ -3696,15 +3616,14 @@ pub fn get_damage_and_add_force(
     w_scanner: &mut WScanner,
     devices: &mut [Option<Box<dyn Device + Send>>;4],
     my_id: ActorID,
-    player_settings: &PlayerSettings,
     physic_system: &PhysicsSystem,
     audio_system: &mut AudioSystem,
     ui_system: &mut UISystem,
-    engine_handle: &mut EngineHandle,
+    messenger: &mut Messenger,
 ) {
 
     audio_system.spawn_non_spatial_sound(
-        Sound::PlayerHited,
+        Sound::PlayerHit,
         0.4.lerp(0.6, (damage as f32/PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
         1.0,
         false,
@@ -3746,16 +3665,16 @@ pub fn get_damage_and_add_force(
             screen_effects,
             devices,
             my_id,
-            player_settings,
             physic_system,
             audio_system,
             ui_system,
-            engine_handle,
+            messenger,
         );
     }
 }
 
 
+#[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
 pub fn set_gun_to_slot(
     hands_slot: &mut Option<Box<dyn Device>>,
     device: Box<dyn Device>
@@ -3775,6 +3694,7 @@ pub fn set_gun_to_slot(
 }
 
 
+#[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
 pub fn put_device_into_device_slot(
     devices: &mut [Option<Box<dyn Device + Send>>;4],
     slot_number: PlayersDeviceSlotNumber,
@@ -3816,41 +3736,35 @@ impl MainPlayer {
 
     pub fn new(
         // master: InputMaster,
-        player_settings: PlayerSettings,
         // audio_system: &mut AudioSystem,
 
         red_spawn_points: Vec<Vec4>,
         blue_spawn_points: Vec<Vec4>,
     ) -> Self {
-
-        let master = InputMaster::LocalMaster(
-            LocalMaster::new(ActionsFrameState::empty())
-        );
         
         let screen_effects = PlayerScreenEffects::default();
 
-        let w_scanner = WScanner::new(&player_settings);
+        let w_scanner = WScanner::new();
 
         MainPlayer {
             id: None,
 
             inner_state: PlayerInnerState::new(
                 Transform::new(),
-                &player_settings,
                 false,
                 false,
                 RIGHT*0.6,
-                UP * player_settings.collider_radius * 0.2,
+                UP * PLAYER_COLLIDER_RADIUS * 0.2,
                 None,
                 None,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
 
             hands_slot_0: Box::new(MachineGun::new(
-                player_settings.machinegun_damage,
-                player_settings.machinegun_add_force, 
-                player_settings.machinegun_heat_add_on_shot, 
-                player_settings.machinegun_cooling_speed,
+                MACHINEGUN_DAMAGE,
+                MACHINEGUN_ADD_FORCE, 
+                MACHINEGUN_HEAT_ADD_ON_SHOT, 
+                MACHINEGUN_COOLING_SPEED,
                 Vec4::new(
                     1.0,
                     -0.3,
@@ -3868,10 +3782,10 @@ impl MainPlayer {
                 false
             ))),
             hands_slot_2: Some(Box::new(HoleGun::new(
-                player_settings.energy_gun_hole_size_mult, 
-                player_settings.energy_gun_add_force_mult, 
-                player_settings.energy_gun_damage_mult, 
-                player_settings.energy_gun_restoring_speed,
+                ENERGY_GUN_HOLE_SIZE_MULT, 
+                ENERGY_GUN_ADD_FORCE_MULT, 
+                ENERGY_GUN_DAMAGE_MULT, 
+                ENERGY_GUN_RESTORING_SPEED,
                 Vec4::new(
                     1.0,
                     -0.3,
@@ -3880,10 +3794,10 @@ impl MainPlayer {
                 ),
             ))),
             hands_slot_3: None, /*Some(Box::new(ObstaclesGun::new(
-                player_settings.energy_gun_hole_size_mult, 
-                player_settings.energy_gun_add_force_mult, 
-                player_settings.energy_gun_damage_mult, 
-                player_settings.energy_gun_restoring_speed,
+                ENERGY_GUN_HOLE_SIZE_MULT, 
+                ENERGY_GUN_ADD_FORCE_MULT, 
+                ENERGY_GUN_DAMAGE_MULT, 
+                ENERGY_GUN_RESTORING_SPEED,
                 Vec4::new(
                     1.0,
                     -0.3,
@@ -3893,10 +3807,6 @@ impl MainPlayer {
             ))),*/
 
             devices: [None, None, None, None],
-            
-            player_settings,
-
-            master,
 
             screen_effects,
 
@@ -3933,17 +3843,16 @@ impl ControlledActor for MainPlayer
         self.inner_state.team
     }
 
-    fn get_input_master(&mut self) -> &mut InputMaster {
-        &mut self.master
-    }
-
     fn spawn(
         &mut self,
-        physics_system: &PhysicsSystem,
-        ui_system: &mut UISystem,
-        audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let physics_system = world.physics;
+        let messenger = &mut *world.messenger;
+        let ui_system = &mut shared.ui;
+        let audio_system = &mut shared.audio;
+
         let spawns: &Vec<Vec4>;
 
         match self.get_team()
@@ -3957,9 +3866,9 @@ impl ControlledActor for MainPlayer
                 spawns = &self.blue_spawn_points;
             },
         }
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
 
-        let rand_index: usize = rng.gen_range(0..spawns.len());
+        let rand_index: usize = rng.random_range(0..spawns.len());
         let mut current_spawn = *spawns.get(rand_index).expect("Main Player haven't spawn points");
 
         for spawn in spawns.iter()
@@ -3970,8 +3879,8 @@ impl ControlledActor for MainPlayer
                 Some(self.get_id().expect("Player hasn't ActorID"))
             );
     
-            for hit in &hits {
-                if let Some(team) = hit.hited_actors_team
+            for hit in hits {
+                if let Some(team) = hit.hit_actors_team
                 {
                     if self.get_team() == team
                     {
@@ -3992,8 +3901,8 @@ impl ControlledActor for MainPlayer
         );
 
         for hit in hits {
-            engine_handle.send_direct_message(
-                hit.hited_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
+            messenger.send_direct_message(
+                hit.hit_actors_id.expect("In respawn func in death on respawn hit have not ActorID"),
                 Message {
                     from: self.get_id().expect("Player have not ID in respawn func"),
                     remote_sender: false,
@@ -4016,7 +3925,7 @@ impl ControlledActor for MainPlayer
 
         self.inner_state.saved_angle_of_rotation = Vec4::ZERO;
 
-        self.w_scanner.restore_scanner_values(&self.player_settings);
+        self.w_scanner.restore_scanner_values();
 
         self.inner_state.restore_w_shift_and_rotate_values();
 
@@ -4056,7 +3965,7 @@ impl ControlledActor for MainPlayer
                     physics_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
 
             },
@@ -4068,7 +3977,7 @@ impl ControlledActor for MainPlayer
                         physics_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -4081,7 +3990,7 @@ impl ControlledActor for MainPlayer
                         physics_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -4094,7 +4003,7 @@ impl ControlledActor for MainPlayer
                         physics_system,
                         audio_system,
                         ui_system,
-                        engine_handle,
+                        messenger,
                     );
                 }
 
@@ -4109,15 +4018,15 @@ impl ControlledActor for MainPlayer
                     physics_system,
                     audio_system,
                     ui_system,
-                    engine_handle,
+                    messenger,
                 );
             }
         }
 
-        self.screen_effects.w_scanner_ring_intesity = 0.0;
+        self.screen_effects.w_scanner_ring_intensity = 0.0;
         self.screen_effects.w_scanner_radius = 0.0;
         self.screen_effects.w_scanner_is_active = false;
-        self.w_scanner.w_scanner_reloading_time = self.player_settings.scanner_reloading_time;
+        self.w_scanner.w_scanner_reloading_time = SCANNER_RELOADING_TIME;
 
         self.inner_state.collider.reset_forces_and_velocity();
 
@@ -4136,23 +4045,21 @@ impl ControlledActor for MainPlayer
             // player_moving_state: self.inner_state.player_moving_state.clone(),
         };
 
-        engine_handle.send_command(
-            Command {
-                sender: self.get_id().expect("Player have not ActorID"),
-                command_type: CommandType::NetCommand(
-                    NetCommand::SendBoardcastNetMessageReliable(
-                        NetMessageToPlayer::RemoteDirectMessage(
-                            self.get_id().expect("Player have not ActorID"),
-                            RemoteMessage::PlayerRespawn(
-                                self.inner_state.transform.to_serializable_transform(),
-                                player_doll_input_state.serialize(),
-                                Vec4::ZERO.to_array(),
-                                self.inner_state.team
-                            )
-                        )
+        send_to_session_controller(
+            messenger,
+            self.get_id().expect("Player have not ActorID"),
+            SessionControllerMessage::SendToPlayers(
+                NetMessageToPlayer::RemoteDirectMessage(
+                    self.get_id().expect("Player have not ActorID"),
+                    RemoteMessage::PlayerRespawn(
+                        self.inner_state.transform.to_serializable_transform(),
+                        player_doll_input_state.serialize(),
+                        Vec4::ZERO.to_array(),
+                        self.inner_state.team
                     )
-                )
-            }
+                ),
+                Reliability::Reliable,
+            ),
         )
     }
 }

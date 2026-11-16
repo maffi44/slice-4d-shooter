@@ -1,19 +1,6 @@
 ; Slice 4D Shooter - the first multiplayer shooter set in 4D space
 ; Copyright (C) 2023-2026  Timofei Molokov
 
-; This program is free software: you can redistribute it and/or modify
-; it under the terms of the GNU Affero General Public License as
-; published by the Free Software Foundation, either version 3 of the
-; License, or (at your option) any later version.
-
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU Affero General Public License for more details.
-
-; You should have received a copy of the GNU Affero General Public License
-; along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 [Setup]
 AppName=Slice 4D Shooter
 ; The value is patched from CI by the "Patch installer.iss appVersion" step
@@ -34,6 +21,12 @@ UninstallDisplayIcon={app}\Slice 4D Shooter.exe
 Source: "target\release\Slice 4D Shooter.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "media\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dll\WinSparkle.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "CREDITS.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dll\LICENSE.txt"; DestDir: "{app}\licenses"; DestName: "WinSparkle-LICENSE.txt"; Flags: ignoreversion
+Source: "matchbox_signaling_modified\LICENSE-MIT"; DestDir: "{app}\licenses"; DestName: "Matchbox-LICENSE-MIT.txt"; Flags: ignoreversion
+Source: "matchbox_signaling_modified\LICENSE-APACHE"; DestDir: "{app}\licenses"; DestName: "Matchbox-LICENSE-APACHE.txt"; Flags: ignoreversion
+Source: "matchbox_signaling_modified\NOTICE"; DestDir: "{app}\licenses"; DestName: "Matchbox-NOTICE.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Slice 4D Shooter"; Filename: "{app}\Slice 4D Shooter.exe"; IconFilename: "{app}\icon.ico"

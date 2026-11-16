@@ -3,13 +3,14 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use crate::{
     engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{
-            colliders_container::PhysicalElement, PhysicsSystem
-        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::StaticObject
+        world::physics::colliders_container::PhysicalElement, shared_systems::render::VisualElement, world::static_object::StaticObject
     },
-    transform::Transform
+    engine::transform::Transform
 };
 
 use std::f32::consts::PI;
@@ -62,8 +63,6 @@ impl WanderingActor {
     }
 }
 
-const THRESHOLD: f32 = 0.01;
-
 impl Actor for WanderingActor {
     fn get_transform(&self) -> &Transform {
         &self.transform
@@ -81,7 +80,7 @@ impl Actor for WanderingActor {
         self.id = Some(id);
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         let physical_element = PhysicalElement {
             id: self.get_id().expect("Actor have not ActorID"),
             transform: &mut self.transform,
@@ -95,7 +94,7 @@ impl Actor for WanderingActor {
         Some(physical_element)
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         let visual_element = VisualElement {
             transform: &self.transform,
             static_objects: Some(&self.static_objects),
@@ -112,14 +111,11 @@ impl Actor for WanderingActor {
     
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
-    ) {    
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
+    ) {
+        let delta = world.time.delta();
+    
         let current_target = self.targets[self.current_target_index];
 
         let previous_target = self.targets[

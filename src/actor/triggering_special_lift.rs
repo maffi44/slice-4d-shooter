@@ -3,15 +3,16 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use fyrox_core::math::lerpf;
 use glam::Vec4;
 
 use crate::{
     actor::{Message, MessageType, SpecificActorMessage, trigger::TriggerMessage, wandering_actor::WanderingActorMovementType}, engine::{
-        audio::AudioSystem, effects::EffectsSystem, engine_handle::EngineHandle, physics::{
-            PhysicsSystem, colliders_container::PhysicalElement
-        }, render::VisualElement, time::TimeSystem, ui::UISystem, world::static_object::StaticObject
-    }, transform::Transform
+        world::physics::colliders_container::PhysicalElement, shared_systems::render::VisualElement, world::static_object::StaticObject
+    }, engine::transform::Transform
 };
 
 use std::f32::consts::PI;
@@ -91,7 +92,6 @@ impl TriggeringSpecialLiftActor {
     }
 }
 
-const THRESHOLD: f32 = 0.01;
 const PULSE_MULT: f32 = 0.12;
 
 impl Actor for TriggeringSpecialLiftActor {
@@ -142,14 +142,11 @@ impl Actor for TriggeringSpecialLiftActor {
     
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+
 
         self.pulse_timer += delta*2.0; 
         if self.pulse_timer >= PI*2.0 {self.pulse_timer -= PI*2.0}
@@ -276,15 +273,12 @@ impl Actor for TriggeringSpecialLiftActor {
     fn recieve_message(
         &mut self,
         message: Message,
-        engine_handle: &mut EngineHandle,
-        physics_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
+        _world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {
 
-        let from = message.from;
+
+        let _from = message.from;
 
         match message.message {
             MessageType::SpecificActorMessage(message) =>

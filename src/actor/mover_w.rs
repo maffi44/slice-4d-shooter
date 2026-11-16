@@ -3,28 +3,35 @@
 
 
 
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+use crate::engine::world::effects;
+
 use std::collections::HashMap;
 
 use glam::{Vec3, Vec4};
 
-use crate::{engine::{physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}}, transform::Transform};
+use crate::{engine::{world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::static_object::{SphericalVolumeArea, VolumeArea}}, engine::transform::Transform};
 
 use super::{main_player::{BLUE_TEAM_COLOR, RED_TEAM_COLOR}, Actor, ActorID, Message, MessageType, PhysicsMessages, SpecificActorMessage};
 
 
-const TIME_TO_NOT_INTERACT_WITH_ACTOR: f32 = 1.0;
+#[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
 const MOVER_W_PHYSICAL_AREA_RADIUS: f32 = 0.8;
-const MOVER_W_VISUAL_AREA_RADIUS: f32 = 0.5;
+const TIME_TO_NOT_INTERACT_WITH_ACTOR: f32 = 1.0;
 
 #[derive(Clone)]
 pub enum MoverWMessage
 {
     Rotate(
         // z_lock
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
         f32,
         // w_lock
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
         f32,
         // direction
+        #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
         f32
     ),
 }
@@ -47,6 +54,7 @@ pub struct MoverW
 
 impl MoverW
 {
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn new(
         position: Vec4,
         mut direction: f32,
@@ -111,15 +119,13 @@ impl MoverW
 impl Actor for MoverW
 {
     fn tick(
-            &mut self,
-            physic_system: &crate::engine::physics::PhysicsSystem,
-            engine_handle: &mut crate::engine::engine_handle::EngineHandle,
-            audio_system: &mut crate::engine::audio::AudioSystem,
-            ui_system: &mut crate::engine::ui::UISystem,
-            time_system: &mut crate::engine::time::TimeSystem,
-            effects_system: &mut crate::engine::effects::EffectsSystem,
-            delta: f32
-        ) {
+        &mut self,
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
+    ) {
+        let delta = world.time.delta();
+        let messenger = &mut *world.messenger;
+
         
         for (id, time) in self.actors_to_not_interact_with.iter_mut()
         {
@@ -141,8 +147,8 @@ impl Actor for MoverW
         {
             self.vlisual_wave_tick_timer = 0.0;
 
-            effects_system.spawn_wave(
-                engine_handle,
+            effects::spawn_wave(
+                messenger,
                 self.transform.get_position(),
                 vec![3.6, 1.8, 0.0],
                 vec![Vec3::ZERO, self.base_color*0.012, MOVER_W_COLOR*0.8],
@@ -155,15 +161,13 @@ impl Actor for MoverW
     fn recieve_message(
         &mut self,
         message: super::Message,
-        engine_handle: &mut crate::engine::engine_handle::EngineHandle,
-        physics_system: &crate::engine::physics::PhysicsSystem,
-        audio_system: &mut crate::engine::audio::AudioSystem,
-        ui_system: &mut crate::engine::ui::UISystem,
-        time_system: &crate::engine::time::TimeSystem,
-        effects_system: &mut crate::engine::effects::EffectsSystem,
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     )
     {
-        let from = message.from;
+        let messenger = &mut *world.messenger;
+
+        let _from = message.from;
         match message.message {
             MessageType::PhysicsMessages(message) =>
             {
@@ -181,7 +185,7 @@ impl Actor for MoverW
                                         TIME_TO_NOT_INTERACT_WITH_ACTOR
                                     );
 
-                                    engine_handle.send_direct_message(
+                                    messenger.send_direct_message(
                                         id,
                                         Message {
                                             from: self.id.expect("MoverW hasn't ActorID"),
@@ -227,7 +231,7 @@ impl Actor for MoverW
         self.id = Some(id);
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         Some(
             PhysicalElement {
                 id: self.id.expect("MoverW have not ActorID"),
@@ -241,7 +245,7 @@ impl Actor for MoverW
         )
     }
 
-    fn get_visual_element(&self) -> Option<VisualElement> {
+    fn get_visual_element(&self) -> Option<VisualElement<'_>> {
         Some(
             VisualElement {
                 transform: &self.transform,

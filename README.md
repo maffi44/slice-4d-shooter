@@ -20,28 +20,44 @@ Our **goal** is to create the first **free and open-source esports shooter in 4D
 **Slice: 4D Shooter** is built on a **custom game engine**, developed from scratch in **Rust**.
 The project is currently in playable prototype stage. 
 
+Up to and including commit [`f3e2128`](https://github.com/maffi44/slice-4d-shooter/commit/f3e2128) (2026-11-03), the entire codebase was written manually, without the use of large language models or AI-assisted code generation tools (the only exception is the ```tv_hash``` and ```tv_noise``` functions in ```raymarch_shader.wgsl```).
+Starting with the engine refactoring that follows that commit (November 2026), the project is developed with the help of AI coding agents to speed up development: the author designs the architecture, discusses and reviews every change, and the agents implement it (see [Development with AI agents](#development-with-ai-agents)).
+
 **Core engine features include:**
 *   **4D Rendering:** Utilizes a Signed Distance Field (SDF) algorithm to render four-dimensional geometry.
 *   **4D Physics:** Features a custom-built physics engine, also SDF-based, to handle movement and collisions in 4D space.
-*   **Actor-based Architecture:** Uses an actor-in-arena-based game logic architecture.
+*   **Actor-based Architecture:** Uses actors with per-world message queues and simulation state.
 *   **Destructible Environment:** Supports environment destruction using the SDF-based physics and rendering systems.
 *   **Multiplayer Networking:** Implements a temporary client-based networking model for multiplayer gameplay and game state synchronization.
 *   **Cross-Platform Support:** The game runs on Windows, Linux, and macOS.
 
+## Development with AI agents
+
+The repository keeps working instructions, current tasks and their history separate:
+
+* **[AGENTS.md](AGENTS.md)**: working principles, repository map, verification, release restrictions and issue conventions.
+* **[Engine architecture](docs/engine-architecture.md)**: the current implementation reference, with links to decision history.
+* **[Issue index](issues/README.md)**: tasks grouped by area and priority. Each task has a permanent directory, a concise main file, and a sibling `-context.md` file when extended discussion is needed. Context preserves the rationale, alternatives, decisions and implementation history, and can link to earlier contexts.
+* **Open filenames** have no date: `<slug>.md` and `<slug>-context.md`. High-priority tasks prefix both with `high-priority-`.
+* **Completed filenames** are `done-YYYY-MM-DD-<stem>.md` and `done-YYYY-MM-DD-<stem>-context.md`, retaining any priority prefix in `<stem>`. The date is the completion date; rename only after the author's confirmation.
+* **Links between tasks point to their permanent directories**, so priority changes and completion do not break them. The main/context files link directly to each other; only those local links normally need updating when renamed.
+
+Read the main task first and follow relevant context links when the reasons behind a decision matter. Historical proposals are preserved as history, not silently promoted to current requirements.
+
 ## License
 
-The source code of **Slice: 4D Shooter** is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).  
-See the [`LICENSE.txt`](LICENSE.txt) file for full terms.
+The project's original source code, including the client and servers, is licensed under the **GNU Affero General Public License, version 3 or later** (`AGPL-3.0-or-later`). Third-party components retain their own licenses.  
+See the [`LICENSE.txt`](LICENSE.txt) file for full terms. The Windows installer includes `LICENSE.txt`, `CREDITS.md` and the bundled WinSparkle/Matchbox notices (`licenses/`).
 
 This project incorporates third-party components under their respective licenses:
 
-*   **WinSparkle** (located in the `dll/` directory): Copyright (c) 2009-2025 Vaclav Slavik. Licensed under the MIT-like license found in the library's binaries and source code. This software includes components from the OpenSSL Project.
+*   **WinSparkle** (located in the `dll/` directory): Copyright (c) 2009-2025 Vaclav Slavik. Licensed under the MIT license reproduced in [`dll/LICENSE.txt`](dll/LICENSE.txt). This software includes components from the OpenSSL Project.
 *   **Modified `matchbox_signaling` crate**: The original work is licensed under either **MIT** or **Apache 2.0**. The modified source code, original licenses, README, and a `NOTICE` file describing the changes are located in the `matchbox_signaling_modified/` directory.
 *   **Audio Assets**: Various sound effects are used under **CC0 1.0**, **CC BY 3.0**, and **CC BY 4.0** licenses. A complete list with attribution is available in the [`CREDITS.md`](CREDITS.md) file.
 
 ### Original Assets and Trademark
 
-*   **Original Art & Assets**: All other project assets (excluding third-party audio and the `media/` directory) are original works by Timofei Molokov and are licensed under **Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)**.
+*   **Original Art & Assets**: The project's original assets by Timofei Molokov (excluding the `media/` directory) are licensed under **Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)**.
 *   **Media Directory**: All files in the `media/` directory are **All Rights Reserved** and are the exclusive property of Timofei Molokov. They are included for demonstration only and are not covered by the AGPL-3.0 or CC BY-SA 4.0 licenses.
 *   **Project Name**: The name **"Slice: 4D Shooter"** and its associated logo are trademarks and are **not covered** by the AGPL or CC BY-SA 4.0 licenses. If you create a fork of this project, please choose a unique, original name for your work.
 
@@ -131,42 +147,57 @@ Build the game client:
 cargo build --release --bin game-client-without-autoupdate --target x86_64-pc-windows-msvc
 ```
 
+Other client binaries: `game-client` (the released client with WinSparkle auto-update) and `game-client-with-windows-command-line` (with a console window that shows the log).
+
 ---
 
 ## Launching the game
 
-After completing the compilation and build (created in the "target" directory), check the version of the game client.
+Build output is in `target/<target>/release/`. The repository's `.cargo/config.toml` defaults to `x86_64-unknown-linux-gnu`; Windows and macOS commands above select their target explicitly.
+
+On Linux, check the client version from the repository root:
 
 ```bash
-./game-client -v
+./target/x86_64-unknown-linux-gnu/release/game-client --version
 ```
+
+For the Windows build command above, run `target\x86_64-pc-windows-msvc\release\game-client-without-autoupdate.exe`; for Apple Silicon, run `target/aarch64-apple-darwin/release/game-client`. Pass the same CLI options to the chosen executable.
 
 If you are going to connect to the official servers, then the version of the game client **must match the version** of the **[latest release](https://github.com/maffi44/slice-4d-shooter/releases)** of the game.
 
-After launching the game client (created in the `target` directory), shader compilation is underway, which may take some time, depending on the performance of your computer.
+After launching the graphical client, shaders are compiled, which may take some time, depending on the performance of your computer.
 
-If the FPS of the game client is **too low**, you can press the `i` key (each tap reduces the screen resolution by 5 percent) to degrade the graphics rendering parameters.
+If the FPS of the game client is **too low**, you can press the `i` key (each tap reduces the screen resolution by 5 percent) to lower the rendering resolution.
 
-If you want to play online on your own servers, you need to create a game-client `settings.json` executable file in the same directory, and enter the ipv4 address and port of the matchmaking server in the `matchmaking_server_url` field.
+Command-line options of the game client:
+
+*   `-b`, `--backend <gl|dx12|vulkan|metal>`: graphics backend (selected automatically by default);
+*   `-l`, `--level <name>`: start a specific map (default: `capture_the_flag_map`);
+*   `--headless`: run without a window, rendering and sound;
+*   `-v`, `--version`: print the client version.
+
+Only `capture_the_flag_map` is currently known to load; several other bundled maps are out of sync with the parser. See [map compatibility](issues/programming/maps-out-of-sync-with-parser/) before using `--level` with those maps.
+
+`J`/`K` lower/raise mouse sensitivity, and `N`/`M` lower/raise volume. `Esc` leaves fullscreen and releases the cursor; `Enter` returns to fullscreen and captures it.
+
+Your settings (mouse sensitivity, volume, render resolution, shadows) are saved in `user_settings.json` in the platform config directory (`~/.config/slice4d/` on Linux, `%APPDATA%\Slice4D\` on Windows, `~/Library/Application Support/Slice4D/` on macOS), or next to the executable if a `user_settings.json` is placed there.
+
+If you want to play online on your own servers, create a `connection_settings.json` file next to the game client executable and enter the address and port of your matchmaking server in the `matchmaking_server_url` field:
 
 ```json
 {
-    "mouse_sensivity" : 0.21,
-
     "matchmaking_server_url" : "ws://8.8.8.8:45123/",
 
-    "bash_and_turn_servers" : [],
+    "ice_servers" : [],
 
-    "turn_server_username" : "homeo",
-    "turn_server_credential" : "homeo",
-    
-    "screen_resolution_scale" : 1.0
+    "turn_server_username" : "",
+    "turn_server_credential" : ""
 }
 ```
 
-**The `settings.json` file is not required for single-player mode or for playing on the official Slice: 4D Shooter servers.**
+**The `connection_settings.json` file is not required for single-player mode or for playing on the official Slice: 4D Shooter servers** (the official connection settings are built into the client).
 
-Currently, the client can make several connection attempts until success is achieved.
+Press `G` to request an online connection (the current HUD still incorrectly says `P`). Connection attempts have timeouts and a limited retry count.
 
 The address `8.8.8.8` must be replaced with the hosting address of your server.
 
@@ -180,6 +211,7 @@ The address `8.8.8.8` must be replaced with the hosting address of your server.
 
 ```bash
 git clone https://github.com/maffi44/slice-4d-shooter.git
+cd slice-4d-shooter
 ```
 
 #### 2) Install dependencies:
@@ -218,11 +250,11 @@ Go to the directory where matchmaking_server is located.
 cd target/x86_64-unknown-linux-gnu/release
 ```
 
-Сreate a matchmaking-server-config.json file.
+Create a `matchmaking-server-config.json` file.
 
 ```json
 {
-  "current_game_version": "0.5.2",
+  "current_game_version": "0.5.10",
   "matchmaking_server_ip": "8.8.8.8",
   "matchmaking_server_port_for_clients": 45123,
   "matchmaking_server_port_for_servers": 45124,
@@ -247,7 +279,7 @@ cd target/x86_64-unknown-linux-gnu/release
 }
 ```
 
-The address `8.8.8.8` **needs to be replaced** with your hosting address.
+The address `8.8.8.8` **needs to be replaced** with your hosting address. Set `current_game_version` to the client product version from the root `Cargo.toml` (or `game-client --version`); the example must be updated when that version changes. The server crates have separate package versions.
 
 ---
 

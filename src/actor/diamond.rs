@@ -5,7 +5,7 @@
 
 // use crate::systems::{
 //     physics::collider::Area,
-//     engine_handle::EngineHandle,
+//     world::messenger::Messenger,
 //     transform::Transform,
 // };
 
@@ -34,7 +34,7 @@
 // }
 
 // impl Actor for Diamond {
-//     fn recieve_message(&mut self, message: Message, engine_handle: &mut EngineHandle) {
+//     fn recieve_message(&mut self, message: Message, messenger: &mut Messenger) {
 //         let from = message.from;
 
 //         let message = message.message;
@@ -52,7 +52,7 @@
 //         // }
 //     }
 
-//     fn recieve_boardcast_message(&mut self, message: &Message, engine_handle: &mut EngineHandle) {
+//     fn recieve_boardcast_message(&mut self, message: &Message, messenger: &mut Messenger) {
 //         let from = message.from;
 
 //         let message = &message.message;

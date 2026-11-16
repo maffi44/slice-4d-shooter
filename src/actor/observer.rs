@@ -3,12 +3,17 @@
 
 
 
+use crate::actor::main_player::constants::*;
+
+use crate::engine::world::WorldContext;
+use crate::engine::shared_systems::EngineSharedSystems;
+
 use client_server_protocol::Team;
-use rand::{Rng, thread_rng};
+use rand::Rng;
 
 use crate::{
     actor::{
-        main_player::{player_inner_state::PlayerInnerState, player_input_master, player_settings, PlayerMessage, PlayerScreenEffects, PlayersProjections},
+        main_player::{player_inner_state::PlayerInnerState, PlayerMessage, PlayerScreenEffects, PlayersProjections},
         players_doll::PlayerDollInputState,
         Actor,
         ActorID,
@@ -18,26 +23,17 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        audio::{
+        shared_systems::audio::{
             AudioSystem,
             Sound
-        }, effects::EffectsSystem, engine_handle::{
-            Command,
-            CommandType,
-            EngineHandle
-        }, input::ActionsFrameState, physics::{
+        }, shared_systems::input::ActionsFrameState, world::physics::{
             colliders_container::PhysicalElement,
-            kinematic_collider::KinematicColliderMessage,
-            PhysicsSystem
-        }, render::camera::Camera, time::TimeSystem, ui::UISystem, world::level::Spawn
+            kinematic_collider::KinematicColliderMessage
+        }, shared_systems::render::camera::Camera
     },
-    transform::{Transform, BACKWARD, FORWARD, LEFT, RIGHT, UP, W_DOWN, W_UP},
+    engine::transform::{Transform, BACKWARD, FORWARD, LEFT, RIGHT, UP, W_DOWN, W_UP},
 };
 
-use self::{
-    player_input_master::InputMaster,
-    player_settings::PlayerSettings,
-};
 
 use glam::Vec4;
 
@@ -49,8 +45,6 @@ use super::{
 pub struct Observer {
     id: Option<ActorID>,
     inner_state: PlayerInnerState,
-    pub player_settings: PlayerSettings,
-    pub master: InputMaster,
     screen_effects: PlayerScreenEffects,
 
     free_movement_is_enabled: bool,
@@ -72,13 +66,11 @@ impl Actor for Observer {
     fn recieve_message(
         &mut self,
         message: Message,
-        engine_handle: &mut EngineHandle,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &TimeSystem,
-        effects_system: &mut EffectsSystem,
+        world: &mut WorldContext,
+        _shared: &mut EngineSharedSystems,
     ) {
+        let _messenger = &mut *world.messenger;
+
         let from = message.from;
 
         let message = message.message;
@@ -103,7 +95,7 @@ impl Actor for Observer {
                     {
                         self.inner_state.transform.increment_position(increment);
                     },
-                    CommonActorsMessage::IWasChangedMyId(new_id) => {}
+                    CommonActorsMessage::IWasChangedMyId(_new_id) => {}
                     CommonActorsMessage::ClientDisconnectedFromGameServer => {}
                 }
             }
@@ -116,7 +108,7 @@ impl Actor for Observer {
                             KinematicColliderMessage::ColliderIsStuckInsideObject =>
                             {
                                 todo!("must impliment respawn for observer");
-                                // engine_handle.send_command(
+                                // messenger.send_command(
                                 //     Command {
                                 //         sender: self.get_id().expect("Player have not ActorID"),
                                 //         command_type: CommandType::RespawnPlayer(
@@ -125,7 +117,6 @@ impl Actor for Observer {
                                 //     }
                                 // );
                             }
-                            _ => {}
                         }
                     }
                     _ => {}
@@ -146,7 +137,7 @@ impl Actor for Observer {
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
                                 todo!("must impliment respawn for observer");
-                                // engine_handle.send_command(
+                                // messenger.send_command(
                                 //     Command {
                                 //         sender: self.get_id().expect("Player have not ActorID"),
                                 //         command_type: CommandType::RespawnPlayer(
@@ -185,7 +176,7 @@ impl Actor for Observer {
                                 self.inner_state.team = team;
 
                                 todo!("must impliment respawn for observer");
-                                // engine_handle.send_command(
+                                // messenger.send_command(
                                 //     Command {
                                 //         sender: self.get_id().expect("Player have not ActorID"),
                                 //         command_type: CommandType::RespawnPlayer(
@@ -203,7 +194,7 @@ impl Actor for Observer {
                                 self.inner_state.team = your_team;
 
                                 todo!("must impliment respawn for observer");
-                                // engine_handle.send_command(
+                                // messenger.send_command(
                                 //     Command {
                                 //         sender: self.get_id().expect("Player have not ActorID"),
                                 //         command_type: CommandType::RespawnPlayer(
@@ -276,7 +267,7 @@ impl Actor for Observer {
         self.id
     }
 
-    fn get_physical_element(&mut self) -> Option<PhysicalElement> {
+    fn get_physical_element(&mut self) -> Option<PhysicalElement<'_>> {
         if self.inner_state.is_enable
         {
             let collider_container = PhysicalElement {
@@ -296,23 +287,15 @@ impl Actor for Observer {
 
     fn tick(
         &mut self,
-        physic_system: &PhysicsSystem,
-        engine_handle: &mut EngineHandle,
-        audio_system: &mut AudioSystem,
-        ui_system: &mut UISystem,
-        time_system: &mut TimeSystem,
-        effects_system: &mut EffectsSystem,
-        delta: f32
+        world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let delta = world.time.delta();
+        let _messenger = &mut *world.messenger;
+        let audio_system = &mut shared.audio;
 
-        let input = match &self.master {
-            InputMaster::LocalMaster(master) => {
-                master.current_input.clone()
-            }
-            InputMaster::RemoteMaster(master) => {
-               master.current_input.clone()
-            }   
-        };
+
+        let input = shared.input.actions().clone();
 
         let mut player_doll_input_state = PlayerDollInputState {
             move_forward: false,
@@ -322,11 +305,11 @@ impl Actor for Observer {
             will_jump: false,
         };
 
-        let my_id = self.get_id().expect("Player have not ActorID");
+        let _my_id = self.get_id().expect("Player have not ActorID");
 
         main_player::process_player_rotation(
             &input,
-            &self.player_settings,
+            shared.global_settings.user.mouse_sensitivity,
             &mut self.inner_state,
             &self.screen_effects,
             delta
@@ -343,7 +326,6 @@ impl Actor for Observer {
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
-                &self.player_settings,
                 delta,
             );
 
@@ -351,13 +333,11 @@ impl Actor for Observer {
                 &input,
                 &mut player_doll_input_state,
                 &mut self.inner_state,
-                &self.player_settings,
             );
 
             main_player::process_player_second_jump_input(
                 &input,
                 &mut self.inner_state,
-                &self.player_settings,
                 audio_system,
                 true,
                 delta,
@@ -365,7 +345,7 @@ impl Actor for Observer {
 
             // self.screen_effects.player_projections.projections_tick(
             //     my_id,
-            //     engine_handle,
+            //     messenger,
             //     audio_system,
             //     delta
             // );
@@ -375,7 +355,6 @@ impl Actor for Observer {
             process_free_movement_input(
                 &input,
                 &mut self.inner_state,
-                &self.player_settings,
                 delta
             );
         }
@@ -393,7 +372,7 @@ impl Actor for Observer {
         if self.inner_state.get_position().y < Y_DEATH_PLANE_LEVEL
         {
             todo!("must impliment respawn for observer");
-            // engine_handle.send_command(
+            // messenger.send_command(
             //     Command {
             //         sender: self.get_id().expect("Player have not ActorID"),
             //         command_type: CommandType::RespawnPlayer(
@@ -414,8 +393,7 @@ impl Actor for Observer {
 fn process_free_movement_input(
     input: &ActionsFrameState,
     inner_state: &mut PlayerInnerState,
-    player_settings: &PlayerSettings,
-    delta: f32,
+    _delta: f32,
 )
 {
     let mut movement_vec = Vec4::ZERO;
@@ -472,12 +450,11 @@ fn process_free_movement_input(
 
 impl Observer {
 
+    #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn new(
-        master: InputMaster,
-        player_settings: PlayerSettings,
-        audio_system: &mut AudioSystem,
-        blue_base_position: Vec4,
-        red_base_position: Vec4,
+        _audio_system: &mut AudioSystem,
+        _blue_base_position: Vec4,
+        _red_base_position: Vec4,
         red_spawn_points: Vec<Vec4>,
         blue_spawn_points: Vec<Vec4>,
     ) -> Self {
@@ -485,7 +462,7 @@ impl Observer {
         let screen_effects = PlayerScreenEffects {
             w_scanner_is_active: false,
             w_scanner_radius: 0.0,
-            w_scanner_ring_intesity: 0.0,
+            w_scanner_ring_intensity: 0.0,
             w_scanner_enemies_intesity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
@@ -501,18 +478,13 @@ impl Observer {
 
             inner_state: PlayerInnerState::new(
                 Transform::new(),
-                &player_settings,
                 false,
                 false,
                 UP*0.6,
-                UP * player_settings.collider_radius * 0.2,
+                UP * PLAYER_COLLIDER_RADIUS * 0.2,
                 None,
                 None,
             ),
-            
-            player_settings,
-
-            master,
 
             screen_effects,
 
@@ -544,17 +516,13 @@ impl ControlledActor for Observer
         self.inner_state.team
     }
 
-    fn get_input_master(&mut self) -> &mut InputMaster {
-        &mut self.master
-    }
-
     fn spawn(
         &mut self,
-        physics_system: &PhysicsSystem,
-        ui_system: &mut UISystem,
-        audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
+        _world: &mut WorldContext,
+        shared: &mut EngineSharedSystems,
     ) {
+        let audio_system = &mut shared.audio;
+
         let spawns: &Vec<Vec4>;
 
         match self.get_team()
@@ -568,10 +536,10 @@ impl ControlledActor for Observer
                 spawns = &self.blue_spawn_points;
             },
         }
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
 
-        let rand_index: usize = rng.gen_range(0..spawns.len());
-        let mut current_spawn = *spawns.get(rand_index).expect("Main Player haven't spawn points");
+        let rand_index: usize = rng.random_range(0..spawns.len());
+        let current_spawn = *spawns.get(rand_index).expect("Main Player haven't spawn points");
 
         self.inner_state.is_alive = true;
         self.inner_state.is_enable = true;
@@ -587,7 +555,7 @@ impl ControlledActor for Observer
             fyrox_sound::source::Status::Playing,
         );
 
-        self.screen_effects.w_scanner_ring_intesity = 0.0;
+        self.screen_effects.w_scanner_ring_intensity = 0.0;
         self.screen_effects.w_scanner_radius = 0.0;
         self.screen_effects.w_scanner_is_active = false;
 

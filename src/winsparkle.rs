@@ -63,5 +63,3 @@ pub fn init() {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
-pub fn init() {}

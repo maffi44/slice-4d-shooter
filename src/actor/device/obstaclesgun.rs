@@ -3,33 +3,42 @@
 
 
 
+// The obstacles gun isn't given to players in the current game modes; kept for later.
+#![allow(dead_code)]
+
+
+
+use crate::actor::session_controller::send_to_session_controller;
+use crate::actor::session_controller::SessionControllerMessage;
+use crate::engine::shared_systems::net::Reliability;
+
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{Vec3, Vec4};
 
 use crate::{
     actor::{
-        ActorID, ActorWrapper, Message, MessageType, SpecificActorMessage, device::{
+        ActorID, ActorWrapper, device::{
             Device,
             DeviceType,
-        }, holegun_miss::HoleGunMiss, holegun_shot::HoleGunShot, main_player::{
-            PlayerMessage, PlayerScreenEffects, player_inner_state::PlayerInnerState
+        }, holegun_miss::HoleGunMiss, main_player::{
+            PlayerScreenEffects, player_inner_state::PlayerInnerState
         }, obstaclesgun_shot::ObstaclesGunShot
     },
     engine::{
-        audio::{
+        shared_systems::audio::{
             AudioSystem,
             Sound
         },
-        engine_handle::{
+        world::messenger::{
             Command,
             CommandType,
-            EngineHandle,
+            Messenger,
         },
-        input::ActionsFrameState,
-        physics::PhysicsSystem,
-        render::ChildVisualElement,
-        ui::{
+        shared_systems::input::ActionsFrameState,
+        world::physics::PhysicsSystem,
+        shared_systems::render::ChildVisualElement,
+        shared_systems::ui::{
             UIElement,
             UIElementType,
             UISystem
@@ -39,11 +48,11 @@ use crate::{
             VolumeArea
         }
     },
-    transform::{FORWARD, Transform}
+    engine::transform::{FORWARD, Transform}
 };
 
 use client_server_protocol::{
-    NetCommand, NetMessageToPlayer, RemoteMessage, Team
+    NetMessageToPlayer, RemoteMessage, Team
 };
 
 pub struct ObstaclesGun {
@@ -118,8 +127,8 @@ impl ObstaclesGun {
         player: &mut PlayerInnerState,
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
-        engine_handle: &mut EngineHandle,
-        screen_effects: &mut PlayerScreenEffects,
+        messenger: &mut Messenger,
+        _screen_effects: &mut PlayerScreenEffects,
         charging_energy: f32,
         color: Vec3,
     ) {
@@ -179,7 +188,7 @@ impl ObstaclesGun {
                 1.0,
             );
     
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
@@ -188,24 +197,22 @@ impl ObstaclesGun {
                 }
             );
 
-            engine_handle.send_command(
-                Command {
-                    sender: player_id,
-                    command_type: CommandType::NetCommand(
-                        NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessageToPlayer::RemoteDirectMessage(
-                                player_id,
-                                RemoteMessage::SpawnObstacleGunShotActor(
-                                    position.to_array(),
-                                    shooted_from.to_array(),
-                                    radius.abs(),//*base_coef,
-                                    color.to_array(),
-                                    volume_area_radius.abs(),
-                                )
-                            )
+            send_to_session_controller(
+                messenger,
+                player_id,
+                SessionControllerMessage::SendToPlayers(
+                    NetMessageToPlayer::RemoteDirectMessage(
+                        player_id,
+                        RemoteMessage::SpawnObstacleGunShotActor(
+                            position.to_array(),
+                            shooted_from.to_array(),
+                            radius.abs(),//*base_coef,
+                            color.to_array(),
+                            volume_area_radius.abs(),
                         )
-                    )
-                }
+                    ),
+                    Reliability::Reliable,
+                ),
             )
 
         } else {
@@ -223,7 +230,7 @@ impl ObstaclesGun {
                 1.0,
             );
 
-            engine_handle.send_command(
+            messenger.send_command(
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
@@ -232,24 +239,22 @@ impl ObstaclesGun {
                 }
             );
 
-            engine_handle.send_command(
-                Command {
-                    sender: player_id,
-                    command_type: CommandType::NetCommand(
-                        NetCommand::SendBoardcastNetMessageReliable(
-                            NetMessageToPlayer::RemoteDirectMessage(
-                                player_id,
-                                RemoteMessage::SpawHoleGunMissActor(
-                                    position_remote.to_array(),
-                                    shooted_from.to_array(),
-                                    radius.abs(),
-                                    color.to_array(),
-                                    volume_area_radius.abs(),
-                                )
-                            )
+            send_to_session_controller(
+                messenger,
+                player_id,
+                SessionControllerMessage::SendToPlayers(
+                    NetMessageToPlayer::RemoteDirectMessage(
+                        player_id,
+                        RemoteMessage::SpawHoleGunMissActor(
+                            position_remote.to_array(),
+                            shooted_from.to_array(),
+                            radius.abs(),
+                            color.to_array(),
+                            volume_area_radius.abs(),
                         )
-                    )
-                }
+                    ),
+                    Reliability::Reliable,
+                ),
             )
         }
     }
@@ -261,7 +266,7 @@ impl Device for ObstaclesGun {
         DeviceType::Gun
     }
 
-    fn get_visual_element<'a>(&'a self, transform: &'a Transform) -> Option<&'a ChildVisualElement> {
+    fn get_visual_element<'a>(&'a self, _transform: &'a Transform) -> Option<&'a ChildVisualElement> {
         Some(
             &self.visual_element
         )
@@ -269,14 +274,14 @@ impl Device for ObstaclesGun {
 
     fn process_while_player_is_not_alive(
             &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
-            delta: f32,
+            _player_id: ActorID,
+            _player: &mut PlayerInnerState,
+            _input: &ActionsFrameState,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
+            _ui_system: &mut UISystem,
+            _messenger: &mut Messenger,
+            _delta: f32,
         ) {
         
     }
@@ -290,7 +295,7 @@ impl Device for ObstaclesGun {
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
         delta: f32,
     )
     {
@@ -314,7 +319,7 @@ impl Device for ObstaclesGun {
                     // start charging
 
                     self.charging_sound = Some(audio_system.spawn_non_spatial_sound(
-                        crate::engine::audio::Sound::HolegunCharging,
+                        crate::engine::shared_systems::audio::Sound::HolegunCharging,
                         0.38,
                         1.2,
                         false,
@@ -344,18 +349,16 @@ impl Device for ObstaclesGun {
                         .expect("Hole gun have not bolume areas in visual element")
                         .push(volume_area);
 
-                    engine_handle.send_command(
-                        Command {
-                            sender: player_id,
-                            command_type: CommandType::NetCommand(
-                                NetCommand::SendBoardcastNetMessageReliable(
-                                    NetMessageToPlayer::RemoteDirectMessage(
-                                        player_id,
-                                        RemoteMessage::HoleGunStartCharging
-                                    )
-                                )
-                            )
-                        }
+                    send_to_session_controller(
+                        messenger,
+                        player_id,
+                        SessionControllerMessage::SendToPlayers(
+                            NetMessageToPlayer::RemoteDirectMessage(
+                                player_id,
+                                RemoteMessage::HoleGunStartCharging
+                            ),
+                            Reliability::Reliable,
+                        ),
                     )
                 }
 
@@ -406,7 +409,7 @@ impl Device for ObstaclesGun {
                         player,
                         physic_system,
                         audio_system,
-                        engine_handle,
+                        messenger,
                         screen_effects,
                         self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                         color,
@@ -435,7 +438,7 @@ impl Device for ObstaclesGun {
                         player,
                         physic_system,
                         audio_system,
-                        engine_handle,
+                        messenger,
                         screen_effects,
                         self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                         color,
@@ -451,7 +454,7 @@ impl Device for ObstaclesGun {
                         self.charging_sound.take().expect("Holegun haven't charging sound on shoot")
                     );
             
-                    let volume_area = self
+                    let _volume_area = self
                         .visual_element
                         .volume_areas
                         .as_mut()
@@ -483,13 +486,13 @@ impl Device for ObstaclesGun {
 
     fn process_while_deactive(
             &mut self,
-            player_id: ActorID,
-            player: &mut PlayerInnerState,
-            input: &ActionsFrameState,
-            physic_system: &PhysicsSystem,
-            audio_system: &mut AudioSystem,
-            ui_system: &mut UISystem,
-            engine_handle: &mut EngineHandle,
+            _player_id: ActorID,
+            _player: &mut PlayerInnerState,
+            _input: &ActionsFrameState,
+            _physic_system: &PhysicsSystem,
+            _audio_system: &mut AudioSystem,
+            _ui_system: &mut UISystem,
+            _messenger: &mut Messenger,
             delta: f32,
         ) {
             self.energy += delta*self.energy_gun_restoring_speed;
@@ -505,7 +508,7 @@ impl Device for ObstaclesGun {
         physic_system: &PhysicsSystem,
         audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        messenger: &mut Messenger,
         screen_effects: &mut PlayerScreenEffects,
     ) {
         let color = match player.team {
@@ -523,7 +526,7 @@ impl Device for ObstaclesGun {
                     player,
                     physic_system,
                     audio_system,
-                    engine_handle,
+                    messenger,
                     screen_effects,
                     self.current_shot_charging_energy*self.energy_gun_hole_size_mult+ENERGY_SHOT_COST*0.04,
                     color,
@@ -565,12 +568,12 @@ impl Device for ObstaclesGun {
 
     fn activate(
         &mut self,
-        player_id: ActorID,
+        _player_id: ActorID,
         player: &mut PlayerInnerState,
-        physic_system: &PhysicsSystem,
-        audio_system: &mut AudioSystem,
+        _physic_system: &PhysicsSystem,
+        _audio_system: &mut AudioSystem,
         ui_system: &mut UISystem,
-        engine_handle: &mut EngineHandle,
+        _messenger: &mut Messenger,
     ) {
         let img = ui_system.get_mut_ui_element(&UIElementType::ObstacleGunImage);
 
