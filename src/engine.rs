@@ -7,12 +7,13 @@ pub mod shared_systems;
 pub mod world;
 pub mod transform;
 pub mod main_loop;
+mod loader;
+
+pub use loader::{load, EngineLoader, LoadedEngine};
 
 use std::sync::Arc;
 
 use glam::UVec2;
-use tokio::task::JoinHandle;
-use wgpu::Backend;
 use winit::{dpi::PhysicalSize, window::Window};
 
 use self::{
@@ -37,69 +38,33 @@ const MAX_OUTPUT_SCALE: f32 = 1.0;
 ///
 /// The engine knows only the root world. Nested worlds are owned and simulated by actors.
 ///
-/// Usage (the entry point): `Engine::new(headless).run(initial_world, graphic_backend)`. `run` owns the
-/// main loop (`main_loop.rs`) and returns when the application quits. Headless = the same simulation
-/// without window, GPU, rendering and sound (a plain tick loop instead of winit).
+/// Created only after EngineLoader has finished. MainLoop owns event delivery and tick scheduling.
 pub struct Engine
 {
-    // Field order = drop order: worlds first, then the shared systems (the RenderScheduler stops
-    // and joins the render thread in its Drop), the window last, so it's destroyed on the main thread
-    // after the render thread released it.
+    // Drop worlds and shared systems (including the render thread) before the window.
     root_world: Option<World>,
-    /// The initial world's descriptor while it loads (the splash is shown meanwhile).
-    /// Loaded asynchronously so that winit's event handling isn't blocked (a blocked window is
-    /// marked "Not Responding" by the OS).
-    pending_root_world: Option<JoinHandle<WorldDescriptor>>,
     pub shared: EngineSharedSystems,
     window: Option<Arc<Window>>,
-    headless: bool,
     quit_requested: bool,
 }
 
 
 impl Engine
 {
-    /// Creates the shared systems, except the GPU and the render loop (they need the window, created
-    /// by `run`). `headless`: no window, GPU, rendering or sound at all.
-    pub fn new(headless: bool) -> Engine
+    /// Consumes a completed load. Only per-instance world activation remains on this thread.
+    pub fn new(loaded: LoadedEngine, window: Option<Arc<Window>>) -> Engine
     {
-        let shared = EngineSharedSystems::new(headless);
-
-        log::info!("engine: init");
-
-        Engine {
+        let mut engine = Engine {
             root_world: None,
-            pending_root_world: None,
-            shared,
-            window: None,
-            headless,
+            shared: loaded.shared,
+            window,
             quit_requested: false,
-        }
-    }
-
-
-    /// Called by the main loop at startup. `window: Some` → creates the GPU context and the render loop;
-    /// `None` → headless (no GPU, no rendering; game logic is the same).
-    /// Then starts loading the initial world asynchronously (the splash is shown meanwhile).
-    fn start(&mut self, window: Option<Window>, initial_world: String, graphic_backend: Option<Backend>)
-    {
-        if let Some(window) = window
-        {
-            let window = Arc::new(window);
-
-            self.shared.create_gpu_and_render(window.clone(), graphic_backend);
-            self.window = Some(window);
-        }
-
-        let gpu = self.shared.gpu.clone();
-
-        log::info!("engine: initial world '{}' is loading", initial_world);
-
-        self.pending_root_world = Some(self.shared.runtime.spawn_blocking(move || {
-            WorldDescriptor::load(&initial_world, gpu)
-        }));
-
-        self.shared.time.init();
+        };
+        engine.set_root_world(Arc::new(loaded.descriptor));
+        // Loading time must not become the first simulation delta.
+        engine.shared.time.init();
+        log::info!("engine: ready");
+        engine
     }
 
 
@@ -113,8 +78,6 @@ impl Engine
     pub fn tick(&mut self)
     {
         self.shared.pre_simulate();
-
-        self.poll_pending_root_world();
 
         if let Some(root_world) = &mut self.root_world
         {
@@ -157,22 +120,7 @@ impl Engine
     }
 
 
-    fn poll_pending_root_world(&mut self)
-    {
-        if self.pending_root_world.as_ref().is_some_and(|handle| handle.is_finished())
-        {
-            let handle = self.pending_root_world.take().unwrap();
-
-            let descriptor = self.shared.runtime
-                .block_on(handle)
-                .expect("ERROR: the initial world loading task failed");
-
-            self.set_root_world(Arc::new(descriptor));
-        }
-    }
-
-
-    /// Replaces the root world (also used for the initial world). `World::new` is cheap.
+    /// Replaces the root world (also used for the initial world). Activates actors and world resources.
     fn set_root_world(&mut self, descriptor: Arc<WorldDescriptor>)
     {
         let render_config = self.window.as_ref().map(|window| {

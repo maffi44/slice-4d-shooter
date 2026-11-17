@@ -20,3 +20,5 @@ Separate preparation from activation side effects: audio, UI, connections, rende
 Distinguish cloning a shared resource handle from deep-cloning mutable actors. A consume-once prepared world also needs a policy for repeated requests/reloads and caching; this does not automatically require `Clone` on `Actor`.
 
 Completion: malformed actor data and resource failures surface during loading, required resources are ready before activation, activation performs no hidden heavy loading, and ownership/reuse/error behavior is documented and verified. Coordinate [Resource System](../resource-system/) and [map compatibility](../maps-out-of-sync-with-parser/).
+
+Related startup discussion: [nonblocking engine startup](../nonblocking-engine-startup/) covers event-loop ownership, GPU prerequisites and readiness notifications. This task retains responsibility for complete resource preparation and activation semantics.

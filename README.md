@@ -165,22 +165,28 @@ For the Windows build command above, run `target\x86_64-pc-windows-msvc\release\
 
 If you are going to connect to the official servers, then the version of the game client **must match the version** of the **[latest release](https://github.com/maffi44/slice-4d-shooter/releases)** of the game.
 
-After launching the graphical client, shaders are compiled, which may take some time, depending on the performance of your computer.
+After launching the graphical client, GPU initialization and initial-map preparation run in the background while the window continues processing events. The window is initially blank; the splash appears once rendering is ready. Shader compilation may take some time, depending on your computer. Closing during loading hides the window immediately; the process finishes after any already-running initialization step returns. See [engine startup](docs/engine-architecture.md) for the loading sequence and remaining synchronous world activation.
 
 If the FPS of the game client is **too low**, you can press the `i` key (each tap reduces the screen resolution by 5 percent) to lower the rendering resolution.
 
 Command-line options of the game client:
 
-*   `-b`, `--backend <gl|dx12|vulkan|metal>`: graphics backend (selected automatically by default);
+*   `-b`, `--backend <vulkan|dx12|metal>`: graphics backend (selected automatically by default);
 *   `-l`, `--level <name>`: start a specific map (default: `capture_the_flag_map`);
 *   `--headless`: run without a window, rendering and sound;
 *   `-v`, `--version`: print the client version.
+
+Native rendering requires Vulkan (Linux/Windows), DirectX 12 (Windows), or Metal (macOS), with a compatible GPU and driver. OpenGL is no longer supported, including automatic fallback; `-b gl` exits with an explanatory error. Asynchronous resource/pipeline loading is retained. See [the backend decision](issues/programming/opengl-context-contention/).
+
+The wgpu instance also allows browser WebGPU, but this native client has no supported browser build; enabling that backend does not restore WebAssembly support, and `-b webgpu` reports this limitation.
 
 Only `capture_the_flag_map` is currently known to load; several other bundled maps are out of sync with the parser. See [map compatibility](issues/programming/maps-out-of-sync-with-parser/) before using `--level` with those maps.
 
 `J`/`K` lower/raise mouse sensitivity, and `N`/`M` lower/raise volume. `Esc` leaves fullscreen and releases the cursor; `Enter` returns to fullscreen and captures it.
 
 Your settings (mouse sensitivity, volume, render resolution, shadows) are saved in `user_settings.json` in the platform config directory (`~/.config/slice4d/` on Linux, `%APPDATA%\Slice4D\` on Windows, `~/Library/Application Support/Slice4D/` on macOS), or next to the executable if a `user_settings.json` is placed there.
+
+Settings load asynchronously. Changes are written in order by a background task; normal shutdown waits for pending settings writes.
 
 If you want to play online on your own servers, create a `connection_settings.json` file next to the game client executable and enter the address and port of your matchmaking server in the `matchmaking_server_url` field:
 

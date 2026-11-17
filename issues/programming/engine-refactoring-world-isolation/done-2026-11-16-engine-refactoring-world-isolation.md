@@ -4,6 +4,7 @@
 - **Priority:** Normal
 - **Created:** 2026-11-12
 - **Completed:** 2026-11-16
+- **Implementation commit:** `caea9ec` (confirmed by the author)
 - **Stable address:** `issues/programming/engine-refactoring-world-isolation/`
 - **Context:** [done-2026-11-16-engine-refactoring-world-isolation-context.md](done-2026-11-16-engine-refactoring-world-isolation-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
 

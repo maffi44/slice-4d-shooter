@@ -32,9 +32,19 @@ pub fn read_args() -> Args
                 {
                     backend = match args[i + 1].to_lowercase().as_str()
                     {
-                        "gl" => Some(Backend::Gl),
+                        "gl" =>
+                        {
+                            eprintln!("OpenGL is no longer supported. Use a supported graphics backend.");
+                            std::process::exit(2);
+                        }
                         
                         "dx12" => Some(Backend::Dx12),
+
+                        "webgpu" =>
+                        {
+                            eprintln!("WebGPU requires a browser build; this client is native. Use vulkan, dx12 or metal.");
+                            std::process::exit(2);
+                        }
                         
                         "vulkan" => Some(Backend::Vulkan),
                         
@@ -44,9 +54,7 @@ pub fn read_args() -> Args
                         {
                             eprintln!("Unknown graphics backend: {}", args[i + 1]);
                             
-                            show_help = true;
-                            
-                            None
+                            std::process::exit(2);
                         }
                     };
                     i += 1;
@@ -55,7 +63,7 @@ pub fn read_args() -> Args
                 {
                     eprintln!("Missing argument for backend option");
 
-                    std::process::exit(0);
+                    std::process::exit(2);
                 }
             }
 
@@ -108,7 +116,7 @@ pub fn read_args() -> Args
         println!("Usage: {} [OPTIONS]", "{}");
         println!();
         println!("Options:");
-        println!("  -b, --backend BACKEND        Set graphics backend (gl, dx12, vulkan, metal)");
+        println!("  -b, --backend BACKEND        Set graphics backend (vulkan, dx12, metal)");
         println!("  --help, -help, -h            Show this help message");
         println!("  -v --v -version, --version,  Show current game version");
         println!("  -l --l -level, --level,  Load specific level");

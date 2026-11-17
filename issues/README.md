@@ -22,6 +22,9 @@ Open filenames have no date. High priority prefixes both files with `high-priori
 | [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/) | Normal | Open — not implemented | 15 |
 | [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Open — decision or implementation pending | — |
 | [Authoritative server and transport](programming/network-authoritative-server-and-transport/) | Normal | Backlog — design pending | — |
+| [Responsive engine startup and MainLoop ownership](programming/nonblocking-engine-startup/) | Normal | First implementation — awaiting author review | — |
+| [OpenGL context contention during rendering](programming/opengl-context-contention/) | Normal | OpenGL removal implemented — awaiting author acceptance | — |
+| [Deliver broadcast messages by reference](programming/borrow-broadcast-messages/) | Normal | Open — not implemented | — |
 | [Resource System](programming/resource-system/) | Normal | Backlog — design pending | — |
 | [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Open — not implemented | 7 |
 | [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Open — not implemented | 9 |
@@ -39,3 +42,7 @@ The author's response to the project review created 12 tasks (points 1–7, 9, 1
 - Points 17–19: documentation changes made directly (concise AGENTS, current task/context split, less categorical rules), not new backlog issues.
 
 The engine refactoring was accepted by the author as complete on 2026-11-16 (renamed to `done-2026-11-16-…`); its review follow-ups remain open as separate tasks. Each new context records the review finding and the author's response; historical context is retained for the seven earlier tasks.
+
+## Follow-up after the first refactoring commit
+
+On 2026-11-16 the author confirmed initial refactoring commit `caea9ec`. Startup ownership/nonblocking loading has a first separate-loader implementation awaiting author review in its own task. Borrowed broadcast delivery remains a separate, unimplemented task.

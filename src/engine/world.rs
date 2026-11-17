@@ -104,8 +104,8 @@ pub enum SpecificOuterWorldMessage
 
 impl World
 {
-    /// Creates a world instance from a prepared descriptor. Cheap: the slow work (shaders,
-    /// pipelines) is already in the descriptor. All per-instance creation happens here:
+    /// Creates a world instance from a prepared descriptor. Shaders and pipelines are already
+    /// prepared; actor/resource construction can still take time. Per-instance creation happens here:
     /// own systems, actors, render registration, initial messages.
     pub fn new(
         descriptor: &WorldDescriptor,

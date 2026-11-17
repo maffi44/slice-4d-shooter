@@ -3,7 +3,9 @@
 
 
 
-use std::{fs, path::{Path, PathBuf}};
+use std::path::{Path, PathBuf};
+
+use tokio::{fs, sync::{mpsc, oneshot}};
 
 use serde::{Deserialize, Serialize};
 
@@ -33,7 +35,7 @@ pub struct GlobalSettings
 {
     pub user: UserSettings,
     pub connection: ConnectionSettings,
-    user_settings_file: Option<PathBuf>,
+    pending_saves: Option<mpsc::UnboundedSender<SettingsWrite>>,
 }
 
 
@@ -72,44 +74,79 @@ pub struct ConnectionSettings
 }
 
 
+enum SettingsWrite
+{
+    Save(UserSettings),
+    Flush(oneshot::Sender<()>),
+}
+
 impl GlobalSettings
 {
-    pub fn load() -> GlobalSettings
+    pub async fn load() -> GlobalSettings
     {
         let exe_dir = executable_dir();
+        let (user, user_settings_file) = load_user_settings(exe_dir.as_deref()).await;
+        let connection = load_connection_settings(exe_dir.as_deref()).await;
+        let pending_saves = user_settings_file.map(start_settings_writer);
 
-        let (user, user_settings_file) = load_user_settings(exe_dir.as_deref());
+        GlobalSettings { user, connection, pending_saves }
+    }
 
-        let connection = load_connection_settings(exe_dir.as_deref());
-
-        GlobalSettings {
-            user,
-            connection,
-            user_settings_file,
+    /// Queues a snapshot. One writer preserves order; independent spawned writes could overwrite
+    /// newer preferences with older ones. This never waits for disk I/O in a simulation/window callback.
+    pub fn save(&self)
+    {
+        if let Some(writer) = &self.pending_saves
+        {
+            if writer.send(SettingsWrite::Save(self.user.clone())).is_err()
+            {
+                log::warn!("global settings: the settings writer has stopped");
+            }
         }
     }
 
-    /// Writes the user settings to the file they were loaded from.
-    pub fn save(&self)
+    /// Waits for earlier saves before the application's runtime is shut down.
+    pub async fn flush(&self)
     {
-        let Some(path) = &self.user_settings_file else {
-            return;
-        };
-
-        match serde_json::to_string_pretty(&self.user)
+        if let Some(writer) = &self.pending_saves
         {
-            Ok(json) =>
+            let (reply, done) = oneshot::channel();
+            if writer.send(SettingsWrite::Flush(reply)).is_err() || done.await.is_err()
             {
-                if let Err(e) = fs::write(path, json)
-                {
-                    log::warn!("global settings: can't save user settings to {}: {}", path.display(), e);
-                }
-            }
-            Err(e) =>
-            {
-                log::warn!("global settings: can't serialize user settings: {}", e);
+                log::warn!("global settings: the settings writer stopped before flushing");
             }
         }
+    }
+}
+
+fn start_settings_writer(path: PathBuf) -> mpsc::UnboundedSender<SettingsWrite>
+{
+    let (sender, mut receiver) = mpsc::unbounded_channel();
+    tokio::spawn(async move {
+        while let Some(command) = receiver.recv().await
+        {
+            match command
+            {
+                SettingsWrite::Save(user) => write_user_settings(&path, &user).await,
+                SettingsWrite::Flush(reply) => { let _ = reply.send(()); }
+            }
+        }
+    });
+    sender
+}
+
+async fn write_user_settings(path: &Path, user: &UserSettings)
+{
+    match serde_json::to_string_pretty(user)
+    {
+        Ok(json) =>
+        {
+            if let Err(e) = fs::write(path, json).await
+            {
+                log::warn!("global settings: can't save user settings to {}: {}", path.display(), e);
+            }
+        }
+        Err(e) => log::warn!("global settings: can't serialize user settings: {}", e),
     }
 }
 
@@ -122,14 +159,14 @@ fn executable_dir() -> Option<PathBuf>
 }
 
 
-fn load_user_settings(exe_dir: Option<&Path>) -> (UserSettings, Option<PathBuf>)
+async fn load_user_settings(exe_dir: Option<&Path>) -> (UserSettings, Option<PathBuf>)
 {
     // 1. next to the executable
     if let Some(exe_dir) = exe_dir
     {
         let path = exe_dir.join(USER_SETTINGS_FILE_NAME);
 
-        if let Some(settings) = read_json_file::<UserSettings>(&path)
+        if let Some(settings) = read_json_file::<UserSettings>(&path).await
         {
             log::info!("global settings: user settings loaded from {}", path.display());
             return (settings, Some(path));
@@ -144,7 +181,7 @@ fn load_user_settings(exe_dir: Option<&Path>) -> (UserSettings, Option<PathBuf>)
 
     let path = config_dir.join(USER_SETTINGS_FILE_NAME);
 
-    if let Some(settings) = read_json_file::<UserSettings>(&path)
+    if let Some(settings) = read_json_file::<UserSettings>(&path).await
     {
         log::info!("global settings: user settings loaded from {}", path.display());
         return (settings, Some(path));
@@ -153,18 +190,13 @@ fn load_user_settings(exe_dir: Option<&Path>) -> (UserSettings, Option<PathBuf>)
     // 3. create the user file with defaults
     let settings = UserSettings::default();
 
-    if let Err(e) = fs::create_dir_all(&config_dir)
+    if let Err(e) = fs::create_dir_all(&config_dir).await
     {
         log::warn!("global settings: can't create {}: {}", config_dir.display(), e);
         return (settings, None);
     }
 
-    let user_settings = GlobalSettings {
-        user: settings.clone(),
-        connection: ConnectionSettings::default(),
-        user_settings_file: Some(path.clone()),
-    };
-    user_settings.save();
+    write_user_settings(&path, &settings).await;
 
     log::info!("global settings: created {} with default user settings", path.display());
 
@@ -172,13 +204,13 @@ fn load_user_settings(exe_dir: Option<&Path>) -> (UserSettings, Option<PathBuf>)
 }
 
 
-fn load_connection_settings(exe_dir: Option<&Path>) -> ConnectionSettings
+async fn load_connection_settings(exe_dir: Option<&Path>) -> ConnectionSettings
 {
     if let Some(exe_dir) = exe_dir
     {
         let path = exe_dir.join(CONNECTION_SETTINGS_FILE_NAME);
 
-        if let Some(settings) = read_json_file::<ConnectionSettings>(&path)
+        if let Some(settings) = read_json_file::<ConnectionSettings>(&path).await
         {
             log::info!("global settings: connection settings overridden by {}", path.display());
             return settings;
@@ -190,9 +222,9 @@ fn load_connection_settings(exe_dir: Option<&Path>) -> ConnectionSettings
 }
 
 
-fn read_json_file<T: for<'de> Deserialize<'de>>(path: &Path) -> Option<T>
+async fn read_json_file<T: for<'de> Deserialize<'de>>(path: &Path) -> Option<T>
 {
-    let content = fs::read_to_string(path).ok()?;
+    let content = fs::read_to_string(path).await.ok()?;
 
     match serde_json::from_str::<T>(&content)
     {
@@ -202,5 +234,41 @@ fn read_json_file<T: for<'de> Deserialize<'de>>(path: &Path) -> Option<T>
             log::warn!("global settings: can't parse {}: {}", path.display(), e);
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn last_save_is_complete_before_runtime_shutdown()
+    {
+        let path = std::env::temp_dir().join(format!(
+            "slice-settings-{}-{}.json",
+            std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos(),
+        ));
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let mut settings = GlobalSettings {
+                user: UserSettings::default(),
+                connection: ConnectionSettings::default(),
+                pending_saves: Some(start_settings_writer(path.clone())),
+            };
+            // A burst of hotkey saves must not let an older write replace the latest one.
+            for value in 0..32
+            {
+                settings.user.mouse_sensitivity = value as f32;
+                settings.save();
+            }
+            settings.flush().await;
+        });
+        drop(runtime);
+
+        let saved: UserSettings = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        std::fs::remove_file(path).unwrap();
+        assert_eq!(saved.mouse_sensitivity, 31.0);
     }
 }

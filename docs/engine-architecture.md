@@ -1,20 +1,30 @@
 # Engine architecture reference
 
-Implementation reference as of 2026-11-16. For working rules see [AGENTS.md](../AGENTS.md); for task status see the [issue index](../issues/README.md).
+Implementation reference as of 2026-11-17. For working rules see [AGENTS.md](../AGENTS.md); for task status see the [issue index](../issues/README.md).
 
 ## Engine architecture (`src/engine.rs`, `src/engine/main_loop.rs`)
 
 The design, its rationale and history are in [engine-refactoring-world-isolation](../issues/programming/engine-refactoring-world-isolation/) (context Part I: rationale, Part III: historical target architecture; the main task tracks current status). Summary:
 
-**`Engine`** = `root_world: Option<World>` + `pending_root_world` (the initial world's descriptor, loading async) + `shared: EngineSharedSystems` + the window. The engine knows only the root world. Nested worlds are owned and simulated by actors.
+**`Engine`** = `root_world: Option<World>` + `shared: EngineSharedSystems` + the window. It contains no loading state or startup handles. The engine knows only the root world. Nested worlds are owned and simulated by actors.
 
-Startup: `Engine::new(headless)` creates the shared systems except the GPU and rendering (no window yet; `headless` also means no sound device). `engine.run(initial_world, graphic_backend)` (`main_loop.rs`):
-- normal: creates the winit event loop; at `StartCause::Init` the window is created and `Engine::start` creates `GpuContext` + `RenderScheduler` (`shared.create_gpu_and_render`) and starts loading the initial world; then `Engine::tick` runs at the target rate until quit;
-- headless (`--headless`): no winit, no window/GPU/rendering/sound; `Engine::start(None, ..)` loads the initial world and a plain loop calls `Engine::tick` at the target rate until a world requests to quit. Game logic is the same.
+Startup is separate from simulation ([decision and implementation context](../issues/programming/nonblocking-engine-startup/)):
+
+```rust
+let loading = engine::load(start_level, args.graphic_backend, args.headless);
+MainLoop::run(loading);
+```
+
+- `engine::load` returns `EngineLoader`. It starts async map/settings loading and GPU instance discovery concurrently; a dedicated loading thread prepares shared systems (including audio/input/UI), coordinates dependencies and owns intermediate handles. The Tokio runtime ultimately moves into the ready shared systems.
+- Graphical `MainLoop` owns the winit application. First `resumed` creates the window (duplicate resumes are guarded). The loader requests a surface through its result channel; only window/surface creation happens in the event-loop callback, preserving Metal's main-thread requirement. Adapter/device, shared GPU resources, UI/upscale pipelines and world pipelines are built off that thread. CPU map preparation overlaps GPU discovery; world GPU finalization requires the device.
+- Loading uses `ControlFlow::Wait`. A queued result followed by `EventLoopProxy::send_event(())` wakes `user_event`; there are no polling simulation ticks. Results queued before the proxy/first resume are drained after window creation. The render thread can show the splash once ready; the window is initially blank.
+- On success, `Engine::new(LoadedEngine, window)` consumes the completed load and activates the root world. The loading object is dropped, simulation timing is initialized, and `WaitUntil` starts regular ticks. Latest window dimensions are applied at activation. Actor creation is still synchronous; full resource preparation is the separate world-preparation task below.
+- Close during loading hides the window immediately and requests cancellation between stages. The event loop continues dispatching until already-started blocking work finishes and releases its resources; then it exits. A driver call cannot be forcibly aborted. Queued surface replies are dropped before joining a loader, preventing a shutdown wait on an unanswered main-thread request. Worker failures/panics become a terminal loading error, not an endless loading state. MainLoop retains the final window owner through cleanup.
+- Headless waits for the same loader's result with no winit/window/GPU/rendering/sound device, constructs Engine, then runs the plain tick loop. Game logic is the same.
 
 There is no game-mode argument. UISystem and NetSystem exist in both modes; the GPU UI renderer does not exist in headless mode.
 
-**Module layout mirrors the architecture:** `src/engine/shared_systems.rs` + `src/engine/shared_systems/` (audio, global_settings, input, net, render, time, ui) hold the shared systems; `src/engine/world.rs` + `src/engine/world/` (actors, messenger, physics, time, world_descriptor, static_object, effects) hold the per-world parts; `src/engine/main_loop.rs` (winit application) and `src/engine/transform.rs` belong to the engine as a whole. `src/game_client_main.rs` is only the entry point (args, logger, allocator, auto-updater, `Engine::new(headless)` + `engine.run(start_level, graphic_backend)`). See [repository map and placement rules](../AGENTS.md#repository-map).
+**Module layout mirrors the architecture:** `src/engine/shared_systems.rs` + `src/engine/shared_systems/` (audio, global_settings, input, net, render, time, ui) hold the shared systems; `src/engine/world.rs` + `src/engine/world/` (actors, messenger, physics, time, world_descriptor, static_object, effects) hold the per-world parts; `src/engine/loader.rs` (initialization), `src/engine/main_loop.rs` (application runner) and `src/engine/transform.rs` belong to the engine as a whole. `src/game_client_main.rs` is only the entry point (args, logger, allocator, auto-updater, `engine::load(start_level, backend, headless)` + `MainLoop::run(loading)`). See [repository map and placement rules](../AGENTS.md#repository-map).
 
 **`EngineSharedSystems`** (`src/engine/shared_systems.rs`), once per application, all `pub` fields:
 - `global_settings: GlobalSettings`: `user` (`user_settings.json`, loaded next to the executable first, otherwise in the platform config dir; saved to the selected path) + `connection` (compiled in from `src/assets/settings/connection_settings.json`, overridable only by a `connection_settings.json` next to the executable)
@@ -22,8 +32,8 @@ There is no game-mode argument. UISystem and NetSystem exist in both modes; the 
 - `input: InputSystem`: collected once per tick; actors read `shared.input.actions()`
 - `net: NetSystem`: transport only (connection handles, WebSocket/WebRTC, raw packets)
 - `audio`, `ui`
-- `gpu: Option<GpuContext>`, `render: Option<RenderScheduler>` (`None` until the window is created at startup, and always in headless mode)
-- `runtime`: tokio, 2 workers (net tasks, `spawn_blocking` loading)
+- `gpu: Option<GpuContext>`, `render: Option<RenderScheduler>` (`None` in a ready headless engine; present in a ready graphical engine)
+- `runtime`: tokio, 2 async workers (networking, resource I/O and settings persistence), plus its blocking pool for CPU/native work
 
 **`World`** (`src/engine/world.rs`), one isolated simulation:
 - `actors: Actors` (`world/actors.rs`)
@@ -34,14 +44,13 @@ There is no game-mode argument. UISystem and NetSystem exist in both modes; the 
 
 `World::new(&WorldDescriptor, WorldConfig, &mut shared)` does per-instance creation. It still parses actor JSON and creates resources; cheap activation is a goal, not a proven guarantee (see [async world preparation](../issues/programming/async-world-preparation/)). `World::simulate(&mut shared)` runs: world time → actors' `tick` → message pump → physics → message pump → render data update.
 
-**`WorldDescriptor`** (`world/world_descriptor.rs`, the former `Level`): parsed map + generated shaders/pipelines + actor descriptions (JSON). `WorldDescriptor::load(name, Option<GpuContext>)` is blocking (run it via `shared.runtime.spawn_blocking` for async). `create_actors()` builds fresh actors. A `World` doesn't keep its descriptor.
+**`WorldDescriptor`** (`world/world_descriptor.rs`, the former `Level`): parsed map + generated shaders/pipelines + actor descriptions (JSON). `WorldDescriptor::load(name, Option<GpuContext>)` is async; actor callers spawn its future on the shared runtime. `WorldPreparation::load` awaits whole-file reads through `tokio::fs`, then parses JSON/geometry on a blocking worker and retains shader inputs. Synchronous `finish(gpu)` generates shaders/pipelines after GPU readiness; it runs on the loading thread at startup and a blocking worker for later transitions. `WorldDescriptor::load` still composes both steps for existing world-transition callers. `create_actors()` builds fresh actors. A `World` doesn't keep its descriptor.
 
 Engine tick (`Engine::tick`), target 60 Hz (`GlobalTimeSystem::new(60)`). ⚠️ The average period is currently a bit longer than 16.(6) ms, see [engine-tick-rate](../issues/programming/engine-tick-rate/):
 1. `shared.pre_simulate()`: gamepad input, `time.start_of_frame`, frame input actions, `net.tick` (poll sockets)
-2. finish loading the initial world if ready → `set_root_world`
-3. `root_world.simulate(&mut shared)`, then handle the root world's `OuterWorldMessage`s (quit, replace root world, ...)
-4. render hotkeys (`i`/`O` root output scale, `P` shadows; persisted)
-5. `shared.post_simulate()`: `net.flush`, UI buffers, `input.reset_input`, `time.end_of_frame`
+2. `root_world.simulate(&mut shared)`, then handle the root world's `OuterWorldMessage`s (quit, replace root world, ...)
+3. render hotkeys (`i`/`O` root output scale, `P` shadows; persisted)
+4. `shared.post_simulate()`: `net.flush`, UI buffers, `input.reset_input`, `time.end_of_frame`
 
 Window-level hotkeys (`Esc`/`Enter`, `J`/`K` sensitivity, `N`/`M` volume, `Y`/`H` browser) are handled in `engine/main_loop.rs` and operate on `engine.shared`.
 
@@ -78,9 +87,14 @@ Window-level hotkeys (`Esc`/`Enter`, `J`/`K` sensitivity, `N`/`M` volume, `Y`/`H
   It then falls back to maps embedded with `include_str!` (the list is near the top of `world_descriptor.rs`). To ship a new map inside the binary, add it to that list.
 - `old_maps_archive/` holds unused historical maps.
 - Textures, skyboxes and shaders are embedded at compile time via `include_bytes!`/`include_str!`. Sounds go through fyrox-sound. The splash screen is `media/slice_4d_shooter_poster.png`.
-- Settings: see `GlobalSettings` above. Gameplay values are constants, not settings.
+- Settings: `GlobalSettings::load` asynchronously reads configuration and creates a default file if needed. `save()` queues a small snapshot for one async writer; writes remain ordered and do not block tick/window callbacks. Normal exit queues the final save and awaits `flush()` before runtime destruction. This waits for file writes, not power-loss durability (`fsync`). Gameplay values are constants, not settings.
 
 ### Rendering (`src/engine/shared_systems/render/`)
+
+Backend policy: the wgpu instance explicitly permits Vulkan, DX12, Metal and browser WebGPU, and rejects explicit requests outside that set. Native CLI choices are `vulkan`, `dx12`, `metal`; WebGPU requires a browser build, which this project currently does not support. Cargo disables wgpu's default features and explicitly enables the retained backends plus `std`, `parking_lot` and `wgsl`; GLES/WebGL is excluded. The WebGL2 device-limit fallback was removed; default limits and the existing downlevel fallback remain. Adapter initialization logs the selected GPU and backend. See [OpenGL removal and rationale](../issues/programming/opengl-context-contention/).
+
+Asynchronous CPU/GPU preparation and the existing separate simulation/render threads remain. No single GPU owner thread, GL-only serialization, or mandatory preload of every shader was introduced.
+
 - `gpu_context.rs`: `GpuContext` (device, queue, shared layouts, sky box, shared buffers). World output textures use the fixed sRGB format `WORLD_OUTPUT_FORMAT`.
 - `render_scheduler.rs`: `RenderScheduler` runs the render loop on a dedicated OS thread (`std::thread`), stopped by a `Shutdown` message + `join()` in `Drop`. Worlds register through a channel; each `WorldSlot` holds a `Weak<WorldRenderShared>` (atomics: render rate, packed resolution+scale) and the world's GPU objects. Per frame: skip if the GPU is busy (no frame queueing) or too early (~125 FPS target), encode due worlds in reverse registration order (children first when parents register before their children), upscale the presented world (or the splash) to the surface, UI, one submit, present.
 - `world_render_system.rs`: `WorldRenderSystem` (per world, main thread) computes render data in `simulate()` and writes the buffers via `queue.write_buffer`. No application-level locks between the threads; multiple buffer writes are not an atomic snapshot (see [GPU data grouping](../issues/programming/gpu-data-grouping/)).
@@ -111,3 +125,5 @@ Simulation intervals over 0.35 s currently fall back to about one nominal tick; 
 World removal unregisters rendering but does not yet close session connections: [connection lifetime](../issues/programming/session-connection-lifetime/). The output texture resolver is deferred to [in-world screens](../issues/programming/in-world-4d-screens/). `WorldFinished` currently requests application exit at the root; its enum comment claiming it is ignored is stale.
 
 The [refactoring task](../issues/programming/engine-refactoring-world-isolation/) links its historical context: Part I for rationale, §19 for discussions, §24.9 for implementation rounds. Current proposals are recorded in the linked follow-up tasks; they are not implemented architecture.
+
+Startup loading now lives in a separate EngineLoader and uses event notifications; see [implementation and verification](../issues/programming/nonblocking-engine-startup/). Actor activation remains synchronous, and supported native platforms still need runtime verification beyond the Linux environment used for this implementation.

@@ -9,3 +9,7 @@ Author's explanation: World versus WorldDescriptor was considered as the resourc
 Earlier arguments also concerned construction side effects and immutable sharing, not only cloning. Read [engine refactoring context](../engine-refactoring-world-isolation/), Part I “WorldDescriptor vs World”, §12, §20.1 and §21.6, then [Resource System context](../resource-system/). Reopen the earlier choice because storing raw descriptions leaves validation and resource work at activation; preserve its useful constraints.
 
 Technical distinction raised during documentation: `Arc`/resource-handle cloning need not clone the contained actor, but sharing one mutable World is not the same as creating independent world instances. A non-cloneable prepared instance may be appropriate; it does not by itself solve side effects, thread affinity, or repeated-use semantics. Neither alternative has been implemented or selected as final architecture.
+
+## 2026-11-16 — Startup follow-up
+
+The author reopened application startup after accepting initial refactoring commit `caea9ec`. [Startup context](../nonblocking-engine-startup/) records research on parallel CPU/GPU preparation, dependent pipeline creation and event-driven readiness. The two tasks share the preparation boundary; no resource ownership alternative above has been silently selected.

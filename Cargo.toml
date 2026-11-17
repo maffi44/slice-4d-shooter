@@ -27,10 +27,10 @@ game_server = { path = "./game_server" }
 env_logger = "*"
 winit = {version = "*", features = ["rwh_05"]}
 windows-sys = {version = "*", features = ["Win32", "Win32_Media"]}
-wgpu = { version = "*" }
+wgpu = { version = "*", default-features = false, features = ["std", "parking_lot", "vulkan", "dx12", "metal", "webgpu", "wgsl"] }
 bytemuck = { version = "*", features = [ "derive" ] }
 pollster = "*"
-tokio = "*"
+tokio = { version = "*", features = ["fs", "sync"] }
 tokio-tungstenite = "*"
 web-time = "*"
 glam = "*"

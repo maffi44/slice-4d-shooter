@@ -3,10 +3,8 @@
 
 
 
-use std::sync::Arc;
-
 use image::{GenericImageView, ImageBuffer, Rgba};
-use winit::window::Window;
+use winit::dpi::PhysicalSize;
 use wgpu::{
     Backend, BackendOptions, ExperimentalFeatures, Extent3d, InstanceFlags, MemoryBudgetThresholds,
     TexelCopyBufferLayout, TexelCopyTextureInfoBase,
@@ -58,21 +56,24 @@ pub struct GpuContext
 
 impl GpuContext
 {
-    /// Creates the instance, the window surface, the adapter, device and queue (with the same
-    /// fallbacks as before) and the shared layouts. The surface and its configuration are returned
-    /// separately: they belong to the `RenderScheduler`.
-    pub async fn new(
-        window: &Arc<Window>,
-        specific_backend: Option<Backend>,
-    ) -> (GpuContext, wgpu::Surface<'static>, wgpu::SurfaceConfiguration)
+    /// Driver discovery can block, so the loader calls this on a worker.
+    pub fn create_instance(specific_backend: Option<Backend>) -> wgpu::Instance
     {
-        let size = window.inner_size();
+        // Keep background pipeline preparation: GL's shared-context timeout is incompatible
+        // with long concurrent driver calls. See issues/programming/opengl-context-contention/.
+        // Browser WebGPU is allowed by policy but is unavailable in native builds.
+        let allowed_backends = wgpu::Backends::VULKAN
+            | wgpu::Backends::DX12
+            | wgpu::Backends::METAL
+            | wgpu::Backends::BROWSER_WEBGPU;
+        let backends = match specific_backend {
+            Some(backend) => wgpu::Backends::from(backend),
+            None => allowed_backends,
+        };
+        assert!(allowed_backends.contains(backends), "Unsupported graphics backend: {:?}", specific_backend);
 
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: match specific_backend {
-                Some(backend) => wgpu::Backends::from(backend),
-                None => wgpu::Backends::all(),
-            },
+            backends,
             flags: InstanceFlags::empty(),
             backend_options: BackendOptions::from_env_or_default(),
             memory_budget_thresholds: MemoryBudgetThresholds::default(),
@@ -80,11 +81,17 @@ impl GpuContext
 
         log::info!("gpu context: wgpu instance init");
 
-        let surface = instance.create_surface(window.clone())
-            .expect("ERROR: can't create the window surface");
+        instance
+    }
 
-        log::info!("gpu context: wgpu surface init");
-
+    /// The surface must already have been created on the event-loop thread (Metal requires it).
+    /// Run even this async function on a blocking worker: native driver calls can block while polled.
+    pub async fn new(
+        instance: wgpu::Instance,
+        surface: wgpu::Surface<'static>,
+        size: PhysicalSize<u32>,
+    ) -> (GpuContext, wgpu::Surface<'static>, wgpu::SurfaceConfiguration)
+    {
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -94,7 +101,8 @@ impl GpuContext
             .await
             .unwrap();
 
-        log::info!("gpu context: wgpu adapter init");
+        let adapter_info = adapter.get_info();
+        log::info!("gpu context: wgpu adapter init: {} ({:?})", adapter_info.name, adapter_info.backend);
 
         let mut res = adapter
             .request_device(
@@ -117,22 +125,6 @@ impl GpuContext
                     label: None,
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::downlevel_defaults(),
-                    memory_hints: wgpu::MemoryHints::Performance,
-                    trace: wgpu::Trace::Off,
-                    experimental_features: ExperimentalFeatures::disabled(),
-                },
-            )
-            .await;
-        }
-
-        if res.is_err()
-        {
-            res = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                     memory_hints: wgpu::MemoryHints::Performance,
                     trace: wgpu::Trace::Off,
                     experimental_features: ExperimentalFeatures::disabled(),

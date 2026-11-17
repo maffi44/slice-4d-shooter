@@ -11,11 +11,6 @@ pub mod render;
 pub mod time;
 pub mod ui;
 
-use std::sync::Arc;
-
-use wgpu::Backend;
-use winit::window::Window;
-
 use self::{
     audio::AudioSystem,
     global_settings::GlobalSettings,
@@ -40,10 +35,9 @@ pub struct EngineSharedSystems
     pub net: NetSystem,
     pub audio: AudioSystem,
     pub ui: UISystem,
-    /// GPU infrastructure for creating GPU resources. Created when the window is created at startup
-    /// (`create_gpu_and_render`); `None` before that and in headless mode.
+    /// GPU infrastructure for creating GPU resources. `None` in headless mode.
     pub gpu: Option<GpuContext>,
-    /// The render loop (own OS thread). `None` before the window is created and in headless mode.
+    /// The render loop (own OS thread). `None` in headless mode.
     pub render: Option<RenderScheduler>,
     /// Async tasks: network sockets, async loading. Declared last, so it's dropped last.
     pub runtime: tokio::runtime::Runtime,
@@ -52,18 +46,9 @@ pub struct EngineSharedSystems
 
 impl EngineSharedSystems
 {
-    /// Everything except the GPU and the render loop: they need the window, which winit lets us
-    /// create only inside the running event loop (see `create_gpu_and_render`).
-    /// `headless`: no sound device (and the engine never creates a window, GPU or render loop).
-    pub fn new(headless: bool) -> Self
+    /// Called on the loading thread; the loader attaches GPU/rendering before publishing the result.
+    pub fn new(headless: bool, runtime: tokio::runtime::Runtime, global_settings: GlobalSettings) -> Self
     {
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2)
-            .enable_all()
-            .build()
-            .expect("ERROR: can't build the tokio async runtime");
-
-        let global_settings = GlobalSettings::load();
         log::info!("engine shared systems: global settings init");
 
         let time = GlobalTimeSystem::new(60_u32);
@@ -92,26 +77,6 @@ impl EngineSharedSystems
             render: None,
             runtime,
         }
-    }
-
-
-    /// Creates the GPU context and the render loop for the window. Called once, at startup.
-    pub fn create_gpu_and_render(&mut self, window: Arc<Window>, graphic_backend: Option<Backend>)
-    {
-        let (gpu, surface, surface_config) = pollster::block_on(GpuContext::new(&window, graphic_backend));
-        log::info!("engine shared systems: gpu context init");
-
-        let render = RenderScheduler::new(
-            &gpu,
-            surface,
-            surface_config,
-            window,
-            &mut self.ui,
-        );
-        log::info!("engine shared systems: render scheduler init");
-
-        self.gpu = Some(gpu);
-        self.render = Some(render);
     }
 
 

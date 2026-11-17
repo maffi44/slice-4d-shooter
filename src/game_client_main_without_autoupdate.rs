@@ -9,7 +9,7 @@ mod engine;
 mod actor;
 mod read_args;
 
-use engine::Engine;
+use engine::main_loop::MainLoop;
 
 use crate::read_args::read_args;
 
@@ -27,7 +27,7 @@ fn main() {
 
     let start_level = args.specific_level.unwrap_or("capture_the_flag_map".to_string());
 
-    let engine = Engine::new(args.headless);
+    let loading = engine::load(start_level, args.graphic_backend, args.headless);
 
-    engine.run(start_level, args.graphic_backend);
+    MainLoop::run(loading);
 }

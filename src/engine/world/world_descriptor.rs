@@ -3,7 +3,7 @@
 
 
 
-use std::{collections::HashMap, fs::File, io::Read};
+use std::{borrow::Cow, collections::HashMap};
 
 use crate::{
     actor::{
@@ -71,7 +71,8 @@ pub struct DefaultStaticObjectSettings {
 /// created render pipelines (the slow part), and the descriptions of the map's actors.
 ///
 /// Immutable and shareable (`Arc`): many Worlds can be created from one descriptor.
-/// `World::new` is cheap; it asks the descriptor to create fresh actor instances (`create_actors`).
+/// `World::new` creates fresh actors and per-instance resources; full asynchronous actor preparation
+/// is tracked in issues/programming/async-world-preparation/.
 pub struct WorldDescriptor {
     pub name: String,
     pub static_objects: Vec<StaticObject>,
@@ -102,47 +103,16 @@ pub struct WorldDescriptorGpu {
 
 impl WorldDescriptor {
 
-    /// Blocking: reads the map (same lookup as before: next to the binary, `assets/maps`,
-    /// `src/assets/maps`, `../../../src/assets/maps`, then the maps embedded into the binary),
-    /// parses it, and generates shaders / creates pipelines if `gpu` is `Some`.
-    /// For async loading run it via `shared.runtime.spawn_blocking`.
-    pub fn load(
+    /// Async file loading followed by CPU parsing and optional GPU preparation on blocking workers.
+    /// Spawn this future on the shared runtime when loading from synchronous actor callbacks.
+    pub async fn load(
         name: &str,
         gpu: Option<GpuContext>,
     ) -> WorldDescriptor
     {
-        let candidates = [
-            format!("./{}.json", name),
-            format!("./assets/maps/{}.json", name),
-            format!("./src/assets/maps/{}.json", name),
-            format!("../../../src/assets/maps/{}.json", name),
-        ];
-
-        for path in candidates.iter()
-        {
-            if let Ok(mut file) = File::open(path)
-            {
-                let mut file_content = String::new();
-
-                if file.read_to_string(&mut file_content).is_ok()
-                {
-                    let level_json = serde_json::from_str(&file_content)
-                        .expect(&format!("ERROR: can't parse the JSON of the {} map", name));
-
-                    return parse_json_level(level_json, gpu);
-                }
-            }
-        }
-
-        if let Some(level) = get_preloaded_level(name)
-        {
-            let level_json = serde_json::from_str(level)
-                .expect(&format!("ERROR: can't parse the JSON of the {} map", name));
-
-            return parse_json_level(level_json, gpu);
-        }
-
-        panic!("can't open the {} level", name);
+        let preparation = WorldPreparation::load(name).await;
+        tokio::task::spawn_blocking(move || preparation.finish(gpu))
+            .await.expect("ERROR: world GPU preparation failed")
     }
 
     /// Creates NEW actor instances from the stored descriptions: (main actor, other actors).
@@ -168,11 +138,70 @@ impl WorldDescriptor {
 }
 
 
+/// CPU map data and shader inputs retained until the GPU is ready.
+/// Consumed once; the finished descriptor does not retain these temporary inputs.
+pub(crate) struct WorldPreparation
+{
+    descriptor: WorldDescriptor,
+    shader_name: String,
+    allowed_dyn_objects: AllowedDynamicObjectsInBspTreeTable,
+}
 
-fn parse_json_level(
-    json: Value,
-    gpu: Option<GpuContext>,
-) -> WorldDescriptor
+impl WorldPreparation
+{
+    pub async fn load(name: &str) -> Self
+    {
+        let candidates = [
+            format!("./{}.json", name),
+            format!("./assets/maps/{}.json", name),
+            format!("./src/assets/maps/{}.json", name),
+            format!("../../../src/assets/maps/{}.json", name),
+        ];
+
+        let mut source = None;
+        for path in &candidates
+        {
+            // One operation per file, rather than separate open/read jobs in Tokio's fs pool.
+            if let Ok(content) = tokio::fs::read_to_string(path).await
+            {
+                source = Some(Cow::Owned(content));
+                break;
+            }
+        }
+        let source = source.or_else(|| get_preloaded_level(name).map(Cow::Borrowed))
+            .unwrap_or_else(|| panic!("can't open the {} level", name));
+        let name = name.to_owned();
+
+        // JSON/geometry parsing does not yield; a large map must not occupy an async worker.
+        tokio::task::spawn_blocking(move || {
+            let json = serde_json::from_str(&source)
+                .expect(&format!("ERROR: can't parse the JSON of the {} map", name));
+            parse_json_level(json)
+        }).await.expect("ERROR: world CPU preparation failed")
+    }
+
+
+    /// Synchronous CPU/driver work; call only on a loading thread or blocking worker.
+    pub fn finish(mut self, gpu: Option<GpuContext>) -> WorldDescriptor
+    {
+        let (main, minimap) = build_render_pipeline(
+            gpu,
+            &self.shader_name,
+            self.descriptor.is_generated_raymarch_shader,
+            &self.allowed_dyn_objects,
+            &self.descriptor,
+        );
+        self.descriptor.gpu = main.map(|main_pipeline| WorldDescriptorGpu {
+            main_pipeline,
+            minimap_pipeline: minimap,
+        });
+        self.descriptor
+    }
+}
+
+
+
+fn parse_json_level(json: Value) -> WorldPreparation
 {
     let json_level = json
     .as_object()
@@ -294,7 +323,7 @@ fn parse_json_level(
         parse_allowed_dynamic_objects_in_bsp_tree(&allowed_dynamic_objects_in_bsp_tree)
     };
 
-    let mut level = WorldDescriptor {
+    let descriptor = WorldDescriptor {
         name: level_name,
         static_objects,
         all_shapes_stickiness_radius,
@@ -313,28 +342,14 @@ fn parse_json_level(
         materials_table,
     };
 
-    let (main_render_pipeline, minimap_render_pipeline) = {
-        let shader_name = json_level
-            .get("main_shader")
-            .expect("Wrong JSON map format: JSON level must have a main_shader property")
-            .as_str()
-            .expect("Wrong JSON map format: main_shader property must be a string");
+    let shader_name = json_level
+        .get("main_shader")
+        .expect("Wrong JSON map format: JSON level must have a main_shader property")
+        .as_str()
+        .expect("Wrong JSON map format: main_shader property must be a string")
+        .to_owned();
 
-        build_render_pipeline(
-            gpu,
-            shader_name,
-            is_generated_raymarch_shader,
-            &allowed_dyn_objects,
-            &level
-        )
-    };
-
-    level.gpu = main_render_pipeline.map(|main_pipeline| WorldDescriptorGpu {
-        main_pipeline,
-        minimap_pipeline: minimap_render_pipeline,
-    });
-
-    level
+    WorldPreparation { descriptor, shader_name, allowed_dyn_objects }
 }
 
 

@@ -3,12 +3,17 @@
 
 
 
-use crate::engine::{Engine, shared_systems::ui::UIElementType};
+use std::sync::{mpsc::TryRecvError, Arc};
+
+use crate::engine::{
+    Engine, EngineLoader,
+    loader::{LoadEvent, WindowSurface},
+    shared_systems::ui::UIElementType,
+};
 
 use web_time::Instant;
 use glam::Vec2;
 
-use wgpu::Backend;
 use winit::{
     application::ApplicationHandler, event::*, event_loop::{
         ControlFlow,
@@ -16,118 +21,175 @@ use winit::{
     }, keyboard::{
         KeyCode,
         PhysicalKey
-    }, window::{Fullscreen, WindowAttributes}
+    }, window::{Fullscreen, Window, WindowAttributes}
 };
 
 
-impl Engine
+/// The application runner: loading/event delivery first, simulation timing only once ready.
+pub struct MainLoop
 {
-    /// Runs the application: the winit event loop creates the window, then calls `Engine::tick`
-    /// at the engine's target rate. Returns when the application quits.
-    /// Headless: no winit, a plain tick loop (`graphic_backend` is ignored).
-    ///
-    /// `initial_world`: the world loaded at startup (now the Capture the Flag map, later the main menu).
-    pub fn run(mut self, initial_world: String, graphic_backend: Option<Backend>)
+    state: State,
+    closing: bool,
+    failure: Option<String>,
+    // Last owner on the main thread, including cancellation and late loading results.
+    window: Option<Arc<Window>>,
+}
+
+enum State
+{
+    Loading(EngineLoader),
+    Running(Engine),
+    Stopped,
+}
+
+impl MainLoop
+{
+    pub fn run(loading: EngineLoader)
     {
-        if self.headless
+        if loading.headless
         {
-            self.run_headless(initial_world);
+            let result = loading.receiver.as_ref().unwrap().recv()
+                .expect("ERROR: engine loader disconnected");
+            let LoadEvent::Finished(Ok(Some(loaded))) = result else {
+                if let LoadEvent::Finished(Err(error)) = result { panic!("Engine loading failed: {error}"); }
+                panic!("Headless engine loading did not complete");
+            };
+            let mut engine = Engine::new(loaded, None);
+            drop(loading);
+            while !engine.quit_requested()
+            {
+                let next_tick = Instant::now() + engine.shared.time.target_frame_duration;
+                engine.tick();
+                std::thread::sleep(next_tick.saturating_duration_since(Instant::now()));
+            }
+            engine.shared.global_settings.save();
+            engine.shared.runtime.block_on(engine.shared.global_settings.flush());
             return;
         }
 
-        let event_loop = EventLoop::new().expect("ERROR: can't create the event loop");
-
+        let event_loop = EventLoop::<()>::with_user_event().build()
+            .expect("ERROR: can't create the event loop");
+        loading.set_waker(event_loop.create_proxy());
         let mut main_loop = MainLoop {
-            engine: self,
-            initial_world: Some(initial_world),
-            graphic_backend,
+            state: State::Loading(loading),
+            closing: false,
+            failure: None,
+            window: None,
         };
-
+        event_loop.set_control_flow(ControlFlow::Wait);
         event_loop.run_app(&mut main_loop).expect("ERROR: the event loop failed");
-
-        // Persist user settings once more. The engine is dropped right after: root world, then shared
-        // systems (the render thread is stopped and joined), then the window.
-        main_loop.engine.shared.global_settings.save();
+        if let State::Running(engine) = &main_loop.state
+        {
+            engine.shared.global_settings.save();
+            engine.shared.runtime.block_on(engine.shared.global_settings.flush());
+        }
+        if let Some(error) = &main_loop.failure { panic!("Engine loading failed: {error}"); }
     }
 
-
-    /// Headless main loop: no window, no winit. Ticks at the engine's target rate until a world
-    /// requests to quit.
-    fn run_headless(&mut self, initial_world: String)
+    fn receive_loading_events(&mut self, event_loop: &winit::event_loop::ActiveEventLoop)
     {
-        self.start(None, initial_world, None);
-
-        while !self.quit_requested
+        // A wake can arrive before the first resumed. Leave queued requests for resumed to drain.
+        if self.window.is_none() { return; }
+        loop
         {
-            let next_tick = Instant::now() + self.shared.time.target_frame_duration;
-
-            self.tick();
-
-            std::thread::sleep(next_tick.saturating_duration_since(Instant::now()));
+            let State::Loading(loading) = &self.state else { return; };
+            let event = match loading.receiver.as_ref().unwrap().try_recv()
+            {
+                Ok(event) => event,
+                Err(TryRecvError::Empty) => return,
+                Err(TryRecvError::Disconnected) => {
+                    self.failure = Some("engine loader disconnected".into());
+                    event_loop.exit();
+                    return;
+                }
+            };
+            match event
+            {
+                LoadEvent::CreateSurface { instance, reply } => {
+                    if self.closing { continue; } // Dropping the reply releases the waiting worker.
+                    let window = self.window.as_ref().unwrap().clone();
+                    match instance.create_surface(window.clone())
+                    {
+                        Ok(surface) => {
+                            let size = window.inner_size();
+                            let _ = reply.send(WindowSurface { window, surface, size });
+                        }
+                        Err(error) => {
+                            self.failure = Some(format!("can't create the window surface: {error}"));
+                            self.close(event_loop);
+                        }
+                    }
+                }
+                LoadEvent::Finished(result) => {
+                    match result
+                    {
+                        Ok(Some(loaded)) if !self.closing => {
+                            let mut engine = Engine::new(loaded, self.window.clone());
+                            // The window may have been resized/minimized during loading.
+                            engine.on_window_resized(self.window.as_ref().unwrap().inner_size());
+                            event_loop.set_control_flow(ControlFlow::WaitUntil(
+                                Instant::now() + engine.shared.time.target_frame_duration
+                            ));
+                            self.state = State::Running(engine);
+                        }
+                        result => {
+                            if let Err(error) = result { self.failure = Some(error); }
+                            self.state = State::Stopped;
+                            event_loop.exit();
+                        }
+                    }
+                    return;
+                }
+            }
         }
     }
+
+    fn close(&mut self, event_loop: &winit::event_loop::ActiveEventLoop)
+    {
+        self.closing = true;
+        if let State::Loading(loading) = &self.state
+        {
+            loading.cancel();
+            if let Some(window) = &self.window { window.set_visible(false); }
+            // Keep dispatching while an in-flight driver call finishes. Never join it in a callback.
+            self.receive_loading_events(event_loop);
+        }
+        else { event_loop.exit(); }
+    }
 }
-
-
-/// The winit application: creates the window and starts the engine, forwards events,
-/// handles the window-level hotkeys and calls `Engine::tick` at the engine's target rate.
-struct MainLoop
-{
-    engine: Engine,
-    /// Startup parameters, used once the window is created (`StartCause::Init`).
-    initial_world: Option<String>,
-    graphic_backend: Option<Backend>,
-}
-
 
 impl ApplicationHandler for MainLoop
 {
-    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {}
-
-
-    fn new_events(&mut self, event_loop: &winit::event_loop::ActiveEventLoop, cause: StartCause) {
-        match cause {
-            StartCause::Init => {
-                let window = event_loop
-                    .create_window(
-                        WindowAttributes::default()
-                        .with_active(true)
-                        .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
-                        .with_title("Slice: 4D Shooter")
-                    )
-                    .unwrap();
-
-                let engine = &mut self.engine;
-
-                engine.start(
-                    Some(window),
-                    self.initial_world.take().unwrap(),
-                    self.graphic_backend,
-                );
-
-                event_loop.set_control_flow(ControlFlow::WaitUntil(
-                    Instant::now() + engine.shared.time.target_frame_duration
-                ));
-            }
-            StartCause::ResumeTimeReached {..} => {
-                let engine = &mut self.engine;
-
-                event_loop.set_control_flow(ControlFlow::WaitUntil(
-                    Instant::now() + engine.shared.time.target_frame_duration
-                ));
-
-                engine.tick();
-
-                if engine.quit_requested()
-                {
-                    event_loop.exit();
-                }
-            }
-            StartCause::WaitCancelled {..} => {}
-            StartCause::Poll => {}
+    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop)
+    {
+        if self.window.is_none()
+        {
+            self.window = Some(Arc::new(event_loop.create_window(
+                WindowAttributes::default()
+                    .with_active(true)
+                    .with_fullscreen(Some(Fullscreen::Borderless(None)))
+                    .with_title("Slice: 4D Shooter")
+            ).expect("ERROR: can't create the window")));
         }
+        self.receive_loading_events(event_loop);
     }
 
+    fn user_event(&mut self, event_loop: &winit::event_loop::ActiveEventLoop, _event: ())
+    {
+        self.receive_loading_events(event_loop);
+    }
+
+    fn new_events(&mut self, event_loop: &winit::event_loop::ActiveEventLoop, cause: StartCause)
+    {
+        if let (StartCause::ResumeTimeReached {..}, State::Running(engine)) = (cause, &mut self.state)
+        {
+            event_loop.set_control_flow(ControlFlow::WaitUntil(
+                Instant::now() + engine.shared.time.target_frame_duration
+            ));
+            engine.tick();
+            if engine.quit_requested() { event_loop.exit(); }
+        }
+    }
 
     fn device_event(
         &mut self,
@@ -135,7 +197,7 @@ impl ApplicationHandler for MainLoop
         _device_id: DeviceId,
         event: DeviceEvent,
     ) {
-        let engine = &mut self.engine;
+        let State::Running(engine) = &mut self.state else { return; };
 
         match event {
             DeviceEvent::MouseMotion {delta} => {
@@ -155,7 +217,12 @@ impl ApplicationHandler for MainLoop
         _window_id: winit::window::WindowId,
         event: WindowEvent,
     ) {
-        let engine = &mut self.engine;
+        if matches!(event, WindowEvent::CloseRequested)
+        {
+            self.close(event_loop);
+            return;
+        }
+        let State::Running(engine) = &mut self.state else { return; };
 
         let Some(window) = engine.window().cloned() else {
             return;

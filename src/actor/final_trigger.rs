@@ -63,8 +63,8 @@ impl FinalTrgger
         let name = self.next_level_name.clone();
         let gpu = shared.gpu.clone();
 
-        self.next_world = Some(shared.runtime.spawn_blocking(move || {
-            WorldDescriptor::load(&name, gpu)
+        self.next_world = Some(shared.runtime.spawn(async move {
+            WorldDescriptor::load(&name, gpu).await
         }));
     }
 
