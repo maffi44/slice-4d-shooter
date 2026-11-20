@@ -247,14 +247,14 @@ impl World
 
     // ---- world → owner ----
 
-    /// The world's requests to its owner, taken one by one (`pop`, no reallocation).
+    /// The world's requests to its owner, taken one by one in sending order (no reallocation).
     #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
     pub fn take_outer_world_messages(&mut self) -> impl Iterator<Item = OuterWorldMessage> + '_
     {
         self.messenger.take_outer_world_messages()
     }
 
-    /// Takes one request to the owner. Useful when the owner needs `&mut self` while handling it
+    /// Takes the oldest request to the owner. Useful when the owner needs `&mut self` while handling it
     /// (the iterator would keep the world borrowed).
     pub fn pop_outer_world_message(&mut self) -> Option<OuterWorldMessage>
     {

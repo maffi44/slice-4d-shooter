@@ -7,7 +7,6 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | Task | Priority | Status | Created | Review |
 |---|---|---|---|---|
 | [Close connections when their owner is removed](programming/session-connection-lifetime/) | High | Open — not implemented | 2026-11-16 | 2 |
-| [Define and preserve message ordering](programming/message-ordering/) | High | Open — not implemented | 2026-11-16 | 3 |
 | [Configurable target render frame rate](programming/render-frame-rate-setting/) | Normal | Open — awaiting author review | 2026-11-20 | — |
 | [Engine tick scheduling](programming/engine-tick-rate/) | Normal | Open — decision or implementation pending | 2026-11-13 | — |
 | [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Open — decision or implementation pending | 2026-11-13 | 12 |
@@ -15,6 +14,7 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | [Render resources for worlds and dynamic UI textures](programming/render-resources/) | Normal | Open — design pending | 2026-11-20 | — |
 | [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/) | Normal | Open — decision or implementation pending | 2026-11-20 | — |
 | [Research vertical synchronization and display refresh rate](programming/vsync-research/) | Normal | Open — research pending | 2026-11-20 | — |
+| [Review the engine for cache-friendly memory layout](programming/cache-friendly-memory-layout/) | Normal | Open — research pending | 2026-11-20 | — |
 | [Preserve short presses and multiple input bindings](programming/input-button-state/) | Normal | Open — not implemented | 2026-11-16 | 4 |
 | [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Open — not implemented | 2026-11-16 | 7 |
 | [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Open — not implemented | 2026-11-16 | 9 |

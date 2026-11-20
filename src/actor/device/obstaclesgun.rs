@@ -202,7 +202,7 @@ impl ObstaclesGun {
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
-                        ActorWrapper::ObstaclesGunShot(obstacle)
+                        Box::new(ActorWrapper::ObstaclesGunShot(obstacle))
                     )
                 }
             );
@@ -244,7 +244,7 @@ impl ObstaclesGun {
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
-                        ActorWrapper::HoleGunMiss(miss)
+                        Box::new(ActorWrapper::HoleGunMiss(miss))
                     )
                 }
             );

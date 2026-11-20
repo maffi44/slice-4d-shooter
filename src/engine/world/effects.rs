@@ -47,7 +47,7 @@ pub fn spawn_wave(
         Command {
             sender: 0u128,
             command_type: CommandType::SpawnActor(
-                ActorWrapper::Wave(wave)
+                Box::new(ActorWrapper::Wave(wave))
             )
         }
     );

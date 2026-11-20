@@ -52,7 +52,8 @@ impl Actors
             },
         };
 
-        self.place(id, actor, messenger);
+        self.vacate(id, messenger);
+        self.actors.insert(id, actor);
 
         id
     }
@@ -84,17 +85,25 @@ impl Actors
             return;
         }
 
-        let Some(mut actor) = self.actors.remove(&old_id) else
+        if !self.actors.contains_key(&old_id)
         {
             log::warn!("Actors::change_id: no actor with the old id, the id is not changed");
             return;
-        };
+        }
 
         let changed_actor_was_main = self.main_actor_id == old_id;
 
+        // The displaced actor's notification (new -> random) must be queued before the changed
+        // actor's one (old -> new): see `vacate`. Vacating while `old_id` is still taken also keeps
+        // the displaced actor's random id different from `old_id`.
+        self.vacate(new_id, messenger);
+
+        let mut actor = self.actors.remove(&old_id)
+            .expect("the actor disappeared while its new id was vacated");
+
         actor.change_id(new_id, messenger);
 
-        self.place(new_id, actor, messenger);
+        self.actors.insert(new_id, actor);
 
         if changed_actor_was_main
         {
@@ -102,16 +111,18 @@ impl Actors
         }
     }
 
-    /// Puts `actor` (whose id is already `id`) at `id`, displacing the previous holder of `id`
-    /// to a fresh random id and keeping `main_actor_id` on the displaced actor if it was the main one.
+    /// Frees `id` before another actor is stored under it: its current holder (if any) is moved
+    /// to a fresh random id, broadcasts `IWasChangedMyId` (id -> random), and keeps `main_actor_id`
+    /// if it was the main actor.
     ///
-    /// Notification order: in `change_id` the changed actor's `IWasChangedMyId` (old -> new) is
-    /// pushed before the displaced actor's one (new -> random). The current LIFO pump delivers the
-    /// displaced actor's notification first, so a receiver that tracks ids (e.g. `MoveWBonusSpot`)
-    /// never applies both renames to one reference. See issues/programming/message-ordering/.
-    fn place(&mut self, id: ActorID, actor: ActorWrapper, messenger: &mut Messenger)
+    /// Notification order: the displaced actor's notification is queued before the notification of
+    /// the actor that takes `id` (old -> id). With FIFO delivery a receiver that tracks ids
+    /// (e.g. `MoveWBonusSpot`) first moves a reference to `id` onto the random id, and only then a
+    /// reference to `old` onto `id`, so no reference is renamed twice.
+    /// See issues/programming/message-ordering/.
+    fn vacate(&mut self, id: ActorID, messenger: &mut Messenger)
     {
-        if let Some(mut displaced_actor) = self.actors.insert(id, actor)
+        if let Some(mut displaced_actor) = self.actors.remove(&id)
         {
             let new_id_for_displaced_actor = self.get_new_random_uniq_id();
 
@@ -227,7 +238,6 @@ mod tests
     fn id_change_notifications(messenger: &Messenger) -> Vec<(ActorID, ActorID)>
     {
         messenger.queued_broadcast_messages()
-            .iter()
             .filter_map(|message| match message.message
             {
                 MessageType::CommonActorsMessages(CommonActorsMessage::IWasChangedMyId(new_id)) =>
@@ -328,9 +338,9 @@ mod tests
         assert_eq!(actors.main_actor_id(), 20);
         let notifications = id_change_notifications(&messenger);
         assert_eq!(notifications.len(), 2);
-        assert_eq!(notifications[0], (10, 20));
-        assert_eq!(notifications[1].0, 20);
-        assert!(actors.get(&notifications[1].1).is_some());
+        assert_eq!(notifications[0].0, 20);
+        assert!(actors.get(&notifications[0].1).is_some());
+        assert_eq!(notifications[1], (10, 20));
         assert_ids_valid(&actors, 2);
     }
 
@@ -344,7 +354,7 @@ mod tests
         let main_id = actors.main_actor_id();
         assert_ne!(main_id, 10);
         assert_ne!(main_id, 20);
-        assert_eq!(id_change_notifications(&messenger), vec![(20, 10), (10, main_id)]);
+        assert_eq!(id_change_notifications(&messenger), vec![(10, main_id), (20, 10)]);
         assert_ids_valid(&actors, 2);
     }
 

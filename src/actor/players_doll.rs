@@ -384,7 +384,7 @@ impl PlayerDoll {
             Command {
                 sender: self.get_id().expect("Player have not ActorID"),
                 command_type: CommandType::SpawnActor(
-                    super::ActorWrapper::PlayersDeathExplosion(players_death_explode)
+                    Box::new(super::ActorWrapper::PlayersDeathExplosion(players_death_explode))
                 )
             }
         );
@@ -885,9 +885,9 @@ impl Actor for PlayerDoll {
                                     messenger.send_command(Command {
                                         sender: 0u128,
                                         command_type: CommandType::SpawnActor(
-                                            ActorWrapper::ShootingImpact(
+                                            Box::new(ActorWrapper::ShootingImpact(
                                                 ShootingImpact::new(*impact_pos, *damage)
-                                            )
+                                            ))
                                         )
                                     });
     
@@ -995,7 +995,7 @@ impl Actor for PlayerDoll {
                                 messenger.send_command(Command {
                                     sender: 0u128,
                                     command_type: CommandType::SpawnActor(
-                                        ActorWrapper::ShotgunShotSource(shotgun_shot_source)
+                                        Box::new(ActorWrapper::ShotgunShotSource(shotgun_shot_source))
                                     )
                                 })
                             },
@@ -1123,7 +1123,7 @@ impl Actor for PlayerDoll {
     
                                 messenger.send_command(Command {
                                     sender: 0u128,
-                                    command_type: CommandType::SpawnActor(actor)
+                                    command_type: CommandType::SpawnActor(Box::new(actor))
                                 })
                             },
 
@@ -1177,7 +1177,7 @@ impl Actor for PlayerDoll {
     
                                 messenger.send_command(Command {
                                     sender: 0u128,
-                                    command_type: CommandType::SpawnActor(actor)
+                                    command_type: CommandType::SpawnActor(Box::new(actor))
                                 })
                             },
 
@@ -1231,7 +1231,7 @@ impl Actor for PlayerDoll {
 
                                 messenger.send_command(Command {
                                     sender: 0u128,
-                                    command_type: CommandType::SpawnActor(actor)
+                                    command_type: CommandType::SpawnActor(Box::new(actor))
                                 })
                             },
 
@@ -1263,7 +1263,7 @@ impl Actor for PlayerDoll {
 
                                 messenger.send_command(Command {
                                     sender: 0u128,
-                                    command_type: CommandType::SpawnActor(actor)
+                                    command_type: CommandType::SpawnActor(Box::new(actor))
                                 })
                             }
 

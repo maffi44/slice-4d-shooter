@@ -6,6 +6,7 @@ Newest closure first. A task is listed here only after the author confirms its c
 
 | Task | Opened | Closed | Resolution |
 |---|---|---|---|
+| [Define and preserve message ordering](programming/message-ordering/) | 2026-11-16 | 2026-11-20 | Done — reviewed by the author |
 | [Deliver broadcast messages by reference](programming/borrow-broadcast-messages/) | 2026-11-16 | 2026-11-20 | Done — reviewed by the author |
 | [Preserve main_actor_id during actor ID collisions](programming/main-actor-id-collisions/) | 2026-11-16 | 2026-11-20 | Done — closed at the author's request without separate review |
 | [Limit the render rate to the simulation rate](programming/render-rate-limit/) | 2026-11-20 | 2026-11-20 | Superseded — the 60 FPS cap felt worse in play; replaced by [configurable target render frame rate](programming/render-frame-rate-setting/) |

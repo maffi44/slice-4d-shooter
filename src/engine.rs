@@ -85,7 +85,7 @@ impl Engine
         }
 
         // One message at a time: handling one needs `&mut self` (e.g. replacing the root world),
-        // so the world can't stay borrowed by an iterator. `pop` doesn't reallocate.
+        // so the world can't stay borrowed by an iterator. Oldest first; nothing is reallocated.
         while let Some(message) = self.root_world.as_mut().and_then(|world| world.pop_outer_world_message())
         {
             self.handle_outer_world_message(message);

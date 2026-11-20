@@ -3360,7 +3360,7 @@ pub fn die
             Command {
                 sender: my_id,
                 command_type: CommandType::SpawnActor(
-                    super::ActorWrapper::PlayersDeathExplosion(players_death_explode)
+                    Box::new(super::ActorWrapper::PlayersDeathExplosion(players_death_explode))
                 )
             }
         );

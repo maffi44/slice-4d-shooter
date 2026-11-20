@@ -186,7 +186,7 @@ impl ShotgunShotSource
                 Command {
                     sender: damage_dealer_id,
                     command_type: CommandType::SpawnActor(
-                        super::ActorWrapper::ShotgunLaserShot(shotgun_laser_shot)
+                        Box::new(super::ActorWrapper::ShotgunLaserShot(shotgun_laser_shot))
                     )
                 }
             );

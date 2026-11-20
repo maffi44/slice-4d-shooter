@@ -148,7 +148,7 @@ impl Shotgun {
             Command {
                 sender: player_id,
                 command_type: CommandType::SpawnActor(
-                    ActorWrapper::ShotgunShotSource(shotgun_shot_source)
+                    Box::new(ActorWrapper::ShotgunShotSource(shotgun_shot_source))
                 )
             }
         );

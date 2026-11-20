@@ -209,7 +209,7 @@ impl MachineGun {
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
-                        ActorWrapper::MachinegunShot(shot)
+                        Box::new(ActorWrapper::MachinegunShot(shot))
                     )
                 }
             );
@@ -246,7 +246,7 @@ impl MachineGun {
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
-                        ActorWrapper::MachinegunShot(shot)
+                        Box::new(ActorWrapper::MachinegunShot(shot))
                     )
                 }
             );

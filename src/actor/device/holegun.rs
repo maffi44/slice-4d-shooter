@@ -249,7 +249,7 @@ impl HoleGun {
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
-                        ActorWrapper::HoleGunShot(hole)
+                        Box::new(ActorWrapper::HoleGunShot(hole))
                     )
                 }
             );
@@ -291,7 +291,7 @@ impl HoleGun {
                 Command {
                     sender: player_id,
                     command_type: CommandType::SpawnActor(
-                        ActorWrapper::HoleGunMiss(miss)
+                        Box::new(ActorWrapper::HoleGunMiss(miss))
                     )
                 }
             );

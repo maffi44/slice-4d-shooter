@@ -784,7 +784,7 @@ fn process_message(
                     messenger.send_command(Command {
                         sender: 0u128,
                         command_type: CommandType::SpawnActor(
-                            ActorWrapper::PlayersDeathExplosion(player_death_explode)
+                            Box::new(ActorWrapper::PlayersDeathExplosion(player_death_explode))
                         )
                     });
                 },
@@ -812,7 +812,7 @@ fn process_message(
 
                     messenger.send_command(Command {
                         sender: 0u128,
-                        command_type: CommandType::SpawnActor(actor)
+                        command_type: CommandType::SpawnActor(Box::new(actor))
                     })
                 }
 
@@ -843,7 +843,7 @@ fn process_message(
 
                     messenger.send_command(Command {
                         sender: 0u128,
-                        command_type: CommandType::SpawnActor(actor)
+                        command_type: CommandType::SpawnActor(Box::new(actor))
                     })
                 }
             }
