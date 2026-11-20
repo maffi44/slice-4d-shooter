@@ -1,12 +1,13 @@
 # Engine refactoring: isolated, nestable worlds
 
-- **Status:** ✅ Done — accepted by the author on 2026-11-16
+- **Status:** Done — accepted by the author on 2026-11-16
 - **Priority:** Normal
 - **Created:** 2026-11-12
-- **Completed:** 2026-11-16
+- **Closed:** 2026-11-16
+- **Resolution:** Done
 - **Implementation commit:** `caea9ec` (confirmed by the author)
 - **Stable address:** `issues/programming/engine-refactoring-world-isolation/`
-- **Context:** [done-2026-11-16-engine-refactoring-world-isolation-context.md](done-2026-11-16-engine-refactoring-world-isolation-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
+- **Context:** [engine-refactoring-world-isolation-context.md](engine-refactoring-world-isolation-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
 
 ## Current state and scope
 

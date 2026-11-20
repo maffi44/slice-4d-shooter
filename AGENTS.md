@@ -72,26 +72,27 @@ Known limitations: [allocator](issues/programming/global-allocator/) documents b
 
 ## Issues and decision context
 
-Start with [issues/README.md](issues/README.md), then read the relevant main task. Issues cover all project areas, under `issues/<area>/<stable-slug>/`. Programming is one area; add others when needed.
+Start with [open tasks](issues/open-tasks.md), then read the relevant main task; [issues/README.md](issues/README.md) holds the shared rules and review dispositions. Read [closed tasks](issues/closed-tasks.md) only when history is needed. Issues cover all project areas, under `issues/<area>/<stable-slug>/`. Programming is one area; add others when needed.
 
 Track a change that contributes to a broader task’s completion criteria as a step within that task. Keep unrelated large work in separate issues.
 
 Each task has a concise main file containing the problem, current decisions, scope, status, priority, open choices and completion criteria. Put extended rationale, discussion, rejected variants, experiments and implementation history in a sibling `-context.md` file when needed. Do not create empty context files merely for symmetry. Read the relevant context when investigating why a choice was made, changing it or needing details; do not load every historical discussion for every task.
 
-### Naming and stable links
+### Naming, lists and stable links
 
-- The directory slug is a permanent address: e.g. `issues/programming/global-allocator/`. Do not rename it for priority or completion.
-- Open task: `global-allocator.md`; context: `global-allocator-context.md`. No date in open filenames; creation dates stay in metadata.
-- High priority: `high-priority-<slug>.md` and `high-priority-<slug>-context.md`. Also set **Priority: High** in the task and index. Normal and long-term priority need no filename prefix; record them in metadata/index. Preserve context pairing when priority changes.
-- Completed task: `done-YYYY-MM-DD-<stem>.md` and `done-YYYY-MM-DD-<stem>-context.md`, where `<stem>` includes `high-priority-` if present. The date is **completion**, not creation. Rename only after the author confirms completion, even if implementation is ready.
-- Cross-task/document/source-comment references point to the stable directory, with the role/section described: “decision rationale in this task's context, §19”. The directory shows the current pair, including completion/priority in filenames. This avoids repository-wide link changes at completion and works without symlinks or redirect stubs.
-- Inside the pair, link directly to the sibling filename and update those local links when renaming. If a precise cross-file anchor really requires a direct filename, update that exceptional link at rename; stable directory links are the default. Keep the index status current. Neither completion nor priority changes require moving directories.
+- The directory slug is a permanent address: e.g. `issues/programming/global-allocator/`. Never rename or move it.
+- Files: `global-allocator.md` and, when needed, `global-allocator-context.md`. Filenames never change for priority, status or closure. Metadata at the top of the main file holds **Status**, **Priority**, **Created** and, after closure, **Closed** and **Resolution**.
+- [Open tasks](issues/open-tasks.md) list every open task with priority, status and creation date, sorted by priority (High → Normal → Long-term), then status group (awaiting author review → decision/design pending → not implemented → backlog), then creation date. Add new tasks in their sorted place; move a row when its priority or status changes.
+- [Closed tasks](issues/closed-tasks.md) list opening date, closing date and resolution, newest closure first. Resolutions: Done, Obsolete, Superseded, Rejected, Duplicate; for anything other than Done, give the reason or linked task. Close only after the author confirms, even if implementation is ready: update the metadata, then move the row from the open list to the top of the closed list. Reopening moves it back with a reason in the context.
+- Keep task metadata and list rows consistent.
+- The author often reviews and commits without saying the task is finished. When a task's implementation is complete and it awaits the author's review, end the final report with one line (in Russian) reminding the author to say after review that the task is done, so it can be moved to the closed list.
+- Cross-task/document/source-comment references point to the stable directory, with the role/section described: “decision rationale in this task's context, §19”. Closure and priority changes therefore never break links. Inside the pair, link directly to the sibling filename.
 
 ### Context chains and decision history
 
 State a decision and its short reason where it is used; link to the task/context containing the wider argument. That context can link to older contexts instead of copying them. Example: JSON actor descriptions avoided mandatory actor cloning and premature world side effects ([refactoring context](issues/programming/engine-refactoring-world-isolation/), Part I and §12); activation-time resource loading now motivates [async world preparation](issues/programming/async-world-preparation/), which links to [resource-system context](issues/programming/resource-system/).
 
-Follow only relevant links. Before reversing an earlier decision, explain which premise changed or which new evidence invalidates it. Keep intermediate ideas and rejected variants; mark them superseded with a reason, rather than erasing them. Use ✅ accepted, 💡 proposed, ❓ open, ❌ rejected/superseded. The main task is the current summary; context is historical evidence, not a second conflicting specification. Keep a chronological discussion/implementation log there as work proceeds. Date events and preserve author preferences as preferences until a design is actually approved.
+Follow only relevant links. Before reversing an earlier decision, explain which premise changed or which new evidence invalidates it. Keep intermediate ideas and rejected variants; mark them superseded with a reason, rather than erasing them. Mark items with plain-text tags `[accepted]`, `[proposed]`, `[open]` and `[rejected]` (or `[superseded]`). Do not use emoji in documentation or rules. The main task is the current summary; context is historical evidence, not a second conflicting specification. Keep a chronological discussion/implementation log there as work proceeds. Date events and preserve author preferences as preferences until a design is actually approved.
 
 ## Conventions and licensing
 

@@ -53,11 +53,11 @@ At the initial research stage, no runtime experiment or startup code change was 
 
 ## 2026-11-16 — Author's separate-loader proposal and authorization
 
-✅ The author does not want Startup state/handles inside Engine. He proposed a function in the engine module returning an asynchronous loading object passed into MainLoop.run; this object owns task handles and dependency sequencing. When initialization finishes, Engine.new consumes the completed load. He authorized a first implementation if the design is sound, for subsequent review.
+[accepted] The author does not want Startup state/handles inside Engine. He proposed a function in the engine module returning an asynchronous loading object passed into MainLoop.run; this object owns task handles and dependency sequencing. When initialization finishes, Engine.new consumes the completed load. He authorized a first implementation if the design is sound, for subsequent review.
 
-❌ Superseded: the earlier recommendation to construct a lightweight, partially initialized Engine in main with a Startup member. Its premise was that Engine should own initialization sequencing. The separate loader preserves explicit ownership while giving Engine a clearer invariant: required startup preparation is complete before it exists. The main loop still owns window/platform events; the loader owns loading, not simulation.
+[rejected] Superseded: the earlier recommendation to construct a lightweight, partially initialized Engine in main with a Startup member. Its premise was that Engine should own initialization sequencing. The separate loader preserves explicit ownership while giving Engine a clearer invariant: required startup preparation is complete before it exists. The main loop still owns window/platform events; the loader owns loading, not simulation.
 
-✅ Implementation refinement: the pending object is `EngineLoader`; its successful result is `LoadedEngine`. Passing the latter to `Engine::new` prevents an unfinished handle from being mistaken for ready state. `engine::load(level, backend, headless)` performs actual work (runtime creation and launching CPU/instance jobs), not a forwarding-only wrapper. MainLoop is externally callable and remains in `engine/main_loop.rs`.
+[accepted] Implementation refinement: the pending object is `EngineLoader`; its successful result is `LoadedEngine`. Passing the latter to `Engine::new` prevents an unfinished handle from being mistaken for ready state. `engine::load(level, backend, headless)` performs actual work (runtime creation and launching CPU/instance jobs), not a forwarding-only wrapper. MainLoop is externally callable and remains in `engine/main_loop.rs`.
 
 ## First implementation log
 
@@ -96,7 +96,7 @@ Subsequent GL verification reproduced a context-lock timeout during a long first
 
 ## 2026-11-17 — Async I/O audit and implementation
 
-✅ The author requested async resource/I/O APIs wherever they fit the engine without disproportionate complexity, and authorized implementation plus an AGENTS rule. The earlier “put the entire load on a blocking worker” approach was safe for responsiveness but exposed an unnecessarily synchronous API to its callers. Resource I/O now composes with other futures; synchronous CPU/native work remains explicitly isolated.
+[accepted] The author requested async resource/I/O APIs wherever they fit the engine without disproportionate complexity, and authorized implementation plus an AGENTS rule. The earlier “put the entire load on a blocking worker” approach was safe for responsiveness but exposed an unnecessarily synchronous API to its callers. Resource I/O now composes with other futures; synchronous CPU/native work remains explicitly isolated.
 
 ### Findings
 
@@ -136,3 +136,7 @@ Subsequent GL verification reproduced a context-lock timeout during a long first
 - Headless release run reached `engine: ready` with asynchronous map/configuration loading; deliberately stopped after 8 seconds by timeout (124).
 - Graphical Vulkan reached the rendered CTF world at 960×640 and exited normally (0), including the final settings flush. The window appeared in 0.107 s; 21 startup ping samples had a maximum observed round trip of 5.13 ms (5 ms sampling granularity, not a latency benchmark).
 - `git diff --check` passed. Native Windows/macOS execution and actor-driven map transitions were not runtime-tested in this pass; all affected entry points/actor code compile. No production connection or commit.
+
+## 2026-11-20 — Closed
+
+[accepted] The author confirmed that the review was done and the implementation committed in `76d73d9`; the task is closed as Done. Later changes go to new or existing open tasks.

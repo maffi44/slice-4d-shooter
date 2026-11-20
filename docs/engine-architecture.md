@@ -1,6 +1,6 @@
 # Engine architecture reference
 
-Implementation reference updated 2026-11-20. For working rules see [AGENTS.md](../AGENTS.md); for task status see the [issue index](../issues/README.md).
+Implementation reference updated 2026-11-20. For working rules see [AGENTS.md](../AGENTS.md); for task status see the [open tasks](../issues/open-tasks.md).
 
 ## Engine architecture (`src/engine.rs`, `src/engine/main_loop.rs`)
 
@@ -50,7 +50,7 @@ During initial map preparation, constructors execute on a loading worker. They r
 
 A session request pins its resource until shutdown. Ordinary resources expire after 60 seconds of unused cache-update time. Startup registers its descriptor under the same key as transitions so CPU map preparation can overlap device discovery. A final trigger with `async_preload` requests the destination on addition. Otherwise it requests the destination at transition time. In both cases it polls each tick and sends one replacement message on success or logs one error on failure. Older maps may retain the boolean `async_load` field with either value.
 
-Engine tick (`Engine::tick`), target 60 Hz (`GlobalTimeSystem::new(60)`). ⚠️ The average period is currently a bit longer than 16.(6) ms, see [engine-tick-rate](../issues/programming/engine-tick-rate/):
+Engine tick (`Engine::tick`), target 60 Hz (`GlobalTimeSystem::new(60)`). Note: The average period is currently a bit longer than 16.(6) ms, see [engine-tick-rate](../issues/programming/engine-tick-rate/):
 1. `shared.pre_simulate()`: gamepad input, `time.start_of_frame`, frame input actions, `net.tick` (poll sockets)
 2. `root_world.simulate(&mut shared)`, then handle the root world's `OuterWorldMessage`s (quit, replace root world, ...)
 3. render hotkeys (`i`/`O` root output scale, `P` shadows; persisted)

@@ -10,13 +10,13 @@ Define how a caller describes rendering into a texture, supplies the data its sh
 
 ## Required change within this task
 
-✅ Remove the minimap shader and pipeline from the map contract. A map supplies only the pipelines needed to render the world itself. Today the map parser reads `main_shader`, while world preparation also selects minimap WGSL and stores an optional `minimap_pipeline` in `WorldDescriptorGpu`. Trace its consumers and move any required HUD rendering to the owner of that effect. Map loading should no longer generate, compile or carry a minimap pipeline for the HUD.
+[accepted] Remove the minimap shader and pipeline from the map contract. A map supplies only the pipelines needed to render the world itself. Today the map parser reads `main_shader`, while world preparation also selects minimap WGSL and stores an optional `minimap_pipeline` in `WorldDescriptorGpu`. Trace its consumers and move any required HUD rendering to the owner of that effect. Map loading should no longer generate, compile or carry a minimap pipeline for the HUD.
 
 ## Design and review
 
 - Describe the caller-facing operations for creating a dynamic texture, updating shader inputs and displaying the output. Use the scanner and a world output as concrete examples before choosing types.
 - Decide who owns the pipeline, target texture, buffers and bindings, which resources can be shared and which belong to an instance. Account for resize, teardown and switching the presented world while the scanner is visible.
-- 💡 A common rendering path for worlds and shader-driven UI textures is a proposal. Document which responsibilities coincide and any concrete reason to keep a difference. Coordinate buffer update semantics with [GPU data grouping](../gpu-data-grouping/) and reusable asset ownership with [Resource System](../resource-system/).
+- [proposed] A common rendering path for worlds and shader-driven UI textures is a proposal. Document which responsibilities coincide and any concrete reason to keep a difference. Coordinate buffer update semantics with [GPU data grouping](../gpu-data-grouping/) and reusable asset ownership with [Resource System](../resource-system/).
 
 ## Completion criteria
 

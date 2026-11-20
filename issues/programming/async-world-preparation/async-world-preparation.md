@@ -1,10 +1,13 @@
 # Prepare and validate worlds asynchronously
 
-- **Status:** Implemented — awaiting author review
+- **Status:** Done — accepted by the author on 2026-11-20
 - **Priority:** High
 - **Created:** 2026-11-16
+- **Closed:** 2026-11-20
+- **Resolution:** Done
+- **Implementation commit:** `858c5ae` (reviewed by the author)
 - **Stable address:** `issues/programming/async-world-preparation/`
-- **Context:** [high-priority-async-world-preparation-context.md](high-priority-async-world-preparation-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
+- **Context:** [async-world-preparation-context.md](async-world-preparation-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
 
 ## Task
 

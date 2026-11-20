@@ -4,7 +4,7 @@
 - **Priority:** High
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/main-actor-id-collisions/`
-- **Context:** [high-priority-main-actor-id-collisions-context.md](high-priority-main-actor-id-collisions-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
+- **Context:** [main-actor-id-collisions-context.md](main-actor-id-collisions-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
 
 ## Task
 

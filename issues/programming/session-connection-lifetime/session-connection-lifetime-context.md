@@ -1,6 +1,6 @@
 # Context: Close connections when their owner is removed
 
-[Current task](high-priority-session-connection-lifetime.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
+[Current task](session-connection-lifetime.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
 
 Review point 2. The author confirmed the finding and called it very high priority on 2026-11-16. No implementation mechanism was selected.
 

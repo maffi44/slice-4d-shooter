@@ -9,7 +9,7 @@ The following original issue is preserved in full. Its old filename rules, statu
 # Most maps don't load: map files are out of sync with the map parser
 
 - **Created:** 2026-11-16
-- **Status:** ❓ open (found, not fixed, not discussed with the author yet)
+- **Status:** [open] open (found, not fixed, not discussed with the author yet)
 - **Area:** programming (map loading, `src/engine/world/world_descriptor.rs`), level design (map files)
 - **Related:** `issues/programming/engine-refactoring-world-isolation/` (found while verifying it: §24.9 round 7 and round 10, §24.10)
 
@@ -33,16 +33,16 @@ The list isn't complete: after a missing property is added, the next missing one
 
 `WorldDescriptor::load` tries `./<name>.json` first, so you can run the client from another directory with a fixed copy: copy the map to a scratch directory, add the missing properties, run `<repo>/target/x86_64-unknown-linux-gnu/release/game-client -l <copy-name>` from that directory. This was used in round 10 to check that the hand-written raymarch shaders (`raymarch_shader_obstacle_course*.wgsl`) still compile. Their pipelines are created in `load`; the run then panicked later, in `create_actors`, on `final_trigger.async_preload`.
 
-## 3. Options (💡, to discuss with the author)
+## 3. Options ([proposed], to discuss with the author)
 
-- 💡 Update the map files: add the missing properties with the values the old behaviour implied (`it_is_2d_3d_example: false`, `async_preload`/`async_load: false`, a permissive `allowed_dynamic_objects_in_bsp_tree`).
-- 💡 Or make the parser use defaults for optional properties (`unwrap_or(default)` instead of `expect`) so that older maps keep loading. This is simpler for content, but it hides mistakes in new maps.
-- ❓ Which maps are still wanted at all (obstacle course, puzzle levels, 2D/3D example)? Unwanted ones could move to `old_maps_archive/`.
+- [proposed] Update the map files: add the missing properties with the values the old behaviour implied (`it_is_2d_3d_example: false`, `async_preload`/`async_load: false`, a permissive `allowed_dynamic_objects_in_bsp_tree`).
+- [proposed] Or make the parser use defaults for optional properties (`unwrap_or(default)` instead of `expect`) so that older maps keep loading. This is simpler for content, but it hides mistakes in new maps.
+- [open] Which maps are still wanted at all (obstacle course, puzzle levels, 2D/3D example)? Unwanted ones could move to `old_maps_archive/`.
 - Note: the JSON keys contain typos (`frenel_color`, `sticiness_negative_*`, `trgger` in some names). They were deliberately not renamed in round 10. If the map format gets touched anyway, decide whether to fix them, which would mean updating all maps and the parser together.
 
 ## 4. Decision log
 
 | # | Topic | Decision | Status |
 |---|---|---|---|
-| M1 | Fix maps vs. parser defaults | — | ❓ |
-| M2 | Which maps to keep | — | ❓ |
+| M1 | Fix maps vs. parser defaults | — | Open |
+| M2 | Which maps to keep | — | Open |

@@ -1,10 +1,10 @@
 # Context: Engine refactoring: isolated, nestable worlds
 
-[Current task](done-2026-11-16-engine-refactoring-world-isolation.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
+[Current task](engine-refactoring-world-isolation.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
 
 ## Completion (2026-11-16)
 
-The author accepted the refactoring as complete on 2026-11-16; both files were renamed with the `done-2026-11-16-` prefix. Follow-ups from the 2026-11-16 review stay in their own tasks (see the main task).
+The author accepted the refactoring as complete on 2026-11-16; both files were renamed with the `done-2026-11-16-` prefix (removed on 2026-11-20, when status moved to the task lists; see the [issue README](../../README.md#tracking-convention-history)). Follow-ups from the 2026-11-16 review stay in their own tasks (see the main task).
 
 ## Preserved history (before the 2026-11-16 documentation migration)
 
@@ -14,7 +14,7 @@ The following original issue is preserved in full. Its old filename rules, statu
 
 - **Created:** 2026-11-12 · **Last updated:** 2026-11-16 (session wrap-up after round 10; under the author's review)
 - **Branch:** `dev`
-- **Status:** ✅ **Implemented (2026-11-12), follow-up rounds 7–10 done (2026-11-13)** on `dev`, **not committed**. Now: the author reviews the code manually, then accepts (commits) or gives more feedback. When accepted, rename this file to `done-YYYY-MM-DD-engine-refactoring-world-isolation.md` (historical instruction; the current naming rule uses the acceptance/completion date and renames the context too) (issue naming rule in `AGENTS.md`). See §24.9 (implementation log) and §24.10 (what still needs manual verification by the author).
+- **Status:** **Implemented (2026-11-12), follow-up rounds 7–10 done (2026-11-13)** on `dev`, **not committed**. Now: the author reviews the code manually, then accepts (commits) or gives more feedback. When accepted, rename this file to `done-YYYY-MM-DD-engine-refactoring-world-isolation.md` (historical instruction; the current naming rule uses the acceptance/completion date and renames the context too) (issue naming rule in `AGENTS.md`). See §24.9 (implementation log) and §24.10 (what still needs manual verification by the author).
 - **Current state in short (for using this issue as context):**
   - Done: `EngineSharedSystems` + isolated nestable `World`s; render loop on its own thread (`RenderScheduler`); `NetSystem` = transport, session logic in `SessionController`; `GlobalSettings` (user settings in the platform config dir, connection settings embedded / next to the exe); `PlayerSettings` → constants; module layout mirrors the architecture (`engine/`, `engine/shared_systems/`, `engine/world/`); `Engine::new(headless).run(level, backend)` with the winit main loop inside the engine; crutch flags removed; three working client bins; zero compiler warnings; found bugs fixed (dolls' team-win effect, unbreakable static shapes packing, WinSparkle call restored); licenses restored (AGPL-3.0-or-later code, CC BY-SA 4.0 assets; files carry only the copyright line).
   - Open, outside this issue: the global allocator (`issues/programming/global-allocator/`); the exact engine tick rate (`issues/programming/engine-tick-rate/`); most maps don't load (`issues/programming/maps-out-of-sync-with-parser/`); obstacle-course maps lack `it_is_2d_3d_example` (§24.10); everything in §24.10 needs playtesting by the author.
@@ -27,11 +27,11 @@ The following original issue is preserved in full. Its old filename rules, statu
 
 This file keeps the full context of the task: motivation, analysis of the current code, the discussion, decisions and open questions. It is not a verbatim transcript, but it aims to keep every essential detail, constraint and reason. Update it as decisions are made, especially §17 (decision log), §18 (open questions) and §19 (discussion).
 
-✅ Author's rule for issues (round 4): keep the **wide context**, including intermediate ideas, arguments and rejected variants. Don't delete superseded ideas; mark them ❌ with the reason. "We don't save bytes."
+[accepted] Author's rule for issues (round 4): keep the **wide context**, including intermediate ideas, arguments and rejected variants. Don't delete superseded ideas; mark them [rejected] with the reason. "We don't save bytes."
 
-Structure of this file (✅ round 6):
+Structure of this file (done in round 6):
 - **Part I — Concept, architecture principles and rationale.** What we build and why. Start here.
-- **Part II — Design discussion and decision history** (§1–§20, §23). Analysis of the old code, every topic as it was discussed (including superseded ideas, marked ❌), the decision log (§17), open questions (§18), the chronological discussion (§19), code findings (§20) and the broader engine review (§23). Later decisions override earlier ones; the decision log is the index.
+- **Part II — Design discussion and decision history** (§1–§20, §23). Analysis of the old code, every topic as it was discussed (including superseded ideas, marked [rejected]), the decision log (§17), open questions (§18), the chronological discussion (§19), code findings (§20) and the broader engine review (§23). Later decisions override earlier ones; the decision log is the index.
 - **Part III — Final target architecture** (§21 Rust structures, revision 3; §22 key operations).
 - **Part IV — Technical specification and implementation plan** (§24), including the implementation log (§24.9).
 
@@ -47,7 +47,7 @@ This part explains **what** the refactoring builds and **why** it's built this w
 
 **Broader goal.** The engine moves from an experimental demo to an architecture suitable for long-term, full-scale development: clear responsibilities, systems passed in a uniform way, no hidden global coupling, ready for the next big tasks (Resource System, authoritative server, in-world screens, UI rewrite).
 
-**Expected result of this refactoring (✅ author):**
+**Expected result of this refactoring ([accepted] author):**
 - The existing game works **exactly as now**: it starts, loads the Capture the Flag map, and actors, physics, controls, rendering, networking and all mechanics keep working.
 - Internally the engine follows the new structure: `EngineSharedSystems`, `World`, `Actors`, `Messenger`, `WorldDescriptor`, `RenderScheduler`, `GpuContext`, `GlobalTimeSystem` / `WorldTimeSystem`, `NetSystem` as a transport, `SessionController` owning the game session, `GlobalSettings`.
 - It's technically possible to create nested worlds, simulate them independently, render them into separate textures, control their render rate, resolution and scale, and get their textures for other GPU pipelines.
@@ -174,7 +174,7 @@ Every actor callback receives **two things**: `&mut WorldContext` (its own world
 
 # Part II — Design discussion and decision history
 
-The sections below were written during the discussion (rounds 1–6) and are kept as the design history. Section numbers are stable references. Where a section's early content was superseded, it's marked ❌ and the later decision is stated next to it.
+The sections below were written during the discussion (rounds 1–6) and are kept as the design history. Section numbers are stable references. Where a section's early content was superseded, it's marked [rejected] and the later decision is stated next to it.
 
 ## 1. Motivation
 
@@ -246,7 +246,7 @@ Besides nested worlds, the refactoring also cleans up the engine's structure:
   4. One `submit`, `pre_present_notify`, `present`. `PresentMode::AutoNoVsync`.
 - The pattern "render the slice into an offscreen texture, then use it" already exists: `raymarch_target_texture` is effectively the world's output texture.
 
-### 2.4 Why there is no frame queueing ✅
+### 2.4 Why there is no frame queueing [accepted]
 
 Slice is a fast competitive shooter. The author experimented with queueing frames: output gets smoother, but **input-to-photon latency** grows, which is unacceptable. The renderer always renders the latest state and never submits while the GPU is busy.
 
@@ -269,11 +269,11 @@ Names introduced there that are worth keeping:
 | `static_object.rs` | `geometry.rs` |
 | — | `EngineSystems` in `shared_systems.rs` |
 
-✅ Decided:
+[accepted] Decided:
 - Claude may reuse or drop the WIP files and **may delete them without further approval**.
 - The established names must be kept.
 
-💡 Plan:
+[proposed] Plan:
 - Implement from the live (compiling) code, using the WIP files as a naming and structure reference.
 - Delete them during stage 1, once nothing useful is left in them. Don't delete them before implementation starts; they are still a useful reference.
 - Settings naming changes in §14: `GameConfig` disappears.
@@ -313,30 +313,30 @@ World
 
 | System | Category | Status / notes |
 |---|---|---|
-| Audio, UI, Input, Net | Shared | ✅ |
-| `GlobalSettings` | Shared | ✅ (§14) |
-| tokio `Runtime` | Shared | 💡 |
-| Time | **Both** | ✅ round 4: `GlobalTimeSystem` (shared: engine tick, start time, clock, server time) + `WorldTimeSystem` (per world: its own delta). See §5.3. |
-| **Render Scheduler** (GPU context, surface, upscale, UI renderer, render thread) | Shared | ✅ |
-| Resource System | Shared | ✅ (separate issue) |
-| Physics, Messenger, Actors | World | ✅ |
-| World render system (pipelines, buffers, bind groups, output texture, `RenderData`) | World | ✅ updated in `simulate()`, submitted by the scheduler |
-| Effects | dissolved into a helper | 💡 (`EffectsSystem` is an empty struct; `spawn_wave` becomes a free function taking `&mut Messenger`) |
+| Audio, UI, Input, Net | Shared | Accepted |
+| `GlobalSettings` | Shared | [accepted] (§14) |
+| tokio `Runtime` | Shared | Proposed |
+| Time | **Both** | done in round 4: `GlobalTimeSystem` (shared: engine tick, start time, clock, server time) + `WorldTimeSystem` (per world: its own delta). See §5.3. |
+| **Render Scheduler** (GPU context, surface, upscale, UI renderer, render thread) | Shared | Accepted |
+| Resource System | Shared | [accepted] (separate issue) |
+| Physics, Messenger, Actors | World | Accepted |
+| World render system (pipelines, buffers, bind groups, output texture, `RenderData`) | World | [accepted] updated in `simulate()`, submitted by the scheduler |
+| Effects | dissolved into a helper | [proposed] (`EffectsSystem` is an empty struct; `spawn_wave` becomes a free function taking `&mut Messenger`) |
 
 ---
 
 ## 5. `World::simulate()`, contexts, delta
 
-### 5.1 Two-stage main loop (+ post stage for net) ✅
+### 5.1 Two-stage main loop (+ post stage for net) [accepted]
 
 The current main loop splits into:
 1. a **tick of the Engine Shared Systems** (collect input, net receive, time, …)
 2. **`root_world.simulate(&mut shared)`**: one full world tick (actors, messages and commands, physics, messages again, render-data update; order taken from §2.2 and adapted)
-3. ✅ **a post-simulate step for shared systems**, at least `NetSystem`, so outgoing messages produced during simulation go out **immediately**, without waiting for the next engine tick (latency, see §13.5)
+3. [accepted] **a post-simulate step for shared systems**, at least `NetSystem`, so outgoing messages produced during simulation go out **immediately**, without waiting for the next engine tick (latency, see §13.5)
 
-The name is `simulate()`, not `tick()` ✅.
+The name is `simulate()`, not `tick()` [accepted].
 
-💡 Sketch:
+[proposed] Sketch:
 
 ```
 Engine frame:
@@ -346,23 +346,23 @@ Engine frame:
   wait until next tick
 ```
 
-### 5.2 Actor signature ✅
+### 5.2 Actor signature [accepted]
 
-- Every actor receives **one** `&mut EngineSharedSystems` ✅. This is needed at least because any actor may own a nested `World` and must pass the shared systems on.
+- Every actor receives **one** `&mut EngineSharedSystems` [accepted]. This is needed at least because any actor may own a nested `World` and must pass the shared systems on.
 - Per-world systems (Messenger, Physics, …) are passed alongside, possibly bundled into a context struct.
 
-💡 Shape:
+[proposed] Shape:
 
 ```rust
 fn tick(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems)
 // WorldContext: { messenger: &mut Messenger, physics: &PhysicsSystem, delta: f32, render info for creating child worlds, ... }
 ```
 
-Changing signatures is explicitly fine ✅. This is a large mechanical change: ~30 actors plus every `ActorWrapper` match.
+Changing signatures is explicitly fine [accepted]. This is a large mechanical change: ~30 actors plus every `ActorWrapper` match.
 
-### 5.3 Time: `GlobalTimeSystem` + `WorldTimeSystem`, delta for nested worlds ✅ (round 4)
+### 5.3 Time: `GlobalTimeSystem` + `WorldTimeSystem`, delta for nested worlds (done in round 4)
 
-✅ **Decision (round 4).** The author agreed with the nested-delta problem described below, and split time into two systems:
+[accepted] **Decision (round 4).** The author agreed with the nested-delta problem described below, and split time into two systems:
 - **`GlobalTimeSystem`** (in `EngineSharedSystems`): time information not tied to a world, e.g.
   - total number of engine ticks
   - application / session start time
@@ -372,7 +372,7 @@ Changing signatures is explicitly fine ✅. This is a large mechanical change: ~
 
 Author's assumption: the existing `TimeSystem` mostly becomes `WorldTimeSystem`, maybe minus main-loop-related functions; the exact split to be decided after studying the code.
 
-💡 Claude's correction after studying `src/engine/time.rs` (round 4): it's mostly the other way round. Almost everything in today's `TimeSystem` is **engine-loop** timing, so it goes to `GlobalTimeSystem`. `WorldTimeSystem` is small and new.
+[proposed] Claude's correction after studying `src/engine/time.rs` (round 4): it's mostly the other way round. Almost everything in today's `TimeSystem` is **engine-loop** timing, so it goes to `GlobalTimeSystem`. `WorldTimeSystem` is small and new.
 
 | Current `TimeSystem` item | Used by | Goes to |
 |---|---|---|
@@ -380,20 +380,20 @@ Author's assumption: the existing `TimeSystem` mostly becomes `WorldTimeSystem`,
 | `start_of_frame` / `end_of_frame`, `timestamp_of_start_of_current_frame` | main loop | `GlobalTimeSystem` (`frame_start()`) |
 | `prev_frame_duration` + `get_prev_frame_duration()` (clamped: > 0.35 s → 1/60) | main loop (physics delta, actor delta, hotkeys J/K/N/M) | `GlobalTimeSystem` keeps the engine value (hotkeys use it); world delta is computed by `WorldTimeSystem` with the **same clamp** |
 | `frame_counter`, `timestamp_of_main_loop_start`, `average_frame_duration`, `current_frame_duration` | stats | `GlobalTimeSystem` |
-| `set_server_time` / `get_server_time` | `NetSystem` sets it; `MainPlayer` / `PlayerFor2d3dExample` read it (9 uses) **only to timestamp outgoing network messages** | ✅ round 5: **`SessionController`**, not `GlobalTimeSystem` (see below) |
+| `set_server_time` / `get_server_time` | `NetSystem` sets it; `MainPlayer` / `PlayerFor2d3dExample` read it (9 uses) **only to timestamp outgoing network messages** | done in round 5: **`SessionController`**, not `GlobalTimeSystem` (see below) |
 | — (new) | | `WorldTimeSystem { last_simulate_frame_start, delta, simulate_counter, world_time }` |
 
-💡 `WorldTimeSystem::begin_simulate(&GlobalTimeSystem)` is called first in `World::simulate`:
+[proposed] `WorldTimeSystem::begin_simulate(&GlobalTimeSystem)` is called first in `World::simulate`:
 - delta = `global.frame_start() − self.last_simulate_frame_start` (first simulate: the engine's previous frame duration)
 - same clamp as today (> 0.35 s → 1/60 s), so resuming after a long pause doesn't produce a huge step
 - for the root world this equals exactly today's `get_prev_frame_duration()`, so behaviour is unchanged
 - using the engine's frame-start timestamp (not `Instant::now()`) keeps all worlds of one engine tick on the same clock
 
-~~Server time note: it's conceptually per-connection (per game session). There is one game session per application, so keeping it in `GlobalTimeSystem` is the simplest option.~~ ❌ superseded in round 5.
+~~Server time note: it's conceptually per-connection (per game session). There is one game session per application, so keeping it in `GlobalTimeSystem` is the simplest option.~~ [rejected] superseded in round 5.
 
-✅ **Round 5 (author): session time belongs to `SessionController`.** Everything related to a concrete game session (server time, timestamps, offsets and other synchronization parameters) is encapsulated in the `SessionController` actor, which stores and updates it. Reason: an application could in theory have several game sessions, and session time in a global system would be the wrong split of responsibility. `GlobalTimeSystem` provides only truly global time information. Server time in today's shared `TimeSystem` is a legacy of the raw architecture.
+[accepted] **Round 5 (author): session time belongs to `SessionController`.** Everything related to a concrete game session (server time, timestamps, offsets and other synchronization parameters) is encapsulated in the `SessionController` actor, which stores and updates it. Reason: an application could in theory have several game sessions, and session time in a global system would be the wrong split of responsibility. `GlobalTimeSystem` provides only truly global time information. Server time in today's shared `TimeSystem` is a legacy of the raw architecture.
 
-💡 This works out especially well in the code: all 9 reads of `get_server_time()` (in `main_player.rs` and `player_for_2d_3d_example.rs`) only **stamp outgoing messages** (`TryToReturnMyFlag(time)`, `TryToGetOpponentsFlag(time)`, `TryToGetScore(time)`, `TryToGetMoveWBonus(time)`, the player-state message). With V1 all of them pass through `SessionController`, so **`SessionController` adds the timestamp when it builds the network message**, and the actors no longer need server time at all. The protocol (`client_server_protocol.rs`) stays unchanged; the timestamp is taken a few microseconds later, in the same tick.
+[proposed] This works out especially well in the code: all 9 reads of `get_server_time()` (in `main_player.rs` and `player_for_2d_3d_example.rs`) only **stamp outgoing messages** (`TryToReturnMyFlag(time)`, `TryToGetOpponentsFlag(time)`, `TryToGetScore(time)`, `TryToGetMoveWBonus(time)`, the player-state message). With V1 all of them pass through `SessionController`, so **`SessionController` adds the timestamp when it builds the network message**, and the actors no longer need server time at all. The protocol (`client_server_protocol.rs`) stays unchanged; the timestamp is taken a few microseconds later, in the same tick.
 
 #### History of this topic
 
@@ -407,7 +407,7 @@ Claude's note: the author's reasoning about "previous frame duration" is correct
 - The world then advances half as much simulated time as real time passed, i.e. it runs at half speed. That is a systematic error, not jitter, so it doesn't average out.
 - If an owner pauses simulation for 5 s and resumes, the world just continues (which may be desired).
 
-💡 Minimal fix that keeps the `simulate(shared)` signature (no extra parameter):
+[proposed] Minimal fix that keeps the `simulate(shared)` signature (no extra parameter):
 - `World` remembers the timestamp of its last `simulate()` call.
 - It computes its **own delta** = `shared.time.frame_start − self.last_simulate_frame_start`, clamped to a max (e.g. 100 ms), so a resume after a pause doesn't produce a huge step.
 - Actors read `world.delta` from the `WorldContext`, not `shared.time.delta`.
@@ -415,15 +415,15 @@ Claude's note: the author's reasoning about "previous frame duration" is correct
 
 (Optional later: a per-world `time_scale` for slow-motion demos.)
 
-~~❓ Accept this, or deliberately keep "nested worlds advance by the engine delta per simulate call"?~~ → resolved in round 4: per-world delta in `WorldTimeSystem` ✅.
+~~[open] Accept this, or deliberately keep "nested worlds advance by the engine delta per simulate call"?~~ → resolved in round 4: per-world delta in `WorldTimeSystem` [accepted].
 
-### 5.4 Messenger ✅
+### 5.4 Messenger [accepted]
 
 `Messenger` = former `EngineHandle` + outer-world mailbox (§7).
 
 ---
 
-## 6. Nested worlds ✅
+## 6. Nested worlds [accepted]
 
 - The engine creates the root `World` at startup.
 - **Nested `World`s are owned by actors** (a field of an actor). The engine does **not** track worlds or their count.
@@ -433,7 +433,7 @@ Claude's note: the author's reasoning about "previous frame duration" is correct
 
 ---
 
-## 7. Communication between worlds ✅
+## 7. Communication between worlds [accepted]
 
 - Encapsulated in `Messenger`, kept as simple as possible. Hand-written enums, as for actor messages; no generic message system for now.
 - **Outward (world → owner):**
@@ -441,30 +441,30 @@ Claude's note: the author's reasoning about "previous frame duration" is correct
   - actors call something like `messenger.send_to_outer_world(msg)`
   - after `nested.simulate(..)` the owner drains it
   - for the root world, the **engine** drains it
-- **Inward (owner → world):** the owner pushes messages into the nested world's existing broadcast/direct buffers before `simulate`. **Sender id = 0** ✅ (actor ids of different worlds are independent namespaces).
-- **Root world → engine requests** ✅. Messages are *requests*; the receiver (engine or owner actor) decides what to do. Examples:
+- **Inward (owner → world):** the owner pushes messages into the nested world's existing broadcast/direct buffers before `simulate`. **Sender id = 0** [accepted] (actor ids of different worlds are independent namespaces).
+- **Root world → engine requests** [accepted]. Messages are *requests*; the receiver (engine or owner actor) decides what to do. Examples:
   - quit the application
   - **replace the root `World`** with another one (§12.4)
 
 ---
 
-## 8. Input ✅
+## 8. Input [accepted]
 
 - Input System is shared and collected once in the shared tick. Its state is available to actors of **any** world via `EngineSharedSystems` (like Godot). No special restrictions for nested worlds.
 - The current `InputMaster` / `set_input_to_controlled_actors` design is considered not great, but **reworking Input is out of scope**.
-- ~~💡 For this refactoring: keep the current mechanism working for the root world, and expose the frame's input via `shared.input`.~~ ❌ superseded in round 5.
+- ~~[proposed] For this refactoring: keep the current mechanism working for the root world, and expose the frame's input via `shared.input`.~~ [rejected] superseded in round 5.
 
-✅ **Round 5 (author): remove `InputMaster` now, Godot-style input.**
+[accepted] **Round 5 (author): remove `InputMaster` now, Godot-style input.**
 - One shared `InputSystem` collects and prepares input once per tick.
 - Any actor of any world reads it through `shared.input`: mouse, key states, and mainly **input actions** (the existing action system; actions stay hard-coded for now).
 - `InputMaster` (`LocalMaster`/`RemoteMaster`), `ControlledActor::get_input_master` and `InputSystem::set_input_to_controlled_actors` are deleted. "Maybe we'll come back to something similar later if needed."
 - Nested worlds get the same `EngineSharedSystems`, so the question "do nested worlds get input" disappears: an actor that needs input reads it, one that doesn't, doesn't.
 - The 2D/3D demo player reacting to the keyboard inside a nested world isn't a problem; its logic will change later. The task now is the engine architecture, not the tutorial mechanics.
 
-💡 Claude: no counter-arguments, and the code supports it:
+[proposed] Claude: no counter-arguments, and the code supports it:
 - `RemoteMaster` is **not implemented**: `set_input_to_controlled_actors` hits `unimplemented!("Remote input aster didn't implement yet")` for it. Remote players are `PlayerDoll` actors driven by network messages, not by an input master.
 - `LocalMaster` only caches a copy of `ActionsFrameState`, which `InputSystem::get_input()` already computes on demand. Actors call `shared.input.get_input()` (or a cached per-tick `shared.input.actions()`) instead.
-- `InputSystem` stores its actions as `HashMap<SomeButton, Arc<Mutex<(ButtonActions, Action, i32)>>>`, although input is only touched on the main thread. With direct access the `Arc<Mutex<…>>` is unnecessary → plain values (the "remove locks that aren't needed" rule). 💡 See §23.
+- `InputSystem` stores its actions as `HashMap<SomeButton, Arc<Mutex<(ButtonActions, Action, i32)>>>`, although input is only touched on the main thread. With direct access the `Arc<Mutex<…>>` is unnecessary → plain values (the "remove locks that aren't needed" rule). [proposed] See §23.
 
 ---
 
@@ -478,7 +478,7 @@ Each `World` would get its own `Renderer` in its own tokio task, with configurab
 
 The current renderer checks that previous GPU work finished before submitting (no queueing, §2.4). With several independent renderers, can each track only its own work, or would they wait on each other's?
 
-### 9.3 Claude's analysis ✅ (accepted)
+### 9.3 Claude's analysis [accepted] (accepted)
 
 - **Valid for the current mechanism.** `device.poll(Poll)` → `QueueEmpty` reports the state of *the whole queue*, so N renderers would see each other's work.
 - **Per-submission tracking is possible in wgpu** (`SubmissionIndex` from `submit`, `queue.on_submitted_work_done`, `PollType::Wait { submission_index }`), so tracking isn't the real blocker.
@@ -486,9 +486,9 @@ The current renderer checks that previous GPU work finished before submitting (n
   1. **One `Device` is mandatory**: parents sample children's textures, and resources can't cross devices.
   2. **One device = one queue, executed in order.** A heavy nested raymarch queued just before the main frame delays the player's frame, which is exactly the latency the author avoids.
   3. **Inter-world data dependency**: the child's texture must be rendered before the parent pass that samples it. Independent tasks give no ordering.
-- **Conclusion ✅:** a single render loop with a shared **Render Scheduler** that encodes all due worlds into **one encoder and one `submit`** per frame. The `QueueEmpty` check stays valid.
+- **Conclusion [accepted]:** a single render loop with a shared **Render Scheduler** that encodes all due worlds into **one encoder and one `submit`** per frame. The `QueueEmpty` check stays valid.
 
-### 9.4 Render Scheduler design ✅ (concept) / 💡 (details)
+### 9.4 Render Scheduler design [accepted] (concept) / [proposed] (details)
 
 ```
 EngineSharedSystems.render: Option<RenderScheduler>
@@ -520,7 +520,7 @@ WorldRenderShared {                    // one Arc per world, held by the world's
 - **Deepest first:** a child's texture is ready before its parent samples it. Depth = parent depth + 1.
 - A skipped frame keeps the last image in the texture.
 
-#### 9.4.1 Round-4 simplifications 💡 (proposed by Claude while drafting §21)
+#### 9.4.1 Round-4 simplifications [proposed] (proposed by Claude while drafting §21)
 
 1. **No `Mutex<WorldGpu>` at all.** In wgpu 27 the resource types (`Buffer`, `Texture`, `BindGroup`, `RenderPipeline`, …) are cheap `Clone` handles. So:
    - the main-thread `WorldRenderSystem` keeps **clones of the world's buffers** and writes them via `queue.write_buffer` (thread-safe, as today)
@@ -533,15 +533,15 @@ WorldRenderShared {                    // one Arc per world, held by the world's
 3. **The presented world is explicit.** The engine tells the scheduler which world goes to the window (`present_world(Some(id))`). If none (startup, or the presented world is gone), the render loop draws the **splash texture** (§21.10) through the existing upscale pipeline.
 4. Torn data between buffers: `simulate()` writes ~11 buffers one after another, and the render thread may submit between two writes. This is **exactly as today** (`send_data_to_renderer` doesn't lock the renderer either), so it's not a regression. Not addressed in this refactoring.
 
-### 9.5 Registration via channel, auto-unregistration via `Weak` ✅
+### 9.5 Registration via channel, auto-unregistration via `Weak` [accepted]
 
-✅ Requirement: when a `World` is destroyed, it must be unregistered **automatically**, including worlds created and destroyed dynamically inside other worlds.
+[accepted] Requirement: when a `World` is destroyed, it must be unregistered **automatically**, including worlds created and destroyed dynamically inside other worlds.
 
-✅ Accepted:
+[accepted] Accepted:
 - The world holds `Arc<WorldRenderShared>`; the scheduler holds `Weak`. When the world is dropped, `upgrade()` returns `None` and the slot is removed. No `Drop` impl is needed.
 - **Registration goes through an `mpsc` channel.** The render loop owns `Vec<WorldSlot>` exclusively, so neither registration nor iteration needs a mutex. `Sender` is `Clone + Send`, so registration works from any thread, including an async world-build task.
 - `try_lock()` on `WorldGpu`: the render loop never blocks; it skips a busy world for one frame.
-- Author's principle ✅: **remove every lock that can be removed without unnecessary complexity.**
+- Author's principle [accepted]: **remove every lock that can be removed without unnecessary complexity.**
 
 **How `Arc`/`Weak` work (explained to the author):**
 - `Arc<T>` points to one heap block `{ strong: AtomicUsize, weak: AtomicUsize, data: T }`.
@@ -554,12 +554,12 @@ WorldRenderShared {                    // one Arc per world, held by the world's
 - Only atomics with Acquire/Release ordering: **no mutex, no syscalls, no thread blocking**. Lock-free (strictly, not wait-free: a CAS may retry under contention, which is negligible here).
 - `T` is dropped on the thread that releases the last strong `Arc`; the memory is freed once the weak count is 0 too. If the world is dropped mid-frame, its `WorldGpu` is freed on the render thread after that frame. That is safe, because wgpu resources are refcounted and thread-safe to drop.
 
-### 9.6 Dynamic `RenderRate` ✅
+### 9.6 Dynamic `RenderRate` [accepted]
 
-- ✅ Changeable at runtime via `world.set_render_rate(n)`.
-- ✅ Encoding: `AtomicU32`; `0` paused, `1` every frame, `2` every 2nd, `3` every 3rd, …
-- ✅ Counted in **render frames** (Render Scheduler frames), not simulation ticks. Rendering and simulation are independent processes with possibly different rates. In the future, target simulation and render rates may be configured separately; the current coupling is accidental.
-- 💡 Optional: a "dirty" flag, so a world is rendered only if it was simulated since its last render.
+- [accepted] Changeable at runtime via `world.set_render_rate(n)`.
+- [accepted] Encoding: `AtomicU32`; `0` paused, `1` every frame, `2` every 2nd, `3` every 3rd, …
+- [accepted] Counted in **render frames** (Render Scheduler frames), not simulation ticks. Rendering and simulation are independent processes with possibly different rates. In the future, target simulation and render rates may be configured separately; the current coupling is accidental.
+- [proposed] Optional: a "dirty" flag, so a world is rendered only if it was simulated since its last render.
 
 **Atomics and `Relaxed` (explained to the author; the author's model was partly right):**
 - An atomic operation is **indivisible**: a `load` sees either the old or the new value in full, never a half-written one. This is not a queue. The CPU guarantees it through cache coherence (the core gets exclusive ownership of the cache line for the write). On x86/ARM an aligned `u32` `load`/`store` with `Relaxed` compiles to an ordinary `mov`/`ldr`/`str`, with no extra cost.
@@ -569,45 +569,45 @@ WorldRenderShared {                    // one Arc per world, held by the world's
 - "The new value becomes visible a bit later" is roughly right in effect. The memory model only promises visibility "in reasonable time"; in practice it's nanoseconds to microseconds, not frames.
 - For a standalone value like `render_rate`, `Relaxed` is correct. The scheduler sees the new value on the same or the next frame.
 
-### 9.7 Output texture and headless 💡
+### 9.7 Output texture and headless [proposed]
 
-✅ Requirements:
+[accepted] Requirements:
 - each world renders into its own texture, obtainable from the `World` and usable by actors (the screen actor)
 - normal and headless logic as identical as possible: no GPU resources in headless mode, yet the same game logic
 
-💡 Proposal:
+[proposed] Proposal:
 - Actors never see GPU types. A `World` exposes `WorldTextureId(u64)`: `Copy`, valid in headless mode too, just never resolved.
 - The screen actor puts the id into its `VisualElement`.
 - The parent's render system resolves id → `TextureView` via the scheduler when building its bind group, with a 1×1 placeholder if missing (headless, destroyed, not yet rendered, being recreated).
 - A texture "generation" counter tells the parent when to rebuild its bind group after a child's texture was recreated (resolution/scale change).
 
-~~❓ **Q5: how the parent displays the texture.**~~ → ✅ round 4: **moved to a separate issue**, `issues/programming/in-world-4d-screens/`, and **out of scope** for this refactoring. The author wants a real 4D object with depth-correct occlusion (rasterized quad with 4D vertices + depth texture from the SDF pass), not a 2D overlay. Earlier options listed here were:
+~~[open] **Q5: how the parent displays the texture.**~~ → done in round 4: **moved to a separate issue**, `issues/programming/in-world-4d-screens/`, and **out of scope** for this refactoring. The author wants a real 4D object with depth-correct occlusion (rasterized quad with 4D vertices + depth texture from the SDF pass), not a 2D overlay. Earlier options listed here were:
 - an SDF "screen" object in the parent's raymarch shader (texture binding, UV projection, fixed slots, e.g. 4, with a placeholder)
-- a 2D overlay via the UI renderer (❌ rejected in round 4: not an in-world object)
+- a 2D overlay via the UI renderer ([rejected] rejected in round 4: not an in-world object)
 
-✅ What this refactoring must provide: a world renders into its own GPU texture, the texture is obtainable (via `WorldTextureId`) and usable by other GPU resources / pipelines. Displaying it is the other issue's job.
+[accepted] What this refactoring must provide: a world renders into its own GPU texture, the texture is obtainable (via `WorldTextureId`) and usable by other GPU resources / pipelines. Displaying it is the other issue's job.
 
-### 9.8 Render loop thread ✅ (round 4)
+### 9.8 Render loop thread (done in round 4)
 
 The render loop currently runs as a **tokio task** on the shared 2-worker runtime: a busy loop with ~3 ms sleeps that occupies a worker almost permanently.
 
-💡 Proposal: run the Render Scheduler loop on a **dedicated OS thread** (`std::thread::spawn`) instead.
+[proposed] Proposal: run the Render Scheduler loop on a **dedicated OS thread** (`std::thread::spawn`) instead.
 - It's an infinite timing loop, not async I/O, and gains nothing from tokio.
 - It no longer competes with net or loading tasks for tokio workers.
 - This also removes the root of the "heavy loading tasks occupy the render worker" concern (§12.5).
 
-✅ Accepted by the author (round 4): the concept of independent rendering stays, a `std::thread` replaces the tokio task.
+[accepted] Accepted by the author (round 4): the concept of independent rendering stays, a `std::thread` replaces the tokio task.
 
-#### 9.8.1 Clean shutdown ✅ requirement / 💡 design
+#### 9.8.1 Clean shutdown [accepted] requirement / [proposed] design
 
-✅ Author's requirement: **the render thread must stop correctly when the engine shuts down**; it must not outlive the systems it uses. (With tokio, the `Runtime` partly managed task lifetimes; with a plain thread we must do it ourselves.)
+[accepted] Author's requirement: **the render thread must stop correctly when the engine shuts down**; it must not outlive the systems it uses. (With tokio, the `Runtime` partly managed task lifetimes; with a plain thread we must do it ourselves.)
 
 Facts (answering the author's question):
 - `std::thread::spawn` returns `std::thread::JoinHandle<T>`. **Dropping it does not stop the thread**: the thread is *detached* and keeps running until its closure returns or the **process exits** (when `main` returns, remaining threads are killed without running destructors).
 - Rust has no way to kill a thread from outside. The thread must be asked to stop and must check that request itself; then `join()` waits for it.
 - `join()` returns `Err` if the thread panicked; we log it.
 
-💡 Design:
+[proposed] Design:
 - The registration channel becomes the render loop's only inbox: `enum RenderLoopMessage { RegisterWorld(..), PresentWorld(..), ResizeSurface(..), Shutdown }`.
 - The render loop drains it every iteration; on `Shutdown` **or** when the channel is disconnected (all senders dropped) it leaves the loop, drops its GPU objects (surface, slots, UI renderer) and returns.
 - `impl Drop for RenderScheduler`: send `Shutdown`, then `join()` the thread. So the thread can never outlive `EngineSharedSystems`.
@@ -618,11 +618,11 @@ Facts (answering the author's question):
 
 ---
 
-## 10. Output resolution and scale ✅ (revised)
+## 10. Output resolution and scale [accepted] (revised)
 
-❌ **Superseded:** multiplicative inheritance of scale factors along the nesting chain. It conflicted with per-world aspect ratios (raised by Claude) and was dropped by the author for simplicity.
+[rejected] **Superseded:** multiplicative inheritance of scale factors along the nesting chain. It conflicted with per-world aspect ratios (raised by Claude) and was dropped by the author for simplicity.
 
-✅ **Now:**
+[accepted] **Now:**
 - On creation a `World` gets two **independent** parameters:
   - **output texture resolution** (arbitrary; not tied to the window or parent; the aspect ratio follows from it)
   - **output texture scale factor**
@@ -635,7 +635,7 @@ Facts (answering the author's question):
 - The root world's resolution = window resolution, updated on window resize via `set_output_resolution`.
 - Use case: **LOD**. A screen actor lowers the nested world's resolution or scale as the player's camera moves away.
 
-💡 Implementation:
+[proposed] Implementation:
 - Store resolution + scale **packed in one `AtomicU64`** (`width: u16 | height: u16 | scale: f32 bits`) inside `WorldRenderShared`.
 - A combined change is one atomic `store`, so the render loop always reads a **consistent** triple. With separate atomics it could read a new resolution with an old scale and recreate the texture twice.
 - Max 65535 px per side is plenty.
@@ -646,23 +646,23 @@ Facts (answering the author's question):
 
 ## 11. Headless and selectively disabled systems
 
-✅ Requirements:
+[accepted] Requirements:
 - Keep headless mode, possibly extend it per world (no sound, no render, …).
 - Logic should be identical in normal and headless mode.
 
-💡 Proposal (minimal):
+[proposed] Proposal (minimal):
 - `HeadlessEngine` disappears: headless = `EngineSharedSystems.render == None`. Then every world has `render == None` and `WorldTextureId`s never resolve.
 - Per world: `WorldConfig { render: Option<WorldRenderConfig /* resolution, scale, rate */>, ... }`.
-- **Net:** no per-world net gating ✅ (author: don't restrict functionality by root vs nested; separate transport from game logic). With the `SessionController` approach (§13.4), a nested world simply has no connection unless one of its actors creates one.
+- **Net:** no per-world net gating [accepted] (author: don't restrict functionality by root vs nested; separate transport from game logic). With the `SessionController` approach (§13.4), a nested world simply has no connection unless one of its actors creates one.
 - **Audio/UI:** no per-world gating for now. Nested demo worlds use dedicated actors. Note that spatial audio in a nested world uses that world's coordinates, which is the owner's/actor's responsibility.
 
-✅ **Out of scope:** the UI rewrite (UI elements owned by actors, probably Fyrox UI, input routing to UI) and the Input rewrite.
+[accepted] **Out of scope:** the UI rewrite (UI elements owned by actors, probably Fyrox UI, input routing to UI) and the Input rewrite.
 
 ---
 
 ## 12. World creation, World Descriptor, async loading
 
-### 12.1 Requirements ✅
+### 12.1 Requirements [accepted]
 
 - Creating a level currently compiles shaders and creates pipelines. That is slow and blocks.
 - **`World` creation must support an async mode** (start, get a handle, keep working, take the `World` when ready) **and a sync mode**.
@@ -687,7 +687,7 @@ Claude's answer:
   - **cached, immutable, shareable (`Arc`) descriptor** with the expensive prepared data (parsed level + compiled pipelines)
   - **`World::new(descriptor, ..)`**: cheap, contains *all* creation events, produces an independent instance. Many worlds can be created from one descriptor.
 
-✅ **Decided (round 4):** cache a **`WorldDescriptor`**. The author fully agreed:
+[accepted] **Decided (round 4):** cache a **`WorldDescriptor`**. The author fully agreed:
 - `WorldDescriptor` holds the prepared data needed to create a world, including the parts that are slow to prepare: generated shaders and created render pipelines. It can be preloaded, prepared asynchronously and cached.
 - `World::new()` is a relatively fast operation that creates a concrete instance from a prepared descriptor. It contains everything tied to creating *this instance*:
   - creating and initializing the world's own systems
@@ -697,23 +697,23 @@ Claude's answer:
   - other per-instance initialization
 - Heavy preparation happens in advance; creating and starting the world is encapsulated in `World::new()`. "This is more logical and simpler."
 
-⚠️ Consequence found in the code (round 4, see §20.1): today's `Level` holds **already-constructed actors** (`main_actor: Option<ActorWrapper>`, `actors: Option<Vec<ActorWrapper>>`) that `World::set_new_level` *takes* out of it. A descriptor shared via `Arc` and used for several `World::new` calls can't hand out the same actor objects twice. 💡 So the descriptor stores the **actor descriptions** (the parsed JSON entries of the map), and `World::new` constructs the actors from them with the existing `parse_json_*` functions. Constructing actors from JSON is cheap; the slow part (shader generation, pipeline creation) stays in the descriptor.
+Note: Consequence found in the code (round 4, see §20.1): today's `Level` holds **already-constructed actors** (`main_actor: Option<ActorWrapper>`, `actors: Option<Vec<ActorWrapper>>`) that `World::set_new_level` *takes* out of it. A descriptor shared via `Arc` and used for several `World::new` calls can't hand out the same actor objects twice. [proposed] So the descriptor stores the **actor descriptions** (the parsed JSON entries of the map), and `World::new` constructs the actors from them with the existing `parse_json_*` functions. Constructing actors from JSON is cheap; the slow part (shader generation, pipeline creation) stays in the descriptor.
 
-### 12.3 Naming: `LevelDescriptor` vs `WorldDescriptor` ✅ `WorldDescriptor` (round 4)
+### 12.3 Naming: `LevelDescriptor` vs `WorldDescriptor` [accepted] `WorldDescriptor` (round 4)
 
 - The WIP has `level_descriptor.rs`. The author is undecided; `WorldDescriptor` matches the new `World` abstraction.
-- 💡 Claude: `WorldDescriptor`. It's exactly "everything needed to construct a `World`", including GPU pipelines, i.e. more than level data.
+- [proposed] Claude: `WorldDescriptor`. It's exactly "everything needed to construct a `World`", including GPU pipelines, i.e. more than level data.
 - The JSON files can remain "maps/levels".
 
-### 12.4 Replacing the root world ✅
+### 12.4 Replacing the root world [accepted]
 
-- ✅ Done at the `Engine` level, by **request** through the root world's `outer_world_mailbox`. The engine decides whether to comply.
-- ✅ The requesting world may prepare the next world/descriptor **asynchronously in advance**, then send the request **with the prepared data attached** (e.g. `Box`ed, to keep the enum small). The engine doesn't have to figure out what to load.
+- Done at the `Engine` level, by **request** through the root world's `outer_world_mailbox`. The engine decides whether to comply.
+- [accepted] The requesting world may prepare the next world/descriptor **asynchronously in advance**, then send the request **with the prepared data attached** (e.g. `Box`ed, to keep the enum small). The engine doesn't have to figure out what to load.
 - This replaces today's in-world `LoadNewLevelSync/Async` / `PreloadNewLevelAsync` commands and `World.preloaded_levels`.
 
-💡 Example: `OuterWorldMessage::ReplaceRootWorld(Box<…>)`. Since `World::new` is cheap and the heavy part is in the descriptor, the payload can be an `Arc<WorldDescriptor>`, and the engine calls `World::new` itself.
+[proposed] Example: `OuterWorldMessage::ReplaceRootWorld(Box<…>)`. Since `World::new` is cheap and the heavy part is in the descriptor, the payload can be an `Arc<WorldDescriptor>`, and the engine calls `World::new` itself.
 
-### 12.5 Where heavy work runs ❓
+### 12.5 Where heavy work runs [open]
 
 The author doesn't want to fix `spawn_blocking` as the final decision, and proposed a separate tokio runtime (dedicated worker) for loading as one option.
 
@@ -725,12 +725,12 @@ Claude's clarifications and options:
   2. a separate runtime for the Resource System
   3. a dedicated loader thread (or small pool) with a channel; loading is mostly blocking I/O + CPU (shader compilation), so async adds nothing
   4. if `fyrox-resource` is adopted, it brings its own `TaskPool` (separate threads)
-- 💡 Recommendation:
+- [proposed] Recommendation:
   - Fix the root cause by moving the render loop to its own OS thread (§9.8). Then the tokio runtime only serves net/async I/O.
   - Heavy loads go to either the blocking pool or the Resource System's own pool, decided in the Resource System issue.
   - Optionally limit concurrent heavy loads so shader compilation doesn't saturate all CPU cores and starve the render thread's CPU work.
-- 💡 Pipelines should target **one fixed output-texture format** for all worlds (instead of the surface format, as now). Then a descriptor's pipelines are valid regardless of whether the world is root or nested.
-- ❓ Should an async-created world register with the scheduler at `World::new` (paused until first simulate), or on first simulate? Since `World::new` is cheap and runs on the main thread, register in `World::new`.
+- [proposed] Pipelines should target **one fixed output-texture format** for all worlds (instead of the surface format, as now). Then a descriptor's pipelines are valid regardless of whether the world is root or nested.
+- [open] Should an async-created world register with the scheduler at `World::new` (paused until first simulate), or on first simulate? Since `World::new` is cheap and runs on the main thread, register in `World::new`.
 
 ---
 
@@ -755,7 +755,7 @@ Also:
 - `SessionController` exists today (placed by the CTF map via `level.rs`) but holds no network logic; `NetSystem` sends `SessionControllerMessage`s to it.
 - Server side: the game server relays `ClientMessage::{DirectMessageToPlayer, BoardcastMessageToPlayers}` to clients, which is **emulated peer-to-peer** over client-server, a legacy of the WebRTC/P2P choice (§13.2).
 
-### 13.2 Author's context ✅
+### 13.2 Author's context [accepted]
 
 - WebRTC (via Matchbox) was chosen when a web version was considered. The logic is still P2P-style (clients address each other; the server relays).
 - In practice connections often went through TURN anyway, so the architecture drifted to client-server with WebRTC as transport.
@@ -765,7 +765,7 @@ Also:
   - possibly UDP/TCP instead of WebRTC
   - actors like `SessionController` encapsulating session networking
 
-### 13.3 Scope for this refactoring ✅
+### 13.3 Scope for this refactoring [accepted]
 
 - Make `NetSystem` **mainly a transport abstraction**, whatever is underneath (WebRTC, UDP, TCP, …):
   - create connections, maintain them, report their state
@@ -776,18 +776,18 @@ Also:
 - Example of independent connections: `SessionController` ↔ game server; `GameServerBrowser` ↔ server list; `StatisticsController` ↔ stats server; all at the same time.
 - Don't mix this with the long-term rework.
 
-💡 Minimal transport API:
+[proposed] Minimal transport API:
 - `connect(kind, url/config) -> ConnectionHandle`, where kind is WebSocket (matchmaking) or WebRTC (game server)
 - `state(h)`
 - `send(h, packet, reliability)`
 - `receive(h) -> drain of packets`
 - `close(h)`
 
-`NetSystem` works with `Packet` (`Box<[u8]>`). The protocol types already have `to_packet()` / `from_packet()` (`ClientMessage`, `ServerMessage`), so serialization stays with the protocol types and their users. `NetSystem` stays protocol-agnostic without a new abstraction. (The author mentioned NetSystem converting high-level messages to bytes, possibly with compression. That can be added inside `send` later if wanted. ❓)
+`NetSystem` works with `Packet` (`Box<[u8]>`). The protocol types already have `to_packet()` / `from_packet()` (`ClientMessage`, `ServerMessage`), so serialization stays with the protocol types and their users. `NetSystem` stays protocol-agnostic without a new abstraction. (The author mentioned NetSystem converting high-level messages to bytes, possibly with compression. That can be added inside `send` later if wanted. [open])
 
-### 13.4 Variant 1 vs Variant 2 for outgoing game messages ✅ Variant 1 (round 4)
+### 13.4 Variant 1 vs Variant 2 for outgoing game messages [accepted] Variant 1 (round 4)
 
-✅ **Decided (round 4): V1.** All game network messages go through `SessionController`. `MainPlayer` and other actors that send game data pass it to `SessionController` as ordinary in-world messages; `SessionController` talks to `NetSystem` via `EngineSharedSystems` and sends to the game server. New message variants are added to the existing enums (between `MainPlayer` and `SessionController`, and for other actors that currently send to the network directly). The author considers this a fairly straightforward change.
+[accepted] **Decided (round 4): V1.** All game network messages go through `SessionController`. `MainPlayer` and other actors that send game data pass it to `SessionController` as ordinary in-world messages; `SessionController` talks to `NetSystem` via `EngineSharedSystems` and sends to the game server. New message variants are added to the existing enums (between `MainPlayer` and `SessionController`, and for other actors that currently send to the network directly). The author considers this a fairly straightforward change.
 
 The author described two options:
 - **V1:** actors (`MainPlayer`, weapons, …) send ordinary in-world messages to `SessionController`, which sends them via its connection handle. Only `SessionController` uses the handle.
@@ -796,33 +796,33 @@ The author described two options:
 Claude's analysis:
 - **Incoming handling is identical in both variants, and it's the big part.** The ~950-line decoder `process_message`, plus connection/matchmaking flow, UI messages and server time, moves into `SessionController` (or a module it uses). The variants differ only in the ~60 outgoing call sites.
 - **Latency is the same.** In V1 the message reaches `SessionController` in the same message pump within the same `simulate()`; `send_messages_and_process_commands` loops until all buffers are empty. It is then sent immediately (or flushed in `post_simulate`).
-- **Nested worlds:** both isolate naturally. In V1, a `MainPlayer` in a nested world sends to *its* world's `SessionController`; if there is none, the direct message is dropped (`send_direct_messages` ignores unknown ids). In V2 it has no handle. No root/nested special-casing, as the author wants ✅.
+- **Nested worlds:** both isolate naturally. In V1, a `MainPlayer` in a nested world sends to *its* world's `SessionController`; if there is none, the direct message is dropped (`send_direct_messages` ignores unknown ids). In V2 it has no handle. No root/nested special-casing, as the author wants [accepted].
 - **Long-term fit:** V1 is better. All protocol knowledge (which `ClientMessage`/`NetMessageToPlayer` to build, reliability) is concentrated in one actor. Moving to an authoritative server then changes `SessionController` + server, not 9 actor files. V2 keeps protocol construction spread across actors, which entrenches today's P2P style.
 - **Effort now:** about the same.
   - V1: replace `messenger.send_command(NetCommand(...))` with a direct message to the session controller carrying the same payload (e.g. `SessionControllerMessage::Net(NetCommand)`). That is mechanical; the payload types stay the same.
   - V2: replace them with `shared.net.send(handle, ...)` and distribute the handle (another mechanism).
   - V1 needs actors to know the `SessionController`'s `ActorID`. Simplest: `SessionController` broadcasts `IAmSessionController(id)` on world start or when the connection is established, and interested actors store it. That is the same discovery style the code already uses (e.g. `GiveMeFlagsPostitions`). Fallback: broadcast the outgoing message (no id needed, slightly wasteful).
-- 💡 Recommendation: **V1.** → ✅ accepted.
+- [proposed] Recommendation: **V1.** → [accepted] accepted.
 
-💡 Other things the session logic does today that must move with it (found in round 4, see §20.2):
-- `NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id)` makes `execute_command` call `world.change_actor_id(main_actor_id, new_id)`: **the main player's actor id becomes its network peer id.** ~~`SessionController` needs a world command for that: `CommandType::ChangeActorId { old, new }`.~~ ❌ round 5 → ✅ the author's design: `SessionController` sends `MainPlayer` an ordinary message `ChangeYourId(new_id)`; `MainPlayer` itself sends `CommandType::ChangeMyId(new_id)`. An actor may change **only its own** id; the old id is taken from the command's `sender` (`Command` already has `sender: ActorID`).
+[proposed] Other things the session logic does today that must move with it (found in round 4, see §20.2):
+- `NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id)` makes `execute_command` call `world.change_actor_id(main_actor_id, new_id)`: **the main player's actor id becomes its network peer id.** ~~`SessionController` needs a world command for that: `CommandType::ChangeActorId { old, new }`.~~ [rejected] round 5 → [accepted] the author's design: `SessionController` sends `MainPlayer` an ordinary message `ChangeYourId(new_id)`; `MainPlayer` itself sends `CommandType::ChangeMyId(new_id)`. An actor may change **only its own** id; the old id is taken from the command's `sender` (`Command` already has `sender: ActorID`).
 - `PeerConnected` / `PeerDisconnected` spawn / remove `PlayerDoll`s → ordinary `SpawnActor` / `RemoveActor` commands from `SessionController`.
 - `SetServerTime` → ~~`shared.time.set_server_time(..)`~~ stored inside `SessionController` (round 5).
 - `RemoveAllHolesAndEffects` (sent from `net.rs` on new session / team win) → stays a world command, now sent by `SessionController`.
 - `ShowConnectionStatusUI` (sent by `MainPlayer`) → becomes a message to `SessionController`, which owns the connection UI.
 - `it_is_2d_3d_example` (held by `NetSystem` today) → read from the world's descriptor by `SessionController`.
 
-### 13.5 Post-simulate net step ✅
+### 13.5 Post-simulate net step [accepted]
 
-- ✅ After the root world's `simulate()`, `NetSystem` gets another tick so outgoing messages are sent immediately (minimal input-to-network latency).
+- [accepted] After the root world's `simulate()`, `NetSystem` gets another tick so outgoing messages are sent immediately (minimal input-to-network latency).
 - Shared-system updates are therefore not limited to "before `simulate`".
-- 💡 Note: today `send_*` already transmits immediately. If `NetSystem` keeps immediate sends, `post_simulate` costs nothing and is a natural place for future batching/packing or explicit flushes (UDP). If sends become buffered, `post_simulate` must flush.
+- [proposed] Note: today `send_*` already transmits immediately. If `NetSystem` keeps immediate sends, `post_simulate` costs nothing and is a natural place for future batching/packing or explicit flushes (UDP). If sends become buffered, `post_simulate` must flush.
 
 ---
 
-## 14. Settings: `PlayerSettings` → constants + `GlobalSettings` ✅ (direction) / 💡 (details)
+## 14. Settings: `PlayerSettings` → constants + `GlobalSettings` [accepted] (direction) / [proposed] (details)
 
-### 14.1 Author's decision ✅
+### 14.1 Author's decision [accepted]
 
 - Remove `PlayerSettings`.
 - Gameplay parameters of `MainPlayer` become **Rust constants in the actor code**.
@@ -839,47 +839,47 @@ Today values come from `settings.json` (user file, optional), with fallback per 
 | `min_respawn_timer`, `max_respawn_timer`, `scanner_show_enemies_time`, `scanner_reloading_time` | main_player | **constants** |
 | `energy_gun_hole_size_mult`, `energy_gun_add_force_mult`, `energy_gun_damage_mult`, `energy_gun_restoring_speed`, `machinegun_damage`, `machinegun_add_force`, `machinegun_heat_add_on_shot`, `machinegun_cooling_speed` | main_player / devices | **constants** (in the respective device modules if only devices use them) |
 | `jetpak_w_speed`, `w_jump_time_reloading`, `rotation_along_w_standard_method` | parsed, **unused** | delete |
-| `shadows_enable` | only commented-out code; render has its own `P` toggle | ✅ round 4: `GlobalSettings.shadows_enabled` with a default value; the `P` toggle changes it and it is saved |
+| `shadows_enable` | only commented-out code; render has its own `P` toggle | done in round 4: `GlobalSettings.shadows_enabled` with a default value; the `P` toggle changes it and it is saved |
 | `mouse_sensivity: Arc<Mutex<f32>>` | input/players (~21 uses), `Settings` (+/− keys) | `GlobalSettings.mouse_sensitivity: f32`. A plain `f32` suffices once everyone reads it via `&mut shared`; the `Arc<Mutex>` existed only because every actor held its own `PlayerSettings` clone. |
 | `matchmaking_server_url`, `bash_and_turn_servers`, `turn_server_username`, `turn_server_credential` | `NetSystem` | `GlobalSettings` (read by `SessionController` when creating connections) |
 | `screen_resolution_scale` | parsed, **currently unused** (the renderer gets a hard-coded `1.0`) | `GlobalSettings`; use it as the root world's initial output scale |
 
-💡 Constants placement:
+[proposed] Constants placement:
 - Put them in `main_player.rs`, where `PLAYER_MAX_HP`, `TIME_TO_DIE_SLOWLY`, `W_SCANNER_*` etc. already live, or in a `main_player/constants.rs`.
 - Other actors (`players_doll`, `observer`, …) import them.
 - Actors that need different values (obstacle-course player, 2d/3d player) can define their own.
 
-💡 → ✅ (round 4, accepted implicitly; the author used `GlobalSettings` throughout) Naming: the WIP had `GameConfig` (the renamed `PlayerSettings`, loaded data) wrapped by `GlobalSettings` (renamed `Settings`). After this change there is only **one** struct, so **`GlobalSettings`** (the author's preference, already in the WIP) is the right name. `GameConfig` is dropped: it would also be confusing next to gameplay constants. The loader becomes `GlobalSettings::load()`, reading `settings.json` with the same path fallbacks; `settings2.json` disappears. (Superseded by §14.3 for the file locations.)
+[proposed] → (done in round 4, accepted implicitly; the author used `GlobalSettings` throughout) Naming: the WIP had `GameConfig` (the renamed `PlayerSettings`, loaded data) wrapped by `GlobalSettings` (renamed `Settings`). After this change there is only **one** struct, so **`GlobalSettings`** (the author's preference, already in the WIP) is the right name. `GameConfig` is dropped: it would also be confusing next to gameplay constants. The loader becomes `GlobalSettings::load()`, reading `settings.json` with the same path fallbacks; `settings2.json` disappears. (Superseded by §14.3 for the file locations.)
 
-### 14.3 Persistent user settings file ✅ (round 4) / 💡 details
+### 14.3 Persistent user settings file (done in round 4) / [proposed] details
 
-✅ Author's concept:
+[accepted] Author's concept:
 - `GlobalSettings` are stored in a **local config file on the user's computer**.
 - On first launch the app creates a Slice 4D folder in the user's home directory, e.g. `~/.slice4d/`, with a settings file inside, e.g. `~/.slice4d/GlobalSettings.json`. Names are provisional.
 - If the file is missing, it is created with default values. Later launches read it.
 - Settings changed at runtime (now via hotkeys, e.g. `P` for shadows; later via the menu GUI) are **saved to that file**, so the next launch uses the saved value, not the default.
-- ✅ **Lookup order** (the author changed his mind a few times and settled on this):
+- [accepted] **Lookup order** (the author changed his mind a few times and settled on this):
   1. a config file **next to the executable**
   2. otherwise the **user config file** (`~/.slice4d/GlobalSettings.json`)
   3. otherwise create the user directory and file with **defaults**
 
-💡 Claude's notes and proposals:
+[proposed] Claude's notes and proposals:
 1. **"Next to the executable" ≠ current directory.** Today `PlayerSettings` opens `./settings.json`, which is relative to the **current working directory**, not the binary. To really mean "next to the binary", use `std::env::current_exe()?.parent()`.
 2. **Where to save changes.** Proposal: save back to **the file the settings were loaded from**. If that's the file next to the binary and it isn't writable (e.g. Windows installs into `Program Files`), log a warning and keep the change in memory only. The file next to the binary is then mainly a dev / server / portable override.
 3. **Connection data should not be persisted in the user file** (important). `matchmaking_server_url`, ICE/TURN server list and TURN credentials are deployment data. If they're written into `~/.slice4d/…` on first launch, a later release that changes the server URL or rotates TURN credentials **won't reach existing players**: their saved file keeps the old values forever. Proposal: split `GlobalSettings` into
    - **user preferences** (sensitivity, volume, resolution scale, shadows, …): loaded/saved via the lookup order above
    - **connection config**: compiled-in defaults (today's embedded `settings.json`), optionally overridden **only** by the file next to the binary, never saved to the user file
 
-   Both still live in one `GlobalSettings` struct (as nested structs), so there's no new system, only two fields. ❓ (§18)
-4. **Directory.** `~/.slice4d/` is simple and works everywhere. The platform convention would be the OS config dir (`~/.config/slice4d/` on Linux, `%APPDATA%\Slice4D\` on Windows, `~/Library/Application Support/Slice4D/` on macOS), via the small `dirs` crate. Claude has a slight preference for the platform config dir on Windows (users rarely look into `C:\Users\name\.slice4d`), but either is fine. ❓ (§18)
-5. **Forward compatibility.** Missing keys must fall back to defaults (a new release adds a field → the old file still loads), unknown keys ignored. With `serde` derive this is `#[serde(default)]` on the struct. Today the project parses JSON manually with `serde_json::Value`; adding `serde` with the `derive` feature (already in the dependency tree via other crates) is the simplest way to get both load and save. 💡
-6. **Also persist:** `master_volume` (the `N`/`M` hotkeys change `AudioSystem.master_volume`, currently not saved) and the root world's output scale (`i`/`O` keys → `screen_resolution_scale`). 💡
-7. **When to save:** immediately on change is simplest (these changes are rare: a key press or a menu click). For keys that change a value continuously while held (`J`/`K` sensitivity, `N`/`M` volume), save on key release, or mark dirty and save at most once per second / on exit. 💡 Proposal: `GlobalSettings::save()` called on key release and on engine shutdown.
-8. **Name of the file/dir:** follow the struct name → `global_settings.json` (snake_case like other project files, e.g. `matchmaking-server-config.json` uses kebab-case; either is fine). ❓
+   Both still live in one `GlobalSettings` struct (as nested structs), so there's no new system, only two fields. [open] (§18)
+4. **Directory.** `~/.slice4d/` is simple and works everywhere. The platform convention would be the OS config dir (`~/.config/slice4d/` on Linux, `%APPDATA%\Slice4D\` on Windows, `~/Library/Application Support/Slice4D/` on macOS), via the small `dirs` crate. Claude has a slight preference for the platform config dir on Windows (users rarely look into `C:\Users\name\.slice4d`), but either is fine. [open] (§18)
+5. **Forward compatibility.** Missing keys must fall back to defaults (a new release adds a field → the old file still loads), unknown keys ignored. With `serde` derive this is `#[serde(default)]` on the struct. Today the project parses JSON manually with `serde_json::Value`; adding `serde` with the `derive` feature (already in the dependency tree via other crates) is the simplest way to get both load and save. [proposed]
+6. **Also persist:** `master_volume` (the `N`/`M` hotkeys change `AudioSystem.master_volume`, currently not saved) and the root world's output scale (`i`/`O` keys → `screen_resolution_scale`). [proposed]
+7. **When to save:** immediately on change is simplest (these changes are rare: a key press or a menu click). For keys that change a value continuously while held (`J`/`K` sensitivity, `N`/`M` volume), save on key release, or mark dirty and save at most once per second / on exit. [proposed] Proposal: `GlobalSettings::save()` called on key release and on engine shutdown.
+8. **Name of the file/dir:** follow the struct name → `global_settings.json` (snake_case like other project files, e.g. `matchmaking-server-config.json` uses kebab-case; either is fine). [open]
 
 ---
 
-## 15. Proposed staging (history; ❌ superseded by the final plan in §24.4)
+## 15. Proposed staging (history; [rejected] superseded by the final plan in §24.4)
 
 1. **Structure:**
    - `EngineSharedSystems` + one `World`
@@ -894,7 +894,7 @@ Today values come from `settings.json` (user file, optional), with fallback per 
 3. **NetSystem as transport:**
    - connection handles
    - session logic, `process_message` and connection UI moved into `SessionController`
-   - outgoing via V1 ✅
+   - outgoing via V1 [accepted]
 4. **Render split:**
    - `RenderScheduler` on its own OS thread with clean shutdown (inbox channel, `Weak` slots, atomics)
    - per-world `WorldRenderSystem` / `WorldRenderShared` / `WorldGpu`; fixed output format
@@ -910,9 +910,9 @@ Today values come from `settings.json` (user file, optional), with fallback per 
 6. **WorldDescriptor + async world creation** (minimal: `WorldDescriptor::load` on `spawn_blocking`; the Resource System comes later). Initial world via `EngineConfig`.
 7. ~~**Showing a nested world's texture** (Q5) and the tutorial screen.~~ → moved out of this refactoring (round 4): `issues/programming/in-world-4d-screens/`.
 
-✅ Expected result (round 4, author): **the existing game works exactly as now** (CTF map, actors, physics, controls, rendering, networking, all mechanics) on the new architecture, plus the technical ability to create nested worlds, simulate them independently, render them into separate textures and control their render rate.
+[accepted] Expected result (round 4, author): **the existing game works exactly as now** (CTF map, actors, physics, controls, rendering, networking, all mechanics) on the new architecture, plus the technical ability to create nested worlds, simulate them independently, render them into separate textures and control their render rate.
 
-💡 Stages 4 and 6 overlap (the descriptor carries the pipelines the render split needs); in practice `Level` → `WorldDescriptor` may happen together with stage 1 or 4. The order will be fixed in the final spec.
+[proposed] Stages 4 and 6 overlap (the descriptor carries the pipelines the render split needs); in practice `Level` → `WorldDescriptor` may happen together with stage 1 or 4. The order will be fixed in the final spec.
 
 ---
 
@@ -930,65 +930,65 @@ Today values come from `settings.json` (user file, optional), with fallback per 
 
 | # | Topic | Decision | Status |
 |---|---|---|---|
-| D1 | Purpose | Nested worlds for the tutorial screen (2D/3D analogy) | ✅ |
-| D2 | System split | Shared (Audio, UI, Input, Net, Time, GlobalSettings, Render Scheduler, Resources) vs World (Physics, Render data, Messenger, Actors) | ✅ |
-| D3 | Naming | Keep the WIP names; `simulate()` (not `tick`) | ✅ |
-| D4 | WIP files | Claude may reuse or delete them (no approval needed); plan: implement from live code, delete in stage 1 | ✅ |
-| D5 | Ownership | Nested worlds are owned by actors; the engine doesn't track worlds | ✅ |
-| D6 | Simulation | The owner drives `simulate(shared)`; no simulation scheduler | ✅ |
-| D7 | Render vs sim | Independent; render data updated in `simulate`, drawn by the scheduler | ✅ |
-| D8 | Renderer | One render loop + Render Scheduler; one encoder/submit per frame | ✅ |
-| D9 | Unregistration | `Arc` (world) / `Weak` (scheduler), automatic | ✅ |
-| D10 | Registration | `mpsc` channel; the render loop owns the slots; no mutex; `try_lock` on `WorldGpu` | ✅ (round 4 💡: drop the `WorldGpu` mutex entirely, §9.4.1) |
-| D11 | RenderRate | `AtomicU32` divisor (0 paused, N every Nth), runtime-changeable, counted in render frames | ✅ |
-| D12 | Messaging | In `Messenger`; `outer_world_mailbox`; inward via existing buffers with sender id 0; hand-written enums | ✅ |
-| D13 | Root replacement | Requested via the root world's mailbox; the engine decides; the payload may carry prepared data | ✅ |
-| D14 | Input | Shared, no restrictions; Input rewrite out of scope | ✅ |
-| D15 | Output resolution/scale | Independent per world, runtime-changeable; **no inheritance** (supersedes the earlier idea) | ✅ |
-| D16 | Resolution+scale storage | Packed `AtomicU64` for consistent updates | 💡 |
-| D17 | Texture abstraction | `WorldTextureId` + placeholder + generation counter | 💡 |
-| D18 | Headless | `render: None` at engine level; no per-world net gating | ✅ / 💡 |
-| D19 | Resource System | Separate issue | ✅ |
-| D20 | World caching | Cache an immutable `WorldDescriptor` (with pipelines); `World::new` is cheap and holds all creation events | ✅ direction / 💡 details |
-| D21 | Descriptor name | `WorldDescriptor` | ✅ round 4 |
-| D22 | NetSystem | Transport abstraction with connection handles, multiple connections; session logic → actors | ✅ |
-| D23 | Outgoing game messages | V1: all game traffic through `SessionController` | ✅ round 4 |
-| D24 | Post-simulate net step | Yes | ✅ |
-| D25 | Settings | `PlayerSettings` removed; gameplay → constants; app settings → `GlobalSettings` in shared systems | ✅ |
-| D26 | Settings name | `GlobalSettings` (`GameConfig` dropped) | ✅ round 4 |
-| D27 | Time | `GlobalTimeSystem` (shared) + `WorldTimeSystem` (per world, own delta) | ✅ round 4 |
-| D28 | Render thread | Dedicated OS thread instead of a tokio task; clean shutdown (§9.8.1) | ✅ round 4 |
-| D29 | Heavy loading | Not fixed to `spawn_blocking`; options listed in §12.5 | ❓ |
-| D30 | Agent docs | `AGENTS.md` main, `CLAUDE.md` → `@AGENTS.md`; `issues/YYYY-MM-DD-name.md` | ✅ done |
-| D31 | In-world screens (Q5) | Separate issue `issues/programming/in-world-4d-screens/`; out of scope here; the refactoring only provides a usable per-world texture | ✅ round 4 |
-| D32 | Shadows setting | `GlobalSettings.shadows_enabled` with a default, saved when toggled | ✅ round 4 |
-| D33 | Settings persistence | User settings file; lookup: next to the binary → user dir → create with defaults; runtime changes are saved | ✅ round 4 (details 💡 §14.3) |
-| D34 | Initial world | Passed to `Engine::new`; now the CTF map, later the main menu | ✅ round 4 (author) |
-| D35 | Loading placeholder | Splash texture drawn by the render loop when no world is presented; not a `World` | 💡 (§21.10) |
-| D36 | Issues format | Each issue keeps a Discussion section with intermediate ideas; superseded ideas are marked, not deleted | ✅ round 4 |
-| D37 | Expected result | The game works exactly as before, on the new architecture; nested worlds can be created, simulated, rendered to textures, with controllable render rate | ✅ round 4 |
-| D38 | Descriptor actors | `WorldDescriptor` stores actor descriptions (map JSON entries); `World::new` constructs actors | 💡 (§12.2, §20.1) |
-| D39 | Render order | Reverse registration order instead of a depth field | 💡 (§9.4.1) |
-| D40 | Outer-world messages | `OuterWorldMessage` with standard variants + one `Specific(..)` variant for game-specific messages | ✅ round 5 |
-| D41 | Actor creation | `WorldDescriptor::create_actors()` builds new actors from stored JSON (existing `parse_json_*`); `World` doesn't know about JSON (supersedes the "World parses" part of D38) | ✅ round 5 |
-| D42 | Actor ids | An actor changes only its own id: `ChangeYourId(new)` message → `CommandType::ChangeMyId(new)`, old id = `command.sender` | ✅ round 5 |
-| D43 | Messenger | All message delivery, distribution and command execution live in `Messenger`; `World` only calls it | ✅ round 5 |
-| D44 | Session time | Server/session time and sync data in `SessionController`, not in `GlobalTimeSystem`; it stamps outgoing messages | ✅ round 5 |
-| D45 | Input | `InputMaster` and `set_input_to_controlled_actors` removed; actors read `shared.input` (Godot-style), actions stay hard-coded | ✅ round 5 |
-| D46 | World ↔ descriptor | `World` doesn't store its descriptor; needed values are copied into its systems; `World::new(&WorldDescriptor, ..)` | ✅ round 5 |
-| D47 | GPU context | `GpuContext` (device, queue, output format, layouts; Clone) as a **separate field `shared.gpu: Option<GpuContext>`** | ✅ round 6 (author; supersedes "inside `RenderScheduler`") |
-| D48 | Splash | Render-loop `SplashScreen` component with time input; static logo first, animated indicator possible later | ✅ round 5 (direction) |
-| D49 | `pending_root_world` | Keep (async initial load) because a blocked main thread makes the OS mark the window "Not Responding" | ✅ round 6 |
-| D50 | Naming | `on_level_loaded` → `on_world_started`, `boardcast` → `broadcast`, `WorldRenderSystem` | ✅ round 5 |
-| D51 | Settings split | User preferences in the user file; connection data compiled in, overridable only next to the binary | ✅ round 5 |
-| D52 | Settings location | Platform config dirs (`~/.config/slice4d`, `%APPDATA%\Slice4D`, `~/Library/Application Support/Slice4D`) | ✅ round 5 |
-| D53 | `serde` | `serde` derive for settings load/save | ✅ round 5 |
-| D54 | Extra cleanups | Round 6 outcome: ✅ `macro_rules!` for `ActorWrapper`; ❌ keep `SpawnControlledActor`; ✅ `InputSystem` without `Arc<Mutex>` (if no complications); ❌ keep LIFO `Vec::pop()`; ✅ `EffectsSystem` → function; ❌ keep `async fn Engine::new` (wgpu) | ✅ round 6 |
-| D55 | Settings file names | `user_settings.json`, `connection_settings.json` | ✅ round 6 |
-| D56 | UI renderer | Re-bound to the presented world's buffers (HUD scanner reads world data) | ✅ round 6 (found in code, part of the spec) |
-| D57 | Network scope | Network only in worlds with a `SessionController` (today: CTF map) | ✅ round 6 (consequence of V1, accepted behaviour change, §24.2) |
-| D58 | Issue structure | Part I concept/rationale, Part II discussion & history, Part III final architecture, Part IV spec + implementation log | ✅ round 6 |
-| D59 | Start | The author authorized starting the implementation right after the final spec, without another confirmation | ✅ round 6 |
+| D1 | Purpose | Nested worlds for the tutorial screen (2D/3D analogy) | Accepted |
+| D2 | System split | Shared (Audio, UI, Input, Net, Time, GlobalSettings, Render Scheduler, Resources) vs World (Physics, Render data, Messenger, Actors) | Accepted |
+| D3 | Naming | Keep the WIP names; `simulate()` (not `tick`) | Accepted |
+| D4 | WIP files | Claude may reuse or delete them (no approval needed); plan: implement from live code, delete in stage 1 | Accepted |
+| D5 | Ownership | Nested worlds are owned by actors; the engine doesn't track worlds | Accepted |
+| D6 | Simulation | The owner drives `simulate(shared)`; no simulation scheduler | Accepted |
+| D7 | Render vs sim | Independent; render data updated in `simulate`, drawn by the scheduler | Accepted |
+| D8 | Renderer | One render loop + Render Scheduler; one encoder/submit per frame | Accepted |
+| D9 | Unregistration | `Arc` (world) / `Weak` (scheduler), automatic | Accepted |
+| D10 | Registration | `mpsc` channel; the render loop owns the slots; no mutex; `try_lock` on `WorldGpu` | (done in round 4 [proposed]: drop the `WorldGpu` mutex entirely, §9.4.1) |
+| D11 | RenderRate | `AtomicU32` divisor (0 paused, N every Nth), runtime-changeable, counted in render frames | Accepted |
+| D12 | Messaging | In `Messenger`; `outer_world_mailbox`; inward via existing buffers with sender id 0; hand-written enums | Accepted |
+| D13 | Root replacement | Requested via the root world's mailbox; the engine decides; the payload may carry prepared data | Accepted |
+| D14 | Input | Shared, no restrictions; Input rewrite out of scope | Accepted |
+| D15 | Output resolution/scale | Independent per world, runtime-changeable; **no inheritance** (supersedes the earlier idea) | Accepted |
+| D16 | Resolution+scale storage | Packed `AtomicU64` for consistent updates | Proposed |
+| D17 | Texture abstraction | `WorldTextureId` + placeholder + generation counter | Proposed |
+| D18 | Headless | `render: None` at engine level; no per-world net gating | [accepted] / [proposed] |
+| D19 | Resource System | Separate issue | Accepted |
+| D20 | World caching | Cache an immutable `WorldDescriptor` (with pipelines); `World::new` is cheap and holds all creation events | [accepted] direction / [proposed] details |
+| D21 | Descriptor name | `WorldDescriptor` | done in round 4 |
+| D22 | NetSystem | Transport abstraction with connection handles, multiple connections; session logic → actors | Accepted |
+| D23 | Outgoing game messages | V1: all game traffic through `SessionController` | done in round 4 |
+| D24 | Post-simulate net step | Yes | Accepted |
+| D25 | Settings | `PlayerSettings` removed; gameplay → constants; app settings → `GlobalSettings` in shared systems | Accepted |
+| D26 | Settings name | `GlobalSettings` (`GameConfig` dropped) | done in round 4 |
+| D27 | Time | `GlobalTimeSystem` (shared) + `WorldTimeSystem` (per world, own delta) | done in round 4 |
+| D28 | Render thread | Dedicated OS thread instead of a tokio task; clean shutdown (§9.8.1) | done in round 4 |
+| D29 | Heavy loading | Not fixed to `spawn_blocking`; options listed in §12.5 | Open |
+| D30 | Agent docs | `AGENTS.md` main, `CLAUDE.md` → `@AGENTS.md`; `issues/YYYY-MM-DD-name.md` | [accepted] done |
+| D31 | In-world screens (Q5) | Separate issue `issues/programming/in-world-4d-screens/`; out of scope here; the refactoring only provides a usable per-world texture | done in round 4 |
+| D32 | Shadows setting | `GlobalSettings.shadows_enabled` with a default, saved when toggled | done in round 4 |
+| D33 | Settings persistence | User settings file; lookup: next to the binary → user dir → create with defaults; runtime changes are saved | done in round 4 (details [proposed] §14.3) |
+| D34 | Initial world | Passed to `Engine::new`; now the CTF map, later the main menu | done in round 4 (author) |
+| D35 | Loading placeholder | Splash texture drawn by the render loop when no world is presented; not a `World` | [proposed] (§21.10) |
+| D36 | Issues format | Each issue keeps a Discussion section with intermediate ideas; superseded ideas are marked, not deleted | done in round 4 |
+| D37 | Expected result | The game works exactly as before, on the new architecture; nested worlds can be created, simulated, rendered to textures, with controllable render rate | done in round 4 |
+| D38 | Descriptor actors | `WorldDescriptor` stores actor descriptions (map JSON entries); `World::new` constructs actors | [proposed] (§12.2, §20.1) |
+| D39 | Render order | Reverse registration order instead of a depth field | [proposed] (§9.4.1) |
+| D40 | Outer-world messages | `OuterWorldMessage` with standard variants + one `Specific(..)` variant for game-specific messages | done in round 5 |
+| D41 | Actor creation | `WorldDescriptor::create_actors()` builds new actors from stored JSON (existing `parse_json_*`); `World` doesn't know about JSON (supersedes the "World parses" part of D38) | done in round 5 |
+| D42 | Actor ids | An actor changes only its own id: `ChangeYourId(new)` message → `CommandType::ChangeMyId(new)`, old id = `command.sender` | done in round 5 |
+| D43 | Messenger | All message delivery, distribution and command execution live in `Messenger`; `World` only calls it | done in round 5 |
+| D44 | Session time | Server/session time and sync data in `SessionController`, not in `GlobalTimeSystem`; it stamps outgoing messages | done in round 5 |
+| D45 | Input | `InputMaster` and `set_input_to_controlled_actors` removed; actors read `shared.input` (Godot-style), actions stay hard-coded | done in round 5 |
+| D46 | World ↔ descriptor | `World` doesn't store its descriptor; needed values are copied into its systems; `World::new(&WorldDescriptor, ..)` | done in round 5 |
+| D47 | GPU context | `GpuContext` (device, queue, output format, layouts; Clone) as a **separate field `shared.gpu: Option<GpuContext>`** | done in round 6 (author; supersedes "inside `RenderScheduler`") |
+| D48 | Splash | Render-loop `SplashScreen` component with time input; static logo first, animated indicator possible later | done in round 5 (direction) |
+| D49 | `pending_root_world` | Keep (async initial load) because a blocked main thread makes the OS mark the window "Not Responding" | done in round 6 |
+| D50 | Naming | `on_level_loaded` → `on_world_started`, `boardcast` → `broadcast`, `WorldRenderSystem` | done in round 5 |
+| D51 | Settings split | User preferences in the user file; connection data compiled in, overridable only next to the binary | done in round 5 |
+| D52 | Settings location | Platform config dirs (`~/.config/slice4d`, `%APPDATA%\Slice4D`, `~/Library/Application Support/Slice4D`) | done in round 5 |
+| D53 | `serde` | `serde` derive for settings load/save | done in round 5 |
+| D54 | Extra cleanups | Round 6 outcome: [accepted] `macro_rules!` for `ActorWrapper`; [rejected] keep `SpawnControlledActor`; [accepted] `InputSystem` without `Arc<Mutex>` (if no complications); [rejected] keep LIFO `Vec::pop()`; [accepted] `EffectsSystem` → function; [rejected] keep `async fn Engine::new` (wgpu) | done in round 6 |
+| D55 | Settings file names | `user_settings.json`, `connection_settings.json` | done in round 6 |
+| D56 | UI renderer | Re-bound to the presented world's buffers (HUD scanner reads world data) | done in round 6 (found in code, part of the spec) |
+| D57 | Network scope | Network only in worlds with a `SessionController` (today: CTF map) | done in round 6 (consequence of V1, accepted behaviour change, §24.2) |
+| D58 | Issue structure | Part I concept/rationale, Part II discussion & history, Part III final architecture, Part IV spec + implementation log | done in round 6 |
+| D59 | Start | The author authorized starting the implementation right after the final spec, without another confirmation | done in round 6 |
 
 ---
 
@@ -1109,52 +1109,52 @@ Questions that come up during implementation are recorded in §24.9.
 
 Found by re-reading the live code against the agreed design. None of them changes the architecture; each needs a small, explicit decision, already reflected in §21.
 
-### 20.1 `Level` owns constructed actors → the descriptor needs actor *descriptions* 💡
+### 20.1 `Level` owns constructed actors → the descriptor needs actor *descriptions* [proposed]
 - `Level { main_actor: Option<ActorWrapper>, actors: Option<Vec<ActorWrapper>>, .. }`; `World::set_new_level` **takes** them.
 - An `Arc<WorldDescriptor>` used for several `World::new` calls can't give out the same actors twice, and `ActorWrapper` isn't `Clone`.
-- 💡 The descriptor stores the map's actor JSON entries (`serde_json::Value`); ~~`World::new` calls the existing `parse_json_main_actor` / `parse_json_actors` on them.~~
-- ✅ Round 5 (author): **the creation logic stays encapsulated in `WorldDescriptor`.** `World::new` calls a descriptor method (e.g. `create_actors()`), which builds **new** actor instances from the stored JSON with the existing `parse_json_*` functions and returns them. `World` doesn't know how actors are made from JSON. Construction still happens at `World::new` time (it's called from there), so creation side effects stay in `World::new`.
+- [proposed] The descriptor stores the map's actor JSON entries (`serde_json::Value`); ~~`World::new` calls the existing `parse_json_main_actor` / `parse_json_actors` on them.~~
+- done in round 5 (author): **the creation logic stays encapsulated in `WorldDescriptor`.** `World::new` calls a descriptor method (e.g. `create_actors()`), which builds **new** actor instances from the stored JSON with the existing `parse_json_*` functions and returns them. `World` doesn't know how actors are made from JSON. Construction still happens at `World::new` time (it's called from there), so creation side effects stay in `World::new`.
 
-### 20.2 Actor ids are rewritten to network peer ids 💡
+### 20.2 Actor ids are rewritten to network peer ids [proposed]
 - On connection, `NetCommand::NetSystemIsConnectedAndGetNewPeerID(new_id)` → `world.change_actor_id(main_actor_id, new_id)`. Remote messages are addressed by these ids.
-- ~~With session logic in `SessionController` (V1), this becomes a world command `CommandType::ChangeActorId { old, new }`.~~ ❌ round 5.
-- ✅ Round 5: `SessionController` → message `ChangeYourId(new_id)` to the main player (id from `WorldContext::main_actor_id`) → the player sends `CommandType::ChangeMyId(new_id)`; old id = `command.sender`. The `Messenger` updates `Actors::main_actor_id` if the changed actor was the main one, and keeps today's collision handling (if `new_id` is taken, the other actor gets a fresh random id).
+- ~~With session logic in `SessionController` (V1), this becomes a world command `CommandType::ChangeActorId { old, new }`.~~ [rejected] round 5.
+- done in round 5: `SessionController` → message `ChangeYourId(new_id)` to the main player (id from `WorldContext::main_actor_id`) → the player sends `CommandType::ChangeMyId(new_id)`; old id = `command.sender`. The `Messenger` updates `Actors::main_actor_id` if the changed actor was the main one, and keeps today's collision handling (if `new_id` is taken, the other actor gets a fresh random id).
 - Peer connect/disconnect → `SpawnActor(PlayerDoll)` / `RemoveActor`. Server time → kept in `SessionController` (round 5).
 
 ### 20.3 Server time lives in `TimeSystem`, actors read it
-- 9 actor call sites read `time_system.get_server_time()`, all to timestamp outgoing messages. ✅ Round 5: server time lives in `SessionController`, which stamps those messages itself. See §5.3.
+- 9 actor call sites read `time_system.get_server_time()`, all to timestamp outgoing messages. done in round 5: server time lives in `SessionController`, which stamps those messages itself. See §5.3.
 
 ### 20.4 Input routing and nested worlds
 - `InputSystem::set_input_to_controlled_actors(&mut World, &mut NetSystem)` writes the frame's input into every `ControlledActor` whose `InputMaster` is local. (`net` is passed but unused.)
-- ~~💡 `World::simulate` calls it for **every** world. Consequence: an actor with a local `InputMaster` in a nested world will react to the keyboard.~~
-- ✅ Round 5: `InputMaster` and `set_input_to_controlled_actors` are removed; actors read `shared.input` directly (Godot-style). See §8.
+- ~~[proposed] `World::simulate` calls it for **every** world. Consequence: an actor with a local `InputMaster` in a nested world will react to the keyboard.~~
+- done in round 5: `InputMaster` and `set_input_to_controlled_actors` are removed; actors read `shared.input` directly (Godot-style). See §8.
 
 ### 20.5 Window-level hotkeys live in `main_loop.rs`
 - `J/K` sensitivity, `N/M` volume, `Y/H` open browser, `Esc/Enter` fullscreen and cursor grab are handled in `Slice4DShooter::window_event`, outside the world.
-- 💡 They stay at the engine/application level and operate on `shared` (`global_settings`, `audio`, `ui`, window). Changes to persistent settings call `GlobalSettings::save()` (§14.3). `i`/`O` (scale) and `P` (shadows) currently go through `RenderSystem::process_player_input`; they move to the same engine-level handler: `i/O` → `root_world.set_output_scale(..)` + save, `P` → `global_settings.shadows_enabled` + save.
+- [proposed] They stay at the engine/application level and operate on `shared` (`global_settings`, `audio`, `ui`, window). Changes to persistent settings call `GlobalSettings::save()` (§14.3). `i`/`O` (scale) and `P` (shadows) currently go through `RenderSystem::process_player_input`; they move to the same engine-level handler: `i/O` → `root_world.set_output_scale(..)` + save, `P` → `global_settings.shadows_enabled` + save.
 
 ### 20.6 Pipelines target the surface format
 - `raymarch_target_texture` and the main/minimap pipelines use `config.format` (the surface format, e.g. `Bgra8UnormSrgb`). A nested world has no surface.
-- 💡 All world output textures use **one fixed format** (constant `WORLD_OUTPUT_FORMAT`); only the upscale pipeline targets the surface format. ⚠️ Implementation note: pick the format so that colours stay **identical** (sRGB vs linear). The current path is "raymarch writes into a surface-format texture → upscale samples it → surface"; keeping an `*Srgb` format for the output texture preserves that.
+- [proposed] All world output textures use **one fixed format** (constant `WORLD_OUTPUT_FORMAT`); only the upscale pipeline targets the surface format. Note: Implementation note: pick the format so that colours stay **identical** (sRGB vs linear). The current path is "raymarch writes into a surface-format texture → upscale samples it → surface"; keeping an `*Srgb` format for the output texture preserves that.
 
 ### 20.7 The xwz minimap is world-specific
 - The minimap pass uses the level's minimap pipeline and draws into `raymarch_target_texture`. → It's part of the world's `encode` (into its output texture), not of the scheduler.
 
 ### 20.8 UI is shared and drawn on top of the presented world
 - `UISystem` is shared; `ui.write_buffers_ui(queue, aspect)` is called each frame; `UIRenderer` lives inside `Renderer`.
-- 💡 `UIRenderer` belongs to the render loop and is drawn after the upscale of the **presented** world. `write_buffers_ui` moves to `EngineSharedSystems::post_simulate`.
+- [proposed] `UIRenderer` belongs to the render loop and is drawn after the upscale of the **presented** world. `write_buffers_ui` moves to `EngineSharedSystems::post_simulate`.
 - Note: UI elements shown by actors of a replaced root world stay visible unless someone hides them. That's today's behaviour as well (level change), and the UI rewrite (out of scope) will fix it with actor-owned UI elements.
 
 ### 20.9 `HeadlessEngine` has no users
-- No live entry point constructs `HeadlessEngine` (the alternative `*_main.rs` bins are commented out). Headless becomes `Engine::new(None /* no window */, ..)` with `render: None`. 💡 Verify it at least once (e.g. a tiny headless run) since nothing exercises it today.
+- No live entry point constructs `HeadlessEngine` (the alternative `*_main.rs` bins are commented out). Headless becomes `Engine::new(None /* no window */, ..)` with `render: None`. [proposed] Verify it at least once (e.g. a tiny headless run) since nothing exercises it today.
 
-### 20.10 Level loading commands from actors ✅ (round 5)
+### 20.10 Level loading commands from actors (done in round 5)
 - `FinalTrigger` uses `PreloadNewLevelAsync` (at start), then `LoadNewLevelAsync` or `LoadNewLevelSync` after the level is beaten.
-- 💡 New flow, same behaviour, no engine commands:
+- [proposed] New flow, same behaviour, no engine commands:
   - at start: `self.next = Some(shared.runtime.spawn_blocking(move || WorldDescriptor::load(&name, kit)))` (preload)
   - when it's time: if the handle is finished, take the descriptor and send `OuterWorldMessage::ReplaceRootWorld(Arc::new(desc))`; otherwise keep waiting (async) or `block_on` it (sync variant)
   - `CommandType::{LoadNewLevelSync, LoadNewLevelAsync, PreloadNewLevelAsync}` and `World.preloaded_levels` are deleted.
-- ✅ Round 5 (author): `FinalTrigger` is a test actor that won't be widely used, but the replacement is right. **Target flow once the Resource System exists:**
+- done in round 5 (author): `FinalTrigger` is a test actor that won't be widely used, but the replacement is right. **Target flow once the Resource System exists:**
   1. On creation, `FinalTrigger` requests the next world's descriptor from the Resource System.
   2. If it was loaded before, the Resource System returns it; otherwise it starts an async load and the actor gets a handle.
   3. When it's time to change levels, the actor sends `OuterWorldMessage::ReplaceRootWorld(..)` carrying the prepared descriptor (or a reference to it: `Arc`/`Box`, so the enum stays small).
@@ -1168,20 +1168,20 @@ Found by re-reading the live code against the agreed design. None of them change
 
 ---
 
-## 23. Round-5 broader engine review 💡
+## 23. Round-5 broader engine review [proposed]
 
 The author asked for a last, wider look at the whole engine: not only "how to implement the agreed refactoring", but whether there are fundamental flaws worth fixing now, while everything is being touched anyway, without inventing extra work.
 
 ### 23.1 Overall verdict
 
 **After the agreed refactoring the architecture is good enough for further development. I don't see a reason for a radical change.** In particular:
-- The **actor + message** model is a good fit for this game (few dozen actors, lots of message-driven gameplay, network messages mapping onto actor messages). An ECS would be a rewrite of every actor for no concrete gain here. ❌ Not recommended.
+- The **actor + message** model is a good fit for this game (few dozen actors, lots of message-driven gameplay, network messages mapping onto actor messages). An ECS would be a rewrite of every actor for no concrete gain here. [rejected] Not recommended.
 - **Static dispatch via `ActorWrapper`** stays (it's also used for pattern matches like `RemoveAllHolesAndEffects`). `Box<dyn Actor>` would lose those matches and gain nothing important.
 - The biggest structural problems (systems passed as 7–11 separate parameters, session logic in the transport, gameplay constants in a settings file, one hard-coded world, the render loop on a tokio worker) are exactly what this refactoring fixes.
 
 ### 23.2 Recommended to include in this refactoring (small, and the code is touched anyway)
 
-✅ Round-6 outcome (author): items 1, 3, 5 **included**; item 2 (`SpawnControlledActor`) and item 4 (FIFO) **not included**; item 6 (sync `Engine::new`) **not included** (wgpu adapter/device creation is async; `async fn new` stays). See D54.
+done in round-6 outcome (author): items 1, 3, 5 **included**; item 2 (`SpawnControlledActor`) and item 4 (FIFO) **not included**; item 6 (sync `Engine::new`) **not included** (wgpu adapter/device creation is async; `async fn new` stays). See D54.
 
 1. **Generate the `impl Actor for ActorWrapper` matches with a `macro_rules!`.**
    - Today: ~1300 lines in `actor.rs`, ~420 `ActorWrapper::` arms over ~12 methods. Adding an actor means editing every match (see `AGENTS.md`).
@@ -1215,7 +1215,7 @@ The author asked for a last, wider look at the whole engine: not only "how to im
 
 # Part III — Final target architecture
 
-## 21. Final target architecture (Rust), revision 3 ✅ (round 6)
+## 21. Final target architecture (Rust), revision 3 (done in round 6)
 
 Revision 1 (round 4) → reviewed → revision 2 (round 5) → reviewed → **revision 3 (round 6, final)**. Names, fields and signatures are what the implementation follows; method bodies are only shown where they explain an interaction. Module paths are indicative. Small deviations found necessary during implementation are recorded in §24.9 (implementation log).
 
@@ -1228,7 +1228,7 @@ Revision 1 (round 4) → reviewed → revision 2 (round 5) → reviewed → **re
 | 3 | FIFO message order | **Keep `Vec::pop()` (LIFO)** | author |
 | 4 | `Engine::new` synchronous | **Stays `async`** (wgpu adapter/device creation is async); `pollster::block_on` at the call site as today | author |
 | 5 | — | `UIRenderer` re-binds the **presented world's** buffers (the HUD scanner reads world buffers) | Claude (found in code) |
-| 6 | settings file names proposed | `user_settings.json`, `connection_settings.json` ✅ | author |
+| 6 | settings file names proposed | `user_settings.json`, `connection_settings.json` [accepted] | author |
 | 7 | — | `NetSystem` transport details: WebSocket and WebRTC connections behind one handle API; the matchmaking request moves into `SessionController` | Claude (detail) |
 | 8 | — | Networking exists only in worlds with a `SessionController` (today: the CTF map) | consequence of V1, see §24.7 |
 
@@ -1247,7 +1247,7 @@ Revision 1 (round 4) → reviewed → revision 2 (round 5) → reviewed → **re
 | 8 | Static splash | Splash is a small render-loop component that gets the time each frame, so an animated indicator can be added later | author |
 | 9 | `on_level_loaded`, `send_boardcast_message` | `on_world_started`, `send_broadcast_message` | author |
 | 10 | Settings: open questions | User file (platform config dir) for user preferences only; connection data compiled in, overridable only next to the binary; `serde` derive | author |
-| 11 | `SpawnControlledActor` command; `ControlledActor::{get_input_master, spawn}` | Command removed: the player calls its own `spawn(..)` directly; `ControlledActor` keeps only what the renderer needs | Claude (§23) — ❌ reverted in revision 3: kept |
+| 11 | `SpawnControlledActor` command; `ControlledActor::{get_input_master, spawn}` | Command removed: the player calls its own `spawn(..)` directly; `ControlledActor` keeps only what the renderer needs | Claude (§23) — [rejected] reverted in revision 3: kept |
 | 12 | `pending_root_world` | Kept, after re-evaluation (§21.10) | Claude, at the author's request |
 
 ### 21.1 `Engine` (`src/engine.rs`)
@@ -1438,7 +1438,7 @@ The `recieve_message` misspelling stays (used everywhere; out of scope). `boardc
 
 ### 21.4 `Messenger` (`src/engine/world/messenger.rs`, former `EngineHandle` + the message pump)
 
-✅ Round 5 (author): **all logic of delivering and processing messages between actors is encapsulated in `Messenger`.** It gets access to `Actors` and the other world systems it needs; `World` only calls its methods. Today this logic is spread over `engine.rs` (`send_messages_and_process_commands`, `send_boardcast_messages`, `send_direct_messages`, `execute_command`) and `World` (`add_actor_to_world`, …).
+done in round 5 (author): **all logic of delivering and processing messages between actors is encapsulated in `Messenger`.** It gets access to `Actors` and the other world systems it needs; `World` only calls its methods. Today this logic is spread over `engine.rs` (`send_messages_and_process_commands`, `send_boardcast_messages`, `send_direct_messages`, `execute_command`) and `World` (`add_actor_to_world`, …).
 
 ```rust
 pub const OUTER_WORLD_SENDER_ID: ActorID = 0;   // actor ids are random non-zero (get_random_non_zero_id)
@@ -1504,9 +1504,9 @@ pub enum CommandType
 
 How `process_messages` hands `&mut Messenger` to actors while it is itself running: each message is popped out of the buffer first (owned value), then delivered with `WorldContext { messenger: self, .. }`. Actors push new messages into the same buffers; the loop continues until all are empty. No extra structures needed.
 
-Message order: **`Vec::pop()` (LIFO) as today** ✅ (revision 3, author): actor logic treats everything within one tick as simultaneous; `pop()` is fast and simple.
+Message order: **`Vec::pop()` (LIFO) as today** [accepted] (revision 3, author): actor logic treats everything within one tick as simultaneous; `pop()` is fast and simple.
 
-### 21.5 `OuterWorldMessage` ✅ (accepted in round 5)
+### 21.5 `OuterWorldMessage` [accepted] (accepted in round 5)
 
 ```rust
 /// Requests from a world to whoever owns it: the Engine for the root world,
@@ -1587,7 +1587,7 @@ Values needed after creation are **copied** into the systems that use them (that
 
 ### 21.7 Rendering (`src/engine/render/`)
 
-#### GPU context ✅ (revision 3: separate shared field)
+#### GPU context [accepted] (revision 3: separate shared field)
 
 ```rust
 /// The shared wgpu objects needed to create GPU resources.
@@ -1794,7 +1794,7 @@ impl RenderLoop
 - On `PresentWorld(id)` the render loop calls `ui_renderer.bind_world_buffers(&slot.gpu.buffers)`, which rebuilds the scanner bind groups. Until a world is presented (splash), scanner elements are skipped.
 - Image/progress-bar UI elements don't depend on a world and are created once.
 
-### 21.8 Time ✅
+### 21.8 Time [accepted]
 
 ```rust
 pub struct GlobalTimeSystem
@@ -1933,7 +1933,7 @@ impl InputSystem
 }
 ```
 
-### 21.10 Startup, initial world, splash, and `pending_root_world` ✅ / 💡
+### 21.10 Startup, initial world, splash, and `pending_root_world` [accepted] / [proposed]
 
 - `Engine::new(window, EngineConfig { initial_world, .. })` creates the shared systems. `RenderScheduler::new` spawns the render thread, which **shows the splash immediately**.
 - The initial descriptor loads, then `set_root_world` creates the first `World` and presents it.
@@ -1947,9 +1947,9 @@ impl InputSystem
   - Linux/Wayland compositors may also show "not responding" dialogs.
 - A **first launch** compiles shaders (slow, often many seconds; see `AGENTS.md`). That's exactly when a splash matters, and exactly when the sync variant would show "Not Responding". (Today's `Engine::new` blocks the same way; there's just no splash to notice.)
 - The async variant costs **one field and ~8 lines** (`poll_pending_root_world`), and reuses the same `spawn_blocking` + `JoinHandle` pattern actors use.
-- 💡 **Recommendation: keep `pending_root_world`.** If the author still prefers sync, it's a two-line change and doesn't affect the rest of the architecture.
+- [proposed] **Recommendation: keep `pending_root_world`.** If the author still prefers sync, it's a two-line change and doesn't affect the rest of the architecture.
 
-### 21.11 `GlobalSettings` ✅ (round 5)
+### 21.11 `GlobalSettings` (done in round 5)
 
 ```rust
 pub struct GlobalSettings
@@ -1988,11 +1988,11 @@ impl GlobalSettings
 }
 ```
 
-- ✅ User preferences only in the user file; connection data compiled in, overridable only next to the binary (so new releases can change servers / rotate TURN credentials).
-- ✅ Platform config directories: Linux `~/.config/slice4d/` (`$XDG_CONFIG_HOME`), Windows `%APPDATA%\Slice4D\`, macOS `~/Library/Application Support/Slice4D/`. 💡 Via the small `dirs` crate (`dirs::config_dir()`).
-- ✅ `serde` with `derive` (new direct dependency; already in the tree through other crates).
+- [accepted] User preferences only in the user file; connection data compiled in, overridable only next to the binary (so new releases can change servers / rotate TURN credentials).
+- [accepted] Platform config directories: Linux `~/.config/slice4d/` (`$XDG_CONFIG_HOME`), Windows `%APPDATA%\Slice4D\`, macOS `~/Library/Application Support/Slice4D/`. [proposed] Via the small `dirs` crate (`dirs::config_dir()`).
+- [accepted] `serde` with `derive` (new direct dependency; already in the tree through other crates).
 - "Next to the binary" = `std::env::current_exe()?.parent()`, not the current directory (§14.3).
-- 💡 File names: `user_settings.json` and `connection_settings.json` (two files, because they have different lifecycles). Directory name `slice4d` / `Slice4D` following each platform's casing habit.
+- [proposed] File names: `user_settings.json` and `connection_settings.json` (two files, because they have different lifecycles). Directory name `slice4d` / `Slice4D` following each platform's casing habit.
 - MainPlayer gameplay values become constants (§14.2); unused fields are deleted.
 
 ### 21.12 Ownership summary
@@ -2016,7 +2016,7 @@ WorldDescriptor (Arc): held by whoever loaded it (an actor, the engine during st
 
 ---
 
-## 22. Key operations (pseudo-code), revision 3 ✅
+## 22. Key operations (pseudo-code), revision 3 [accepted]
 
 ```rust
 // 1. Create the Engine (main_loop.rs, StartCause::Init)
@@ -2239,7 +2239,7 @@ world.messenger.send_to_outer_world(OuterWorldMessage::ReplaceRootWorld(Arc::new
 
 # Part IV — Technical specification and implementation plan
 
-## 24. Technical specification ✅ (round 6, final)
+## 24. Technical specification (done in round 6, final)
 
 This section is the implementation contract. It lists every agreed change from the current code (Part II §2) to the target architecture (Part III §21–§22). Rationale is in Part I; history in Part II.
 
@@ -2268,7 +2268,7 @@ This section is the implementation contract. It lists every agreed change from t
 
 ### 24.2 Behaviour that must stay identical
 
-- Startup into `capture_the_flag_map` (or `-l <level>`), `-b` backend, ~~`-m observer` mode~~ (❌ round 7 point 4: `-m` removed, `game_mode` was never read).
+- Startup into `capture_the_flag_map` (or `-l <level>`), `-b` backend, ~~`-m observer` mode~~ ([rejected] round 7 point 4: `-m` removed, `game_mode` was never read).
 - Player movement/physics feel: same constants, same delta for the root world (same 0.35 s clamp → 1/60).
 - All weapons, holes, flags, bonuses, scanner, HUD, sounds.
 - Render: same image (colours!), same ~125 FPS pacing target, "no frame queueing", same `i`/`O` 5% steps within 0.1–1.0, `P` shadows, minimap pass.
@@ -2371,7 +2371,7 @@ There are no automated tests. Verification is by building and running:
 - **Main player id change:** `SessionController` → `PlayerMessage::ChangeYourId(new)` to `world.main_actor_id` → player sends `CommandType::ChangeMyId(new)` → `Messenger` changes the id (today's `World::change_actor_id` logic incl. collision handling and `IWasChangedMyId` broadcast) and updates `Actors::main_actor_id`.
 - **Server time stamps:** outgoing messages that carried `get_server_time()` are sent to `SessionController` without the time; it fills in `SessionTime::server_time_ms()` when building the protocol message.
 - **`PlayerDoll::new(.., player_settings, ..)`** takes constants instead.
-- ~~**Observer mode** (`-m observer`) keeps working through `EngineConfig.game_mode` (passed where it's used today).~~ ❌ round 7 point 4: `game_mode` was never read by anything; removed with `EngineConfig`.
+- ~~**Observer mode** (`-m observer`) keeps working through `EngineConfig.game_mode` (passed where it's used today).~~ [rejected] round 7 point 4: `game_mode` was never read by anything; removed with `EngineConfig`.
 - **`ShowConnectionStatusUI`**: message to `SessionController` (sets `connection_status_visible`).
 - **`RemoveAllHolesAndEffects`**: stays a world command, sent by `SessionController`.
 - **`it_is_2d_3d_example`**: descriptor field; given to `SessionController` and `PlayerDoll` at creation.
@@ -2424,7 +2424,7 @@ Deviations from §21/§24.4, problems found, decisions taken while coding (2026-
 - **Shutdown time** after the close request: old build **9.17 s**, new build **0.21 s** (the old render task on tokio wasn't stopped explicitly).
 
 **Round 7 (2026-11-13), the author's feedback, point 1: no unnecessary allocations.**
-- ✅ Author's rule (now a core principle in `AGENTS.md`): wherever an allocation or reallocation can be avoided, avoid it, even with a fast allocator.
+- [accepted] Author's rule (now a core principle in `AGENTS.md`): wherever an allocation or reallocation can be avoided, avoid it, even with a fast allocator.
 - `Messenger::take_outer_world_messages` used `std::mem::take`: the mailbox was replaced by an empty `Vec`, so the next message reallocated it. Now it's an iterator that `pop()`s one message per step (`std::iter::from_fn`), plus `pop_outer_world_message()`. The engine uses the `pop` form in a `while let` loop, because handling a message needs `&mut self` (replacing the root world), which an iterator borrowing the world wouldn't allow. Same API on `World`.
 - Similar places found and changed (interface-only changes):
   - `NetSystem::receive` also used `mem::take` → returns `std::vec::Drain` (keeps the buffer's capacity). `drain(..)` rather than `pop()` here because **packet order matters** (e.g. spawn before state updates).
@@ -2434,7 +2434,7 @@ Deviations from §21/§24.4, problems found, decisions taken while coding (2026-
 - Found but **not** cheap (needs restructuring, not just an interface change; left for a separate decision): `PhysicsSystem::process_physics` builds three `Vec`s of references (`kinematic_colliders`, `areas`, `dynamic_colliders`) every tick. Reusing them needs a different data layout (e.g. indices instead of `&mut` references), because a buffer of references can't be stored across ticks.
 - Checked and fine: broadcast messages are cloned per receiving actor, but the message types contain no heap data (plain copies); per-frame render buffers are cleared and reused; actor/level creation allocations happen once.
 
-**Round 7, point 2 (2026-11-13): shared systems in their own folder.** The author asked whether the shared-system modules should live in a `shared_systems/` folder for readability; Claude agreed (the file layout then mirrors the architecture: `shared_systems/` ↔ `world/`). Moved `audio`, `global_settings`, `input` (+ `input/`), `net`, `render` (+ `render/`), `time`, `ui` from `src/engine/` to `src/engine/shared_systems/`; `shared_systems.rs` declares them. Paths: `crate::engine::X` → `crate::engine::shared_systems::X`; relative `include_str!`/`include_bytes!` paths got one more `../`. `render/` keeps `world_render_system.rs` (the per-world render part), because it shares the render-thread types (`WorldGpu`, slots) with the scheduler. ~~`physics` (per world) and `effects` (a helper) stay in `src/engine/` for now (see the open question in the reply / next round).~~ ❌ superseded by point 3: both moved to `world/`.
+**Round 7, point 2 (2026-11-13): shared systems in their own folder.** The author asked whether the shared-system modules should live in a `shared_systems/` folder for readability; Claude agreed (the file layout then mirrors the architecture: `shared_systems/` ↔ `world/`). Moved `audio`, `global_settings`, `input` (+ `input/`), `net`, `render` (+ `render/`), `time`, `ui` from `src/engine/` to `src/engine/shared_systems/`; `shared_systems.rs` declares them. Paths: `crate::engine::X` → `crate::engine::shared_systems::X`; relative `include_str!`/`include_bytes!` paths got one more `../`. `render/` keeps `world_render_system.rs` (the per-world render part), because it shares the render-thread types (`WorldGpu`, slots) with the scheduler. ~~`physics` (per world) and `effects` (a helper) stay in `src/engine/` for now (see the open question in the reply / next round).~~ [rejected] superseded by point 3: both moved to `world/`.
 
 **Round 7, point 3 (2026-11-13): every module where it logically belongs.** The author confirmed the proposal and stated the general principle: everything that belongs to shared systems goes to `shared_systems/`, everything that belongs to a world goes to `world/`, everything that belongs to the engine as a whole goes to `engine/`; exceptions are documented with their reason. Done:
 - `src/engine/physics.rs` (+ `physics/`) → `src/engine/world/physics.rs` (+ `world/physics/`): `PhysicsSystem` is per world.
@@ -2449,7 +2449,7 @@ Deviations from §21/§24.4, problems found, decisions taken while coding (2026-
 - `src/game_client_main.rs`: `let engine = Engine::new(args.headless); engine.run(start_level, args.graphic_backend);` (no `pollster` here any more).
 - `Engine::new(headless)` (sync) creates `EngineSharedSystems::new(headless)` without GPU/rendering and without a window: winit 0.30 lets a window be created only inside the running event loop. `impl Engine { pub fn run(self, initial_world, graphic_backend) }` lives in `engine/main_loop.rs`: creates the `EventLoop`, runs a private `MainLoop { engine, initial_world, graphic_backend }` (`ApplicationHandler`; the startup parameters are needed only at `StartCause::Init`) and saves user settings after the loop exits. At `Init`: create the window → `Engine::start(window, initial_world, backend)` (private, visible to the child module) → `shared.create_gpu_and_render(window, backend)` (`pollster::block_on(GpuContext::new)` + `RenderScheduler::new`), spawn the initial world loading, `time.init()`. `Slice4DShooter` and the old `MainLoop::new/run` are gone; `EngineConfig` is deleted.
 - Removed: `EngineConfig { with_ui_renderer, disable_net_system, game_mode, … }`; `RenderScheduler::new(.., with_ui_renderer)` (`ui_renderer` is now a plain `UIRenderer`, not `Option`); `NetSystem::new(.., disabled)` with its "disabled" branch, and the `DisconnectReason::ClosedLocally` / `Transport::Closed` variants that only that branch created; `AudioSystem::new` is now sync (it never awaited anything; it keeps its `headless` parameter, see below); `GameMode` and the `-m/--mode` CLI flag in `read_args.rs`.
-- Headless mode. ~~First removed together with the crutches (the window was always created by `run`; `shared.gpu`/`shared.render` only meant "not created yet").~~ ❌ The author stopped this mid-work: **headless stays**. Second variant, also replaced mid-work: ~~`Engine::new()` without arguments + a separate `engine.run_headless(initial_world)`; the sound device opened later by `audio.start_sound_engine()` in windowed `run` only.~~ The author then said the `headless` argument can stay in `Engine::new` and be set from the command line (or by a separate entry point). ✅ Final:
+- Headless mode. ~~First removed together with the crutches (the window was always created by `run`; `shared.gpu`/`shared.render` only meant "not created yet").~~ [rejected] The author stopped this mid-work: **headless stays**. Second variant, also replaced mid-work: ~~`Engine::new()` without arguments + a separate `engine.run_headless(initial_world)`; the sound device opened later by `audio.start_sound_engine()` in windowed `run` only.~~ The author then said the `headless` argument can stay in `Engine::new` and be set from the command line (or by a separate entry point). [accepted] Final:
   - `Engine::new(headless: bool)` → `EngineSharedSystems::new(headless)` → `AudioSystem::new(headless)` (no sound device, as before the round); `Engine.headless` field.
   - `engine.run(initial_world, graphic_backend)` is the single entry: if headless → private `run_headless` (no winit, no window; `Engine::start(None, ..)` loads the initial world without GPU; a plain loop: `tick()`, sleep until the next target tick, until `quit_requested`); otherwise the winit loop, where `Init` calls `Engine::start(Some(window), ..)`.
   - CLI flag `--headless` (`Args.headless`); `game_client_main.rs`: `Engine::new(args.headless).run(start_level, args.graphic_backend)`.
@@ -2467,7 +2467,7 @@ Deviations from §21/§24.4, problems found, decisions taken while coding (2026-
 - **Warnings: client 702 → 2, servers 33 → 0** (debug and release, all bins). How:
   - `cargo fix` (machine-applicable: unused imports, needless `mut`, elided lifetimes `'_` in signatures, …).
   - `unused_assignments` (render data): `let mut x = 0u32;` initializers that were always overwritten before being read → `let x: u32;`; counters `x += 1` whose value was always overwritten later → removed; computed-but-never-read amounts (`inf_cubes_amount` etc., their use is commented out) → `_` prefix.
-  - ⚠️ Found in `static_render_data.rs` (pre-existing, same in HEAD): `unbreakable_spheres_amount` is assigned twice — the second time with the s-spheres count (`- unbreakable_s_spheres_start`) — and `unbreakable_s_spheres_amount` is never set (stays 0); also the "unbreakable" sections are filled from `s_cubes`/`s_spheres`, not from the `unbreakable_*` vectors. Looks like copy-paste bugs, but fixing them changes rendering. Only the dead first assignment was removed (identical behaviour) and a `NOTE` left; ❓ for the author.
+  - Note: Found in `static_render_data.rs` (pre-existing, same in HEAD): `unbreakable_spheres_amount` is assigned twice — the second time with the s-spheres count (`- unbreakable_s_spheres_start`) — and `unbreakable_s_spheres_amount` is never set (stays 0); also the "unbreakable" sections are filled from `s_cubes`/`s_spheres`, not from the `unbreakable_*` vectors. Looks like copy-paste bugs, but fixing them changes rendering. Only the dead first assignment was removed (identical behaviour) and a `NOTE` left; [open] for the author.
   - `deprecated`: rand 0.9 renames (`thread_rng` → `rand::rng`, `gen_range` → `random_range`, `gen_bool` → `random_bool`); `fyrox_core::rand` (rand 0.8) calls left as they are (not deprecated there).
   - `unreachable_patterns`: `_ => {}` arms after an exhaustive match of a one-variant enum removed (4).
   - `private_interfaces`: `raymarch_shader_generator::Slice` made `pub` (it's a `pub` field type of `SliceInfo`).
@@ -2477,17 +2477,17 @@ Deviations from §21/§24.4, problems found, decisions taken while coding (2026-
   - `cargo test --workspace` failed before this round too: the `game_server` test binary panicked in the `blink-alloc` global allocator (allocator-api2 layout assertion; verified on a clean HEAD worktree). The global allocator is now `#[cfg(not(test))]` in `game_server` (no change for normal/release builds). Now all tests pass.
   - **Left (can't be fixed without a decision):**
     1. `Cargo.toml`: "only one of `license` or `license-file` is necessary" — licensing is in flux, not touched.
-    2. `players_doll.rs`: unreachable second `SpecificActorMessage::SessionControllerMessage` arm (pre-existing): the `TeamWin` wave effect of player dolls never runs, because the first arm catches all `SessionControllerMessage`s. Merging the arms enables the effect (a gameplay/visual change), deleting it loses the intended logic. ❓ for the author.
-    3. `game_client_main.rs`: `init_winsparkle` is never called (+ the non-Windows `winsparkle::init` stub unused in this bin). The call was removed from `main` in merge `54c1980`, so the shipped Windows client doesn't start WinSparkle auto-update checks at all. Calling it would change what players get; deleting it would cement it. ❓ for the author.
+    2. `players_doll.rs`: unreachable second `SpecificActorMessage::SessionControllerMessage` arm (pre-existing): the `TeamWin` wave effect of player dolls never runs, because the first arm catches all `SessionControllerMessage`s. Merging the arms enables the effect (a gameplay/visual change), deleting it loses the intended logic. [open] for the author.
+    3. `game_client_main.rs`: `init_winsparkle` is never called (+ the non-Windows `winsparkle::init` stub unused in this bin). The call was removed from `main` in merge `54c1980`, so the shipped Windows client doesn't start WinSparkle auto-update checks at all. Calling it would change what players get; deleting it would cement it. [open] for the author.
 - Check: `cargo build --workspace` and `cargo build --release --workspace` — only the warnings above; `cargo test --workspace` OK; `game-client` windowed run (map loaded, exit 0, render thread stopped), `game-client --headless` and `game-client-without-autoupdate --headless` (map loaded, ticking).
 
 **Round 8 (2026-11-13): the author's answers to round 7 point 5, licenses, working patterns.**
 - **blink-alloc / test panic.** The author suspected the server test panic started after a `cargo update` and asked to try a targeted update of blink-alloc (or roll back to the version of a year ago). Findings:
-  - `game_server` has no own `Cargo.lock` (workspace member → shared root lock). The lock had **blink-alloc 0.3.1 / allocator-api2 0.2.21 in every commit since 2025** (checked `16b20a0` … `f3e2128`), so the panic did not come from an update. ~~`cargo update` caused it~~ ❌.
+  - `game_server` has no own `Cargo.lock` (workspace member → shared root lock). The lock had **blink-alloc 0.3.1 / allocator-api2 0.2.21 in every commit since 2025** (checked `16b20a0` … `f3e2128`), so the panic did not come from an update. ~~`cargo update` caused it~~ [rejected].
   - `cargo update -p blink-alloc` → 0.4.0 (+ allocator-api2 0.4.0): the panic stays. Lock rolled back to 0.3.1.
   - Root cause (read in the crate source, both 0.3.1 and 0.4.0, `src/global/sync.rs`, `State::resize`): in direct mode (`enabled == false`, the default) the condition is inverted — `if old_layout.size() >= new_layout.size() { grow(..) } else { shrink(..) }`. Debug builds hit allocator-api2's `debug_assert!` in `shrink`; release builds skip the assertion but then pass a false `assume(new_size <= old_size)` to the optimizer (undefined behaviour in principle; in practice `realloc` still gets the right size).
   - The game never calls `GlobalBlinkAlloc::blink_mode()`, so the allocator always runs in direct mode = the system allocator plus this bug: **it gives no speed-up at all**. This also explains `d3cda7e` ("disabled global allocator in debug build").
-  - ❓ Decision for the author. 💡 Claude's recommendation: remove blink-alloc from client and server (the system allocator is what actually runs now; the "no allocations" principle is achieved in code, not by the allocator). Real blink mode would need an arena reset scheme (`reset()` at a point where nothing allocated in blink mode is alive) — not suitable for long-lived game state without a redesign. Until decided: `game_server`'s global allocator stays `#[cfg(not(test))]` (comment explains the bug).
+  - [open] Decision for the author. [proposed] Claude's recommendation: remove blink-alloc from client and server (the system allocator is what actually runs now; the "no allocations" principle is achieved in code, not by the allocator). Real blink mode would need an arena reset scheme (`reset()` at a point where nothing allocated in blink mode is alive) — not suitable for long-lived game state without a redesign. Until decided: `game_server`'s global allocator stays `#[cfg(not(test))]` (comment explains the bug).
 - **`resolver = "2"`:** kept in the `workspace` table (the author once set it for wgpu; with edition 2021 it's the default anyway, so it's harmless).
 - **Shaders:** `raymarch_shader_with_bsp_tree.wgsl` and `raymarch_shader_for_2d_3d_example_with_bsp_tree.wgsl` deleted (the BSP shader is generated at runtime now); `raymarch_shader_for_2d_3d_example.wgsl` kept (temporarily unused).
 - **Player dolls' team-win effect fixed:** the `TeamWin` arm moved into the first `SpecificActorMessage::SessionControllerMessage` arm of `PlayerDoll::recieve_message`; the unreachable duplicate arm deleted. `TeamWin` is a broadcast (`RemoteBoardCastMessage` → `send_broadcast_message`), so the dolls of the winning team now spawn their wave.
@@ -2495,7 +2495,7 @@ Deviations from §21/§24.4, problems found, decisions taken while coding (2026-
 - **Copy-paste bug in `StaticRenderData` fixed:** the undestroyable GPU arrays are packed from `unbreakable_cubes/spheres/sph_cubes` and `unbreakable_s_*` (were: the destroyable `cubes`, `spheres`, `inf_w_cubes`, `sph_cubes` and their sticky variants); `unbreakable_spheres_amount` / `unbreakable_s_spheres_amount` are set correctly (the s-count used to overwrite the first, the second stayed 0); no infinite-W cubes in the unbreakable sections (there are no unbreakable ones). This now matches `DynamicRenderData`, which already used `sd.unbreakable_*`. The BSP generator reads `unbreakable_*` directly, so the CTF map looks the same (screenshots before/after compared); maps on the plain `raymarch_shader.wgsl` now get their unbreakable objects in the buffer.
 - **Licenses** restored to the September 2025 release (`a9f478f`, "Add AGPLv3 license and comprehensive attribution file" + README/CREDITS of that time), after the temporary switch to MIT:
   - `LICENSE.txt`: AGPL-3.0 text (was MIT); `Cargo.toml`: only `license = "AGPL-3.0-or-later"` (the release had `license = "AGPL-3.0"` + `license-file`; cargo warns that only one is needed — an SPDX id is enough, and "-or-later" matches the "version 3 … or any later version" wording); README and CREDITS.md already matched the release (code AGPL-3.0, original assets CC BY-SA 4.0, `media/` All Rights Reserved, third-party sounds CC0/CC BY 3.0/4.0, WinSparkle, matchbox NOTICE).
-  - File headers: ~~the release's full AGPL notice restored in every file~~ ❌ the author stopped it mid-work: the license is defined by the license file, **files carry only the two copyright lines**. Done so everywhere (also the 4 render files that had no header, `Cargo.toml`, `deploy.yml`, `installer.iss`).
+  - File headers: ~~the release's full AGPL notice restored in every file~~ [rejected] the author stopped it mid-work: the license is defined by the license file, **files carry only the two copyright lines**. Done so everywhere (also the 4 render files that had no header, `Cargo.toml`, `deploy.yml`, `installer.iss`).
 - **`AGENTS.md`:** new section "How to approach a task (lessons from working with the author)" — finish tasks completely (move modules, docs, issue, all bins), freedom to remove crutches but distinguish crutch vs capability (headless), fix obvious bugs found on the way and verify, root cause over masking, answer "is it better" with an opinion and act, no trivial `cfg` wrappers, zero warnings, the author works on the same branch in parallel, how to verify (incl. the Windows GNU check), Russian + explanations, targeted `cargo update -p` only. Licensing and header conventions rewritten; blink-alloc note.
 - Check: `cargo build --workspace` and `--release --workspace`: **0 warnings**; `cargo test --workspace` OK; `cargo check --target x86_64-pc-windows-gnu --bins` OK; client windowed (CTF map, exit 0) and `--headless` OK.
 
@@ -2530,24 +2530,24 @@ Things the agent couldn't verify without playing:
 - Online with two clients: other players' dolls, shooting/holes sync, flags, score, team win, disconnect/reconnect UI.
 - `i`/`O`, `P`, `J`/`K`, `N`/`M`, and that the values are restored after a restart.
 - Window resize / fullscreen toggling (`Esc`/`Enter`).
-- `-l obstacle_course_levels/level-1` (and `FinalTrigger` level transitions). ⚠️ Found in round 7: these maps lack the required `it_is_2d_3d_example` property and panic in `WorldDescriptor::load` (pre-existing, same in the old `level.rs`). ~~`-m observer`~~ (removed, round 7 point 4).
+- `-l obstacle_course_levels/level-1` (and `FinalTrigger` level transitions). Note: Found in round 7: these maps lack the required `it_is_2d_3d_example` property and panic in `WorldDescriptor::load` (pre-existing, same in the old `level.rs`). ~~`-m observer`~~ (removed, round 7 point 4).
 - Performance on the author's gaming machine (the agent's comparison in §24.9 showed no regression).
 - Round 8 fixes: the winning team's player dolls spawn a wave on team win (online); WinSparkle update check starts in the Windows `game-client`; unbreakable static objects on maps that use the plain `raymarch_shader.wgsl` (non-BSP) render correctly.
 
 
 ## 2026-11-16 — Review response and documentation migration
 
-✅ The author requested concise task files plus separate context files, context chains with reasons for decisions, no dates in open filenames, completion dates only after acceptance, and visible high priority. Implemented using stable task directories, a paired `-context.md`, `high-priority-` on both high-priority filenames, and `done-YYYY-MM-DD-` on both at completion. The stable-directory mechanism is the implementation choice for avoiding broken cross-task links; it does not require symlinks or extra redirect files. See [AGENTS.md](../../../AGENTS.md#issues-and-decision-context).
+[accepted] The author requested concise task files plus separate context files, context chains with reasons for decisions, no dates in open filenames, completion dates only after acceptance, and visible high priority. Implemented using stable task directories, a paired `-context.md`, `high-priority-` on both high-priority filenames, and `done-YYYY-MM-DD-` on both at completion (filename prefixes [superseded] on 2026-11-20 by separate open/closed task lists; see the [issue README](../../README.md#tracking-convention-history)). The stable-directory mechanism is the implementation choice for avoiding broken cross-task links; it does not require symlinks or extra redirect files. See [AGENTS.md](../../../AGENTS.md#issues-and-decision-context).
 
-✅ The original seven issue texts remain in their context files; earlier section numbers and rejected alternatives are preserved. Main files now summarize current scope, decisions and open choices. The former AGENTS architecture reference moved to [docs/engine-architecture.md](../../../docs/engine-architecture.md), with known limitations identified. README and source-comment references were updated. No gameplay code was changed or issue accepted as complete.
+[accepted] The original seven issue texts remain in their context files; earlier section numbers and rejected alternatives are preserved. Main files now summarize current scope, decisions and open choices. The former AGENTS architecture reference moved to [docs/engine-architecture.md](../../../docs/engine-architecture.md), with known limitations identified. README and source-comment references were updated. No gameplay code was changed or issue accepted as complete.
 
-✅ The author requested 12 follow-up tasks; [the index](../../README.md) maps them to review points. High priority is 2 (connection lifetime), 3 (message order), 6 (main actor ID collision), 10 (async preparation). GPU grouping and overflow protection are long-term. No standalone issues were requested for nested-world verification, performance instrumentation or a test suite; existing allocator/tick-rate issues remain.
+[accepted] The author requested 12 follow-up tasks; [the index](../../README.md) maps them to review points. High priority is 2 (connection lifetime), 3 (message order), 6 (main actor ID collision), 10 (async preparation). GPU grouping and overflow protection are long-term. No standalone issues were requested for nested-world verification, performance instrumentation or a test suite; existing allocator/tick-rate issues remain.
 
-❌ Superseded premise, not yet changed code: message processing cannot generally treat state assignments as order-independent. FIFO implementation remains to be designed in [message ordering](../message-ordering/); previous LIFO reasoning is retained above.
+[rejected] Superseded premise, not yet changed code: message processing cannot generally treat state assignments as order-independent. FIFO implementation remains to be designed in [message ordering](../message-ordering/); previous LIFO reasoning is retained above.
 
-💡 Reopened resource decision: the author prefers investigating a special non-cloneable prepared world resource over mandatory actor cloning, to move resource work out of activation. [Async world preparation](../async-world-preparation/) records both options, earlier side-effect constraints and the distinction between cloning handles and actors. This is not approval to implement either design yet.
+[proposed] Reopened resource decision: the author prefers investigating a special non-cloneable prepared world resource over mandatory actor cloning, to move resource work out of activation. [Async world preparation](../async-world-preparation/) records both options, earlier side-effect constraints and the distinction between cloning handles and actors. This is not approval to implement either design yet.
 
-✅ AGENTS rules now allow justified ownership/invariant wrappers and distinguish allocation avoidance from measured correctness/performance. Logical responsibility, not file length alone, drives module splitting. Existing licensing, release safeguards, headless support and the author's control over large architecture changes are preserved.
+[accepted] AGENTS rules now allow justified ownership/invariant wrappers and distinguish allocation avoidance from measured correctness/performance. Logical responsibility, not file length alone, drives module splitting. Existing licensing, release safeguards, headless support and the author's control over large architecture changes are preserved.
 
 
 ## 2026-11-16 — Final documentation and license consistency check before dev commit

@@ -8,7 +8,7 @@ The following original issue is preserved in full. Its old filename rules, statu
 
 # Global allocator: do we need a custom one at all?
 
-**Status:** ❓ open, the next discussion stage after the engine refactoring (`issues/programming/engine-refactoring-world-isolation/`).
+**Status:** [open] open, the next discussion stage after the engine refactoring (`issues/programming/engine-refactoring-world-isolation/`).
 **Area:** programming (client, game server).
 
 ## 1. Context / motivation
@@ -53,21 +53,21 @@ allocator-api2-0.2.21/src/stable/alloc/system.rs:57:9:
 ## 3. Discussion
 
 - **Author (round 8):** «blink-alloc. Я не уверен, что он не работает. Но если ты проверял исходники и там есть проблемы, то, может быть, действительно нет смысла его использовать. Может быть, стоит поискать альтернативы blink-alloc. В общем, про аллокаторы давай поговорим чуть позже — это будет следующая стадия обсуждений.»
-- **Claude (round 8):** the panic is not from `cargo update` (same versions for a year) and not fixed by 0.4.0; it's an inverted `grow`/`shrink` condition in blink-alloc's direct mode; and since the game never calls `blink_mode()`, blink-alloc currently just forwards to the system allocator. 💡 Recommendation: remove blink-alloc from client and server — the system allocator is what actually runs now, and the "no allocations" principle is achieved in code, not by the allocator. Interim state: `game_server`'s global allocator is `#[cfg(not(test))]` with a comment explaining the bug; the client keeps `#[cfg(not(debug_assertions))]`.
+- **Claude (round 8):** the panic is not from `cargo update` (same versions for a year) and not fixed by 0.4.0; it's an inverted `grow`/`shrink` condition in blink-alloc's direct mode; and since the game never calls `blink_mode()`, blink-alloc currently just forwards to the system allocator. [proposed] Recommendation: remove blink-alloc from client and server — the system allocator is what actually runs now, and the "no allocations" principle is achieved in code, not by the allocator. Interim state: `game_server`'s global allocator is `#[cfg(not(test))]` with a comment explaining the bug; the client keeps `#[cfg(not(debug_assertions))]`.
 
 ## 4. Questions for the next stage
 
-- ❓ Do we want a custom global allocator at all, given that hot paths are meant to be allocation-free?
-- ❓ If yes, which one and why — measured, not assumed. Candidates to evaluate: `mimalloc`, `jemalloc` (`tikv-jemallocator`; not on Windows MSVC), `snmalloc`, `rpmalloc`; or blink-alloc fixed upstream (report/PR the inverted condition) and used in real blink mode only for a scoped per-frame arena.
-- ❓ How to measure: allocation counts per tick/frame (a counting allocator in debug builds), frame-time percentiles in the client, tick time on the server under load.
-- ❓ Server vs client: different allocation patterns (server: many connections, long uptime → fragmentation matters more).
-- 💡 Possible first step regardless of the choice: a debug-only counting allocator that reports allocations per tick, to find hot-path allocations to remove (core principle 4).
+- [open] Do we want a custom global allocator at all, given that hot paths are meant to be allocation-free?
+- [open] If yes, which one and why — measured, not assumed. Candidates to evaluate: `mimalloc`, `jemalloc` (`tikv-jemallocator`; not on Windows MSVC), `snmalloc`, `rpmalloc`; or blink-alloc fixed upstream (report/PR the inverted condition) and used in real blink mode only for a scoped per-frame arena.
+- [open] How to measure: allocation counts per tick/frame (a counting allocator in debug builds), frame-time percentiles in the client, tick time on the server under load.
+- [open] Server vs client: different allocation patterns (server: many connections, long uptime → fragmentation matters more).
+- [proposed] Possible first step regardless of the choice: a debug-only counting allocator that reports allocations per tick, to find hot-path allocations to remove (core principle 4).
 
 ## 5. Decision log
 
 | # | Topic | Decision | Status |
 |---|---|---|---|
-| A1 | Cause of the test panic | blink-alloc direct-mode `resize` bug (inverted grow/shrink), present in 0.3.1 and 0.4.0; not caused by `cargo update` | ✅ verified |
-| A2 | Lock file | stays on blink-alloc 0.3.1 until the allocator decision | ✅ |
-| A3 | Interim | `game_server` global allocator `#[cfg(not(test))]`; client unchanged | ✅ |
-| A4 | Keep / replace / remove the custom allocator | — | ❓ next stage |
+| A1 | Cause of the test panic | blink-alloc direct-mode `resize` bug (inverted grow/shrink), present in 0.3.1 and 0.4.0; not caused by `cargo update` | [accepted] verified |
+| A2 | Lock file | stays on blink-alloc 0.3.1 until the allocator decision | Accepted |
+| A3 | Interim | `game_server` global allocator `#[cfg(not(test))]`; client unchanged | Accepted |
+| A4 | Keep / replace / remove the custom allocator | — | [open] next stage |

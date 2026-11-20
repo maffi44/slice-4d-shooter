@@ -4,7 +4,7 @@
 - **Priority:** High
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/message-ordering/`
-- **Context:** [high-priority-message-ordering-context.md](high-priority-message-ordering-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
+- **Context:** [message-ordering-context.md](message-ordering-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
 
 ## Task
 

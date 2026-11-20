@@ -1,8 +1,11 @@
 # OpenGL context contention during rendering
 
-- **Status:** OpenGL removal implemented and verified on Linux — awaiting author acceptance
+- **Status:** Done — accepted by the author on 2026-11-20
 - **Priority:** Normal
 - **Created:** 2026-11-17
+- **Closed:** 2026-11-20
+- **Resolution:** Done
+- **Implementation commit:** `76d73d9` (reviewed by the author)
 - **Stable address:** `issues/programming/opengl-context-contention/`
 - **Context:** [opengl-context-contention-context.md](opengl-context-contention-context.md)
 
@@ -12,11 +15,11 @@ Launching the client with `-b gl` could panic after `engine: ready` with `Could 
 
 ## Accepted decision — 2026-11-17
 
-✅ The author chose to remove OpenGL support instead of serializing all GPU work or introducing separate GL/non-GL architectures. Preserve asynchronous resource/pipeline loading: making rendering wait for background pipeline creation is unacceptable. Do not require preloading every game shader at startup.
+[accepted] The author chose to remove OpenGL support instead of serializing all GPU work or introducing separate GL/non-GL architectures. Preserve asynchronous resource/pipeline loading: making rendering wait for background pipeline creation is unacceptable. Do not require preloading every game shader at startup.
 
-✅ Allowed instance backends: Vulkan, DX12, Metal and browser WebGPU. The author explicitly clarified that DX12 should remain supported. Native CLI choices are `vulkan`, `dx12`, `metal`; browser WebGPU is not available in the current native client, and this change does not restore the removed WebAssembly build.
+[accepted] Allowed instance backends: Vulkan, DX12, Metal and browser WebGPU. The author explicitly clarified that DX12 should remain supported. Native CLI choices are `vulkan`, `dx12`, `metal`; browser WebGPU is not available in the current native client, and this change does not restore the removed WebAssembly build.
 
-❌ Superseded proposals: a single GPU owner thread and GL-only synchronization. Their investigation and tradeoffs remain in the context. No GPU ownership rewrite or change to [GPU data grouping](../gpu-data-grouping/) is part of this fix.
+[rejected] Superseded proposals: a single GPU owner thread and GL-only synchronization. Their investigation and tradeoffs remain in the context. No GPU ownership rewrite or change to [GPU data grouping](../gpu-data-grouping/) is part of this fix.
 
 ## Implementation
 

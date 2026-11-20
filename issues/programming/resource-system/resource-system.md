@@ -1,8 +1,11 @@
 # Resource System
 
-- **Status:** Implemented — awaiting author review
+- **Status:** Done — accepted by the author on 2026-11-20
 - **Priority:** Normal
 - **Created:** 2026-11-12
+- **Closed:** 2026-11-20
+- **Resolution:** Done
+- **Implementation commit:** `858c5ae` (reviewed by the author)
 - **Stable address:** `issues/programming/resource-system/`
 - **Context:** [resource-system-context.md](resource-system-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
 

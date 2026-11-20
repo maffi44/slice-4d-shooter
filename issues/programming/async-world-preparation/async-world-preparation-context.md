@@ -1,6 +1,6 @@
 # Context: Prepare and validate worlds asynchronously
 
-[Current task](high-priority-async-world-preparation.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
+[Current task](async-world-preparation.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
 
 Review point 10. Author assigned high priority (2026-11-16).
 
@@ -16,8 +16,12 @@ The author reopened application startup after accepting initial refactoring comm
 
 ## 2026-11-19 — actor descriptors approved
 
-✅ Reusable factories and preloaded dependencies supersede the consume-once world and cloneable-actor proposals. See the [Resource System](../resource-system/) implementation history.
+[accepted] Reusable factories and preloaded dependencies supersede the consume-once world and cloneable-actor proposals. See the [Resource System](../resource-system/) implementation history.
 
 ## 2026-11-20 — spare actor set replaces factories
 
-✅ Author review superseded the actor descriptor factories. The map keeps parsed actor inputs and a single prepared set. Its public method owns the refill and activation sequence. See the [Resource System](../resource-system/) review and verification log.
+[accepted] Author review superseded the actor descriptor factories. The map keeps parsed actor inputs and a single prepared set. Its public method owns the refill and activation sequence. See the [Resource System](../resource-system/) review and verification log.
+
+## 2026-11-20 — Closed
+
+[accepted] The author confirmed that the review was done and the implementation committed in `858c5ae`; the task is closed as Done. Later changes go to new or existing open tasks.

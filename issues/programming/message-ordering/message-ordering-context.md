@@ -1,6 +1,6 @@
 # Context: Define and preserve message ordering
 
-[Current task](high-priority-message-ordering.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
+[Current task](message-ordering.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
 
 Review point 3. Author agreed and assigned high priority (2026-11-16).
 

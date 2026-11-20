@@ -9,7 +9,7 @@ The following original issue is preserved in full. Its old filename rules, statu
 # Engine tick rate: an exact average tick period of 16.(6) ms
 
 - **Created:** 2026-11-13
-- **Status:** ❓ open (not started)
+- **Status:** [open] open (not started)
 - **Area:** programming (engine main loop, both windowed and headless)
 - **Related:** `issues/programming/engine-refactoring-world-isolation/` (the main loop moved to `src/engine/main_loop.rs` in round 7), `issues/programming/network-authoritative-server-and-transport/` (server tick, see §5)
 
@@ -49,20 +49,20 @@ std::thread::sleep(next_tick.saturating_duration_since(Instant::now()));
 
 In windowed mode a tick that takes longer than the period (e.g. a hitch) just shifts the whole schedule. That is acceptable, but it should be a deliberate policy (see §3).
 
-## 3. Proposed approach (💡, to discuss)
+## 3. Proposed approach ([proposed], to discuss)
 
-💡 **A fixed timeline instead of "now + period".** Keep the schedule start `t0` and the tick number `n`. The deadline of tick `n` is `t0 + n * period`. To avoid rounding drift, compute it exactly from integers, e.g. `t0 + Duration::from_nanos(n * 1_000_000_000 / 60)` (16 666 666.(6) ns can't be stored exactly as one `Duration`; computing from `n` keeps the error below 1 ns forever). Lateness at one wake-up then automatically shortens the wait before the next tick, so **the average period is exactly 16.(6) ms**, and individual periods jitter around it.
+[proposed] **A fixed timeline instead of "now + period".** Keep the schedule start `t0` and the tick number `n`. The deadline of tick `n` is `t0 + n * period`. To avoid rounding drift, compute it exactly from integers, e.g. `t0 + Duration::from_nanos(n * 1_000_000_000 / 60)` (16 666 666.(6) ns can't be stored exactly as one `Duration`; computing from `n` keeps the error below 1 ns forever). Lateness at one wake-up then automatically shortens the wait before the next tick, so **the average period is exactly 16.(6) ms**, and individual periods jitter around it.
 
 This is probably the same idea as the author's lost "average value" implementation, just phrased differently. Correcting the next sleep by the measured average error converges to the same result. The fixed timeline is simpler and has no tuning parameters.
 
 Things to decide:
-- ❓ **Falling behind** (a tick longer than the period, a debugger pause, window dragging on Windows, loading): run catch-up ticks back to back, or re-sync the timeline (`t0 = now`, `n = 0`) when we are more than N periods late? 💡 Proposal: allow a small catch-up (1–2 ticks), otherwise re-sync, so that after a long pause the simulation doesn't spin hundreds of ticks. World delta time already falls back to one nominal frame for huge deltas (`MAX_DELTA` / `FALLBACK_DELTA` in `time.rs`).
-- ❓ **Precision of the wait itself.** The fixed timeline fixes the *average*, but each tick's jitter still depends on the timer:
+- [open] **Falling behind** (a tick longer than the period, a debugger pause, window dragging on Windows, loading): run catch-up ticks back to back, or re-sync the timeline (`t0 = now`, `n = 0`) when we are more than N periods late? [proposed] Proposal: allow a small catch-up (1–2 ticks), otherwise re-sync, so that after a long pause the simulation doesn't spin hundreds of ticks. World delta time already falls back to one nominal frame for huge deltas (`MAX_DELTA` / `FALLBACK_DELTA` in `time.rs`).
+- [open] **Precision of the wait itself.** The fixed timeline fixes the *average*, but each tick's jitter still depends on the timer:
   - Windows: `timeBeginPeriod(1)` or a high-resolution waitable timer (`CREATE_WAITABLE_TIMER_HIGH_RESOLUTION`); check what winit 0.30's `ControlFlow::WaitUntil` already uses internally;
   - optionally sleep until ~1 ms before the deadline and spin (busy-wait / `yield`) for the rest. This costs a little CPU but gives sub-ms jitter.
   - Measure before choosing.
-- ❓ **One implementation for both loops.** 💡 Put the schedule into `GlobalTimeSystem` (e.g. `next_tick_deadline()` + advancing the timeline in `end_of_frame`). The headless loop sleeps until the deadline; the windowed loop passes it to `ControlFlow::WaitUntil`. Then both modes share exactly the same logic.
-- ❓ Does winit deliver `ResumeTimeReached` on time while there are many window events (mouse movement at a high polling rate)? Verify that input events don't delay ticks.
+- [open] **One implementation for both loops.** [proposed] Put the schedule into `GlobalTimeSystem` (e.g. `next_tick_deadline()` + advancing the timeline in `end_of_frame`). The headless loop sleeps until the deadline; the windowed loop passes it to `ControlFlow::WaitUntil`. Then both modes share exactly the same logic.
+- [open] Does winit deliver `ResumeTimeReached` on time while there are many window events (mouse movement at a high polling rate)? Verify that input events don't delay ticks.
 
 ## 4. How to verify
 
@@ -77,14 +77,14 @@ Things to decide:
 ## 6. Discussion
 
 - **Author (2026-11-13):** the tick rate isn't quite accurate; the current way is not ideal, fine as a first approximation, but the period should be exactly 16.(6) ms on average, for both the headless and the normal engine. He had such an implementation before the first commit (lost); as he remembers, it computed some average value.
-- **Claude (2026-11-13):** the root cause is that the deadline is `now + period` computed after wake-up, so wake-up lateness accumulates and the average period is always longer than 16.(6) ms. 💡 Proposal: a fixed timeline (`t0 + n * period`, computed exactly from integers), shared by both loops via `GlobalTimeSystem`, plus a policy for falling behind; then measure the per-tick jitter and decide whether a high-resolution timer or a short final spin is needed.
+- **Claude (2026-11-13):** the root cause is that the deadline is `now + period` computed after wake-up, so wake-up lateness accumulates and the average period is always longer than 16.(6) ms. [proposed] Proposal: a fixed timeline (`t0 + n * period`, computed exactly from integers), shared by both loops via `GlobalTimeSystem`, plus a policy for falling behind; then measure the per-tick jitter and decide whether a high-resolution timer or a short final spin is needed.
 
 ## 7. Decision log
 
 | # | Topic | Decision | Status |
 |---|---|---|---|
-| T1 | Target | average tick period exactly 1/60 s, in windowed and headless mode | ✅ (author) |
-| T2 | Scheduling method | fixed timeline `t0 + n * period` | 💡 proposed |
-| T3 | Falling behind | small catch-up, then re-sync | 💡 proposed |
-| T4 | Wait precision (Windows timer, spin) | — | ❓ measure first |
-| T5 | Game server tick | — | ❓ |
+| T1 | Target | average tick period exactly 1/60 s, in windowed and headless mode | [accepted] (author) |
+| T2 | Scheduling method | fixed timeline `t0 + n * period` | [proposed] proposed |
+| T3 | Falling behind | small catch-up, then re-sync | [proposed] proposed |
+| T4 | Wait precision (Windows timer, spin) | — | [open] measure first |
+| T5 | Game server tick | — | Open |

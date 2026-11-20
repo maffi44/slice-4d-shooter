@@ -1,6 +1,6 @@
 # Context: Preserve main_actor_id during actor ID collisions
 
-[Current task](high-priority-main-actor-id-collisions.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
+[Current task](main-actor-id-collisions.md). This file preserves discussion and historical proposals; the current task states the latest scope and decisions. Dates below describe discussions, not completion.
 
 Review point 6. Author called this very important and high priority (2026-11-16).
 

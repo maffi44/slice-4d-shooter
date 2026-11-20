@@ -37,10 +37,9 @@ The repository keeps working instructions, current tasks and their history separ
 
 * **[AGENTS.md](AGENTS.md)**: working principles, repository map, verification, release restrictions and issue conventions.
 * **[Engine architecture](docs/engine-architecture.md)**: the current implementation reference, with links to decision history.
-* **[Issue index](issues/README.md)**: tasks grouped by area and priority. Each task has a permanent directory, a concise main file, and a sibling `-context.md` file when extended discussion is needed. Context preserves the rationale, alternatives, decisions and implementation history, and can link to earlier contexts.
-* **Open filenames** have no date: `<slug>.md` and `<slug>-context.md`. High-priority tasks prefix both with `high-priority-`.
-* **Completed filenames** are `done-YYYY-MM-DD-<stem>.md` and `done-YYYY-MM-DD-<stem>-context.md`, retaining any priority prefix in `<stem>`. The date is the completion date; rename only after the author's confirmation.
-* **Links between tasks point to their permanent directories**, so priority changes and completion do not break them. The main/context files link directly to each other; only those local links normally need updating when renamed.
+* **[Issues](issues/README.md)**: shared task rules, with separate lists of [open tasks](issues/open-tasks.md) (sorted by priority and status) and [closed tasks](issues/closed-tasks.md) (with opening/closing dates and resolution). Each task has a permanent directory, a concise main file `<slug>.md`, and a sibling `<slug>-context.md` when extended discussion is needed. Context preserves the rationale, alternatives, decisions and implementation history, and can link to earlier contexts.
+* **Filenames and directories never change.** Priority, status and dates live in task metadata and the lists; closing a task moves its row from the open list to the closed list after the author's confirmation.
+* **Links between tasks point to their permanent directories**, so priority changes and closure do not break them.
 
 Read the main task first and follow relevant context links when the reasons behind a decision matter. Historical proposals are preserved as history, not silently promoted to current requirements.
 

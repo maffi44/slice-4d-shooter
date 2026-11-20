@@ -1,8 +1,11 @@
 # Responsive engine startup and MainLoop ownership
 
-- **Status:** First implementation ready for author review — not yet accepted as done
+- **Status:** Done — accepted by the author on 2026-11-20
 - **Priority:** Normal
 - **Created:** 2026-11-16
+- **Closed:** 2026-11-20
+- **Resolution:** Done
+- **Implementation commit:** `76d73d9` (reviewed by the author)
 - **Stable address:** `issues/programming/nonblocking-engine-startup/`
 - **Context:** [nonblocking-engine-startup-context.md](nonblocking-engine-startup-context.md)
 
@@ -40,4 +43,4 @@ OpenGL runtime verification on 2026-11-17 found a context-lock timeout after sta
 
 The first implementation must compile all client entry points and preserve headless mode. Verify window responsiveness during GPU/shader loading, completion/error transitions, early close, latest resize at activation and normal shutdown. Duplicate resumes are guarded in code. Native Windows and Metal runtime checks remain required on those platforms; cross-compilation alone cannot establish driver/thread correctness.
 
-Commands, runtime evidence and limitations are recorded in the context implementation log. Keep this task open until the author reviews the implementation and confirms completion.
+Commands, runtime evidence and limitations are recorded in the context implementation log. The author reviewed the implementation and closed the task on 2026-11-20 (commit `76d73d9`).

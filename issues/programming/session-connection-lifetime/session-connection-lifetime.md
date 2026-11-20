@@ -4,7 +4,7 @@
 - **Priority:** High
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/session-connection-lifetime/`
-- **Context:** [high-priority-session-connection-lifetime-context.md](high-priority-session-connection-lifetime-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
+- **Context:** [session-connection-lifetime-context.md](session-connection-lifetime-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
 
 ## Task
 

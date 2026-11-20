@@ -9,7 +9,7 @@ The following original issue is preserved in full. Its old filename rules, statu
 # Network: authoritative server, drop emulated P2P, UDP/TCP transport
 
 - **Created:** 2026-11-12
-- **Status:** 🔵 Backlog / long-term. **Not part of the current engine refactoring.**
+- **Status:** Backlog / long-term. **Not part of the current engine refactoring.**
 - **Related:** `issues/programming/engine-refactoring-world-isolation/` §13. That refactoring turns `NetSystem` into a transport abstraction with connection handles and moves session logic into actors (`SessionController`). This issue builds on that.
 
 ## Context (from the author)

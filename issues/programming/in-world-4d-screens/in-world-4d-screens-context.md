@@ -9,25 +9,25 @@ The following original issue is preserved in full. Its old filename rules, statu
 # In-world 4D screens: showing a texture on geometry inside 4D space
 
 - **Created:** 2026-11-12
-- **Status:** 🔵 Backlog, **preliminary ideas only**. Not a spec. **Not part of the current engine refactoring.**
+- **Status:** Backlog, **preliminary ideas only**. Not a spec. **Not part of the current engine refactoring.**
 - **Related:** `issues/programming/engine-refactoring-world-isolation/`. That refactoring makes it possible to create nested `World`s, render each into its own GPU texture, and get that texture (§9.7 there, formerly "Q5"). This issue covers **displaying** such a texture (or a static one) on a screen object that lives inside the 4D game space.
 
-Legend: ✅ decided · 💡 proposed · ❓ open · ❌ rejected.
+Legend: [accepted] decided · [proposed] proposed · [open] open · [rejected] rejected.
 
 ## 1. Goal
 
 The in-game tutorial (see the refactoring issue §1) needs a **screen inside the level** showing another `World`: a 2D slice of a 3D world, as an analogy for the player's 3D slice of 4D space.
 
 Requirements from the author:
-- ✅ The screen is a **real object in 4D space**, not a 2D overlay. Its image must respect its position in space and be **occluded** by other objects correctly.
-- ✅ The displayed texture can be either:
+- [accepted] The screen is a **real object in 4D space**, not a 2D overlay. Its image must respect its position in space and be **occluded** by other objects correctly.
+- [accepted] The displayed texture can be either:
   - an ordinary **static texture**, or
   - the **output texture of another `World`**.
 
   From the screen's point of view there should be no fundamental difference between the two.
-- ✅ Out of scope for the refactoring. The refactoring only has to provide a GPU texture per world that other GPU resources / pipelines can use.
+- [accepted] Out of scope for the refactoring. The refactoring only has to provide a GPU texture per world that other GPU resources / pipelines can use.
 
-## 2. Preliminary rendering scheme (author's idea, 2026-11-12) 💡
+## 2. Preliminary rendering scheme (author's idea, 2026-11-12) [proposed]
 
 1. **Render the SDF scene as now**, but also produce a **depth texture**: the depth of the visible 3D slice after the SDF raymarch.
 2. **A separate pass renders the screens** as ordinary rasterized geometry:
@@ -38,7 +38,7 @@ Requirements from the author:
    - the **fragment shader** samples the assigned texture (static or a world's output)
 3. The pass uses the **depth texture from step 1**, so screens are correctly occluded by the main SDF geometry.
 
-## 3. Thickness along the 4th dimension 💡 / ❓
+## 3. Thickness along the 4th dimension [proposed] / [open]
 
 An infinitely thin 2D plane in 4D would leave the 3D slice almost as soon as the player moves along W. So the screen must have some **extent along the extra dimension**. Two variants so far:
 
@@ -50,7 +50,7 @@ An infinitely thin 2D plane in 4D would leave the 3D slice almost as soon as the
   - The 4D geometry is chosen so that its 3D cross-sections give a screen of **varying size**: as the player moves along W, the screen appears small, grows to its maximum size, then shrinks and disappears.
   - Something like a **4D double pyramid** (a pyramidal shape with two apexes along the extra axis). The author first thought of a tetrahedron, but a double pyramid is the closer description.
 
-## 4. Open problem: arbitrary 4D rotation ❓
+## 4. Open problem: arbitrary 4D rotation [open]
 
 How to implement thickness / size variation correctly when the screen has an **arbitrary 4D rotation**, or is viewed at an angle?
 - Simply scaling the quad by the W coordinate is probably not enough once the screen is rotated in 4D.
@@ -64,7 +64,7 @@ How to implement thickness / size variation correctly when the screen has an **a
 - A texture "generation" counter lets the consumer rebuild its bind group after the child texture was recreated (resolution/scale change).
 - Earlier options listed for "Q5" in the refactoring issue:
   - an SDF "screen" object inside the raymarch shader (texture binding + UV projection, fixed slots with placeholder) — not chosen; the author now prefers rasterized geometry + depth test
-  - a 2D overlay via the UI renderer — ❌ rejected: the screen must be an in-world object
+  - a 2D overlay via the UI renderer — [rejected] rejected: the screen must be an in-world object
 - The current raymarch shaders don't output depth. Producing depth (e.g. writing `frag_depth` or a separate depth/R32F target) is part of this task.
 
 ## 6. Open questions
