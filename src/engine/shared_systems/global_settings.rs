@@ -47,6 +47,10 @@ pub struct UserSettings
     pub master_volume: f32,
     pub screen_resolution_scale: f32,
     pub shadows_enabled: bool,
+    /// Target (maximum) render frames per second. Edited by hand in the user file; read when the
+    /// render scheduler is created. Higher than the 60 Hz simulation rate on purpose: without frame
+    /// interpolation, a render loop capped at the tick rate visibly judders against the tick clock.
+    pub target_render_frame_rate: u32,
 }
 
 impl Default for UserSettings
@@ -58,6 +62,7 @@ impl Default for UserSettings
             master_volume: 1.0,
             screen_resolution_scale: 1.0,
             shadows_enabled: true,
+            target_render_frame_rate: 125,
         }
     }
 }

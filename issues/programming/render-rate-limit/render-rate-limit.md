@@ -1,10 +1,10 @@
 # Limit the render rate to the simulation rate
 
-- **Status:** Done — closed at the author's request on 2026-11-20 without separate review
+- **Status:** Superseded — the cap was replaced on 2026-11-20
 - **Priority:** Normal
 - **Created:** 2026-11-20
 - **Closed:** 2026-11-20
-- **Resolution:** Done
+- **Resolution:** Superseded by [configurable target render frame rate](../render-frame-rate-setting/) after the author's play test
 - **Stable address:** `issues/programming/render-rate-limit/`
 
 ## Problem
@@ -29,3 +29,7 @@ Completion: the windowed client renders at most at the simulation rate (check th
 - `docs/engine-architecture.md` (render scheduler) states the rule.
 
 Verification (Linux, uncommitted on top of `b39ec5b`): release workspace build, workspace tests and Windows GNU bins check pass without warnings; headless run is unaffected (15 s, no errors). Windowed run of `capture_the_flag_map` for about 20 s logged `render loop: avg dt 0.016669` (60 FPS; min 0.012, max 0.0227). The window was closed externally with `xdotool windowclose`, which made winit panic with an X11 `BadWindow` error at exit; that is an artifact of the external close, not of this change.
+
+## Play test and supersession — 2026-11-20 [superseded]
+
+The cap was committed in `6361d4e`. In the author's play test the game felt less smooth at 60 render FPS, although the simulation did not change. The premise "frames above the tick rate redraw identical data, so they give nothing" ignored that the render and tick clocks are independent: at equal rates their phase drifts and ticks are shown unevenly [inference]. The cap was replaced by a user setting, default 125 after a brief trial of 80 ([configurable target render frame rate](../render-frame-rate-setting/)); interpolation and vsync are tracked in [render-frame-interpolation](../render-frame-interpolation/) and [vsync-research](../vsync-research/). The fixed-timeline scheduling from this task is kept.

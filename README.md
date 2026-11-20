@@ -185,7 +185,7 @@ Only `capture_the_flag_map` is currently known to load; several other bundled ma
 
 `J`/`K` lower/raise mouse sensitivity, and `N`/`M` lower/raise volume. `Esc` leaves fullscreen and releases the cursor; `Enter` returns to fullscreen and captures it.
 
-Your settings (mouse sensitivity, volume, render resolution, shadows) are saved in `user_settings.json` in the platform config directory (`~/.config/slice4d/` on Linux, `%APPDATA%\Slice4D\` on Windows, `~/Library/Application Support/Slice4D/` on macOS), or next to the executable if a `user_settings.json` is placed there.
+Your settings (mouse sensitivity, volume, render resolution, shadows, target render frame rate) are saved in `user_settings.json` in the platform config directory (`~/.config/slice4d/` on Linux, `%APPDATA%\Slice4D\` on Windows, `~/Library/Application Support/Slice4D/` on macOS), or next to the executable if a `user_settings.json` is placed there.
 
 Settings load asynchronously. Changes are written in order by a background task; normal shutdown waits for pending settings writes.
 

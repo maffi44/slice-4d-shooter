@@ -31,6 +31,10 @@ use super::{
 };
 
 
+/// Accepted range of the `target_render_frame_rate` user setting; values outside are clamped.
+const MIN_TARGET_FRAME_RATE: u32 = 10;
+const MAX_TARGET_FRAME_RATE: u32 = 1000;
+
 /// If a render-loop iteration took less than this, the thread sleeps a bit (as before).
 const MIN_ITERATION_DURATION: Duration = Duration::from_millis(3);
 const ITERATION_SLEEP: Duration = Duration::from_micros(3122);
@@ -153,9 +157,21 @@ impl RenderScheduler
         surface_config: wgpu::SurfaceConfiguration,
         window: Arc<Window>,
         ui: &mut UISystem,
-        min_frame_duration: Duration,
+        target_frame_rate: u32,
     ) -> Self
     {
+        let clamped_frame_rate = target_frame_rate.clamp(MIN_TARGET_FRAME_RATE, MAX_TARGET_FRAME_RATE);
+
+        if clamped_frame_rate != target_frame_rate
+        {
+            log::warn!(
+                "render scheduler: target_render_frame_rate {} is outside {}..={}, using {}",
+                target_frame_rate, MIN_TARGET_FRAME_RATE, MAX_TARGET_FRAME_RATE, clamped_frame_rate,
+            );
+        }
+
+        let min_frame_duration = Duration::from_secs_f64(1.0 / clamped_frame_rate as f64);
+
         let surface_size = PhysicalSize::new(surface_config.width, surface_config.height);
 
         // UIRenderer initializes the UI elements' GPU buffers, so it's created here (it needs
@@ -198,7 +214,7 @@ impl RenderScheduler
             .spawn(move || render_loop.run())
             .expect("ERROR: can't spawn the render thread");
 
-        log::info!("render scheduler: render thread started");
+        log::info!("render scheduler: render thread started, target {} FPS", clamped_frame_rate);
 
         RenderScheduler {
             to_render_loop,
@@ -286,8 +302,7 @@ struct RenderLoop
     /// The world whose buffers the UI renderer (HUD scanner) is bound to, and the texture generation.
     ui_bound_world: Option<WorldTextureId>,
 
-    /// Render data changes once per simulation tick and frames aren't interpolated, so the render
-    /// rate is capped at the simulation rate: this is the tick period, set at creation.
+    /// The period of the target render frame rate (a user setting), set at creation.
     min_frame_duration: Duration,
     /// The earliest start of the next frame. Advanced by `min_frame_duration` on a fixed timeline,
     /// so the average rate never exceeds the cap and lateness under one period isn't accumulated.
