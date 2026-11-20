@@ -17,3 +17,5 @@ Move authoritative gameplay state to the server and replace emulated peer-to-pee
 Design server simulation/tick, prediction, reconciliation, lag compensation, protocol and compatible deployment before implementation. Decide whether to retain WebRTC or adopt another transport. Context records why WebRTC was chosen and why the direction changed.
 
 Immediate [connection lifetime](../session-connection-lifetime/) and ordinary-priority [TCP framing](../server-tcp-framing/) fixes are separate and need not wait for this rewrite.
+
+The host process that runs many cheap headless session instances (per-session cost, threads, shared runtime) is designed in [server side of the engine](../server-engine/) (2026-11-20).

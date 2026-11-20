@@ -1,7 +1,7 @@
 # Review the engine for cache-friendly memory layout
 
 - **Status:** Open — research pending
-- **Priority:** Normal
+- **Priority:** Long-term
 - **Created:** 2026-11-20
 - **Stable address:** `issues/programming/cache-friendly-memory-layout/`
 
