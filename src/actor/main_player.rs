@@ -918,7 +918,7 @@ impl Actor for MainPlayer {
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         shared: &mut EngineSharedSystems,
     ) {
@@ -930,7 +930,7 @@ impl Actor for MainPlayer {
 
         let from = message.from;
 
-        let message = message.message;
+        let message = &message.message;
         
         match message
         {
@@ -940,17 +940,17 @@ impl Actor for MainPlayer {
                 {
                     CommonActorsMessage::SetTransform(transform) =>
                     {
-                        self.inner_state.transform = transform;
+                        self.inner_state.transform = *transform;
                     },
 
                     CommonActorsMessage::Enable(switch) =>
                     {
-                        self.inner_state.is_enable = switch;
+                        self.inner_state.is_enable = *switch;
                     },
 
                     CommonActorsMessage::IncrementPosition(increment) =>
                     {
-                        self.inner_state.transform.increment_position(increment);
+                        self.inner_state.transform.increment_position(*increment);
                     },
                     CommonActorsMessage::IWasChangedMyId(_new_id) => {}
                     CommonActorsMessage::ClientDisconnectedFromGameServer => {}
@@ -1020,10 +1020,10 @@ impl Actor for MainPlayer {
                             {
                                 self.screen_effects.player_projections.update_projection_state(
                                     from,
-                                    updated_projection_position,
-                                    updated_projection_radius,
-                                    anti_projection_mode_enabled,
-                                    player_is_alive,
+                                    *updated_projection_position,
+                                    *updated_projection_radius,
+                                    *anti_projection_mode_enabled,
+                                    *player_is_alive,
                                     &self.inner_state
                                 );
                             }
@@ -1104,10 +1104,10 @@ impl Actor for MainPlayer {
                                 damage_dealer_id
                             ) =>
                             {
-                                if team != self.inner_state.team
+                                if *team != self.inner_state.team
                                 {
                                     self.screen_effects.player_projections.update_or_add_projection(
-                                        damage_dealer_id,
+                                        *damage_dealer_id,
                                         PLAYER_PROJECTION_DISPLAY_TIME,
                                         GET_DAMAGE_PROJECTION_INTENSITY,
                                         self.get_id().expect("Player have not ActorID"),
@@ -1119,8 +1119,8 @@ impl Actor for MainPlayer {
                                     let my_id = self.get_id().expect("Player Have not ActorID");
 
                                     get_damage_and_add_force(
-                                        damage as i32,
-                                        force,
+                                        *damage as i32,
+                                        *force,
                                         &mut self.screen_effects,
                                         &mut self.inner_state,
                                         &mut self.active_hands_slot,
@@ -1144,7 +1144,7 @@ impl Actor for MainPlayer {
                                 messenger.send_command(
                                     Command {
                                         sender: self.id.expect("Player have not ActorID"),
-                                        command_type: CommandType::ChangeMyId(new_id),
+                                        command_type: CommandType::ChangeMyId(*new_id),
                                     }
                                 );
                             }
@@ -1163,7 +1163,7 @@ impl Actor for MainPlayer {
                                                 self.inner_state.team
                                             )
                                         ),
-                                        peer_id,
+                                        *peer_id,
                                         Reliability::Reliable,
                                     ),
                                 )
@@ -1171,7 +1171,7 @@ impl Actor for MainPlayer {
 
                             PlayerMessage::SetNewTeam(team) =>
                             {
-                                self.inner_state.team = team;
+                                self.inner_state.team = *team;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
                                 set_right_team_hud(
@@ -1196,7 +1196,7 @@ impl Actor for MainPlayer {
                         {
                             SessionControllerMessage::NewSessionStarted(team) =>
                             {
-                                self.inner_state.team = team;
+                                self.inner_state.team = *team;
                                 self.inner_state.is_time_after_some_team_win = false;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
@@ -1222,7 +1222,7 @@ impl Actor for MainPlayer {
                             {
                                 println!("Joined to game session");
                                 
-                                self.inner_state.team = your_team;
+                                self.inner_state.team = *your_team;
                                 self.inner_state.is_time_after_some_team_win = false;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
@@ -1290,7 +1290,7 @@ impl Actor for MainPlayer {
                                 flag_status,
                             ) =>
                             {
-                                if team_that_owns_flag == self.inner_state.team
+                                if *team_that_owns_flag == self.inner_state.team
                                 {
                                     match flag_status {
                                         FlagStatus::Missed(_) =>
@@ -1324,7 +1324,7 @@ impl Actor for MainPlayer {
                         match message {
                             FlagBaseMessage::YouInteractingWithFlagBase(team_of_base) =>
                             {
-                                if team_of_base == self.inner_state.team
+                                if *team_of_base == self.inner_state.team
                                 {
                                     send_to_session_controller(
                                         messenger,
@@ -1346,7 +1346,7 @@ impl Actor for MainPlayer {
                                 {
                                     BonusSpotStatus::BonusCollected(collected_by) =>
                                     {
-                                        if collected_by == self.get_id().expect("Player have not ActorID")
+                                        if *collected_by == self.get_id().expect("Player have not ActorID")
                                         {
                                             if self.inner_state.amount_of_move_w_bonuses_do_i_have <
                                                 MAX_MOVE_W_BONUSES_I_CAN_HAVE
@@ -1368,7 +1368,7 @@ impl Actor for MainPlayer {
                                         messenger,
                                         self.get_id().expect("Player have not ActorID"),
                                         SessionControllerMessage::TryToGetMoveWBonus(
-                                            index,
+                                            *index,
                                         ),
                                     );
                                 }

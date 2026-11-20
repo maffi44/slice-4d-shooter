@@ -181,7 +181,7 @@ impl Actor for DropedRotatorTool
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         shared: &mut EngineSharedSystems,
     ) {
@@ -191,7 +191,7 @@ impl Actor for DropedRotatorTool
         
         let _from = message.from;
 
-        match message.message
+        match &message.message
         {
             MessageType::SpecificActorMessage(message) =>
             {
@@ -236,7 +236,7 @@ impl Actor for DropedRotatorTool
                 match message {
                     CommonActorsMessage::SetTransform(tr) =>
                     {
-                        self.transform = tr;
+                        self.transform = *tr;
                     }
                     CommonActorsMessage::ClientDisconnectedFromGameServer =>
                     {
@@ -255,7 +255,7 @@ impl Actor for DropedRotatorTool
                             AreaMessage::ActorEnterArea(id) =>
                             {
                                 messenger.send_direct_message(
-                                    id,
+                                    *id,
                                     Message {
                                         from: self.get_id().expect("Droped Rotator Tool havn't ActorID"),
                                         remote_sender: false,

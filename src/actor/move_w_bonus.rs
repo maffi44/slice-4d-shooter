@@ -42,7 +42,7 @@ pub enum MoveWBonusSpotMessage
     ),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum BonusSpotStatus
 {
     BonusOnTheSpot,
@@ -201,20 +201,16 @@ impl Actor for MoveWBonusSpot
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         _shared: &mut EngineSharedSystems,
     ) {
         let messenger = &mut *world.messenger;
 
         
-        let Message {
-            from,
-            remote_sender: _,
-            message
-        } = message;
+        let from = message.from;
 
-        match message
+        match &message.message
         {
             MessageType::CommonActorsMessages(message) =>
             {
@@ -227,7 +223,7 @@ impl Actor for MoveWBonusSpot
                             {
                                 if from == id
                                 {
-                                    self.status = BonusSpotStatus::BonusCollected(new_id);
+                                    self.status = BonusSpotStatus::BonusCollected(*new_id);
                                 }
                             }
                             _ => {}
@@ -236,12 +232,12 @@ impl Actor for MoveWBonusSpot
 
                     CommonActorsMessage::SetTransform(tr) =>
                     {
-                        self.transform = tr;
+                        self.transform = *tr;
                     }
 
                     CommonActorsMessage::IncrementPosition(incr) =>
                     {
-                        self.transform.increment_position(incr);
+                        self.transform.increment_position(*incr);
                     }
 
                     CommonActorsMessage::Enable(_switch) =>
@@ -270,7 +266,7 @@ impl Actor for MoveWBonusSpot
                             ) =>
                             {
                                 self.area.clear_containing_colliders_list();
-                                self.status = BonusSpotStatus::from(bonus_status);
+                                self.status = BonusSpotStatus::from(*bonus_status);
                             }
                             
                             SessionControllerMessage::NewSessionStarted(_) =>
@@ -291,10 +287,10 @@ impl Actor for MoveWBonusSpot
                                 new_status,
                             ) =>
                             {
-                                if self.index == index
+                                if self.index == *index
                                 {
                                     self.area.clear_containing_colliders_list();
-                                    self.status = new_status;
+                                    self.status = *new_status;
                                 }
                             }
 
@@ -315,7 +311,7 @@ impl Actor for MoveWBonusSpot
                             AreaMessage::ActorEnterArea(id) =>
                             {
                                 messenger.send_direct_message(
-                                    id,
+                                    *id,
                                     Message {
                                         from: self.get_id().expect("move w bonus spot have not ActorId"),
                                         remote_sender: false,

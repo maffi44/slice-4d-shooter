@@ -150,7 +150,7 @@ impl Actor for FlagBase
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         _shared: &mut EngineSharedSystems,
     ) {
@@ -159,7 +159,7 @@ impl Actor for FlagBase
         
         let from = message.from;
 
-        match message.message
+        match &message.message
         {
             MessageType::PhysicsMessages(message) =>
             {
@@ -171,7 +171,7 @@ impl Actor for FlagBase
                             AreaMessage::ActorEnterArea(id) =>
                             {
                                 messenger.send_direct_message(
-                                    id,
+                                    *id,
                                     Message {
                                         from: self.id.expect("Flag have not ActorID"),
                                         remote_sender: false,

@@ -71,6 +71,7 @@ Window-level hotkeys (`Esc`/`Enter`, `J`/`K` sensitivity, `N`/`M` volume, `Y`/`H
 ### Actors (`src/actor.rs`, `src/actor/`)
 - `trait Actor` callbacks get `(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems)`:
   - `tick`, `recieve_message` (the misspelling is intentional and used everywhere), `on_added_to_world`, `on_world_started`
+  - `recieve_message` gets `&Message`: Messenger keeps ownership of the popped message during delivery, so a broadcast is borrowed by every recipient instead of cloned per actor. A handler that stores or forwards payload data copies/clones only that data; it must not keep the reference beyond the callback.
   - `WorldContext` = `messenger`, `physics`, `time` (`world.time.delta()`), `main_actor_id`
   - also `get_physical_element`, `get_visual_element`, id handling
 - `trait ControlledActor` covers player-like actors (camera, screen effects, team, spawn).

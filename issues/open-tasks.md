@@ -21,7 +21,6 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | [Separate development CI from release deployment](programming/ci-validation-and-release/) | Normal | Open — not implemented | 2026-11-16 | 13 |
 | [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/) | Normal | Open — not implemented | 2026-11-16 | 15 |
 | [Clean dependencies and obsolete build configuration](programming/dependency-and-build-cleanup/) | Normal | Open — not implemented | 2026-11-16 | 16 |
-| [Deliver broadcast messages by reference](programming/borrow-broadcast-messages/) | Normal | Open — not implemented | 2026-11-16 | — |
 | [In-world 4D screens](programming/in-world-4d-screens/) | Normal | Backlog — design pending | 2026-11-12 | — |
 | [Authoritative server and transport](programming/network-authoritative-server-and-transport/) | Normal | Backlog — design pending | 2026-11-12 | — |
 | [GPU upload grouping and coherent data](programming/gpu-data-grouping/) | Long-term | Backlog — long-term | 2026-11-16 | 1 |

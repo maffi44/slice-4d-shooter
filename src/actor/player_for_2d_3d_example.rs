@@ -137,7 +137,7 @@ impl Actor for PlayerFor2d3dExample {
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         shared: &mut EngineSharedSystems,
     ) {
@@ -149,7 +149,7 @@ impl Actor for PlayerFor2d3dExample {
 
         let from = message.from;
 
-        let message = message.message;
+        let message = &message.message;
         
         match message
         {
@@ -159,17 +159,17 @@ impl Actor for PlayerFor2d3dExample {
                 {
                     CommonActorsMessage::SetTransform(transform) =>
                     {
-                        self.inner_state.transform = transform;
+                        self.inner_state.transform = *transform;
                     },
 
                     CommonActorsMessage::Enable(switch) =>
                     {
-                        self.inner_state.is_enable = switch;
+                        self.inner_state.is_enable = *switch;
                     },
 
                     CommonActorsMessage::IncrementPosition(increment) =>
                     {
-                        self.inner_state.transform.increment_position(increment);
+                        self.inner_state.transform.increment_position(*increment);
                     },
                     CommonActorsMessage::IWasChangedMyId(_new_id) => {}
                     CommonActorsMessage::ClientDisconnectedFromGameServer => {}
@@ -239,10 +239,10 @@ impl Actor for PlayerFor2d3dExample {
                             {
                                 self.screen_effects.player_projections.update_projection_state_for_2d_3d_example(
                                     from,
-                                    updated_projection_position,
-                                    updated_projection_radius,
-                                    anti_projection_mode_enabled,
-                                    player_is_alive,
+                                    *updated_projection_position,
+                                    *updated_projection_radius,
+                                    *anti_projection_mode_enabled,
+                                    *player_is_alive,
                                     &self.inner_state
                                 );
                             }
@@ -323,7 +323,7 @@ impl Actor for PlayerFor2d3dExample {
                                 _
                             ) =>
                             {
-                                if team != self.inner_state.team
+                                if *team != self.inner_state.team
                                 {
                                     self.screen_effects.player_projections.update_or_add_projection(
                                         from,
@@ -338,8 +338,8 @@ impl Actor for PlayerFor2d3dExample {
                                     let my_id = self.get_id().expect("Player Have not ActorID");
 
                                     main_player::get_damage_and_add_force(
-                                        damage as i32,
-                                        force,
+                                        *damage as i32,
+                                        *force,
                                         &mut self.screen_effects,
                                         &mut self.inner_state,
                                         &mut self.active_hands_slot,
@@ -375,7 +375,7 @@ impl Actor for PlayerFor2d3dExample {
                                                 self.inner_state.team
                                             )
                                         ),
-                                        peer_id,
+                                        *peer_id,
                                         Reliability::Reliable,
                                     ),
                                 )
@@ -383,7 +383,7 @@ impl Actor for PlayerFor2d3dExample {
 
                             PlayerMessage::SetNewTeam(team) =>
                             {
-                                self.inner_state.team = team;
+                                self.inner_state.team = *team;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
                                 main_player::set_right_team_hud(
@@ -409,7 +409,7 @@ impl Actor for PlayerFor2d3dExample {
                         {
                             SessionControllerMessage::NewSessionStarted(team) =>
                             {
-                                self.inner_state.team = team;
+                                self.inner_state.team = *team;
                                 self.inner_state.is_time_after_some_team_win = false;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
@@ -436,7 +436,7 @@ impl Actor for PlayerFor2d3dExample {
                             {
                                 println!("Joined to game session");
                                 
-                                self.inner_state.team = your_team;
+                                self.inner_state.team = *your_team;
                                 self.inner_state.is_time_after_some_team_win = false;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
@@ -505,7 +505,7 @@ impl Actor for PlayerFor2d3dExample {
                                 flag_status,
                             ) =>
                             {
-                                if team_that_owns_flag == self.inner_state.team
+                                if *team_that_owns_flag == self.inner_state.team
                                 {
                                     match flag_status {
                                         FlagStatus::Missed(_) =>
@@ -553,7 +553,7 @@ impl Actor for PlayerFor2d3dExample {
                                 {
                                     BonusSpotStatus::BonusCollected(collected_by) =>
                                     {
-                                        if collected_by == self.get_id().expect("Player have not ActorID")
+                                        if *collected_by == self.get_id().expect("Player have not ActorID")
                                         {
                                             if self.inner_state.amount_of_move_w_bonuses_do_i_have <
                                                 MAX_MOVE_W_BONUSES_I_CAN_HAVE
@@ -575,7 +575,7 @@ impl Actor for PlayerFor2d3dExample {
                                         messenger,
                                         self.get_id().expect("Player have not ActorID"),
                                         SessionControllerMessage::TryToGetMoveWBonus(
-                                            index,
+                                            *index,
                                         ),
                                     );
                                 }

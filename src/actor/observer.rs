@@ -66,7 +66,7 @@ impl Actor for Observer {
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         _shared: &mut EngineSharedSystems,
     ) {
@@ -74,7 +74,7 @@ impl Actor for Observer {
 
         let from = message.from;
 
-        let message = message.message;
+        let message = &message.message;
         
         match message
         {
@@ -84,17 +84,17 @@ impl Actor for Observer {
                 {
                     CommonActorsMessage::SetTransform(transform) =>
                     {
-                        self.inner_state.transform = transform;
+                        self.inner_state.transform = *transform;
                     },
 
                     CommonActorsMessage::Enable(switch) =>
                     {
-                        self.inner_state.is_enable = switch;
+                        self.inner_state.is_enable = *switch;
                     },
 
                     CommonActorsMessage::IncrementPosition(increment) =>
                     {
-                        self.inner_state.transform.increment_position(increment);
+                        self.inner_state.transform.increment_position(*increment);
                     },
                     CommonActorsMessage::IWasChangedMyId(_new_id) => {}
                     CommonActorsMessage::ClientDisconnectedFromGameServer => {}
@@ -134,7 +134,7 @@ impl Actor for Observer {
 
                             PlayerMessage::SetNewTeam(team) =>
                             {
-                                self.inner_state.team = team;
+                                self.inner_state.team = *team;
                                 self.inner_state.amount_of_move_w_bonuses_do_i_have = 0u32;
 
                                 todo!("must impliment respawn for observer");
@@ -157,10 +157,10 @@ impl Actor for Observer {
                             {
                                 self.screen_effects.player_projections.update_projection_state(
                                     from,
-                                    updated_projection_position,
-                                    updated_projection_radius,
-                                    anti_projection_mode_enabled,
-                                    player_is_alive,
+                                    *updated_projection_position,
+                                    *updated_projection_radius,
+                                    *anti_projection_mode_enabled,
+                                    *player_is_alive,
                                     &self.inner_state
                                 );
                             }
@@ -174,7 +174,7 @@ impl Actor for Observer {
                         {
                             SessionControllerMessage::NewSessionStarted(team) =>
                             {
-                                self.inner_state.team = team;
+                                self.inner_state.team = *team;
 
                                 todo!("must impliment respawn for observer");
                                 // messenger.send_command(
@@ -192,7 +192,7 @@ impl Actor for Observer {
                                 your_team, _, _, _, _, _,
                             ) =>
                             {
-                                self.inner_state.team = your_team;
+                                self.inner_state.team = *your_team;
 
                                 todo!("must impliment respawn for observer");
                                 // messenger.send_command(

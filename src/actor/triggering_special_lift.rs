@@ -272,7 +272,7 @@ impl Actor for TriggeringSpecialLiftActor {
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         _world: &mut WorldContext,
         _shared: &mut EngineSharedSystems,
     ) {
@@ -280,7 +280,7 @@ impl Actor for TriggeringSpecialLiftActor {
 
         let _from = message.from;
 
-        match message.message {
+        match &message.message {
             MessageType::SpecificActorMessage(message) =>
             {
                 match message {
@@ -289,7 +289,7 @@ impl Actor for TriggeringSpecialLiftActor {
                         match message {
                             TriggerMessage::Triggered(trigger_name) =>
                             {
-                                if self.triggering_by_trigger == trigger_name
+                                if self.triggering_by_trigger == *trigger_name
                                 {
                                     self.triggered = true;
                                 }

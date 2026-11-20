@@ -205,7 +205,7 @@ impl Actor for Trigger
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         _shared: &mut EngineSharedSystems,
     ) {
@@ -214,7 +214,7 @@ impl Actor for Trigger
         
         let _from = message.from;
 
-        match message.message
+        match &message.message
         {
             MessageType::PhysicsMessages(message) =>
             {
@@ -236,7 +236,7 @@ impl Actor for Trigger
                                                     TriggerMessage::ActorEnteredTriggerArea(
                                                         self.trigger_name.clone(),
                                                         self.id.expect("Flag have not ActorID"),
-                                                        id,
+                                                        *id,
                                                         self.transform.get_position()
                                                     )
                                                 )

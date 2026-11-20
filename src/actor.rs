@@ -85,7 +85,7 @@ pub trait Actor {
 
     fn recieve_message(
         &mut self,
-        _message: Message,
+        _message: &Message,
         _world: &mut WorldContext,
         _shared: &mut EngineSharedSystems,
     ) {}
@@ -195,7 +195,7 @@ macro_rules! actor_wrapper {
                 }
             }
 
-            fn recieve_message(&mut self, message: Message, world: &mut WorldContext, shared: &mut EngineSharedSystems)
+            fn recieve_message(&mut self, message: &Message, world: &mut WorldContext, shared: &mut EngineSharedSystems)
             {
                 match self {
                     $( ActorWrapper::$variant(actor) => actor.recieve_message(message, world, shared), )*

@@ -571,7 +571,7 @@ impl Actor for Flag
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         shared: &mut EngineSharedSystems,
     ) {
@@ -581,7 +581,7 @@ impl Actor for Flag
         
         let from = message.from;
 
-        match message.message
+        match &message.message
         {
             MessageType::SpecificActorMessage(message) =>
             {
@@ -605,7 +605,7 @@ impl Actor for Flag
                                                     NetMessageToServer::DropedFlag(
                                                         self.owned_by_team,
                                                         self.get_transform().get_position().to_array(),
-                                                        in_space,
+                                                        *in_space,
                                                     ),
                                                 ),
                                             );
@@ -617,11 +617,11 @@ impl Actor for Flag
 
                             FlagMessage::SetFlagStatus(team, status) =>
                             {
-                                if self.owned_by_team == team
+                                if self.owned_by_team == *team
                                 {
                                     self.area.clear_containing_colliders_list();
                                     
-                                    match status {
+                                    match *status {
                                         FlagStatus::OnTheBase =>
                                         {
                                             self.set_flag_on_base_status(audio_system, messenger);
@@ -645,7 +645,7 @@ impl Actor for Flag
                                     {
                                         if id == from
                                         {
-                                            self.target_position = position;
+                                            self.target_position = *position;
                                         }
                                     }
                                     _ => {}
@@ -758,7 +758,7 @@ impl Actor for Flag
                                 {
                                     Team::Red =>
                                     {
-                                        match red_flag_status
+                                        match *red_flag_status
                                         {
                                             FlagStatus::OnTheBase =>
                                             {
@@ -778,7 +778,7 @@ impl Actor for Flag
                                     }
                                     Team::Blue =>
                                     {
-                                        match blue_flag_status
+                                        match *blue_flag_status
                                         {
                                             FlagStatus::OnTheBase =>
                                             {
@@ -810,7 +810,7 @@ impl Actor for Flag
                 match message {
                     CommonActorsMessage::SetTransform(tr) =>
                     {
-                        self.transform = tr;
+                        self.transform = *tr;
                     }
                     CommonActorsMessage::ClientDisconnectedFromGameServer =>
                     {
@@ -829,7 +829,7 @@ impl Actor for Flag
                             AreaMessage::ActorEnterArea(id) =>
                             {
                                 messenger.send_direct_message(
-                                    id,
+                                    *id,
                                     Message {
                                         from: self.id.expect("Flag have not ActorID"),
                                         remote_sender: false,

@@ -531,7 +531,7 @@ impl Actor for TriggerOrb
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         shared: &mut EngineSharedSystems,
     ) {
@@ -541,7 +541,7 @@ impl Actor for TriggerOrb
         
         let from = message.from;
 
-        match message.message
+        match &message.message
         {
             MessageType::SpecificActorMessage(message) =>
             {
@@ -558,7 +558,7 @@ impl Actor for TriggerOrb
                                     {
                                         if id == from
                                         {
-                                            self.target_position = position;
+                                            self.target_position = *position;
                                         }
                                     }
                                     _ => {}
@@ -567,7 +567,7 @@ impl Actor for TriggerOrb
 
                             TriggerOrbMessage::TriggerOrbCapturedByPlayer(player_id) =>
                             {
-                                self.status = TrggerOrbStatus::Captured(player_id);
+                                self.status = TrggerOrbStatus::Captured(*player_id);
 
                                 audio_system.spawn_spatial_sound(
                                     &self.flag_captured_sound,
@@ -595,10 +595,10 @@ impl Actor for TriggerOrb
                                 match self.status {
                                     TrggerOrbStatus::Captured(player_id) =>
                                     {
-                                        if player_id == entered_actor_id && trigger_name == self.target_trigger_name
+                                        if player_id == *entered_actor_id && *trigger_name == self.target_trigger_name
                                         {
-                                            self.status = TrggerOrbStatus::MovingToTrigger(trigger_id);
-                                            self.target_position = trigger_pos;
+                                            self.status = TrggerOrbStatus::MovingToTrigger(*trigger_id);
+                                            self.target_position = *trigger_pos;
                                         }
                                     }
                                     _ => {}
@@ -615,7 +615,7 @@ impl Actor for TriggerOrb
                 match message {
                     CommonActorsMessage::SetTransform(tr) =>
                     {
-                        self.transform = tr;
+                        self.transform = *tr;
                     }
                     CommonActorsMessage::ClientDisconnectedFromGameServer =>
                     {
@@ -634,7 +634,7 @@ impl Actor for TriggerOrb
                             AreaMessage::ActorEnterArea(id) =>
                             {
                                 messenger.send_direct_message(
-                                    id,
+                                    *id,
                                     Message {
                                         from: self.id.expect("Flag have not ActorID"),
                                         remote_sender: false,

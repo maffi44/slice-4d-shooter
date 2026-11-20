@@ -191,7 +191,7 @@ impl Actor for TriggeringWanderingActor {
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         _world: &mut WorldContext,
         _shared: &mut EngineSharedSystems,
     ) {
@@ -199,7 +199,7 @@ impl Actor for TriggeringWanderingActor {
 
         let _from = message.from;
 
-        match message.message {
+        match &message.message {
             MessageType::SpecificActorMessage(message) =>
             {
                 match message {
@@ -208,7 +208,7 @@ impl Actor for TriggeringWanderingActor {
                         match message {
                             TriggerMessage::Triggered(trigger_name) =>
                             {
-                                if self.triggering_by_trigger == trigger_name
+                                if self.triggering_by_trigger == *trigger_name
                                 {
                                     self.triggered = true;
                                 }

@@ -160,7 +160,7 @@ impl Actor for MoverW
 
     fn recieve_message(
         &mut self,
-        message: super::Message,
+        message: &super::Message,
         world: &mut WorldContext,
         _shared: &mut EngineSharedSystems,
     )
@@ -168,7 +168,7 @@ impl Actor for MoverW
         let messenger = &mut *world.messenger;
 
         let _from = message.from;
-        match message.message {
+        match &message.message {
             MessageType::PhysicsMessages(message) =>
             {
                 match message {
@@ -178,15 +178,15 @@ impl Actor for MoverW
                         {
                             AreaMessage::ActorEnterArea(id) =>
                             {
-                                if !self.actors_to_not_interact_with.contains_key(&id)
+                                if !self.actors_to_not_interact_with.contains_key(id)
                                 {
                                     self.actors_to_not_interact_with.insert(
-                                        id,
+                                        *id,
                                         TIME_TO_NOT_INTERACT_WITH_ACTOR
                                     );
 
                                     messenger.send_direct_message(
-                                        id,
+                                        *id,
                                         Message {
                                             from: self.id.expect("MoverW hasn't ActorID"),
                                             remote_sender: false,

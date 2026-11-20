@@ -1,8 +1,10 @@
 # Deliver broadcast messages by reference
 
-- **Status:** Open — not implemented
+- **Status:** Closed
 - **Priority:** Normal
 - **Created:** 2026-11-16
+- **Closed:** 2026-11-20
+- **Resolution:** Done — reviewed by the author
 - **Stable address:** `issues/programming/borrow-broadcast-messages/`
 - **Context:** [borrow-broadcast-messages-context.md](borrow-broadcast-messages-context.md)
 
@@ -16,4 +18,8 @@ Prefer a simple borrowed callback (`&Message`) where practical; direct delivery 
 
 Preserve sender filtering, remote-sender metadata and current delivery semantics. Coordinate [message ordering](../message-ordering/) without silently changing order in this small task. Keep the intentional spelling `recieve_message`.
 
-Completion: no unconditional full-message clone per broadcast recipient, all actors/bins compile, and handlers still produce the same intended effects. Verify with relevant workspace checks. This is expected to be a small mechanical change; implementation has not been requested in this turn.
+Completion: no unconditional full-message clone per broadcast recipient, all actors/bins compile, and handlers still produce the same intended effects. Verify with relevant workspace checks.
+
+## Current state (2026-11-20)
+
+[accepted] Implemented: `Actor::recieve_message` takes `&Message`; `Messenger::process_messages` lends the popped message to every broadcast recipient and to the direct recipient. Handlers match on `&message.message` and copy `Copy` payload fields at use; non-`Copy` payloads that are stored are cloned explicitly (`PlayerDollInputState` in `PlayersDoll`). Strings in trigger messages are now compared by reference instead of being cloned per recipient. Delivery order, sender filtering and `remote_sender` are unchanged. Details and verification: [context](borrow-broadcast-messages-context.md).

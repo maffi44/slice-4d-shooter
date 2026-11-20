@@ -538,7 +538,7 @@ impl Actor for SessionController
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         shared: &mut EngineSharedSystems,
     ) {
@@ -555,7 +555,7 @@ impl Actor for SessionController
         let ui_system = &mut shared.ui;
 
         
-        match message.message {
+        match &message.message {
             MessageType::SpecificActorMessage(message) =>
             {
                 match message
@@ -567,7 +567,7 @@ impl Actor for SessionController
                             {
                                 self.blue_team_score = 0u32;
                                 self.red_team_score = 0u32;
-                                self.your_team = your_team;
+                                self.your_team = *your_team;
                                 self.show_blue_team_backlight_timer = 0.0;
                                 self.show_red_team_backlight_timer = 0.0;
                                 self.show_join_blue_team_title_timer = 0.0;
@@ -609,7 +609,7 @@ impl Actor for SessionController
 
                             SessionControllerMessage::SetScore(new_red_team_score, new_blue_team_score) =>
                             {
-                                if new_red_team_score > self.red_team_score
+                                if *new_red_team_score > self.red_team_score
                                 {
                                     effects::spawn_wave(
                                         messenger,
@@ -671,7 +671,7 @@ impl Actor for SessionController
                                         }
                                     }
                                 }
-                                if new_blue_team_score > self.blue_team_score
+                                if *new_blue_team_score > self.blue_team_score
                                 {
                                     effects::spawn_wave(
                                         messenger,
@@ -733,8 +733,8 @@ impl Actor for SessionController
                                         }
                                     }
                                 }
-                                self.red_team_score = new_red_team_score;
-                                self.blue_team_score = new_blue_team_score;
+                                self.red_team_score = *new_red_team_score;
+                                self.blue_team_score = *new_blue_team_score;
 
                                 self.set_score_ui(ui_system);
                             }
@@ -871,9 +871,9 @@ impl Actor for SessionController
                                 self.show_blue_team_win_title_timer = 0.0;
                                 self.show_red_team_win_title_timer = 0.0;
 
-                                self.your_team = your_team;
-                                self.red_team_score = red_team_score;
-                                self.blue_team_score = blue_team_score;
+                                self.your_team = *your_team;
+                                self.red_team_score = *red_team_score;
+                                self.blue_team_score = *blue_team_score;
 
                                 match your_team
                                 {
@@ -912,11 +912,11 @@ impl Actor for SessionController
                                 {
                                     Team::Blue =>
                                     {
-                                        self.blue_flag_base_position = Some(position);
+                                        self.blue_flag_base_position = Some(*position);
                                     }
                                     Team::Red =>
                                     {
-                                        self.red_flag_base_position = Some(position);
+                                        self.red_flag_base_position = Some(*position);
                                     }
                                 }
                             }
@@ -931,7 +931,7 @@ impl Actor for SessionController
                         {
                             PlayerMessage::SetNewTeam(team) =>
                             {
-                                self.your_team = team;
+                                self.your_team = *team;
 
                                 match team {
                                     Team::Red =>

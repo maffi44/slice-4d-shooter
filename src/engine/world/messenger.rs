@@ -147,7 +147,7 @@ impl Messenger
                 {
                     if actor.get_id().expect("the actor has no id") != message.from
                     {
-                        actor.recieve_message(message.clone(), &mut world, shared);
+                        actor.recieve_message(&message, &mut world, shared);
                     }
                 }
             }
@@ -165,7 +165,7 @@ impl Messenger
                         time,
                     };
 
-                    actor.recieve_message(message, &mut world, shared);
+                    actor.recieve_message(&message, &mut world, shared);
                 }
             }
 

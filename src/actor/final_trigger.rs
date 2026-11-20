@@ -265,7 +265,7 @@ impl Actor for FinalTrgger
 
     fn recieve_message(
         &mut self,
-        message: Message,
+        message: &Message,
         world: &mut WorldContext,
         shared: &mut EngineSharedSystems,
     ) {
@@ -275,7 +275,7 @@ impl Actor for FinalTrgger
         
         let _from = message.from;
 
-        match message.message
+        match &message.message
         {
             MessageType::PhysicsMessages(message) =>
             {
@@ -297,7 +297,7 @@ impl Actor for FinalTrgger
                                                     TriggerMessage::ActorEnteredTriggerArea(
                                                         "final_trigger".to_string(),
                                                         self.id.expect("Flag have not ActorID"),
-                                                        id,
+                                                        *id,
                                                         self.transform.get_position()
                                                     )
                                                 )
