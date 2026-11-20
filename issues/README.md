@@ -24,6 +24,20 @@ Rows are sorted by priority (High → Normal → Long-term), then by status grou
 
 Priority and horizon are planning decisions, not claims of implementation.
 
+## Complexity estimates
+
+Every open task has a **Created** date and a preliminary **Complexity** estimate in its card and table row. Estimate the work to meet the task's completion criteria, including design, compatibility and verification. For a research task, estimate the investigation itself. Revisit the estimate when the scope or evidence changes.
+
+| Complexity | Typical scope |
+|---|---|
+| Very simple | A localized change with an established behavior and a narrow check. |
+| Simple | A small change with a few cases to verify or one bounded caller decision. |
+| Moderate | Several paths, edge cases or measurements need to agree. |
+| Complex | Multiple subsystems, platforms or lifecycles require coordinated design and verification. |
+| Very complex | A substantial architectural capability involving several open design decisions and stages. |
+
+Use the [complexity index](open-tasks.md#by-complexity) to find small tasks together. Its groups run from Very simple to Very complex and preserve the main table's order within each group. Update both views when tasks are added, re-estimated or closed.
+
 ## Closing a task
 
 Only after the author confirms the closure: set **Status**, **Closed** and **Resolution** in the task's metadata, then move its row from the open list to the top of the closed list. Files and the directory stay in place. Resolutions:

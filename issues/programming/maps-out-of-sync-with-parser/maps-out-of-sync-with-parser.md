@@ -2,6 +2,7 @@
 
 - **Status:** Open — decision or implementation pending
 - **Priority:** Normal
+- **Complexity:** Moderate
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/maps-out-of-sync-with-parser/`
 - **Context:** [maps-out-of-sync-with-parser-context.md](maps-out-of-sync-with-parser-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

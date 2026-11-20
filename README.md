@@ -37,7 +37,7 @@ The repository keeps working instructions, current tasks and their history separ
 
 * **[AGENTS.md](AGENTS.md)**: working principles, repository map, verification, release restrictions and issue conventions.
 * **[Engine architecture](docs/engine-architecture.md)**: the current implementation reference, with links to decision history.
-* **[Issues](issues/README.md)**: shared task rules, with separate lists of [open tasks](issues/open-tasks.md) (sorted by priority and status) and [closed tasks](issues/closed-tasks.md) (with opening/closing dates and resolution). Each task has a permanent directory, a concise main file `<slug>.md`, and a sibling `<slug>-context.md` when extended discussion is needed. Context preserves the rationale, alternatives, decisions and implementation history, and can link to earlier contexts.
+* **[Issues](issues/README.md)** contains the task rules. Browse open tasks [by priority and status](issues/open-tasks.md) or [by estimated complexity](issues/open-tasks.md#by-complexity). The [closed list](issues/closed-tasks.md) records opening and closing dates and resolutions. Each task has a permanent directory, a concise main file `<slug>.md`, and a sibling `<slug>-context.md` when extended discussion is needed. Context preserves the rationale, alternatives, decisions and implementation history, and can link to earlier contexts.
 * **Filenames and directories never change.** Priority, status and dates live in task metadata and the lists; closing a task moves its row from the open list to the closed list after the author's confirmation.
 * **Links between tasks point to their permanent directories**, so priority changes and closure do not break them.
 

@@ -2,6 +2,7 @@
 
 - **Status:** Open — decision or implementation pending
 - **Priority:** Normal
+- **Complexity:** Moderate
 - **Created:** 2026-11-13
 - **Stable address:** `issues/programming/engine-tick-rate/`
 - **Context:** [engine-tick-rate-context.md](engine-tick-rate-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

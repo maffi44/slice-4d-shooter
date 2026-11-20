@@ -2,6 +2,7 @@
 
 - **Status:** Open — awaiting author review
 - **Priority:** Normal
+- **Complexity:** Simple
 - **Created:** 2026-11-20
 - **Stable address:** `issues/programming/render-frame-rate-setting/`
 

@@ -2,6 +2,7 @@
 
 - **Status:** Open — decision or implementation pending
 - **Priority:** Normal
+- **Complexity:** Complex
 - **Created:** 2026-11-20
 - **Stable address:** `issues/programming/unobserved-panics/`
 

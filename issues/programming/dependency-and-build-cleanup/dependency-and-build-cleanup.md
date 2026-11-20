@@ -2,6 +2,7 @@
 
 - **Status:** Open — not implemented
 - **Priority:** Normal
+- **Complexity:** Moderate
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/dependency-and-build-cleanup/`
 - **Context:** [dependency-and-build-cleanup-context.md](dependency-and-build-cleanup-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

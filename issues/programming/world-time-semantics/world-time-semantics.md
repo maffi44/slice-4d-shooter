@@ -2,6 +2,7 @@
 
 - **Status:** Open — not implemented
 - **Priority:** Normal
+- **Complexity:** Moderate
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/world-time-semantics/`
 - **Context:** [world-time-semantics-context.md](world-time-semantics-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

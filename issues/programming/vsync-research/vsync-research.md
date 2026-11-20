@@ -2,6 +2,7 @@
 
 - **Status:** Open — research pending
 - **Priority:** Normal
+- **Complexity:** Moderate
 - **Created:** 2026-11-20
 - **Stable address:** `issues/programming/vsync-research/`
 

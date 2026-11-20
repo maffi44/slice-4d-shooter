@@ -2,6 +2,7 @@
 
 - **Status:** Backlog — long-term
 - **Priority:** Long-term
+- **Complexity:** Complex
 - **Created:** 2026-11-20
 - **Stable address:** `issues/programming/render-frame-interpolation/`
 

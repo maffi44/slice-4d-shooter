@@ -2,6 +2,7 @@
 
 - **Status:** Backlog — long-term
 - **Priority:** Long-term
+- **Complexity:** Moderate
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/gpu-buffer-overflow/`
 - **Context:** [gpu-buffer-overflow-context.md](gpu-buffer-overflow-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

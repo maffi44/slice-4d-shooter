@@ -2,6 +2,7 @@
 
 - **Status:** Open — research pending
 - **Priority:** Long-term
+- **Complexity:** Complex
 - **Created:** 2026-11-20
 - **Stable address:** `issues/programming/cache-friendly-memory-layout/`
 

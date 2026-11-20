@@ -2,6 +2,7 @@
 
 - **Status:** Open — not implemented
 - **Priority:** High
+- **Complexity:** Complex
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/session-connection-lifetime/`
 - **Context:** [session-connection-lifetime-context.md](session-connection-lifetime-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

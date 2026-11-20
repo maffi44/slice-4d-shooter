@@ -2,6 +2,7 @@
 
 - **Status:** Backlog — long-term
 - **Priority:** Long-term
+- **Complexity:** Complex
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/gpu-data-grouping/`
 - **Context:** [gpu-data-grouping-context.md](gpu-data-grouping-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

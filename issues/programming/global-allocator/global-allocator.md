@@ -2,6 +2,7 @@
 
 - **Status:** Open — decision or implementation pending
 - **Priority:** Normal
+- **Complexity:** Moderate
 - **Created:** 2026-11-13
 - **Stable address:** `issues/programming/global-allocator/`
 - **Context:** [global-allocator-context.md](global-allocator-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

@@ -2,6 +2,7 @@
 
 - **Status:** Open — design pending
 - **Priority:** Normal
+- **Complexity:** Very complex
 - **Created:** 2026-11-20
 - **Stable address:** `issues/programming/server-engine/`
 

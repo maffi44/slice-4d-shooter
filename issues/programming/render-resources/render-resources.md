@@ -2,6 +2,7 @@
 
 - **Status:** Open — design pending
 - **Priority:** Normal
+- **Complexity:** Complex
 - **Created:** 2026-11-20
 
 ## Goal

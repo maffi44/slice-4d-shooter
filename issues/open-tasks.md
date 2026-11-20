@@ -1,29 +1,85 @@
 # Open tasks
 
-Sorted by priority, then status group (awaiting review → decision pending → not implemented → backlog), then creation date. Rules: [issue README](README.md). Closed tasks: [closed-tasks.md](closed-tasks.md).
+Sorted by priority, then status group (awaiting review → decision pending → not implemented → backlog), then creation date. Jump to [tasks by complexity](#by-complexity). Rules: [issue README](README.md). Closed tasks: [closed-tasks.md](closed-tasks.md).
 
 ## Programming
 
-| Task | Priority | Status | Created | Review |
-|---|---|---|---|---|
-| [Close connections when their owner is removed](programming/session-connection-lifetime/) | High | Open — not implemented | 2026-11-16 | 2 |
-| [Configurable target render frame rate](programming/render-frame-rate-setting/) | Normal | Open — awaiting author review | 2026-11-20 | — |
-| [Engine tick scheduling](programming/engine-tick-rate/) | Normal | Open — decision or implementation pending | 2026-11-13 | — |
-| [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Open — decision or implementation pending | 2026-11-13 | 12 |
-| [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Open — decision or implementation pending | 2026-11-16 | — |
-| [Render resources for worlds and dynamic UI textures](programming/render-resources/) | Normal | Open — design pending | 2026-11-20 | — |
-| [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/) | Normal | Open — decision or implementation pending | 2026-11-20 | — |
-| [Research vertical synchronization and display refresh rate](programming/vsync-research/) | Normal | Open — research pending | 2026-11-20 | — |
-| [Server side of the engine: many cheap session instances](programming/server-engine/) | Normal | Open — design pending | 2026-11-20 | — |
-| [Preserve short presses and multiple input bindings](programming/input-button-state/) | Normal | Open — not implemented | 2026-11-16 | 4 |
-| [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Open — not implemented | 2026-11-16 | 7 |
-| [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Open — not implemented | 2026-11-16 | 9 |
-| [Separate development CI from release deployment](programming/ci-validation-and-release/) | Normal | Open — not implemented | 2026-11-16 | 13 |
-| [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/) | Normal | Open — not implemented | 2026-11-16 | 15 |
-| [Clean dependencies and obsolete build configuration](programming/dependency-and-build-cleanup/) | Normal | Open — not implemented | 2026-11-16 | 16 |
-| [In-world 4D screens](programming/in-world-4d-screens/) | Normal | Backlog — design pending | 2026-11-12 | — |
-| [Authoritative server and transport](programming/network-authoritative-server-and-transport/) | Normal | Backlog — design pending | 2026-11-12 | — |
-| [Review the engine for cache-friendly memory layout](programming/cache-friendly-memory-layout/) | Long-term | Open — research pending | 2026-11-20 | — |
-| [GPU upload grouping and coherent data](programming/gpu-data-grouping/) | Long-term | Backlog — long-term | 2026-11-16 | 1 |
-| [Protect GPU upload buffers from overflow](programming/gpu-buffer-overflow/) | Long-term | Backlog — long-term | 2026-11-16 | 5 |
-| [Interpolate actor state between simulation ticks for rendering](programming/render-frame-interpolation/) | Long-term | Backlog — long-term | 2026-11-20 | — |
+| Task | Priority | Complexity | Status | Created | Review |
+|---|---|---|---|---|---|
+| [Close connections when their owner is removed](programming/session-connection-lifetime/) | High | Complex | Open — not implemented | 2026-11-16 | 2 |
+| [Preserve user settings when the FPS field is invalid](programming/preserve-invalid-user-settings/) | High | Moderate | Open — not implemented | 2026-11-20 | — |
+| [Configurable target render frame rate](programming/render-frame-rate-setting/) | Normal | Simple | Open — awaiting author review | 2026-11-20 | — |
+| [Engine tick scheduling](programming/engine-tick-rate/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | — |
+| [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | 12 |
+| [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-16 | — |
+| [Render resources for worlds and dynamic UI textures](programming/render-resources/) | Normal | Complex | Open — design pending | 2026-11-20 | — |
+| [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/) | Normal | Complex | Open — decision or implementation pending | 2026-11-20 | — |
+| [Research vertical synchronization and display refresh rate](programming/vsync-research/) | Normal | Moderate | Open — research pending | 2026-11-20 | — |
+| [Server side of the engine: many cheap session instances](programming/server-engine/) | Normal | Very complex | Open — design pending | 2026-11-20 | — |
+| [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/) | Normal | Moderate | Open — design pending | 2026-11-20 | — |
+| [Resolve the root world's WorldFinished behavior](programming/root-world-finished/) | Normal | Simple | Open — decision pending | 2026-11-20 | — |
+| [Preserve short presses and multiple input bindings](programming/input-button-state/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 4 |
+| [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Complex | Open — not implemented | 2026-11-16 | 7 |
+| [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 9 |
+| [Separate development CI from release deployment](programming/ci-validation-and-release/) | Normal | Complex | Open — not implemented | 2026-11-16 | 13 |
+| [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/) | Normal | Complex | Open — not implemented | 2026-11-16 | 15 |
+| [Clean dependencies and obsolete build configuration](programming/dependency-and-build-cleanup/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 16 |
+| [Keep the captured flag attached when its carrier changes ID](programming/flag-carrier-id-changes/) | Normal | Simple | Open — not implemented | 2026-11-20 | — |
+| [Wait for the next render deadline without a fixed sleep ceiling](programming/render-deadline-wait/) | Normal | Moderate | Open — not implemented | 2026-11-20 | — |
+| [Emit PlayerBeatLevel once per completed level](programming/single-level-completion-event/) | Normal | Very simple | Open — not implemented | 2026-11-20 | — |
+| [In-world 4D screens](programming/in-world-4d-screens/) | Normal | Very complex | Backlog — design pending | 2026-11-12 | — |
+| [Authoritative server and transport](programming/network-authoritative-server-and-transport/) | Normal | Very complex | Backlog — design pending | 2026-11-12 | — |
+| [Review the engine for cache-friendly memory layout](programming/cache-friendly-memory-layout/) | Long-term | Complex | Open — research pending | 2026-11-20 | — |
+| [Exclude the displaced actor's old ID from replacement candidates](programming/reserve-displaced-actor-id/) | Long-term | Very simple | Open — not implemented | 2026-11-20 | — |
+| [Skip sound source construction when playback is unavailable](programming/headless-sound-builder-allocation/) | Long-term | Very simple | Open — not implemented | 2026-11-20 | — |
+| [GPU upload grouping and coherent data](programming/gpu-data-grouping/) | Long-term | Complex | Backlog — long-term | 2026-11-16 | 1 |
+| [Protect GPU upload buffers from overflow](programming/gpu-buffer-overflow/) | Long-term | Moderate | Backlog — long-term | 2026-11-16 | 5 |
+| [Interpolate actor state between simulation ticks for rendering](programming/render-frame-interpolation/) | Long-term | Complex | Backlog — long-term | 2026-11-20 | — |
+
+## By complexity
+
+Estimates cover the work and verification described in each task. Within each group, higher-priority tasks appear first. See the [estimation scale](README.md#complexity-estimates).
+
+### Very simple
+
+- [Emit PlayerBeatLevel once per completed level](programming/single-level-completion-event/)
+- [Exclude the displaced actor's old ID from replacement candidates](programming/reserve-displaced-actor-id/)
+- [Skip sound source construction when playback is unavailable](programming/headless-sound-builder-allocation/)
+
+### Simple
+
+- [Configurable target render frame rate](programming/render-frame-rate-setting/)
+- [Resolve the root world's WorldFinished behavior](programming/root-world-finished/)
+- [Keep the captured flag attached when its carrier changes ID](programming/flag-carrier-id-changes/)
+
+### Moderate
+
+- [Preserve user settings when the FPS field is invalid](programming/preserve-invalid-user-settings/)
+- [Engine tick scheduling](programming/engine-tick-rate/)
+- [Global allocator: keep, replace or remove?](programming/global-allocator/)
+- [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/)
+- [Research vertical synchronization and display refresh rate](programming/vsync-research/)
+- [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/)
+- [Preserve short presses and multiple input bindings](programming/input-button-state/)
+- [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/)
+- [Clean dependencies and obsolete build configuration](programming/dependency-and-build-cleanup/)
+- [Wait for the next render deadline without a fixed sleep ceiling](programming/render-deadline-wait/)
+- [Protect GPU upload buffers from overflow](programming/gpu-buffer-overflow/)
+
+### Complex
+
+- [Close connections when their owner is removed](programming/session-connection-lifetime/)
+- [Render resources for worlds and dynamic UI textures](programming/render-resources/)
+- [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/)
+- [Frame server TCP messages and bound reads](programming/server-tcp-framing/)
+- [Separate development CI from release deployment](programming/ci-validation-and-release/)
+- [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/)
+- [Review the engine for cache-friendly memory layout](programming/cache-friendly-memory-layout/)
+- [GPU upload grouping and coherent data](programming/gpu-data-grouping/)
+- [Interpolate actor state between simulation ticks for rendering](programming/render-frame-interpolation/)
+
+### Very complex
+
+- [Server side of the engine: many cheap session instances](programming/server-engine/)
+- [In-world 4D screens](programming/in-world-4d-screens/)
+- [Authoritative server and transport](programming/network-authoritative-server-and-transport/)

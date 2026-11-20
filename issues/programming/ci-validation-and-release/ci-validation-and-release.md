@@ -2,6 +2,7 @@
 
 - **Status:** Open — not implemented
 - **Priority:** Normal
+- **Complexity:** Complex
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/ci-validation-and-release/`
 - **Context:** [ci-validation-and-release-context.md](ci-validation-and-release-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

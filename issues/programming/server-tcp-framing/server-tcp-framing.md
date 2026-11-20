@@ -2,6 +2,7 @@
 
 - **Status:** Open — not implemented
 - **Priority:** Normal
+- **Complexity:** Complex
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/server-tcp-framing/`
 - **Context:** [server-tcp-framing-context.md](server-tcp-framing-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

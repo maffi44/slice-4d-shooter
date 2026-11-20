@@ -2,6 +2,7 @@
 
 - **Status:** Backlog — design pending
 - **Priority:** Normal
+- **Complexity:** Very complex
 - **Created:** 2026-11-12
 - **Stable address:** `issues/programming/network-authoritative-server-and-transport/`
 - **Context:** [network-authoritative-server-and-transport-context.md](network-authoritative-server-and-transport-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

@@ -4,6 +4,10 @@ Guidance for coding agents working on **Slice: 4D Shooter**, a native multiplaye
 
 ## Working principles
 
+Design engine and gameplay changes for low input-to-photon and input-to-network latency, low CPU cost per tick and frame, and clear ownership. Keep frequently accessed data compact and favor sequential access in hot paths. For headless hosting, consider how CPU, memory and thread costs scale with the number of active sessions.
+
+Prefer the simplest design that meets the caller's needs. Make it clear who owns each resource, who may share it and when it is released. When a trade-off materially affects gameplay, latency, the caller's contract or per-session cost, explain it with a concrete example and agree on the choice with the author.
+
 - Start system design from the caller's perspective. The author may give a high-level goal and an initial preference. Investigate the current architecture and propose a concrete design. If evidence calls for a different approach, explain the constraint and discuss the trade-off. Revisit these decisions when a real use case changes them. Keep each playable stage coherent, with a small interface and implementation costs proportionate to the job.
 - Document the intent and caller contract of each system or significant module in the engine architecture reference as it is introduced or revised. Keep decisions and their rationale in the relevant task. Use a common implementation where ownership and execution requirements agree. Explain type-specific paths through concrete constraints, including latency, allocation and thread affinity.
 - Prefer the simplest direct design with one clear responsibility per system or actor. Introduce a trait, wrapper or layer when it provides a concrete benefit (ownership, invariants, cleanup, reuse), not merely indirection. A useful ownership wrapper is not a forbidden abstraction.
@@ -81,10 +85,10 @@ Each task has a concise main file containing the problem, current decisions, sco
 ### Naming, lists and stable links
 
 - The directory slug is a permanent address: e.g. `issues/programming/global-allocator/`. Never rename or move it.
-- Files: `global-allocator.md` and, when needed, `global-allocator-context.md`. Filenames never change for priority, status or closure. Metadata at the top of the main file holds **Status**, **Priority**, **Created** and, after closure, **Closed** and **Resolution**.
+- Files: `global-allocator.md` and, when needed, `global-allocator-context.md`. Filenames never change for priority, status or closure. Metadata at the top of the main file holds **Status**, **Priority**, **Created** and, for open tasks, **Complexity**. On closure add **Closed** and **Resolution**.
 - [Open tasks](issues/open-tasks.md) list every open task with priority, status and creation date, sorted by priority (High → Normal → Long-term), then status group (awaiting author review → decision/design pending → not implemented → backlog), then creation date. Add new tasks in their sorted place; move a row when its priority or status changes.
 - [Closed tasks](issues/closed-tasks.md) list opening date, closing date and resolution, newest closure first. Resolutions: Done, Obsolete, Superseded, Rejected, Duplicate; for anything other than Done, give the reason or linked task. Close only after the author confirms, even if implementation is ready: update the metadata, then move the row from the open list to the top of the closed list. Reopening moves it back with a reason in the context.
-- Keep task metadata and list rows consistent.
+- Keep task metadata and list rows consistent. Give each open task a preliminary [complexity estimate](issues/README.md#complexity-estimates) and include it once in the [complexity index](issues/open-tasks.md#by-complexity). Keep that view in sync with the priority table.
 - The author often reviews and commits without saying the task is finished. When a task's implementation is complete and it awaits the author's review, end the final report with one line (in Russian) reminding the author to say after review that the task is done, so it can be moved to the closed list.
 - Cross-task/document/source-comment references point to the stable directory, with the role/section described: “decision rationale in this task's context, §19”. Closure and priority changes therefore never break links. Inside the pair, link directly to the sibling filename.
 

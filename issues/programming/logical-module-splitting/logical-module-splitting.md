@@ -2,6 +2,7 @@
 
 - **Status:** Open — not implemented
 - **Priority:** Normal
+- **Complexity:** Complex
 - **Created:** 2026-11-16
 - **Stable address:** `issues/programming/logical-module-splitting/`
 - **Context:** [logical-module-splitting-context.md](logical-module-splitting-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.

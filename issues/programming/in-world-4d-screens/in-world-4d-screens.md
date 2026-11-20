@@ -2,6 +2,7 @@
 
 - **Status:** Backlog — design pending
 - **Priority:** Normal
+- **Complexity:** Very complex
 - **Created:** 2026-11-12
 - **Stable address:** `issues/programming/in-world-4d-screens/`
 - **Context:** [in-world-4d-screens-context.md](in-world-4d-screens-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
