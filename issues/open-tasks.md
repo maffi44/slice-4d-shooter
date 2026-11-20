@@ -13,6 +13,7 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Open — decision or implementation pending | 2026-11-13 | 12 |
 | [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Open — decision or implementation pending | 2026-11-16 | — |
 | [Render resources for worlds and dynamic UI textures](programming/render-resources/) | Normal | Open — design pending | 2026-11-20 | — |
+| [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/) | Normal | Open — decision or implementation pending | 2026-11-20 | — |
 | [Preserve short presses and multiple input bindings](programming/input-button-state/) | Normal | Open — not implemented | 2026-11-16 | 4 |
 | [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Open — not implemented | 2026-11-16 | 7 |
 | [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Open — not implemented | 2026-11-16 | 9 |

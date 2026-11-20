@@ -64,7 +64,7 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
                 if worker_cancelled.load(Ordering::Relaxed) { return Ok(None); }
 
                 // UI textures/pipelines and the upscale pipeline are expensive too.
-                shared.render = Some(RenderScheduler::new(&gpu, surface, config, window, &mut shared.ui));
+                shared.render = Some(RenderScheduler::new(&gpu, surface, config, window, &mut shared.ui, shared.time.target_frame_duration));
                 shared.gpu = Some(gpu);
             }
 

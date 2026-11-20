@@ -31,9 +31,6 @@ use super::{
 };
 
 
-/// Target duration of one render frame (~125 FPS), independent of the 60 Hz simulation.
-const TARGET_RENDER_FRAME_DURATION: f64 = 0.008;
-
 /// If a render-loop iteration took less than this, the thread sleeps a bit (as before).
 const MIN_ITERATION_DURATION: Duration = Duration::from_millis(3);
 const ITERATION_SLEEP: Duration = Duration::from_micros(3122);
@@ -156,6 +153,7 @@ impl RenderScheduler
         surface_config: wgpu::SurfaceConfiguration,
         window: Arc<Window>,
         ui: &mut UISystem,
+        min_frame_duration: Duration,
     ) -> Self
     {
         let surface_size = PhysicalSize::new(surface_config.width, surface_config.height);
@@ -186,6 +184,8 @@ impl RenderScheduler
             slots: Vec::new(),
             presented: None,
             ui_bound_world: None,
+            min_frame_duration,
+            next_frame_deadline: None,
             prev_frame_instant: None,
             total_time: 0.0,
             total_frames_count: 0,
@@ -285,6 +285,13 @@ struct RenderLoop
     presented: Option<WorldTextureId>,
     /// The world whose buffers the UI renderer (HUD scanner) is bound to, and the texture generation.
     ui_bound_world: Option<WorldTextureId>,
+
+    /// Render data changes once per simulation tick and frames aren't interpolated, so the render
+    /// rate is capped at the simulation rate: this is the tick period, set at creation.
+    min_frame_duration: Duration,
+    /// The earliest start of the next frame. Advanced by `min_frame_duration` on a fixed timeline,
+    /// so the average rate never exceeds the cap and lateness under one period isn't accumulated.
+    next_frame_deadline: Option<Instant>,
 
     prev_frame_instant: Option<Instant>,
     total_time: f64,
@@ -409,14 +416,27 @@ impl RenderLoop
             Err(e) => panic!("{}", e),
         }
 
-        if let Some(instant) = self.prev_frame_instant
-        {
-            let current_frame_time = instant.elapsed().as_secs_f64();
+        let now = Instant::now();
 
-            if current_frame_time < TARGET_RENDER_FRAME_DURATION - 0.001
+        if let Some(deadline) = self.next_frame_deadline
+        {
+            if now < deadline
             {
                 return Ok(());
             }
+
+            // More than one period late (a stall): restart the timeline instead of catching up.
+            let next_deadline = deadline + self.min_frame_duration;
+            self.next_frame_deadline = Some(if next_deadline <= now { now + self.min_frame_duration } else { next_deadline });
+        }
+        else
+        {
+            self.next_frame_deadline = Some(now + self.min_frame_duration);
+        }
+
+        if let Some(instant) = self.prev_frame_instant
+        {
+            let current_frame_time = now.duration_since(instant).as_secs_f64();
 
             self.total_time += current_frame_time;
             self.total_frames_count += 1;
@@ -424,7 +444,7 @@ impl RenderLoop
             self.max_time = self.max_time.max(current_frame_time);
         }
 
-        self.prev_frame_instant = Some(Instant::now());
+        self.prev_frame_instant = Some(now);
 
         // remove the slots of dropped worlds
         self.slots.retain(|slot| slot.shared.strong_count() > 0);

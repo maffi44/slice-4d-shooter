@@ -6,6 +6,7 @@ Newest closure first. A task is listed here only after the author confirms its c
 
 | Task | Opened | Closed | Resolution |
 |---|---|---|---|
+| [Limit the render rate to the simulation rate](programming/render-rate-limit/) | 2026-11-20 | 2026-11-20 | Done — closed at the author's request without separate review |
 | [Prepare and validate worlds asynchronously](programming/async-world-preparation/) | 2026-11-16 | 2026-11-20 | Done — reviewed by the author; commit `858c5ae` |
 | [Resource System](programming/resource-system/) | 2026-11-12 | 2026-11-20 | Done — reviewed by the author; commit `858c5ae` |
 | [Responsive engine startup and MainLoop ownership](programming/nonblocking-engine-startup/) | 2026-11-16 | 2026-11-20 | Done — reviewed by the author; commit `76d73d9` |
