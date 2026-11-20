@@ -91,6 +91,13 @@ impl Messenger
         self.commands.push(command);
     }
 
+    /// The queued broadcast messages, oldest first (for tests of id-change notifications).
+    #[cfg(test)]
+    pub(super) fn queued_broadcast_messages(&self) -> &[Message]
+    {
+        &self.broadcast_messages
+    }
+
     /// A request to the world's owner (the Engine for the root world, the owner actor otherwise).
     #[inline]
     pub fn send_to_outer_world(&mut self, message: OuterWorldMessage)

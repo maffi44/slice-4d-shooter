@@ -8,7 +8,6 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 |---|---|---|---|---|
 | [Close connections when their owner is removed](programming/session-connection-lifetime/) | High | Open — not implemented | 2026-11-16 | 2 |
 | [Define and preserve message ordering](programming/message-ordering/) | High | Open — not implemented | 2026-11-16 | 3 |
-| [Preserve main_actor_id during actor ID collisions](programming/main-actor-id-collisions/) | High | Open — not implemented | 2026-11-16 | 6 |
 | [Engine tick scheduling](programming/engine-tick-rate/) | Normal | Open — decision or implementation pending | 2026-11-13 | — |
 | [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Open — decision or implementation pending | 2026-11-13 | 12 |
 | [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Open — decision or implementation pending | 2026-11-16 | — |

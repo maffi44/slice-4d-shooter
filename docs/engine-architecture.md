@@ -61,6 +61,7 @@ Window-level hotkeys (`Esc`/`Enter`, `J`/`K` sensitivity, `N`/`M` volume, `Y`/`H
 **Communication model:** actors communicate with other actors through Messenger; they can access shared systems directly through EngineSharedSystems. They push into their world's `Messenger`:
 - broadcast `Message`s, direct `(ActorID, Message)` pairs
 - `Command`s: `SpawnActor`, `SpawnControlledActor`, `RemoveActor`, `ChangeMyId` (an actor changes only its own id), `RemoveAllHolesAndEffects`
+- Actor ids: random non-zero `u128`; `0` is reserved for the outer world. If an inserted actor or a `ChangeMyId` target takes an id that is in use, the previous holder moves to a fresh random id; every moved actor broadcasts `IWasChangedMyId` from its previous id, and `Actors::main_actor_id` keeps identifying the same actor. Queued messages are resolved by id at delivery time (a vacated id drops them, a reused id reaches its new holder). Details: [main actor ID collisions](../issues/programming/main-actor-id-collisions/).
 - `send_to_outer_world(OuterWorldMessage)`: requests to the world's owner (the engine for the root world)
 
 `Messenger::process_messages` drains everything until empty (`Vec::pop()`, LIFO currently; order-independent state updates are not guaranteed — see [message ordering](../issues/programming/message-ordering/)). The owner-to-world API uses reserved sender id `0`. SessionController also uses it for some server-originated events; relayed player messages preserve the remote player ID, so network messages do not universally have sender `0`.
