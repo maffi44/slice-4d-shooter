@@ -22,7 +22,8 @@ These principles come from the [refactoring context](issues/programming/engine-r
 
 ## Scope, ownership and verification
 
-- The author works on the same branch. Preserve unrelated changes/deletions; ask if their ownership affects your task. Never commit unless asked.
+- Preserve unrelated changes and deletions. Ask if their ownership affects your task.
+- The author creates every Git commit manually. When the author says “commit” or “коммит”, prepare and verify the requested changes, move any tasks the author has confirmed as done to the closed list, and provide a ready-to-use commit message in the text chat. Leave execution of `git commit` to the author.
 - Finish authorized work fully: implementation, logical module placement, imports, obsolete code cleanup, all affected bins, documentation and task history. Check README every task; update it when behavior, build commands, configuration or documentation organization changes.
 - Fix clear local bugs encountered in scope, explaining and verifying them. Ask before uncertain gameplay/protocol changes or substantial scope expansion. Distinguish leftovers from intended capabilities; preserve uncertain features and report them.
 - Find root causes and explain technical subtleties candidly. Answer architectural questions with your own assessment, distinguishing evidence, inference, proposal and accepted decision.
