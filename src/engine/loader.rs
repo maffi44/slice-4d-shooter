@@ -25,7 +25,6 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
         .expect("ERROR: can't build the tokio async runtime");
 
     log::info!("engine loader: loading '{}'", initial_world);
-    let descriptor = runtime.spawn(async move { WorldPreparation::load(&initial_world).await });
     let settings = runtime.spawn(GlobalSettings::load());
     let instance = (!headless).then(|| runtime.spawn_blocking(move || GpuContext::create_instance(graphic_backend)));
 
@@ -39,8 +38,12 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
     // In particular, runtime destruction must not happen inside a Tokio async task.
     let worker = thread::Builder::new().name("engine-loader".into()).spawn(move || {
         let result = catch_unwind(AssertUnwindSafe(|| -> Result<Option<LoadedEngine>, String> {
+            let resources = Arc::new(super::shared_systems::resources::ResourceSystem::new(headless));
+            let world_resources = resources.clone();
+            let initial_key = initial_world.clone();
+            let descriptor = runtime.spawn(async move { WorldPreparation::load(&initial_world, world_resources).await });
             let settings = runtime.block_on(settings).map_err(|error| error.to_string())?;
-            let mut shared = EngineSharedSystems::new(headless, runtime, settings);
+            let mut shared = EngineSharedSystems::new(headless, runtime, settings, resources);
 
             if let Some(instance) = instance
             {
@@ -65,9 +68,11 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
                 shared.gpu = Some(gpu);
             }
 
-            let preparation = shared.runtime.block_on(descriptor).map_err(|error| error.to_string())?;
+            let preparation = shared.runtime.block_on(descriptor).map_err(|error| error.to_string())??;
             if worker_cancelled.load(Ordering::Relaxed) { return Ok(None); }
-            let descriptor = preparation.finish(shared.gpu.clone());
+            let descriptor = Arc::new(preparation.finish(shared.gpu.clone()));
+            shared.resources.register_world_loader(shared.gpu.clone(), shared.runtime.handle().clone());
+            shared.resources.register_initial_world(&initial_key, descriptor.clone());
             if worker_cancelled.load(Ordering::Relaxed) { return Ok(None); }
 
             Ok(Some(LoadedEngine { shared, descriptor }))
@@ -128,7 +133,7 @@ impl Drop for EngineLoader
 pub struct LoadedEngine
 {
     pub(super) shared: EngineSharedSystems,
-    pub(super) descriptor: WorldDescriptor,
+    pub(super) descriptor: Arc<WorldDescriptor>,
 }
 
 pub(super) struct WindowSurface

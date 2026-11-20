@@ -1,6 +1,6 @@
 # Engine architecture reference
 
-Implementation reference as of 2026-11-17. For working rules see [AGENTS.md](../AGENTS.md); for task status see the [issue index](../issues/README.md).
+Implementation reference updated 2026-11-20. For working rules see [AGENTS.md](../AGENTS.md); for task status see the [issue index](../issues/README.md).
 
 ## Engine architecture (`src/engine.rs`, `src/engine/main_loop.rs`)
 
@@ -18,13 +18,13 @@ MainLoop::run(loading);
 - `engine::load` returns `EngineLoader`. It starts async map/settings loading and GPU instance discovery concurrently; a dedicated loading thread prepares shared systems (including audio/input/UI), coordinates dependencies and owns intermediate handles. The Tokio runtime ultimately moves into the ready shared systems.
 - Graphical `MainLoop` owns the winit application. First `resumed` creates the window (duplicate resumes are guarded). The loader requests a surface through its result channel; only window/surface creation happens in the event-loop callback, preserving Metal's main-thread requirement. Adapter/device, shared GPU resources, UI/upscale pipelines and world pipelines are built off that thread. CPU map preparation overlaps GPU discovery; world GPU finalization requires the device.
 - Loading uses `ControlFlow::Wait`. A queued result followed by `EventLoopProxy::send_event(())` wakes `user_event`; there are no polling simulation ticks. Results queued before the proxy/first resume are drained after window creation. The render thread can show the splash once ready; the window is initially blank.
-- On success, `Engine::new(LoadedEngine, window)` consumes the completed load and activates the root world. The loading object is dropped, simulation timing is initialized, and `WaitUntil` starts regular ticks. Latest window dimensions are applied at activation. Actor creation is still synchronous; full resource preparation is the separate world-preparation task below.
+- On success, `Engine::new(LoadedEngine, window)` consumes the completed load and activates the root world. The loading object is dropped, simulation timing is initialized, and `WaitUntil` starts regular ticks. Latest window dimensions are applied at activation. Initial actor construction and required sound decoding have already finished when the descriptor is published.
 - Close during loading hides the window immediately and requests cancellation between stages. The event loop continues dispatching until already-started blocking work finishes and releases its resources; then it exits. A driver call cannot be forcibly aborted. Queued surface replies are dropped before joining a loader, preventing a shutdown wait on an unanswered main-thread request. Worker failures/panics become a terminal loading error, not an endless loading state. MainLoop retains the final window owner through cleanup.
 - Headless waits for the same loader's result with no winit/window/GPU/rendering/sound device, constructs Engine, then runs the plain tick loop. Game logic is the same.
 
 There is no game-mode argument. UISystem and NetSystem exist in both modes; the GPU UI renderer does not exist in headless mode.
 
-**Module layout mirrors the architecture:** `src/engine/shared_systems.rs` + `src/engine/shared_systems/` (audio, global_settings, input, net, render, time, ui) hold the shared systems; `src/engine/world.rs` + `src/engine/world/` (actors, messenger, physics, time, world_descriptor, static_object, effects) hold the per-world parts; `src/engine/loader.rs` (initialization), `src/engine/main_loop.rs` (application runner) and `src/engine/transform.rs` belong to the engine as a whole. `src/game_client_main.rs` is only the entry point (args, logger, allocator, auto-updater, `engine::load(start_level, backend, headless)` + `MainLoop::run(loading)`). See [repository map and placement rules](../AGENTS.md#repository-map).
+**Module layout mirrors the architecture:** `src/engine/shared_systems.rs` + `src/engine/shared_systems/` (audio, global_settings, input, net, render, resources, time, ui) hold the shared systems; `src/engine/world.rs` + `src/engine/world/` (actors, messenger, physics, time, world_descriptor, static_object, effects) hold the per-world parts; `src/engine/loader.rs` (initialization), `src/engine/main_loop.rs` (application runner) and `src/engine/transform.rs` belong to the engine as a whole. `src/game_client_main.rs` is only the entry point (args, logger, allocator, auto-updater, `engine::load(start_level, backend, headless)` + `MainLoop::run(loading)`). See [repository map and placement rules](../AGENTS.md#repository-map).
 
 **`EngineSharedSystems`** (`src/engine/shared_systems.rs`), once per application, all `pub` fields:
 - `global_settings: GlobalSettings`: `user` (`user_settings.json`, loaded next to the executable first, otherwise in the platform config dir; saved to the selected path) + `connection` (compiled in from `src/assets/settings/connection_settings.json`, overridable only by a `connection_settings.json` next to the executable)
@@ -42,9 +42,13 @@ There is no game-mode argument. UISystem and NetSystem exist in both modes; the 
 - `time: WorldTimeSystem` (`world/time.rs`): the world's elapsed interval since its previous `simulate()`, subject to the simulation-time clamp
 - `render: Option<WorldRenderSystem>`
 
-`World::new(&WorldDescriptor, WorldConfig, &mut shared)` does per-instance creation. It still parses actor JSON and creates resources; cheap activation is a goal, not a proven guarantee (see [async world preparation](../issues/programming/async-world-preparation/)). `World::simulate(&mut shared)` runs: world time → actors' `tick` → message pump → physics → message pump → render data update.
+`descriptor.give_me_world(config, &mut shared)` returns an active world. The descriptor owns parsed actor JSON, map geometry, shared pipelines and one ready set of independently constructed actors. The call synchronously constructs a replacement set from the parsed JSON, swaps it with the ready set under a short lock, then registers per-world systems and runs addition/start callbacks on the outgoing actors. The callbacks run after the lock is released. Rendering uses the caller’s current configuration. `World::simulate(&mut shared)` runs world time, actor ticks, message pump, physics, message pump and render data update.
 
-**`WorldDescriptor`** (`world/world_descriptor.rs`, the former `Level`): parsed map + generated shaders/pipelines + actor descriptions (JSON). `WorldDescriptor::load(name, Option<GpuContext>)` is async; actor callers spawn its future on the shared runtime. `WorldPreparation::load` awaits whole-file reads through `tokio::fs`, then parses JSON/geometry on a blocking worker and retains shader inputs. Synchronous `finish(gpu)` generates shaders/pipelines after GPU readiness; it runs on the loading thread at startup and a blocking worker for later transitions. `WorldDescriptor::load` still composes both steps for existing world-transition callers. `create_actors()` builds fresh actors. A `World` doesn't keep its descriptor.
+During initial map preparation, constructors execute on a loading worker. They request their own assets and leave gameplay effects for activation. For example, `MachineGun` owns an optional typed sound-buffer handle and requests `embedded_asset!("sounds/machinegun_shot.wav")` in its constructor. The macro supplies a logical key and embedded bytes from one literal. A scoped request context collects the handles requested during this preparation. Decodes can overlap and readiness includes their completion. Headless skips audio requests. Devices and actors spawned during gameplay can use the same request API. A sound played while its buffer is pending gets a silent source that can receive controls until the buffer is attached.
+
+**Resource system design intent.** An actor requests an asset by key and immediately owns a typed handle. The resource system owns cache lookup, loading, sharing, lifetime policy and publication of success or failure. The consumer chooses when to use the result. A tick can call `handle.try_read(...)` to obtain a value from ready data under one short lock. Pending work or a busy slot can wait until the next tick. A completed load error is a separate outcome. A caller performing asynchronous preparation can await the same handle.
+
+A session request pins its resource until shutdown. Ordinary resources expire after 60 seconds of unused cache-update time. Startup registers its descriptor under the same key as transitions so CPU map preparation can overlap device discovery. A final trigger with `async_preload` requests the destination on addition. Otherwise it requests the destination at transition time. In both cases it polls each tick and sends one replacement message on success or logs one error on failure. Older maps may retain the boolean `async_load` field with either value.
 
 Engine tick (`Engine::tick`), target 60 Hz (`GlobalTimeSystem::new(60)`). ⚠️ The average period is currently a bit longer than 16.(6) ms, see [engine-tick-rate](../issues/programming/engine-tick-rate/):
 1. `shared.pre_simulate()`: gamepad input, `time.start_of_frame`, frame input actions, `net.tick` (poll sockets)
@@ -61,7 +65,7 @@ Window-level hotkeys (`Esc`/`Enter`, `J`/`K` sensitivity, `N`/`M` volume, `Y`/`H
 
 `Messenger::process_messages` drains everything until empty (`Vec::pop()`, LIFO currently; order-independent state updates are not guaranteed — see [message ordering](../issues/programming/message-ordering/)). The owner-to-world API uses reserved sender id `0`. SessionController also uses it for some server-originated events; relayed player messages preserve the remote player ID, so network messages do not universally have sender `0`.
 
-**Nested worlds:** an actor creates `World::new(..)`, calls `world.simulate(shared)` when it wants, talks to it with `send_broadcast_message`/`send_direct_message` and `take_outer_world_messages`, and controls rendering with `set_render_rate`, `set_output_resolution`, `set_output_scale`. `output_texture_id()` identifies the world's texture. Dropping the world releases its render-state ownership token; the render loop subsequently removes the expired slot.
+**Nested worlds:** an actor calls `descriptor.give_me_world(config, shared)`, calls `world.simulate(shared)` when it wants, talks to it with `send_broadcast_message`/`send_direct_message` and `take_outer_world_messages`, and controls rendering with `set_render_rate`, `set_output_resolution`, `set_output_scale`. `output_texture_id()` identifies the world's texture. Dropping the world releases its render-state ownership token; the render loop subsequently removes the expired slot.
 
 ### Actors (`src/actor.rs`, `src/actor/`)
 - `trait Actor` callbacks get `(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems)`:
@@ -78,7 +82,7 @@ Window-level hotkeys (`Esc`/`Enter`, `J`/`K` sensitivity, `N`/`M` volume, `Y`/`H
 - Input: actors read `shared.input.actions()` directly (there is no `InputMaster`).
 
 ### Levels & assets
-- Maps are JSON files in `src/assets/maps/`. `WorldDescriptor::load` resolves a name like `obstacle_course_levels/level-2` by trying these paths in order:
+- Maps are JSON files in `src/assets/maps/`. `WorldPreparation::load` resolves a name like `obstacle_course_levels/level-2` by trying these paths in order:
   1. `./<name>.json`
   2. `./assets/maps/<name>.json`
   3. `./src/assets/maps/<name>.json`
@@ -100,7 +104,7 @@ Asynchronous CPU/GPU preparation and the existing separate simulation/render thr
 - `world_render_system.rs`: `WorldRenderSystem` (per world, main thread) computes render data in `simulate()` and writes the buffers via `queue.write_buffer`. No application-level locks between the threads; multiple buffer writes are not an atomic snapshot (see [GPU data grouping](../issues/programming/gpu-data-grouping/)).
 - `ui_renderer.rs` draws the HUD on top of the presented world (the scanner is re-bound to the presented world's buffers).
 - WGSL shaders live in `shared_systems/render/shaders/`. Each level picks its main raymarch shader in `world_descriptor.rs`.
-- `raymarch_shader_generator.rs` (~5k lines) bakes a static BSP tree of the map's geometry into the raymarch shader **at runtime** (`WorldDescriptor::load`, maps with `generated_shader_with_bsp_tree: true`). There are no pre-generated `*_with_bsp_tree.wgsl` files any more.
+- `raymarch_shader_generator.rs` (~5k lines) bakes a static BSP tree of the map's geometry into the raymarch shader **at runtime** (`WorldPreparation::finish`, maps with `generated_shader_with_bsp_tree: true`). There are no pre-generated `*_with_bsp_tree.wgsl` files any more.
 - `render_data/` splits static from dynamic GPU data.
 
 ### Physics (`src/engine/world/physics/`)

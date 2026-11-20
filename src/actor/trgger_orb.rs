@@ -1,8 +1,8 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 use crate::engine::world::effects;
@@ -13,7 +13,7 @@ use rand::Rng;
 
 use crate::{
     actor::trigger::TriggerMessage, engine::{
-        shared_systems::audio::Sound, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
+        world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
     }, engine::transform::Transform
 };
 
@@ -61,6 +61,10 @@ fn get_random_vec4(range_min: f32, range_max: f32) -> Vec4
 
 pub struct TriggerOrb
 {
+    flag_captured_sound: Option<SoundBufferResource>,
+    get_score_sound: Option<SoundBufferResource>,
+
+
     transform: Transform,
     id: Option<ActorID>,
     area: Area,
@@ -85,6 +89,7 @@ pub struct TriggerOrb
 impl TriggerOrb
 {
     pub fn new(
+        resources: &mut ResourceRequests,
         transform: Transform,
         target_trigger_name: String,
         color: Vec3,
@@ -132,6 +137,13 @@ impl TriggerOrb
         ];
 
         TriggerOrb {
+            flag_captured_sound: resources.sound(
+                crate::embedded_asset!("sounds/flag_captured.wav"), Retention::Session,
+            ),
+            get_score_sound: resources.sound(
+                crate::embedded_asset!("sounds/get_score.wav"), Retention::Session,
+            ),
+
             transform,
             target_flag_swing_position,
             current_orb_swing_position: Vec4::ZERO,
@@ -188,7 +200,7 @@ impl TriggerOrb
     //     }
 
     //     audio_system.spawn_non_spatial_sound(
-    //         Sound::FlagOnTheBase,
+    //         &self.flag_returned_sound,
     //         1.0,
     //         1.0,
     //         false,
@@ -268,7 +280,7 @@ impl TriggerOrb
     //     );
         
     //     audio_system.spawn_spatial_sound(
-    //         Sound::FlagCaptured,
+    //         &self.flag_captured_sound,
     //         1.0,
     //         1.0,
     //         false,
@@ -393,7 +405,7 @@ impl Actor for TriggerOrb
                     );
                     
                     audio_system.spawn_spatial_sound(
-                        Sound::GetScore,
+                        &self.get_score_sound,
                         1.0,
                         1.0,
                         false,
@@ -558,7 +570,7 @@ impl Actor for TriggerOrb
                                 self.status = TrggerOrbStatus::Captured(player_id);
 
                                 audio_system.spawn_spatial_sound(
-                                    Sound::FlagCaptured,
+                                    &self.flag_captured_sound,
                                     1.0,
                                     1.0,
                                     false,

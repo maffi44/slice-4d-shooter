@@ -7,6 +7,7 @@ pub mod audio;
 pub mod global_settings;
 pub mod input;
 pub mod net;
+pub mod resources;
 pub mod render;
 pub mod time;
 pub mod ui;
@@ -33,6 +34,7 @@ pub struct EngineSharedSystems
     pub time: GlobalTimeSystem,
     pub input: InputSystem,
     pub net: NetSystem,
+    pub resources: std::sync::Arc<resources::ResourceSystem>,
     pub audio: AudioSystem,
     pub ui: UISystem,
     /// GPU infrastructure for creating GPU resources. `None` in headless mode.
@@ -47,7 +49,7 @@ pub struct EngineSharedSystems
 impl EngineSharedSystems
 {
     /// Called on the loading thread; the loader attaches GPU/rendering before publishing the result.
-    pub fn new(headless: bool, runtime: tokio::runtime::Runtime, global_settings: GlobalSettings) -> Self
+    pub fn new(headless: bool, runtime: tokio::runtime::Runtime, global_settings: GlobalSettings, resources: std::sync::Arc<resources::ResourceSystem>) -> Self
     {
         log::info!("engine shared systems: global settings init");
 
@@ -67,6 +69,7 @@ impl EngineSharedSystems
         log::info!("engine shared systems: net init");
 
         EngineSharedSystems {
+            resources,
             global_settings,
             time,
             input,
@@ -87,6 +90,8 @@ impl EngineSharedSystems
         self.time.start_of_frame();
         self.input.update_frame_actions();
         self.net.tick();
+        self.audio.update();
+        self.resources.update(self.time.prev_frame_duration());
     }
 
 

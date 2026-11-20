@@ -104,11 +104,11 @@ pub enum SpecificOuterWorldMessage
 
 impl World
 {
-    /// Creates a world instance from a prepared descriptor. Shaders and pipelines are already
-    /// prepared; actor/resource construction can still take time. Per-instance creation happens here:
-    /// own systems, actors, render registration, initial messages.
-    pub fn new(
+    /// Attach the prepared actors and register this instance with the shared systems.
+    fn activate(
         descriptor: &WorldDescriptor,
+        main_actor: crate::actor::ActorWrapper,
+        actors: Vec<crate::actor::ActorWrapper>,
         config: WorldConfig,
         shared: &mut EngineSharedSystems,
     ) -> World
@@ -128,8 +128,6 @@ impl World
             time: WorldTimeSystem::new(),
             render,
         };
-
-        let (main_actor, actors) = descriptor.create_actors();
 
         world.messenger.add_main_actor(main_actor, &mut world.actors, &world.physics, &world.time, shared);
         world.messenger.add_actors(actors, &mut world.actors, &world.physics, &world.time, shared);

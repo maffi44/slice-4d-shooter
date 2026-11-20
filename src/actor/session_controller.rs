@@ -1,17 +1,16 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
 mod net_session;
 
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use client_server_protocol::{NetMessageToPlayer, NetMessageToServer, RemoteMessage, Team};
 use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
 
 use crate::{
     engine::{
-        shared_systems::audio::Sound,
         world::effects,
         shared_systems::net::Reliability,
         shared_systems::EngineSharedSystems,
@@ -111,6 +110,12 @@ pub fn send_to_session_controller(
 
 pub struct SessionController
 {
+    get_score_sound: Option<SoundBufferResource>,
+    lost_score_sound: Option<SoundBufferResource>,
+    team_lost_sound: Option<SoundBufferResource>,
+    team_win_sound: Option<SoundBufferResource>,
+
+
     transform: Transform,
     id: Option<ActorID>,
     red_team_score: u32,
@@ -137,10 +142,24 @@ pub struct SessionController
 impl SessionController
 {
     pub fn new(
+        resources: &mut ResourceRequests,
         it_is_2d_3d_example: bool,
     ) -> Self
     {
         let session_controller = SessionController {
+            get_score_sound: resources.sound(
+                crate::embedded_asset!("sounds/get_score.wav"), Retention::Session,
+            ),
+            lost_score_sound: resources.sound(
+                crate::embedded_asset!("sounds/lost_score.wav"), Retention::Session,
+            ),
+            team_lost_sound: resources.sound(
+                crate::embedded_asset!("sounds/team_lost.wav"), Retention::Session,
+            ),
+            team_win_sound: resources.sound(
+                crate::embedded_asset!("sounds/team_win.wav"), Retention::Session,
+            ),
+
             transform: Transform::new(),
             id: None,
             red_team_score: 4u32,
@@ -617,7 +636,7 @@ impl Actor for SessionController
                                         Team::Red =>
                                         {
                                             audio_system.spawn_non_spatial_sound(
-                                                Sound::GetScore,
+                                                &self.get_score_sound,
                                                 1.0,
                                                 1.0,
                                                 false,
@@ -630,7 +649,7 @@ impl Actor for SessionController
                                             if self.observer_mode
                                             {
                                                 audio_system.spawn_non_spatial_sound(
-                                                    Sound::GetScore,
+                                                    &self.get_score_sound,
                                                     1.0,
                                                     1.0,
                                                     false,
@@ -641,7 +660,7 @@ impl Actor for SessionController
                                             else
                                             {
                                                 audio_system.spawn_non_spatial_sound(
-                                                    Sound::LooseScore,
+                                                    &self.lost_score_sound,
                                                     1.0,
                                                     1.0,
                                                     false,
@@ -681,7 +700,7 @@ impl Actor for SessionController
                                             if self.observer_mode
                                             {
                                                 audio_system.spawn_non_spatial_sound(
-                                                    Sound::GetScore,
+                                                    &self.get_score_sound,
                                                     1.0,
                                                     1.0,
                                                     false,
@@ -692,7 +711,7 @@ impl Actor for SessionController
                                             else
                                             {
                                                 audio_system.spawn_non_spatial_sound(
-                                                    Sound::LooseScore,
+                                                    &self.lost_score_sound,
                                                     1.0,
                                                     1.0,
                                                     false,
@@ -704,7 +723,7 @@ impl Actor for SessionController
                                         Team::Blue =>
                                         {
                                             audio_system.spawn_non_spatial_sound(
-                                                Sound::GetScore,
+                                                &self.get_score_sound,
                                                 1.0,
                                                 1.0,
                                                 false,
@@ -746,7 +765,7 @@ impl Actor for SessionController
                                             Team::Red =>
                                             {
                                                 audio_system.spawn_non_spatial_sound(
-                                                    Sound::TeamWin,
+                                                    &self.team_win_sound,
                                                     1.0,
                                                     1.0,
                                                     false,
@@ -759,7 +778,7 @@ impl Actor for SessionController
                                                 if self.observer_mode
                                                 {
                                                     audio_system.spawn_non_spatial_sound(
-                                                        Sound::TeamWin,
+                                                        &self.team_win_sound,
                                                         1.0,
                                                         1.0,
                                                         false,
@@ -770,7 +789,7 @@ impl Actor for SessionController
                                                 else
                                                 {
                                                     audio_system.spawn_non_spatial_sound(
-                                                        Sound::TeamLoose,
+                                                        &self.team_lost_sound,
                                                         1.0,
                                                         1.0,
                                                         false,
@@ -798,7 +817,7 @@ impl Actor for SessionController
                                                 if self.observer_mode
                                                 {
                                                     audio_system.spawn_non_spatial_sound(
-                                                        Sound::TeamWin,
+                                                        &self.team_win_sound,
                                                         1.0,
                                                         1.0,
                                                         false,
@@ -809,7 +828,7 @@ impl Actor for SessionController
                                                 else
                                                 {
                                                     audio_system.spawn_non_spatial_sound(
-                                                        Sound::TeamLoose,
+                                                        &self.team_lost_sound,
                                                         1.0,
                                                         1.0,
                                                         false,
@@ -821,7 +840,7 @@ impl Actor for SessionController
                                             Team::Blue =>
                                             {
                                                 audio_system.spawn_non_spatial_sound(
-                                                    Sound::TeamWin,
+                                                    &self.team_win_sound,
                                                     1.0,
                                                     1.0,
                                                     false,

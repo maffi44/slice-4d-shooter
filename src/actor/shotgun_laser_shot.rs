@@ -1,8 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 
@@ -42,6 +41,8 @@ use super::{
 
 pub struct ShotgunLaserShot
 {
+    impact_sound: Option<SoundBufferResource>,
+
     transform: Transform,
     id: Option<ActorID>,
     visible_start_position: Vec4,
@@ -73,6 +74,7 @@ pub struct ShotgunLaserShot
 impl ShotgunLaserShot
 {
     pub fn new(
+        impact_sound: Option<SoundBufferResource>,
         real_start_position: Vec4,
         visible_start_position: Vec4,
         possible_destination: Vec4,
@@ -111,6 +113,7 @@ impl ShotgunLaserShot
         ShotgunLaserShot
         {
             transform,
+            impact_sound,
             id: None,
             visible_start_position,
             damage_dealer_id,
@@ -362,7 +365,7 @@ impl Actor for ShotgunLaserShot
                     if !self.is_replicated
                     {
                         audio_system.spawn_spatial_sound(
-                            crate::engine::shared_systems::audio::Sound::ShotgunShotImpact,
+                            &self.impact_sound,
                             0.1,
                             1.0,
                             false,

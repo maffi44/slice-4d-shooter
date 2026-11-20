@@ -1,10 +1,6 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
-use std::collections::HashMap;
-
 use fyrox_core::{
     algebra::Vector3,
     pool::Handle
@@ -12,10 +8,7 @@ use fyrox_core::{
 use fyrox_resource::Resource;
 use fyrox_sound::{
     buffer::{
-        DataSource,
-        SoundBuffer,
-        SoundBufferResource,
-        SoundBufferResourceExtension
+        SoundBuffer
     },
     context::{
         DistanceModel,
@@ -32,41 +25,9 @@ use fyrox_sound::{
 use glam::Vec4;
 
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
-pub enum Sound {
-    AntiProjectionModeEnabledSound,
-    MachinegunShot,
-    ShotgunShot,
-    ObstacleGunShot,
-    ShotgunShotImpact,
-    HolegunShot,
-    HolegunCharging,
-    RotatingAroundW,
-    PlayerExplosion,
-    PlayerHitSignal,
-    PlayerDeathSignal,
-    ScannerSound,
-    PlayerHit,
-    PlayerDied,
-    ShiftingAlongW,
-    PlayerRespawned,
-    TeamWin,
-    TeamLoose,
-    GetScore,
-    LooseScore,
-    WShiftStart,
-    FlagOnTheBase,
-    FlagCaptured,
-    NewProjection,
-    SwitchWeapon,
-    PlayerGetScanned,
-    ChargingWJump,
-    WJump,
-    ProjectionCaptured,
-}
 pub struct AudioSystem {
     pub sound_engine: Option<SoundEngine>,
-    sounds: HashMap<Sound, Resource<SoundBuffer>>,
+    pending_buffers: Vec<(usize, Handle<SoundSource>, Resource<SoundBuffer>)>,
     pub master_volume: f32,
 }
 
@@ -111,48 +72,25 @@ impl AudioSystem {
 
     pub fn spawn_non_spatial_sound(
         &mut self,
-        sound: Sound,
+        sound_buffer: &Option<Resource<SoundBuffer>>,
         gain: f32,
         pitch: f64,
         looping: bool,
         is_play_once: bool,
         status: Status,
     ) -> Option<Handle<SoundSource>> {
-        if let Some(sound_engine) = self.sound_engine.as_mut()
-        {
-            let sound_buffer = self.sounds
-                .get(&sound)
-                .expect("the sound does not exist");
-    
-            let source = SoundSourceBuilder::new()
-                .with_buffer(sound_buffer.clone())
-                .with_status(status)
-                .with_gain(gain*self.master_volume)
-                .with_play_once(is_play_once)
-                .with_pitch(pitch)
-                .with_looping(looping)
-                .build()
-                .unwrap();
-    
-            let engine_state = sound_engine.state();
-    
-            // getting the non-spatial sound context
-            let mut context_state = engine_state.contexts()[0].state();
-    
-            let handle = context_state.add_source(source);
-    
-            Some(handle)
-        }
-        else
-        {
-            None    
-        }
-
+        let builder = SoundSourceBuilder::new()
+            .with_status(status)
+            .with_gain(gain * self.master_volume)
+            .with_play_once(is_play_once)
+            .with_pitch(pitch)
+            .with_looping(looping);
+        self.spawn_source(0, builder, sound_buffer.as_ref()?)
     }
 
     pub fn spawn_spatial_sound(
         &mut self,
-        sound: Sound,
+        sound_buffer: &Option<Resource<SoundBuffer>>,
         gain: f32,
         pitch: f64,
         looping: bool,
@@ -163,48 +101,65 @@ impl AudioSystem {
         rolloff_factor: f32,
         max_distance: f32,
     ) -> Option<Handle<SoundSource>> {
-        if let Some(sound_engine) = self.sound_engine.as_mut()
-        {
-            let sound_buffer = self.sounds
-                .get(&sound)
-                .expect("the sound does not exist");
-    
-            let position = Vector3::<f32>::new(
-                position.x,
-                position.y + position.w,
-                position.z,
-            );
-    
-            let source = SoundSourceBuilder::new()
-                .with_buffer(sound_buffer.clone())
-                .with_status(status)
-                .with_gain(gain*self.master_volume)
-                .with_play_once(is_play_once)
-                .with_pitch(pitch)
-                .with_looping(looping)
-                .with_position(position)
-                .with_radius(radius)
-                .with_rolloff_factor(rolloff_factor)
-                .with_max_distance(max_distance)
-                .build()
-                .unwrap();
-    
-            let engine_state = sound_engine.state();
-    
-            // getting the spatial sound context
-            let mut context_state = engine_state.contexts()[1].state();
-    
-            let handle = context_state.add_source(source);
-    
-            Some(handle)
-        }
-        else
-        {
-            None    
-        }
-
+        let position = Vector3::<f32>::new(position.x, position.y + position.w, position.z);
+        let builder = SoundSourceBuilder::new()
+            .with_status(status)
+            .with_gain(gain * self.master_volume)
+            .with_play_once(is_play_once)
+            .with_pitch(pitch)
+            .with_looping(looping)
+            .with_position(position)
+            .with_radius(radius)
+            .with_rolloff_factor(rolloff_factor)
+            .with_max_distance(max_distance);
+        self.spawn_source(1, builder, sound_buffer.as_ref()?)
     }
 
+    fn spawn_source(
+        &mut self,
+        context: usize,
+        builder: SoundSourceBuilder,
+        buffer: &Resource<SoundBuffer>,
+    ) -> Option<Handle<SoundSource>> {
+        let engine = self.sound_engine.as_ref()?;
+        let pending = buffer.is_loading();
+        let source = builder
+            .with_opt_buffer((!pending).then(|| buffer.clone()))
+            .build()
+            .ok()?;
+        let handle = engine.state().contexts()[context]
+            .state()
+            .add_source(source);
+        if pending {
+            // A dynamically spawned actor can play before its first decode finishes.
+            // The silent source already accepts position, gain and playback commands.
+            self.pending_buffers.push((context, handle, buffer.clone()));
+        }
+        Some(handle)
+    }
+
+    pub fn update(&mut self) {
+        if self.pending_buffers.is_empty() {
+            return;
+        }
+        let Some(engine) = &self.sound_engine else {
+            return;
+        };
+        let engine = engine.state();
+        self.pending_buffers.retain(|(index, handle, buffer)| {
+            if buffer.is_loading() {
+                return true;
+            }
+            let mut context = engine.contexts()[*index].state();
+            if let Some(source) = context.try_get_source_mut(*handle) {
+                if let Err(error) = source.set_buffer(Some(buffer.clone())) {
+                    log::error!("Cannot attach sound buffer: {error:?}");
+                    context.remove_source(*handle);
+                }
+            }
+            false
+        });
+    }
 
     #[allow(dead_code)] // sound control API, not used by the game yet
     pub fn pause_sound(&mut self, handle: Option<Handle<SoundSource>>) {
@@ -525,216 +480,9 @@ impl AudioSystem {
     /// `headless`: no sound device (every play/stop call is a no-op).
     pub fn new(headless: bool) -> Self {
         
-        let mut sounds = HashMap::new();
-
-        let machinegun_shot_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/machinegun_shot.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let shotgun_shot_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/shotgun_shot.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let shotgun_shot_impact_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/shotgun_shot_impact.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let holegun_shot_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/holegun_shot.wav").into()
-            )
-        ).expect("can't create sound buffer resource");
-
-        let holegun_charging_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/holegun_charging.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let rotating_around_w_sound_resource = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/rotating_around_w.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let player_explosion = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/player_explosion.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let player_hit_signal = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/player_hit_signal.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let player_death_signal = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/player_death_signal.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let scanner_sound = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/scanner_sound.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let player_hit = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/player_hited.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-        
-        let player_died = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/player_died.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let shifting_along_w = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/shifting_along_w.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let player_respawned = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/player_respawned.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let team_win = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/team_win.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let team_loose = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/team_lost.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let get_score = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/get_score.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let loose_score = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/lost_score.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let flag_captured = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/flag_captured.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let flag_on_the_base = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/flag_returned.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let w_shift_start = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/move_to_another_w_level.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let new_projection = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/new_projection.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let switch_weapon = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/switch_weapon.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-        
-        let player_get_scanned = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/player_get_scanned.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-        
-        let charging_w_jump = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/charging_w_jump.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-        
-        let w_jump = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/w_jump.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let projection_captured = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/projection_captured.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let anti_projection_mode_enabled = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/anti_projection_mode_enabled.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        let obstacle_gun_shot = SoundBufferResource::new_generic(
-            DataSource::from_memory(
-                include_bytes!("../../assets/sounds/obstacle_gun_shot.wav").into(),
-            )
-        ).expect("can't create sound buffer resource");
-
-        sounds.insert(Sound::MachinegunShot, machinegun_shot_sound_resource);
-        sounds.insert(Sound::ShotgunShot, shotgun_shot_sound_resource);
-        sounds.insert(Sound::ShotgunShotImpact, shotgun_shot_impact_sound_resource);
-        sounds.insert(Sound::HolegunShot, holegun_shot_sound_resource);
-        sounds.insert(Sound::HolegunCharging, holegun_charging_sound_resource);
-        sounds.insert(Sound::RotatingAroundW, rotating_around_w_sound_resource);
-        sounds.insert(Sound::PlayerExplosion, player_explosion);
-        sounds.insert(Sound::PlayerHitSignal, player_hit_signal);
-        sounds.insert(Sound::PlayerDeathSignal, player_death_signal);
-        sounds.insert(Sound::ScannerSound, scanner_sound);
-        sounds.insert(Sound::PlayerHit, player_hit);
-        sounds.insert(Sound::PlayerDied, player_died);
-        sounds.insert(Sound::ShiftingAlongW, shifting_along_w);
-        sounds.insert(Sound::PlayerRespawned, player_respawned);
-        sounds.insert(Sound::TeamWin, team_win);
-        sounds.insert(Sound::TeamLoose, team_loose);
-        sounds.insert(Sound::GetScore, get_score);
-        sounds.insert(Sound::LooseScore, loose_score);
-        sounds.insert(Sound::FlagCaptured, flag_captured);
-        sounds.insert(Sound::FlagOnTheBase, flag_on_the_base);
-        sounds.insert(Sound::WShiftStart, w_shift_start);
-        sounds.insert(Sound::NewProjection, new_projection);
-        sounds.insert(Sound::SwitchWeapon, switch_weapon);
-        sounds.insert(Sound::PlayerGetScanned, player_get_scanned);
-        sounds.insert(Sound::ChargingWJump, charging_w_jump);
-        sounds.insert(Sound::WJump, w_jump);
-        sounds.insert(Sound::ProjectionCaptured, projection_captured);
-        sounds.insert(Sound::AntiProjectionModeEnabledSound, anti_projection_mode_enabled);
-        sounds.insert(Sound::ObstacleGunShot, obstacle_gun_shot);
-
-
         AudioSystem {
             sound_engine: if headless {None} else {Self::create_sound_engine()},
-            sounds,
+            pending_buffers: Vec::new(),
             master_volume: 0.7,
         }
     }

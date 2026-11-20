@@ -99,3 +99,41 @@ Real points to evaluate:
    4. No engine-level `PreloadNewLevelAsync` / `LoadNewLevel*` commands; those concepts become redundant.
 
    Also decided in round 5: a `World` does **not** keep a reference to its descriptor. An actor that wants to recreate a world keeps the descriptor resource (handle) itself. So the Resource System's cache (or the actors holding handles) is what keeps descriptors alive.
+
+## 2026-11-19 — approved integration
+
+✅ The author approved Fyrox with a project-owned retention policy and reusable actor descriptors. A held untyped Fyrox handle pins a session resource. Retention can be promoted after its first request. Full world instances and cloned actors are superseded by factories capturing validated constructor arguments and prepared sound handles.
+
+The sound collection stores Fyrox's shareable untyped handles. Its constructor requests only `SoundBuffer` and checks the type on playback. Fyrox 0.36.2's typed sound handle carries the thread-safety bounds of streaming decoder data, so sharing it directly inside an immutable map descriptor fails Rust's `Sync` bound. Gameplay APIs retain typed access.
+
+The existing two-phase startup continues to overlap map parsing with device creation. Later world requests submit work to the existing Tokio runtime through a Fyrox loader. The loader holds a weak reference back to the resource system. Built-in sound decoding runs on Fyrox's task pool. Source creation and world callbacks run during gameplay.
+
+✅ Start next-level preload from `on_added_to_world` when enabled by the map. A trigger descriptor stores the destination key. A map can target itself without waiting on or retaining itself. The separate `async_load` property now reads its own JSON key; the previous parser read `async_preload` twice.
+
+### Verification on Linux, working tree based on `76d73d9`
+
+- Release workspace build, Linux workspace bins check, Windows GNU bins check and workspace tests passed with the lockfile. The Matchbox integration tests used local sockets. The two new resource tests run in each of the three client binaries.
+- The retention test promotes an existing sound to session lifetime, drops caller handles, advances cache maintenance by 61 seconds and verifies resource identity. The world test requests one map twice, constructs separate actors, changes one actor's ID and verifies failure delivery for a missing map.
+- The no-updater release client reached `engine: ready` headless and in a Vulkan window on an RTX 3070 Laptop GPU. Graphical CTF startup loaded 25 gameplay WAVs. Headless used zero sound loads. All smoke runs used a loopback matchmaking URL and isolated settings. Audible playback of each sound was not manually checked.
+- Temporary maps outside the repository used the current schema, an obstacle-course player, a trigger orb and a final trigger. Headless gameplay exercised repeated self-transitions and an A → B → A round trip. The latter logged one background B load and reused the initial descriptor on return.
+- The original obstacle-course level 6 still fails initial parsing on its missing `it_is_2d_3d_example` field. Legacy data migration belongs to [map compatibility](../maps-out-of-sync-with-parser/).
+
+## 2026-11-20 — author review and revised implementation
+
+❌ The November 19 sound enum, per-actor sound groups and actor descriptor factories required asset declarations in several places. The author wants each owner to declare a typed field and request its file by path.
+
+✅ Each actor/device constructor now requests its own handles with a scoped resource context. Embedded assets get a key and static bytes from one literal. The initial preparation waits for exactly those requests. Gameplay-time requests can start a new background load. An audio source requested during decoding can already receive playback controls. Headless actors omit the audio handle.
+
+✅ The shared world descriptor retains parsed JSON and a ready actor set. On each call it constructs the next set synchronously, swaps it with the spare and releases the lock before world registration and callbacks. The caller gets an active world directly. Strong handles to the destination world of a final trigger are acquired only after activation. Synchronous refill trades one spare actor set and constructor work per activation for simple, repeatable ownership.
+
+The existing gameplay device slots already require `Box<dyn Device + Send>`. Compilation confirmed that the new actor sets can cross the worker boundary. Enum dispatch remains an independent design choice.
+
+Verification used an uncommitted Linux working tree based on `76d73d9`. Workspace release build, workspace tests with local Matchbox sockets, Linux and Windows GNU bins checks passed. The Vulkan release client reached ready on the default CTF map with 22 distinct embedded WAV loads. Local headless fixtures exercised A → B → A and self-transitions. Each resource test runs in all three clients. The retention test uses the same embedded request API as actors. Individual audio playback and the worst-case synchronous refill time were not measured.
+
+## 2026-11-20 — caller contract and nonblocking transitions
+
+✅ Agree on the caller’s model before selecting internal mechanisms. The author wants each stage to cover its current use cases cohesively while keeping cognitive and runtime costs low. Apply this to new systems and revisions, recording intent in the architecture reference and decisions in the task.
+
+✅ Actors request a handle, inspect it and consume ready data. A single nonblocking inspection distinguishes pending, success and failure. The final trigger now polls the destination and releases the resource guard before sending its message. This supersedes the blocking branch retained on November 19. Both legacy boolean values are accepted, and the field can be omitted. Audio continues to accept pending buffers.
+
+Verified on the uncommitted Linux tree based on `76d73d9`. Release workspace build, workspace tests and Windows GNU bins check passed. The handle test covers pending work, contention on a ready resource, success and failure. With loopback connection settings, headless fixtures completed A → B → A with preload disabled, using legacy false on A and an omitted flag on B. A missing destination produced one trigger error and the current world kept running until the smoke-test timeout. The Vulkan client reached ready on the default CTF map.

@@ -1,8 +1,9 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
 use crate::engine::world::WorldContext;
@@ -27,10 +28,6 @@ use crate::{
             Device, DeviceType, holegun::HoleGun, shotgun::Shotgun
         }, flag_base::FlagBaseMessage, players_doll::PlayerDollInputState
     }, engine::{
-        shared_systems::audio::{
-            AudioSystem,
-            Sound
-        },
         world::messenger::{
             Command,
             CommandType,
@@ -97,16 +94,27 @@ pub struct PlayerScreenEffects {
 
 pub struct PlayersProjections
 {
+    projection_captured_sound: Option<SoundBufferResource>,
+    new_projection_sound: Option<SoundBufferResource>,
+
     pub projections: Vec<PlayerProjection>,
     pub current_active_projection: Option<ActorID>
 }
 
 impl PlayersProjections
 {
-    pub fn new() -> Self
+    pub fn new(
+        resources: &mut ResourceRequests,) -> Self
     {
         PlayersProjections
         {
+            projection_captured_sound: resources.sound(
+                crate::embedded_asset!("sounds/projection_captured.wav"), Retention::Session,
+            ),
+            new_projection_sound: resources.sound(
+                crate::embedded_asset!("sounds/new_projection.wav"), Retention::Session,
+            ),
+
             projections: Vec::with_capacity(10),
             current_active_projection: None,
         }
@@ -165,7 +173,7 @@ impl PlayersProjections
             //use the same sound for cuptured and lost 
             //projection, just with different pitch
             audio_system.spawn_non_spatial_sound(
-                Sound::ProjectionCaptured,
+                &self.projection_captured_sound,
                 0.70,
                 0.48,
                 false,
@@ -198,7 +206,7 @@ impl PlayersProjections
                     if prev_pr_id != projection_id
                     {
                         audio_system.spawn_non_spatial_sound(
-                            Sound::ProjectionCaptured,
+                            &self.projection_captured_sound,
                             0.7,
                             0.7,
                             false,
@@ -210,7 +218,7 @@ impl PlayersProjections
                 else
                 {
                     audio_system.spawn_non_spatial_sound(
-                        Sound::ProjectionCaptured,
+                        &self.projection_captured_sound,
                         0.7,
                         0.7,
                         false,
@@ -271,7 +279,7 @@ impl PlayersProjections
                 }
 
                 audio_system.spawn_non_spatial_sound(
-                    Sound::NewProjection,
+                    &self.new_projection_sound,
                     0.7,
                     1.0,
                     false,
@@ -319,7 +327,7 @@ impl PlayersProjections
                     //use the same sound for cuptured and lost 
                     //projection, just with different pitch
                     audio_system.spawn_non_spatial_sound(
-                        Sound::ProjectionCaptured,
+                        &self.projection_captured_sound,
                         0.70,
                         0.48,
                         false,
@@ -379,7 +387,7 @@ impl PlayersProjections
                         //use the same sound for cuptured and lost 
                         //projection, just with different pitch
                         audio_system.spawn_non_spatial_sound(
-                            Sound::ProjectionCaptured,
+                            &self.projection_captured_sound,
                             0.70,
                             0.48,
                             false,
@@ -704,9 +712,9 @@ impl PlayerProjection
     }
 }
 
-impl Default for PlayerScreenEffects
+impl PlayerScreenEffects
 {
-    fn default() -> Self {
+    pub fn new(resources: &mut ResourceRequests) -> Self {
         PlayerScreenEffects {
             w_scanner_is_active: false,
             w_scanner_radius: 0.0,
@@ -716,7 +724,7 @@ impl Default for PlayerScreenEffects
             w_shift_intensity: 0.0,
             death_screen_effect: 0.0,
             getting_damage_screen_effect: 0.0,
-            player_projections: PlayersProjections::new(),
+            player_projections: PlayersProjections::new(resources),
             player_projections_is_visible: false,
         }
     }
@@ -725,6 +733,9 @@ impl Default for PlayerScreenEffects
 
 pub struct WScanner
 {
+    scanner_sound_sound: Option<SoundBufferResource>,
+    anti_projection_mode_enabled_sound: Option<SoundBufferResource>,
+
     pub w_scanner_enable: bool,
     pub w_scanner_radius: f32,
     pub w_scanner_reloading_time: f32,
@@ -735,12 +746,20 @@ pub struct WScanner
 
 impl WScanner
 {
-    pub fn new() -> WScanner
+    pub fn new(
+        resources: &mut ResourceRequests,) -> WScanner
     {
         let w_scanner_reloading_time =  SCANNER_RELOADING_TIME;
         let w_scanner_enemies_show_time =  SCANNER_SHOW_ENEMIES_TIME;
 
         WScanner {
+            scanner_sound_sound: resources.sound(
+                crate::embedded_asset!("sounds/scanner_sound.wav"), Retention::Session,
+            ),
+            anti_projection_mode_enabled_sound: resources.sound(
+                crate::embedded_asset!("sounds/anti_projection_mode_enabled.wav"), Retention::Session,
+            ),
+
             w_scanner_enable: false,
             w_scanner_radius: 0.0,
             w_scanner_reloading_time,
@@ -760,6 +779,12 @@ impl WScanner
 
 
 pub struct MainPlayer {
+    player_get_scanned_sound: Option<SoundBufferResource>,
+    player_respawned_sound: Option<SoundBufferResource>,
+    rotating_around_w_sound: Option<SoundBufferResource>,
+    shifting_along_w_sound: Option<SoundBufferResource>,
+
+
     id: Option<ActorID>,
 
     inner_state: PlayerInnerState,
@@ -862,7 +887,7 @@ impl Actor for MainPlayer {
         let audio_system = &mut shared.audio;
 
         let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
-            Sound::RotatingAroundW,
+            &self.rotating_around_w_sound,
             0.0,
             1.0,
             true,
@@ -871,7 +896,7 @@ impl Actor for MainPlayer {
         );
 
         let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
-            Sound::ShiftingAlongW,
+            &self.shifting_along_w_sound,
             0.0,
             1.0,
             true,
@@ -977,7 +1002,7 @@ impl Actor for MainPlayer {
                             PlayerMessage::YouWasScanned =>
                             {
                                 audio_system.spawn_non_spatial_sound(
-                                    Sound::PlayerGetScanned,
+                                    &self.player_get_scanned_sound,
                                     0.45,
                                     0.8,
                                     false,
@@ -2359,7 +2384,7 @@ pub fn process_w_scanner(
                 );
 
                 audio_system.spawn_non_spatial_sound(
-                    crate::engine::shared_systems::audio::Sound::ScannerSound,
+                    &w_scanner.scanner_sound_sound,
                     0.9,
                     1.0,
                     false,
@@ -2396,7 +2421,7 @@ pub fn process_w_scanner(
             );
 
             audio_system.spawn_non_spatial_sound(
-                crate::engine::shared_systems::audio::Sound::AntiProjectionModeEnabledSound,
+                &w_scanner.anti_projection_mode_enabled_sound,
                 0.81,
                 1.0,
                 false,
@@ -2808,7 +2833,7 @@ pub fn process_switch_active_hand_slot_input
             ActiveHandsSlot::Zero => {},
             _ => {
                 audio_system.spawn_non_spatial_sound(
-                    Sound::SwitchWeapon,
+                    &inner_state.switch_weapon_sound,
                     0.35,
                     1.0,
                     false,
@@ -2854,7 +2879,7 @@ pub fn process_switch_active_hand_slot_input
             ActiveHandsSlot::First => {},
             _ => {
                 audio_system.spawn_non_spatial_sound(
-                    Sound::SwitchWeapon,
+                    &inner_state.switch_weapon_sound,
                     0.35,
                     1.0,
                     false,
@@ -2902,7 +2927,7 @@ pub fn process_switch_active_hand_slot_input
             ActiveHandsSlot::Second => {},
             _ => {
                 audio_system.spawn_non_spatial_sound(
-                    Sound::SwitchWeapon,
+                    &inner_state.switch_weapon_sound,
                     0.35,
                     1.0,
                     false,
@@ -2950,7 +2975,7 @@ pub fn process_switch_active_hand_slot_input
             ActiveHandsSlot::Third => {},
             _ => {
                 audio_system.spawn_non_spatial_sound(
-                    Sound::SwitchWeapon,
+                    &inner_state.switch_weapon_sound,
                     0.35,
                     1.0,
                     false,
@@ -3315,7 +3340,7 @@ pub fn die
         inner_state.after_death_timer = 0.0;
 
         audio_system.spawn_non_spatial_sound(
-            Sound::PlayerDied,
+            &inner_state.player_died_sound,
             0.37,
             1.0,
             false,
@@ -3623,7 +3648,7 @@ pub fn get_damage_and_add_force(
 ) {
 
     audio_system.spawn_non_spatial_sound(
-        Sound::PlayerHit,
+        &inner_state.player_hited_sound,
         0.4.lerp(0.6, (damage as f32/PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
         1.0,
         false,
@@ -3735,6 +3760,7 @@ pub fn put_device_into_device_slot(
 impl MainPlayer {
 
     pub fn new(
+        resources: &mut ResourceRequests,
         // master: InputMaster,
         // audio_system: &mut AudioSystem,
 
@@ -3742,14 +3768,28 @@ impl MainPlayer {
         blue_spawn_points: Vec<Vec4>,
     ) -> Self {
         
-        let screen_effects = PlayerScreenEffects::default();
+        let screen_effects = PlayerScreenEffects::new(resources);
 
-        let w_scanner = WScanner::new();
+        let w_scanner = WScanner::new(resources);
 
         MainPlayer {
+            player_get_scanned_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_get_scanned.wav"), Retention::Session,
+            ),
+            player_respawned_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
+            ),
+            rotating_around_w_sound: resources.sound(
+                crate::embedded_asset!("sounds/rotating_around_w.wav"), Retention::Session,
+            ),
+            shifting_along_w_sound: resources.sound(
+                crate::embedded_asset!("sounds/shifting_along_w.wav"), Retention::Session,
+            ),
+
             id: None,
 
             inner_state: PlayerInnerState::new(
+                resources,
                 Transform::new(),
                 false,
                 false,
@@ -3761,6 +3801,7 @@ impl MainPlayer {
             active_hands_slot: ActiveHandsSlot::Zero,
 
             hands_slot_0: Box::new(MachineGun::new(
+                resources,
                 MACHINEGUN_DAMAGE,
                 MACHINEGUN_ADD_FORCE, 
                 MACHINEGUN_HEAT_ADD_ON_SHOT, 
@@ -3773,6 +3814,7 @@ impl MainPlayer {
                 ),
             )),
             hands_slot_1: Some(Box::new(Shotgun::new(
+                resources,
                 Vec4::new(
                     1.0,
                     -0.3,
@@ -3782,6 +3824,7 @@ impl MainPlayer {
                 false
             ))),
             hands_slot_2: Some(Box::new(HoleGun::new(
+                resources,
                 ENERGY_GUN_HOLE_SIZE_MULT, 
                 ENERGY_GUN_ADD_FORCE_MULT, 
                 ENERGY_GUN_DAMAGE_MULT, 
@@ -3794,6 +3837,7 @@ impl MainPlayer {
                 ),
             ))),
             hands_slot_3: None, /*Some(Box::new(ObstaclesGun::new(
+                resources,
                 ENERGY_GUN_HOLE_SIZE_MULT, 
                 ENERGY_GUN_ADD_FORCE_MULT, 
                 ENERGY_GUN_DAMAGE_MULT, 
@@ -3930,7 +3974,7 @@ impl ControlledActor for MainPlayer
         self.inner_state.restore_w_shift_and_rotate_values();
 
         audio_system.spawn_non_spatial_sound(
-            Sound::PlayerRespawned,
+            &self.player_respawned_sound,
             1.0,
             1.0,
             false,

@@ -1,13 +1,12 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
 // The game-session networking of `SessionController` (moved out of the former `NetSystem`):
 // the connection flow (matchmaking request over WebSocket, then the game server over WebRTC),
 // decoding server messages into actor messages, the connection-status UI and the session (server) time.
 // The transport itself is `NetSystem` (connection handles, raw packets).
 
+use crate::engine::shared_systems::resources::ResourceRequests;
 use std::time::Duration;
 
 use glam::{Vec3, Vec4};
@@ -52,7 +51,6 @@ use crate::{
         SpecificActorMessage,
     },
     engine::{
-        shared_systems::audio::AudioSystem,
         shared_systems::global_settings::ConnectionSettings,
         shared_systems::net::{
             ConnectionConfig,
@@ -243,7 +241,7 @@ impl NetSession {
 
             SessionState::ConnectedToGameServer { connection, players_id } => {
                 self.handle_connected_to_game_server(
-                    connection,
+                            connection,
                     players_id,
                     it_is_2d_3d_example,
                     world,
@@ -679,7 +677,7 @@ impl NetSession {
                             from_player,
                             message,
                             world.messenger,
-                            &mut shared.audio,
+                            &mut shared.resources.requests(),
                             it_is_2d_3d_example,
                         );
                     }
@@ -760,7 +758,7 @@ fn process_message(
     message_from_peer_id: u128,
     message: NetMessageToPlayer,
     messenger: &mut Messenger,
-    audio_system: &mut AudioSystem,
+    resources: &mut ResourceRequests,
     it_is_2d_3d_example: bool,
 ) {
     match message
@@ -805,7 +803,7 @@ fn process_message(
                         player_sphere_radius,
                         transform,
                         is_alive,
-                        audio_system,
+                        resources,
                         team,
                         it_is_2d_3d_example
                     );

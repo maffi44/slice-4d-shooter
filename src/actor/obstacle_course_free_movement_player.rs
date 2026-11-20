@@ -1,8 +1,9 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
 use crate::engine::world::WorldContext;
@@ -21,10 +22,7 @@ use crate::{
         Actor, ActorID, CommonActorsMessage, Message, MessageType, SpecificActorMessage, device::{Device, EmptyHand, rotator::RotatorTool}, droped_rotator_tool::DropedRotatorToolMessage, main_player::{ActiveHandsSlot, PlayerMessage, PlayerScreenEffects, PlayersProjections, player_inner_state::PlayerInnerState}, new_spawn_area::NewSpawnAreaMessage, players_doll::PlayerDollInputState, trgger_orb::TriggerOrbMessage
     },
     engine::{
-        shared_systems::audio::{
-            AudioSystem,
-            Sound
-        }, world::messenger::Messenger, shared_systems::input::ActionsFrameState, world::physics::{
+        world::messenger::Messenger, shared_systems::input::ActionsFrameState, world::physics::{
             PhysicsSystem, colliders_container::PhysicalElement, kinematic_collider::KinematicColliderMessage
         }, shared_systems::render::{VisualElement, camera::Camera}, shared_systems::ui::{UIElement, UIElementType, UISystem}, world::static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea}
     },
@@ -42,6 +40,9 @@ const POINTER_COLOR: Vec3 = Vec3::new(0.7, 0.0, 0.0);
 const DITHERING_EFFET_FOV: f32 = 1.1;
 
 pub struct ObstacleCourseFreeMovementPlayer {
+    player_respawned_sound: Option<SoundBufferResource>,
+
+
     id: Option<ActorID>,
     inner_state: PlayerInnerState,
     screen_effects: PlayerScreenEffects,
@@ -737,6 +738,7 @@ fn process_free_movement_input(
 impl ObstacleCourseFreeMovementPlayer {
 
     pub fn new(
+        resources: &mut ResourceRequests,
         spawn: Vec4,
         with_rotator_tool: bool,
     ) -> Self {
@@ -750,11 +752,12 @@ impl ObstacleCourseFreeMovementPlayer {
             getting_damage_screen_effect: 0.0,
             w_shift_coef: 0.0,
             w_shift_intensity: 0.0,
-            player_projections: PlayersProjections::new(),
+            player_projections: PlayersProjections::new(resources),
             player_projections_is_visible: false
         };
 
         let mut inner_state = PlayerInnerState::new(
+                resources,
             Transform::new(),
             false,
             false,
@@ -782,6 +785,10 @@ impl ObstacleCourseFreeMovementPlayer {
         let _dithering_effect_target = dithering_effect;
 
         ObstacleCourseFreeMovementPlayer {
+            player_respawned_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
+            ),
+
             id: None,
 
             inner_state,
@@ -1132,7 +1139,7 @@ impl ObstacleCourseFreeMovementPlayer {
         self.inner_state.restore_w_shift_and_rotate_values();
 
         audio_system.spawn_non_spatial_sound(
-            Sound::PlayerRespawned,
+            &self.player_respawned_sound,
             1.0,
             1.0,
             false,
@@ -1616,7 +1623,7 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
         self.inner_state.restore_w_shift_and_rotate_values();
 
         audio_system.spawn_non_spatial_sound(
-            Sound::PlayerRespawned,
+            &self.player_respawned_sound,
             1.0,
             1.0,
             false,

@@ -141,7 +141,7 @@ pub trait Actor {
         _shared: &mut EngineSharedSystems,
     ) {}
 
-    /// Called once on every actor at the end of `World::new` (formerly `on_level_loaded`).
+    /// Called once on every actor during world activation (formerly `on_level_loaded`).
     fn on_world_started(
         &mut self,
         _world: &mut WorldContext,

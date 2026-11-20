@@ -1,8 +1,9 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 use crate::actor::session_controller::send_to_session_controller;
@@ -15,7 +16,7 @@ use rand::Rng;
 
 use crate::{
     engine::{
-        shared_systems::audio::{AudioSystem, Sound}, world::messenger::Messenger, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, shared_systems::ui::UIElementType, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
+        world::messenger::Messenger, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, shared_systems::ui::UIElementType, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
     },
     engine::transform::Transform
 };
@@ -91,6 +92,10 @@ pub const FLAG_AREA_PHYSICAL_RADIUS: f32 = 1.5;
 
 pub struct Flag
 {
+    flag_captured_sound: Option<SoundBufferResource>,
+    flag_returned_sound: Option<SoundBufferResource>,
+
+
     transform: Transform,
     next_target_swing_position_in_secs: f32,
     target_flag_swing_position: Vec4,
@@ -117,7 +122,9 @@ pub struct Flag
 
 impl Flag
 {
-    pub fn new(flag_owned_by_team: Team, transform_of_the_base: Transform) -> Self
+    pub fn new(
+        resources: &mut ResourceRequests,
+        flag_owned_by_team: Team, transform_of_the_base: Transform) -> Self
     {
         let target_flag_swing_position = get_random_vec4(
             -FLAG_SWING_RANGE,
@@ -186,6 +193,13 @@ impl Flag
         ];
 
         Flag {
+            flag_captured_sound: resources.sound(
+                crate::embedded_asset!("sounds/flag_captured.wav"), Retention::Session,
+            ),
+            flag_returned_sound: resources.sound(
+                crate::embedded_asset!("sounds/flag_returned.wav"), Retention::Session,
+            ),
+
             transform: transform_of_the_base,
             target_flag_swing_position,
             current_flag_swing_position: Vec4::ZERO,
@@ -243,7 +257,7 @@ impl Flag
         }
 
         audio_system.spawn_non_spatial_sound(
-            Sound::FlagOnTheBase,
+            &self.flag_returned_sound,
             1.0,
             1.0,
             false,
@@ -321,7 +335,7 @@ impl Flag
         );
         
         audio_system.spawn_spatial_sound(
-            Sound::FlagCaptured,
+            &self.flag_captured_sound,
             1.0,
             1.0,
             false,

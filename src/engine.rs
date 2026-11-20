@@ -60,7 +60,7 @@ impl Engine
             window,
             quit_requested: false,
         };
-        engine.set_root_world(Arc::new(loaded.descriptor));
+        engine.set_root_world(loaded.descriptor);
         // Loading time must not become the first simulation delta.
         engine.shared.time.init();
         log::info!("engine: ready");
@@ -134,8 +134,7 @@ impl Engine
             }
         });
 
-        let new_world = World::new(
-            &descriptor,
+        let new_world = descriptor.give_me_world(
             WorldConfig { render: render_config },
             &mut self.shared,
         );
@@ -164,10 +163,7 @@ impl Engine
             {
                 self.set_root_world(descriptor);
             }
-            OuterWorldMessage::WorldFinished =>
-            {
-                self.quit_requested = true;
-            }
+            OuterWorldMessage::WorldFinished => {}
             OuterWorldMessage::Specific(_) => {}
         }
     }

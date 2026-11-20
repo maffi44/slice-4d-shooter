@@ -8,7 +8,7 @@ Open filenames have no date. High priority prefixes both files with `high-priori
 
 | Task | Priority | Status | Review point |
 |---|---|---|---|
-| [Prepare and validate worlds asynchronously](programming/async-world-preparation/) | High | Open — not implemented | 10 |
+| [Prepare and validate worlds asynchronously](programming/async-world-preparation/) | High | Implemented — awaiting author review | 10 |
 | [Preserve main_actor_id during actor ID collisions](programming/main-actor-id-collisions/) | High | Open — not implemented | 6 |
 | [Define and preserve message ordering](programming/message-ordering/) | High | Open — not implemented | 3 |
 | [Close connections when their owner is removed](programming/session-connection-lifetime/) | High | Open — not implemented | 2 |
@@ -25,7 +25,8 @@ Open filenames have no date. High priority prefixes both files with `high-priori
 | [Responsive engine startup and MainLoop ownership](programming/nonblocking-engine-startup/) | Normal | First implementation — awaiting author review | — |
 | [OpenGL context contention during rendering](programming/opengl-context-contention/) | Normal | OpenGL removal implemented — awaiting author acceptance | — |
 | [Deliver broadcast messages by reference](programming/borrow-broadcast-messages/) | Normal | Open — not implemented | — |
-| [Resource System](programming/resource-system/) | Normal | Backlog — design pending | — |
+| [Render resources for worlds and dynamic UI textures](programming/render-resources/) | Normal | Open — design pending | — |
+| [Resource System](programming/resource-system/) | Normal | Implemented — awaiting author review | — |
 | [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Open — not implemented | 7 |
 | [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Open — not implemented | 9 |
 | [Protect GPU upload buffers from overflow](programming/gpu-buffer-overflow/) | Long-term | Backlog — long-term | 5 |

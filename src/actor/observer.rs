@@ -1,8 +1,9 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
 use crate::engine::world::WorldContext;
@@ -23,10 +24,7 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        shared_systems::audio::{
-            AudioSystem,
-            Sound
-        }, shared_systems::input::ActionsFrameState, world::physics::{
+        shared_systems::input::ActionsFrameState, world::physics::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicColliderMessage
         }, shared_systems::render::camera::Camera
@@ -43,6 +41,9 @@ use super::{
 
 
 pub struct Observer {
+    player_respawned_sound: Option<SoundBufferResource>,
+
+
     id: Option<ActorID>,
     inner_state: PlayerInnerState,
     screen_effects: PlayerScreenEffects,
@@ -452,6 +453,7 @@ impl Observer {
 
     #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn new(
+        resources: &mut ResourceRequests,
         _audio_system: &mut AudioSystem,
         _blue_base_position: Vec4,
         _red_base_position: Vec4,
@@ -468,15 +470,20 @@ impl Observer {
             getting_damage_screen_effect: 0.0,
             w_shift_coef: 0.0,
             w_shift_intensity: 0.0,
-            player_projections: PlayersProjections::new(),
+            player_projections: PlayersProjections::new(resources),
             player_projections_is_visible: false
         };
         
         
         Observer {
+            player_respawned_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
+            ),
+
             id: None,
 
             inner_state: PlayerInnerState::new(
+                resources,
                 Transform::new(),
                 false,
                 false,
@@ -547,7 +554,7 @@ impl ControlledActor for Observer
         self.inner_state.restore_w_shift_and_rotate_values();
 
         audio_system.spawn_non_spatial_sound(
-            Sound::PlayerRespawned,
+            &self.player_respawned_sound,
             1.0,
             1.0,
             false,

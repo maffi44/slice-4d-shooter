@@ -3,6 +3,11 @@
 
 
 
+use super::{World, WorldConfig};
+use crate::engine::shared_systems::EngineSharedSystems;
+use fyrox_core::parking_lot::Mutex;
+use crate::engine::shared_systems::resources::{ResourceSystem, ResourceRequests};
+use std::sync::Arc;
 use std::{borrow::Cow, collections::HashMap};
 
 use crate::{
@@ -67,12 +72,7 @@ pub struct DefaultStaticObjectSettings {
     undestroyable: bool,
 }
 
-/// Everything prepared in advance to create a `World`: the parsed map, the generated shaders and
-/// created render pipelines (the slow part), and the descriptions of the map's actors.
-///
-/// Immutable and shareable (`Arc`): many Worlds can be created from one descriptor.
-/// `World::new` creates fresh actors and per-instance resources; full asynchronous actor preparation
-/// is tracked in issues/programming/async-world-preparation/.
+/// Shared map geometry and pipelines, parsed actor inputs and one ready actor set.
 pub struct WorldDescriptor {
     pub name: String,
     pub static_objects: Vec<StaticObject>,
@@ -84,16 +84,16 @@ pub struct WorldDescriptor {
     pub red_base_position: Vec4,
     pub blue_base_position: Vec4,
     pub is_generated_raymarch_shader: bool,
-    pub it_is_2d_3d_example: bool,
 
     /// The expensive GPU part. `None` in headless mode.
     pub gpu: Option<WorldDescriptorGpu>,
 
-    // actor descriptions (the map's JSON); only `create_actors` knows how to turn them into actors
     main_actor_description: Value,
     actor_descriptions: Value,
     default_settings: DefaultStaticObjectSettings,
     materials_table: HashMap<String, i32>,
+    it_is_2d_3d_example: bool,
+    ready_actors: Mutex<(ActorWrapper, Vec<ActorWrapper>)>,
 }
 
 pub struct WorldDescriptorGpu {
@@ -103,40 +103,21 @@ pub struct WorldDescriptorGpu {
 
 impl WorldDescriptor {
 
-    /// Async file loading followed by CPU parsing and optional GPU preparation on blocking workers.
-    /// Spawn this future on the shared runtime when loading from synchronous actor callbacks.
-    pub async fn load(
-        name: &str,
-        gpu: Option<GpuContext>,
-    ) -> WorldDescriptor
-    {
-        let preparation = WorldPreparation::load(name).await;
-        tokio::task::spawn_blocking(move || preparation.finish(gpu))
-            .await.expect("ERROR: world GPU preparation failed")
+    pub(crate) fn take_actors(&self, resources: &ResourceSystem) -> (ActorWrapper, Vec<ActorWrapper>) {
+        let mut requests = resources.requests();
+        let main = parse_json_main_actor(&self.main_actor_description, &mut requests)
+            .expect("Wrong JSON map format: missing main actor");
+        let others = parse_json_actors(&self.actor_descriptions, &self.default_settings, &self.materials_table, self.it_is_2d_3d_example, &mut requests);
+        std::mem::replace(&mut *self.ready_actors.lock(), (main, others))
     }
 
-    /// Creates NEW actor instances from the stored descriptions: (main actor, other actors).
-    /// Called by `World::new`, so actor construction happens when the world is created.
-    pub fn create_actors(&self) -> (ActorWrapper, Vec<ActorWrapper>)
-    {
-        let main_actor = parse_json_main_actor(
-            &self.main_actor_description,
-            &self.default_settings,
-            &self.materials_table,
-        )
-        .expect("the level has no main actor");
-
-        let actors = parse_json_actors(
-            &self.actor_descriptions,
-            &self.default_settings,
-            &self.materials_table,
-            self.it_is_2d_3d_example,
-        );
-
-        (main_actor, actors)
+    /// Refill the spare from the warm cache before publishing the world. Callbacks run
+    /// after the swap, so they may request this descriptor again.
+    pub fn give_me_world(&self, config: WorldConfig, shared: &mut EngineSharedSystems) -> World {
+        let (main, actors) = self.take_actors(&shared.resources);
+        World::activate(self, main, actors, config, shared)
     }
 }
-
 
 /// CPU map data and shader inputs retained until the GPU is ready.
 /// Consumed once; the finished descriptor does not retain these temporary inputs.
@@ -149,7 +130,7 @@ pub(crate) struct WorldPreparation
 
 impl WorldPreparation
 {
-    pub async fn load(name: &str) -> Self
+    pub async fn load(name: &str, resources: Arc<ResourceSystem>) -> Result<Self, String>
     {
         let candidates = [
             format!("./{}.json", name),
@@ -169,15 +150,21 @@ impl WorldPreparation
             }
         }
         let source = source.or_else(|| get_preloaded_level(name).map(Cow::Borrowed))
-            .unwrap_or_else(|| panic!("can't open the {} level", name));
+            .ok_or_else(|| format!("Cannot open level {name}"))?;
         let name = name.to_owned();
 
         // JSON/geometry parsing does not yield; a large map must not occupy an async worker.
-        tokio::task::spawn_blocking(move || {
+        let (prepared, dependencies) = tokio::task::spawn_blocking(move || {
             let json = serde_json::from_str(&source)
                 .expect(&format!("ERROR: can't parse the JSON of the {} map", name));
-            parse_json_level(json)
-        }).await.expect("ERROR: world CPU preparation failed")
+            let mut requests = resources.preparation_requests();
+            let prepared = parse_json_level(json, &mut requests);
+            (prepared, requests.into_dependencies())
+        }).await.map_err(|err| err.to_string())?;
+        for dependency in dependencies {
+            dependency.await.map_err(|err| format!("Actor resource failed: {err:?}"))?;
+        }
+        Ok(prepared)
     }
 
 
@@ -201,7 +188,7 @@ impl WorldPreparation
 
 
 
-fn parse_json_level(json: Value) -> WorldPreparation
+fn parse_json_level(json: Value, resources: &mut ResourceRequests) -> WorldPreparation
 {
     let json_level = json
     .as_object()
@@ -267,13 +254,11 @@ fn parse_json_level(json: Value) -> WorldPreparation
 
     let actor_descriptions = json_level
         .get("actors")
-        .expect("Wrong JSON map format: JSON level must have an actors property")
-        .clone();
+        .expect("Wrong JSON map format: JSON level must have an actors property");
 
     let main_actor_description = json_level
         .get("main_actor")
-        .expect("Wrong JSON map format: JSON level must have a main_actor property")
-        .clone();
+        .expect("Wrong JSON map format: JSON level must have a main_actor property");
 
     let visual_settings_of_environment = {
         let json_visual_settings_of_environment = json_level
@@ -335,11 +320,15 @@ fn parse_json_level(json: Value) -> WorldPreparation
         is_generated_raymarch_shader,
         red_base_position,
         blue_base_position,
-        it_is_2d_3d_example,
-        main_actor_description,
-        actor_descriptions,
+        ready_actors: Mutex::new((
+            parse_json_main_actor(main_actor_description, resources).expect("Wrong JSON map format: missing main actor"),
+            parse_json_actors(actor_descriptions, &default_settings, &materials_table, it_is_2d_3d_example, resources),
+        )),
+        main_actor_description: main_actor_description.clone(),
+        actor_descriptions: actor_descriptions.clone(),
         default_settings,
         materials_table,
+        it_is_2d_3d_example,
     };
 
     let shader_name = json_level
@@ -1853,8 +1842,7 @@ fn parse_json_into_material_index(
 
 fn parse_json_main_actor(
     json: &Value,
-    _defaults: &DefaultStaticObjectSettings,
-    _materials_table: &HashMap<String, i32>,
+    resources: &mut ResourceRequests,
 ) -> Option<ActorWrapper>
 {
 
@@ -1868,7 +1856,7 @@ fn parse_json_main_actor(
         match actor_type.as_str() {
             "obstacle_course_free_movement_player" => {
 
-                let actor = parse_obstacle_course_free_movement_player(
+                let actor = parse_obstacle_course_free_movement_player(resources,
                     actor_value,
                 );
 
@@ -1877,7 +1865,7 @@ fn parse_json_main_actor(
 
             "main_player" => {
 
-                let actor = parse_main_player(
+                let actor = parse_main_player(resources,
                     actor_value,
                 );
 
@@ -2012,6 +2000,7 @@ fn parse_allowed_dynamic_objects_in_bsp_tree(
 }
 
 fn parse_main_player(
+    resources: &mut ResourceRequests,
     actor_value: &Value,
 ) -> MainPlayer
 {
@@ -2049,11 +2038,12 @@ fn parse_main_player(
         blue_spawns.push(spawn_transform.get_position());
     }
 
-    MainPlayer::new(red_spawns, blue_spawns)
+    MainPlayer::new(resources, red_spawns, blue_spawns)
 }
 
 
 fn parse_obstacle_course_free_movement_player(
+    resources: &mut ResourceRequests,
     actor_value: &Value,
 ) -> ObstacleCourseFreeMovementPlayer
 {
@@ -2075,7 +2065,7 @@ fn parse_obstacle_course_free_movement_player(
         .as_bool()
         .expect("Wrong JSON map format: with_rotator_tool in obstacle_course_free_movement_player must be a boolean");
 
-    ObstacleCourseFreeMovementPlayer::new(
+    ObstacleCourseFreeMovementPlayer::new(resources,
         spawn_transform.get_position(),
         with_rotator_tool,
     )
@@ -2087,6 +2077,7 @@ fn parse_json_actors(
     defaults: &DefaultStaticObjectSettings,
     materials_table: &HashMap<String, i32>,
     it_is_2d_3d_example: bool,
+    resources: &mut ResourceRequests,
 ) -> Vec<ActorWrapper>
 {
 
@@ -2105,13 +2096,13 @@ fn parse_json_actors(
         for (actor_type, actor_value) in actor_json_object {
             match actor_type.as_str() {
                 "ctf_session_controller" => {
-                    let actor = parse_ctf_session_controller_actor(it_is_2d_3d_example);
+                    let actor = parse_ctf_session_controller_actor(resources, it_is_2d_3d_example);
 
                     actors.push(ActorWrapper::SessionController(actor));
                 }
 
                 "flag" => {
-                    let actor = parse_flag_actor(actor_value);
+                    let actor = parse_flag_actor(resources, actor_value);
 
                     actors.push(ActorWrapper::Flag(actor));
                 }
@@ -2133,12 +2124,12 @@ fn parse_json_actors(
                     actors.push(ActorWrapper::Trigger(actor));
                 }
                 "final_trigger" => {
-                    let actor = parse_final_trigger(actor_value, defaults, materials_table);
+                    let actor = parse_final_trigger(resources, actor_value, defaults, materials_table);
 
                     actors.push(ActorWrapper::FinalTrigger(actor));
                 }
                 "trigger_orb" => {
-                    let actor = parse_trigger_orb(actor_value);
+                    let actor = parse_trigger_orb(resources, actor_value);
 
                     actors.push(ActorWrapper::TriggerOrb(actor));
                 }
@@ -2153,7 +2144,7 @@ fn parse_json_actors(
                     actors.push(ActorWrapper::TriggeringSpecialLiftActor(actor));
                 }
                 "droped_rotator_tool" => {
-                    let actor = parse_droped_rotator_tool_actor(actor_value);
+                    let actor = parse_droped_rotator_tool_actor(resources, actor_value);
 
                     actors.push(ActorWrapper::DropedRotatorTool(actor));
                 }
@@ -2196,13 +2187,14 @@ fn parse_new_spawn_area_actor(
 }
 
 fn parse_droped_rotator_tool_actor(
+    resources: &mut ResourceRequests,
     actor_value: &Value,
 ) -> DropedRotatorTool {
 
     let transform = parse_json_into_transform(actor_value, "droped_rotator_tool_actor");
 
     
-    DropedRotatorTool::new(
+    DropedRotatorTool::new(resources,
         transform,
     )
 }
@@ -2303,6 +2295,7 @@ fn parse_triggering_special_lift_actor(
 
 
 fn parse_trigger_orb(
+    resources: &mut ResourceRequests,
     actor_value: &Value
 ) -> TriggerOrb
 {
@@ -2339,7 +2332,7 @@ fn parse_trigger_orb(
         )
     };
 
-    TriggerOrb::new(
+    TriggerOrb::new(resources,
         transform,
         target_trigger_name,
         color,
@@ -2349,6 +2342,7 @@ fn parse_trigger_orb(
 
 
 fn parse_final_trigger(
+    resources: &mut ResourceRequests,
     actor_value: &Value,
     defaults: &DefaultStaticObjectSettings,
     materials_table: &HashMap<String, i32>
@@ -2371,11 +2365,10 @@ fn parse_final_trigger(
         .as_bool()
         .expect("Wrong JSON map format: final_trigger's async_preload property must be a boolean");
 
-    let async_load = actor_object
-        .get("async_preload")
-        .expect("Wrong JSON map format: final_trigger must have an async_load property")
-        .as_bool()
-        .expect("Wrong JSON map format: final_trigger's async_load property must be a boolean");
+    // Legacy maps may specify this flag. All transitions now poll readiness.
+    if let Some(value) = actor_object.get("async_load") {
+        value.as_bool().expect("Wrong JSON map format: final_trigger's async_load property must be a boolean");
+    }
 
     let transform = parse_json_into_transform(actor_value, "final_trgger_actor");
 
@@ -2432,11 +2425,10 @@ fn parse_final_trigger(
 
     let static_objects = parse_json_static_objects(static_objects_value, defaults, materials_table);
 
-    FinalTrgger::new(
+    FinalTrgger::new(resources,
         transform,
         next_level_name,
         async_preload,
-        async_load,
         trigger_area_radius,
         visual_area_radius,
         visual_area_color,
@@ -2449,12 +2441,13 @@ fn parse_final_trigger(
 }
 
 
-fn parse_ctf_session_controller_actor(it_is_2d_3d_example: bool) -> SessionController
+fn parse_ctf_session_controller_actor(resources: &mut ResourceRequests, it_is_2d_3d_example: bool) -> SessionController
 {
-    SessionController::new(it_is_2d_3d_example)
+    SessionController::new(resources, it_is_2d_3d_example)
 }
 
 fn parse_flag_actor(
+    resources: &mut ResourceRequests,
     actor_value: &Value,
 )-> Flag
 {
@@ -2480,7 +2473,7 @@ fn parse_flag_actor(
         _ => panic!("Wrong JSON map format: flag's team property must be 'red' or 'blue'")
     };
     
-    Flag::new(flag_owned_by_team, transform_of_the_base)
+    Flag::new(resources, flag_owned_by_team, transform_of_the_base)
 }
 
 fn parse_flag_base_actor(

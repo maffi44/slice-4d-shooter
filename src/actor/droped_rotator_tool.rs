@@ -1,8 +1,8 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 
@@ -13,7 +13,7 @@ use glam::{Vec3, Vec4};
 
 use crate::{
     engine::{
-        shared_systems::audio::Sound, world::messenger::{Command, CommandType}, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider}, shared_systems::render::VisualElement, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
+        world::messenger::{Command, CommandType}, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType, static_collider::StaticCollider}, shared_systems::render::VisualElement, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
     }, engine::transform::Transform
 };
 
@@ -31,6 +31,9 @@ pub enum DropedRotatorToolMessage
 
 pub struct DropedRotatorTool
 {
+    get_score_sound: Option<SoundBufferResource>,
+
+
     transform: Transform,
     id: Option<ActorID>,
     area: Area,
@@ -43,6 +46,7 @@ pub struct DropedRotatorTool
 impl DropedRotatorTool
 {
     pub fn new(
+        resources: &mut ResourceRequests,
         transform: Transform,
     ) -> Self
     {
@@ -95,6 +99,10 @@ impl DropedRotatorTool
 
 
         DropedRotatorTool {
+            get_score_sound: resources.sound(
+                crate::embedded_asset!("sounds/get_score.wav"), Retention::Session,
+            ),
+
             transform,
             id: None,
             area,
@@ -195,7 +203,7 @@ impl Actor for DropedRotatorTool
                             DropedRotatorToolMessage::DropedRotatorToolCapturedByPlayer =>
                             {
                                 audio_system.spawn_spatial_sound(
-                                    Sound::GetScore,
+                                    &self.get_score_sound,
                                     1.0,
                                     1.0,
                                     false,

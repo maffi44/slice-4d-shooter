@@ -1,24 +1,25 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::resources::{ResourceRead, ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 use crate::engine::world::effects;
 
-use std::{f32::consts::PI, sync::Arc};
+use std::f32::consts::PI;
 
-use tokio::task::JoinHandle;
+use fyrox_resource::Resource;
+use crate::engine::shared_systems::resources::WorldResource;
 
-use crate::engine::world::{world_descriptor::WorldDescriptor, OuterWorldMessage};
+use crate::engine::world::OuterWorldMessage;
 
 use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
 
 use crate::{
     actor::{trgger_orb::TriggerOrbMessage, trigger::TriggerMessage}, engine::{
-        shared_systems::audio::Sound, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
+        world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}
     }, engine::transform::Transform
 };
 
@@ -34,6 +35,9 @@ pub enum FinalTrggerMessage
 
 pub struct FinalTrgger
 {
+    team_win_sound: Option<SoundBufferResource>,
+
+
     transform: Transform,
     id: Option<ActorID>,
     area: Area,
@@ -44,11 +48,9 @@ pub struct FinalTrgger
     level_transition_timer: f32,
     next_level_name: String,
     async_preload: bool,
-    async_load: bool,
-    async_load_command_sended: bool,
+    transition_finished: bool,
     /// The next world's descriptor, loading in the background (preload).
-    /// Later this will be a Resource System handle.
-    next_world: Option<JoinHandle<WorldDescriptor>>,
+    next_world: Option<Resource<WorldResource>>,
     pulse_timer: f32,
     orginal_visual_area_radius: f32,
     orginal_visual_area_color: Vec3,
@@ -60,19 +62,14 @@ impl FinalTrgger
 {
     fn start_loading_next_world(&mut self, shared: &mut EngineSharedSystems)
     {
-        let name = self.next_level_name.clone();
-        let gpu = shared.gpu.clone();
-
-        self.next_world = Some(shared.runtime.spawn(async move {
-            WorldDescriptor::load(&name, gpu).await
-        }));
+        self.next_world = Some(shared.resources.request_world(&self.next_level_name));
     }
 
     pub fn new(
+        resources: &mut ResourceRequests,
         transform: Transform,
         next_level_name: String,
         async_preload: bool,
-        async_load: bool,
         trigger_area_radius: f32,
         visual_area_radius: f32,
         visual_area_color: Vec3,
@@ -115,11 +112,14 @@ impl FinalTrgger
         coloring_areas.push(coloring_area);
 
         FinalTrgger {
+            team_win_sound: resources.sound(
+                crate::embedded_asset!("sounds/team_win.wav"), Retention::Session,
+            ),
+
             transform,
             next_level_name,
             async_preload,
-            async_load,
-            async_load_command_sended: false,
+            transition_finished: false,
             next_world: None,
             id: None,
             area,
@@ -144,6 +144,12 @@ const COLORING_AREA_COLOR_PULSE_MULT: f32 = 0.208;
 
 impl Actor for FinalTrgger
 {
+    fn on_added_to_world(&mut self, _: &mut WorldContext, shared: &mut EngineSharedSystems) {
+        if self.async_preload {
+            self.start_loading_next_world(shared);
+        }
+    }
+
     fn tick(
         &mut self,
         world: &mut WorldContext,
@@ -170,13 +176,6 @@ impl Actor for FinalTrgger
         self.coloring_areas[0].color = self.orginal_coloring_area_color * coloring_area_color_pulse_val;
 
 
-        if self.async_preload
-        {
-            self.start_loading_next_world(shared);
-            
-            self.async_preload = false;
-        }
-
         if self.is_triggered
         {
             self.level_transition_timer += delta;
@@ -196,32 +195,21 @@ impl Actor for FinalTrgger
                 );
             }
 
-            if self.level_transition_timer > 5.0 && !self.async_load_command_sended
+            if self.level_transition_timer > 5.0 && !self.transition_finished
             {
-                if self.next_world.is_none()
+                let handle = self.next_world.get_or_insert_with(|| shared.resources.request_world(&self.next_level_name));
+                match handle.try_read(|world| world.0.as_ref().expect("Loaded world descriptor").clone())
                 {
-                    self.start_loading_next_world(shared);
+                    std::task::Poll::Pending => return,
+                    std::task::Poll::Ready(Ok(descriptor)) => {
+                        messenger.send_to_outer_world(OuterWorldMessage::ReplaceRootWorld(descriptor));
+                    }
+                    std::task::Poll::Ready(Err(error)) => {
+                        log::error!("Could not load world '{}': {error:?}", self.next_level_name);
+                    }
                 }
-
-                let next_world_is_ready = self.next_world
-                    .as_ref()
-                    .is_some_and(|handle| handle.is_finished());
-
-                // async: wait (keep playing) until the descriptor is ready; sync: block until it's ready
-                if next_world_is_ready || !self.async_load
-                {
-                    let handle = self.next_world.take().unwrap();
-
-                    let descriptor = shared.runtime
-                        .block_on(handle)
-                        .expect("ERROR: next world loading task failed");
-
-                    messenger.send_to_outer_world(
-                        OuterWorldMessage::ReplaceRootWorld(Arc::new(descriptor))
-                    );
-
-                    self.async_load_command_sended = true;
-                }
+                self.transition_finished = true;
+                self.next_world = None;
             }
         }
     }
@@ -342,7 +330,7 @@ impl Actor for FinalTrgger
                                     self.is_triggered = true;
 
                                     audio_system.spawn_spatial_sound(
-                                        Sound::TeamWin,
+                                        &self.team_win_sound,
                                         1.0,
                                         1.0,
                                         false,

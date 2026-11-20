@@ -1,13 +1,16 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
 // The obstacles gun isn't given to players in the current game modes; kept for later.
 #![allow(dead_code)]
 
 
 
+
+
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::session_controller::send_to_session_controller;
 use crate::actor::session_controller::SessionControllerMessage;
 use crate::engine::shared_systems::net::Reliability;
@@ -26,10 +29,6 @@ use crate::{
         }, obstaclesgun_shot::ObstaclesGunShot
     },
     engine::{
-        shared_systems::audio::{
-            AudioSystem,
-            Sound
-        },
         world::messenger::{
             Command,
             CommandType,
@@ -56,6 +55,9 @@ use client_server_protocol::{
 };
 
 pub struct ObstaclesGun {
+    holegun_charging_sound: Option<SoundBufferResource>,
+    obstacle_gun_shot_sound: Option<SoundBufferResource>,
+
     shooted_on_this_charge: bool,
     is_charging: bool,
     // color: Vec3,
@@ -84,6 +86,7 @@ pub const ENERGY_SHOT_COST: f32 = 9.0;
 
 impl ObstaclesGun {
     pub fn new(
+        resources: &mut ResourceRequests,
         energy_gun_hole_size_mult: f32, 
         energy_gun_add_force_mult: f32, 
         energy_gun_damage_mult: f32, 
@@ -103,6 +106,13 @@ impl ObstaclesGun {
         energy_gun_restoring_speed *= 0.65;
 
         ObstaclesGun {
+            holegun_charging_sound: resources.sound(
+                crate::embedded_asset!("sounds/holegun_charging.wav"), Retention::Session,
+            ),
+            obstacle_gun_shot_sound: resources.sound(
+                crate::embedded_asset!("sounds/obstacle_gun_shot.wav"), Retention::Session,
+            ),
+
             shooted_on_this_charge: false,
             // color,
             shooted_from_pivot_point_dir,
@@ -146,7 +156,7 @@ impl ObstaclesGun {
             .pop().expect("Hole Gun doesn't have volume area on shoot");
 
         audio_system.spawn_non_spatial_sound(
-            Sound::ObstacleGunShot,
+            &self.obstacle_gun_shot_sound,
             (charging_energy*2.9/ (MAX_CHARGING_TIME*1.0)).powf(0.7).clamp(0.2, 1.94), 
             ((MAX_CHARGING_TIME*0.1+1.15) - charging_energy*0.5*0.15).clamp(1.0, 100.0) as f64,
             false,
@@ -319,7 +329,7 @@ impl Device for ObstaclesGun {
                     // start charging
 
                     self.charging_sound = Some(audio_system.spawn_non_spatial_sound(
-                        crate::engine::shared_systems::audio::Sound::HolegunCharging,
+                        &self.holegun_charging_sound,
                         0.38,
                         1.2,
                         false,

@@ -1,11 +1,11 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
 use crate::actor::main_player::constants::*;
 
 use client_server_protocol::Team;
+use fyrox_sound::buffer::SoundBufferResource;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{Mat4, Vec4};
@@ -15,6 +15,10 @@ use crate::{actor::session_controller::DEFAULT_TEAM, engine::{world::physics::{d
 use super::{PlayerScreenEffects, CROSSHAIR_DECREASING_SPEED, CROSSHAIR_INCREASING_SPEED, CROSSHAIR_MAX_SIZE, CROSSHAIR_MIN_SIZE, CROSSHAIR_ROTATION_SPEED};
 
 pub struct PlayerInnerState {
+    pub(super) switch_weapon_sound: Option<SoundBufferResource>,
+    pub(super) player_died_sound: Option<SoundBufferResource>,
+    pub(super) player_hited_sound: Option<SoundBufferResource>,
+
     pub team: Team,
     pub collider: KinematicCollider,
     pub collider_for_others: Vec<PlayersDollCollider>,
@@ -58,6 +62,7 @@ pub struct PlayerInnerState {
 
 impl PlayerInnerState {
     pub fn new(
+        resources: &mut ResourceRequests,
         transform: Transform,
         is_alive: bool,
         is_enable: bool,
@@ -84,6 +89,16 @@ impl PlayerInnerState {
         let after_death_timer =  MIN_RESPAWN_TIMER;
 
         PlayerInnerState {
+            switch_weapon_sound: resources.sound(
+                crate::embedded_asset!("sounds/switch_weapon.wav"), Retention::Session,
+            ),
+            player_died_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_died.wav"), Retention::Session,
+            ),
+            player_hited_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_hited.wav"), Retention::Session,
+            ),
+
             team: DEFAULT_TEAM,
             collider: KinematicCollider::new(
                 PLAYER_MAX_SPEED,
@@ -116,7 +131,7 @@ impl PlayerInnerState {
             jumped_to_y_on_current_action: false,
             player_previous_w_position: 0.0,
             saved_angle_of_rotation: Vec4::ZERO,
-            screen_effects: PlayerScreenEffects::default(),
+            screen_effects: PlayerScreenEffects::new(resources),
 
             rotating_around_w_sound_pitch: 1.0,
             rotating_around_w_sound_gain: 0.0,

@@ -1,8 +1,9 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
 use crate::engine::world::WorldContext;
@@ -34,10 +35,7 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        shared_systems::audio::{
-            AudioSystem,
-            Sound
-        }, shared_systems::input::ActionsFrameState, world::physics::{
+        shared_systems::input::ActionsFrameState, world::physics::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicColliderMessage,
             PhysicsSystem
@@ -62,6 +60,12 @@ use super::{
 
 
 pub struct PlayerFor2d3dExample {
+    rotating_sound: Option<SoundBufferResource>,
+    shifting_sound: Option<SoundBufferResource>,
+    player_get_scanned_sound: Option<SoundBufferResource>,
+    player_respawned_sound: Option<SoundBufferResource>,
+
+
     id: Option<ActorID>,
 
     inner_state: PlayerInnerState,
@@ -102,6 +106,26 @@ pub struct PlayerFor2d3dExample {
 }
 
 impl Actor for PlayerFor2d3dExample {
+    fn on_added_to_world(&mut self, _: &mut WorldContext, shared: &mut EngineSharedSystems) {
+        self.inner_state.rotating_around_w_sound_handle = shared.audio.spawn_non_spatial_sound(
+            &self.rotating_sound,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+
+        self.inner_state.shifting_along_w_sound_handle = shared.audio.spawn_non_spatial_sound(
+            &self.shifting_sound,
+            0.0,
+            1.0,
+            true,
+            false,
+            fyrox_sound::source::Status::Playing
+        );
+    }
+
 
     fn get_actor_as_controlled(&self) -> Option<&dyn ControlledActor> {
         Some(self)
@@ -197,7 +221,7 @@ impl Actor for PlayerFor2d3dExample {
                             PlayerMessage::YouWasScanned =>
                             {
                                 audio_system.spawn_non_spatial_sound(
-                                    Sound::PlayerGetScanned,
+                                    &self.player_get_scanned_sound,
                                     0.45,
                                     0.8,
                                     false,
@@ -1209,7 +1233,7 @@ impl PlayerFor2d3dExample {
 
     #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn new(
-        audio_system: &mut AudioSystem,
+        resources: &mut ResourceRequests,
         _blue_base_position: Vec4,
         _red_base_position: Vec4,
         red_spawn_points: Vec<Vec4>,
@@ -1225,11 +1249,11 @@ impl PlayerFor2d3dExample {
             getting_damage_screen_effect: 0.0,
             w_shift_coef: 0.0,
             w_shift_intensity: 0.0,
-            player_projections: PlayersProjections::new(),
+            player_projections: PlayersProjections::new(resources),
             player_projections_is_visible: false
         };
 
-        let w_scanner = WScanner::new();
+        let w_scanner = WScanner::new(resources);
 
         // let camera3d_rotation_zy = Mat4::from_rotation_x(-PI*0.1);
         // let camera3d_rotation_zx = Mat4::from_rotation_y(PI*0.6);
@@ -1263,39 +1287,36 @@ impl PlayerFor2d3dExample {
             )
         ];
 
-        let rotating_around_w_sound_handle = audio_system.spawn_non_spatial_sound(
-            Sound::RotatingAroundW,
-            0.0,
-            1.0,
-            true,
-            false,
-            fyrox_sound::source::Status::Playing
-        );
-
-        let shifting_along_w_sound_handle = audio_system.spawn_non_spatial_sound(
-            Sound::ShiftingAlongW,
-            0.0,
-            1.0,
-            true,
-            false,
-            fyrox_sound::source::Status::Playing
-        );
-        
         PlayerFor2d3dExample {
+            rotating_sound: resources.sound(
+                crate::embedded_asset!("sounds/rotating_around_w.wav"), Retention::Session,
+            ),
+            shifting_sound: resources.sound(
+                crate::embedded_asset!("sounds/shifting_along_w.wav"), Retention::Session,
+            ),
+            player_get_scanned_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_get_scanned.wav"), Retention::Session,
+            ),
+            player_respawned_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
+            ),
+
             id: None,
 
             inner_state: PlayerInnerState::new(
+                resources,
                 Transform::new(),
                 false,
                 false,
                 UP*0.6,
                 Vec4::ZERO,
-                rotating_around_w_sound_handle,
-                shifting_along_w_sound_handle,
+                None,
+                None,
             ),
             active_hands_slot: ActiveHandsSlot::Zero,
 
             hands_slot_0: Box::new(MachineGun::new(
+                resources,
                 MACHINEGUN_DAMAGE,
                 MACHINEGUN_ADD_FORCE, 
                 MACHINEGUN_HEAT_ADD_ON_SHOT, 
@@ -1308,6 +1329,7 @@ impl PlayerFor2d3dExample {
                 ),
             )),
             hands_slot_1: Some(Box::new(Shotgun::new(
+                resources,
                 Vec4::new(
                     0.0,
                     1.0,
@@ -1317,6 +1339,7 @@ impl PlayerFor2d3dExample {
                 true,
             ))),
             hands_slot_2: Some(Box::new(HoleGun::new(
+                resources,
                 ENERGY_GUN_HOLE_SIZE_MULT, 
                 ENERGY_GUN_ADD_FORCE_MULT, 
                 ENERGY_GUN_DAMAGE_MULT, 
@@ -1558,7 +1581,7 @@ impl ControlledActor for PlayerFor2d3dExample
         self.inner_state.restore_w_shift_and_rotate_values();
 
         audio_system.spawn_non_spatial_sound(
-            Sound::PlayerRespawned,
+            &self.player_respawned_sound,
             1.0,
             1.0,
             false,

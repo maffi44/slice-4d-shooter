@@ -1,8 +1,9 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::session_controller::send_to_session_controller;
 use crate::actor::session_controller::SessionControllerMessage;
 use crate::engine::shared_systems::net::Reliability;
@@ -17,7 +18,6 @@ use crate::{
         }, shotgun_shot_source::ShotgunShotSource, ActorID, ActorWrapper
     },
     engine::{
-        shared_systems::audio::AudioSystem,
         world::messenger::{
             Command,
             CommandType,
@@ -70,6 +70,9 @@ pub const SHOTGUN_SHOTS_SPREAD_ALONG_W: f32 = 0.175;
 const SHOTGUN_COOLING_SPEED: f32 = 40.0;
 
 pub struct Shotgun {
+    shotgun_shot_sound: Option<SoundBufferResource>,
+    shotgun_shot_impact_sound: Option<SoundBufferResource>,
+
     temperature: f32,
     shooted_from_pivot_point_dir: Vec4,
     this_is_shotgun_for_2d_3d_example: bool,
@@ -77,12 +80,20 @@ pub struct Shotgun {
 
 impl Shotgun {
     pub fn new(
+        resources: &mut ResourceRequests,
         shooted_from_pivot_point_dir: Vec4,
         this_is_shotgun_for_2d_3d_example: bool,
 
     ) -> Self {
 
         Shotgun {
+            shotgun_shot_sound: resources.sound(
+                crate::embedded_asset!("sounds/shotgun_shot.wav"), Retention::Session,
+            ),
+            shotgun_shot_impact_sound: resources.sound(
+                crate::embedded_asset!("sounds/shotgun_shot_impact.wav"), Retention::Session,
+            ),
+
             temperature: 0.0,
             shooted_from_pivot_point_dir,
             this_is_shotgun_for_2d_3d_example
@@ -116,6 +127,8 @@ impl Shotgun {
         let direction = player.transform.get_rotation() * FORWARD;
 
         let shotgun_shot_source = ShotgunShotSource::new(
+                &self.shotgun_shot_sound,
+                &self.shotgun_shot_impact_sound,
             real_start_position,
             visible_start_position,
             direction,

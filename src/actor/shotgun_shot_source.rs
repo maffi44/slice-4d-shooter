@@ -1,8 +1,8 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::audio::AudioSystem;
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 
@@ -11,7 +11,7 @@ use glam::Vec4;
 use fyrox_core::rand::{Rng, SeedableRng};
 use fyrox_core::rand::prelude::StdRng;
 
-use crate::engine::shared_systems::audio::AudioSystem;
+
 use crate::engine::world::messenger::{Command, CommandType, Messenger};
 use crate::engine::world::physics::PhysicsSystem;
 use crate::engine::shared_systems::render::VisualElement;
@@ -40,6 +40,8 @@ pub struct ShotgunShotSource
 impl ShotgunShotSource
 {
     pub fn new(
+        shot_sound: &Option<SoundBufferResource>,
+        impact_sound: &Option<SoundBufferResource>,
         real_start_position: Vec4,
         visible_start_position: Vec4,
         direction: Vec4,
@@ -57,7 +59,7 @@ impl ShotgunShotSource
         if is_replicated
         {
             audio_system.spawn_spatial_sound(
-                crate::engine::shared_systems::audio::Sound::ShotgunShot,
+                shot_sound,
                 0.25,
                 1.0,
                 false,
@@ -72,7 +74,7 @@ impl ShotgunShotSource
         else
         {
             audio_system.spawn_non_spatial_sound(
-                crate::engine::shared_systems::audio::Sound::ShotgunShot,
+                shot_sound,
                 0.36,
                 1.0,
                 false,
@@ -170,6 +172,7 @@ impl ShotgunShotSource
             };
 
             let shotgun_laser_shot = ShotgunLaserShot::new(
+                impact_sound.clone(),
                 real_start_position,
                 visible_start_position,
                 possible_destination,

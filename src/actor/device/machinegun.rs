@@ -1,8 +1,9 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::session_controller::send_to_session_controller;
 use crate::actor::session_controller::SessionControllerMessage;
 use crate::engine::shared_systems::net::Reliability;
@@ -23,7 +24,6 @@ use crate::{
         SpecificActorMessage
     },
     engine::{
-        shared_systems::audio::AudioSystem,
         world::messenger::{
             Command,
             CommandType,
@@ -56,6 +56,8 @@ const SHOOTING_SPREAD_DCR_SPEED: f32 = 15.0;
 const CROSSHAIR_INCREASE_ON_SHOOT: f32 = 0.2;
 
 pub struct MachineGun {
+    machinegun_shot_sound: Option<SoundBufferResource>,
+
     temperature: f32,
     shooting_spread: f32,
     time_from_prev_shot: f32,
@@ -70,6 +72,7 @@ pub struct MachineGun {
 
 impl MachineGun {
     pub fn new(
+        resources: &mut ResourceRequests,
         machinegun_damage: f32,
         machinegun_add_force: f32, 
         machinegun_heat_add_on_shot: f32, 
@@ -79,6 +82,10 @@ impl MachineGun {
     ) -> Self {
 
         MachineGun {
+            machinegun_shot_sound: resources.sound(
+                crate::embedded_asset!("sounds/machinegun_shot.wav"), Retention::Session,
+            ),
+
             temperature: 0.0,
             shooting_spread: 0.0,
             time_from_prev_shot: 0.0,
@@ -109,7 +116,7 @@ impl MachineGun {
         messenger: &mut Messenger,
     ) {
         audio_system.spawn_non_spatial_sound(
-            crate::engine::shared_systems::audio::Sound::MachinegunShot,
+            &self.machinegun_shot_sound,
             0.33,
             1.1,
             false,

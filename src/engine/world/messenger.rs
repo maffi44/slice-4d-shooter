@@ -210,7 +210,7 @@ impl Messenger
     }
 
 
-    /// Calls `on_world_started` on every actor (the end of `World::new`).
+    /// Calls `on_world_started` on every actor during world activation.
     pub fn start_world(
         &mut self,
         actors: &mut Actors,

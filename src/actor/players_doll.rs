@@ -1,8 +1,9 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-
-
+use crate::engine::shared_systems::audio::AudioSystem;
+use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
 use crate::engine::world::WorldContext;
@@ -23,7 +24,7 @@ use client_server_protocol::{
 
 use crate::{
     actor::{main_player, obstaclesgun_shot::ObstaclesGunShot}, engine::{
-        shared_systems::audio::{AudioSystem, Sound}, world::messenger::{
+        world::messenger::{
             Command,
             CommandType,
             Messenger
@@ -79,6 +80,19 @@ impl PlayerDollInputState {
 
 
 pub struct PlayerDoll {
+    anti_projection_mode_enabled_sound: Option<SoundBufferResource>,
+    holegun_charging_sound: Option<SoundBufferResource>,
+    holegun_shot_sound: Option<SoundBufferResource>,
+    machinegun_shot_sound: Option<SoundBufferResource>,
+    obstacle_gun_shot_sound: Option<SoundBufferResource>,
+    player_death_signal_sound: Option<SoundBufferResource>,
+    player_hit_signal_sound: Option<SoundBufferResource>,
+    player_respawned_sound: Option<SoundBufferResource>,
+    scanner_sound_sound: Option<SoundBufferResource>,
+    shotgun_shot_sound: Option<SoundBufferResource>,
+    shotgun_shot_impact_sound: Option<SoundBufferResource>,
+
+
     team: Team,
     id: Option<ActorID>,
     transform: Transform,
@@ -210,7 +224,7 @@ impl PlayerDoll {
         player_sphere_radius: f32,
         transform: Transform,
         is_alive: bool,
-        _audio_system: &mut AudioSystem,
+        resources: &mut ResourceRequests,
         team: Team,
         player_doll_for_2d_3d_example: bool,
     ) -> Self {
@@ -278,6 +292,40 @@ impl PlayerDoll {
         };
 
         PlayerDoll {
+            anti_projection_mode_enabled_sound: resources.sound(
+                crate::embedded_asset!("sounds/anti_projection_mode_enabled.wav"), Retention::Session,
+            ),
+            holegun_charging_sound: resources.sound(
+                crate::embedded_asset!("sounds/holegun_charging.wav"), Retention::Session,
+            ),
+            holegun_shot_sound: resources.sound(
+                crate::embedded_asset!("sounds/holegun_shot.wav"), Retention::Session,
+            ),
+            machinegun_shot_sound: resources.sound(
+                crate::embedded_asset!("sounds/machinegun_shot.wav"), Retention::Session,
+            ),
+            obstacle_gun_shot_sound: resources.sound(
+                crate::embedded_asset!("sounds/obstacle_gun_shot.wav"), Retention::Session,
+            ),
+            player_death_signal_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_death_signal.wav"), Retention::Session,
+            ),
+            player_hit_signal_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_hit_signal.wav"), Retention::Session,
+            ),
+            player_respawned_sound: resources.sound(
+                crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
+            ),
+            scanner_sound_sound: resources.sound(
+                crate::embedded_asset!("sounds/scanner_sound.wav"), Retention::Session,
+            ),
+            shotgun_shot_sound: resources.sound(
+                crate::embedded_asset!("sounds/shotgun_shot.wav"), Retention::Session,
+            ),
+            shotgun_shot_impact_sound: resources.sound(
+                crate::embedded_asset!("sounds/shotgun_shot_impact.wav"), Retention::Session,
+            ),
+
             input_state,
             weapon_shooting_point,
             id: Some(id),
@@ -342,7 +390,7 @@ impl PlayerDoll {
         );
 
         audio_system.spawn_spatial_sound(
-            Sound::PlayerDeathSignal,
+            &self.player_death_signal_sound,
             0.8,
             1.5,
             false,
@@ -355,7 +403,7 @@ impl PlayerDoll {
         );
 
         audio_system.spawn_non_spatial_sound(
-            Sound::PlayerDeathSignal,
+            &self.player_death_signal_sound,
             1.0,
             1.3,
             false,
@@ -395,7 +443,7 @@ impl PlayerDoll {
         messenger: &mut Messenger,
     ) {
         audio_system.spawn_spatial_sound(
-            Sound::PlayerRespawned,
+            &self.player_respawned_sound,
             1.0,
             1.0,
             false,
@@ -741,7 +789,7 @@ impl Actor for PlayerDoll {
                                 self.anti_projection_mode_enabled_timer = main_player::ANTI_PROJECTION_MODE_DURATION;
 
                                 audio_system.spawn_spatial_sound(
-                                    crate::engine::shared_systems::audio::Sound::AntiProjectionModeEnabledSound,
+                                    &self.anti_projection_mode_enabled_sound,
                                     0.68,
                                     1.0,
                                     false,
@@ -861,7 +909,7 @@ impl Actor for PlayerDoll {
                                     );
                                     
                                     audio_system.spawn_non_spatial_sound(
-                                        Sound::PlayerHitSignal,
+                                        &self.player_hit_signal_sound,
                                         0.14.lerp(0.22, (damage as f32 / PLAYER_MAX_HP as f32).clamp(0.0, 1.0)),
                                         1.0,
                                         false,
@@ -904,7 +952,7 @@ impl Actor for PlayerDoll {
                                 );
 
                                 audio_system.spawn_spatial_sound(
-                                    crate::engine::shared_systems::audio::Sound::ScannerSound,
+                                    &self.scanner_sound_sound,
                                     0.7,
                                     1.0,
                                     false,
@@ -928,6 +976,8 @@ impl Actor for PlayerDoll {
                                 let shooted_from = self.transform.get_position() + self.transform.get_rotation() * self.weapon_shooting_point;
                         
                                 let shotgun_shot_source = ShotgunShotSource::new(
+                &self.shotgun_shot_sound,
+                &self.shotgun_shot_impact_sound,
                                     start_pos,
                                     shooted_from,
                                     shot_dir,
@@ -990,7 +1040,7 @@ impl Actor for PlayerDoll {
                                     self.volume_area.push(volume_area);
 
                                     self.holegun_charge_sound = Some(audio_system.spawn_spatial_sound(
-                                        Sound::HolegunCharging,
+                                        &self.holegun_charging_sound,
                                         0.08,
                                         1.0,
                                         false,
@@ -1038,7 +1088,7 @@ impl Actor for PlayerDoll {
                                 }
 
                                 audio_system.spawn_spatial_sound(
-                                    Sound::HolegunShot,
+                                    &self.holegun_shot_sound,
                                     0.08,
                                     1.0,
                                     false,
@@ -1092,7 +1142,7 @@ impl Actor for PlayerDoll {
                                 }
 
                                 audio_system.spawn_spatial_sound(
-                                    Sound::ObstacleGunShot,
+                                    &self.obstacle_gun_shot_sound,
                                     0.9,
                                     0.9,
                                     false,
@@ -1146,7 +1196,7 @@ impl Actor for PlayerDoll {
                                 }
 
                                 audio_system.spawn_spatial_sound(
-                                    Sound::HolegunShot,
+                                    &self.holegun_shot_sound,
                                     0.08,
                                     1.0,
                                     false,
@@ -1189,7 +1239,7 @@ impl Actor for PlayerDoll {
                                 let shooted_from = self.transform.get_position() + self.transform.get_rotation() * self.weapon_shooting_point;
 
                                 audio_system.spawn_spatial_sound(
-                                    Sound::MachinegunShot,
+                                    &self.machinegun_shot_sound,
                                     0.17,
                                     1.0,
                                     false,

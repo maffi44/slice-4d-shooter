@@ -13,3 +13,11 @@ Technical distinction raised during documentation: `Arc`/resource-handle cloning
 ## 2026-11-16 — Startup follow-up
 
 The author reopened application startup after accepting initial refactoring commit `caea9ec`. [Startup context](../nonblocking-engine-startup/) records research on parallel CPU/GPU preparation, dependent pipeline creation and event-driven readiness. The two tasks share the preparation boundary; no resource ownership alternative above has been silently selected.
+
+## 2026-11-19 — actor descriptors approved
+
+✅ Reusable factories and preloaded dependencies supersede the consume-once world and cloneable-actor proposals. See the [Resource System](../resource-system/) implementation history.
+
+## 2026-11-20 — spare actor set replaces factories
+
+✅ Author review superseded the actor descriptor factories. The map keeps parsed actor inputs and a single prepared set. Its public method owns the refill and activation sequence. See the [Resource System](../resource-system/) review and verification log.
