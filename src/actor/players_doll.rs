@@ -98,7 +98,7 @@ pub struct PlayerDoll {
     transform: Transform,
     target_transform: Transform,
     input_state: PlayerDollInputState,
-    // masters_peer_id: PeerId,
+    peer_id: ActorID,
     weapon_shooting_point: Vec4,
     is_alive: bool,
 
@@ -329,6 +329,7 @@ impl PlayerDoll {
             input_state,
             weapon_shooting_point,
             id: Some(id),
+            peer_id: id,
             target_transform: transform.clone(),
             transform,
             charging_time: 0.0,
@@ -657,6 +658,11 @@ impl PlayerDoll {
 
 
 impl Actor for PlayerDoll {
+    fn on_added_to_world(&mut self, world: &mut WorldContext, _: &mut EngineSharedSystems) {
+        let available = FlagMessage::CarrierAvailable(self.peer_id).from_actor(self.id.expect("PlayerDoll has no ActorID"));
+        world.messenger.send_broadcast_message(available);
+    }
+
     fn recieve_message(
         &mut self,
         message: &Message,
@@ -1293,6 +1299,11 @@ impl Actor for PlayerDoll {
                     {
                         match message
                         {
+                            FlagMessage::FindCarrier(peer) if self.peer_id == *peer =>
+                            {
+                                let available = FlagMessage::CarrierAvailable(*peer).from_actor(self.id.expect("Player has no ActorID"));
+                                messenger.send_direct_message(from, available);
+                            }
                             FlagMessage::GiveMeTargetPosition =>
                             {
                                 messenger.send_direct_message(

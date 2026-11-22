@@ -106,13 +106,24 @@ impl Messenger
         self.queue.push_back(Queued::Command(command));
     }
 
-    /// The queued broadcast messages, oldest first (for tests of id-change notifications).
+    /// The queued broadcast messages, oldest first (for tests of actor notifications).
     #[cfg(test)]
-    pub(super) fn queued_broadcast_messages(&self) -> impl Iterator<Item = &Message>
+    pub(crate) fn queued_broadcast_messages(&self) -> impl Iterator<Item = &Message>
     {
         self.queue.iter().filter_map(|item| match item
         {
             Queued::Broadcast(message) => Some(message),
+            _ => None,
+        })
+    }
+
+    /// The queued direct messages with their recipients, oldest first (for tests of actor requests).
+    #[cfg(test)]
+    pub(crate) fn queued_direct_messages(&self) -> impl Iterator<Item = (ActorID, &Message)>
+    {
+        self.queue.iter().filter_map(|item| match item
+        {
+            Queued::Direct(to, message) => Some((*to, message)),
             _ => None,
         })
     }

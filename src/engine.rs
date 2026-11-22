@@ -163,6 +163,8 @@ impl Engine
             {
                 self.set_root_world(descriptor);
             }
+            // Only `QuitApplication` exits; a finished root world keeps running
+            // (issues/programming/root-world-finished/).
             OuterWorldMessage::WorldFinished => {}
             OuterWorldMessage::Specific(_) => {}
         }
@@ -208,5 +210,41 @@ impl Engine
 
             self.shared.global_settings.save();
         }
+    }
+}
+
+
+#[cfg(test)]
+pub(crate) mod tests
+{
+    use super::*;
+
+    pub(crate) fn headless_map() -> (EngineSharedSystems, Arc<WorldDescriptor>)
+    {
+        use shared_systems::resources::ResourceSystem;
+        use world::world_descriptor::WorldPreparation;
+
+        let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+        let resources = Arc::new(ResourceSystem::new(true));
+        let map = WorldPreparation::load("capture_the_flag_map", resources.clone());
+        let descriptor = Arc::new(runtime.block_on(map).unwrap().finish(None));
+        resources.register_world_loader(None, runtime.handle().clone());
+        resources.register_initial_world("capture_the_flag_map", descriptor.clone());
+        let shared = EngineSharedSystems::new(true, runtime, Default::default(), resources);
+        (shared, descriptor)
+    }
+
+    #[test]
+    fn root_world_finished_keeps_running_and_quit_application_exits()
+    {
+        let (shared, descriptor) = headless_map();
+        let mut engine = Engine::new(LoadedEngine { shared, descriptor }, None);
+
+        engine.handle_outer_world_message(OuterWorldMessage::WorldFinished);
+        assert!(!engine.quit_requested());
+        assert!(engine.root_world.is_some());
+
+        engine.handle_outer_world_message(OuterWorldMessage::QuitApplication);
+        assert!(engine.quit_requested());
     }
 }

@@ -172,7 +172,7 @@ impl Actor for PlayerFor2d3dExample {
                         self.inner_state.transform.increment_position(*increment);
                     },
                     CommonActorsMessage::IWasChangedMyId(_new_id) => {}
-                    CommonActorsMessage::ClientDisconnectedFromGameServer => {}
+                    CommonActorsMessage::ClientDisconnectedFromGameServer => { self.inner_state.peer_id = None; }
                 }
             }
 
@@ -358,7 +358,12 @@ impl Actor for PlayerFor2d3dExample {
                                 }
                             }
 
-                            PlayerMessage::ChangeYourId(_) => {}
+                            PlayerMessage::ChangeYourId(new_id) =>
+                            {
+                                self.inner_state.peer_id = Some(*new_id);
+                                let available = FlagMessage::CarrierAvailable(*new_id).from_actor(self.id.expect("Player has no ActorID"));
+                                messenger.send_broadcast_message(available);
+                            }
 
 
                             PlayerMessage::NewPeerConnected(peer_id) =>
@@ -469,6 +474,11 @@ impl Actor for PlayerFor2d3dExample {
                     {
                         match message
                         {
+                            FlagMessage::FindCarrier(peer) if self.inner_state.peer_id == Some(*peer) =>
+                            {
+                                let available = FlagMessage::CarrierAvailable(*peer).from_actor(self.id.expect("Player has no ActorID"));
+                                messenger.send_direct_message(from, available);
+                            }
                             FlagMessage::GiveMeTargetPosition =>
                             {
                                 match self.inner_state.team {

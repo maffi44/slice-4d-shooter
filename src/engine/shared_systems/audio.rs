@@ -79,13 +79,15 @@ impl AudioSystem {
         is_play_once: bool,
         status: Status,
     ) -> Option<Handle<SoundSource>> {
-        let builder = SoundSourceBuilder::new()
-            .with_status(status)
-            .with_gain(gain * self.master_volume)
-            .with_play_once(is_play_once)
-            .with_pitch(pitch)
-            .with_looping(looping);
-        self.spawn_source(0, builder, sound_buffer.as_ref()?)
+        let master_volume = self.master_volume;
+        self.spawn_source(0, sound_buffer.as_ref()?, || {
+            SoundSourceBuilder::new()
+                .with_status(status)
+                .with_gain(gain * master_volume)
+                .with_play_once(is_play_once)
+                .with_pitch(pitch)
+                .with_looping(looping)
+        })
     }
 
     pub fn spawn_spatial_sound(
@@ -101,29 +103,34 @@ impl AudioSystem {
         rolloff_factor: f32,
         max_distance: f32,
     ) -> Option<Handle<SoundSource>> {
-        let position = Vector3::<f32>::new(position.x, position.y + position.w, position.z);
-        let builder = SoundSourceBuilder::new()
-            .with_status(status)
-            .with_gain(gain * self.master_volume)
-            .with_play_once(is_play_once)
-            .with_pitch(pitch)
-            .with_looping(looping)
-            .with_position(position)
-            .with_radius(radius)
-            .with_rolloff_factor(rolloff_factor)
-            .with_max_distance(max_distance);
-        self.spawn_source(1, builder, sound_buffer.as_ref()?)
+        let master_volume = self.master_volume;
+        self.spawn_source(1, sound_buffer.as_ref()?, || {
+            let position = Vector3::<f32>::new(position.x, position.y + position.w, position.z);
+            SoundSourceBuilder::new()
+                .with_status(status)
+                .with_gain(gain * master_volume)
+                .with_play_once(is_play_once)
+                .with_pitch(pitch)
+                .with_looping(looping)
+                .with_position(position)
+                .with_radius(radius)
+                .with_rolloff_factor(rolloff_factor)
+                .with_max_distance(max_distance)
+        })
     }
 
+    /// `make_builder` runs only when playback is possible: without a sound engine (headless, or the
+    /// device failed to open) the call returns `None` before a builder is constructed, because
+    /// `SoundSourceBuilder::new` allocates (issues/programming/headless-sound-builder-allocation/).
     fn spawn_source(
         &mut self,
         context: usize,
-        builder: SoundSourceBuilder,
         buffer: &Resource<SoundBuffer>,
+        make_builder: impl FnOnce() -> SoundSourceBuilder,
     ) -> Option<Handle<SoundSource>> {
         let engine = self.sound_engine.as_ref()?;
         let pending = buffer.is_loading();
-        let source = builder
+        let source = make_builder()
             .with_opt_buffer((!pending).then(|| buffer.clone()))
             .build()
             .ok()?;
@@ -485,5 +492,32 @@ impl AudioSystem {
             pending_buffers: Vec::new(),
             master_volume: 0.7,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+    use crate::engine::shared_systems::resources::{ResourceSystem, Retention};
+
+    #[test]
+    fn unavailable_playback_returns_before_building_a_source()
+    {
+        let resources = ResourceSystem::new(false);
+        let buffer = resources.requests()
+            .sound(crate::embedded_asset!("sounds/player_explosion.wav"), Retention::WhileUsed)
+            .expect("a sound handle when sound is enabled");
+        let mut audio = AudioSystem::new(true);
+
+        let mut built = false;
+        assert!(audio.spawn_source(0, &buffer, || { built = true; SoundSourceBuilder::new() }).is_none());
+        assert!(!built, "no builder without a sound engine");
+
+        // An absent buffer returns before `spawn_source` and before any spatial computation.
+        assert!(audio.spawn_non_spatial_sound(&None, 1.0, 1.0, false, true, Status::Playing).is_none());
+        assert!(audio.spawn_spatial_sound(&None, 1.0, 1.0, false, true, Status::Playing, Vec4::ZERO, 1.0, 1.0, 1.0).is_none());
+        assert!(audio.spawn_spatial_sound(&Some(buffer.clone()), 1.0, 1.0, false, true, Status::Playing, Vec4::ZERO, 1.0, 1.0, 1.0).is_none());
+        assert!(audio.pending_buffers.is_empty());
     }
 }

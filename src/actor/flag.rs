@@ -30,12 +30,25 @@ pub enum FlagMessage
 {
     SetFlagStatus(Team, FlagStatus),
     YouInteractingWithFlag(Team, FlagStatus),
+    /// A flag asks the player with this session peer ID to identify its local actor.
+    FindCarrier(ActorID),
+    /// Sent by a player from its local actor ID, on spawn or in reply to FindCarrier.
+    CarrierAvailable(ActorID),
     GiveMeTargetPosition,
     SetTargetPosition(Vec4),
-    PlayerDied(
-        // true if dead outside of map (in space)
-        bool
-    ),
+    PlayerDied { peer_id: Option<ActorID>, in_space: bool },
+}
+
+impl FlagMessage
+{
+    pub(super) fn from_actor(self, from: ActorID) -> Message
+    {
+        Message {
+            from,
+            remote_sender: false,
+            message: MessageType::SpecificActorMessage(SpecificActorMessage::FlagMessage(self)),
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -104,6 +117,8 @@ pub struct Flag
     transfrom_of_the_base: Transform,
     id: Option<ActorID>,
     status: FlagStatus,
+    // Captured stores the server peer ID. Only a matching player can supply the local ID.
+    carrier_actor_id: Option<ActorID>,
     owned_by_team: Team,
     area: Area,
     visual_areas: Vec<VolumeArea>,
@@ -206,7 +221,8 @@ impl Flag
             target_position: transform_of_the_base.get_position(),
             transfrom_of_the_base: transform_of_the_base,
             id: None,
-            status:FlagStatus::OnTheBase,
+            status: FlagStatus::OnTheBase,
+            carrier_actor_id: None,
             owned_by_team: flag_owned_by_team,
             next_target_swing_position_in_secs: TIME_TO_CHANGE_NEXT_TARGET_SWING_POSITION,
             area,
@@ -265,6 +281,7 @@ impl Flag
             Status::Playing,
         );
         
+        self.carrier_actor_id = None;
         self.status = FlagStatus::OnTheBase;
     }
 
@@ -290,6 +307,7 @@ impl Flag
                 1.5,
             ]
         );
+        self.carrier_actor_id = None;
         self.status = FlagStatus::Missed(pos);
     }
 
@@ -302,18 +320,20 @@ impl Flag
     {
         self.area.clear_containing_colliders_list();
         
-        messenger.send_direct_message(
-            captured_by,
-            Message {
-                from: self.id.expect("Flag has no ActorID"),
-                remote_sender: false,
-                message: MessageType::SpecificActorMessage(
-                    SpecificActorMessage::FlagMessage(
-                        FlagMessage::GiveMeTargetPosition
-                    )
-                )
-            }
-        );
+        if !matches!(self.status, FlagStatus::Captured(peer) if peer == captured_by)
+        {
+            self.carrier_actor_id = None;
+        }
+        self.status = FlagStatus::Captured(captured_by);
+        if self.carrier_actor_id.is_some()
+        {
+            self.request_target_position_from_carrier(messenger);
+        }
+        else
+        {
+            let query = FlagMessage::FindCarrier(captured_by).from_actor(self.id.expect("Flag has no ActorID"));
+            messenger.send_broadcast_message(query);
+        }
 
         effects::spawn_wave(
             messenger,
@@ -346,8 +366,64 @@ impl Flag
             1.0,
             15.0
         );
+    }
 
-        self.status = FlagStatus::Captured(captured_by);
+    /// Follows the carrier when the world renumbers it, without replaying capture effects or
+    /// notifying the server. On an id collision the displaced actor's notification is delivered
+    /// first, so each notification is matched against the id the carrier had at that point.
+    fn on_actor_changed_id(&mut self, old_id: ActorID, new_id: ActorID)
+    {
+        if let Some(carrier) = &mut self.carrier_actor_id
+        {
+            if *carrier == old_id
+            {
+                *carrier = new_id;
+            }
+        }
+    }
+
+    fn request_target_position_from_carrier(&self, messenger: &mut Messenger)
+    {
+        if let Some(carrier) = self.carrier_actor_id
+        {
+            messenger.send_direct_message(
+                carrier,
+                Message {
+                    from: self.get_id().expect("Flag have not ActorID"),
+                    remote_sender: false,
+                    message: MessageType::SpecificActorMessage(
+                        SpecificActorMessage::FlagMessage(
+                            FlagMessage::GiveMeTargetPosition
+                        )
+                    )
+                }
+            );
+        }
+    }
+
+    /// The carrier's death drops the flag (reported to the server through the session controller).
+    fn on_player_died(&self, from: ActorID, peer_id: Option<ActorID>, in_space: bool, messenger: &mut Messenger)
+    {
+        let is_carrier = match self.carrier_actor_id
+        {
+            Some(id) => id == from,
+            // A death can already be queued when the flag sends its first lookup.
+            None => matches!(self.status, FlagStatus::Captured(peer) if Some(peer) == peer_id),
+        };
+        if is_carrier
+        {
+            send_to_session_controller(
+                messenger,
+                self.get_id().expect("Flag have not ActorID"),
+                SessionControllerMessage::SendToServer(
+                    NetMessageToServer::DropedFlag(
+                        self.owned_by_team,
+                        self.get_transform().get_position().to_array(),
+                        in_space,
+                    ),
+                ),
+            );
+        }
     }
 }
 
@@ -441,25 +517,7 @@ impl Actor for Flag
 
         self.transform.set_position(current_flag_position);
 
-        match self.status
-        {
-            FlagStatus::Captured(id) =>
-            {
-                messenger.send_direct_message(
-                    id,
-                    Message {
-                        from: self.get_id().expect("Flag have not ActorID"),
-                        remote_sender: false,
-                        message: MessageType::SpecificActorMessage(
-                            SpecificActorMessage::FlagMessage(
-                                FlagMessage::GiveMeTargetPosition
-                            )
-                        )
-                    }
-                );
-            }
-            _ => {}
-        }
+        self.request_target_position_from_carrier(messenger);
 
         self.wave_tick_timer += delta;
 
@@ -590,29 +648,9 @@ impl Actor for Flag
                     {
                         match message
                         {
-                            FlagMessage::PlayerDied(in_space) =>
+                            FlagMessage::PlayerDied { peer_id, in_space } =>
                             {
-                                match self.status
-                                {
-                                    FlagStatus::Captured(id) =>
-                                    {
-                                        if from == id
-                                        {
-                                            send_to_session_controller(
-                                                messenger,
-                                                self.get_id().expect("Player have not ActorID"),
-                                                SessionControllerMessage::SendToServer(
-                                                    NetMessageToServer::DropedFlag(
-                                                        self.owned_by_team,
-                                                        self.get_transform().get_position().to_array(),
-                                                        *in_space,
-                                                    ),
-                                                ),
-                                            );
-                                        }
-                                    }
-                                    _ => {}
-                                }
+                                self.on_player_died(from, *peer_id, *in_space, messenger);
                             }
 
                             FlagMessage::SetFlagStatus(team, status) =>
@@ -637,21 +675,22 @@ impl Actor for Flag
                                     }
                                 }
                             }
-                            FlagMessage::SetTargetPosition(position) =>
+                            FlagMessage::CarrierAvailable(peer) =>
                             {
-                                match self.status
+                                if self.carrier_actor_id != Some(from)
+                                    && matches!(self.status, FlagStatus::Captured(expected) if expected == *peer)
                                 {
-                                    FlagStatus::Captured(id) =>
-                                    {
-                                        if id == from
-                                        {
-                                            self.target_position = *position;
-                                        }
-                                    }
-                                    _ => {}
+                                    self.carrier_actor_id = Some(from);
+                                    self.request_target_position_from_carrier(messenger);
                                 }
                             }
-                            
+                            FlagMessage::SetTargetPosition(position) =>
+                            {
+                                if self.carrier_actor_id == Some(from)
+                                {
+                                    self.target_position = *position;
+                                }
+                            }
                             _ => {}
                         }
                     }
@@ -816,6 +855,10 @@ impl Actor for Flag
                     {
                         self.set_flag_on_base_status(audio_system, messenger);
                     }
+                    CommonActorsMessage::IWasChangedMyId(new_id) =>
+                    {
+                        self.on_actor_changed_id(from, *new_id);
+                    }
                     _ => {}
                 }
             }
@@ -859,3 +902,228 @@ impl Actor for Flag
     }
 }
 
+
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+    use crate::{
+        actor::{move_w_bonus::MoveWBonusSpot, ActorWrapper},
+        engine::{shared_systems::resources::ResourceSystem, world::actors::Actors},
+    };
+
+    const FLAG_ID: ActorID = 5;
+    const CARRIER: ActorID = 10;
+    const OTHER: ActorID = 20;
+
+    fn flag_with_status(status: FlagStatus) -> Flag
+    {
+        let resources = ResourceSystem::new(true);
+        let mut flag = Flag::new(&mut resources.requests(), Team::Red, Transform::new());
+        flag.set_id(FLAG_ID);
+        flag.status = status;
+        if let FlagStatus::Captured(id) = status { flag.carrier_actor_id = Some(id); }
+        flag
+    }
+
+    /// A world holding the carrier and another actor.
+    fn world() -> (Actors, Messenger)
+    {
+        let mut actors = Actors::new();
+        let mut messenger = Messenger::new();
+
+        for id in [CARRIER, OTHER]
+        {
+            let mut actor = ActorWrapper::MoveWBonusSpot(MoveWBonusSpot::new(Transform::new(), 0));
+            actor.set_id(id);
+            actors.insert(actor, &mut messenger);
+        }
+
+        (actors, messenger)
+    }
+
+    /// Delivers the world's queued id-change notifications to the flag in sending order.
+    fn deliver_id_changes(flag: &mut Flag, messenger: &Messenger)
+    {
+        for message in messenger.queued_broadcast_messages()
+        {
+            if let MessageType::CommonActorsMessages(CommonActorsMessage::IWasChangedMyId(new_id)) = message.message
+            {
+                flag.on_actor_changed_id(message.from, new_id);
+            }
+        }
+    }
+
+    fn position_request_recipients(messenger: &Messenger) -> Vec<ActorID>
+    {
+        messenger.queued_direct_messages()
+            .filter(|(_, message)| matches!(
+                message.message,
+                MessageType::SpecificActorMessage(SpecificActorMessage::FlagMessage(FlagMessage::GiveMeTargetPosition))
+            ))
+            .map(|(to, _)| to)
+            .collect()
+    }
+
+    fn flag_drop_reports(messenger: &Messenger) -> usize
+    {
+        messenger.queued_broadcast_messages()
+            .filter(|message| matches!(
+                message.message,
+                MessageType::SpecificActorMessage(SpecificActorMessage::SessionControllerMessage(
+                    SessionControllerMessage::SendToServer(NetMessageToServer::DropedFlag(..))
+                ))
+            ))
+            .count()
+    }
+
+    /// The next position request and the death check refer to `expected` only.
+    fn assert_follows(flag: &Flag, expected: ActorID, stale: ActorID)
+    {
+        assert_eq!(flag.carrier_actor_id, Some(expected));
+
+        let mut messenger = Messenger::new();
+        flag.request_target_position_from_carrier(&mut messenger);
+        assert_eq!(position_request_recipients(&messenger), vec![expected]);
+
+        flag.on_player_died(stale, None, false, &mut messenger);
+        assert_eq!(flag_drop_reports(&messenger), 0);
+        flag.on_player_died(expected, None, false, &mut messenger);
+        assert_eq!(flag_drop_reports(&messenger), 1);
+    }
+
+    #[test]
+    fn join_snapshot_waits_for_the_peer_and_finds_it_again_after_a_local_rename()
+    {
+        use crate::{
+            actor::{move_w_bonus::BonusSpotStatus, players_doll::PlayerDoll},
+            engine::{tests::headless_map, world::{
+                messenger::{Command, CommandType}, physics::PhysicsSystem, time::WorldTimeSystem,
+            }},
+        };
+
+        let (mut shared, map) = headless_map();
+        let physics = PhysicsSystem::new(&map);
+        let time = WorldTimeSystem::new();
+        let (mut actors, mut messenger) = world(); // A map actor already occupies OTHER.
+        actors.insert(ActorWrapper::Flag(flag_with_status(FlagStatus::OnTheBase)), &mut messenger);
+
+        let joined = Message {
+            from: 0,
+            remote_sender: true,
+            message: MessageType::SpecificActorMessage(SpecificActorMessage::SessionControllerMessage(
+                SessionControllerMessage::JoinedToSession(Team::Blue, FlagStatus::Captured(OTHER),
+                    FlagStatus::OnTheBase, BonusSpotStatus::BonusOnTheSpot, 0, 0),
+            )),
+        };
+        messenger.send_broadcast_message(joined);
+        messenger.process_messages(&mut actors, &physics, &time, &mut shared);
+        assert_eq!(stored_flag(&actors).carrier_actor_id, None);
+        stored_flag(&actors).request_target_position_from_carrier(&mut messenger);
+        assert!(position_request_recipients(&messenger).is_empty());
+
+        // A queued death before the first binding reply must identify the server peer.
+        let mut deaths = Messenger::new();
+        stored_flag(&actors).on_player_died(OTHER, Some(CARRIER), false, &mut deaths);
+        assert_eq!(flag_drop_reports(&deaths), 0);
+        stored_flag(&actors).on_player_died(CARRIER, Some(OTHER), false, &mut deaths);
+        assert_eq!(flag_drop_reports(&deaths), 1);
+
+        let doll = PlayerDoll::new(OTHER, 1.0, Transform::new(), true, &mut shared.resources.requests(), Team::Blue, false);
+        messenger.send_command(Command {
+            sender: 0,
+            command_type: CommandType::SpawnActor(Box::new(ActorWrapper::PlayersDoll(doll))),
+        });
+        messenger.process_messages(&mut actors, &physics, &time, &mut shared);
+        assert_eq!(stored_flag(&actors).carrier_actor_id, Some(OTHER));
+        assert_eq!(stored_flag(&actors).target_position, Vec4::Y * 2.0);
+
+        // The doll takes CARRIER from the other map actor. Its server peer ID is still OTHER.
+        actors.change_id(OTHER, CARRIER, &mut messenger);
+        messenger.process_messages(&mut actors, &physics, &time, &mut shared);
+        assert_follows(stored_flag(&actors), CARRIER, OTHER);
+
+        // A fresh server capture after the doll was displaced must resolve the same peer.
+        for status in [FlagStatus::OnTheBase, FlagStatus::Captured(OTHER)]
+        {
+            let update = FlagMessage::SetFlagStatus(Team::Red, status).from_actor(0);
+            messenger.send_direct_message(FLAG_ID, update);
+        }
+        messenger.process_messages(&mut actors, &physics, &time, &mut shared);
+        assert_follows(stored_flag(&actors), CARRIER, OTHER);
+    }
+
+    fn stored_flag(actors: &Actors) -> &Flag
+    {
+        match actors.get(&FLAG_ID).unwrap()
+        {
+            ActorWrapper::Flag(flag) => flag,
+            _ => panic!("expected the flag"),
+        }
+    }
+
+    #[test]
+    fn carrier_renamed_to_a_free_id_keeps_the_flag()
+    {
+        let (mut actors, _) = world();
+        let mut messenger = Messenger::new();
+        let mut flag = flag_with_status(FlagStatus::Captured(CARRIER));
+
+        actors.change_id(CARRIER, 30, &mut messenger);
+        deliver_id_changes(&mut flag, &messenger);
+
+        assert_follows(&flag, 30, CARRIER);
+    }
+
+    #[test]
+    fn carrier_renamed_onto_another_actor_keeps_the_flag()
+    {
+        let (mut actors, _) = world();
+        let mut messenger = Messenger::new();
+        let mut flag = flag_with_status(FlagStatus::Captured(CARRIER));
+
+        // OTHER is displaced first (OTHER -> random), then the carrier takes OTHER's id.
+        actors.change_id(CARRIER, OTHER, &mut messenger);
+        deliver_id_changes(&mut flag, &messenger);
+
+        assert_follows(&flag, OTHER, CARRIER);
+    }
+
+    #[test]
+    fn displaced_carrier_keeps_the_flag()
+    {
+        let (mut actors, _) = world();
+        let mut messenger = Messenger::new();
+        let mut flag = flag_with_status(FlagStatus::Captured(OTHER));
+
+        // The carrier (OTHER) is displaced to a random id when CARRIER takes its id.
+        actors.change_id(CARRIER, OTHER, &mut messenger);
+        let displaced_to = actors.iter()
+            .map(|(id, _)| *id)
+            .find(|id| *id != OTHER)
+            .expect("the displaced carrier");
+        deliver_id_changes(&mut flag, &messenger);
+
+        assert_follows(&flag, displaced_to, OTHER);
+    }
+
+    #[test]
+    fn unrelated_renames_and_uncaptured_flags_keep_their_state()
+    {
+        let mut flag = flag_with_status(FlagStatus::Captured(CARRIER));
+        flag.on_actor_changed_id(OTHER, 40);
+        assert_eq!(flag.carrier_actor_id, Some(CARRIER));
+
+        for status in [FlagStatus::OnTheBase, FlagStatus::Missed(Vec4::ONE)]
+        {
+            let mut flag = flag_with_status(status);
+            flag.on_actor_changed_id(CARRIER, 40);
+            assert!(flag.carrier_actor_id.is_none());
+
+            let mut messenger = Messenger::new();
+            flag.request_target_position_from_carrier(&mut messenger);
+            assert!(position_request_recipients(&messenger).is_empty());
+        }
+    }
+}

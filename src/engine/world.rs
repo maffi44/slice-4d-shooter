@@ -85,7 +85,8 @@ pub enum OuterWorldMessage
     /// Replace the root world with a prepared one. Root: the engine does it.
     /// Nested: the owner may forward it to its own world's outer mailbox.
     ReplaceRootWorld(Arc<WorldDescriptor>),
-    /// This world has finished its job; the owner may drop it. Root: ignored.
+    /// This world has finished its job; the owner may drop it. Root: ignored, the world keeps running;
+    /// only `QuitApplication` exits the application.
     #[allow(dead_code)] // nested-world API (issues/programming/engine-refactoring-world-isolation/), not used by the game yet
     WorldFinished,
     /// Game-specific messages for owner actors. The engine ignores them.

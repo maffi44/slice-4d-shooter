@@ -6,6 +6,10 @@ Newest closure first. A task is listed here only after the author confirms its c
 
 | Task | Opened | Closed | Resolution |
 |---|---|---|---|
+| [Keep the captured flag attached when its carrier changes ID](programming/flag-carrier-id-changes/) | 2026-11-20 | 2026-11-22 | Done |
+| [Emit PlayerBeatLevel once per completed level](programming/single-level-completion-event/) | 2026-11-20 | 2026-11-22 | Done |
+| [Resolve the root world's WorldFinished behavior](programming/root-world-finished/) | 2026-11-20 | 2026-11-22 | Done |
+| [Skip sound source construction when playback is unavailable](programming/headless-sound-builder-allocation/) | 2026-11-20 | 2026-11-22 | Done |
 | [Exclude the displaced actor's old ID from replacement candidates](programming/reserve-displaced-actor-id/) | 2026-11-20 | 2026-11-22 | Done |
 | [Configurable target render frame rate](programming/render-frame-rate-setting/) | 2026-11-20 | 2026-11-20 | Done — commit `d7bcf17` |
 | [Define and preserve message ordering](programming/message-ordering/) | 2026-11-16 | 2026-11-20 | Done — reviewed by the author |

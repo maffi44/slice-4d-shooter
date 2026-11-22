@@ -16,20 +16,16 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | [Research vertical synchronization and display refresh rate](programming/vsync-research/) | Normal | Moderate | Open — research pending | 2026-11-20 | — |
 | [Server side of the engine: many cheap session instances](programming/server-engine/) | Normal | Very complex | Open — design pending | 2026-11-20 | — |
 | [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/) | Normal | Moderate | Open — design pending | 2026-11-20 | — |
-| [Resolve the root world's WorldFinished behavior](programming/root-world-finished/) | Normal | Simple | Open — decision pending | 2026-11-20 | — |
 | [Preserve short presses and multiple input bindings](programming/input-button-state/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 4 |
 | [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Complex | Open — not implemented | 2026-11-16 | 7 |
 | [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 9 |
 | [Separate development CI from release deployment](programming/ci-validation-and-release/) | Normal | Complex | Open — not implemented | 2026-11-16 | 13 |
 | [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/) | Normal | Complex | Open — not implemented | 2026-11-16 | 15 |
 | [Clean dependencies and obsolete build configuration](programming/dependency-and-build-cleanup/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 16 |
-| [Keep the captured flag attached when its carrier changes ID](programming/flag-carrier-id-changes/) | Normal | Simple | Open — not implemented | 2026-11-20 | — |
 | [Wait for the next render deadline without a fixed sleep ceiling](programming/render-deadline-wait/) | Normal | Moderate | Open — not implemented | 2026-11-20 | — |
-| [Emit PlayerBeatLevel once per completed level](programming/single-level-completion-event/) | Normal | Very simple | Open — not implemented | 2026-11-20 | — |
 | [In-world 4D screens](programming/in-world-4d-screens/) | Normal | Very complex | Backlog — design pending | 2026-11-12 | — |
 | [Authoritative server and transport](programming/network-authoritative-server-and-transport/) | Normal | Very complex | Backlog — design pending | 2026-11-12 | — |
 | [Review the engine for cache-friendly memory layout](programming/cache-friendly-memory-layout/) | Long-term | Complex | Open — research pending | 2026-11-20 | — |
-| [Skip sound source construction when playback is unavailable](programming/headless-sound-builder-allocation/) | Long-term | Very simple | Open — not implemented | 2026-11-20 | — |
 | [GPU upload grouping and coherent data](programming/gpu-data-grouping/) | Long-term | Complex | Backlog — long-term | 2026-11-16 | 1 |
 | [Protect GPU upload buffers from overflow](programming/gpu-buffer-overflow/) | Long-term | Moderate | Backlog — long-term | 2026-11-16 | 5 |
 | [Interpolate actor state between simulation ticks for rendering](programming/render-frame-interpolation/) | Long-term | Complex | Backlog — long-term | 2026-11-20 | — |
@@ -40,13 +36,9 @@ Estimates cover the work and verification described in each task. Within each gr
 
 ### Very simple
 
-- [Emit PlayerBeatLevel once per completed level](programming/single-level-completion-event/)
-- [Skip sound source construction when playback is unavailable](programming/headless-sound-builder-allocation/)
 
 ### Simple
 
-- [Resolve the root world's WorldFinished behavior](programming/root-world-finished/)
-- [Keep the captured flag attached when its carrier changes ID](programming/flag-carrier-id-changes/)
 
 ### Moderate
 

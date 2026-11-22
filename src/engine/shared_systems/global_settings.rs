@@ -31,6 +31,7 @@ const EMBEDDED_CONNECTION_SETTINGS: &str = include_str!("../../assets/settings/c
 ///   Lookup order: next to the executable → the platform config dir → created there with defaults.
 /// - `connection`: deployment data, compiled in; can be overridden only by
 ///   `connection_settings.json` next to the executable. Never saved.
+#[cfg_attr(test, derive(Default))] // In-memory settings with no persistence writer.
 pub struct GlobalSettings
 {
     pub user: UserSettings,

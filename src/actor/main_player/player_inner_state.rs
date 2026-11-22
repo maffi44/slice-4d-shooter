@@ -19,6 +19,7 @@ pub struct PlayerInnerState {
     pub(super) player_died_sound: Option<SoundBufferResource>,
     pub(super) player_hited_sound: Option<SoundBufferResource>,
 
+    pub(crate) peer_id: Option<crate::actor::ActorID>,
     pub team: Team,
     pub collider: KinematicCollider,
     pub collider_for_others: Vec<PlayersDollCollider>,
@@ -99,6 +100,7 @@ impl PlayerInnerState {
                 crate::embedded_asset!("sounds/player_hited.wav"), Retention::Session,
             ),
 
+            peer_id: None,
             team: DEFAULT_TEAM,
             collider: KinematicCollider::new(
                 PLAYER_MAX_SPEED,

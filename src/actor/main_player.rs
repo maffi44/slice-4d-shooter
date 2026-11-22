@@ -953,7 +953,7 @@ impl Actor for MainPlayer {
                         self.inner_state.transform.increment_position(*increment);
                     },
                     CommonActorsMessage::IWasChangedMyId(_new_id) => {}
-                    CommonActorsMessage::ClientDisconnectedFromGameServer => {}
+                    CommonActorsMessage::ClientDisconnectedFromGameServer => { self.inner_state.peer_id = None; }
                 }
             }
 
@@ -1141,6 +1141,9 @@ impl Actor for MainPlayer {
 
                             PlayerMessage::ChangeYourId(new_id) =>
                             {
+                                self.inner_state.peer_id = Some(*new_id);
+                                let available = FlagMessage::CarrierAvailable(*new_id).from_actor(self.id.expect("Player has no ActorID"));
+                                messenger.send_broadcast_message(available);
                                 messenger.send_command(
                                     Command {
                                         sender: self.id.expect("Player have not ActorID"),
@@ -1254,6 +1257,11 @@ impl Actor for MainPlayer {
                     {
                         match message
                         {
+                            FlagMessage::FindCarrier(peer) if self.inner_state.peer_id == Some(*peer) =>
+                            {
+                                let available = FlagMessage::CarrierAvailable(*peer).from_actor(self.id.expect("Player has no ActorID"));
+                                messenger.send_direct_message(from, available);
+                            }
                             FlagMessage::GiveMeTargetPosition =>
                             {
                                 // match self.inner_state.team {
@@ -3309,7 +3317,7 @@ pub fn die
             remote_sender: false,
             message: MessageType::SpecificActorMessage(
                 SpecificActorMessage::FlagMessage(
-                    FlagMessage::PlayerDied(in_space)
+                    FlagMessage::PlayerDied { peer_id: inner_state.peer_id, in_space }
                 )
             )
         }
