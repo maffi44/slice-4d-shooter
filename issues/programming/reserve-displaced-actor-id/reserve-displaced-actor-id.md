@@ -1,9 +1,10 @@
 # Exclude the displaced actor's old ID from replacement candidates
 
-- **Status:** Open — not implemented
+- **Status:** Done
 - **Priority:** Long-term
-- **Complexity:** Very simple
 - **Created:** 2026-11-20
+- **Closed:** 2026-11-22
+- **Resolution:** Done
 - **Stable address:** `issues/programming/reserve-displaced-actor-id/`
 - **Context:** [Review evidence and reasoning](reserve-displaced-actor-id-context.md)
 
@@ -11,9 +12,9 @@
 
 Ensure displacement always chooses a different ID before the incoming actor occupies the requested slot.
 
-## Possible solution [proposed]
+## Solution [accepted]
 
-Generate a replacement while the displaced slot is still occupied, or explicitly reject the vacated ID when choosing a candidate. Keep the no-collision path free of random-ID generation.
+`Actors::displace_actor_at` removes the current holder, then passes `Some(id)` to `get_new_random_uniq_id` to reserve the requested slot for its caller. Ordinary ID allocation passes `None`. The generator retries on either the excluded ID or an occupied ID. A free slot draws no candidates. See the [decision history](reserve-displaced-actor-id-context.md).
 
 ## Completion criteria
 

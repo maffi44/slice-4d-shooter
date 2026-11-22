@@ -1,9 +1,10 @@
 # Configurable target render frame rate
 
-- **Status:** Open — awaiting author review
+- **Status:** Done
 - **Priority:** Normal
-- **Complexity:** Simple
 - **Created:** 2026-11-20
+- **Closed:** 2026-11-20
+- **Resolution:** Done
 - **Stable address:** `issues/programming/render-frame-rate-setting/`
 
 ## Problem
@@ -25,3 +26,5 @@ Default: the author first asked for 80 as an experiment, then set it back to 125
 Verification (Linux, uncommitted on top of `181330f`): release workspace build, workspace tests and Windows GNU bins check pass without warnings; headless run without errors. Windowed `capture_the_flag_map` with the author's existing settings file (no field, default used): `target 80 FPS`, `avg dt 0.012515` (80 FPS), clean exit via Alt+F4. With a temporary `user_settings.json` next to the executable containing `5`: warning, clamped to 10, `avg dt 0.1000`. The temporary file was removed.
 
 Completion: the setting controls the render rate, the default is 125, the author confirms the feel in play.
+
+On 2026-11-22 the author confirmed that the task had already been completed on 2026-11-20.

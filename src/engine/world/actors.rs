@@ -46,13 +46,13 @@ impl Actors
                     log::warn!("Actors::insert: the actor has the reserved id 0, a random id is assigned instead");
                 }
 
-                let new_id = self.get_new_random_uniq_id();
+                let new_id = self.get_new_random_uniq_id(None);
                 actor.set_id(new_id);
                 new_id
             },
         };
 
-        self.vacate(id, messenger);
+        self.displace_actor_at(id, messenger);
         self.actors.insert(id, actor);
 
         id
@@ -93,10 +93,9 @@ impl Actors
 
         let changed_actor_was_main = self.main_actor_id == old_id;
 
-        // The displaced actor's notification (new -> random) must be queued before the changed
-        // actor's one (old -> new): see `vacate`. Vacating while `old_id` is still taken also keeps
-        // the displaced actor's random id different from `old_id`.
-        self.vacate(new_id, messenger);
+        // Queue the displaced actor's notification first. Keep old_id occupied until its
+        // replacement has been chosen so the displaced actor cannot take old_id.
+        self.displace_actor_at(new_id, messenger);
 
         let mut actor = self.actors.remove(&old_id)
             .expect("the actor disappeared while its new id was vacated");
@@ -120,11 +119,14 @@ impl Actors
     /// (e.g. `MoveWBonusSpot`) first moves a reference to `id` onto the random id, and only then a
     /// reference to `old` onto `id`, so no reference is renamed twice.
     /// See issues/programming/message-ordering/.
-    fn vacate(&mut self, id: ActorID, messenger: &mut Messenger)
+    ///
+    /// See issues/programming/reserve-displaced-actor-id/.
+    fn displace_actor_at(&mut self, id: ActorID, messenger: &mut Messenger)
     {
         if let Some(mut displaced_actor) = self.actors.remove(&id)
         {
-            let new_id_for_displaced_actor = self.get_new_random_uniq_id();
+            // The caller will take id, even though it is now absent from the map.
+            let new_id_for_displaced_actor = self.get_new_random_uniq_id(Some(id));
 
             displaced_actor.change_id(new_id_for_displaced_actor, messenger);
 
@@ -178,11 +180,11 @@ impl Actors
         self.actors.retain(f);
     }
 
-    fn get_new_random_uniq_id(&self) -> ActorID
+    fn get_new_random_uniq_id(&self, excluded_id: Option<ActorID>) -> ActorID
     {
         let mut new_id = get_random_non_zero_id();
 
-        while self.actors.contains_key(&new_id)
+        while excluded_id == Some(new_id) || self.actors.contains_key(&new_id)
         {
             new_id = get_random_non_zero_id();
         }

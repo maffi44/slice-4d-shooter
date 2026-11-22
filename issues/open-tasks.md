@@ -8,7 +8,6 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 |---|---|---|---|---|---|
 | [Close connections when their owner is removed](programming/session-connection-lifetime/) | High | Complex | Open — not implemented | 2026-11-16 | 2 |
 | [Preserve user settings when the FPS field is invalid](programming/preserve-invalid-user-settings/) | High | Moderate | Open — not implemented | 2026-11-20 | — |
-| [Configurable target render frame rate](programming/render-frame-rate-setting/) | Normal | Simple | Open — awaiting author review | 2026-11-20 | — |
 | [Engine tick scheduling](programming/engine-tick-rate/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | — |
 | [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | 12 |
 | [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-16 | — |
@@ -30,7 +29,6 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | [In-world 4D screens](programming/in-world-4d-screens/) | Normal | Very complex | Backlog — design pending | 2026-11-12 | — |
 | [Authoritative server and transport](programming/network-authoritative-server-and-transport/) | Normal | Very complex | Backlog — design pending | 2026-11-12 | — |
 | [Review the engine for cache-friendly memory layout](programming/cache-friendly-memory-layout/) | Long-term | Complex | Open — research pending | 2026-11-20 | — |
-| [Exclude the displaced actor's old ID from replacement candidates](programming/reserve-displaced-actor-id/) | Long-term | Very simple | Open — not implemented | 2026-11-20 | — |
 | [Skip sound source construction when playback is unavailable](programming/headless-sound-builder-allocation/) | Long-term | Very simple | Open — not implemented | 2026-11-20 | — |
 | [GPU upload grouping and coherent data](programming/gpu-data-grouping/) | Long-term | Complex | Backlog — long-term | 2026-11-16 | 1 |
 | [Protect GPU upload buffers from overflow](programming/gpu-buffer-overflow/) | Long-term | Moderate | Backlog — long-term | 2026-11-16 | 5 |
@@ -43,12 +41,10 @@ Estimates cover the work and verification described in each task. Within each gr
 ### Very simple
 
 - [Emit PlayerBeatLevel once per completed level](programming/single-level-completion-event/)
-- [Exclude the displaced actor's old ID from replacement candidates](programming/reserve-displaced-actor-id/)
 - [Skip sound source construction when playback is unavailable](programming/headless-sound-builder-allocation/)
 
 ### Simple
 
-- [Configurable target render frame rate](programming/render-frame-rate-setting/)
 - [Resolve the root world's WorldFinished behavior](programming/root-world-finished/)
 - [Keep the captured flag attached when its carrier changes ID](programming/flag-carrier-id-changes/)
 

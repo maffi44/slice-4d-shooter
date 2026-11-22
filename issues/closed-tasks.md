@@ -6,6 +6,8 @@ Newest closure first. A task is listed here only after the author confirms its c
 
 | Task | Opened | Closed | Resolution |
 |---|---|---|---|
+| [Exclude the displaced actor's old ID from replacement candidates](programming/reserve-displaced-actor-id/) | 2026-11-20 | 2026-11-22 | Done |
+| [Configurable target render frame rate](programming/render-frame-rate-setting/) | 2026-11-20 | 2026-11-20 | Done — commit `d7bcf17` |
 | [Define and preserve message ordering](programming/message-ordering/) | 2026-11-16 | 2026-11-20 | Done — reviewed by the author |
 | [Deliver broadcast messages by reference](programming/borrow-broadcast-messages/) | 2026-11-16 | 2026-11-20 | Done — reviewed by the author |
 | [Preserve main_actor_id during actor ID collisions](programming/main-actor-id-collisions/) | 2026-11-16 | 2026-11-20 | Done — closed at the author's request without separate review |
