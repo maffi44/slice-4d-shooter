@@ -18,10 +18,13 @@ use futures::{StreamExt, stream::SplitStream};
 use hyper::{HeaderMap, StatusCode};
 use matchbox_protocol::{JsonPeerEvent, PeerId};
 use std::{collections::HashMap, net::SocketAddr};
+use tokio::sync::watch;
 use tracing::{error, info};
 
 /// Metastate used during by a signaling server's runtime
 pub struct WsStateMeta<Cb, S> {
+    /// The room to associate the peer with
+    pub room: String,
     /// The peer connecting, by their ID
     pub peer_id: PeerId,
     /// The channel to signal this peer through
@@ -55,6 +58,7 @@ pub(crate) async fn ws_handler<Cb, S>(
     Extension(callbacks): Extension<Cb>,
     Extension(state): Extension<S>,
     Extension(state_machine): Extension<SignalingStateMachine<Cb, S>>,
+    Extension(shutdown): Extension<watch::Receiver<bool>>,
     ConnectInfo(origin): ConnectInfo<SocketAddr>,
 ) -> impl IntoResponse
 where
@@ -64,6 +68,11 @@ where
     info!("`{origin}` connected.");
 
     let path = path.map(|path| path.0);
+
+    // We will isolate peer connections by path, and if no path was specified
+    // we will connect peers to a global room named 'world'
+    let room = path.clone().unwrap_or("world".to_string());
+
     let meta = WsUpgradeMeta {
         origin,
         path,
@@ -98,13 +107,40 @@ where
             info!("{peer_id} -> {event_text}");
         };
 
+        info!("`{peer_id}` will be isolated to room '{room}'.");
+
         let meta = WsStateMeta {
+            room,
             peer_id,
-            sender,
+            sender: sender.clone(),
             receiver,
             callbacks,
             state,
         };
-        (*state_machine.0)(meta)
+        async move {
+            let handler = (*state_machine.0)(meta);
+            tokio::pin!(handler);
+            tokio::select! {
+                _ = &mut handler => {}
+                _ = shutting_down(shutdown) => {
+                    // The handler ends when the peer answers the close
+                    let _ = sender.send(Ok(Message::Close(None)));
+                    handler.await;
+                }
+            }
+        }
     })
+}
+
+/// Resolves when the server shuts down
+async fn shutting_down(mut shutdown: watch::Receiver<bool>) {
+    loop {
+        if *shutdown.borrow_and_update() {
+            return;
+        }
+        if shutdown.changed().await.is_err() {
+            // The server is gone without shutting down, let the handler run on
+            std::future::pending::<()>().await;
+        }
+    }
 }

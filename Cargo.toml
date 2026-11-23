@@ -30,7 +30,7 @@ windows-sys = {version = "*", features = ["Win32", "Win32_Media"]}
 wgpu = { version = "*", default-features = false, features = ["std", "parking_lot", "vulkan", "dx12", "metal", "webgpu", "wgsl"] }
 bytemuck = { version = "*", features = [ "derive" ] }
 pollster = "*"
-tokio = { version = "*", features = ["fs", "sync"] }
+tokio = { version = "*", features = ["fs", "sync", "time", "macros"] }
 tokio-tungstenite = "*"
 web-time = "*"
 glam = "*"
@@ -49,7 +49,7 @@ bincode = "*"
 console_error_panic_hook = "*"
 console_log = "*"
 getrandom = { version = "*", features = [ "js" ] }
-matchbox_socket = "0.12.0"
+matchbox_socket = "0.15.0"
 rustc-hash = "*"
 opener = "*"
 gilrs = "*"
@@ -70,3 +70,7 @@ path="src/game_client_main_without_autoupdate.rs"
 
 [build-dependencies]
 winresource = "0.1.23"
+
+[dev-dependencies]
+# local sockets for the NetSystem connection-lifetime tests
+tokio = { version = "*", features = ["net", "io-util", "rt-multi-thread"] }

@@ -15,7 +15,7 @@ alkahest = { version = "*", features = [ "derive" ] }
 serde_json = "*"
 matchmaking_server = { path = "../matchmaking_server" }
 matchbox_signaling = { path = "../matchbox_signaling_modified" }
-matchbox_socket = "0.12.0"
+matchbox_socket = "0.15.0"
 rand = "*"
 glam = "*"
 blink-alloc = { version = "*", features = [ "sync" ] }

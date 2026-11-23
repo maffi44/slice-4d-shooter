@@ -204,6 +204,8 @@ If you want to play online on your own servers, create a `connection_settings.js
 
 **The `connection_settings.json` file is not required for single-player mode or for playing on the official Slice: 4D Shooter servers** (the official connection settings are built into the client).
 
+The client requests a match over WebSocket. Each game server runs its own Matchbox 0.15 signaling service, and the client and game server exchange gameplay packets over WebRTC.
+
 Press `G` to request an online connection (the current HUD still incorrectly says `P`). Connection attempts have timeouts and a limited retry count.
 
 The address `8.8.8.8` must be replaced with the hosting address of your server.

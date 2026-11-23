@@ -4,9 +4,10 @@ Modified Code Attribution
 
 This project includes modified code from the original library. The following changes were made to address specific issues:
 Modification: Client Connection Timeout
+Original modification by Timofei Molokov, July 2025.
 
     Description:
-    Disconnects a client if no packet is received from them for 3 seconds.
+    Based on upstream matchbox_signaling 0.15.0. The client/server topology checks hosts and clients for inactivity after the first 15 seconds, then every 5 seconds, and disconnects peers silent for more than 5 seconds.
 
     Reason for Change:
     A bug was discovered during testing where a client process crashing or losing connection abruptly (without sending a proper WebSocket close signal) would leave the signaling server in a "connected" state indefinitely—until the server itself shuts down.

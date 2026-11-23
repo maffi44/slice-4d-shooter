@@ -6,6 +6,7 @@ Newest closure first. A task is listed here only after the author confirms its c
 
 | Task | Opened | Closed | Resolution |
 |---|---|---|---|
+| [Close connections when their owner is removed](programming/session-connection-lifetime/) | 2026-11-16 | 2026-11-23 | Done |
 | [Keep the captured flag attached when its carrier changes ID](programming/flag-carrier-id-changes/) | 2026-11-20 | 2026-11-22 | Done |
 | [Emit PlayerBeatLevel once per completed level](programming/single-level-completion-event/) | 2026-11-20 | 2026-11-22 | Done |
 | [Resolve the root world's WorldFinished behavior](programming/root-world-finished/) | 2026-11-20 | 2026-11-22 | Done |

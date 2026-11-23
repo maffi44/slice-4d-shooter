@@ -5,7 +5,7 @@
 
 use alkahest::{alkahest, Serialize};
 
-type Packet = Box<[u8]>;
+use matchbox_socket::Packet;
 type ActorID = u128;
 
 type SerializableTransform = ([f32; 4], [f32; 16]);
@@ -27,7 +27,7 @@ impl ClientMessage {
 
         alkahest::serialize_to_vec::<ClientMessage, ClientMessage>(self, &mut packet);
 
-        packet.into_boxed_slice()
+        packet.into()
     }
 
     pub fn from_packet(packet: Packet) -> Option<Self> {
@@ -83,7 +83,7 @@ impl ServerMessage {
 
         alkahest::serialize_to_vec::<ServerMessage, ServerMessage>(self, &mut packet);
 
-        packet.into_boxed_slice()
+        packet.into()
     }
 
     pub fn from_packet(packet: Packet) -> Option<Self> {
@@ -307,7 +307,7 @@ impl NetMessageToPlayer {
 
         alkahest::serialize_to_vec::<NetMessageToPlayer, NetMessageToPlayer>(self, &mut packet);
 
-        packet.into_boxed_slice()
+        packet.into()
     }
 
     pub fn from_packet(packet: Packet) -> Option<Self> {

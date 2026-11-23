@@ -1383,7 +1383,7 @@ fn process_player_message(
     channel: &mut WebRtcChannel,
     game_session_state: &mut GameSessionState,
     from_player: PeerId,
-    packet: Box<[u8]>,
+    packet: matchbox_socket::Packet,
 ) {
     if let Some(message) = ClientMessage::from_packet(packet) {
         match message

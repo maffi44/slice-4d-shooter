@@ -54,6 +54,7 @@ use crate::{
         shared_systems::global_settings::ConnectionSettings,
         shared_systems::net::{
             ConnectionConfig,
+            ConnectionError as NetConnectionError,
             ConnectionHandle,
             ConnectionState,
             DisconnectReason,
@@ -168,8 +169,9 @@ impl NetSession {
     /// Sends a message to the game server (if connected).
     pub fn send_to_server(&self, message: NetMessageToServer, net: &mut NetSystem) {
         if let Some(SessionState::ConnectedToGameServer { connection, .. }) = &self.state {
-            net.send(
-                *connection,
+            // a lost connection is handled in `tick`, where `receive` reports it
+            let _ = net.send(
+                connection,
                 ClientMessage::MessageToServer(message).to_packet(),
                 Reliability::Reliable,
             );
@@ -179,8 +181,9 @@ impl NetSession {
     /// Sends a message to all players through the game server (if connected).
     pub fn send_to_players(&self, message: NetMessageToPlayer, reliability: Reliability, net: &mut NetSystem) {
         if let Some(SessionState::ConnectedToGameServer { connection, .. }) = &self.state {
-            net.send(
-                *connection,
+            // a lost connection is handled in `tick`, where `receive` reports it
+            let _ = net.send(
+                connection,
                 ClientMessage::BoardcastMessageToPlayers(message).to_packet(),
                 reliability,
             );
@@ -190,8 +193,9 @@ impl NetSession {
     /// Sends a message to one player through the game server (if connected).
     pub fn send_to_player(&self, message: NetMessageToPlayer, peer: u128, reliability: Reliability, net: &mut NetSystem) {
         if let Some(SessionState::ConnectedToGameServer { connection, .. }) = &self.state {
-            net.send(
-                *connection,
+            // a lost connection is handled in `tick`, where `receive` reports it
+            let _ = net.send(
+                connection,
                 ClientMessage::DirectMessageToPlayer(peer, message).to_packet(),
                 reliability,
             );
@@ -369,36 +373,35 @@ impl NetSession {
             }
         };
 
-        let result: Option<Result<String, ConnectionError>> = match shared.net.state(connection) {
-            ConnectionState::Connecting => None,
+        if !request_sent && shared.net.state(&connection) == ConnectionState::Connected {
+            let version = GameVersion::from(VERSION);
 
-            ConnectionState::Connected => {
-                if !request_sent {
-                    let version = GameVersion::from(VERSION);
+            let game_type = match it_is_2d_3d_example {
+                false => GameType::Slice4DShooter,
+                true => GameType::Slice3DExample,
+            };
 
-                    let game_type = match it_is_2d_3d_example {
-                        false => GameType::Slice4DShooter,
-                        true => GameType::Slice3DExample,
-                    };
+            let request = ClientMatchmakingServerProtocol::ClientMessage(
+                matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
+                    version.into(),
+                    game_type,
+                )
+            ).to_packet();
 
-                    let request = ClientMatchmakingServerProtocol::ClientMessage(
-                        matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
-                            version.into(),
-                            game_type,
-                        )
-                    ).to_packet();
+            // if sending fails, `receive` below reports the disconnect
+            request_sent = shared.net.send(&connection, request.into(), Reliability::Reliable).is_ok();
+        }
 
-                    shared.net.send(connection, request.into_boxed_slice(), Reliability::Reliable);
-
-                    request_sent = true;
-                }
-
-                shared.net.receive(connection)
-                    .next()
-                    .map(|packet| parse_matchmaking_server_response(&packet))
+        // The server may answer and close the connection at once (e.g. a wrong version):
+        // `receive` returns the answer first and reports the disconnect only after it.
+        let result: Option<Result<String, ConnectionError>> = match shared.net.receive(&connection) {
+            Ok(mut packets) => {
+                packets.next().map(|packet| parse_matchmaking_server_response(&packet))
             }
 
-            ConnectionState::Disconnected(reason) => {
+            Err(NetConnectionError::Connecting) => None,
+
+            Err(NetConnectionError::Disconnected(reason)) => {
                 Some(Err(match reason {
                     DisconnectReason::Timeout => ConnectionError::ConnectionTimeout,
                     DisconnectReason::ClosedByRemote => ConnectionError::ConnectionClosedByServer,
@@ -417,8 +420,6 @@ impl NetSession {
             }
 
             Some(result) => {
-                shared.net.close(connection);
-
                 match result {
                     Ok(game_server_url) => {
                         log::info!("got the url of game server: {}", game_server_url);
@@ -465,10 +466,6 @@ impl NetSession {
         if timeout_counter > 0 {
             timeout_counter -= 1;
         } else {
-            if let Some(connection) = connection {
-                shared.net.close(connection);
-            }
-
             if attempts_left > 0 {
                 return SessionState::ConnectingToMatchmakingServer {
                     connection: None,
@@ -505,7 +502,7 @@ impl NetSession {
             }
         };
 
-        match shared.net.state(connection) {
+        match shared.net.state(&connection) {
             ConnectionState::Connecting => {
                 SessionState::ConnectingToGameServer {
                     connection: Some(connection),
@@ -516,7 +513,7 @@ impl NetSession {
 
             ConnectionState::Connected => {
                 let new_id = shared.net
-                    .local_peer_id(connection)
+                    .local_peer_id(&connection)
                     .expect("ERROR: registrated peer (game server) connection, but the game client still does not have id in the p2p network");
 
                 // The main player's actor id becomes its network peer id.
@@ -545,8 +542,6 @@ impl NetSession {
             ConnectionState::Disconnected(_) => {
                 log::warn!("connection to game server is lost, trying to reconnect");
 
-                shared.net.close(connection);
-
                 SessionState::ConnectionFailure(300, ConnectionError::ConnectionClosedByServer)
             }
         }
@@ -570,9 +565,122 @@ impl NetSession {
             self.show_ui_elem(UIElementType::TitleConnectedToServerAndWaitingForOthers, &mut shared.ui);
         }
 
-        if let ConnectionState::Disconnected(_) = shared.net.state(connection) {
+        // Packets that arrived before a disconnect are processed first; the error comes after them.
+        let lost_connection = match shared.net.receive(&connection) {
+            Ok(packets) => {
+                for packet in packets {
 
-            shared.net.close(connection);
+                    if let Some(message) = ServerMessage::from_packet(packet) {
+                        match message
+                        {
+                            ServerMessage::JoinTheMatch(
+                                millis_from_server_start,
+                                your_team,
+                                red_flag_status,
+                                blue_flag_status,
+                                bonus_spot_status,
+                                red_team_score,
+                                blue_team_score,
+                            ) => {
+                                self.session_time = Some(SessionTime {
+                                    server_time_at_join_ms: millis_from_server_start,
+                                    joined_at: Instant::now(),
+                                });
+
+                                world.messenger.send_command(Command {
+                                    sender: OUTER_WORLD_SENDER_ID,
+                                    command_type: CommandType::RemoveAllHolesAndEffects
+                                });
+
+                                world.messenger.send_broadcast_message(
+                                    Message {
+                                        from: OUTER_WORLD_SENDER_ID,
+                                        remote_sender: true,
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::SessionControllerMessage(
+                                                SessionControllerMessage::JoinedToSession(
+                                                    your_team,
+                                                    FlagStatus::from(red_flag_status),
+                                                    FlagStatus::from(blue_flag_status),
+                                                    BonusSpotStatus::from(bonus_spot_status),
+                                                    red_team_score,
+                                                    blue_team_score,
+                                                )
+                                            )
+                                        )
+                                    }
+                                );
+                            }
+
+                            ServerMessage::PlayerConnected(player_id) => {
+                                world.messenger.send_broadcast_message(
+                                    Message {
+                                        from: OUTER_WORLD_SENDER_ID,
+                                        remote_sender: false,
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::PlayerMessage(
+                                                PlayerMessage::NewPeerConnected(player_id)
+                                            )
+                                        )
+                                    }
+                                );
+
+                                players_id.push(player_id);
+                            }
+
+                            ServerMessage::PlayerDisconnected(player_id) => {
+                                if let Some(index) = players_id.iter().position(|stored_peer| *stored_peer == player_id) {
+                                    players_id.remove(index);
+
+                                    world.messenger.send_command(Command {
+                                        sender: OUTER_WORLD_SENDER_ID,
+                                        command_type: CommandType::RemoveActor(player_id)
+                                    });
+                                }
+                            }
+
+                            ServerMessage::NetMessageToPlayer(from_player, message) => {
+                                process_message(
+                                    from_player,
+                                    message,
+                                    world.messenger,
+                                    &mut shared.resources.requests(),
+                                    it_is_2d_3d_example,
+                                );
+                            }
+
+                            ServerMessage::NewSessionStarted(
+                                _server_time,
+                                your_team,
+                            ) =>
+                            {
+                                world.messenger.send_command(Command {
+                                    sender: OUTER_WORLD_SENDER_ID,
+                                    command_type: CommandType::RemoveAllHolesAndEffects
+                                });
+
+                                world.messenger.send_broadcast_message(
+                                    Message {
+                                        from: OUTER_WORLD_SENDER_ID,
+                                        remote_sender: true,
+                                        message: MessageType::SpecificActorMessage(
+                                            SpecificActorMessage::SessionControllerMessage(
+                                                SessionControllerMessage::NewSessionStarted(your_team)
+                                            )
+                                        )
+                                    }
+                                );
+                            }
+                        }
+                    }
+                }
+                None
+            }
+            Err(error) => Some(error),
+        };
+
+        if let Some(error) = lost_connection {
+            log::warn!("connection to the game server is lost: {:?}", error);
 
             world.messenger.send_broadcast_message(
                 Message {
@@ -599,113 +707,6 @@ impl NetSession {
             );
 
             return SessionState::ConnectionFailure(820, ConnectionError::ConnectionClosedByServer);
-        }
-
-        for packet in shared.net.receive(connection) {
-
-            if let Some(message) = ServerMessage::from_packet(packet) {
-                match message
-                {
-                    ServerMessage::JoinTheMatch(
-                        millis_from_server_start,
-                        your_team,
-                        red_flag_status,
-                        blue_flag_status,
-                        bonus_spot_status,
-                        red_team_score,
-                        blue_team_score,
-                    ) => {
-                        self.session_time = Some(SessionTime {
-                            server_time_at_join_ms: millis_from_server_start,
-                            joined_at: Instant::now(),
-                        });
-
-                        world.messenger.send_command(Command {
-                            sender: OUTER_WORLD_SENDER_ID,
-                            command_type: CommandType::RemoveAllHolesAndEffects
-                        });
-
-                        world.messenger.send_broadcast_message(
-                            Message {
-                                from: OUTER_WORLD_SENDER_ID,
-                                remote_sender: true,
-                                message: MessageType::SpecificActorMessage(
-                                    SpecificActorMessage::SessionControllerMessage(
-                                        SessionControllerMessage::JoinedToSession(
-                                            your_team,
-                                            FlagStatus::from(red_flag_status),
-                                            FlagStatus::from(blue_flag_status),
-                                            BonusSpotStatus::from(bonus_spot_status),
-                                            red_team_score,
-                                            blue_team_score,
-                                        )
-                                    )
-                                )
-                            }
-                        );
-                    }
-
-                    ServerMessage::PlayerConnected(player_id) => {
-                        world.messenger.send_broadcast_message(
-                            Message {
-                                from: OUTER_WORLD_SENDER_ID,
-                                remote_sender: false,
-                                message: MessageType::SpecificActorMessage(
-                                    SpecificActorMessage::PlayerMessage(
-                                        PlayerMessage::NewPeerConnected(player_id)
-                                    )
-                                )
-                            }
-                        );
-
-                        players_id.push(player_id);
-                    }
-
-                    ServerMessage::PlayerDisconnected(player_id) => {
-                        if let Some(index) = players_id.iter().position(|stored_peer| *stored_peer == player_id) {
-                            players_id.remove(index);
-
-                            world.messenger.send_command(Command {
-                                sender: OUTER_WORLD_SENDER_ID,
-                                command_type: CommandType::RemoveActor(player_id)
-                            });
-                        }
-                    }
-
-                    ServerMessage::NetMessageToPlayer(from_player, message) => {
-                        process_message(
-                            from_player,
-                            message,
-                            world.messenger,
-                            &mut shared.resources.requests(),
-                            it_is_2d_3d_example,
-                        );
-                    }
-
-                    ServerMessage::NewSessionStarted(
-                        _server_time,
-                        your_team,
-                    ) =>
-                    {
-                        world.messenger.send_command(Command {
-                            sender: OUTER_WORLD_SENDER_ID,
-                            command_type: CommandType::RemoveAllHolesAndEffects
-                        });
-
-                        world.messenger.send_broadcast_message(
-                            Message {
-                                from: OUTER_WORLD_SENDER_ID,
-                                remote_sender: true,
-                                message: MessageType::SpecificActorMessage(
-                                    SpecificActorMessage::SessionControllerMessage(
-                                        SessionControllerMessage::NewSessionStarted(your_team)
-                                    )
-                                )
-                            }
-                        );
-                    }
-                }
-            }
         }
 
         SessionState::ConnectedToGameServer { connection, players_id }

@@ -12,10 +12,10 @@ use crate::{
 };
 use async_trait::async_trait;
 use axum::extract::ws::Message;
-use futures::{select, FutureExt, StreamExt};
-use futures_timer::Delay;
+use futures::StreamExt;
 use matchbox_protocol::{JsonPeerEvent, PeerId, PeerRequest};
 use std::{collections::HashMap, time::Duration};
+use tokio::time::{Instant, sleep_until};
 use tracing::{error, info, warn};
 
 /// A client server network topology
@@ -60,12 +60,11 @@ impl SignalingServerBuilder<ClientServer, ClientServerCallbacks, ClientServerSta
     }
 }
 
-const TIME_TO_DISCONNECT_PEER_WITHOUT_PACKETS: f32 = 5.0;
-
 #[async_trait]
 impl SignalingTopology<ClientServerCallbacks, ClientServerState> for ClientServer {
     async fn state_machine(upgrade: WsStateMeta<ClientServerCallbacks, ClientServerState>) {
         let WsStateMeta {
+            room: _,
             peer_id,
             sender,
             mut receiver,
@@ -103,105 +102,79 @@ impl SignalingTopology<ClientServerCallbacks, ClientServerState> for ClientServe
             host.is_some() && host.unwrap() == peer_id
         };
 
-        // Modified by Timofei Molokov Jul 2025
-        // Disconnects a client if no packet is received from them for 3 seconds.  
-        //  
-        // This change was introduced due to a bug discovered during testing:  
-        // - If a client process crashes or loses connection abruptly (without sending  
-        //   a proper WebSocket close signal), the signaling server would keep the client  
-        //   in a "connected" state indefinitely—until the server itself shuts down.  
-        //  
-        // Modifications were required in `crate matchbox_signaling` to enforce cleanup  
-        // of stale connections and prevent ghost clients.  
-        //  
-        // Note: This is particularly important for unstable networks or clients that  
-        // may terminate unexpectedly (e.g., mobile apps, crashed processes).
-        
-        let mut last_packet_time = std::time::Instant::now();
-
-        let mut timeout = Delay::new(
-            Duration::from_secs(15)
-        ).fuse();
-
-        loop
-        {
-            select!
-            {
-                _ = timeout =>
-                {
-                    if last_packet_time.elapsed().as_secs_f32() > TIME_TO_DISCONNECT_PEER_WITHOUT_PACKETS
-                    {
+        // The state machine for the data channel established for this websocket.
+        // Slice servers allow startup 15 seconds before the first inactivity check.
+        // Afterwards a silent host or client is removed on a five-second check.
+        let idle_timeout = Duration::from_secs(5);
+        let mut last_packet = Instant::now();
+        let mut next_check = last_packet + Duration::from_secs(15);
+        loop {
+            let request = tokio::select! {
+                _ = sleep_until(next_check) => {
+                    if last_packet.elapsed() > idle_timeout {
                         break;
                     }
-
-                    timeout = Delay::new(
-                        Duration::from_secs(TIME_TO_DISCONNECT_PEER_WITHOUT_PACKETS as u64)
-                    ).fuse();
+                    next_check = Instant::now() + idle_timeout;
+                    continue;
                 }
-
-                request = receiver.next().fuse() =>
-                {
-                    if request.is_none()
-                    {
-                        break;
-                    }
-
-                    last_packet_time = std::time::Instant::now();
-
-                    let request = match parse_request(request.unwrap()) {
-                        Ok(request) => request,
-                        Err(e) => {
-                            match e {
-                                ClientRequestError::Axum(_) => {
-                                    // Most likely a ConnectionReset or similar.
-                                    warn!("Unrecoverable error with {peer_id}: {e:?}");
-                                }
-                                ClientRequestError::Close => {
-                                    info!("Connection closed by {peer_id}");
-                                }
-                                ClientRequestError::Json(_) | ClientRequestError::UnsupportedType(_) => {
-                                    error!("Error with request: {e:?}");
-                                    continue; // Recoverable error
-                                }
-                            };
-                            if is_host {
-                                state.reset();
-                                // Lifecycle event: On Host Disonnected
-                                callbacks.on_host_disconnected.emit(peer_id);
-                            } else {
-                                state.remove_client(&peer_id);
-                                // Lifecycle event: On Client Disonnected
-                                callbacks.on_client_disconnected.emit(peer_id);
-                            }
-                            return;
+                request = receiver.next() => {
+                    let Some(request) = request else { break };
+                    last_packet = Instant::now();
+                    request
+                }
+            };
+            let request = match parse_request(request) {
+                Ok(request) => request,
+                Err(e) => {
+                    match e {
+                        ClientRequestError::Axum(_) => {
+                            // Most likely a ConnectionReset or similar.
+                            warn!("Unrecoverable error with {peer_id}: {e:?}");
+                        }
+                        ClientRequestError::Close => {
+                            info!("Connection closed by {peer_id}");
+                        }
+                        ClientRequestError::Json(_) | ClientRequestError::UnsupportedType(_) => {
+                            error!("Error with request: {e:?}");
+                            continue; // Recoverable error
                         }
                     };
-
-                    match request {
-                        PeerRequest::Signal { receiver, data } => {
-                            let event = Message::Text(
-                                JsonPeerEvent::Signal {
-                                    sender: peer_id,
-                                    data,
-                                }
-                                .to_string()
-                                .into(),
-                            );
-                            if let Err(e) = {
-                                if is_host {
-                                    state.try_send_to_client(receiver, event)
-                                } else {
-                                    state.try_send_to_host(event)
-                                }
-                            } {
-                                error!("error sending signal event: {e:?}");
-                            }
-                        }
-                        PeerRequest::KeepAlive => {
-                            // Do nothing. KeepAlive packets are used to protect against idle websocket
-                            // connections getting automatically disconnected, common for reverse proxies.
-                        }
+                    if is_host {
+                        state.reset();
+                        // Lifecycle event: On Host Disonnected
+                        callbacks.on_host_disconnected.emit(peer_id);
+                    } else {
+                        state.remove_client(&peer_id);
+                        // Lifecycle event: On Client Disonnected
+                        callbacks.on_client_disconnected.emit(peer_id);
                     }
+                    return;
+                }
+            };
+
+            match request {
+                PeerRequest::Signal { receiver, data } => {
+                    let event = Message::Text(
+                        JsonPeerEvent::Signal {
+                            sender: peer_id,
+                            data,
+                        }
+                        .to_string()
+                        .into(),
+                    );
+                    if let Err(e) = {
+                        if is_host {
+                            state.try_send_to_client(receiver, event)
+                        } else {
+                            state.try_send_to_host(event)
+                        }
+                    } {
+                        error!("error sending signal event: {e:?}");
+                    }
+                }
+                PeerRequest::KeepAlive => {
+                    // Do nothing. KeepAlive packets are used to protect against idle websocket
+                    // connections getting automatically disconnected, common for reverse proxies.
                 }
             }
         }

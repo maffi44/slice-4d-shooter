@@ -6,14 +6,13 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 
 | Task | Priority | Complexity | Status | Created | Review |
 |---|---|---|---|---|---|
-| [Close connections when their owner is removed](programming/session-connection-lifetime/) | High | Complex | Open — not implemented | 2026-11-16 | 2 |
 | [Preserve user settings when the FPS field is invalid](programming/preserve-invalid-user-settings/) | High | Moderate | Open — not implemented | 2026-11-20 | — |
 | [Engine tick scheduling](programming/engine-tick-rate/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | — |
 | [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | 12 |
 | [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-16 | — |
 | [Render resources for worlds and dynamic UI textures](programming/render-resources/) | Normal | Complex | Open — design pending | 2026-11-20 | — |
 | [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/) | Normal | Complex | Open — decision or implementation pending | 2026-11-20 | — |
-| [Research vertical synchronization and display refresh rate](programming/vsync-research/) | Normal | Moderate | Open — research pending | 2026-11-20 | — |
+| [Research surface presentation, frame pacing and graphics menu settings](programming/vsync-research/) | Normal | Complex | Open — research pending | 2026-11-20 | — |
 | [Server side of the engine: many cheap session instances](programming/server-engine/) | Normal | Very complex | Open — design pending | 2026-11-20 | — |
 | [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/) | Normal | Moderate | Open — design pending | 2026-11-20 | — |
 | [Preserve short presses and multiple input bindings](programming/input-button-state/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 4 |
@@ -46,7 +45,6 @@ Estimates cover the work and verification described in each task. Within each gr
 - [Engine tick scheduling](programming/engine-tick-rate/)
 - [Global allocator: keep, replace or remove?](programming/global-allocator/)
 - [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/)
-- [Research vertical synchronization and display refresh rate](programming/vsync-research/)
 - [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/)
 - [Preserve short presses and multiple input bindings](programming/input-button-state/)
 - [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/)
@@ -56,9 +54,9 @@ Estimates cover the work and verification described in each task. Within each gr
 
 ### Complex
 
-- [Close connections when their owner is removed](programming/session-connection-lifetime/)
 - [Render resources for worlds and dynamic UI textures](programming/render-resources/)
 - [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/)
+- [Research surface presentation, frame pacing and graphics menu settings](programming/vsync-research/)
 - [Frame server TCP messages and bound reads](programming/server-tcp-framing/)
 - [Separate development CI from release deployment](programming/ci-validation-and-release/)
 - [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/)
