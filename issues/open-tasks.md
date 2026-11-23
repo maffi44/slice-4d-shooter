@@ -15,6 +15,7 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | [Research surface presentation, frame pacing and graphics menu settings](programming/vsync-research/) | Normal | Complex | Open — research pending | 2026-11-20 | — |
 | [Server side of the engine: many cheap session instances](programming/server-engine/) | Normal | Very complex | Open — design pending | 2026-11-20 | — |
 | [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/) | Normal | Moderate | Open — design pending | 2026-11-20 | — |
+| [Unify typed resource requests across actors and engine startup](programming/unified-resource-requests/) | Normal | Complex | Open — design pending | 2026-11-23 | — |
 | [Preserve short presses and multiple input bindings](programming/input-button-state/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 4 |
 | [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Complex | Open — not implemented | 2026-11-16 | 7 |
 | [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 9 |
@@ -57,6 +58,7 @@ Estimates cover the work and verification described in each task. Within each gr
 - [Render resources for worlds and dynamic UI textures](programming/render-resources/)
 - [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/)
 - [Research surface presentation, frame pacing and graphics menu settings](programming/vsync-research/)
+- [Unify typed resource requests across actors and engine startup](programming/unified-resource-requests/)
 - [Frame server TCP messages and bound reads](programming/server-tcp-framing/)
 - [Separate development CI from release deployment](programming/ci-validation-and-release/)
 - [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/)

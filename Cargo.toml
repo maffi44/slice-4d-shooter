@@ -69,6 +69,8 @@ name="game-client-without-autoupdate"
 path="src/game_client_main_without_autoupdate.rs"
 
 [build-dependencies]
+proc-macro2 = "1"
+syn = { version = "2", default-features = false, features = ["parsing"] }
 winresource = "0.1.23"
 
 [dev-dependencies]

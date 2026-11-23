@@ -164,7 +164,7 @@ For the Windows build command above, run `target\x86_64-pc-windows-msvc\release\
 
 If you are going to connect to the official servers, then the version of the game client **must match the version** of the **[latest release](https://github.com/maffi44/slice-4d-shooter/releases)** of the game.
 
-Actors and devices request their gameplay sounds directly. Instances share decoded buffers for the session. Headless worlds skip sound decoding. Each cached map keeps one actor set ready for its next activation. While a destination map loads, the current world continues ticking, including in older maps with `async_load: false`.
+Actors and devices request their gameplay sounds directly. To embed a gameplay sound, place its WAV under `src/assets/sounds/` and use `embedded_asset!("sounds/name.wav")` at the request site. Cargo generates a catalog from these markers and embeds each marked path once per client binary. Instances share decoded buffers for the session. Headless worlds skip sound decoding. Each cached map keeps one actor set ready for its next activation. While a destination map loads, the current world continues ticking, including in older maps with `async_load: false`.
 
 After launching the graphical client, GPU initialization and initial-map preparation run in the background while the window continues processing events. The window is initially blank; the splash appears once rendering is ready. Shader compilation may take some time, depending on your computer. Closing during loading hides the window immediately; the process finishes after any already-running initialization step returns. See [engine startup](docs/engine-architecture.md) for the loading sequence and remaining synchronous world activation.
 

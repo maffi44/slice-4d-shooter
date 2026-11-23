@@ -18,7 +18,7 @@ use fyrox_resource::{
     untyped::UntypedResource,
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     error::Error,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
@@ -29,20 +29,17 @@ use crate::engine::world::world_descriptor::{WorldDescriptor, WorldPreparation};
 
 use fyrox_sound::buffer::{DataSource, SoundBuffer, SoundBufferResource};
 
-/// A logical path and the embedded bytes share one literal at the point of use.
+/// Build-time marker and logical key for an asset under src/assets.
 #[macro_export]
 macro_rules! embedded_asset {
     ($path:literal) => {
-        (
-            concat!("embedded/", $path),
-            include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/assets/", $path)).as_slice(),
-        )
+        concat!("embedded/", $path)
     };
 }
 
-type EmbeddedFiles = Arc<Mutex<HashMap<&'static Path, &'static [u8]>>>;
+include!(concat!(env!("OUT_DIR"), "/embedded_assets.rs"));
 
-struct SoundLoader(EmbeddedFiles);
+struct SoundLoader;
 
 impl ResourceLoader for SoundLoader {
     fn extensions(&self) -> &[&str] {
@@ -52,7 +49,7 @@ impl ResourceLoader for SoundLoader {
         <SoundBuffer as TypeUuidProvider>::type_uuid()
     }
     fn load(&self, path: PathBuf, io: Arc<dyn ResourceIo>) -> BoxedLoaderFuture {
-        let bytes = self.0.lock().get(path.as_path()).copied();
+        let bytes = path.to_str().and_then(embedded_bytes);
         Box::pin(async move {
             let source = match bytes {
                 Some(bytes) => DataSource::from_memory(bytes.to_vec()),
@@ -76,14 +73,13 @@ pub struct ResourceRequests<'a> {
 impl ResourceRequests<'_> {
     pub fn sound(
         &mut self,
-        (key, bytes): (&'static str, &'static [u8]),
+        key: &'static str,
         retention: Retention,
     ) -> Option<SoundBufferResource> {
         if self.system.headless {
             return None;
         }
         let path = Path::new(key);
-        self.system.embedded.lock().entry(path).or_insert(bytes);
         let buffer = self.system.request::<SoundBuffer>(path, retention);
         if let Some(pending) = &mut self.dependencies {
             pending.push(buffer.clone().into_untyped());
@@ -129,7 +125,6 @@ pub enum Retention {
 
 pub struct ResourceSystem {
     manager: ResourceManager,
-    embedded: EmbeddedFiles,
     retained: Mutex<HashSet<UntypedResource>>,
     pub headless: bool,
 }
@@ -137,11 +132,9 @@ pub struct ResourceSystem {
 impl ResourceSystem {
     pub fn new(headless: bool) -> Self {
         let manager = ResourceManager::new(Default::default());
-        let embedded = EmbeddedFiles::default();
-        manager.state().loaders.set(SoundLoader(embedded.clone()));
+        manager.state().loaders.set(SoundLoader);
         Self {
             manager,
-            embedded,
             retained: Default::default(),
             headless,
         }
