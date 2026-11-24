@@ -6,7 +6,7 @@ use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 use glam::Vec4;
 use fyrox_core::rand::{Rng, SeedableRng};
 use fyrox_core::rand::prelude::StdRng;

@@ -61,11 +61,9 @@ impl GpuContext
     {
         // Keep background pipeline preparation: GL's shared-context timeout is incompatible
         // with long concurrent driver calls. See issues/programming/opengl-context-contention/.
-        // Browser WebGPU is allowed by policy but is unavailable in native builds.
         let allowed_backends = wgpu::Backends::VULKAN
             | wgpu::Backends::DX12
-            | wgpu::Backends::METAL
-            | wgpu::Backends::BROWSER_WEBGPU;
+            | wgpu::Backends::METAL;
         let backends = match specific_backend {
             Some(backend) => wgpu::Backends::from(backend),
             None => allowed_backends,

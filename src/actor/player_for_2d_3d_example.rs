@@ -11,7 +11,7 @@ use crate::engine::shared_systems::EngineSharedSystems;
 use crate::actor::session_controller::send_to_session_controller;
 use crate::engine::shared_systems::net::Reliability;
 
-use client_server_protocol::{
+use net_protocol::gameplay::{
     NetMessageToPlayer,
     RemoteCommand,
     RemoteMessage,

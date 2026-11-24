@@ -3,8 +3,7 @@
 
 
 
-use std::time::{Duration, SystemTime};
-use web_time::Instant;
+use std::time::{Duration, Instant, SystemTime};
 
 
 /// If the previous engine frame took longer than this (a hitch, a debugger pause, a long load),

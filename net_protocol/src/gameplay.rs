@@ -5,7 +5,6 @@
 
 use alkahest::{alkahest, Serialize};
 
-use matchbox_socket::Packet;
 type ActorID = u128;
 
 type SerializableTransform = ([f32; 4], [f32; 16]);
@@ -19,7 +18,7 @@ pub enum ClientMessage {
 }
 
 impl ClientMessage {
-    pub fn to_packet(self) -> Packet {
+    pub fn to_packet(self) -> Vec<u8> {
         
         let size = <ClientMessage as Serialize<ClientMessage>>::size_hint(&self).unwrap();
         
@@ -27,15 +26,11 @@ impl ClientMessage {
 
         alkahest::serialize_to_vec::<ClientMessage, ClientMessage>(self, &mut packet);
 
-        packet.into()
+        packet
     }
 
-    pub fn from_packet(packet: Packet) -> Option<Self> {
-        if let Ok(message) = alkahest::deserialize::<ClientMessage, ClientMessage>(&packet) {
-            Some(message)
-        } else {
-            None
-        }
+    pub fn from_packet(packet: &[u8]) -> Option<Self> {
+        alkahest::deserialize::<Self, Self>(packet).ok()
     }
 }
 
@@ -75,7 +70,7 @@ pub enum ServerMessage {
 }
 
 impl ServerMessage {
-    pub fn to_packet(self) -> Packet {
+    pub fn to_packet(self) -> Vec<u8> {
         
         let size = <ServerMessage as Serialize<ServerMessage>>::size_hint(&self).unwrap();
         
@@ -83,15 +78,11 @@ impl ServerMessage {
 
         alkahest::serialize_to_vec::<ServerMessage, ServerMessage>(self, &mut packet);
 
-        packet.into()
+        packet
     }
 
-    pub fn from_packet(packet: Packet) -> Option<Self> {
-        if let Ok(message) = alkahest::deserialize::<ServerMessage, ServerMessage>(&packet) {
-            Some(message)
-        } else {
-            None
-        }
+    pub fn from_packet(packet: &[u8]) -> Option<Self> {
+        alkahest::deserialize::<Self, Self>(packet).ok()
     }
 }
 
@@ -299,7 +290,7 @@ pub enum RemoteMessage {
 }
 
 impl NetMessageToPlayer {
-    pub fn to_packet(self) -> Packet {
+    pub fn to_packet(self) -> Vec<u8> {
         
         let size = <NetMessageToPlayer as Serialize<NetMessageToPlayer>>::size_hint(&self).unwrap();
         
@@ -307,15 +298,11 @@ impl NetMessageToPlayer {
 
         alkahest::serialize_to_vec::<NetMessageToPlayer, NetMessageToPlayer>(self, &mut packet);
 
-        packet.into()
+        packet
     }
 
-    pub fn from_packet(packet: Packet) -> Option<Self> {
-        if let Ok(message) = alkahest::deserialize::<NetMessageToPlayer, NetMessageToPlayer>(&packet) {
-            Some(message)
-        } else {
-            None
-        }
+    pub fn from_packet(packet: &[u8]) -> Option<Self> {
+        alkahest::deserialize::<Self, Self>(packet).ok()
     }
 }
 

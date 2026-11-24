@@ -40,7 +40,7 @@ use crate::{
     engine::transform::Transform
 };
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 
 
 

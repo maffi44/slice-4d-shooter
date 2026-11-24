@@ -65,7 +65,7 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
                 // The first surface reply comes from the live event loop.
                 let proxy = worker_wake.get().expect("window event loop is installed").clone();
                 let failure_proxy = proxy.clone();
-                let (gpu, presentation) = pollster::block_on(GpuContext::new(&instance, surface, size, move |reason, message| {
+                let (gpu, presentation) = shared.runtime.block_on(GpuContext::new(&instance, surface, size, move |reason, message| {
                     let _ = failure_proxy.send_event(AppEvent::RenderFailed(format!("GPU device lost ({reason:?}): {message}")));
                 }));
                 if *worker_cancelled.borrow() { return Ok(None); }

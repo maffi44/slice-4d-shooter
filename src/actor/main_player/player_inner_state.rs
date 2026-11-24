@@ -3,7 +3,7 @@
 
 use crate::actor::main_player::constants::*;
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_core::pool::Handle;

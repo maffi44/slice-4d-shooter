@@ -16,7 +16,7 @@ use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{FloatExt, Vec3, Vec4};
 
-use client_server_protocol::{
+use net_protocol::gameplay::{
     NetMessageToPlayer,
     RemoteMessage,
     Team

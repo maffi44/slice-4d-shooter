@@ -3,7 +3,7 @@
 
 
 
-use std::sync::{mpsc::TryRecvError, Arc};
+use std::{sync::{mpsc::TryRecvError, Arc}, time::Instant};
 
 use crate::engine::{
     Engine, EngineLoader,
@@ -11,7 +11,6 @@ use crate::engine::{
     shared_systems::{render::WindowPresentation, ui::UIElementType},
 };
 
-use web_time::Instant;
 use glam::Vec2;
 
 use winit::{

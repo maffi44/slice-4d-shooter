@@ -47,3 +47,77 @@ A separate Vulkan llvmpipe probe exercised the idle-queue check and 100 ms uploa
 On the uncommitted Linux x86_64 tree based on `87ea043`, the offline targeted update encountered an unrelated wasm resolution conflict. The allocator entries were resolved in an isolated Cargo lock and incorporated into the workspace lock. The locked dependency tree confirmed 0.4.0 for both consumers. Linux workspace bins/tests checking, the release workspace build and the Windows GNU bins check passed without compiler warnings. Each client test binary passed 29 tests. Local socket restrictions affected nine transport tests per client and 24 Matchbox tests.
 
 With the final lock, the release client using isolated loopback settings again passed bundled startup, local override A → external B → A, an external self-transition and the malformed-map diagnostic in headless mode. The graphical attempt stopped at `XOpenDisplayFailed`.
+
+## 2026-11-24 — Native binary dependency audit before implementation
+
+First pass on clean source revision `baa9800`. Compared application manifests with Rust call sites, build.rs, embedded image sources and the locked crate sources. Inspected normal dependency trees for each application separately on Linux x86_64 and Windows GNU. For example:
+
+```sh
+cargo tree --offline --locked -p slice-4d-shooter --target x86_64-unknown-linux-gnu -e normal -i axum
+cargo tree --offline --locked -p game_server --target x86_64-pc-windows-gnu -e normal
+cargo tree --offline --locked -p matchmaking_server --target x86_64-unknown-linux-gnu -e normal
+```
+
+All three client bins share package dependencies. The Linux client, game server and matchmaking graphs contain 513, 295 and 114 distinct name/version pairs respectively, including the selected root. Windows GNU gives 488, 295 and 113. These counts describe Cargo's normal edges before cleanup. Build and dev edges are excluded. Linked executable sizes and build-time savings were not measured. The macOS offline tree lacked cached Apple crates (`block2` and `objc2-core-foundation`). This pass made no code or manifest changes.
+
+### Direct removals and native substitutions
+
+| Proposed edit | Evidence and constraint |
+|---|---|
+| Remove client `console_error_panic_hook` and `console_log` | No initialization or uses in any entry point. Native logging uses `env_logger`. Linux reverse trees lead from `web-sys` through `console_log` and from `wasm-bindgen` through the browser console crates. |
+| Replace `web_time::Instant` with `std::time::Instant` | Five imports cover world/shared timing, the main loop, render scheduler and network session. Locked web-time 1.1.0 re-exports the standard library clock on native targets. |
+| Replace the single `pollster::block_on` with `shared.runtime.block_on` | In `engine/loader.rs`, the named OS thread already owns the multi-thread Tokio runtime and uses it immediately before and after GPU initialization. Tokio polls the top-level future on the calling thread. Window/surface creation stays on the event loop, driver calls stay on the loader thread, and the existing cancellation checks still bracket that work. No new runtime, task, worker thread or nested async wait is needed. Pollster currently just drives this future. Validate graphical startup and close-during-load; headless skips this call. |
+| Remove direct `bincode` 2, `rustc-hash` and `windows-sys` | No use in project client source or build script. Protocols use Alkahest. Fyrox still uses bincode 1.3. Windows libraries may still occur transitively. |
+| Remove normal `winresource`; target-gate `libloading` to Windows | Only build.rs uses winresource for icon embedding. Keep its build dependency: build.rs references it even on a Linux host cross-compiling to Windows. Only the Windows updater uses libloading directly. Check Windows packaging for the icon and adjacent WinSparkle DLL. |
+| Remove game server's direct `tokio-tungstenite` and `serde_json` | No direct users in the game server sources. The client and matchmaking use WebSockets, matchmaking parses JSON, and signaling uses both protocols internally. Declare the game's actual Tokio TCP and async I/O features explicitly. |
+| Remove the commented wasm target in `.cargo/config.toml` | No build effect. The active forced Linux target determines output paths used by build.rs, deployment and README. Changing that target needs coordinated path handling. |
+
+[open] Browser WebGPU was an explicit [backend decision](../opengl-context-contention/). Given the author's native-only goal, propose removing wgpu's `webgpu` feature and `BROWSER_WEBGPU` from the allowed mask together, updating README and the repository guidance. The native CLI can keep explaining why `-b webgpu` is unavailable. Preserve Vulkan, DX12, Metal and WGSL. Upstream winit, Fyrox and Matchbox still declare wasm-target dependencies. Cargo.lock covers all targets. Confirm removal from the native graph per target and let Cargo retain required cross-target lock entries. Matchbox/WebRTC is used natively for gameplay.
+
+### Randomness and compatibility
+
+- Linux client tree: rand 0.8.8 comes from Fyrox, 0.9.5 from tungstenite 0.29 via Axum, and 0.10.4 from the application, native RTC and tungstenite 0.30. The [protocol extraction](../shared-network-protocol/) cuts the Axum route. getrandom 0.2.17 serves ring and rand_core 0.6, 0.3.4 serves rand_core 0.9, and 0.4.3 serves current rand, UUID, ahash and the client directly. The obsolete direct JS feature was already removed in the dependency update above.
+- Actor IDs use 16 OS-random bytes, reserve zero and check collisions. The machinegun interprets raw random bits as floats before transforming them. Physics uses raw float bits and retries invalid vector lengths. Replacing these calls with uniform floating-point samples would change gameplay. [proposed] Keep the direct getrandom use on the first pass. Switching to an equivalent OS-byte API would remove a manifest edge while leaving getrandom in the tree.
+- The shotgun sends a seed in `RemoteMessage::SpawnShotgunShot`. Both local and remote actors regenerate pellet directions using Fyrox's rand 0.8 `StdRng` and range sampler. Keep that path for wire-compatible behavior. A generator migration needs a fixed-seed direction comparison against the baseline, including the sampling algorithm.
+- The game server uses Fyrox only for team shuffling and already uses rand 0.10 for team choice. [proposed] Use `rand::seq::SliceRandom` and `rand::rng()` for that shuffle, where only the server chooses teams. Matchmaking uses Fyrox only for `SinkExt` and `StreamExt`; import them from `futures-util` with its sink feature. These changes together with protocol extraction can remove Fyrox from the separate server builds. Client resources/audio still require Fyrox.
+
+### Feature reductions to verify
+
+- Only the client directly enables `image` defaults. The HUD, splash and skybox decoding paths currently receive PNGs. [proposed] Enable only PNG, then exercise all three paths; default formats currently enable AVIF/ravif among other codecs. If a caller starts accepting other formats, its contract must say which formats are supported.
+- The client adds winit's `rwh_05` alongside default `rwh_06`. wgpu 30 uses raw-window-handle 0.6.2. [proposed] Drop the 0.5 feature and check window/surface creation on supported platforms.
+- The production client should declare Tokio `rt-multi-thread` itself. Isolated package checks avoid dev features and other workspace members masking missing declarations. Likewise inspect server Tokio features: `game_server` invokes `std::process::exit`, while matchmaking actually spawns child processes with Tokio. Preserve each required feature with its caller. The build dependency pair `syn` and `proc-macro2` serves the embedded-asset scanner and remains in use.
+
+[proposed] After approval, compare isolated locked trees before and after and compare stripped or unstripped release binary sizes under identical settings. Verify native launches, package builds and local networking according to the changes. No general dependency upgrade is required.
+
+## 2026-11-24 — Implementation decisions
+
+[accepted] The author approved the native-only browser cleanup, dependency and feature reductions, native clock and loader substitutions, server-only shuffle migration, and retention of the existing gameplay random paths. Keep the active explicit Linux build target for the documented release/deployment layout. The root package version and deployment configuration stay as they are.
+
+### Verification on the uncommitted Linux tree based on baa9800
+
+Compared locked normal dependency trees using the same package, target and counting method as the first pass. The three client entry points share one package graph.
+
+| Application | Linux x86_64 before → after | Windows GNU x86_64 before → after |
+|---|---:|---:|
+| Client | 513 → 415 | 488 → 393 |
+| Game server | 295 → 253 | 295 → 253 |
+| Matchmaking server | 114 → 49 | 113 → 48 |
+
+The [protocol extraction](../shared-network-protocol/) removed both server packages, signaling and Axum from the isolated client graph. Neither native client tree contains wasm-bindgen, web-sys, web-time or pollster. Matchmaking no longer builds Fyrox. Both servers still compile separately with their production Tokio features. The new lock adds one local package and removes 58 package/version entries; all retained third-party versions are unchanged. Third-party wasm-target declarations still appear in the cross-target lock.
+
+Measured actual file lengths after `cargo build --release --workspace --locked --offline` under identical settings before and after the changes. The graph counts above are isolated per package; these binaries are from the workspace release configuration.
+
+| Linux binary | Before (bytes) | After (bytes) |
+|---|---:|---:|
+| game-client | 64,531,144 | 62,551,176 |
+| game-client-with-windows-command-line | 64,620,848 | 62,642,224 |
+| game-client-without-autoupdate | 64,596,640 | 62,617,944 |
+| game_server | 12,453,864 | 12,429,424 |
+| matchmaking_server | 2,200,072 | 2,206,360 |
+
+- Linux release workspace build, workspace bins check, production bins checks for each app separately, and Windows GNU workspace bins check completed without compiler warnings. The Windows resource object contains icon and group-icon resources, and the copied DLL is byte-identical to the bundled WinSparkle DLL. No Windows executable was run. The macOS arm64 client tree still needs an uncached Apple crate (`block2`); macOS execution was not verified.
+- The workspace test run passed 32 tests in each of the three client bins. Each also had nine local transport tests fail on socket permissions. All 24 vendored signaling tests failed at bind with the same `PermissionDenied`. All three dedicated wire tests passed with the default test-thread stack after the [debug codec fix](../shared-network-protocol/). No production endpoint was contacted.
+- With isolated user settings and a loopback-only connection configuration, the no-updater headless client reached `engine: ready` and ran until the 12-second timeout. The sandbox also restricted the gilrs hot-plug monitor. Native `-b webgpu` reported supported options and exited 2.
+- A separate probe with the release PNG-only image library decoded all 58 embedded images referenced by the Rust sources, including the splash, HUD and six skybox faces. A dedicated OS thread ran Tokio's `block_on` through Vulkan adapter/device creation on llvmpipe. The real windowed run stopped at winit's `XOpenDisplayFailed`. Actual presentation and closing the window during loading remain unverified here.
+
+[accepted] 2026-11-24 — The author reviewed the result and confirmed closure.

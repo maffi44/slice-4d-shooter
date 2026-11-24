@@ -7,12 +7,11 @@
 // The transport itself is `NetSystem` (connection handles, raw packets).
 
 use crate::engine::shared_systems::resources::ResourceLoader;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use glam::{Vec3, Vec4};
-use web_time::Instant;
 
-use client_server_protocol::{
+use net_protocol::gameplay::{
     ClientMessage,
     NetMessageToPlayer,
     NetMessageToServer,
@@ -21,7 +20,7 @@ use client_server_protocol::{
     ServerMessage,
 };
 
-use matchmaking_server_protocol::{
+use net_protocol::matchmaking::{
     ClientMatchmakingServerProtocol,
     GameType,
     GameVersion,
@@ -172,7 +171,7 @@ impl NetSession {
             // a lost connection is handled in `tick`, where `receive` reports it
             let _ = net.send(
                 connection,
-                ClientMessage::MessageToServer(message).to_packet(),
+                ClientMessage::MessageToServer(message).to_packet().into(),
                 Reliability::Reliable,
             );
         }
@@ -184,7 +183,7 @@ impl NetSession {
             // a lost connection is handled in `tick`, where `receive` reports it
             let _ = net.send(
                 connection,
-                ClientMessage::BoardcastMessageToPlayers(message).to_packet(),
+                ClientMessage::BoardcastMessageToPlayers(message).to_packet().into(),
                 reliability,
             );
         }
@@ -196,7 +195,7 @@ impl NetSession {
             // a lost connection is handled in `tick`, where `receive` reports it
             let _ = net.send(
                 connection,
-                ClientMessage::DirectMessageToPlayer(peer, message).to_packet(),
+                ClientMessage::DirectMessageToPlayer(peer, message).to_packet().into(),
                 reliability,
             );
         }
@@ -382,7 +381,7 @@ impl NetSession {
             };
 
             let request = ClientMatchmakingServerProtocol::ClientMessage(
-                matchmaking_server_protocol::ClientMessage::RequestToConnectToGameServer(
+                net_protocol::matchmaking::ClientMessage::RequestToConnectToGameServer(
                     version.into(),
                     game_type,
                 )
@@ -570,7 +569,7 @@ impl NetSession {
             Ok(packets) => {
                 for packet in packets {
 
-                    if let Some(message) = ServerMessage::from_packet(packet) {
+                    if let Some(message) = ServerMessage::from_packet(&packet) {
                         match message
                         {
                             ServerMessage::JoinTheMatch(
@@ -716,7 +715,7 @@ impl NetSession {
 
 fn parse_matchmaking_server_response(packet: &[u8]) -> Result<String, ConnectionError>
 {
-    match alkahest::deserialize::<ClientMatchmakingServerProtocol, ClientMatchmakingServerProtocol>(packet)
+    match ClientMatchmakingServerProtocol::from_packet(packet)
     {
         Ok(ClientMatchmakingServerProtocol::MatchmakingServerMessage(message)) =>
         {

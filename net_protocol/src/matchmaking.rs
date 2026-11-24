@@ -198,6 +198,10 @@ pub enum GameServerMatchmakingServerProtocol
 
 impl GameServerMatchmakingServerProtocol
 {
+    pub fn from_packet(packet: &[u8]) -> Result<Self, alkahest::DeserializeError> {
+        alkahest::deserialize::<Self, Self>(packet)
+    }
+
     pub fn to_packet(self) -> Vec<u8> {
 
         let size = <
@@ -233,6 +237,10 @@ pub enum MatchmakingServerMessageToGameServer
 
 impl ClientMatchmakingServerProtocol
 {
+    pub fn from_packet(packet: &[u8]) -> Result<Self, alkahest::DeserializeError> {
+        alkahest::deserialize::<Self, Self>(packet)
+    }
+
     pub fn to_packet(self) -> Vec<u8> {
 
         let size = <

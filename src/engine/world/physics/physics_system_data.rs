@@ -7,7 +7,7 @@ use crate::engine::{
         world::physics::static_collider::StaticCollider, world::world_descriptor::WorldDescriptor
     };
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 use glam::Vec4;
 
 use super::dynamic_collider::PlayersDollCollider;

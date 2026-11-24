@@ -28,7 +28,7 @@ use crate::{
 
 use std::f32::consts::PI;
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 use glam::{Mat4, Vec4};
 use winit::dpi::PhysicalSize;
 

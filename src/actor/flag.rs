@@ -9,7 +9,7 @@ use crate::engine::shared_systems::EngineSharedSystems;
 use crate::actor::session_controller::send_to_session_controller;
 use crate::engine::world::effects;
 
-use client_server_protocol::{NetMessageToServer, Team};
+use net_protocol::gameplay::{NetMessageToServer, Team};
 use fyrox_sound::source::Status;
 use glam::{FloatExt, Vec3, Vec4};
 use rand::RngExt;
@@ -59,20 +59,20 @@ pub enum FlagStatus
     OnTheBase,
 }
 
-impl From<client_server_protocol::FlagStatus> for FlagStatus
+impl From<net_protocol::gameplay::FlagStatus> for FlagStatus
 {
-    fn from(value: client_server_protocol::FlagStatus) -> Self {
+    fn from(value: net_protocol::gameplay::FlagStatus) -> Self {
         match value
         {
-            client_server_protocol::FlagStatus::OnTheBase =>
+            net_protocol::gameplay::FlagStatus::OnTheBase =>
             {
                 FlagStatus::OnTheBase
             }
-            client_server_protocol::FlagStatus::Droped(arr) =>
+            net_protocol::gameplay::FlagStatus::Droped(arr) =>
             {
                 FlagStatus::Missed(Vec4::from_array(arr))
             }
-            client_server_protocol::FlagStatus::Captured(id) =>
+            net_protocol::gameplay::FlagStatus::Captured(id) =>
             {
                 FlagStatus::Captured(id)
             }

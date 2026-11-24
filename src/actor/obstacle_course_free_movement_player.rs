@@ -13,7 +13,7 @@ use crate::engine::shared_systems::net::Reliability;
 
 use std::f32::consts::PI;
 
-use client_server_protocol::{NetMessageToPlayer, RemoteMessage, Team};
+use net_protocol::gameplay::{NetMessageToPlayer, RemoteMessage, Team};
 
 use fyrox_core::math::lerpf;
 

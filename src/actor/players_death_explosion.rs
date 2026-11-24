@@ -6,7 +6,7 @@
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 use glam::Vec4;
 
 use crate::{actor::device::holegun::{HOLE_GUN_BLUE_COLOR, HOLE_GUN_RED_COLOR}, engine::{world::messenger::{Command, CommandType}, world::physics::{physics_system_data::ShapeType, static_collider::StaticCollider}, shared_systems::render::VisualElement, world::static_object::{ColoringArea, SphericalVolumeArea, StaticObject, VolumeArea}}, engine::transform::Transform};

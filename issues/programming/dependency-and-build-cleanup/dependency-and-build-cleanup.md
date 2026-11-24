@@ -1,18 +1,21 @@
 # Clean dependencies and obsolete build configuration
 
-- **Status:** Open — not implemented
+- **Status:** Done — accepted by the author
 - **Priority:** Normal
-- **Complexity:** Moderate
 - **Created:** 2026-11-16
+- **Closed:** 2026-11-24
+- **Resolution:** Done
 - **Stable address:** `issues/programming/dependency-and-build-cleanup/`
-- **Context:** [dependency-and-build-cleanup-context.md](dependency-and-build-cleanup-context.md) — rationale, discussion and implementation history; read relevant sections before changing a prior decision.
+- **Context:** [Audit, prior version updates, decisions and verification](dependency-and-build-cleanup-context.md).
 
-## Task
+## Scope and result
 
-Audit remaining web-only dependencies/configuration after wasm removal, unused direct dependencies, platform-specific dependencies and `*` requirements. Remove only verified leftovers; preserve deliberate capabilities.
+[accepted] Remove unused direct dependencies and browser-only configuration from the native applications. On 2026-11-24 the earlier version update replaced wildcard requirements with compatible ranges. The subsequent native cleanup kept all surviving third-party lock versions and the product version. See the context for the per-dependency rationale.
 
-Consider defaulting to the host target instead of forcing Linux globally; update documented paths and CI explicitly if changed. Pin compatible version ranges without casually updating Cargo.lock. Check build-script output handling and all client entry points.
+The loader uses the engine's Tokio runtime on its existing OS thread. Native clocks use `std::time::Instant`. The client enables PNG decoding and native Vulkan, DX12 and Metal. Server-only shuffle and WebSocket helper imports no longer require Fyrox. The gameplay random paths and their seed semantics are preserved. [Shared network protocol](../shared-network-protocol/) tracks isolation of the application dependency trees. The allocator's resize defect remains in [its own task](../global-allocator/).
 
-Progress: on 2026-11-24 the author requested a full dependency update. The manifests now use explicit version requirements and the lock file was updated. Both consumers use `blink-alloc` 0.4.0. Its direct-mode resize defect remains open in the [allocator task](../global-allocator/). See the context for details. Web-only and unused dependencies are not yet audited or removed.
+[accepted] Retain the configured Linux target and the target-qualified output paths used by the documented hosting and release commands. WinSparkle uses a Windows-only runtime dependency and the existing build dependency for the icon.
 
-Completion: each removed dependency/feature has an explained reason; Linux and relevant Windows/macOS build assumptions are checked, README and CI paths agree, and root product version/licenses remain unchanged. Dependency updates are targeted and require their own authorization.
+## Completion and verification
+
+The Linux release workspace build, isolated app checks and Windows GNU workspace bins check passed. The context records before/after trees and binary sizes, image decoding, headless startup, offscreen Vulkan and the Windows resource checks. Windowed startup, a live network session and the macOS client build still need an environment with the relevant display, socket access and Apple dependencies.

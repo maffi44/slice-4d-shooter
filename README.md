@@ -181,7 +181,7 @@ Native rendering requires Vulkan (Linux/Windows), DirectX 12 (Windows), or Metal
 
 If the window surface is lost during the splash or a match, the client attempts to restore the picture in the same window. The match continues during recovery. If the replacement fails or the GPU device is lost, the client reports the error and exits. See [surface recovery](issues/programming/lost-render-surface/).
 
-The wgpu instance also allows browser WebGPU, but this native client has no supported browser build; enabling that backend does not restore WebAssembly support, and `-b webgpu` reports this limitation.
+The client builds only native graphics backends. Passing `-b webgpu` prints the supported native choices and exits.
 
 Both `-l` and in-game transitions prefer local map JSON over the bundled map of the same name. For example, launch `-l capture_the_flag_map` with a `capture_the_flag_map.json` in the working directory to try a local override. A broken override reports its file path. The [architecture reference](docs/engine-architecture.md#levels--assets) lists the remaining search locations.
 
@@ -208,7 +208,7 @@ If you want to play online on your own servers, create a `connection_settings.js
 
 **The `connection_settings.json` file is not required for single-player mode or for playing on the official Slice: 4D Shooter servers** (the official connection settings are built into the client).
 
-The client requests a match over WebSocket. Each game server runs its own Matchbox 0.15 signaling service, and the client and game server exchange gameplay packets over WebRTC.
+The client and both servers share the Alkahest message definitions in [net_protocol](net_protocol/src/lib.rs). The client requests a match over WebSocket. Each game server runs its own Matchbox 0.15 signaling service, and the client and game server exchange gameplay packets over WebRTC.
 
 Press `G` to request an online connection (the current HUD still incorrectly says `P`). Connection attempts have timeouts and a limited retry count.
 

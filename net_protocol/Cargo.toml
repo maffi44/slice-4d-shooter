@@ -1,0 +1,11 @@
+# Slice 4D Shooter - the first multiplayer shooter set in 4D space
+# Copyright (C) 2023-2026  Timofei Molokov
+
+[package]
+name = "net_protocol"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+[dependencies]
+alkahest = { version = "0.3", features = ["derive"] }

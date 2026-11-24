@@ -35,7 +35,7 @@ use crate::{
     engine::transform::{Transform, FORWARD}
 };
 
-use client_server_protocol::{
+use net_protocol::gameplay::{
     NetMessageToPlayer, RemoteMessage, Team
 };
 

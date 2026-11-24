@@ -42,8 +42,9 @@ These principles come from the [refactoring context](issues/programming/engine-r
 | `src/engine/shared_systems/` | Shared input, audio, UI, settings, timing, transport, resource loading, GPU/render scheduler |
 | `src/engine/world.rs`, `src/engine/world/` | Per-world actors, messenger, physics, time, descriptor, effects |
 | `src/actor/` | Game actors and devices; player gameplay constants in `main_player/constants.rs` |
-| `game_server/` | Game server (currently relays client-authoritative gameplay); exports `client_server_protocol` |
-| `matchmaking_server/` | Matchmaking server; exports `matchmaking_server_protocol` |
+| `net_protocol/` | Shared wire types and byte encoding/decoding for gameplay and matchmaking |
+| `game_server/` | Game server (currently relays client-authoritative gameplay) and Matchbox signaling |
+| `matchmaking_server/` | Matchmaking server and game server process management |
 | `matchbox_signaling_modified/` | Modified third-party crate; avoid unrelated edits |
 | `src/assets/`, `media/`, `dll/` | Maps/embedded assets, branding, WinSparkle |
 
@@ -66,10 +67,10 @@ cargo run --release --bin game-client-without-autoupdate -- --headless
 - `.cargo/config.toml` forces Linux target `x86_64-unknown-linux-gnu`; output is `target/<target>/<profile>/`. Other platforms need an explicit target. Windows GNU checking needs its toolchain; MSVC cannot be checked here without its C toolchain (`ring`).
 - Linux dependencies: `build-essential pkg-config libasound2-dev`. See [README](README.md) for platform/server commands and hosting.
 - Three client bins: shipped `game-client` (Windows GUI subsystem, updater), `game-client-with-windows-command-line` (Windows console, updater), `game-client-without-autoupdate` (console, no updater). Keep all compiling. CI currently builds only the shipped client.
-- CLI: `-b/--backend vulkan|dx12|metal`, `-l/--level <name>`, `--headless`, `-v/--version`; default map `capture_the_flag_map`. OpenGL is disabled in Cargo features and instance selection; browser WebGPU is allowed by policy but unavailable in the native client (see [backend decision](issues/programming/opengl-context-contention/)). Headless has no window, GPU, rendering or sound device. First graphical launch compiles shaders and can be slow.
-- Windows branch of `build.rs` embeds the icon and copies `WinSparkle.dll` next to the exe. Wasm support was removed in `f3e2128`; remaining browser dependencies/configuration are tracked in [cleanup](issues/programming/dependency-and-build-cleanup/).
+- CLI: `-b/--backend vulkan|dx12|metal`, `-l/--level <name>`, `--headless`, `-v/--version`; default map `capture_the_flag_map`. Cargo features and instance selection enable Vulkan, DX12 and Metal. See [OpenGL removal](issues/programming/opengl-context-contention/) and [native dependency cleanup](issues/programming/dependency-and-build-cleanup/). Headless has no window, GPU, rendering or sound device. First graphical launch compiles shaders and can be slow.
+- Windows branch of `build.rs` embeds the icon and copies `WinSparkle.dll` next to the exe. Wasm support was removed in `f3e2128`. The [dependency cleanup](issues/programming/dependency-and-build-cleanup/) removed direct browser dependencies from the native client.
 - Hotkeys: `i`/`O` render scale, `P` shadows, `G` online (HUD still says P), `J`/`K` sensitivity, `N`/`M` volume. User preferences load next to the exe first, then platform config (`~/.config/slice4d/user_settings.json` on Linux); connection settings are embedded, overridable next to the exe.
-- Automated tests cover vendored Matchbox (requires local sockets), client settings-write ordering/shutdown, resource retention, shared map requests, independent actor construction and map load failure. They do not verify gameplay; the servers have no unit tests. No standalone test-suite or performance-instrumentation task was requested in the 2026-11-16 review response.
+- Automated tests cover shared protocol wire compatibility, vendored Matchbox (requires local sockets), client settings-write ordering/shutdown, resource retention, shared map requests, independent actor construction and map load failure. They do not verify gameplay; the servers have no unit tests. No standalone test-suite or performance-instrumentation task was requested in the 2026-11-16 review response.
 
 Known limitations: [allocator](issues/programming/global-allocator/) documents blink-alloc direct-mode realloc problems (client excludes debug, server excludes tests); [map compatibility](issues/programming/maps-out-of-sync-with-parser/) documents maps that fail loading; [tick scheduling](issues/programming/engine-tick-rate/) documents accumulated wake-up lateness. Consult these before diagnosing related failures.
 

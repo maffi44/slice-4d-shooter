@@ -52,16 +52,16 @@ pub enum BonusSpotStatus
     )
 }
 
-impl From<client_server_protocol::BonusSpotStatus> for BonusSpotStatus
+impl From<net_protocol::gameplay::BonusSpotStatus> for BonusSpotStatus
 {
-    fn from(value: client_server_protocol::BonusSpotStatus) -> Self {
+    fn from(value: net_protocol::gameplay::BonusSpotStatus) -> Self {
         match value
         {
-            client_server_protocol::BonusSpotStatus::BonusOnTheSpot =>
+            net_protocol::gameplay::BonusSpotStatus::BonusOnTheSpot =>
             {
                 BonusSpotStatus::BonusOnTheSpot
             }
-            client_server_protocol::BonusSpotStatus::BonusCollected(id) =>
+            net_protocol::gameplay::BonusSpotStatus::BonusCollected(id) =>
             {
                 BonusSpotStatus::BonusCollected(id)
             }

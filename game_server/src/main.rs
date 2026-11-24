@@ -18,15 +18,15 @@ use std::{
         Instant
     }
 };
-use matchmaking_server_protocol::{
+use net_protocol::matchmaking::{
     GameServerMatchmakingServerProtocol,
     GameServerMessage, MatchmakingServerMessageToGameServer
 };
-use client_server_protocol::{
-    BonusSpotStatus, ClientMessage, FlagStatus, NetMessageToPlayer, NetMessageToServer, RemoteMessage, ServerMessage, Team
+use net_protocol::gameplay::{
+    BonusSpotStatus, ClientMessage, FlagStatus, NetMessageToPlayer, NetMessageToServer, RemoteCommand, RemoteMessage, ServerMessage, Team
 };
 
-use fyrox_core::rand::seq::SliceRandom;
+use rand::seq::SliceRandom;
 use matchbox_signaling::SignalingServer;
 use matchbox_socket::{
     PeerId,
@@ -624,12 +624,12 @@ impl GameSessionState {
                 ServerMessage::NetMessageToPlayer(
                     0u128,
                     NetMessageToPlayer::RemoteBoardCastMessage(
-                        client_server_protocol::RemoteMessage::SetMoveWBonusStatus(
+                        RemoteMessage::SetMoveWBonusStatus(
                             index as u32,
                             new_status,
                         )
                     )
-                ).to_packet(),
+                ).to_packet().into(),
                 player_info.peer_id
             );
         }
@@ -693,12 +693,12 @@ impl GameSessionState {
                 ServerMessage::NetMessageToPlayer(
                     0u128,
                     NetMessageToPlayer::RemoteBoardCastMessage(
-                        client_server_protocol::RemoteMessage::SetFlagStatus(
+                        RemoteMessage::SetFlagStatus(
                             flag_team,
                             new_status
                         )
                     )
-                ).to_packet(),
+                ).to_packet().into(),
                 player_info.peer_id
             );
         }
@@ -741,7 +741,7 @@ impl GameSessionState {
                                     self.blue_team_score,
                                 )
                             )
-                        ).to_packet(),
+                        ).to_packet().into(),
                         player_info.peer_id
                     );
                 }
@@ -762,7 +762,7 @@ impl GameSessionState {
                                         Team::Red
                                     )
                                 )
-                            ).to_packet(),
+                            ).to_packet().into(),
                             player_info.peer_id
                         );
                     }
@@ -783,7 +783,7 @@ impl GameSessionState {
                                         Team::Blue
                                     )
                                 )
-                            ).to_packet(),
+                            ).to_packet().into(),
                             player_info.peer_id
                         );
                     }
@@ -1037,7 +1037,7 @@ fn update_states_for_players(
             ServerMessage::NewSessionStarted(
                 server_start_time.elapsed().as_millis(),
                 player_info.team
-            ).to_packet(),
+            ).to_packet().into(),
             player_info.peer_id
         );
     }
@@ -1057,7 +1057,7 @@ fn shuffle_teams(players_state: &mut GameSessionState)
         keys.push(*key);
     }
 
-    let mut rng = fyrox_core::rand::thread_rng();
+    let mut rng = rand::rng();
 
     keys.shuffle(&mut rng);
 
@@ -1131,7 +1131,7 @@ async fn handle_player_connection(
             game_session_state.move_w_bonus.status,
             game_session_state.red_team_score,
             game_session_state.blue_team_score,
-        ).to_packet(),
+        ).to_packet().into(),
         connected_player_id
     );
 
@@ -1141,7 +1141,7 @@ async fn handle_player_connection(
             ServerMessage::NetMessageToPlayer(
                 0u128,
                 NetMessageToPlayer::RemoteCommand(
-                    client_server_protocol::RemoteCommand::SpawnHole(
+                    RemoteCommand::SpawnHole(
                         hole.position,
                         hole.radius,
                         hole.color,
@@ -1151,7 +1151,7 @@ async fn handle_player_connection(
                         hole.explode_final_time,
                     )
                 )
-            ).to_packet(),
+            ).to_packet().into(),
             connected_player_id
         );
     }
@@ -1160,14 +1160,14 @@ async fn handle_player_connection(
         channel.send(
             ServerMessage::PlayerConnected(
                 connected_player_id.0.as_u128()
-            ).to_packet(),
+            ).to_packet().into(),
             player_id.peer_id
         );
 
         channel.send(
             ServerMessage::PlayerConnected(
                 player_id.peer_id.0.as_u128()
-            ).to_packet(),
+            ).to_packet().into(),
             connected_player_id
         );
     }
@@ -1252,7 +1252,7 @@ fn make_teams_equal(
                     NetMessageToPlayer::RemoteBoardCastMessage(
                         RemoteMessage::SetNewTeam(Team::Red)
                     )
-                ).to_packet(),
+                ).to_packet().into(),
                 game_session_state
                     .players
                     .get(&key)
@@ -1301,7 +1301,7 @@ fn make_teams_equal(
                     NetMessageToPlayer::RemoteBoardCastMessage(
                         RemoteMessage::SetNewTeam(Team::Blue)
                     )
-                ).to_packet(),
+                ).to_packet().into(),
                 game_session_state
                     .players
                     .get(&key)
@@ -1366,7 +1366,7 @@ async fn handle_player_disconnection(
             relaible_channel.send(
                 ServerMessage::PlayerDisconnected(
                     disconnected_player_id.0.as_u128()
-                ).to_packet(),
+                ).to_packet().into(),
                 player_id.peer_id
             );
         }
@@ -1385,7 +1385,7 @@ fn process_player_message(
     from_player: PeerId,
     packet: matchbox_socket::Packet,
 ) {
-    if let Some(message) = ClientMessage::from_packet(packet) {
+    if let Some(message) = ClientMessage::from_packet(&packet) {
         match message
         {
             ClientMessage::DirectMessageToPlayer(to_player, message) => {
@@ -1420,14 +1420,14 @@ fn process_player_message(
                         ServerMessage::NetMessageToPlayer(
                             from_player.0.as_u128(),
                             message
-                        ).to_packet(),
+                        ).to_packet().into(),
                         player_info.unwrap().peer_id
                     );
                 } else {
                     channel.send(
                         ServerMessage::PlayerDisconnected(
                             to_player
-                        ).to_packet(),
+                        ).to_packet().into(),
                         from_player
                     );
                 }
@@ -1440,7 +1440,7 @@ fn process_player_message(
                             ServerMessage::NetMessageToPlayer(
                                 from_player.0.as_u128(),
                                 message.clone()
-                            ).to_packet(),
+                            ).to_packet().into(),
                             player_info.peer_id
                         );
                     }
@@ -1791,7 +1791,7 @@ async fn listening_to_matchmaking_server(
 
         stream.read_buf(&mut buf).await.unwrap();
 
-        let message = alkahest::deserialize::<GameServerMatchmakingServerProtocol, GameServerMatchmakingServerProtocol>(&buf);
+        let message = GameServerMatchmakingServerProtocol::from_packet(&buf);
 
         match message
         {

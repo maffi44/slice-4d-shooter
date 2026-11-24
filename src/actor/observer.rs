@@ -9,7 +9,7 @@ use crate::actor::main_player::constants::*;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 use rand::RngExt;
 
 use crate::{

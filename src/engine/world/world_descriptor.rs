@@ -25,7 +25,7 @@ use crate::{
     }, engine::transform::Transform
 };
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 use glam::{Vec4, Vec3};
 use serde_json::Value;
 use super::static_object::{WFloor, WRoof};

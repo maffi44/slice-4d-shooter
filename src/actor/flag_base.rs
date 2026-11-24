@@ -6,7 +6,7 @@
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 use glam::Vec4;
 
 use crate::{

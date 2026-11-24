@@ -14,7 +14,7 @@ use crate::engine::shared_systems::net::Reliability;
 pub mod player_inner_state;
 pub mod constants;
 
-use client_server_protocol::{
+use net_protocol::gameplay::{
     NetMessageToPlayer,
     RemoteCommand,
     RemoteMessage,

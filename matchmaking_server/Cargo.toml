@@ -8,15 +8,8 @@ edition = "2021"
 license = "AGPL-3.0-or-later"
 
 [dependencies]
-tokio = { version = "1.54", features = [ "process", "sync", "time", "rt", "fs" ] }
+net_protocol = { path = "../net_protocol" }
+tokio = { version = "1.54", features = [ "fs", "io-util", "net", "process", "rt", "sync", "time" ] }
+futures-util = { version = "0.3", default-features = false, features = ["sink"] }
 tokio-tungstenite = "0.30"
-fyrox-core = "1.0"
-alkahest = { version = "0.3", features = [ "derive" ] }
 serde_json = "1.0"
-
-[lib]
-name = "matchmaking_server_protocol"
-path = "src/matchmaking_server_protocol.rs"
-doc = false
-crate-type = ["lib"]
-

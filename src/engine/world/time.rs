@@ -3,7 +3,7 @@
 
 
 
-use web_time::Instant;
+use std::time::Instant;
 
 use crate::engine::shared_systems::time::{clamp_delta, GlobalTimeSystem};
 

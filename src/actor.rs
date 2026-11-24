@@ -345,7 +345,7 @@ pub enum MessageType {
     PhysicsMessages(PhysicsMessages),
 }
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 use flag::Flag;
 use glam::Vec4;
 use hole::Hole;

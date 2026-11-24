@@ -11,11 +11,10 @@ use std::{
         Weak,
     },
     thread::JoinHandle,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use glam::UVec2;
-use web_time::Instant;
 use wgpu::{Color, PipelineCompilationOptions, PollStatus, ShaderRuntimeChecks};
 use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy, window::Window};
 

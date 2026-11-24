@@ -1,7 +1,7 @@
 # Slice 4D Shooter - the first multiplayer shooter set in 4D space
 # Copyright (C) 2023-2026  Timofei Molokov
 
-workspace = { members = [ "game_server", "matchmaking_server", "matchbox_signaling_modified"], resolver = "2" }
+workspace = { members = [ "net_protocol", "game_server", "matchmaking_server", "matchbox_signaling_modified"], resolver = "2" }
 [package]
 name = "slice-4d-shooter"
 edition = "2021"
@@ -22,38 +22,30 @@ version = "0.5.10"
 
 [dependencies]
 
-matchmaking_server = { path = "./matchmaking_server" }
-game_server = { path = "./game_server" }
+net_protocol = { path = "net_protocol" }
 env_logger = "0.11"
-winit = {version = "0.30", features = ["rwh_05"]}
-windows-sys = {version = "0.61", features = ["Win32", "Win32_Media"]}
-wgpu = { version = "30", default-features = false, features = ["std", "parking_lot", "vulkan", "dx12", "metal", "webgpu", "wgsl"] }
+winit = "0.30"
+wgpu = { version = "30", default-features = false, features = ["std", "parking_lot", "vulkan", "dx12", "metal", "wgsl"] }
 bytemuck = { version = "1.25", features = [ "derive" ] }
-pollster = "1.0"
-tokio = { version = "1.54", features = ["fs", "sync", "time", "macros"] }
+tokio = { version = "1.54", features = ["fs", "sync", "time", "macros", "rt-multi-thread"] }
 tokio-tungstenite = "0.30"
-web-time = "1.1"
 glam = "0.34"
 rand = "0.10"
 blink-alloc = {version = "0.4", features = ["sync"]}
 fyrox-sound = "1.0"
 fyrox-resource = "1.0"
 fyrox-core = "1.0"
-image = "0.25"
+image = { version = "0.25", default-features = false, features = ["png"] }
 log = "0.4"
 serde_json = "1.0"
 serde = { version = "1.0", features = [ "derive" ] }
 dirs = "7.0"
-alkahest = { version = "0.3", features = [ "derive" ] }
-bincode = "2"
-console_error_panic_hook = "0.1"
-console_log = "1.0"
 getrandom = "0.4"
 matchbox_socket = "0.15.0"
-rustc-hash = "2.1"
 opener = "0.9"
 gilrs = "0.11"
-winresource = "0.1.34"
+
+[target.'cfg(windows)'.dependencies]
 libloading = "0.9"
 
 [[bin]]
@@ -75,4 +67,8 @@ winresource = "0.1.34"
 
 [dev-dependencies]
 # local sockets for the NetSystem connection-lifetime tests
-tokio = { version = "1.54", features = ["net", "io-util", "rt-multi-thread"] }
+tokio = { version = "1.54", features = ["net", "io-util"] }
+
+# Unoptimized Alkahest gameplay encoders exceed a standard test/worker thread's stack.
+[profile.dev.package.net_protocol]
+opt-level = 1

@@ -5,7 +5,7 @@ mod net_session;
 
 use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
-use client_server_protocol::{NetMessageToPlayer, NetMessageToServer, RemoteMessage, Team};
+use net_protocol::gameplay::{NetMessageToPlayer, NetMessageToServer, RemoteMessage, Team};
 use fyrox_sound::source::Status;
 use glam::{Vec3, Vec4};
 

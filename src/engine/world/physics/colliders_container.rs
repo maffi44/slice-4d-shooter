@@ -3,7 +3,7 @@
 
 
 
-use client_server_protocol::Team;
+use net_protocol::gameplay::Team;
 
 use crate::{
     actor::ActorID, engine::{world::physics::{

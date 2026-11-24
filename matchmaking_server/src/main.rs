@@ -3,15 +3,13 @@
 
 
 
-pub mod matchmaking_server_protocol;
-
-use matchmaking_server_protocol::{
+use net_protocol::matchmaking::{
     GameServerMatchmakingServerProtocol,
     ClientMatchmakingServerProtocol,
-    MatchmakingServerMessage,
+    MatchmakingServerMessage, MatchmakingServerMessageToGameServer,
     GameServerMessage,
     ClientMessage,
-    GameVersion
+    GameVersion, GameType
 };
 
 use core::panic;
@@ -32,7 +30,7 @@ use tokio::{
     }
 };
 
-use fyrox_core::futures::{SinkExt, StreamExt};
+use futures_util::{SinkExt, StreamExt};
 use serde_json::{
     Value,
     Map,
@@ -40,7 +38,6 @@ use serde_json::{
 use tokio_tungstenite::accept_async;
 use std::collections::HashMap;
 
-use crate::matchmaking_server_protocol::GameType;
 
 #[derive(Clone, Debug)]
 struct Config
@@ -173,7 +170,7 @@ async fn handle_client_connection(
 
     while let Some(Ok(msg)) = receiver_from_client.next().await {
         let message =
-            alkahest::deserialize::<ClientMatchmakingServerProtocol, ClientMatchmakingServerProtocol>(&msg.into_data());
+            ClientMatchmakingServerProtocol::from_packet(&msg.into_data());
 
         if message.is_ok()
         {
@@ -625,7 +622,7 @@ async fn check_game_servers_status(
                 Some(mut stream) =>
                 {
                     let message = GameServerMatchmakingServerProtocol::MatchmakingServerMessageToGameServer(
-                        matchmaking_server_protocol::MatchmakingServerMessageToGameServer::GiveMePlayersAmount
+                        MatchmakingServerMessageToGameServer::GiveMePlayersAmount
                     );
 
                     match stream.write_all(&message.to_packet()).await
@@ -641,7 +638,7 @@ async fn check_game_servers_status(
                             {
                                 Ok(Ok(_)) => {
 
-                                    let message = alkahest::deserialize::<GameServerMatchmakingServerProtocol, GameServerMatchmakingServerProtocol>(&buf);
+                                    let message = GameServerMatchmakingServerProtocol::from_packet(&buf);
 
                                     match message
                                     {

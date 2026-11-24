@@ -6,6 +6,8 @@ Newest closure first. A task is listed here only after the author confirms its c
 
 | Task | Opened | Closed | Resolution |
 |---|---|---|---|
+| [Extract the shared network protocol into a workspace library](programming/shared-network-protocol/) | 2026-11-24 | 2026-11-24 | Done |
+| [Clean dependencies and obsolete build configuration](programming/dependency-and-build-cleanup/) | 2026-11-16 | 2026-11-24 | Done |
 | [Recover a lost presentation surface](programming/lost-render-surface/) | 2026-11-24 | 2026-11-24 | Done |
 | [Bound the lifetime of runtime resource registry entries](programming/resource-registry-retention/) | 2026-11-24 | 2026-11-24 | Done — manual engine maintenance helper |
 | [Research: show GPU-rendered wgpu textures in Fyrox UI without CPU copies](programming/fyrox-ui-gpu-textures/) | 2026-11-24 | 2026-11-24 | Done |

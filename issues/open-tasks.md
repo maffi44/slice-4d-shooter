@@ -23,7 +23,6 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 9 |
 | [Separate development CI from release deployment](programming/ci-validation-and-release/) | Normal | Complex | Open — not implemented | 2026-11-16 | 13 |
 | [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/) | Normal | Complex | Open — not implemented | 2026-11-16 | 15 |
-| [Clean dependencies and obsolete build configuration](programming/dependency-and-build-cleanup/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 16 |
 | [Wait for the next render deadline without a fixed sleep ceiling](programming/render-deadline-wait/) | Normal | Moderate | Open — not implemented | 2026-11-20 | — |
 | [In-world 4D screens](programming/in-world-4d-screens/) | Normal | Very complex | Backlog — design pending | 2026-11-12 | — |
 | [Authoritative server and transport](programming/network-authoritative-server-and-transport/) | Normal | Very complex | Backlog — design pending | 2026-11-12 | — |
@@ -52,7 +51,6 @@ Estimates cover the work and verification described in each task. Within each gr
 - [Discover bundled destination maps from level JSON](programming/discover-linked-maps/)
 - [Preserve short presses and multiple input bindings](programming/input-button-state/)
 - [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/)
-- [Clean dependencies and obsolete build configuration](programming/dependency-and-build-cleanup/)
 - [Wait for the next render deadline without a fixed sleep ceiling](programming/render-deadline-wait/)
 - [Protect GPU upload buffers from overflow](programming/gpu-buffer-overflow/)
 
