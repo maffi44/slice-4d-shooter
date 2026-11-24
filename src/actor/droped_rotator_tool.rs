@@ -1,7 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
@@ -46,7 +46,7 @@ pub struct DropedRotatorTool
 impl DropedRotatorTool
 {
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         transform: Transform,
     ) -> Self
     {
@@ -99,7 +99,7 @@ impl DropedRotatorTool
 
 
         DropedRotatorTool {
-            get_score_sound: resources.sound(
+            get_score_sound: resources.load_media(
                 crate::embedded_asset!("sounds/get_score.wav"), Retention::Session,
             ),
 

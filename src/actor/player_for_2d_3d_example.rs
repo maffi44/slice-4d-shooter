@@ -2,7 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use crate::engine::shared_systems::audio::AudioSystem;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
@@ -1243,7 +1243,7 @@ impl PlayerFor2d3dExample {
 
     #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         _blue_base_position: Vec4,
         _red_base_position: Vec4,
         red_spawn_points: Vec<Vec4>,
@@ -1298,16 +1298,16 @@ impl PlayerFor2d3dExample {
         ];
 
         PlayerFor2d3dExample {
-            rotating_sound: resources.sound(
+            rotating_sound: resources.load_media(
                 crate::embedded_asset!("sounds/rotating_around_w.wav"), Retention::Session,
             ),
-            shifting_sound: resources.sound(
+            shifting_sound: resources.load_media(
                 crate::embedded_asset!("sounds/shifting_along_w.wav"), Retention::Session,
             ),
-            player_get_scanned_sound: resources.sound(
+            player_get_scanned_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_get_scanned.wav"), Retention::Session,
             ),
-            player_respawned_sound: resources.sound(
+            player_respawned_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
             ),
 

@@ -31,6 +31,7 @@ There is no game-mode argument. UISystem and NetSystem exist in both modes; the 
 - `time: GlobalTimeSystem`: engine tick timing, counters, wall clock (no session time)
 - `input: InputSystem`: collected once per tick; actors read `shared.input.actions()`
 - `net: NetSystem`: transport only (connection handles, WebSocket/WebRTC, raw packets)
+- `resources`: the actor-facing `ResourceLoader` for the application cache
 - `audio`, `ui`
 - `gpu: Option<GpuContext>`, `render: Option<RenderScheduler>` (`None` in a ready headless engine; present in a ready graphical engine)
 - `runtime`: tokio, 2 async workers (networking, resource I/O and settings persistence), plus its blocking pool for CPU/native work
@@ -46,9 +47,24 @@ There is no game-mode argument. UISystem and NetSystem exist in both modes; the 
 
 During initial map preparation, constructors execute on a loading worker. They request their own assets and leave gameplay effects for activation. For example, `MachineGun` owns an optional typed sound-buffer handle and requests `embedded_asset!("sounds/machinegun_shot.wav")` in its constructor. The macro returns an `embedded/` key. Before compilation, `build.rs` scans Rust token trees under `src/` for direct `embedded_asset!("relative/path")` invocations and emits one `include_bytes!` per distinct key. Paths are relative to `src/assets/` and use forward slashes. The scan precedes macro expansion and includes literal markers in conditional and test code. The sound loader looks up the static bytes on a cache miss. A scoped request context collects the handles requested during this preparation. Decodes can overlap and readiness includes their completion. Headless skips audio requests. Devices and actors spawned during gameplay can use the same request API. A sound played while its buffer is pending gets a silent source that can receive controls until the buffer is attached. Without a sound device (headless, or the device failed to open) or without a buffer, play calls return no source before constructing one.
 
-**Resource system design intent.** An actor requests an asset by key and immediately owns a typed handle. The resource system owns cache lookup, loading, sharing, lifetime policy and publication of success or failure. The consumer chooses when to use the result. A tick can call `handle.try_read(...)` to obtain a value from ready data under one short lock. Pending work or a busy slot can wait until the next tick. A completed load error is a separate outcome. A caller performing asynchronous preparation can await the same handle.
+**Typed resource loading.** Actors receive a concrete `ResourceLoader` with two calls. Constructors borrow it and tick callbacks use `shared.resources` directly. `load<T>(key, retention)` returns a Fyrox `Resource<T>` immediately. `load_media<T>` returns `None` in headless mode before lookup, I/O, pinning or dependency collection. In graphical mode it returns `Some(load(...))`, including a handle when loading fails. Each world preparation owns a local dependency vector. It lends that vector to a temporary loader during actor construction, then awaits the recorded handles, including cache hits. Activation uses the ordinary shared loader to refill the descriptor’s spare actors. A required GPU-only asset fails immediately in headless mode. A world supports CPU-only preparation.
 
-A session request pins its resource until shutdown. Ordinary resources expire after 60 seconds of unused cache-update time. Startup registers its descriptor under the same key as transitions so CPU map preparation can overlap device discovery. A final trigger with `async_preload` requests the destination on addition. Otherwise it requests the destination at transition time. In both cases it polls each tick and sends one replacement message on success or logs one error on failure. Older maps may retain the boolean `async_load` field with either value.
+```rust
+// Shotgun constructor; the field's Option<SoundBufferResource> supplies the type.
+shotgun_shot_sound: resources.load_media(embedded_asset!("sounds/shotgun_shot.wav"), Retention::Session),
+
+// Trigger activation or transition. The tick polls the saved handle with try_read.
+self.next_world = Some(shared.resources.load(&self.next_level_name, Retention::WhileUsed));
+
+// EngineLoader starts the map before waiting for settings or the device.
+let initial = resources.load::<WorldResource>(&initial_world, Retention::WhileUsed);
+```
+
+The engine owns the cache through a private `Arc<ResourceSystem>`. The ordinary loader shares this allocation for its lifetime. The engine updates the cache once per tick after `shared.pre_simulate()` and before world simulation. The manager shares pending work and ready data by logical path. Each asset type maps the key to the extension its Fyrox loader owns. A cache miss resolves catalog bytes or reads a file on Tokio, then runs the same decoder or parser for both sources. Blocking work uses the runtime's blocking pool. The Fyrox handle publishes readiness or failure directly to waiters. A tick uses `try_read` for one short inspection and can defer a pending or busy handle until the next tick.
+
+To add a file-backed texture, implement `Asset` for its data, set `REQUIRES_GPU` if the prepared value owns GPU data, and register its loader in `ResourceSystem::new`. The loader uses catalog-first lookup, decodes, awaits the published device and uploads. The actor can infer the type from its optional texture field and use `load_media`. Dynamic render targets have separate lifetime and update requirements.
+
+A session request pins the shared handle until shutdown, including promotion after the initial request. Ordinary resources expire after 60 seconds of unused cache-update time. Startup and transitions load the same world key. The loading worker publishes device readiness before awaiting the initial map. Only the graphical finish of map preparation waits for the device. Closing the publisher before readiness fails the wait. Returning to a session-pinned map creates a fresh simulation from the retained descriptor. A final trigger with `async_preload` requests the destination on addition. Otherwise it requests the destination at transition time. In both cases it polls each tick and sends one replacement message on success or logs one error on failure. Older maps may retain the boolean `async_load` field with either value.
 
 Engine tick (`Engine::tick`), target 60 Hz (`GlobalTimeSystem::new(60)`). Note: The average period is currently a bit longer than 16.(6) ms, see [engine-tick-rate](../issues/programming/engine-tick-rate/):
 1. `shared.pre_simulate()`: gamepad input, `time.start_of_frame`, frame input actions, `net.tick` (poll sockets)
@@ -86,13 +102,14 @@ The capture-the-flag status identifies the carrier by its session peer ID. The f
 - Input: actors read `shared.input.actions()` directly (there is no `InputMaster`).
 
 ### Levels & assets
-- Maps are JSON files in `src/assets/maps/`. `WorldPreparation::load` resolves a name like `obstacle_course_levels/level-2` by trying these paths in order:
+- Maps are JSON files in `src/assets/maps/`. The world resource loader resolves a name like `obstacle_course_levels/level-2` by trying these paths in order:
   1. `./<name>.json`
   2. `./assets/maps/<name>.json`
   3. `./src/assets/maps/<name>.json`
   4. `../../../src/assets/maps/<name>.json`
 
-  It then falls back to maps embedded with `include_str!` (the list is near the top of `world_descriptor.rs`). To ship a new map inside the binary, add it to that list.
+  Missing files fall through to the generated embedded catalog. A present but unreadable or malformed override reports its path. CLI names and trigger destinations follow the same order. The bare level name, its `.json` spelling and its bundled marker share a cache key. Distinct logical paths retain distinct identities. To ship another bundled map, add its literal marker to `src/engine/shared_systems/resources/source.rs`.
+- WAV keys search the catalog first, then the corresponding disk path. A plain `sounds/name.wav` key and its bundled marker share a buffer.
 - `old_maps_archive/` holds unused historical maps.
 - Textures, skyboxes and shaders are embedded at compile time via `include_bytes!`/`include_str!`. Sounds go through fyrox-sound. The splash screen is `media/slice_4d_shooter_poster.png`.
 - Settings: `GlobalSettings::load` asynchronously reads configuration and creates a default file if needed. `save()` queues a small snapshot for one async writer; writes remain ordered and do not block tick/window callbacks. Normal exit queues the final save and awaits `flush()` before runtime destruction. This waits for file writes, not power-loss durability (`fsync`). Gameplay values are constants, not settings.

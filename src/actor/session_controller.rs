@@ -3,7 +3,7 @@
 
 mod net_session;
 
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use client_server_protocol::{NetMessageToPlayer, NetMessageToServer, RemoteMessage, Team};
 use fyrox_sound::source::Status;
@@ -142,21 +142,21 @@ pub struct SessionController
 impl SessionController
 {
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         it_is_2d_3d_example: bool,
     ) -> Self
     {
         let session_controller = SessionController {
-            get_score_sound: resources.sound(
+            get_score_sound: resources.load_media(
                 crate::embedded_asset!("sounds/get_score.wav"), Retention::Session,
             ),
-            lost_score_sound: resources.sound(
+            lost_score_sound: resources.load_media(
                 crate::embedded_asset!("sounds/lost_score.wav"), Retention::Session,
             ),
-            team_lost_sound: resources.sound(
+            team_lost_sound: resources.load_media(
                 crate::embedded_asset!("sounds/team_lost.wav"), Retention::Session,
             ),
-            team_win_sound: resources.sound(
+            team_win_sound: resources.load_media(
                 crate::embedded_asset!("sounds/team_win.wav"), Retention::Session,
             ),
 

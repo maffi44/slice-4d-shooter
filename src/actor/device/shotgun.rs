@@ -2,7 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use crate::engine::shared_systems::audio::AudioSystem;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::session_controller::send_to_session_controller;
 use crate::actor::session_controller::SessionControllerMessage;
@@ -80,17 +80,17 @@ pub struct Shotgun {
 
 impl Shotgun {
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         shooted_from_pivot_point_dir: Vec4,
         this_is_shotgun_for_2d_3d_example: bool,
 
     ) -> Self {
 
         Shotgun {
-            shotgun_shot_sound: resources.sound(
+            shotgun_shot_sound: resources.load_media(
                 crate::embedded_asset!("sounds/shotgun_shot.wav"), Retention::Session,
             ),
-            shotgun_shot_impact_sound: resources.sound(
+            shotgun_shot_impact_sound: resources.load_media(
                 crate::embedded_asset!("sounds/shotgun_shot_impact.wav"), Retention::Session,
             ),
 

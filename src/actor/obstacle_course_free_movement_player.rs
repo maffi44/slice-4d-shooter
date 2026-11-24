@@ -2,7 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use crate::engine::shared_systems::audio::AudioSystem;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
@@ -738,7 +738,7 @@ fn process_free_movement_input(
 impl ObstacleCourseFreeMovementPlayer {
 
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         spawn: Vec4,
         with_rotator_tool: bool,
     ) -> Self {
@@ -785,7 +785,7 @@ impl ObstacleCourseFreeMovementPlayer {
         let _dithering_effect_target = dithering_effect;
 
         ObstacleCourseFreeMovementPlayer {
-            player_respawned_sound: resources.sound(
+            player_respawned_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
             ),
 

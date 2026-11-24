@@ -1,7 +1,7 @@
 // Slice 4D Shooter - the first multiplayer shooter set in 4D space
 // Copyright (C) 2023-2026  Timofei Molokov
 
-use crate::engine::shared_systems::resources::{ResourceRead, ResourceRequests, ResourceSystem, Retention};
+use crate::engine::shared_systems::resources::{ResourceRead, ResourceLoader, Retention};
 use crate::engine::world::messenger::Messenger;
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
@@ -63,13 +63,13 @@ impl FinalTrgger
 {
     fn start_loading_next_world(&mut self, shared: &mut EngineSharedSystems)
     {
-        self.next_world = Some(shared.resources.request_world(&self.next_level_name));
+        self.next_world = Some(shared.resources.load::<WorldResource>(&self.next_level_name, Retention::WhileUsed));
     }
 
     /// Advances a triggered level: `PlayerBeatLevel` is broadcast once, on the tick the timer first
     /// passes `LEVEL_COMPLETION_TIME`; from `LEVEL_TRANSITION_TIME` the destination is polled each
     /// tick until it is ready (one `ReplaceRootWorld`) or failed (one error report).
-    fn advance_level_transition(&mut self, delta: f32, messenger: &mut Messenger, resources: &ResourceSystem)
+    fn advance_level_transition(&mut self, delta: f32, messenger: &mut Messenger, resources: &mut ResourceLoader)
     {
         let previous_timer = self.level_transition_timer;
         self.level_transition_timer += delta;
@@ -91,7 +91,7 @@ impl FinalTrgger
 
         if self.level_transition_timer > LEVEL_TRANSITION_TIME && !self.transition_finished
         {
-            let handle = self.next_world.get_or_insert_with(|| resources.request_world(&self.next_level_name));
+            let handle = self.next_world.get_or_insert_with(|| resources.load::<WorldResource>(&self.next_level_name, Retention::WhileUsed));
             match handle.try_read(|world| world.0.as_ref().expect("Loaded world descriptor").clone())
             {
                 std::task::Poll::Pending => return,
@@ -108,7 +108,7 @@ impl FinalTrgger
     }
 
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         transform: Transform,
         next_level_name: String,
         async_preload: bool,
@@ -154,7 +154,7 @@ impl FinalTrgger
         coloring_areas.push(coloring_area);
 
         FinalTrgger {
-            team_win_sound: resources.sound(
+            team_win_sound: resources.load_media(
                 crate::embedded_asset!("sounds/team_win.wav"), Retention::Session,
             ),
 
@@ -225,7 +225,7 @@ impl Actor for FinalTrgger
 
         if self.is_triggered
         {
-            self.advance_level_transition(delta, messenger, &shared.resources);
+            self.advance_level_transition(delta, messenger, &mut shared.resources);
         }
     }
 
@@ -397,27 +397,26 @@ mod tests
 {
     use super::*;
     use fyrox_resource::untyped::ResourceKind;
-    use std::sync::Arc;
+    use crate::engine::tests::headless_loader;
 
     const TICK: f32 = 0.25;
 
-    fn world_resources() -> (tokio::runtime::Runtime, Arc<ResourceSystem>)
+    fn world_resources() -> (tokio::runtime::Runtime, ResourceLoader<'static>)
     {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(1)
             .enable_all()
             .build()
             .unwrap();
-        let resources = Arc::new(ResourceSystem::new(true));
-        resources.register_world_loader(None, runtime.handle().clone());
+        let resources = headless_loader(&runtime);
         (runtime, resources)
     }
 
     /// A triggered final trigger whose destination handle is `next_world`.
-    fn triggered(resources: &ResourceSystem, next_world: Resource<WorldResource>) -> FinalTrgger
+    fn triggered(resources: &mut ResourceLoader, next_world: Resource<WorldResource>) -> FinalTrgger
     {
         let mut trigger = FinalTrgger::new(
-            &mut resources.requests(),
+            resources,
             Transform::new(),
             "next_level".to_string(),
             false,
@@ -432,7 +431,7 @@ mod tests
         trigger
     }
 
-    fn advance(trigger: &mut FinalTrgger, messenger: &mut Messenger, resources: &ResourceSystem, seconds: f32)
+    fn advance(trigger: &mut FinalTrgger, messenger: &mut Messenger, resources: &mut ResourceLoader, seconds: f32)
     {
         for _ in 0..(seconds / TICK) as usize
         {
@@ -460,16 +459,16 @@ mod tests
     #[test]
     fn ready_destination_completes_once_and_replaces_once()
     {
-        let (runtime, resources) = world_resources();
-        let next_world = resources.request_world("capture_the_flag_map");
+        let (runtime, mut resources) = world_resources();
+        let next_world = resources.load::<WorldResource>("capture_the_flag_map", Retention::WhileUsed);
         runtime.block_on(next_world.clone()).unwrap();
-        let mut trigger = triggered(&resources, next_world);
+        let mut trigger = triggered(&mut resources, next_world);
         let mut messenger = Messenger::new();
 
-        advance(&mut trigger, &mut messenger, &resources, 2.0);
+        advance(&mut trigger, &mut messenger, &mut resources, 2.0);
         assert_eq!(completion_broadcasts(&messenger), 0);
 
-        advance(&mut trigger, &mut messenger, &resources, 8.0);
+        advance(&mut trigger, &mut messenger, &mut resources, 8.0);
         assert_eq!(completion_broadcasts(&messenger), 1);
         assert_eq!(replacement_requests(&mut messenger), 1);
     }
@@ -477,19 +476,19 @@ mod tests
     #[test]
     fn delayed_destination_completes_once_and_replaces_when_ready()
     {
-        let (runtime, resources) = world_resources();
-        let ready = resources.request_world("capture_the_flag_map");
+        let (runtime, mut resources) = world_resources();
+        let ready = resources.load::<WorldResource>("capture_the_flag_map", Retention::WhileUsed);
         let descriptor = runtime.block_on(ready).unwrap().data_ref().0.clone();
         let next_world = Resource::<WorldResource>::new_pending(ResourceKind::Embedded);
-        let mut trigger = triggered(&resources, next_world.clone());
+        let mut trigger = triggered(&mut resources, next_world.clone());
         let mut messenger = Messenger::new();
 
-        advance(&mut trigger, &mut messenger, &resources, 8.0);
+        advance(&mut trigger, &mut messenger, &mut resources, 8.0);
         assert_eq!(completion_broadcasts(&messenger), 1);
         assert_eq!(replacement_requests(&mut messenger), 0);
 
         next_world.into_untyped().commit_ok(WorldResource(descriptor));
-        advance(&mut trigger, &mut messenger, &resources, 2.0);
+        advance(&mut trigger, &mut messenger, &mut resources, 2.0);
         assert_eq!(completion_broadcasts(&messenger), 1);
         assert_eq!(replacement_requests(&mut messenger), 1);
     }
@@ -497,13 +496,13 @@ mod tests
     #[test]
     fn missing_destination_completes_once_without_replacement()
     {
-        let (runtime, resources) = world_resources();
-        let next_world = resources.request_world("missing-final-trigger-test-level");
+        let (runtime, mut resources) = world_resources();
+        let next_world = resources.load::<WorldResource>("missing-final-trigger-test-level", Retention::WhileUsed);
         assert!(runtime.block_on(next_world.clone()).is_err());
-        let mut trigger = triggered(&resources, next_world);
+        let mut trigger = triggered(&mut resources, next_world);
         let mut messenger = Messenger::new();
 
-        advance(&mut trigger, &mut messenger, &resources, 10.0);
+        advance(&mut trigger, &mut messenger, &mut resources, 10.0);
         assert_eq!(completion_broadcasts(&messenger), 1);
         assert_eq!(replacement_requests(&mut messenger), 0);
         assert!(trigger.transition_finished);

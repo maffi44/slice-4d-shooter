@@ -6,7 +6,7 @@
 use super::{World, WorldConfig};
 use crate::engine::shared_systems::EngineSharedSystems;
 use fyrox_core::parking_lot::Mutex;
-use crate::engine::shared_systems::resources::{ResourceSystem, ResourceRequests};
+use crate::engine::shared_systems::resources::{ResourceSystem, ResourceLoader};
 use std::sync::Arc;
 use std::{borrow::Cow, collections::HashMap};
 
@@ -31,24 +31,6 @@ use serde_json::Value;
 use super::static_object::{WFloor, WRoof};
 use wgpu::{RenderPipeline, ShaderRuntimeChecks};
 
-
-static LEVELS: &[(&str, &str)] =
-&[
-    ("capture_the_flag_map", include_str!("../../.././src/assets/maps/capture_the_flag_map.json")),
-    ("map_2d_3d", include_str!("../../.././src/assets/maps/map_2d_3d.json")),
-    ("obstacle_course_levels/level-1", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-1.json")),
-    ("obstacle_course_levels/level-2", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-2.json")),
-    ("obstacle_course_levels/level-3", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-3.json")),
-    ("obstacle_course_levels/level-4", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-4.json")),
-    ("obstacle_course_levels/level-5", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-5.json")),
-    ("obstacle_course_levels/level-6", include_str!("../../.././src/assets/maps/obstacle_course_levels/level-6.json")),
-];
-
-fn get_preloaded_level(level_name: &str) -> Option<&'static str>
-{
-    LEVELS.iter()
-        .find_map(|&(key, json)| (key == level_name).then_some(json))
-}
 
 #[derive(Clone, Copy, Debug)]
 pub struct EnvironmentVisualSettings {
@@ -103,25 +85,24 @@ pub struct WorldDescriptorGpu {
 
 impl WorldDescriptor {
 
-    pub(crate) fn take_actors(&self, resources: &ResourceSystem) -> (ActorWrapper, Vec<ActorWrapper>) {
-        let mut requests = resources.requests();
-        let main = parse_json_main_actor(&self.main_actor_description, &mut requests)
+    pub(in crate::engine) fn take_actors(&self, resources: &mut ResourceLoader) -> (ActorWrapper, Vec<ActorWrapper>) {
+        let main = parse_json_main_actor(&self.main_actor_description, resources)
             .expect("Wrong JSON map format: missing main actor");
-        let others = parse_json_actors(&self.actor_descriptions, &self.default_settings, &self.materials_table, self.it_is_2d_3d_example, &mut requests);
+        let others = parse_json_actors(&self.actor_descriptions, &self.default_settings, &self.materials_table, self.it_is_2d_3d_example, resources);
         std::mem::replace(&mut *self.ready_actors.lock(), (main, others))
     }
 
     /// Refill the spare from the warm cache before publishing the world. Callbacks run
     /// after the swap, so they may request this descriptor again.
     pub fn give_me_world(&self, config: WorldConfig, shared: &mut EngineSharedSystems) -> World {
-        let (main, actors) = self.take_actors(&shared.resources);
+        let (main, actors) = self.take_actors(&mut shared.resources);
         World::activate(self, main, actors, config, shared)
     }
 }
 
 /// CPU map data and shader inputs retained until the GPU is ready.
 /// Consumed once; the finished descriptor does not retain these temporary inputs.
-pub(crate) struct WorldPreparation
+pub(in crate::engine) struct WorldPreparation
 {
     descriptor: WorldDescriptor,
     shader_name: String,
@@ -130,37 +111,17 @@ pub(crate) struct WorldPreparation
 
 impl WorldPreparation
 {
-    pub async fn load(name: &str, resources: Arc<ResourceSystem>) -> Result<Self, String>
+    pub async fn from_bytes(source: Cow<'static, [u8]>, resources: Arc<ResourceSystem>) -> Result<Self, String>
     {
-        let candidates = [
-            format!("./{}.json", name),
-            format!("./assets/maps/{}.json", name),
-            format!("./src/assets/maps/{}.json", name),
-            format!("../../../src/assets/maps/{}.json", name),
-        ];
-
-        let mut source = None;
-        for path in &candidates
-        {
-            // One operation per file, rather than separate open/read jobs in Tokio's fs pool.
-            if let Ok(content) = tokio::fs::read_to_string(path).await
-            {
-                source = Some(Cow::Owned(content));
-                break;
-            }
-        }
-        let source = source.or_else(|| get_preloaded_level(name).map(Cow::Borrowed))
-            .ok_or_else(|| format!("Cannot open level {name}"))?;
-        let name = name.to_owned();
-
-        // JSON/geometry parsing does not yield; a large map must not occupy an async worker.
+        // Parsing and actor construction run off the async workers.
         let (prepared, dependencies) = tokio::task::spawn_blocking(move || {
-            let json = serde_json::from_str(&source)
-                .expect(&format!("ERROR: can't parse the JSON of the {} map", name));
-            let mut requests = resources.preparation_requests();
-            let prepared = parse_json_level(json, &mut requests);
-            (prepared, requests.into_dependencies())
-        }).await.map_err(|err| err.to_string())?;
+            let json = serde_json::from_slice(&source)
+                .map_err(|error| format!("Wrong JSON map format: {error}"))?;
+            let mut dependencies = Vec::new();
+            let mut loader = resources.loader_with_dependencies(&mut dependencies);
+            let prepared = parse_json_level(json, &mut loader);
+            Ok::<_, String>((prepared, dependencies))
+        }).await.map_err(|err| err.to_string())??;
         for dependency in dependencies {
             dependency.await.map_err(|err| format!("Actor resource failed: {err:?}"))?;
         }
@@ -188,7 +149,7 @@ impl WorldPreparation
 
 
 
-fn parse_json_level(json: Value, resources: &mut ResourceRequests) -> WorldPreparation
+fn parse_json_level(json: Value, resources: &mut ResourceLoader) -> WorldPreparation
 {
     let json_level = json
     .as_object()
@@ -1842,7 +1803,7 @@ fn parse_json_into_material_index(
 
 fn parse_json_main_actor(
     json: &Value,
-    resources: &mut ResourceRequests,
+    resources: &mut ResourceLoader,
 ) -> Option<ActorWrapper>
 {
 
@@ -2000,7 +1961,7 @@ fn parse_allowed_dynamic_objects_in_bsp_tree(
 }
 
 fn parse_main_player(
-    resources: &mut ResourceRequests,
+    resources: &mut ResourceLoader,
     actor_value: &Value,
 ) -> MainPlayer
 {
@@ -2043,7 +2004,7 @@ fn parse_main_player(
 
 
 fn parse_obstacle_course_free_movement_player(
-    resources: &mut ResourceRequests,
+    resources: &mut ResourceLoader,
     actor_value: &Value,
 ) -> ObstacleCourseFreeMovementPlayer
 {
@@ -2077,7 +2038,7 @@ fn parse_json_actors(
     defaults: &DefaultStaticObjectSettings,
     materials_table: &HashMap<String, i32>,
     it_is_2d_3d_example: bool,
-    resources: &mut ResourceRequests,
+    resources: &mut ResourceLoader,
 ) -> Vec<ActorWrapper>
 {
 
@@ -2187,7 +2148,7 @@ fn parse_new_spawn_area_actor(
 }
 
 fn parse_droped_rotator_tool_actor(
-    resources: &mut ResourceRequests,
+    resources: &mut ResourceLoader,
     actor_value: &Value,
 ) -> DropedRotatorTool {
 
@@ -2295,7 +2256,7 @@ fn parse_triggering_special_lift_actor(
 
 
 fn parse_trigger_orb(
-    resources: &mut ResourceRequests,
+    resources: &mut ResourceLoader,
     actor_value: &Value
 ) -> TriggerOrb
 {
@@ -2342,7 +2303,7 @@ fn parse_trigger_orb(
 
 
 fn parse_final_trigger(
-    resources: &mut ResourceRequests,
+    resources: &mut ResourceLoader,
     actor_value: &Value,
     defaults: &DefaultStaticObjectSettings,
     materials_table: &HashMap<String, i32>
@@ -2441,13 +2402,13 @@ fn parse_final_trigger(
 }
 
 
-fn parse_ctf_session_controller_actor(resources: &mut ResourceRequests, it_is_2d_3d_example: bool) -> SessionController
+fn parse_ctf_session_controller_actor(resources: &mut ResourceLoader, it_is_2d_3d_example: bool) -> SessionController
 {
     SessionController::new(resources, it_is_2d_3d_example)
 }
 
 fn parse_flag_actor(
-    resources: &mut ResourceRequests,
+    resources: &mut ResourceLoader,
     actor_value: &Value,
 )-> Flag
 {

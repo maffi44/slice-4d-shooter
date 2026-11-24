@@ -2,7 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use crate::engine::shared_systems::audio::AudioSystem;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
@@ -104,14 +104,14 @@ pub struct PlayersProjections
 impl PlayersProjections
 {
     pub fn new(
-        resources: &mut ResourceRequests,) -> Self
+        resources: &mut ResourceLoader,) -> Self
     {
         PlayersProjections
         {
-            projection_captured_sound: resources.sound(
+            projection_captured_sound: resources.load_media(
                 crate::embedded_asset!("sounds/projection_captured.wav"), Retention::Session,
             ),
-            new_projection_sound: resources.sound(
+            new_projection_sound: resources.load_media(
                 crate::embedded_asset!("sounds/new_projection.wav"), Retention::Session,
             ),
 
@@ -714,7 +714,7 @@ impl PlayerProjection
 
 impl PlayerScreenEffects
 {
-    pub fn new(resources: &mut ResourceRequests) -> Self {
+    pub fn new(resources: &mut ResourceLoader) -> Self {
         PlayerScreenEffects {
             w_scanner_is_active: false,
             w_scanner_radius: 0.0,
@@ -747,16 +747,16 @@ pub struct WScanner
 impl WScanner
 {
     pub fn new(
-        resources: &mut ResourceRequests,) -> WScanner
+        resources: &mut ResourceLoader,) -> WScanner
     {
         let w_scanner_reloading_time =  SCANNER_RELOADING_TIME;
         let w_scanner_enemies_show_time =  SCANNER_SHOW_ENEMIES_TIME;
 
         WScanner {
-            scanner_sound_sound: resources.sound(
+            scanner_sound_sound: resources.load_media(
                 crate::embedded_asset!("sounds/scanner_sound.wav"), Retention::Session,
             ),
-            anti_projection_mode_enabled_sound: resources.sound(
+            anti_projection_mode_enabled_sound: resources.load_media(
                 crate::embedded_asset!("sounds/anti_projection_mode_enabled.wav"), Retention::Session,
             ),
 
@@ -3768,7 +3768,7 @@ pub fn put_device_into_device_slot(
 impl MainPlayer {
 
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         // master: InputMaster,
         // audio_system: &mut AudioSystem,
 
@@ -3781,16 +3781,16 @@ impl MainPlayer {
         let w_scanner = WScanner::new(resources);
 
         MainPlayer {
-            player_get_scanned_sound: resources.sound(
+            player_get_scanned_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_get_scanned.wav"), Retention::Session,
             ),
-            player_respawned_sound: resources.sound(
+            player_respawned_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
             ),
-            rotating_around_w_sound: resources.sound(
+            rotating_around_w_sound: resources.load_media(
                 crate::embedded_asset!("sounds/rotating_around_w.wav"), Retention::Session,
             ),
-            shifting_along_w_sound: resources.sound(
+            shifting_along_w_sound: resources.load_media(
                 crate::embedded_asset!("sounds/shifting_along_w.wav"), Retention::Session,
             ),
 

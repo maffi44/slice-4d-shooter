@@ -1,21 +1,25 @@
 # Unify typed resource requests across actors and engine startup
 
-- **Status:** Open — design pending
+- **Status:** Done
 - **Priority:** Normal
-- **Complexity:** Complex
 - **Created:** 2026-11-23
+- **Closed:** 2026-11-24
+- **Resolution:** Done
 - **Context:** [Caller examples, existing behavior and design choices](unified-resource-requests-context.md)
 
 ## Goal
 
 [accepted] Design the smallest common request that serves a sound in an actor, a destination level in a trigger and the initial world in `EngineLoader`. The caller supplies a key and retention, and receives a typed handle immediately. Rust can infer the resource type from the destination field or the caller can specify it explicitly. The resource system owns lookup, sharing, background preparation and publication of success or failure. Introduce a type-specific public operation only when a concrete caller requirement justifies it.
 
-## Design decisions to make with the author
+## Approved design and implementation
 
-- Choose how a logical key selects embedded bytes or an external file, including ambiguous keys and the precedence of local map overrides. Prefer one request; consider an explicit path variant if the caller needs to select a particular file.
-- Decide how to express optional sound in headless mode and how to collect a world's preparation dependencies through the common request.
-- Agree on startup ordering and who chooses retention for the initial world. A future menu should support `Session`; the initial world can also be an arbitrary map supplied by `-l`.
-- Demonstrate how a future file-backed texture would fit the contract. Texture implementation and dynamic render targets belong to their own work.
+[accepted] The ordinary `load<T>` returns a typed handle. The media call skips headless requests and otherwise delegates to the ordinary call. Required GPU-only resources return a terminal error in headless. Caller-selected retention and each world's dependency collection apply through the shared path.
+
+[accepted] CLI and trigger map names prefer the same ordered local JSON candidates, then the embedded catalog. Other file resources prefer the catalog. The engine starts its initial world with `WhileUsed` before device discovery completes. A future caller can request a resident menu with `Session`. See the [architecture reference](../../../docs/engine-architecture.md) for caller examples and the extension steps for a file-backed texture.
+
+## Review follow-up
+
+[accepted] Gameplay receives a concrete `ResourceLoader` exposing only `load` and `load_media`. Each world preparation lends its dependency list to the loader during construction, then awaits it. The engine owns cache maintenance. See the [review discussion](unified-resource-requests-context.md#2026-11-24--review-of-actor-access-and-preparation-ownership).
 
 ## Completion criteria
 

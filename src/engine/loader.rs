@@ -3,15 +3,17 @@
 
 use std::{
     panic::{catch_unwind, AssertUnwindSafe},
-    sync::{atomic::{AtomicBool, Ordering}, mpsc, Arc, OnceLock},
+    sync::{mpsc, Arc, OnceLock},
     thread::{self, JoinHandle},
 };
 
+use tokio::sync::watch;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy, window::Window};
 
 use super::{
     shared_systems::{EngineSharedSystems, global_settings::GlobalSettings, render::{GpuContext, RenderScheduler}},
-    world::world_descriptor::{WorldDescriptor, WorldPreparation},
+    world::world_descriptor::WorldDescriptor,
+    shared_systems::resources::{ResourceSystem, Retention, WorldResource},
 };
 
 /// Starts async map/settings loading and GPU driver discovery in parallel. No window or Engine yet.
@@ -30,25 +32,24 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
 
     let (sender, receiver) = mpsc::channel();
     let wake = Arc::new(OnceLock::new());
-    let cancelled = Arc::new(AtomicBool::new(false));
+    let (cancelled, mut worker_cancelled) = watch::channel(false);
     let worker_wake = wake.clone();
-    let worker_cancelled = cancelled.clone();
 
     // An OS thread coordinates blocking initialization and owns the runtime until it is ready.
     // In particular, runtime destruction must not happen inside a Tokio async task.
     let worker = thread::Builder::new().name("engine-loader".into()).spawn(move || {
         let result = catch_unwind(AssertUnwindSafe(|| -> Result<Option<LoadedEngine>, String> {
-            let resources = Arc::new(super::shared_systems::resources::ResourceSystem::new(headless));
-            let world_resources = resources.clone();
-            let initial_key = initial_world.clone();
-            let descriptor = runtime.spawn(async move { WorldPreparation::load(&initial_world, world_resources).await });
+            let (gpu_sender, gpu_receiver) = watch::channel(None);
+            let resource_system = ResourceSystem::new(runtime.handle().clone(), (!headless).then_some(gpu_receiver));
+            let mut resources = resource_system.loader();
+            let initial = resources.load::<WorldResource>(&initial_world, Retention::WhileUsed);
             let settings = runtime.block_on(settings).map_err(|error| error.to_string())?;
             let mut shared = EngineSharedSystems::new(headless, runtime, settings, resources);
 
             if let Some(instance) = instance
             {
                 let instance = shared.runtime.block_on(instance).map_err(|error| error.to_string())?;
-                if worker_cancelled.load(Ordering::Relaxed) { return Ok(None); }
+                if *worker_cancelled.borrow() { return Ok(None); }
 
                 let (reply, surface) = mpsc::sync_channel(1);
                 if !publish(&sender, &worker_wake, LoadEvent::CreateSurface { instance: instance.clone(), reply })
@@ -58,10 +59,12 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
                 let Ok(WindowSurface { window, surface, size }) = surface.recv() else {
                     return Ok(None);
                 };
-                if worker_cancelled.load(Ordering::Relaxed) { return Ok(None); }
+                if *worker_cancelled.borrow() { return Ok(None); }
 
                 let (gpu, surface, config) = pollster::block_on(GpuContext::new(instance, surface, size));
-                if worker_cancelled.load(Ordering::Relaxed) { return Ok(None); }
+                if *worker_cancelled.borrow() { return Ok(None); }
+
+                gpu_sender.send_replace(Some(gpu.clone()));
 
                 // UI textures/pipelines and the upscale pipeline are expensive too.
                 let frame_rate = shared.global_settings.user.target_render_frame_rate;
@@ -69,14 +72,18 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
                 shared.gpu = Some(gpu);
             }
 
-            let preparation = shared.runtime.block_on(descriptor).map_err(|error| error.to_string())??;
-            if worker_cancelled.load(Ordering::Relaxed) { return Ok(None); }
-            let descriptor = Arc::new(preparation.finish(shared.gpu.clone()));
-            shared.resources.register_world_loader(shared.gpu.clone(), shared.runtime.handle().clone());
-            shared.resources.register_initial_world(&initial_key, descriptor.clone());
-            if worker_cancelled.load(Ordering::Relaxed) { return Ok(None); }
+            let ready = shared.runtime.block_on(async {
+                tokio::select! {
+                    biased;
+                    _ = worker_cancelled.changed() => Ok(None),
+                    world = initial => world.map(Some),
+                }
+            }).map_err(|error| format!("Cannot load initial world {initial_world}: {error:?}"))?;
+            let Some(ready) = ready else { return Ok(None); };
+            let descriptor = ready.data_ref().0.as_ref().expect("Loaded world descriptor").clone();
+            if *worker_cancelled.borrow() { return Ok(None); }
 
-            Ok(Some(LoadedEngine { shared, descriptor }))
+            Ok(Some(LoadedEngine { resource_system, shared, descriptor }))
         })).unwrap_or_else(|panic| {
             let message = panic.downcast_ref::<String>().map(String::as_str)
                 .or_else(|| panic.downcast_ref::<&str>().copied())
@@ -97,7 +104,7 @@ pub struct EngineLoader
     pub(super) receiver: Option<mpsc::Receiver<LoadEvent>>,
     worker: Option<JoinHandle<()>>,
     wake: Arc<OnceLock<EventLoopProxy<()>>>,
-    cancelled: Arc<AtomicBool>,
+    cancelled: watch::Sender<bool>,
 }
 
 impl EngineLoader
@@ -111,7 +118,7 @@ impl EngineLoader
 
     pub(super) fn cancel(&self)
     {
-        self.cancelled.store(true, Ordering::Relaxed);
+        self.cancelled.send_replace(true);
     }
 }
 
@@ -133,6 +140,7 @@ impl Drop for EngineLoader
 /// Only the loader can construct this value: all required loading work has succeeded.
 pub struct LoadedEngine
 {
+    pub(super) resource_system: Arc<ResourceSystem>,
     pub(super) shared: EngineSharedSystems,
     pub(super) descriptor: Arc<WorldDescriptor>,
 }

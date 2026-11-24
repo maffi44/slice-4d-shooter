@@ -2,7 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use crate::engine::shared_systems::audio::AudioSystem;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
@@ -138,7 +138,7 @@ pub struct Flag
 impl Flag
 {
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         flag_owned_by_team: Team, transform_of_the_base: Transform) -> Self
     {
         let target_flag_swing_position = get_random_vec4(
@@ -208,10 +208,10 @@ impl Flag
         ];
 
         Flag {
-            flag_captured_sound: resources.sound(
+            flag_captured_sound: resources.load_media(
                 crate::embedded_asset!("sounds/flag_captured.wav"), Retention::Session,
             ),
-            flag_returned_sound: resources.sound(
+            flag_returned_sound: resources.load_media(
                 crate::embedded_asset!("sounds/flag_returned.wav"), Retention::Session,
             ),
 
@@ -910,7 +910,7 @@ mod tests
     use super::*;
     use crate::{
         actor::{move_w_bonus::MoveWBonusSpot, ActorWrapper},
-        engine::{shared_systems::resources::ResourceSystem, world::actors::Actors},
+        engine::{tests::headless_loader, world::actors::Actors},
     };
 
     const FLAG_ID: ActorID = 5;
@@ -919,8 +919,9 @@ mod tests
 
     fn flag_with_status(status: FlagStatus) -> Flag
     {
-        let resources = ResourceSystem::new(true);
-        let mut flag = Flag::new(&mut resources.requests(), Team::Red, Transform::new());
+        let runtime = tokio::runtime::Builder::new_current_thread().build().unwrap();
+        let mut resources = headless_loader(&runtime);
+        let mut flag = Flag::new(&mut resources, Team::Red, Transform::new());
         flag.set_id(FLAG_ID);
         flag.status = status;
         if let FlagStatus::Captured(id) = status { flag.carrier_actor_id = Some(id); }
@@ -1030,7 +1031,7 @@ mod tests
         stored_flag(&actors).on_player_died(CARRIER, Some(OTHER), false, &mut deaths);
         assert_eq!(flag_drop_reports(&deaths), 1);
 
-        let doll = PlayerDoll::new(OTHER, 1.0, Transform::new(), true, &mut shared.resources.requests(), Team::Blue, false);
+        let doll = PlayerDoll::new(OTHER, 1.0, Transform::new(), true, &mut shared.resources, Team::Blue, false);
         messenger.send_command(Command {
             sender: 0,
             command_type: CommandType::SpawnActor(Box::new(ActorWrapper::PlayersDoll(doll))),

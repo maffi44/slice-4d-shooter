@@ -17,7 +17,7 @@ use glam::UVec2;
 use winit::{dpi::PhysicalSize, window::Window};
 
 use self::{
-    shared_systems::EngineSharedSystems,
+    shared_systems::{resources::ResourceSystem, EngineSharedSystems},
     world::{
         world_descriptor::WorldDescriptor,
         OuterWorldMessage,
@@ -43,6 +43,7 @@ pub struct Engine
 {
     // Drop worlds and shared systems (including the render thread) before the window.
     root_world: Option<World>,
+    resource_system: Arc<ResourceSystem>,
     pub shared: EngineSharedSystems,
     window: Option<Arc<Window>>,
     quit_requested: bool,
@@ -56,6 +57,7 @@ impl Engine
     {
         let mut engine = Engine {
             root_world: None,
+            resource_system: loaded.resource_system,
             shared: loaded.shared,
             window,
             quit_requested: false,
@@ -78,6 +80,7 @@ impl Engine
     pub fn tick(&mut self)
     {
         self.shared.pre_simulate();
+        self.resource_system.update(self.shared.time.prev_frame_duration());
 
         if let Some(root_world) = &mut self.root_world
         {
@@ -219,26 +222,74 @@ pub(crate) mod tests
 {
     use super::*;
 
-    pub(crate) fn headless_map() -> (EngineSharedSystems, Arc<WorldDescriptor>)
+    fn loaded_headless_map() -> LoadedEngine
     {
-        use shared_systems::resources::ResourceSystem;
-        use world::world_descriptor::WorldPreparation;
+        use shared_systems::resources::{Retention, WorldResource};
 
         let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-        let resources = Arc::new(ResourceSystem::new(true));
-        let map = WorldPreparation::load("capture_the_flag_map", resources.clone());
-        let descriptor = Arc::new(runtime.block_on(map).unwrap().finish(None));
-        resources.register_world_loader(None, runtime.handle().clone());
-        resources.register_initial_world("capture_the_flag_map", descriptor.clone());
+        let resource_system = ResourceSystem::new(runtime.handle().clone(), None);
+        let mut resources = resource_system.loader();
+        let map = resources.load::<WorldResource>("capture_the_flag_map", Retention::WhileUsed);
+        let descriptor = runtime.block_on(map).unwrap().data_ref().0.as_ref().unwrap().clone();
         let shared = EngineSharedSystems::new(true, runtime, Default::default(), resources);
-        (shared, descriptor)
+        LoadedEngine { resource_system, shared, descriptor }
+    }
+
+    pub(crate) fn headless_map() -> (EngineSharedSystems, Arc<WorldDescriptor>)
+    {
+        let loaded = loaded_headless_map();
+        (loaded.shared, loaded.descriptor)
+    }
+
+    pub(crate) fn headless_loader(runtime: &tokio::runtime::Runtime) -> shared_systems::resources::ResourceLoader<'static>
+    {
+        ResourceSystem::new(runtime.handle().clone(), None).loader()
+    }
+
+    #[test]
+    fn returning_to_a_world_respects_source_and_retention_after_expiry()
+    {
+        use shared_systems::resources::{Retention, WorldResource};
+
+        let loaded = loaded_headless_map();
+        let initial = loaded.descriptor.clone();
+        let mut engine = Engine::new(loaded, None);
+
+        let file = std::env::temp_dir().join(format!("{}.json", fyrox_core::uuid::Uuid::new_v4()));
+        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assets/maps/capture_the_flag_map.json");
+        std::fs::copy(fixture, &file).unwrap();
+        let game_key = file.to_str().unwrap();
+        let game = engine.shared.resources.load::<WorldResource>(game_key, Retention::WhileUsed);
+        let game = engine.shared.runtime.block_on(game).unwrap();
+        engine.set_root_world(game.data_ref().0.as_ref().unwrap().clone());
+
+        // Re-enter the initial map after evicting it. Both CLI and marked spellings select
+        // the same source, even when a developer has a local override in the working directory.
+        engine.resource_system.update(61.0);
+        let menu_key = crate::embedded_asset!("maps/capture_the_flag_map.json");
+        let menu = engine.shared.resources.load::<WorldResource>(menu_key, Retention::Session);
+        let menu = engine.shared.runtime.block_on(menu).unwrap().data_ref().0.as_ref().unwrap().clone();
+        assert!(!Arc::ptr_eq(&initial, &menu));
+        assert_eq!(initial.name, menu.name);
+        engine.set_root_world(menu.clone());
+
+        // A session pin survives the same round trip with all caller handles released.
+        engine.set_root_world(game.data_ref().0.as_ref().unwrap().clone());
+        drop(game);
+        std::fs::remove_file(&file).unwrap();
+        engine.resource_system.update(61.0);
+        let returning = engine.shared.resources.load::<WorldResource>("capture_the_flag_map", Retention::WhileUsed);
+        let descriptor = returning.data_ref().0.as_ref().unwrap().clone();
+        assert!(Arc::ptr_eq(&menu, &descriptor));
+        engine.set_root_world(descriptor);
+        let expired = engine.shared.resources.load::<WorldResource>(game_key, Retention::WhileUsed);
+        assert!(engine.shared.runtime.block_on(expired).is_err());
     }
 
     #[test]
     fn root_world_finished_keeps_running_and_quit_application_exits()
     {
-        let (shared, descriptor) = headless_map();
-        let mut engine = Engine::new(LoadedEngine { shared, descriptor }, None);
+        let mut engine = Engine::new(loaded_headless_map(), None);
 
         engine.handle_outer_world_message(OuterWorldMessage::WorldFinished);
         assert!(!engine.quit_requested());

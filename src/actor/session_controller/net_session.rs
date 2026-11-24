@@ -6,7 +6,7 @@
 // decoding server messages into actor messages, the connection-status UI and the session (server) time.
 // The transport itself is `NetSystem` (connection handles, raw packets).
 
-use crate::engine::shared_systems::resources::ResourceRequests;
+use crate::engine::shared_systems::resources::ResourceLoader;
 use std::time::Duration;
 
 use glam::{Vec3, Vec4};
@@ -644,7 +644,7 @@ impl NetSession {
                                     from_player,
                                     message,
                                     world.messenger,
-                                    &mut shared.resources.requests(),
+                                    &mut shared.resources,
                                     it_is_2d_3d_example,
                                 );
                             }
@@ -759,7 +759,7 @@ fn process_message(
     message_from_peer_id: u128,
     message: NetMessageToPlayer,
     messenger: &mut Messenger,
-    resources: &mut ResourceRequests,
+    resources: &mut ResourceLoader,
     it_is_2d_3d_example: bool,
 ) {
     match message

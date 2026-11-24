@@ -5,7 +5,7 @@ use crate::actor::main_player::constants::*;
 
 use client_server_protocol::Team;
 use fyrox_sound::buffer::SoundBufferResource;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{Mat4, Vec4};
@@ -63,7 +63,7 @@ pub struct PlayerInnerState {
 
 impl PlayerInnerState {
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         transform: Transform,
         is_alive: bool,
         is_enable: bool,
@@ -90,13 +90,13 @@ impl PlayerInnerState {
         let after_death_timer =  MIN_RESPAWN_TIMER;
 
         PlayerInnerState {
-            switch_weapon_sound: resources.sound(
+            switch_weapon_sound: resources.load_media(
                 crate::embedded_asset!("sounds/switch_weapon.wav"), Retention::Session,
             ),
-            player_died_sound: resources.sound(
+            player_died_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_died.wav"), Retention::Session,
             ),
-            player_hited_sound: resources.sound(
+            player_hited_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_hited.wav"), Retention::Session,
             ),
 

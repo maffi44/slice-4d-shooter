@@ -2,7 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use crate::engine::shared_systems::audio::AudioSystem;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::session_controller::send_to_session_controller;
 use crate::actor::session_controller::SessionControllerMessage;
@@ -88,7 +88,7 @@ pub const ENERGY_SHOT_COST: f32 = 9.0;
 
 impl HoleGun {
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         energy_gun_hole_size_mult: f32, 
         energy_gun_add_force_mult: f32, 
         energy_gun_damage_mult: f32, 
@@ -106,10 +106,10 @@ impl HoleGun {
         };
 
         HoleGun {
-            holegun_charging_sound: resources.sound(
+            holegun_charging_sound: resources.load_media(
                 crate::embedded_asset!("sounds/holegun_charging.wav"), Retention::Session,
             ),
-            holegun_shot_sound: resources.sound(
+            holegun_shot_sound: resources.load_media(
                 crate::embedded_asset!("sounds/holegun_shot.wav"), Retention::Session,
             ),
 

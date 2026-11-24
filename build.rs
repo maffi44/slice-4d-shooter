@@ -72,7 +72,7 @@ fn generate_asset_catalog() -> io::Result<()> {
         writeln!(
             output,
             "{:?} => Some(include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), {:?}))),",
-            format!("embedded/{key}"),
+            key,
             format!("/src/assets/{key}")
         )?;
     }

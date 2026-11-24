@@ -2,7 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use crate::engine::shared_systems::audio::AudioSystem;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
@@ -224,7 +224,7 @@ impl PlayerDoll {
         player_sphere_radius: f32,
         transform: Transform,
         is_alive: bool,
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         team: Team,
         player_doll_for_2d_3d_example: bool,
     ) -> Self {
@@ -292,37 +292,37 @@ impl PlayerDoll {
         };
 
         PlayerDoll {
-            anti_projection_mode_enabled_sound: resources.sound(
+            anti_projection_mode_enabled_sound: resources.load_media(
                 crate::embedded_asset!("sounds/anti_projection_mode_enabled.wav"), Retention::Session,
             ),
-            holegun_charging_sound: resources.sound(
+            holegun_charging_sound: resources.load_media(
                 crate::embedded_asset!("sounds/holegun_charging.wav"), Retention::Session,
             ),
-            holegun_shot_sound: resources.sound(
+            holegun_shot_sound: resources.load_media(
                 crate::embedded_asset!("sounds/holegun_shot.wav"), Retention::Session,
             ),
-            machinegun_shot_sound: resources.sound(
+            machinegun_shot_sound: resources.load_media(
                 crate::embedded_asset!("sounds/machinegun_shot.wav"), Retention::Session,
             ),
-            obstacle_gun_shot_sound: resources.sound(
+            obstacle_gun_shot_sound: resources.load_media(
                 crate::embedded_asset!("sounds/obstacle_gun_shot.wav"), Retention::Session,
             ),
-            player_death_signal_sound: resources.sound(
+            player_death_signal_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_death_signal.wav"), Retention::Session,
             ),
-            player_hit_signal_sound: resources.sound(
+            player_hit_signal_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_hit_signal.wav"), Retention::Session,
             ),
-            player_respawned_sound: resources.sound(
+            player_respawned_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
             ),
-            scanner_sound_sound: resources.sound(
+            scanner_sound_sound: resources.load_media(
                 crate::embedded_asset!("sounds/scanner_sound.wav"), Retention::Session,
             ),
-            shotgun_shot_sound: resources.sound(
+            shotgun_shot_sound: resources.load_media(
                 crate::embedded_asset!("sounds/shotgun_shot.wav"), Retention::Session,
             ),
-            shotgun_shot_impact_sound: resources.sound(
+            shotgun_shot_impact_sound: resources.load_media(
                 crate::embedded_asset!("sounds/shotgun_shot_impact.wav"), Retention::Session,
             ),
 

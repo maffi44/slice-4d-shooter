@@ -504,9 +504,10 @@ mod tests
     #[test]
     fn unavailable_playback_returns_before_building_a_source()
     {
-        let resources = ResourceSystem::new(false);
-        let buffer = resources.requests()
-            .sound(crate::embedded_asset!("sounds/player_explosion.wav"), Retention::WhileUsed)
+        let runtime = tokio::runtime::Builder::new_multi_thread().worker_threads(1).build().unwrap();
+        let resources = ResourceSystem::new(runtime.handle().clone(), Some(tokio::sync::watch::channel(None).1));
+        let buffer = resources.loader()
+            .load_media(crate::embedded_asset!("sounds/player_explosion.wav"), Retention::WhileUsed)
             .expect("a sound handle when sound is enabled");
         let mut audio = AudioSystem::new(true);
 

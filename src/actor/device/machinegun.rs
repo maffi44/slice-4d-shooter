@@ -2,7 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use crate::engine::shared_systems::audio::AudioSystem;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::session_controller::send_to_session_controller;
 use crate::actor::session_controller::SessionControllerMessage;
@@ -72,7 +72,7 @@ pub struct MachineGun {
 
 impl MachineGun {
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         machinegun_damage: f32,
         machinegun_add_force: f32, 
         machinegun_heat_add_on_shot: f32, 
@@ -82,7 +82,7 @@ impl MachineGun {
     ) -> Self {
 
         MachineGun {
-            machinegun_shot_sound: resources.sound(
+            machinegun_shot_sound: resources.load_media(
                 crate::embedded_asset!("sounds/machinegun_shot.wav"), Retention::Session,
             ),
 

@@ -2,24 +2,26 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use fyrox_core::{
-    TypeUuidProvider,
     parking_lot::Mutex,
     reflect::prelude::*,
-    uuid::{Uuid, uuid},
+    uuid::{uuid, Uuid},
     visitor::prelude::*,
+    TypeUuidProvider,
 };
 use fyrox_resource::{
-    Resource, ResourceData, TypedResourceData,
     io::ResourceIo,
-    loader::{BoxedLoaderFuture, LoaderPayload, ResourceLoader},
+    loader::{BoxedLoaderFuture, LoaderPayload, ResourceLoader as FyroxResourceLoader},
     manager::ResourceManager,
     state::LoadError,
     untyped::ResourceKind,
     untyped::UntypedResource,
+    Resource, ResourceData, TypedResourceData,
 };
 use std::{
+    borrow::Cow,
     collections::HashSet,
     error::Error,
+    future::Future,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
 };
@@ -27,7 +29,10 @@ use std::{
 use super::render::GpuContext;
 use crate::engine::world::world_descriptor::{WorldDescriptor, WorldPreparation};
 
-use fyrox_sound::buffer::{DataSource, SoundBuffer, SoundBufferResource};
+use fyrox_sound::buffer::{DataSource, SoundBuffer};
+use tokio::{runtime::Handle, sync::watch};
+
+mod source;
 
 /// Build-time marker and logical key for an asset under src/assets.
 #[macro_export]
@@ -37,58 +42,106 @@ macro_rules! embedded_asset {
     };
 }
 
-include!(concat!(env!("OUT_DIR"), "/embedded_assets.rs"));
+/// Maps a caller's typed key to the path Fyrox uses for cache identity and loader selection.
+pub trait Asset: TypedResourceData {
+    const REQUIRES_GPU: bool = false;
+    fn manager_path(key: &str) -> Result<Cow<'_, Path>, String>;
+}
 
-struct SoundLoader;
+fn logical_path<'a>(key: &'a str, embedded_root: &str) -> &'a Path {
+    let path = Path::new(key);
+    let path = path.strip_prefix(".").unwrap_or(path);
+    path.strip_prefix(embedded_root).unwrap_or(path)
+}
 
-impl ResourceLoader for SoundLoader {
+impl Asset for SoundBuffer {
+    fn manager_path(key: &str) -> Result<Cow<'_, Path>, String> {
+        let path = logical_path(key, "embedded");
+        if path
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("wav"))
+        {
+            Ok(Cow::Borrowed(path))
+        } else {
+            Err(format!("Expected a WAV sound: {key}"))
+        }
+    }
+}
+
+/// The Fyrox pool polls this join handle. File I/O and blocking jobs belong to the engine runtime.
+fn load_on_runtime(
+    runtime: &Handle,
+    work: impl Future<Output = Result<LoaderPayload, String>> + Send + 'static,
+) -> BoxedLoaderFuture {
+    let task = runtime.spawn(work);
+    Box::pin(async move {
+        task.await
+            .map_err(|error| LoadError::new(error.to_string()))?
+            .map_err(LoadError::new)
+    })
+}
+
+struct SoundLoader(Handle);
+
+impl FyroxResourceLoader for SoundLoader {
     fn extensions(&self) -> &[&str] {
         &["wav"]
     }
     fn data_type_uuid(&self) -> Uuid {
         <SoundBuffer as TypeUuidProvider>::type_uuid()
     }
-    fn load(&self, path: PathBuf, io: Arc<dyn ResourceIo>) -> BoxedLoaderFuture {
-        let bytes = path.to_str().and_then(embedded_bytes);
-        Box::pin(async move {
-            let source = match bytes {
-                Some(bytes) => DataSource::from_memory(bytes.to_vec()),
-                None => DataSource::from_file(&path, io.as_ref())
-                    .await
-                    .map_err(LoadError::new)?,
-            };
-            SoundBuffer::raw_generic(source)
-                .map(LoaderPayload::new)
-                .map_err(|_| LoadError::new(format!("Invalid sound {}", path.display())))
+    fn load(&self, path: PathBuf, _: Arc<dyn ResourceIo>) -> BoxedLoaderFuture {
+        load_on_runtime(&self.0, async move {
+            let source = source::read(&path, [&path], source::Lookup::CatalogFirst).await?;
+            tokio::task::spawn_blocking(move || {
+                SoundBuffer::raw_generic(DataSource::from_memory(source.bytes.into_owned()))
+                    .map(LoaderPayload::new)
+                    .map_err(|_| format!("Invalid sound {}", source.origin))
+            })
+            .await
+            .map_err(|error| error.to_string())?
         })
     }
 }
 
-/// Initial world preparation collects exactly the handles requested by its constructors.
-pub struct ResourceRequests<'a> {
-    system: &'a ResourceSystem,
-    dependencies: Option<Vec<UntypedResource>>,
+/// Actor-facing access to the shared cache. Only map preparation lends a dependency list.
+pub struct ResourceLoader<'a> {
+    system: Arc<ResourceSystem>,
+    dependencies: Option<&'a mut Vec<UntypedResource>>,
 }
 
-impl ResourceRequests<'_> {
-    pub fn sound(
-        &mut self,
-        key: &'static str,
-        retention: Retention,
-    ) -> Option<SoundBufferResource> {
-        if self.system.headless {
-            return None;
-        }
-        let path = Path::new(key);
-        let buffer = self.system.request::<SoundBuffer>(path, retention);
+impl ResourceLoader<'_> {
+    /// Returns a shared pending, ready or failed handle immediately. Maps search disk before
+    /// the catalog. Other assets search the catalog first. Retention also applies to cache hits.
+    pub fn load<T: Asset>(&mut self, key: &str, retention: Retention) -> Resource<T> {
+        let resource = match T::manager_path(key) {
+            Ok(path) if T::REQUIRES_GPU && self.system.headless => Resource::new_load_error(
+                ResourceKind::External(path.into_owned()),
+                LoadError::new(format!("Resource {key} requires a GPU in headless mode")),
+            ),
+            Ok(path) => {
+                let resource: Resource<T> = self.system.manager.request(path.as_ref());
+                if matches!(retention, Retention::Session) {
+                    self.system
+                        .retained
+                        .lock()
+                        .insert(resource.clone().into_untyped());
+                }
+                resource
+            }
+            Err(error) => {
+                Resource::new_load_error(ResourceKind::External(key.into()), LoadError::new(error))
+            }
+        };
         if let Some(pending) = &mut self.dependencies {
-            pending.push(buffer.clone().into_untyped());
+            pending.push(resource.clone().into_untyped());
         }
-        Some(buffer)
+        resource
     }
 
-    pub fn into_dependencies(self) -> Vec<UntypedResource> {
-        self.dependencies.unwrap_or_default()
+    /// Headless callers skip optional media before performing any work or recording dependencies.
+    pub fn load_media<T: Asset>(&mut self, key: &str, retention: Retention) -> Option<Resource<T>> {
+        (!self.system.headless).then(|| self.load(key, retention))
     }
 }
 
@@ -123,75 +176,67 @@ pub enum Retention {
     WhileUsed,
 }
 
-pub struct ResourceSystem {
+pub(in crate::engine) struct ResourceSystem {
     manager: ResourceManager,
     retained: Mutex<HashSet<UntypedResource>>,
-    pub headless: bool,
+    headless: bool,
 }
 
 impl ResourceSystem {
-    pub fn new(headless: bool) -> Self {
-        let manager = ResourceManager::new(Default::default());
-        manager.state().loaders.set(SoundLoader);
-        Self {
-            manager,
-            retained: Default::default(),
-            headless,
-        }
+    /// A graphical loader publishes the device once. None selects headless preparation.
+    pub fn new(runtime: Handle, gpu: Option<watch::Receiver<Option<GpuContext>>>) -> Arc<Self> {
+        Arc::new_cyclic(|resources| {
+            let manager = ResourceManager::new(Default::default());
+            let headless = gpu.is_none();
+            manager.state().loaders.set(SoundLoader(runtime.clone()));
+            manager.state().loaders.set(WorldLoader {
+                resources: resources.clone(),
+                gpu,
+                runtime,
+            });
+            Self {
+                manager,
+                retained: Default::default(),
+                headless,
+            }
+        })
     }
 
-    pub fn requests(&self) -> ResourceRequests<'_> {
-        ResourceRequests {
-            system: self,
+    pub fn loader(self: &Arc<Self>) -> ResourceLoader<'static> {
+        ResourceLoader {
+            system: Arc::clone(self),
             dependencies: None,
         }
     }
-    pub fn preparation_requests(&self) -> ResourceRequests<'_> {
-        ResourceRequests {
-            system: self,
-            dependencies: Some(Vec::new()),
-        }
-    }
 
-    pub fn request<T: TypedResourceData>(&self, path: &Path, retention: Retention) -> Resource<T> {
-        let resource = self.manager.request(path);
-        if matches!(retention, Retention::Session) {
-            self.retained.lock().insert(resource.clone().into_untyped());
+    pub fn loader_with_dependencies<'a>(
+        self: &Arc<Self>,
+        dependencies: &'a mut Vec<UntypedResource>,
+    ) -> ResourceLoader<'a> {
+        ResourceLoader {
+            system: Arc::clone(self),
+            dependencies: Some(dependencies),
         }
-        resource
     }
 
     pub fn update(&self, delta: f32) {
         self.manager.state().update(delta);
     }
-
-    pub fn register_world_loader(
-        self: &Arc<Self>,
-        gpu: Option<GpuContext>,
-        runtime: tokio::runtime::Handle,
-    ) {
-        self.manager.state().loaders.set(WorldLoader {
-            resources: Arc::downgrade(self),
-            gpu,
-            runtime,
-        });
-    }
-
-    pub fn request_world(&self, name: &str) -> Resource<WorldResource> {
-        self.request(&world_path(name), Retention::WhileUsed)
-    }
-
-    pub fn register_initial_world(&self, name: &str, descriptor: Arc<WorldDescriptor>) {
-        let resource = Resource::new_ok(
-            ResourceKind::External(world_path(name)),
-            WorldResource(Some(descriptor)),
-        );
-        self.manager.state().push(resource.into_untyped());
-    }
 }
 
-fn world_path(name: &str) -> PathBuf {
-    PathBuf::from(format!("{name}.world"))
+impl Asset for WorldResource {
+    fn manager_path(key: &str) -> Result<Cow<'_, Path>, String> {
+        let path = logical_path(key, "embedded/maps");
+        let name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| format!("Expected a map name: {key}"))?;
+        let name = name.strip_suffix(".json").unwrap_or(name);
+        if name.is_empty() {
+            return Err(format!("Expected a map name: {key}"));
+        }
+        Ok(Cow::Owned(path.with_file_name(format!("{name}.world"))))
+    }
 }
 
 #[derive(Default, Visit, Reflect)]
@@ -229,11 +274,11 @@ impl ResourceData for WorldResource {
 
 struct WorldLoader {
     resources: Weak<ResourceSystem>,
-    gpu: Option<GpuContext>,
-    runtime: tokio::runtime::Handle,
+    gpu: Option<watch::Receiver<Option<GpuContext>>>,
+    runtime: Handle,
 }
 
-impl ResourceLoader for WorldLoader {
+impl FyroxResourceLoader for WorldLoader {
     fn extensions(&self) -> &[&str] {
         &["world"]
     }
@@ -243,24 +288,32 @@ impl ResourceLoader for WorldLoader {
     fn load(&self, path: PathBuf, _: Arc<dyn ResourceIo>) -> BoxedLoaderFuture {
         let resources = self.resources.clone();
         let gpu = self.gpu.clone();
-        let runtime = self.runtime.clone();
-        Box::pin(async move {
-            let resources = resources
-                .upgrade()
-                .ok_or_else(|| LoadError::new("Engine has shut down"))?;
-            let name = path.with_extension("");
-            let task = runtime.spawn(async move {
-                let prepared =
-                    WorldPreparation::load(name.to_str().expect("UTF-8 world key"), resources)
-                        .await?;
-                tokio::task::spawn_blocking(move || prepared.finish(gpu))
-                    .await
-                    .map_err(|e| e.to_string())
-            });
-            let descriptor = task
+        load_on_runtime(&self.runtime, async move {
+            let resources = resources.upgrade().ok_or("Engine has shut down")?;
+            let file = path.with_extension("json");
+            let paths = [
+                ".",
+                "./assets/maps",
+                "./src/assets/maps",
+                "../../../src/assets/maps",
+            ]
+            .map(|dir| Path::new(dir).join(&file));
+            let key = Path::new("maps").join(&file);
+            let source = source::read(&key, paths, source::Lookup::DiskFirst).await?;
+            let prepared = WorldPreparation::from_bytes(source.bytes, resources)
                 .await
-                .map_err(|e| LoadError::new(e.to_string()))?
-                .map_err(LoadError::new)?;
+                .map_err(|error| format!("{}: {error}", source.origin))?;
+            let device = match gpu {
+                Some(mut receiver) => receiver
+                    .wait_for(Option::is_some)
+                    .await
+                    .map_err(|_| "GPU initialization ended before device publication")?
+                    .clone(),
+                None => None,
+            };
+            let descriptor = tokio::task::spawn_blocking(move || prepared.finish(device))
+                .await
+                .map_err(|error| format!("{}: {error}", source.origin))?;
             Ok(LoaderPayload::new(WorldResource(Some(Arc::new(
                 descriptor,
             )))))
@@ -269,75 +322,4 @@ impl ResourceLoader for WorldLoader {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn tick_reads_pending_ready_and_failed_resources_without_waiting() {
-        use std::task::Poll;
-        let handle = Resource::<WorldResource>::new_pending(ResourceKind::Embedded);
-        assert!(handle.try_read(|_| ()).is_pending());
-        let untyped = handle.clone().into_untyped();
-        untyped.commit_ok(WorldResource::default());
-        let guard = untyped.0.lock();
-        assert!(handle.try_read(|_| ()).is_pending());
-        drop(guard);
-        assert!(matches!(handle.try_read(|_| 42), Poll::Ready(Ok(42))));
-
-        let failed = Resource::<WorldResource>::new_pending(ResourceKind::Embedded);
-        failed.clone().into_untyped().commit_error("missing map");
-        assert!(matches!(failed.try_read(|_| ()), Poll::Ready(Err(_))));
-    }
-
-    #[test]
-    fn session_request_keeps_the_existing_buffer_after_expiry() {
-        let system = ResourceSystem::new(false);
-        let asset = crate::embedded_asset!("sounds/player_explosion.wav");
-        let mut preparation = system.preparation_requests();
-        let first = preparation.sound(asset, Retention::WhileUsed).unwrap();
-        let pinned = system.requests().sound(asset, Retention::Session).unwrap();
-        assert_eq!(first.key(), pinned.key());
-        let key = first.key();
-        drop(first);
-        drop(pinned);
-        for dependency in preparation.into_dependencies() {
-            pollster::block_on(dependency).unwrap();
-        }
-        system.update(61.0);
-        assert_eq!(
-            system
-                .requests()
-                .sound(asset, Retention::WhileUsed)
-                .unwrap()
-                .key(),
-            key
-        );
-    }
-
-    #[test]
-    fn shared_map_creates_fresh_actors_and_reports_missing_maps() {
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2)
-            .enable_all()
-            .build()
-            .unwrap();
-        let system = Arc::new(ResourceSystem::new(true));
-        system.register_world_loader(None, runtime.handle().clone());
-        let first = system.request_world("capture_the_flag_map");
-        let second = system.request_world("capture_the_flag_map");
-        assert_eq!(first.key(), second.key());
-        let ready = runtime.block_on(first).unwrap();
-        let descriptor = ready.data_ref().0.as_ref().unwrap().clone();
-        let (mut actor, others) = descriptor.take_actors(&system);
-        let (another, more) = descriptor.take_actors(&system);
-        use crate::actor::Actor;
-        actor.set_id(1234);
-        assert_ne!(actor.get_id(), another.get_id());
-        assert_eq!(others.len(), more.len());
-        assert!(
-            runtime
-                .block_on(system.request_world("missing-resource-test-level"))
-                .is_err()
-        );
-    }
-}
+mod tests;

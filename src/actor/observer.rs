@@ -2,7 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use crate::engine::shared_systems::audio::AudioSystem;
-use crate::engine::shared_systems::resources::{ResourceRequests, Retention};
+use crate::engine::shared_systems::resources::{ResourceLoader, Retention};
 use fyrox_sound::buffer::SoundBufferResource;
 use crate::actor::main_player::constants::*;
 
@@ -453,7 +453,7 @@ impl Observer {
 
     #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
     pub fn new(
-        resources: &mut ResourceRequests,
+        resources: &mut ResourceLoader,
         _audio_system: &mut AudioSystem,
         _blue_base_position: Vec4,
         _red_base_position: Vec4,
@@ -476,7 +476,7 @@ impl Observer {
         
         
         Observer {
-            player_respawned_sound: resources.sound(
+            player_respawned_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
             ),
 
