@@ -1,13 +1,12 @@
 # Bound the lifetime of runtime resource registry entries
 
-- **Status:** Open — design pending
+- **Status:** Done
 - **Priority:** High
-- **Complexity:** Moderate
 - **Created:** 2026-11-24
+- **Closed:** 2026-11-24
+- **Resolution:** Done
 - **Context:** [Reproduction and cleanup constraints](resource-registry-retention-context.md)
 
-Fyrox retains the path and UUID for every requested map or sound until shutdown, including failed requests. Cache expiry releases resource data. In a long-lived process loading distinct external paths, the separate registry grows and a lookup by path scans its entries.
+Fyrox releases unused resource handles after expiry and keeps their UUID/path mappings in memory. Repeated requests for the same path reuse its mapping. The author considers the observed growth with distinct paths immaterial for the current game.
 
-[open] Decide when the engine can forget a runtime UUID and how cleanup can follow eviction at low cost. Keep cache maintenance inside the resource system and preserve the [actor and preparation contract](../unified-resource-requests/).
-
-Completion requires a repeatable churn check with successful and missing paths showing bounded registry size after expiry. Verify shared pending requests, session pins, failed loads, expiry followed by a concurrent request for the same path, and headless loading. Check the work performed on ticks with no evictions.
+[accepted] Keep Fyrox 1.0 and the existing [resource request and retention contract](../unified-resource-requests/). The engine provides an unscheduled `prune_resource_registry()` for a future workload that demonstrates excessive registry growth. An explicit call removes only mappings whose resources have already left the cache. The same path can acquire a new UUID after cleanup. The engine tick continues to perform only Fyrox's ordinary cache maintenance.

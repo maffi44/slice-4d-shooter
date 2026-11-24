@@ -76,6 +76,15 @@ impl Engine
     }
 
 
+    /// Manual maintenance for a future long-running engine if registry growth becomes measurable.
+    /// Returns the number of path mappings removed for resources already evicted by Fyrox.
+    #[allow(dead_code)] // Reserved for explicit maintenance if needed.
+    pub fn prune_resource_registry(&self) -> usize
+    {
+        self.resource_system.prune_registry()
+    }
+
+
     /// One engine tick.
     pub fn tick(&mut self)
     {
@@ -261,6 +270,7 @@ pub(crate) mod tests
         let game_key = file.to_str().unwrap();
         let game = engine.shared.resources.load::<WorldResource>(game_key, Retention::WhileUsed);
         let game = engine.shared.runtime.block_on(game).unwrap();
+        let game_uuid = game.resource_uuid();
         engine.set_root_world(game.data_ref().0.as_ref().unwrap().clone());
 
         // Re-enter the initial map after evicting it. Both CLI and marked spellings select
@@ -278,11 +288,14 @@ pub(crate) mod tests
         drop(game);
         std::fs::remove_file(&file).unwrap();
         engine.resource_system.update(61.0);
+        assert!(engine.prune_resource_registry() > 0);
+        assert_eq!(engine.prune_resource_registry(), 0);
         let returning = engine.shared.resources.load::<WorldResource>("capture_the_flag_map", Retention::WhileUsed);
         let descriptor = returning.data_ref().0.as_ref().unwrap().clone();
         assert!(Arc::ptr_eq(&menu, &descriptor));
         engine.set_root_world(descriptor);
         let expired = engine.shared.resources.load::<WorldResource>(game_key, Retention::WhileUsed);
+        assert_ne!(expired.resource_uuid(), game_uuid);
         assert!(engine.shared.runtime.block_on(expired).is_err());
     }
 

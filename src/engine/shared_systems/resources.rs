@@ -294,6 +294,29 @@ impl ResourceSystem {
     pub fn update(&self, delta: f32) {
         self.manager.state().update(delta);
     }
+
+    pub fn prune_registry(&self) -> usize {
+        // Keep requests and eviction outside the entire snapshot/removal operation.
+        let state = self.manager.state();
+        let mut stale: HashSet<Uuid> = {
+            let registry = state.resource_registry.lock();
+            // Every entry in this private manager's cache has one registered runtime path.
+            if registry.inner().len() == state.len() {
+                return 0;
+            }
+            registry.inner().keys().copied().collect()
+        };
+        for resource in state.iter() {
+            stale.remove(&resource.resource_uuid());
+        }
+        let count = stale.len();
+        let mut registry = state.resource_registry.lock();
+        let mut entries = registry.modify();
+        for uuid in stale {
+            entries.unregister(uuid);
+        }
+        count
+    }
 }
 
 impl Asset for WorldResource {
