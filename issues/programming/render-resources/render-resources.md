@@ -4,6 +4,7 @@
 - **Priority:** Normal
 - **Complexity:** Complex
 - **Created:** 2026-11-20
+- **Context:** [Scanner ownership and data flow](render-resources-context.md)
 
 ## Goal
 
@@ -16,6 +17,7 @@ Define how a caller describes rendering into a texture, supplies the data its sh
 ## Design and review
 
 - Describe the caller-facing operations for creating a dynamic texture, updating shader inputs and displaying the output. Use the scanner and a world output as concrete examples before choosing types.
+- Register a reusable pipeline and create an actor-owned instance attached to a world's [scheduled passes](../world-render-passes/). Publish the latest complete inputs for the instance and expose a sampleable output to the HUD. The [Fyrox UI integration](../fyrox-ui/) owns the widget-to-texture mapping.
 - Decide who owns the pipeline, target texture, buffers and bindings, which resources can be shared and which belong to an instance. Account for resize, teardown and switching the presented world while the scanner is visible.
 - [proposed] A common rendering path for worlds and shader-driven UI textures is a proposal. Document which responsibilities coincide and any concrete reason to keep a difference. Coordinate buffer update semantics with [GPU data grouping](../gpu-data-grouping/) and reusable asset ownership with [Resource System](../resource-system/).
 

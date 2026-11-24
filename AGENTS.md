@@ -10,6 +10,7 @@ Prefer the simplest design that meets the caller's needs. Make it clear who owns
 
 - Start system design from the caller's perspective. The author may give a high-level goal and an initial preference. Investigate the current architecture and propose a concrete design. If evidence calls for a different approach, explain the constraint and discuss the trade-off. Revisit these decisions when a real use case changes them. Keep each playable stage coherent, with a small interface and implementation costs proportionate to the job.
 - Document the intent and caller contract of each system or significant module in the engine architecture reference as it is introduced or revised. Keep decisions and their rationale in the relevant task. Use a common implementation where ownership and execution requirements agree. Explain type-specific paths through concrete constraints, including latency, allocation and thread affinity.
+- Give gameplay callers direct access to the operations they use. Keep engine maintenance with its owner. When preparation needs extra bookkeeping, check whether it can own that state and lend it to the same interface actors use during play. For example, actors call `shared.resources.load(...)`, the engine updates the cache, and each world preparation collects its own dependencies. See the [resource loader review](issues/programming/unified-resource-requests/).
 - Prefer the simplest direct design with one clear responsibility per system or actor. Introduce a trait, wrapper or layer when it provides a concrete benefit (ownership, invariants, cleanup, reuse), not merely indirection. A useful ownership wrapper is not a forbidden abstraction.
 - Minimize input-to-photon and input-to-network latency; avoid frame queues and unnecessary hot-path work. Prefer ownership, channels and atomics over unnecessary locks, but thread-safe operations alone do not guarantee coherent multi-step updates.
 - Avoid unnecessary allocations/copies in tick/frame paths. Reuse buffers (`clear`, appropriately reserved capacity), borrow or iterate when practical. `mem::take` loses reusable capacity if the empty replacement is refilled; moving a buffer through a lifecycle that returns/reuses it can be appropriate. Choose `pop`, `drain` or a queue according to required ordering, not an assumed universal speed rule. Assess actual costs before adding a complicated optimization; this is not a claim that all current hot paths allocate nothing.
@@ -38,7 +39,7 @@ These principles come from the [refactoring context](issues/programming/engine-r
 | Location | Responsibility |
 |---|---|
 | `src/engine.rs`, `src/engine/` | Engine, main loop, Transform |
-| `src/engine/shared_systems/` | Shared input, audio, UI, settings, timing, transport, GPU/render scheduler |
+| `src/engine/shared_systems/` | Shared input, audio, UI, settings, timing, transport, resource loading, GPU/render scheduler |
 | `src/engine/world.rs`, `src/engine/world/` | Per-world actors, messenger, physics, time, descriptor, effects |
 | `src/actor/` | Game actors and devices; player gameplay constants in `main_player/constants.rs` |
 | `game_server/` | Game server (currently relays client-authoritative gameplay); exports `client_server_protocol` |

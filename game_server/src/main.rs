@@ -1043,7 +1043,7 @@ fn update_states_for_players(
     }
 }
 
-use rand::Rng;
+use rand::RngExt;
 
 fn shuffle_teams(players_state: &mut GameSessionState)
 {

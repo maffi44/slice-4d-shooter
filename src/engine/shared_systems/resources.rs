@@ -2,6 +2,7 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use fyrox_core::{
+    io::FileError,
     parking_lot::Mutex,
     reflect::prelude::*,
     uuid::{uuid, Uuid},
@@ -9,7 +10,7 @@ use fyrox_core::{
     TypeUuidProvider,
 };
 use fyrox_resource::{
-    io::ResourceIo,
+    io::{ResourceIo, ResourceIoFuture},
     loader::{BoxedLoaderFuture, LoaderPayload, ResourceLoader as FyroxResourceLoader},
     manager::ResourceManager,
     state::LoadError,
@@ -21,6 +22,7 @@ use std::{
     borrow::Cow,
     collections::HashSet,
     error::Error,
+    ffi::OsStr,
     future::Future,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
@@ -116,7 +118,8 @@ impl ResourceLoader<'_> {
     pub fn load<T: Asset>(&mut self, key: &str, retention: Retention) -> Resource<T> {
         let resource = match T::manager_path(key) {
             Ok(path) if T::REQUIRES_GPU && self.system.headless => Resource::new_load_error(
-                ResourceKind::External(path.into_owned()),
+                ResourceKind::External,
+                path.into_owned(),
                 LoadError::new(format!("Resource {key} requires a GPU in headless mode")),
             ),
             Ok(path) => {
@@ -130,7 +133,7 @@ impl ResourceLoader<'_> {
                 resource
             }
             Err(error) => {
-                Resource::new_load_error(ResourceKind::External(key.into()), LoadError::new(error))
+                Resource::new_load_error(ResourceKind::External, key.into(), LoadError::new(error))
             }
         };
         if let Some(pending) = &mut self.dependencies {
@@ -159,16 +162,79 @@ impl<T: TypedResourceData> ResourceRead<T> for Resource<T> {
             return Poll::Pending;
         };
         match &header.state {
+            ResourceState::Unloaded => Poll::Ready(Err(LoadError::new("Unloaded resource is not loading"))),
             ResourceState::Pending { .. } => Poll::Pending,
-            ResourceState::LoadError { error } => Poll::Ready(Err(error.clone())),
-            ResourceState::Ok(data) => {
-                let typed = fyrox_core::Downcast::as_any(&**data)
-                    .downcast_ref::<T>()
+            ResourceState::LoadError { error, .. } => Poll::Ready(Err(error.clone())),
+            ResourceState::Ok { .. } => {
+                let typed = header
+                    .state
+                    .data_ref_of_type::<T>()
                     .expect("Resource data must match the typed handle");
                 Poll::Ready(Ok(read(typed)))
             }
         }
     }
+}
+
+/// Fyrox registers each requested path in its UUID registry and saves the registry through the
+/// manager's IO after every change. Our loaders read files and the embedded catalog themselves,
+/// so the manager gets an IO that neither reads nor writes: the registry stays in memory and the
+/// tick that requests a new path does no file I/O.
+struct LoaderOwnedIo;
+
+impl ResourceIo for LoaderOwnedIo {
+    fn can_write(&self) -> bool {
+        false
+    }
+    fn can_read_directories(&self) -> bool {
+        false
+    }
+    fn load_file<'a>(&'a self, path: &'a Path) -> ResourceIoFuture<'a, Result<Vec<u8>, FileError>> {
+        Box::pin(std::future::ready(Err(FileError::Custom(format!(
+            "The resource manager does not read files: {}",
+            path.display()
+        )))))
+    }
+    fn write_file<'a>(&'a self, _: &'a Path, _: Vec<u8>) -> ResourceIoFuture<'a, Result<(), FileError>> {
+        Box::pin(std::future::ready(Err(read_only())))
+    }
+    fn write_file_sync(&self, _: &Path, _: &[u8]) -> Result<(), FileError> {
+        Err(read_only())
+    }
+    fn create_dir_all_sync(&self, _: &Path) -> Result<(), FileError> {
+        Err(read_only())
+    }
+    fn move_file<'a>(&'a self, _: &'a Path, _: &'a Path) -> ResourceIoFuture<'a, Result<(), FileError>> {
+        Box::pin(std::future::ready(Err(read_only())))
+    }
+    fn delete_file<'a>(&'a self, _: &'a Path) -> ResourceIoFuture<'a, Result<(), FileError>> {
+        Box::pin(std::future::ready(Err(read_only())))
+    }
+    fn delete_file_sync(&self, _: &Path) -> Result<(), FileError> {
+        Err(read_only())
+    }
+    fn copy_file<'a>(&'a self, _: &'a Path, _: &'a Path) -> ResourceIoFuture<'a, Result<(), FileError>> {
+        Box::pin(std::future::ready(Err(read_only())))
+    }
+    fn is_valid_file_name(&self, _: &OsStr) -> bool {
+        true
+    }
+    fn exists<'a>(&'a self, _: &'a Path) -> ResourceIoFuture<'a, bool> {
+        Box::pin(std::future::ready(false))
+    }
+    fn exists_sync(&self, _: &Path) -> bool {
+        false
+    }
+    fn is_file<'a>(&'a self, _: &'a Path) -> ResourceIoFuture<'a, bool> {
+        Box::pin(std::future::ready(false))
+    }
+    fn is_dir<'a>(&'a self, _: &'a Path) -> ResourceIoFuture<'a, bool> {
+        Box::pin(std::future::ready(false))
+    }
+}
+
+fn read_only() -> FileError {
+    FileError::Custom("The resource manager does not write files".into())
 }
 
 pub enum Retention {
@@ -186,14 +252,20 @@ impl ResourceSystem {
     /// A graphical loader publishes the device once. None selects headless preparation.
     pub fn new(runtime: Handle, gpu: Option<watch::Receiver<Option<GpuContext>>>) -> Arc<Self> {
         Arc::new_cyclic(|resources| {
-            let manager = ResourceManager::new(Default::default());
+            let manager = ResourceManager::new(Arc::new(LoaderOwnedIo), Default::default());
             let headless = gpu.is_none();
-            manager.state().loaders.set(SoundLoader(runtime.clone()));
-            manager.state().loaders.set(WorldLoader {
-                resources: resources.clone(),
-                gpu,
-                runtime,
-            });
+            {
+                let state = manager.state();
+                // Loaders resolve their own sources, so there is no asset folder to scan.
+                state.resource_registry.lock().status_flag().mark_as_loaded();
+                let mut loaders = state.loaders.lock();
+                loaders.set(SoundLoader(runtime.clone()));
+                loaders.set(WorldLoader {
+                    resources: resources.clone(),
+                    gpu,
+                    runtime,
+                });
+            }
             Self {
                 manager,
                 retained: Default::default(),
@@ -240,6 +312,7 @@ impl Asset for WorldResource {
 }
 
 #[derive(Default, Visit, Reflect)]
+#[reflect(non_cloneable)]
 pub struct WorldResource(
     #[visit(skip)]
     #[reflect(hidden)]
@@ -269,6 +342,9 @@ impl ResourceData for WorldResource {
     }
     fn save(&mut self, _: &Path) -> Result<(), Box<dyn Error>> {
         Err("Runtime world descriptor".into())
+    }
+    fn try_clone_box(&self) -> Option<Box<dyn ResourceData>> {
+        None
     }
 }
 

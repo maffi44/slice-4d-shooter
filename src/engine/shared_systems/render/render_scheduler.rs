@@ -38,6 +38,8 @@ const MAX_TARGET_FRAME_RATE: u32 = 1000;
 /// If a render-loop iteration took less than this, the thread sleeps a bit (as before).
 const MIN_ITERATION_DURATION: Duration = Duration::from_millis(3);
 const ITERATION_SLEEP: Duration = Duration::from_micros(3122);
+// Simulation ticks keep staging uploads even when the window has no drawable.
+const SKIPPED_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_millis(100);
 
 
 /// Identifies a world's output texture. Plain data (valid in headless mode too, it just never resolves).
@@ -202,6 +204,7 @@ impl RenderScheduler
             ui_bound_world: None,
             min_frame_duration,
             next_frame_deadline: None,
+            next_upload_flush: Instant::now(),
             prev_frame_instant: None,
             total_time: 0.0,
             total_frames_count: 0,
@@ -307,6 +310,7 @@ struct RenderLoop
     /// The earliest start of the next frame. Advanced by `min_frame_duration` on a fixed timeline,
     /// so the average rate never exceeds the cap and lateness under one period isn't accumulated.
     next_frame_deadline: Option<Instant>,
+    next_upload_flush: Instant,
 
     prev_frame_instant: Option<Instant>,
     total_time: f64,
@@ -337,23 +341,7 @@ impl RenderLoop
                 break;
             }
 
-            if let Err(err) = self.render_frame()
-            {
-                match err
-                {
-                    wgpu::SurfaceError::Lost |
-                    wgpu::SurfaceError::Outdated |
-                    wgpu::SurfaceError::Other =>
-                    {
-                        self.reconfigure_surface(self.window.inner_size());
-                    }
-
-                    // The system is out of memory, we should probably quit
-                    wgpu::SurfaceError::OutOfMemory => panic!("Out of GPU memory"),
-
-                    _ => log::error!("{:?}", err),
-                }
-            }
+            self.render_frame();
 
             if iteration_start.elapsed() < MIN_ITERATION_DURATION
             {
@@ -421,12 +409,36 @@ impl RenderLoop
     }
 
 
-    fn render_frame(&mut self) -> Result<(), wgpu::SurfaceError>
+    fn acquire_surface_texture(&mut self) -> Option<wgpu::SurfaceTexture>
+    {
+        use wgpu::CurrentSurfaceTexture;
+
+        match self.surface.get_current_texture()
+        {
+            CurrentSurfaceTexture::Success(texture) |
+            CurrentSurfaceTexture::Suboptimal(texture) => Some(texture),
+            CurrentSurfaceTexture::Occluded | CurrentSurfaceTexture::Timeout => None,
+            CurrentSurfaceTexture::Lost | CurrentSurfaceTexture::Outdated =>
+            {
+                // Recreating a lost surface needs the window thread. See issues/programming/lost-render-surface/.
+                self.reconfigure_surface(self.window.inner_size());
+                None
+            }
+            CurrentSurfaceTexture::Validation =>
+            {
+                log::error!("Surface texture acquisition failed validation");
+                None
+            }
+        }
+    }
+
+
+    fn render_frame(&mut self)
     {
         // No frame queueing: don't submit while the GPU is still busy with the previous frame.
         match self.gpu.device.poll(wgpu::wgt::PollType::Poll)
         {
-            Ok(PollStatus::Poll) => return Ok(()),
+            Ok(PollStatus::Poll) => return,
             Ok(PollStatus::QueueEmpty) | Ok(PollStatus::WaitSucceeded) => {}
             Err(e) => panic!("{}", e),
         }
@@ -437,7 +449,7 @@ impl RenderLoop
         {
             if now < deadline
             {
-                return Ok(());
+                return;
             }
 
             // More than one period late (a stall): restart the timeline instead of catching up.
@@ -448,6 +460,19 @@ impl RenderLoop
         {
             self.next_frame_deadline = Some(now + self.min_frame_duration);
         }
+
+        // Remove the slots of dropped worlds even while the window is hidden.
+        self.slots.retain(|slot| slot.shared.strong_count() > 0);
+
+        let Some(output) = self.acquire_surface_texture() else
+        {
+            if now >= self.next_upload_flush
+            {
+                self.gpu.queue.submit([]);
+                self.next_upload_flush = now + SKIPPED_FRAME_UPLOAD_INTERVAL;
+            }
+            return;
+        };
 
         if let Some(instant) = self.prev_frame_instant
         {
@@ -460,11 +485,6 @@ impl RenderLoop
         }
 
         self.prev_frame_instant = Some(now);
-
-        // remove the slots of dropped worlds
-        self.slots.retain(|slot| slot.shared.strong_count() > 0);
-
-        let output = self.surface.get_current_texture()?;
 
         let view = output
             .texture
@@ -532,6 +552,7 @@ impl RenderLoop
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
 
             if let Some(upscale_bind_group) = upscale_bind_group
@@ -567,9 +588,7 @@ impl RenderLoop
 
         self.window.pre_present_notify();
 
-        output.present();
-
-        Ok(())
+        self.gpu.queue.present(output);
     }
 }
 
@@ -587,8 +606,8 @@ fn create_upscale_pipeline(gpu: &GpuContext, surface_format: wgpu::TextureFormat
     let upscale_render_pipeline_layout =
         gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("upscale render pipeline layout"),
-        bind_group_layouts: &[&gpu.upscale_bind_group_layout],
-        push_constant_ranges: &[],
+        bind_group_layouts: &[Some(&gpu.upscale_bind_group_layout)],
+        immediate_size: 0,
     });
 
     gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -598,7 +617,7 @@ fn create_upscale_pipeline(gpu: &GpuContext, surface_format: wgpu::TextureFormat
             module: &upscale_shader,
             entry_point: Some("vs_main"),
             buffers: &[
-                gpu.raymarch_vertex_layout.clone(),
+                Some(gpu.raymarch_vertex_layout.clone()),
             ],
             compilation_options: PipelineCompilationOptions::default(),
         },
@@ -627,7 +646,7 @@ fn create_upscale_pipeline(gpu: &GpuContext, surface_format: wgpu::TextureFormat
             mask: !0,
             alpha_to_coverage_enabled: false,
         },
-        multiview: None,
+        multiview_mask: None,
         cache: None,
     })
 }

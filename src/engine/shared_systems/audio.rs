@@ -158,7 +158,7 @@ impl AudioSystem {
                 return true;
             }
             let mut context = engine.contexts()[*index].state();
-            if let Some(source) = context.try_get_source_mut(*handle) {
+            if let Ok(source) = context.try_get_source_mut(*handle) {
                 if let Err(error) = source.set_buffer(Some(buffer.clone())) {
                     log::error!("Cannot attach sound buffer: {error:?}");
                     context.remove_source(*handle);

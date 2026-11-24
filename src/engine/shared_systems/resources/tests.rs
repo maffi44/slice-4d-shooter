@@ -6,7 +6,10 @@ use super::*;
 #[test]
 fn tick_reads_pending_ready_and_failed_resources_without_waiting() {
     use std::task::Poll;
-    let handle = Resource::<WorldResource>::new_pending(ResourceKind::Embedded);
+    let unloaded = Resource::<WorldResource>::from(Uuid::new_v4());
+    assert!(matches!(unloaded.try_read(|_| ()), Poll::Ready(Err(_))));
+
+    let handle = Resource::<WorldResource>::new_pending(Uuid::new_v4(), ResourceKind::Embedded);
     assert!(handle.try_read(|_| ()).is_pending());
     let untyped = handle.clone().into_untyped();
     untyped.commit_ok(WorldResource::default());
@@ -15,8 +18,8 @@ fn tick_reads_pending_ready_and_failed_resources_without_waiting() {
     drop(guard);
     assert!(matches!(handle.try_read(|_| 42), Poll::Ready(Ok(42))));
 
-    let failed = Resource::<WorldResource>::new_pending(ResourceKind::Embedded);
-    failed.clone().into_untyped().commit_error("missing map");
+    let failed = Resource::<WorldResource>::new_pending(Uuid::new_v4(), ResourceKind::Embedded);
+    failed.clone().into_untyped().commit_error(PathBuf::new(), "missing map");
     assert!(matches!(failed.try_read(|_| ()), Poll::Ready(Err(_))));
 }
 
@@ -166,6 +169,7 @@ fn world_load_fails_when_graphics_startup_ends_without_a_device() {
 #[test]
 fn required_gpu_asset_has_a_terminal_headless_error() {
     #[derive(Debug, Default, Reflect, Visit)]
+    #[reflect(non_cloneable)]
     struct TestTexture {}
 
     impl TypeUuidProvider for TestTexture {
@@ -182,6 +186,9 @@ fn required_gpu_asset_has_a_terminal_headless_error() {
         }
         fn save(&mut self, _: &Path) -> Result<(), Box<dyn Error>> {
             unreachable!()
+        }
+        fn try_clone_box(&self) -> Option<Box<dyn ResourceData>> {
+            None
         }
     }
     impl Asset for TestTexture {

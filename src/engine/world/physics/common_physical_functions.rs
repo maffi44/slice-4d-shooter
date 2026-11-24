@@ -812,7 +812,7 @@ pub fn get_big_normal(
 
 pub fn random_vec() -> Vec4 {
     let mut bytes : [u8;4] = [0,0,0,0];
-    let res = getrandom::getrandom(&mut bytes);
+    let res = getrandom::fill(&mut bytes);
     
     if let Err(_err) = res {
         panic!("can't make a random f32 in random_vec");
@@ -821,7 +821,7 @@ pub fn random_vec() -> Vec4 {
 
 
     let mut bytes : [u8;4] = [0,0,0,0];
-    let res = getrandom::getrandom(&mut bytes);
+    let res = getrandom::fill(&mut bytes);
     
     if let Err(_err) = res {
         panic!("can't make a random f32 in random_vec");
@@ -830,7 +830,7 @@ pub fn random_vec() -> Vec4 {
 
 
     let mut bytes : [u8;4] = [0,0,0,0];
-    let res = getrandom::getrandom(&mut bytes);
+    let res = getrandom::fill(&mut bytes);
     
     if let Err(_err) = res {
         panic!("can't make a random f32 in random_vec");
@@ -839,7 +839,7 @@ pub fn random_vec() -> Vec4 {
 
 
     let mut bytes : [u8;4] = [0,0,0,0];
-    let res = getrandom::getrandom(&mut bytes);
+    let res = getrandom::fill(&mut bytes);
     
     if let Err(_err) = res {
         panic!("can't make a random f32 in random_vec");

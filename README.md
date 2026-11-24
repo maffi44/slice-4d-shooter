@@ -177,7 +177,7 @@ Command-line options of the game client:
 *   `--headless`: run without a window, rendering and sound;
 *   `-v`, `--version`: print the client version.
 
-Native rendering requires Vulkan (Linux/Windows), DirectX 12 (Windows), or Metal (macOS), with a compatible GPU and driver. OpenGL is no longer supported, including automatic fallback; `-b gl` exits with an explanatory error. Asynchronous resource/pipeline loading is retained. See [the backend decision](issues/programming/opengl-context-contention/).
+Native rendering requires Vulkan (Linux/Windows), DirectX 12 (Windows), or Metal (macOS), with a compatible GPU and driver. OpenGL is no longer supported, including automatic fallback; `-b gl` exits with an explanatory error. Asynchronous resource/pipeline loading is retained. While the window is hidden, simulation continues and the renderer periodically flushes queued GPU uploads. See [the backend decision](issues/programming/opengl-context-contention/).
 
 The wgpu instance also allows browser WebGPU, but this native client has no supported browser build; enabling that backend does not restore WebAssembly support, and `-b webgpu` reports this limitation.
 

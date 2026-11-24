@@ -127,7 +127,7 @@ impl MachineGun {
         let from = player.get_eyes_position();
 
         let mut bytes = [0_u8;4];
-        getrandom::getrandom(&mut bytes).expect("Func getrandom is fail in mahinegun shoot fn");
+        getrandom::fill(&mut bytes).expect("Func getrandom is fail in mahinegun shoot fn");
         let mut rnd_x = f32::from_be_bytes(bytes);
         if rnd_x.is_normal() {
             rnd_x = rnd_x.sin();
@@ -136,7 +136,7 @@ impl MachineGun {
         }
 
         let mut bytes = [0_u8;4];
-        getrandom::getrandom(&mut bytes).expect("Func getrandom is fail in mahinegun shoot fn");
+        getrandom::fill(&mut bytes).expect("Func getrandom is fail in mahinegun shoot fn");
         let mut rnd_y = f32::from_be_bytes(bytes);
         if rnd_y.is_normal() {
             rnd_y = rnd_y.sin();

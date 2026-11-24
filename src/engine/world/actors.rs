@@ -198,7 +198,7 @@ fn get_random_non_zero_id() -> ActorID
 {
     let mut bytes: [u8; 16] = [0; 16];
 
-    if getrandom::getrandom(&mut bytes).is_err()
+    if getrandom::fill(&mut bytes).is_err()
     {
         panic!("can't make a random u128 in get_random_id");
     }

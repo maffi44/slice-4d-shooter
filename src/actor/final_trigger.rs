@@ -479,7 +479,7 @@ mod tests
         let (runtime, mut resources) = world_resources();
         let ready = resources.load::<WorldResource>("capture_the_flag_map", Retention::WhileUsed);
         let descriptor = runtime.block_on(ready).unwrap().data_ref().0.clone();
-        let next_world = Resource::<WorldResource>::new_pending(ResourceKind::Embedded);
+        let next_world = Resource::<WorldResource>::new_pending(fyrox_core::uuid::Uuid::new_v4(), ResourceKind::Embedded);
         let mut trigger = triggered(&mut resources, next_world.clone());
         let mut messenger = Messenger::new();
 

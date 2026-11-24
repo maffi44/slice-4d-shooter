@@ -17,7 +17,7 @@ use client_server_protocol::{
     RemoteMessage,
     Team
 };
-use rand::Rng;
+use rand::RngExt;
 
 use crate::{
     actor::{

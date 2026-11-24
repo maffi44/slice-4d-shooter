@@ -370,7 +370,7 @@ fn build_render_pipeline(
                     entry_point: Some("vs_main"),
                     compilation_options: wgpu::PipelineCompilationOptions::default(), 
                     buffers: &[
-                        gpu.raymarch_vertex_layout.clone(),
+                        Some(gpu.raymarch_vertex_layout.clone()),
                     ],
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -398,7 +398,7 @@ fn build_render_pipeline(
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             });
 
@@ -419,7 +419,7 @@ fn build_render_pipeline(
                     entry_point: Some("vs_main"),
                     compilation_options: wgpu::PipelineCompilationOptions::default(), 
                     buffers: &[
-                        gpu.raymarch_vertex_layout,
+                        Some(gpu.raymarch_vertex_layout),
                     ],
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -447,7 +447,7 @@ fn build_render_pipeline(
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             });
 
@@ -505,7 +505,7 @@ fn build_render_pipeline(
                     entry_point: Some("vs_main"),
                     compilation_options: wgpu::PipelineCompilationOptions::default(), 
                     buffers: &[
-                        gpu.raymarch_vertex_layout.clone(),
+                        Some(gpu.raymarch_vertex_layout.clone()),
                     ],
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -533,7 +533,7 @@ fn build_render_pipeline(
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             });
 
@@ -554,7 +554,7 @@ fn build_render_pipeline(
                     entry_point: Some("vs_main"),
                     compilation_options: wgpu::PipelineCompilationOptions::default(), 
                     buffers: &[
-                        gpu.raymarch_vertex_layout,
+                        Some(gpu.raymarch_vertex_layout),
                     ],
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -582,7 +582,7 @@ fn build_render_pipeline(
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             });
 
@@ -629,7 +629,7 @@ fn build_render_pipeline(
                     entry_point: Some("vs_main"),
                     compilation_options: wgpu::PipelineCompilationOptions::default(), 
                     buffers: &[
-                        gpu.raymarch_vertex_layout.clone(),
+                        Some(gpu.raymarch_vertex_layout.clone()),
                     ],
                 },
                 fragment: Some(wgpu::FragmentState {
@@ -657,7 +657,7 @@ fn build_render_pipeline(
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             });
 

@@ -24,37 +24,37 @@ version = "0.5.10"
 
 matchmaking_server = { path = "./matchmaking_server" }
 game_server = { path = "./game_server" }
-env_logger = "*"
-winit = {version = "*", features = ["rwh_05"]}
-windows-sys = {version = "*", features = ["Win32", "Win32_Media"]}
-wgpu = { version = "*", default-features = false, features = ["std", "parking_lot", "vulkan", "dx12", "metal", "webgpu", "wgsl"] }
-bytemuck = { version = "*", features = [ "derive" ] }
-pollster = "*"
-tokio = { version = "*", features = ["fs", "sync", "time", "macros"] }
-tokio-tungstenite = "*"
-web-time = "*"
-glam = "*"
-rand = "*"
-blink-alloc = {version = "*", features = ["sync"]}
-fyrox-sound = "=0.36.2"
-fyrox-resource = "=0.36.2"
-fyrox-core = "=0.36.2"
-image = "*"
-log = "*"
-serde_json = "*"
+env_logger = "0.11"
+winit = {version = "0.30", features = ["rwh_05"]}
+windows-sys = {version = "0.61", features = ["Win32", "Win32_Media"]}
+wgpu = { version = "30", default-features = false, features = ["std", "parking_lot", "vulkan", "dx12", "metal", "webgpu", "wgsl"] }
+bytemuck = { version = "1.25", features = [ "derive" ] }
+pollster = "1.0"
+tokio = { version = "1.54", features = ["fs", "sync", "time", "macros"] }
+tokio-tungstenite = "0.30"
+web-time = "1.1"
+glam = "0.34"
+rand = "0.10"
+blink-alloc = {version = "0.4", features = ["sync"]}
+fyrox-sound = "1.0"
+fyrox-resource = "1.0"
+fyrox-core = "1.0"
+image = "0.25"
+log = "0.4"
+serde_json = "1.0"
 serde = { version = "1.0", features = [ "derive" ] }
-dirs = "6.0"
-alkahest = { version = "*", features = [ "derive" ] }
-bincode = "*"
-console_error_panic_hook = "*"
-console_log = "*"
-getrandom = { version = "*", features = [ "js" ] }
+dirs = "7.0"
+alkahest = { version = "0.3", features = [ "derive" ] }
+bincode = "2"
+console_error_panic_hook = "0.1"
+console_log = "1.0"
+getrandom = "0.4"
 matchbox_socket = "0.15.0"
-rustc-hash = "*"
-opener = "*"
-gilrs = "*"
-winresource = "0.1.23"
-libloading = "0.8"
+rustc-hash = "2.1"
+opener = "0.9"
+gilrs = "0.11"
+winresource = "0.1.34"
+libloading = "0.9"
 
 [[bin]]
 name="game-client"
@@ -70,9 +70,9 @@ path="src/game_client_main_without_autoupdate.rs"
 
 [build-dependencies]
 proc-macro2 = "1"
-syn = { version = "2", default-features = false, features = ["parsing"] }
-winresource = "0.1.23"
+syn = { version = "3", default-features = false, features = ["parsing"] }
+winresource = "0.1.34"
 
 [dev-dependencies]
 # local sockets for the NetSystem connection-lifetime tests
-tokio = { version = "*", features = ["net", "io-util", "rt-multi-thread"] }
+tokio = { version = "1.54", features = ["net", "io-util", "rt-multi-thread"] }

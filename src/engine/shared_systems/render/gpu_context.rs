@@ -72,11 +72,13 @@ impl GpuContext
         };
         assert!(allowed_backends.contains(backends), "Unsupported graphics backend: {:?}", specific_backend);
 
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends,
             flags: InstanceFlags::empty(),
             backend_options: BackendOptions::from_env_or_default(),
             memory_budget_thresholds: MemoryBudgetThresholds::default(),
+            // only the GL backend needs a display handle; it is disabled
+            display: None,
         });
 
         log::info!("gpu context: wgpu instance init");
@@ -97,6 +99,7 @@ impl GpuContext
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
+                apply_limit_buckets: false,
             })
             .await
             .unwrap();
@@ -155,6 +158,7 @@ impl GpuContext
             alpha_mode: wgpu::CompositeAlphaMode::default(),
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
+            color_space: wgpu::SurfaceColorSpace::Auto,
         };
 
         surface.configure(&device, &surface_config);
@@ -218,8 +222,8 @@ impl GpuContext
         let raymarch_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("main shader render pipeline layout"),
-                bind_group_layouts: &[&raymarch_bind_group_layout_0, &raymarch_bind_group_layout_1],
-                push_constant_ranges: &[],
+                bind_group_layouts: &[Some(&raymarch_bind_group_layout_0), Some(&raymarch_bind_group_layout_1)],
+                immediate_size: 0,
         });
 
         let upscale_bind_group_layout = device.create_bind_group_layout(
@@ -254,7 +258,7 @@ impl GpuContext
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Nearest,
             min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
             ..Default::default()
         });
 
@@ -266,7 +270,7 @@ impl GpuContext
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
             ..Default::default()
         });
 

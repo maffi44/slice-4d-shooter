@@ -10,7 +10,7 @@ use crate::engine::world::WorldContext;
 use crate::engine::shared_systems::EngineSharedSystems;
 
 use client_server_protocol::Team;
-use rand::Rng;
+use rand::RngExt;
 
 use crate::{
     actor::{

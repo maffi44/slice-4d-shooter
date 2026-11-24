@@ -12,7 +12,7 @@ use crate::engine::world::effects;
 use client_server_protocol::{NetMessageToServer, Team};
 use fyrox_sound::source::Status;
 use glam::{FloatExt, Vec3, Vec4};
-use rand::Rng;
+use rand::RngExt;
 
 use crate::{
     engine::{

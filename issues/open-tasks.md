@@ -6,9 +6,11 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 
 | Task | Priority | Complexity | Status | Created | Review |
 |---|---|---|---|---|---|
+| [Global allocator: keep, replace or remove?](programming/global-allocator/) | High | Moderate | Open — decision or implementation pending | 2026-11-13 | 12 |
+| [Recover a lost presentation surface](programming/lost-render-surface/) | High | Complex | Open — design pending | 2026-11-24 | — |
+| [Bound the lifetime of runtime resource registry entries](programming/resource-registry-retention/) | High | Moderate | Open — design pending | 2026-11-24 | — |
 | [Preserve user settings when the FPS field is invalid](programming/preserve-invalid-user-settings/) | High | Moderate | Open — not implemented | 2026-11-20 | — |
 | [Engine tick scheduling](programming/engine-tick-rate/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | — |
-| [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | 12 |
 | [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-16 | — |
 | [Render resources for worlds and dynamic UI textures](programming/render-resources/) | Normal | Complex | Open — design pending | 2026-11-20 | — |
 | [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/) | Normal | Complex | Open — decision or implementation pending | 2026-11-20 | — |
@@ -16,6 +18,8 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | [Server side of the engine: many cheap session instances](programming/server-engine/) | Normal | Very complex | Open — design pending | 2026-11-20 | — |
 | [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/) | Normal | Moderate | Open — design pending | 2026-11-20 | — |
 | [Discover bundled destination maps from level JSON](programming/discover-linked-maps/) | Normal | Moderate | Open — design pending | 2026-11-24 | — |
+| [Schedule scene, texture and UI passes per world](programming/world-render-passes/) | Normal | Complex | Open — design pending | 2026-11-24 | — |
+| [Integrate Fyrox UI for world HUDs and multiple windows](programming/fyrox-ui/) | Normal | Very complex | Open — design pending | 2026-11-24 | — |
 | [Preserve short presses and multiple input bindings](programming/input-button-state/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 4 |
 | [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Complex | Open — not implemented | 2026-11-16 | 7 |
 | [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 9 |
@@ -42,9 +46,10 @@ Estimates cover the work and verification described in each task. Within each gr
 
 ### Moderate
 
+- [Global allocator: keep, replace or remove?](programming/global-allocator/)
+- [Bound the lifetime of runtime resource registry entries](programming/resource-registry-retention/)
 - [Preserve user settings when the FPS field is invalid](programming/preserve-invalid-user-settings/)
 - [Engine tick scheduling](programming/engine-tick-rate/)
-- [Global allocator: keep, replace or remove?](programming/global-allocator/)
 - [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/)
 - [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/)
 - [Discover bundled destination maps from level JSON](programming/discover-linked-maps/)
@@ -56,9 +61,11 @@ Estimates cover the work and verification described in each task. Within each gr
 
 ### Complex
 
+- [Recover a lost presentation surface](programming/lost-render-surface/)
 - [Render resources for worlds and dynamic UI textures](programming/render-resources/)
 - [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/)
 - [Research surface presentation, frame pacing and graphics menu settings](programming/vsync-research/)
+- [Schedule scene, texture and UI passes per world](programming/world-render-passes/)
 - [Frame server TCP messages and bound reads](programming/server-tcp-framing/)
 - [Separate development CI from release deployment](programming/ci-validation-and-release/)
 - [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/)
@@ -69,5 +76,6 @@ Estimates cover the work and verification described in each task. Within each gr
 ### Very complex
 
 - [Server side of the engine: many cheap session instances](programming/server-engine/)
+- [Integrate Fyrox UI for world HUDs and multiple windows](programming/fyrox-ui/)
 - [In-world 4D screens](programming/in-world-4d-screens/)
 - [Authoritative server and transport](programming/network-authoritative-server-and-transport/)

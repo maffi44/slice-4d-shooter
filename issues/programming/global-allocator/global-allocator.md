@@ -1,7 +1,7 @@
 # Global allocator: keep, replace or remove?
 
 - **Status:** Open — decision or implementation pending
-- **Priority:** Normal
+- **Priority:** High
 - **Complexity:** Moderate
 - **Created:** 2026-11-13
 - **Stable address:** `issues/programming/global-allocator/`
@@ -13,7 +13,7 @@ The project installs `blink_alloc::GlobalBlinkAlloc`, but never enables blink mo
 
 ## Current decision and next step
 
-Keep the existing interim configuration until the allocator decision: client uses it outside debug builds; game server excludes tests; lock stays at 0.3.1. Discuss removing it in favor of the standard allocator or choosing an alternative with evidence. No blanket dependency update.
+At the author's request, both manifests select the 0.4 series. Cargo.lock resolves `blink-alloc` 0.4.0 with `allocator-api2` 0.4.0. The resize defect is confirmed in that release. The release client and the game server outside its test harness still use the affected allocator. Decide whether to use the standard allocator or choose an alternative with evidence.
 
 Resolve allocator correctness in both client and server and record the choice and relevant verification. A new performance-instrumentation issue is not requested now. The detailed investigation, rejected update and alternatives are in context §§2–5.
 

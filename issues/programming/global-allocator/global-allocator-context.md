@@ -68,6 +68,18 @@ allocator-api2-0.2.21/src/stable/alloc/system.rs:57:9:
 | # | Topic | Decision | Status |
 |---|---|---|---|
 | A1 | Cause of the test panic | blink-alloc direct-mode `resize` bug (inverted grow/shrink), present in 0.3.1 and 0.4.0; not caused by `cargo update` | [accepted] verified |
-| A2 | Lock file | stays on blink-alloc 0.3.1 until the allocator decision | Accepted |
+| A2 | Lock file | stays on blink-alloc 0.3.1 until the allocator decision | [superseded] Author requested the latest release on 2026-11-24. |
 | A3 | Interim | `game_server` global allocator `#[cfg(not(test))]`; client unchanged | Accepted |
 | A4 | Keep / replace / remove the custom allocator | — | [open] next stage |
+
+## 2026-11-24 — Dependency update review
+
+[accepted] The workspace update temporarily selected 0.4.0. Inspection confirmed that its direct-mode resize still calls `shrink` for growth and `grow` for shrinkage. The review follow-up restored the A2 pin in both manifests and the lock file. The allocator choice remains open at High priority because release builds still rely on the faulty implementation. Rolling back the update preserves the agreed baseline and leaves the underlying defect to resolve.
+
+## 2026-11-24 — Author requests the latest published allocator
+
+[accepted] The author explicitly requested the latest release and a check of the unsafe resize code. This supersedes A2. Both workspace consumers now request the 0.4 series. The lock resolves 0.4.0, the latest [published release](https://docs.rs/blink-alloc/latest/blink_alloc/). The High-priority allocator decision stays open.
+
+The published 0.4.0 source (`src/global/sync.rs`, `State::resize`) still selects the underlying allocator method by testing `old_size >= new_size` in direct mode. An isolated check extracted the comparison and method names from the packaged sources of both versions and evaluated two cases. In 0.3.1 and 0.4.0 alike, growth from 16 to 32 bytes selects `shrink`, and shrinking from 32 to 16 selects `grow`. The check exercised branch selection without performing an invalid memory operation.
+
+In `allocator-api2` 0.4.0, both methods assert their size preconditions in debug builds. The same-alignment release paths pass the corresponding inequalities to `assume`. Calling either method in the wrong direction violates its unsafe contract and can result in undefined behavior. The recorded failure in §2 is a debug assertion panic. The available crash history does not establish a segmentation fault or an invalid pointer as its symptom.
