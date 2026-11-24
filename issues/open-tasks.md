@@ -7,7 +7,6 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | Task | Priority | Complexity | Status | Created | Review |
 |---|---|---|---|---|---|
 | [Global allocator: keep, replace or remove?](programming/global-allocator/) | High | Moderate | Open — decision or implementation pending | 2026-11-13 | 12 |
-| [Recover a lost presentation surface](programming/lost-render-surface/) | High | Complex | Open — design pending | 2026-11-24 | — |
 | [Preserve user settings when the FPS field is invalid](programming/preserve-invalid-user-settings/) | High | Moderate | Open — not implemented | 2026-11-20 | — |
 | [Engine tick scheduling](programming/engine-tick-rate/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | — |
 | [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-16 | — |
@@ -59,7 +58,6 @@ Estimates cover the work and verification described in each task. Within each gr
 
 ### Complex
 
-- [Recover a lost presentation surface](programming/lost-render-surface/)
 - [Render resources for worlds and dynamic UI textures](programming/render-resources/)
 - [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/)
 - [Research surface presentation, frame pacing and graphics menu settings](programming/vsync-research/)

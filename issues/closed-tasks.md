@@ -6,6 +6,7 @@ Newest closure first. A task is listed here only after the author confirms its c
 
 | Task | Opened | Closed | Resolution |
 |---|---|---|---|
+| [Recover a lost presentation surface](programming/lost-render-surface/) | 2026-11-24 | 2026-11-24 | Done |
 | [Bound the lifetime of runtime resource registry entries](programming/resource-registry-retention/) | 2026-11-24 | 2026-11-24 | Done — manual engine maintenance helper |
 | [Research: show GPU-rendered wgpu textures in Fyrox UI without CPU copies](programming/fyrox-ui-gpu-textures/) | 2026-11-24 | 2026-11-24 | Done |
 | [Unify typed resource requests across actors and engine startup](programming/unified-resource-requests/) | 2026-11-23 | 2026-11-24 | Done |

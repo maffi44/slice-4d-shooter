@@ -17,6 +17,8 @@ pub mod raymarch_shader_generator;
 mod ui_renderer;
 mod gpu_context;
 mod render_scheduler;
+mod presentation;
+pub(in crate::engine) use render_scheduler::WindowPresentation;
 // Layout exception (see AGENTS.md, Repository map): WorldRenderSystem is the per-world render part
 // and logically belongs to `world/`, but it shares the render-thread internals (WorldGpu, slots,
 // WorldRenderShared) with RenderScheduler; moving it would require making those types public.

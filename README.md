@@ -179,6 +179,8 @@ Command-line options of the game client:
 
 Native rendering requires Vulkan (Linux/Windows), DirectX 12 (Windows), or Metal (macOS), with a compatible GPU and driver. OpenGL is no longer supported, including automatic fallback; `-b gl` exits with an explanatory error. Asynchronous resource/pipeline loading is retained. While the window is hidden, simulation continues and the renderer periodically flushes queued GPU uploads. See [the backend decision](issues/programming/opengl-context-contention/).
 
+If the window surface is lost during the splash or a match, the client attempts to restore the picture in the same window. The match continues during recovery. If the replacement fails or the GPU device is lost, the client reports the error and exits. See [surface recovery](issues/programming/lost-render-surface/).
+
 The wgpu instance also allows browser WebGPU, but this native client has no supported browser build; enabling that backend does not restore WebAssembly support, and `-b webgpu` reports this limitation.
 
 Both `-l` and in-game transitions prefer local map JSON over the bundled map of the same name. For example, launch `-l capture_the_flag_map` with a `capture_the_flag_map.json` in the working directory to try a local override. A broken override reports its file path. The [architecture reference](docs/engine-architecture.md#levels--assets) lists the remaining search locations.

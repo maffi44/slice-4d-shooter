@@ -14,7 +14,7 @@ use wgpu::{
     }
 };
 
-use super::{Vertex, INDICES, INDICES_MINIMAP, VERTICES, VERTICES_MINIMAP};
+use super::{presentation::Presentation, Vertex, INDICES, INDICES_MINIMAP, VERTICES, VERTICES_MINIMAP};
 
 
 /// The format of every world's output texture (and of the world pipelines' color target).
@@ -88,11 +88,12 @@ impl GpuContext
 
     /// The surface must already have been created on the event-loop thread (Metal requires it).
     /// Run even this async function on a blocking worker: native driver calls can block while polled.
-    pub async fn new(
-        instance: wgpu::Instance,
+    pub(in crate::engine) async fn new(
+        instance: &wgpu::Instance,
         surface: wgpu::Surface<'static>,
         size: PhysicalSize<u32>,
-    ) -> (GpuContext, wgpu::Surface<'static>, wgpu::SurfaceConfiguration)
+        on_device_lost: impl Fn(wgpu::DeviceLostReason, String) + Send + 'static,
+    ) -> (GpuContext, Presentation)
     {
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -137,6 +138,7 @@ impl GpuContext
         }
 
         let (device, queue) = res.unwrap();
+        device.set_device_lost_callback(on_device_lost);
 
         log::info!("gpu context: wgpu device and queue init");
 
@@ -160,10 +162,6 @@ impl GpuContext
             desired_maximum_frame_latency: 2,
             color_space: wgpu::SurfaceColorSpace::Auto,
         };
-
-        surface.configure(&device, &surface_config);
-
-        log::info!("gpu context: wgpu surface configured");
 
         let uniform_buffer_entry = |binding: u32| wgpu::BindGroupLayoutEntry {
             binding,
@@ -324,7 +322,7 @@ impl GpuContext
             minimap_num_indices: INDICES_MINIMAP.len() as u32,
         };
 
-        (gpu, surface, surface_config)
+        (gpu, Presentation::new(surface, surface_config, adapter, size))
     }
 
 

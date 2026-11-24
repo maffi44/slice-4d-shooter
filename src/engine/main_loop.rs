@@ -8,7 +8,7 @@ use std::sync::{mpsc::TryRecvError, Arc};
 use crate::engine::{
     Engine, EngineLoader,
     loader::{LoadEvent, WindowSurface},
-    shared_systems::ui::UIElementType,
+    shared_systems::{render::WindowPresentation, ui::UIElementType},
 };
 
 use web_time::Instant;
@@ -29,10 +29,19 @@ use winit::{
 pub struct MainLoop
 {
     state: State,
+    presentation: Option<WindowPresentation>,
     closing: bool,
     failure: Option<String>,
     // Last owner on the main thread, including cancellation and late loading results.
     window: Option<Arc<Window>>,
+}
+
+pub(in crate::engine) enum AppEvent
+{
+    Loading,
+    RenderStarted(WindowPresentation),
+    ReplaceSurface,
+    RenderFailed(String),
 }
 
 enum State
@@ -44,7 +53,7 @@ enum State
 
 impl MainLoop
 {
-    pub fn run(loading: EngineLoader)
+    pub fn run(loading: EngineLoader) -> Result<(), String>
     {
         if loading.headless
         {
@@ -64,15 +73,16 @@ impl MainLoop
             }
             engine.shared.global_settings.save();
             engine.shared.runtime.block_on(engine.shared.global_settings.flush());
-            return;
+            return Ok(());
         }
 
-        let event_loop = EventLoop::<()>::with_user_event().build()
+        let event_loop = EventLoop::<AppEvent>::with_user_event().build()
             .expect("ERROR: can't create the event loop");
         loading.set_waker(event_loop.create_proxy());
         let mut main_loop = MainLoop {
             state: State::Loading(loading),
             closing: false,
+            presentation: None,
             failure: None,
             window: None,
         };
@@ -83,7 +93,11 @@ impl MainLoop
             engine.shared.global_settings.save();
             engine.shared.runtime.block_on(engine.shared.global_settings.flush());
         }
-        if let Some(error) = &main_loop.failure { panic!("Engine loading failed: {error}"); }
+        if let Some(error) = main_loop.failure.take() {
+            log::error!("{error}");
+            return Err(error);
+        }
+        Ok(())
     }
 
     fn receive_loading_events(&mut self, event_loop: &winit::event_loop::ActiveEventLoop)
@@ -133,7 +147,7 @@ impl MainLoop
                             self.state = State::Running(engine);
                         }
                         result => {
-                            if let Err(error) = result { self.failure = Some(error); }
+                            if let Err(error) = result { self.failure.get_or_insert(error); }
                             self.state = State::Stopped;
                             event_loop.exit();
                         }
@@ -158,7 +172,7 @@ impl MainLoop
     }
 }
 
-impl ApplicationHandler for MainLoop
+impl ApplicationHandler<AppEvent> for MainLoop
 {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop)
     {
@@ -174,9 +188,30 @@ impl ApplicationHandler for MainLoop
         self.receive_loading_events(event_loop);
     }
 
-    fn user_event(&mut self, event_loop: &winit::event_loop::ActiveEventLoop, _event: ())
+    fn user_event(&mut self, event_loop: &winit::event_loop::ActiveEventLoop, event: AppEvent)
     {
-        self.receive_loading_events(event_loop);
+        match event
+        {
+            AppEvent::Loading => self.receive_loading_events(event_loop),
+            _ if self.closing => {}
+            AppEvent::RenderStarted(presentation) => {
+                let window = self.window.as_ref().expect("renderer requires a window");
+                presentation.resize(window.inner_size());
+                self.presentation = Some(presentation);
+            }
+            AppEvent::ReplaceSurface => {
+                let presentation = self.presentation.as_ref().expect("renderer registered before first frame");
+                let window = self.window.as_ref().expect("renderer requires a window");
+                if let Err(error) = presentation.replace_surface(window) {
+                    self.failure = Some(format!("Cannot recreate the window surface: {error}"));
+                    self.close(event_loop);
+                }
+            }
+            AppEvent::RenderFailed(error) => {
+                self.failure = Some(error);
+                self.close(event_loop);
+            }
+        }
     }
 
     fn new_events(&mut self, event_loop: &winit::event_loop::ActiveEventLoop, cause: StartCause)
@@ -217,9 +252,20 @@ impl ApplicationHandler for MainLoop
         _window_id: winit::window::WindowId,
         event: WindowEvent,
     ) {
+        if self.closing { return; }
         if matches!(event, WindowEvent::CloseRequested)
         {
             self.close(event_loop);
+            return;
+        }
+        let size = match &event {
+            WindowEvent::Resized(size) => Some(*size),
+            WindowEvent::ScaleFactorChanged {..} => self.window.as_ref().map(|window| window.inner_size()),
+            _ => None,
+        };
+        if let Some(size) = size {
+            if let Some(presentation) = &self.presentation { presentation.resize(size); }
+            if let State::Running(engine) = &mut self.state { engine.on_window_resized(size); }
             return;
         }
         let State::Running(engine) = &mut self.state else { return; };
@@ -229,16 +275,6 @@ impl ApplicationHandler for MainLoop
         };
 
         match event {
-            WindowEvent::CloseRequested => event_loop.exit(),
-
-            WindowEvent::Resized(size) => {
-                engine.on_window_resized(size);
-            },
-
-            WindowEvent::ScaleFactorChanged {..} => {
-                engine.on_window_resized(window.inner_size());
-            },
-
             WindowEvent::KeyboardInput {event, ..} => {
 
                 if let PhysicalKey::Code(code) = event.physical_key {

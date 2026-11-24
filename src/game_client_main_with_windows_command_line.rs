@@ -22,7 +22,7 @@ use blink_alloc::GlobalBlinkAlloc;
 #[global_allocator]
 static GLOBAL_ALLOC: GlobalBlinkAlloc = GlobalBlinkAlloc::new();
 
-fn main() {
+fn main() -> Result<(), String> {
     env_logger::init();
 
     #[cfg(target_os = "windows")]
@@ -34,5 +34,5 @@ fn main() {
 
     let loading = engine::load(start_level, args.graphic_backend, args.headless);
 
-    MainLoop::run(loading);
+    MainLoop::run(loading)
 }

@@ -11,6 +11,7 @@ use tokio::sync::watch;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy, window::Window};
 
 use super::{
+    main_loop::AppEvent,
     shared_systems::{EngineSharedSystems, global_settings::GlobalSettings, render::{GpuContext, RenderScheduler}},
     world::world_descriptor::WorldDescriptor,
     shared_systems::resources::{ResourceSystem, Retention, WorldResource},
@@ -61,14 +62,21 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
                 };
                 if *worker_cancelled.borrow() { return Ok(None); }
 
-                let (gpu, surface, config) = pollster::block_on(GpuContext::new(instance, surface, size));
+                // The first surface reply comes from the live event loop.
+                let proxy = worker_wake.get().expect("window event loop is installed").clone();
+                let failure_proxy = proxy.clone();
+                let (gpu, presentation) = pollster::block_on(GpuContext::new(&instance, surface, size, move |reason, message| {
+                    let _ = failure_proxy.send_event(AppEvent::RenderFailed(format!("GPU device lost ({reason:?}): {message}")));
+                }));
                 if *worker_cancelled.borrow() { return Ok(None); }
 
                 gpu_sender.send_replace(Some(gpu.clone()));
 
                 // UI textures/pipelines and the upscale pipeline are expensive too.
                 let frame_rate = shared.global_settings.user.target_render_frame_rate;
-                shared.render = Some(RenderScheduler::new(&gpu, surface, config, window, &mut shared.ui, frame_rate));
+                shared.render = Some(RenderScheduler::new(
+                    &gpu, instance, presentation, window, proxy, &mut shared.ui, frame_rate,
+                ));
                 shared.gpu = Some(gpu);
             }
 
@@ -103,17 +111,17 @@ pub struct EngineLoader
     pub(super) headless: bool,
     pub(super) receiver: Option<mpsc::Receiver<LoadEvent>>,
     worker: Option<JoinHandle<()>>,
-    wake: Arc<OnceLock<EventLoopProxy<()>>>,
+    wake: Arc<OnceLock<EventLoopProxy<AppEvent>>>,
     cancelled: watch::Sender<bool>,
 }
 
 impl EngineLoader
 {
-    pub(super) fn set_waker(&self, proxy: EventLoopProxy<()>)
+    pub(super) fn set_waker(&self, proxy: EventLoopProxy<AppEvent>)
     {
         self.wake.set(proxy).expect("the loader already has an event loop");
         // Events may have arrived before the proxy was installed.
-        let _ = self.wake.get().unwrap().send_event(());
+        let _ = self.wake.get().unwrap().send_event(AppEvent::Loading);
     }
 
     pub(super) fn cancel(&self)
@@ -158,10 +166,10 @@ pub(super) enum LoadEvent
     Finished(Result<Option<LoadedEngine>, String>),
 }
 
-fn publish(sender: &mpsc::Sender<LoadEvent>, wake: &OnceLock<EventLoopProxy<()>>, event: LoadEvent) -> bool
+fn publish(sender: &mpsc::Sender<LoadEvent>, wake: &OnceLock<EventLoopProxy<AppEvent>>, event: LoadEvent) -> bool
 {
     if sender.send(event).is_err() { return false; }
     // Publish before waking. A wake is not evidence that a thread's JoinHandle has finished.
-    if let Some(proxy) = wake.get() { let _ = proxy.send_event(()); }
+    if let Some(proxy) = wake.get() { let _ = proxy.send_event(AppEvent::Loading); }
     true
 }

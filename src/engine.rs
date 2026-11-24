@@ -119,7 +119,7 @@ impl Engine
     {
         if let Some(render) = &mut self.shared.render
         {
-            render.resize_surface(size);
+            render.update_surface_aspect(size);
         }
 
         if size.width > 0 && size.height > 0

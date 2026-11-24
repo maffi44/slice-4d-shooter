@@ -17,15 +17,17 @@ use std::{
 use glam::UVec2;
 use web_time::Instant;
 use wgpu::{Color, PipelineCompilationOptions, PollStatus, ShaderRuntimeChecks};
-use winit::{dpi::PhysicalSize, window::Window};
+use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy, window::Window};
 
 use crate::engine::{
+    main_loop::AppEvent,
     shared_systems::ui::UISystem,
     world::WorldRenderConfig,
 };
 
 use super::{
     gpu_context::GpuContext,
+    presentation::Presentation,
     ui_renderer::UIRenderer,
     world_render_system::WorldGpu,
 };
@@ -133,9 +135,33 @@ enum RenderLoopMessage
     RegisterWorld(WorldSlot),
     PresentWorld(Option<WorldTextureId>),
     ResizeSurface(PhysicalSize<u32>),
+    ReplaceSurface(wgpu::Surface<'static>, PhysicalSize<u32>),
     Shutdown,
 }
 
+
+/// Window-thread endpoint. It sends resizes and replacements through the same FIFO,
+/// including while the loader still owns the scheduler.
+pub(in crate::engine) struct WindowPresentation
+{
+    instance: wgpu::Instance,
+    to_render_loop: mpsc::Sender<RenderLoopMessage>,
+}
+
+impl WindowPresentation
+{
+    pub fn resize(&self, size: PhysicalSize<u32>)
+    {
+        let _ = self.to_render_loop.send(RenderLoopMessage::ResizeSurface(size));
+    }
+
+    pub fn replace_surface(&self, window: &Arc<Window>) -> Result<(), wgpu::CreateSurfaceError>
+    {
+        let surface = self.instance.create_surface(window.clone())?;
+        let _ = self.to_render_loop.send(RenderLoopMessage::ReplaceSurface(surface, window.inner_size()));
+        Ok(())
+    }
+}
 
 /// The shared render scheduler (part of the Engine Shared Systems). Owns the render thread.
 ///
@@ -147,17 +173,18 @@ pub struct RenderScheduler
     to_render_loop: mpsc::Sender<RenderLoopMessage>,
     render_thread: Option<JoinHandle<()>>,
     next_texture_id: u64,
-    surface_size: PhysicalSize<u32>,
+    surface_aspect: f32,
 }
 
 
 impl RenderScheduler
 {
-    pub fn new(
+    pub(in crate::engine) fn new(
         gpu: &GpuContext,
-        surface: wgpu::Surface<'static>,
-        surface_config: wgpu::SurfaceConfiguration,
+        instance: wgpu::Instance,
+        presentation: Presentation,
         window: Arc<Window>,
+        proxy: EventLoopProxy<AppEvent>,
         ui: &mut UISystem,
         target_frame_rate: u32,
     ) -> Self
@@ -174,28 +201,33 @@ impl RenderScheduler
 
         let min_frame_duration = Duration::from_secs_f64(1.0 / clamped_frame_rate as f64);
 
-        let surface_size = PhysicalSize::new(surface_config.width, surface_config.height);
+        let surface_config = &presentation.config;
+        let aspect = surface_config.width as f32 / surface_config.height as f32;
 
         // UIRenderer initializes the UI elements' GPU buffers, so it's created here (it needs
         // &mut UISystem) and then moved to the render thread.
         let ui_renderer = UIRenderer::new(
             ui,
             &gpu.device,
-            &surface_config,
+            surface_config,
             &gpu.queue,
-            surface_size.width as f32 / surface_size.height as f32,
+            aspect,
         );
 
         let upscale_pipeline = create_upscale_pipeline(gpu, surface_config.format);
 
         let (to_render_loop, inbox) = mpsc::channel();
 
+        let _ = proxy.send_event(AppEvent::RenderStarted(WindowPresentation {
+            instance, to_render_loop: to_render_loop.clone(),
+        }));
+
         let render_loop = RenderLoop {
             inbox,
             gpu: gpu.clone(),
             window,
-            surface,
-            surface_config,
+            presentation,
+            proxy: proxy.clone(),
             upscale_pipeline,
             ui_renderer,
             splash: None,
@@ -214,7 +246,17 @@ impl RenderScheduler
 
         let render_thread = std::thread::Builder::new()
             .name("render".to_string())
-            .spawn(move || render_loop.run())
+            .spawn(move || {
+                // Native wgpu may raise an uncaptured configure/driver error as a panic.
+                let failure = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| render_loop.run())) {
+                    Ok(Ok(())) => return,
+                    Ok(Err(error)) => error,
+                    Err(panic) => panic.downcast_ref::<String>().map(String::as_str)
+                        .or_else(|| panic.downcast_ref::<&str>().copied())
+                        .unwrap_or("unknown render thread panic").to_owned(),
+                };
+                let _ = proxy.send_event(AppEvent::RenderFailed(format!("Rendering failed: {failure}")));
+            })
             .expect("ERROR: can't spawn the render thread");
 
         log::info!("render scheduler: render thread started, target {} FPS", clamped_frame_rate);
@@ -223,13 +265,13 @@ impl RenderScheduler
             to_render_loop,
             render_thread: Some(render_thread),
             next_texture_id: 1,
-            surface_size,
+            surface_aspect: aspect,
         }
     }
 
     pub fn surface_aspect(&self) -> f32
     {
-        self.surface_size.width.max(1) as f32 / self.surface_size.height.max(1) as f32
+        self.surface_aspect
     }
 
     /// Moves a world's GPU objects into a new render slot.
@@ -254,16 +296,14 @@ impl RenderScheduler
         let _ = self.to_render_loop.send(RenderLoopMessage::PresentWorld(id));
     }
 
-    pub fn resize_surface(&mut self, size: PhysicalSize<u32>)
+    pub fn update_surface_aspect(&mut self, size: PhysicalSize<u32>)
     {
         if size.width == 0 || size.height == 0
         {
             return;
         }
 
-        self.surface_size = size;
-
-        let _ = self.to_render_loop.send(RenderLoopMessage::ResizeSurface(size));
+        self.surface_aspect = size.width as f32 / size.height as f32;
     }
 }
 
@@ -293,8 +333,8 @@ struct RenderLoop
     inbox: mpsc::Receiver<RenderLoopMessage>,
     gpu: GpuContext,
     window: Arc<Window>,
-    surface: wgpu::Surface<'static>,
-    surface_config: wgpu::SurfaceConfiguration,
+    presentation: Presentation,
+    proxy: EventLoopProxy<AppEvent>,
     upscale_pipeline: wgpu::RenderPipeline,
     ui_renderer: UIRenderer,
     splash: Option<wgpu::BindGroup>,
@@ -322,7 +362,7 @@ struct RenderLoop
 
 impl RenderLoop
 {
-    fn run(mut self)
+    fn run(mut self) -> Result<(), String>
     {
         // The splash (shown until the first world is presented) is decoded here, so the main
         // thread isn't delayed by it.
@@ -336,12 +376,12 @@ impl RenderLoop
         {
             let iteration_start = std::time::Instant::now();
 
-            if !self.process_inbox()
+            if !self.process_inbox()?
             {
                 break;
             }
 
-            self.render_frame();
+            self.render_frame()?;
 
             if iteration_start.elapsed() < MIN_ITERATION_DURATION
             {
@@ -359,11 +399,12 @@ impl RenderLoop
             );
         }
         // GPU objects (slots, surface, UI renderer) are dropped here, on the render thread.
+        Ok(())
     }
 
 
     /// Returns false when the loop must stop.
-    fn process_inbox(&mut self) -> bool
+    fn process_inbox(&mut self) -> Result<bool, String>
     {
         loop
         {
@@ -379,68 +420,37 @@ impl RenderLoop
                 }
                 Ok(RenderLoopMessage::ResizeSurface(size)) =>
                 {
-                    self.reconfigure_surface(size);
+                    self.presentation.state.resize(size);
+                }
+                Ok(RenderLoopMessage::ReplaceSurface(surface, size)) =>
+                {
+                    self.presentation.replace(surface, size)?;
                 }
                 Ok(RenderLoopMessage::Shutdown) =>
                 {
-                    return false;
+                    return Ok(false);
                 }
                 Err(mpsc::TryRecvError::Empty) =>
                 {
-                    return true;
+                    return Ok(true);
                 }
                 Err(mpsc::TryRecvError::Disconnected) =>
                 {
-                    return false;
+                    return Ok(false);
                 }
             }
         }
     }
 
 
-    fn reconfigure_surface(&mut self, size: PhysicalSize<u32>)
-    {
-        if size.width > 0 && size.height > 0
-        {
-            self.surface_config.width = size.width;
-            self.surface_config.height = size.height;
-            self.surface.configure(&self.gpu.device, &self.surface_config);
-        }
-    }
-
-
-    fn acquire_surface_texture(&mut self) -> Option<wgpu::SurfaceTexture>
-    {
-        use wgpu::CurrentSurfaceTexture;
-
-        match self.surface.get_current_texture()
-        {
-            CurrentSurfaceTexture::Success(texture) |
-            CurrentSurfaceTexture::Suboptimal(texture) => Some(texture),
-            CurrentSurfaceTexture::Occluded | CurrentSurfaceTexture::Timeout => None,
-            CurrentSurfaceTexture::Lost | CurrentSurfaceTexture::Outdated =>
-            {
-                // Recreating a lost surface needs the window thread. See issues/programming/lost-render-surface/.
-                self.reconfigure_surface(self.window.inner_size());
-                None
-            }
-            CurrentSurfaceTexture::Validation =>
-            {
-                log::error!("Surface texture acquisition failed validation");
-                None
-            }
-        }
-    }
-
-
-    fn render_frame(&mut self)
+    fn render_frame(&mut self) -> Result<(), String>
     {
         // No frame queueing: don't submit while the GPU is still busy with the previous frame.
         match self.gpu.device.poll(wgpu::wgt::PollType::Poll)
         {
-            Ok(PollStatus::Poll) => return,
+            Ok(PollStatus::Poll) => return Ok(()),
             Ok(PollStatus::QueueEmpty) | Ok(PollStatus::WaitSucceeded) => {}
-            Err(e) => panic!("{}", e),
+            Err(e) => return Err(format!("GPU poll failed: {e}")),
         }
 
         let now = Instant::now();
@@ -449,7 +459,7 @@ impl RenderLoop
         {
             if now < deadline
             {
-                return;
+                return Ok(());
             }
 
             // More than one period late (a stall): restart the timeline instead of catching up.
@@ -464,14 +474,14 @@ impl RenderLoop
         // Remove the slots of dropped worlds even while the window is hidden.
         self.slots.retain(|slot| slot.shared.strong_count() > 0);
 
-        let Some(output) = self.acquire_surface_texture() else
+        let Some(output) = self.presentation.acquire(&self.gpu.device, &self.proxy)? else
         {
             if now >= self.next_upload_flush
             {
                 self.gpu.queue.submit([]);
                 self.next_upload_flush = now + SKIPPED_FRAME_UPLOAD_INTERVAL;
             }
-            return;
+            return Ok(());
         };
 
         if let Some(instant) = self.prev_frame_instant
@@ -589,6 +599,8 @@ impl RenderLoop
         self.window.pre_present_notify();
 
         self.gpu.queue.present(output);
+        self.presentation.state.presented();
+        Ok(())
     }
 }
 
