@@ -1,7 +1,7 @@
 # Render resources for worlds and dynamic UI textures
 
 - **Status:** Open — design pending
-- **Priority:** Normal
+- **Priority:** High
 - **Complexity:** Complex
 - **Created:** 2026-11-20
 - **Context:** [Scanner ownership and data flow](render-resources-context.md)

@@ -1,7 +1,7 @@
 # Schedule scene, texture and UI passes per world
 
 - **Status:** Open — design pending
-- **Priority:** Normal
+- **Priority:** High
 - **Complexity:** Complex
 - **Created:** 2026-11-24
 - **Context:** [Initial design and implementation order](world-render-passes-context.md)

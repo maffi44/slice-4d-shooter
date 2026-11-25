@@ -1,7 +1,7 @@
 # Integrate Fyrox UI for world HUDs and multiple windows
 
 - **Status:** Open — design pending
-- **Priority:** Normal
+- **Priority:** High
 - **Complexity:** Very complex
 - **Created:** 2026-11-24
 - **Context:** [Versioned API evidence and first integration experiment](fyrox-ui-context.md)

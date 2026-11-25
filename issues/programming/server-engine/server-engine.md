@@ -1,7 +1,7 @@
 # Server side of the engine: many cheap session instances
 
 - **Status:** Open — design pending
-- **Priority:** Normal
+- **Priority:** Long-term
 - **Complexity:** Very complex
 - **Created:** 2026-11-20
 - **Stable address:** `issues/programming/server-engine/`

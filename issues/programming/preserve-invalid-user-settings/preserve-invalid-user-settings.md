@@ -1,7 +1,7 @@
 # Preserve user settings when the FPS field is invalid
 
 - **Status:** Open — not implemented
-- **Priority:** High
+- **Priority:** Normal
 - **Complexity:** Moderate
 - **Created:** 2026-11-20
 - **Stable address:** `issues/programming/preserve-invalid-user-settings/`

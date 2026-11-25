@@ -1,7 +1,7 @@
 # Global allocator: keep, replace or remove?
 
 - **Status:** Open — decision or implementation pending
-- **Priority:** High
+- **Priority:** Normal
 - **Complexity:** Moderate
 - **Created:** 2026-11-13
 - **Stable address:** `issues/programming/global-allocator/`

@@ -1,7 +1,7 @@
 # In-world 4D screens
 
 - **Status:** Backlog — design pending
-- **Priority:** Normal
+- **Priority:** High
 - **Complexity:** Very complex
 - **Created:** 2026-11-12
 - **Stable address:** `issues/programming/in-world-4d-screens/`
