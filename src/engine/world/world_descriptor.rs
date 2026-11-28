@@ -7,8 +7,10 @@ use super::{World, WorldConfig};
 use crate::engine::shared_systems::EngineSharedSystems;
 use fyrox_core::parking_lot::Mutex;
 use crate::engine::shared_systems::resources::{ResourceSystem, ResourceLoader};
-use std::sync::Arc;
-use std::{borrow::Cow, collections::HashMap};
+use std::sync::{Arc, OnceLock};
+use fyrox_resource::Resource;
+use crate::engine::shared_systems::resources::graphics::{CubemapTexture, LevelResource, RenderPipelineResource, BuiltinPipeline, Skybox};
+use std::collections::HashMap;
 
 use crate::{
     actor::{
@@ -19,7 +21,7 @@ use crate::{
     }, engine::{
         world::physics::{
             physics_system_data::ShapeType, static_collider::StaticCollider
-        }, shared_systems::render::{GpuContext, raymarch_shader_generator::{AllowedDynamicObjectsInBspTreeTable, generate_raymarch_shader_with_static_bsp_tree}, render_data::static_render_data::StaticRenderData}, world::static_object::{
+        }, shared_systems::render::{raymarch_shader_generator::{AllowedDynamicObjectsInBspTreeTable, BspTree}, render_data::static_render_data::StaticRenderData}, world::static_object::{
             ObjectMaterial, StaticObject
         }
     }, engine::transform::Transform
@@ -29,7 +31,7 @@ use net_protocol::gameplay::Team;
 use glam::{Vec4, Vec3};
 use serde_json::Value;
 use super::static_object::{WFloor, WRoof};
-use wgpu::{RenderPipeline, ShaderRuntimeChecks};
+
 
 
 #[derive(Clone, Copy, Debug)]
@@ -54,8 +56,14 @@ pub struct DefaultStaticObjectSettings {
     undestroyable: bool,
 }
 
-/// Shared map geometry and pipelines, parsed actor inputs and one ready actor set.
-pub struct WorldDescriptor {
+/// Immutable parsed level, shared by world preparation and geometry-specialized shaders.
+pub struct LevelData {
+    pub shader: BuiltinPipeline,
+    pub skybox: Skybox,
+    pub with_upscale: bool,
+    pub allowed_dyn_objects: AllowedDynamicObjectsInBspTreeTable,
+    static_data: OnceLock<Arc<StaticRenderData>>,
+    bsp: OnceLock<BspTree>,
     pub name: String,
     pub static_objects: Vec<StaticObject>,
     pub all_shapes_stickiness_radius: f32,
@@ -65,31 +73,78 @@ pub struct WorldDescriptor {
     pub visual_settings_of_environment: EnvironmentVisualSettings,
     pub red_base_position: Vec4,
     pub blue_base_position: Vec4,
-    pub is_generated_raymarch_shader: bool,
-
-    /// The expensive GPU part. `None` in headless mode.
-    pub gpu: Option<WorldDescriptorGpu>,
 
     main_actor_description: Value,
     actor_descriptions: Value,
     default_settings: DefaultStaticObjectSettings,
     materials_table: HashMap<String, i32>,
     it_is_2d_3d_example: bool,
+}
+
+impl LevelData {
+    pub fn static_render_data(&self) -> &Arc<StaticRenderData> {
+        self.static_data.get_or_init(|| {
+            let mut data = StaticRenderData::new();
+            data.update(self);
+            Arc::new(data)
+        })
+    }
+
+    pub fn bsp(&self) -> &BspTree {
+        self.bsp.get_or_init(|| BspTree::new(self.static_render_data()))
+    }
+
+    fn build_actors(&self, resources: &mut ResourceLoader) -> (ActorWrapper, Vec<ActorWrapper>) {
+        let main = parse_json_main_actor(&self.main_actor_description, resources)
+            .expect("Wrong JSON map format: missing main actor");
+        (main, parse_json_actors(&self.actor_descriptions, &self.default_settings,
+            &self.materials_table, self.it_is_2d_3d_example, resources))
+    }
+}
+
+pub struct WorldDescriptor {
+    pub level: Arc<LevelData>,
+    pub level_key: String,
+    pub gpu: Option<WorldDescriptorGpu>,
+    pub(super) source: Resource<LevelResource>,
     ready_actors: Mutex<(ActorWrapper, Vec<ActorWrapper>)>,
 }
 
+impl std::ops::Deref for WorldDescriptor {
+    type Target = LevelData;
+    fn deref(&self) -> &LevelData { &self.level }
+}
+
 pub struct WorldDescriptorGpu {
-    pub main_pipeline: RenderPipeline,
-    pub minimap_pipeline: Option<RenderPipeline>,
+    pub main: Resource<RenderPipelineResource>,
+    pub sky: Resource<CubemapTexture>,
 }
 
 impl WorldDescriptor {
+    pub(in crate::engine) async fn prepare(
+        level_key: String, source: Resource<LevelResource>, gpu: Option<WorldDescriptorGpu>,
+        resources: Arc<ResourceSystem>,
+    ) -> Result<Self, String> {
+        let level = source.data_ref().value().clone();
+        let build = level.clone();
+        let (actors, dependencies) = tokio::task::spawn_blocking(move || {
+            let mut dependencies = Vec::new();
+            let actors = build.build_actors(&mut resources.loader_with_dependencies(&mut dependencies));
+            (actors, dependencies)
+        }).await.map_err(|e| e.to_string())?;
+        for dep in dependencies {
+            dep.await.map_err(|e| format!("Actor resource failed: {e:?}"))?;
+        }
+        if let Some(gpu) = &gpu {
+            gpu.main.clone().await.map_err(|e| format!("Scene pipeline failed: {e:?}"))?;
+            gpu.sky.clone().await.map_err(|e| format!("Skybox failed: {e:?}"))?;
+        }
+        Ok(Self { level, level_key, gpu, source, ready_actors: Mutex::new(actors) })
+    }
 
     pub(in crate::engine) fn take_actors(&self, resources: &mut ResourceLoader) -> (ActorWrapper, Vec<ActorWrapper>) {
-        let main = parse_json_main_actor(&self.main_actor_description, resources)
-            .expect("Wrong JSON map format: missing main actor");
-        let others = parse_json_actors(&self.actor_descriptions, &self.default_settings, &self.materials_table, self.it_is_2d_3d_example, resources);
-        std::mem::replace(&mut *self.ready_actors.lock(), (main, others))
+        let next = self.level.build_actors(resources);
+        std::mem::replace(&mut *self.ready_actors.lock(), next)
     }
 
     /// Refill the spare from the warm cache before publishing the world. Callbacks run
@@ -100,56 +155,7 @@ impl WorldDescriptor {
     }
 }
 
-/// CPU map data and shader inputs retained until the GPU is ready.
-/// Consumed once; the finished descriptor does not retain these temporary inputs.
-pub(in crate::engine) struct WorldPreparation
-{
-    descriptor: WorldDescriptor,
-    shader_name: String,
-    allowed_dyn_objects: AllowedDynamicObjectsInBspTreeTable,
-}
-
-impl WorldPreparation
-{
-    pub async fn from_bytes(source: Cow<'static, [u8]>, resources: Arc<ResourceSystem>) -> Result<Self, String>
-    {
-        // Parsing and actor construction run off the async workers.
-        let (prepared, dependencies) = tokio::task::spawn_blocking(move || {
-            let json = serde_json::from_slice(&source)
-                .map_err(|error| format!("Wrong JSON map format: {error}"))?;
-            let mut dependencies = Vec::new();
-            let mut loader = resources.loader_with_dependencies(&mut dependencies);
-            let prepared = parse_json_level(json, &mut loader);
-            Ok::<_, String>((prepared, dependencies))
-        }).await.map_err(|err| err.to_string())??;
-        for dependency in dependencies {
-            dependency.await.map_err(|err| format!("Actor resource failed: {err:?}"))?;
-        }
-        Ok(prepared)
-    }
-
-
-    /// Synchronous CPU/driver work; call only on a loading thread or blocking worker.
-    pub fn finish(mut self, gpu: Option<GpuContext>) -> WorldDescriptor
-    {
-        let (main, minimap) = build_render_pipeline(
-            gpu,
-            &self.shader_name,
-            self.descriptor.is_generated_raymarch_shader,
-            &self.allowed_dyn_objects,
-            &self.descriptor,
-        );
-        self.descriptor.gpu = main.map(|main_pipeline| WorldDescriptorGpu {
-            main_pipeline,
-            minimap_pipeline: minimap,
-        });
-        self.descriptor
-    }
-}
-
-
-
-fn parse_json_level(json: Value, resources: &mut ResourceLoader) -> WorldPreparation
+pub(in crate::engine) fn parse_json_level(json: Value) -> LevelData
 {
     let json_level = json
     .as_object()
@@ -245,13 +251,9 @@ fn parse_json_level(json: Value, resources: &mut ResourceLoader) -> WorldPrepara
         parse_json_into_transform(blue_base_position_json, "blue_base_position").get_position()
     };
 
-    let is_generated_raymarch_shader = {
-        json_level
-            .get("generated_shader_with_bsp_tree")
-            .expect("Wrong JSON map format: JSON level must have a generated_shader_with_bsp_tree property")
-            .as_bool()
-            .expect("Wrong JSON map format: generated_shader_with_bsp_tree property must be a boolean")
-    };
+    if let Some(value) = json_level.get("generated_shader_with_bsp_tree") {
+        assert_eq!(value.as_bool(), Some(true), "Wrong JSON map format: only BSP scene shaders are supported");
+    }
 
     let it_is_2d_3d_example = {
         json_level
@@ -269,7 +271,17 @@ fn parse_json_level(json: Value, resources: &mut ResourceLoader) -> WorldPrepara
         parse_allowed_dynamic_objects_in_bsp_tree(&allowed_dynamic_objects_in_bsp_tree)
     };
 
-    let descriptor = WorldDescriptor {
+    let shader = BuiltinPipeline::parse(json_level.get("main_shader").and_then(Value::as_str)
+        .expect("Wrong JSON map format: main_shader must be a string"))
+        .filter(|kind| matches!(kind, BuiltinPipeline::Slice | BuiltinPipeline::Obstacle | BuiltinPipeline::DitheredObstacle))
+        .expect("Wrong JSON map format: unknown main_shader");
+    let skybox = Skybox::parse(&json_level["visual_settings_of_environment"])
+        .unwrap_or_else(|err| panic!("Wrong JSON map format: {err}"));
+    let with_upscale = json_level.get("with_upscale").map(|v| v.as_bool()
+        .expect("Wrong JSON map format: with_upscale must be a boolean")).unwrap_or(true);
+    LevelData {
+        shader, skybox, with_upscale, allowed_dyn_objects,
+        bsp: OnceLock::new(), static_data: OnceLock::new(),
         name: level_name,
         static_objects,
         all_shapes_stickiness_radius,
@@ -277,397 +289,15 @@ fn parse_json_level(json: Value, resources: &mut ResourceLoader) -> WorldPrepara
         blue_players_visual_materials,
         red_players_visual_materials,
         visual_settings_of_environment,
-        gpu: None,
-        is_generated_raymarch_shader,
         red_base_position,
         blue_base_position,
-        ready_actors: Mutex::new((
-            parse_json_main_actor(main_actor_description, resources).expect("Wrong JSON map format: missing main actor"),
-            parse_json_actors(actor_descriptions, &default_settings, &materials_table, it_is_2d_3d_example, resources),
-        )),
         main_actor_description: main_actor_description.clone(),
         actor_descriptions: actor_descriptions.clone(),
         default_settings,
         materials_table,
         it_is_2d_3d_example,
-    };
-
-    let shader_name = json_level
-        .get("main_shader")
-        .expect("Wrong JSON map format: JSON level must have a main_shader property")
-        .as_str()
-        .expect("Wrong JSON map format: main_shader property must be a string")
-        .to_owned();
-
-    WorldPreparation { descriptor, shader_name, allowed_dyn_objects }
-}
-
-
-fn build_render_pipeline(
-    gpu: Option<GpuContext>,
-    shader_name: &str,
-    is_generated_raymarch_shader: bool,
-    allowed_dyn_objects: &AllowedDynamicObjectsInBspTreeTable,
-    level: &WorldDescriptor,
-) -> (Option<RenderPipeline>, Option<RenderPipeline>)
-{
-    if gpu.is_none()
-    {
-        return (None, None);
-    }
-
-    let gpu= gpu.unwrap();
-    match shader_name
-    {
-        "raymarch_shader_obstacle_course" =>
-        {
-            let (main_shader, minimap_shader) = if is_generated_raymarch_shader
-            {
-                let mut static_render_data = StaticRenderData::new();
-
-                static_render_data.update(level);
-
-                let main_shader = generate_raymarch_shader_with_static_bsp_tree(
-                    include_str!("../shared_systems/render/shaders/raymarch_shader_obstacle_course.wgsl"),
-                    &static_render_data,
-                    false,
-                    allowed_dyn_objects
-                );
-
-                let minimap_shader = generate_raymarch_shader_with_static_bsp_tree(
-                    include_str!("../shared_systems/render/shaders/xwz_minimap_shader.wgsl"),
-                    &static_render_data,
-                    false,
-                    allowed_dyn_objects
-                );
-
-                (main_shader, minimap_shader)
-
-
-            }
-            else
-            {
-                (
-                    include_str!("../shared_systems/render/shaders/raymarch_shader_obstacle_course.wgsl").into(),
-                    include_str!("../shared_systems/render/shaders/xwz_minimap_shader.wgsl").into()
-                )
-            };
-
-            let raymarch_shader_obstacle_course = unsafe {
-                gpu.device.create_shader_module_trusted(
-                wgpu::ShaderModuleDescriptor {
-                    label: Some("Raymarch Shader"),
-                    source: wgpu::ShaderSource::Wgsl(main_shader.into()),
-                },
-                ShaderRuntimeChecks::unchecked()
-            )};
-
-            let main_shader_render_pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("main shader render pipeline"),
-                layout: Some(&gpu.raymarch_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &raymarch_shader_obstacle_course,
-                    entry_point: Some("vs_main"),
-                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
-                    buffers: &[
-                        Some(gpu.raymarch_vertex_layout.clone()),
-                    ],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &raymarch_shader_obstacle_course,
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    entry_point: Some("fs_main"),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: gpu.output_format,
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: None,
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    unclipped_depth: false,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview_mask: None,
-                cache: None,
-            });
-
-            let minimap_shader_obstacle_course = unsafe {
-                gpu.device.create_shader_module_trusted(
-                wgpu::ShaderModuleDescriptor {
-                    label: Some("Raymarch Shader"),
-                    source: wgpu::ShaderSource::Wgsl(minimap_shader.into()),
-                },
-                ShaderRuntimeChecks::unchecked()
-            )};
-
-            let minimap_render_pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("minimap shader render pipeline"),
-                layout: Some(&gpu.raymarch_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &minimap_shader_obstacle_course,
-                    entry_point: Some("vs_main"),
-                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
-                    buffers: &[
-                        Some(gpu.raymarch_vertex_layout),
-                    ],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &minimap_shader_obstacle_course,
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    entry_point: Some("fs_main"),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: gpu.output_format,
-                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: None,
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    unclipped_depth: false,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview_mask: None,
-                cache: None,
-            });
-
-            return (Some(main_shader_render_pipeline), Some(minimap_render_pipeline));
-        }
-
-        "raymarch_shader_obstacle_course_dithered" =>
-        {
-            let (main_shader, minimap_shader) = if is_generated_raymarch_shader
-            {
-                let mut static_render_data = StaticRenderData::new();
-
-                static_render_data.update(level);
-
-                let main_shader = generate_raymarch_shader_with_static_bsp_tree(
-                    include_str!("../shared_systems/render/shaders/raymarch_shader_obstacle_course_dithered.wgsl"),
-                    &static_render_data,
-                    false,
-                    allowed_dyn_objects
-                );
-
-                let minimap_shader = generate_raymarch_shader_with_static_bsp_tree(
-                    include_str!("../shared_systems/render/shaders/xwz_minimap_shader.wgsl"),
-                    &static_render_data,
-                    false,
-                    allowed_dyn_objects
-                );
-
-                (main_shader, minimap_shader)
-
-
-            }
-            else
-            {
-                (
-                    include_str!("../shared_systems/render/shaders/raymarch_shader_obstacle_course_dithered.wgsl").into(),
-                    include_str!("../shared_systems/render/shaders/xwz_minimap_shader.wgsl").into()
-                )
-            };
-
-            let raymarch_shader_obstacle_course = unsafe {
-                gpu.device.create_shader_module_trusted(
-                wgpu::ShaderModuleDescriptor {
-                    label: Some("Raymarch Shader"),
-                    source: wgpu::ShaderSource::Wgsl(main_shader.into()),
-                },
-                ShaderRuntimeChecks::unchecked()
-            )};
-
-            let main_shader_render_pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("main shader render pipeline"),
-                layout: Some(&gpu.raymarch_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &raymarch_shader_obstacle_course,
-                    entry_point: Some("vs_main"),
-                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
-                    buffers: &[
-                        Some(gpu.raymarch_vertex_layout.clone()),
-                    ],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &raymarch_shader_obstacle_course,
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    entry_point: Some("fs_main"),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: gpu.output_format,
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: None,
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    unclipped_depth: false,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview_mask: None,
-                cache: None,
-            });
-
-            let minimap_shader_obstacle_course = unsafe {
-                gpu.device.create_shader_module_trusted(
-                wgpu::ShaderModuleDescriptor {
-                    label: Some("Raymarch Shader"),
-                    source: wgpu::ShaderSource::Wgsl(minimap_shader.into()),
-                },
-                ShaderRuntimeChecks::unchecked()
-            )};
-
-            let minimap_render_pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("minimap shader render pipeline"),
-                layout: Some(&gpu.raymarch_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &minimap_shader_obstacle_course,
-                    entry_point: Some("vs_main"),
-                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
-                    buffers: &[
-                        Some(gpu.raymarch_vertex_layout),
-                    ],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &minimap_shader_obstacle_course,
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    entry_point: Some("fs_main"),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: gpu.output_format,
-                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: None,
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    unclipped_depth: false,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview_mask: None,
-                cache: None,
-            });
-
-            return (Some(main_shader_render_pipeline), Some(minimap_render_pipeline));
-        }
-        "raymarch_shader_slice_4d" =>
-        {
-            let main_shader = if is_generated_raymarch_shader
-            {
-                let mut static_render_data = StaticRenderData::new();
-
-                static_render_data.update(level);
-
-                let main_shader = generate_raymarch_shader_with_static_bsp_tree(
-                    include_str!("../shared_systems/render/shaders/raymarch_shader.wgsl"),
-                    &static_render_data,
-                    false,
-                    allowed_dyn_objects
-                );
-
-                main_shader
-
-
-            }
-            else
-            {
-                include_str!("../shared_systems/render/shaders/raymarch_shader.wgsl").into()
-            };
-
-            let raymarch_shader_slice_4d = unsafe {
-                gpu.device.create_shader_module_trusted(
-                wgpu::ShaderModuleDescriptor {
-                    label: Some("Raymarch Shader"),
-                    source: wgpu::ShaderSource::Wgsl(main_shader.into()),
-                },
-                ShaderRuntimeChecks::unchecked()
-            )};
-
-            let main_shader_render_pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("main shader render pipeline"),
-                layout: Some(&gpu.raymarch_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &raymarch_shader_slice_4d,
-                    entry_point: Some("vs_main"),
-                    compilation_options: wgpu::PipelineCompilationOptions::default(), 
-                    buffers: &[
-                        Some(gpu.raymarch_vertex_layout.clone()),
-                    ],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &raymarch_shader_slice_4d,
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    entry_point: Some("fs_main"),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: gpu.output_format,
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: None,
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    unclipped_depth: false,
-                    conservative: false,
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview_mask: None,
-                cache: None,
-            });
-
-            return (Some(main_shader_render_pipeline), None);
-        }
-
-        _ => unimplemented!()
     }
 }
-
 
 #[allow(dead_code)] // game content that is not wired into the current maps/modes; kept for later
 fn parse_mover_w(json_obj: &Value, w_levels: &Vec<f32>) -> MoverW

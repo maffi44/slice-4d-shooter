@@ -1,26 +1,20 @@
 # Render resources for worlds and dynamic UI textures
 
-- **Status:** Open — design pending
+- **Status:** Implemented — awaiting author review
 - **Priority:** High
 - **Complexity:** Complex
 - **Created:** 2026-11-20
 - **Context:** [Scanner ownership and data flow](render-resources-context.md)
 
-## Goal
+[accepted] Implemented together with [per-world scheduling](../world-render-passes/). The current HUD is the first consumer. The next stage is [Fyrox UI](../fyrox-ui/).
 
-Define how a caller describes rendering into a texture, supplies the data its shader needs and uses the resulting texture. Start with the scanner HUD overlay. Gameplay updates its inputs in real time, and the HUD displays the rendered texture over the presented world. A world also renders into a texture using pipelines and per-instance render data. Assess which parts of those two paths benefit from a common representation.
+## Caller and ownership
 
-## Required change within this task
+- The CPU level resource contains geometry and actor descriptions. Generated scene and minimap pipelines share its static render data and BSP. Headless preparation only requests simulation dependencies.
+- A graphical descriptor awaits its `RenderPipelineResource` and `CubemapTexture`. Each live world creates and updates its own typed uniform buffers, chooses the sky sampler and binds its instances. A scene replacement keeps the previous pipeline active until preparation succeeds.
+- At activation the scanner calls `create_dynamic_texture` twice. The actor retains both producers. Each plane's local key feeds two team-specific widgets. The obstacle-course player can independently request an XWZ minimap. The level loader compiles only the main scene.
+- The producer exposes `image()`, `try_ready()` and `ready().await`. A failed preparation returns the error. A retired instance releases its GPU resources when the last in-flight plan releases them. See the [architecture reference](../../../docs/engine-architecture.md#rendering-srcengineshared_systemsrender) for the caller example and the [context](render-resources-context.md) for decisions and verification.
 
-[accepted] Remove the minimap shader and pipeline from the map contract. A map supplies only the pipelines needed to render the world itself. Today the map parser reads `main_shader`, while world preparation also selects minimap WGSL and stores an optional `minimap_pipeline` in `WorldDescriptorGpu`. Trace its consumers and move any required HUD rendering to the owner of that effect. Map loading should no longer generate, compile or carry a minimap pipeline for the HUD.
+## Review
 
-## Design and review
-
-- Describe the caller-facing operations for creating a dynamic texture, updating shader inputs and displaying the output. Use the scanner and a world output as concrete examples before choosing types.
-- Register a reusable pipeline and create an actor-owned instance attached to a world's [scheduled passes](../world-render-passes/). Publish the latest complete inputs for the instance and expose a sampleable output to the HUD. The [Fyrox UI integration](../fyrox-ui/) owns the widget-to-texture mapping.
-- Decide who owns the pipeline, target texture, buffers and bindings, which resources can be shared and which belong to an instance. Account for resize, teardown and switching the presented world while the scanner is visible.
-- [proposed] A common rendering path for worlds and shader-driven UI textures is a proposal. Document which responsibilities coincide and any concrete reason to keep a difference. Coordinate buffer update semantics with [GPU data grouping](../gpu-data-grouping/) and reusable asset ownership with [Resource System](../resource-system/).
-
-## Completion criteria
-
-Map preparation works independently of HUD shaders, including in headless mode. The scanner displays current data for the presented world across transitions. Root and nested worlds retain their rendering controls and texture outputs. Record the agreed caller contract and ownership in the [engine architecture reference](../../../docs/engine-architecture.md), and verify the graphical paths with a visual comparison where feasible.
+Review the scanner's appearance in a graphical CTF session at full and reduced resolution. The dedicated offscreen Vulkan test exercises shared pipeline requests, per-world skies, a generated minimap, local-key validation, preparation failure and teardown.

@@ -39,7 +39,7 @@ use crate::{
             colliders_container::PhysicalElement,
             kinematic_collider::KinematicColliderMessage,
             PhysicsSystem
-        }, shared_systems::render::{camera::Camera, VisualElement}, shared_systems::ui::{
+        }, shared_systems::render::{camera::Camera, VisualElement}, world::ui::{
             UIElement, UIElementType
         }, world::static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea}
     },
@@ -106,7 +106,8 @@ pub struct PlayerFor2d3dExample {
 }
 
 impl Actor for PlayerFor2d3dExample {
-    fn on_added_to_world(&mut self, _: &mut WorldContext, shared: &mut EngineSharedSystems) {
+    fn on_added_to_world(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems) {
+        self.w_scanner.attach_displays(world,shared);
         self.inner_state.rotating_around_w_sound_handle = shared.audio.spawn_non_spatial_sound(
             &self.rotating_sound,
             0.0,
@@ -144,7 +145,7 @@ impl Actor for PlayerFor2d3dExample {
         let physic_system = world.physics;
         let messenger = &mut *world.messenger;
         let audio_system = &mut shared.audio;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
         let _time_system = &shared.time;
 
         let from = message.from;
@@ -728,7 +729,7 @@ impl Actor for PlayerFor2d3dExample {
         let physic_system = world.physics;
         let messenger = &mut *world.messenger;
         let audio_system = &mut shared.audio;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
         let _time_system = &shared.time;
 
 
@@ -1514,7 +1515,7 @@ impl ControlledActor for PlayerFor2d3dExample
     ) {
         let physics_system = world.physics;
         let messenger = &mut *world.messenger;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
         let audio_system = &mut shared.audio;
 
         let spawns: &Vec<Vec4>;

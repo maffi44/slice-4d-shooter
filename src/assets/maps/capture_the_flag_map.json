@@ -1,7 +1,7 @@
 {
     "level_name" : "test_level",
     "main_shader" : "raymarch_shader_slice_4d",
-    "generated_shader_with_bsp_tree" : true,
+    "with_upscale" : true,
     "it_is_2d_3d_example" : false,
 
     "allowed_dynamic_objects_in_bsp_tree" : {
@@ -41,7 +41,7 @@
     },
 
     "visual_settings_of_environment" : {
-        "sky_box" : "star_sky",
+        "sky_box" : "sky_boxes/star_sky/star_sky.cubemap",
         "sky_color" : {
             "red": 0.1,
             "green": 0.3,

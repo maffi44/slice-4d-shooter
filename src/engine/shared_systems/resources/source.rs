@@ -7,14 +7,13 @@ include!(concat!(env!("OUT_DIR"), "/embedded_assets.rs"));
 
 // CLI and map JSON supply level names at runtime. These declarations choose which maps ship.
 const _: &[&str] = &[
+    crate::embedded_asset!("sky_boxes/star_sky/star_sky_right1.png"),
+    crate::embedded_asset!("sky_boxes/star_sky/star_sky_left2.png"),
+    crate::embedded_asset!("sky_boxes/star_sky/star_sky_top3.png"),
+    crate::embedded_asset!("sky_boxes/star_sky/star_sky_bottom4.png"),
+    crate::embedded_asset!("sky_boxes/star_sky/star_sky_front5.png"),
+    crate::embedded_asset!("sky_boxes/star_sky/star_sky_back6.png"),
     crate::embedded_asset!("maps/capture_the_flag_map.json"),
-    crate::embedded_asset!("maps/map_2d_3d.json"),
-    crate::embedded_asset!("maps/obstacle_course_levels/level-1.json"),
-    crate::embedded_asset!("maps/obstacle_course_levels/level-2.json"),
-    crate::embedded_asset!("maps/obstacle_course_levels/level-3.json"),
-    crate::embedded_asset!("maps/obstacle_course_levels/level-4.json"),
-    crate::embedded_asset!("maps/obstacle_course_levels/level-5.json"),
-    crate::embedded_asset!("maps/obstacle_course_levels/level-6.json"),
 ];
 
 pub(super) struct Source {

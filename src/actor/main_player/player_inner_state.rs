@@ -10,7 +10,7 @@ use fyrox_core::pool::Handle;
 use fyrox_sound::source::SoundSource;
 use glam::{Mat4, Vec4};
 
-use crate::{actor::session_controller::DEFAULT_TEAM, engine::{world::physics::{dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider}, shared_systems::ui::{RectSize, UIElement, UIElementType, UISystem}}, engine::transform::Transform};
+use crate::{actor::session_controller::DEFAULT_TEAM, engine::{world::physics::{dynamic_collider::PlayersDollCollider, kinematic_collider::KinematicCollider}, world::ui::{RectSize, UIElement, UIElementType, UISystem}}, engine::transform::Transform};
 
 use super::{PlayerScreenEffects, CROSSHAIR_DECREASING_SPEED, CROSSHAIR_INCREASING_SPEED, CROSSHAIR_MAX_SIZE, CROSSHAIR_MIN_SIZE, CROSSHAIR_ROTATION_SPEED};
 

@@ -26,7 +26,7 @@ use crate::{
         shared_systems::input::ActionsFrameState,
         world::physics::PhysicsSystem,
         shared_systems::render::ChildVisualElement,
-        shared_systems::ui::{
+        world::ui::{
             UIElement,
             UIElementType,
             UISystem

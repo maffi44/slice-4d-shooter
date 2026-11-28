@@ -46,3 +46,7 @@ The list isn't complete: after a missing property is added, the next missing one
 |---|---|---|---|
 | M1 | Fix maps vs. parser defaults | — | Open |
 | M2 | Which maps to keep | — | Open |
+
+## 2026-11-25 — Supported map set
+
+[accepted] The author selected `capture_the_flag_map` as the only active level. All other formerly active files moved to `src/assets/maps/old_maps_archive/` unchanged. Directories within the archive preserve the puzzle and obstacle-course groupings. Historical parser compatibility and non-BSP rendering are retired. Existing holes in the playable CTF scene stay supported.

@@ -10,7 +10,7 @@ use crate::engine::{
         Shape,
         ShapesArraysMetadata
     },
-    world::world_descriptor::WorldDescriptor
+    world::world_descriptor::LevelData
 };
 
 use super::ShapesArrays;
@@ -95,7 +95,7 @@ pub struct OtherStaticData {
 
 impl OtherStaticData {
     pub fn new(
-        level: &WorldDescriptor,
+        level: &LevelData,
         // shapes_arrays_metadata: ShapesArraysMetadata,
         stickiness: f32
     ) -> Self {
@@ -202,7 +202,7 @@ impl StaticRenderData {
         }
     }
 
-    pub fn update(&mut self, level: &WorldDescriptor)
+    pub fn update(&mut self, level: &LevelData)
     {
 
         let mut shapes = ShapesArrays::default();

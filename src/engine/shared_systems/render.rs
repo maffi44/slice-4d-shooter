@@ -3,31 +3,26 @@
 
 
 
-// Rendering:
-// - `GpuContext` (shared): device, queue, shared layouts and resources for creating GPU objects.
-// - `RenderScheduler` (shared): the render loop on its own OS thread. Each frame it encodes all due
-//   worlds (children before parents) into one encoder, then the presented world → window → UI,
-//   one submit, present. No frame queueing (it doesn't submit while the GPU is busy).
-// - `WorldRenderSystem` (per world): the world's render data and GPU buffers (main thread); its
-//   pipelines, bind groups and output texture live in the render thread's slot (`WorldGpu`).
+// The device and render scheduler are shared by all worlds. Each rendered world
+// publishes a retained scene, local texture producers and an optional HUD. The
+// scheduler encodes due worlds in reverse registration order and presents one output.
 
 pub mod render_data;
+pub mod pipelines;
+pub mod uniform;
 pub mod camera;
 pub mod raymarch_shader_generator;
-mod ui_renderer;
+pub(crate) mod ui_renderer;
 mod gpu_context;
-mod render_scheduler;
+pub(crate) mod render_scheduler;
 mod presentation;
 pub(in crate::engine) use render_scheduler::WindowPresentation;
-// Layout exception (see AGENTS.md, Repository map): WorldRenderSystem is the per-world render part
-// and logically belongs to `world/`, but it shares the render-thread internals (WorldGpu, slots,
-// WorldRenderShared) with RenderScheduler; moving it would require making those types public.
-mod world_render_system;
+pub(crate) mod passes;
+pub use crate::engine::world::render::ImageSource;
 
 pub use self::{
     gpu_context::GpuContext,
     render_scheduler::{RenderScheduler, WorldTextureId},
-    world_render_system::WorldRenderSystem,
 };
 
 use crate::{
@@ -103,13 +98,3 @@ const VERTICES: &[Vertex] = &[
 ];
 
 const INDICES: &[u16] = &[0, 2, 1];
-
-// the xwz minimap quad (bottom right corner)
-const VERTICES_MINIMAP: &[Vertex] = &[
-    Vertex { position: [0.2, -0.9 , 0.0], position_rel: [-1.0, -1.0]},
-    Vertex { position: [0.9, -0.2, 0.0], position_rel: [1.0, 1.0]},
-    Vertex { position: [0.2, -0.2, 0.0], position_rel: [-1.0, 1.0]},
-    Vertex { position: [0.9, -0.9, 0.0], position_rel: [1.0, -1.0]},
-];
-
-const INDICES_MINIMAP: &[u16] = &[0, 2, 1, 0, 3, 1];

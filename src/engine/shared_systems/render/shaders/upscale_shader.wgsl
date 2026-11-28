@@ -75,3 +75,8 @@ fn fs_main(inn: VertexOutput) -> @location(0) vec4<f32> {
 
     return vec4(col.rgb + bloom*vec3(1.4), 1.0);
 }
+@fragment
+fn fs_present(inn: VertexOutput) -> @location(0) vec4<f32> {
+    let uv = inn.position.xy * vec2(0.5, -0.5) + 0.5;
+    return vec4(textureSample(raymarched_view, view_sampler, uv).rgb, 1.0);
+}

@@ -1,0 +1,8 @@
+{
+  "positive_x": "star_sky_right1.png",
+  "negative_x": "star_sky_left2.png",
+  "positive_y": "star_sky_top3.png",
+  "negative_y": "star_sky_bottom4.png",
+  "positive_z": "star_sky_front5.png",
+  "negative_z": "star_sky_back6.png"
+}

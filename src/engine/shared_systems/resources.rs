@@ -29,12 +29,14 @@ use std::{
 };
 
 use super::render::GpuContext;
-use crate::engine::world::world_descriptor::{WorldDescriptor, WorldPreparation};
+use crate::engine::world::world_descriptor::{WorldDescriptor, WorldDescriptorGpu};
+use graphics::{CubemapTexture, LevelResource, RenderPipelineResource};
 
 use fyrox_sound::buffer::{DataSource, SoundBuffer};
 use tokio::{runtime::Handle, sync::watch};
 
 mod source;
+pub mod graphics;
 
 /// Build-time marker and logical key for an asset under src/assets.
 #[macro_export]
@@ -260,9 +262,10 @@ impl ResourceSystem {
                 state.resource_registry.lock().status_flag().mark_as_loaded();
                 let mut loaders = state.loaders.lock();
                 loaders.set(SoundLoader(runtime.clone()));
+                graphics::register(&mut loaders, runtime.clone(), gpu.clone(), resources.clone());
                 loaders.set(WorldLoader {
                     resources: resources.clone(),
-                    gpu,
+                    graphical: !headless,
                     runtime,
                 });
             }
@@ -373,7 +376,7 @@ impl ResourceData for WorldResource {
 
 struct WorldLoader {
     resources: Weak<ResourceSystem>,
-    gpu: Option<watch::Receiver<Option<GpuContext>>>,
+    graphical: bool,
     runtime: Handle,
 }
 
@@ -386,33 +389,23 @@ impl FyroxResourceLoader for WorldLoader {
     }
     fn load(&self, path: PathBuf, _: Arc<dyn ResourceIo>) -> BoxedLoaderFuture {
         let resources = self.resources.clone();
-        let gpu = self.gpu.clone();
+        let graphical = self.graphical;
         load_on_runtime(&self.runtime, async move {
             let resources = resources.upgrade().ok_or("Engine has shut down")?;
-            let file = path.with_extension("json");
-            let paths = [
-                ".",
-                "./assets/maps",
-                "./src/assets/maps",
-                "../../../src/assets/maps",
-            ]
-            .map(|dir| Path::new(dir).join(&file));
-            let key = Path::new("maps").join(&file);
-            let source = source::read(&key, paths, source::Lookup::DiskFirst).await?;
-            let prepared = WorldPreparation::from_bytes(source.bytes, resources)
-                .await
-                .map_err(|error| format!("{}: {error}", source.origin))?;
-            let device = match gpu {
-                Some(mut receiver) => receiver
-                    .wait_for(Option::is_some)
-                    .await
-                    .map_err(|_| "GPU initialization ended before device publication")?
-                    .clone(),
-                None => None,
-            };
-            let descriptor = tokio::task::spawn_blocking(move || prepared.finish(device))
-                .await
-                .map_err(|error| format!("{}: {error}", source.origin))?;
+            let key = path.with_extension("json").to_str().ok_or("Invalid level path")?.to_owned();
+            let mut loader = resources.loader();
+            let source = loader.load::<LevelResource>(&key, Retention::WhileUsed).await
+                .map_err(|e| format!("{key}: {e:?}"))?;
+            let level = source.data_ref().value().clone();
+            let gpu = if graphical {
+                Some(WorldDescriptorGpu {
+                    main: RenderPipelineResource::request(&mut loader, level.shader,
+                        Some(key.as_str())),
+                    sky: loader.load::<CubemapTexture>(&level.skybox.path, Retention::WhileUsed),
+                })
+            } else { None };
+            let descriptor = WorldDescriptor::prepare(key.clone(), source, gpu, resources).await
+                .map_err(|e| format!("{key}: {e}"))?;
             Ok(LoaderPayload::new(WorldResource(Some(Arc::new(
                 descriptor,
             )))))

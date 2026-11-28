@@ -45,15 +45,25 @@ pub struct AllowedDynamicObjectsInBspTreeTable
 }
 
 
+pub struct BspTree(Box<BSPElement>);
+
+impl BspTree {
+    pub fn new(data: &StaticRenderData) -> Self {
+        Self(Box::new(BSPElement::create_binary_space_partition_tree(data)))
+    }
+}
+
 pub fn generate_raymarch_shader_with_static_bsp_tree(
     original_shader: &str,
+    tree: &BspTree,
     static_data: &StaticRenderData,
     generate_with_get_mats_func: bool,
     allowed_dyn_objects: &AllowedDynamicObjectsInBspTreeTable,
 ) -> String
 {
-    let bsp_tree = Box::new(BSPElement::create_binary_space_partition_tree(static_data));
 
+
+    let bsp_tree = &*tree.0;
     let shader_pieces: Vec<&str> = original_shader.split("//###map###").collect();
 
     let mut shader = String::new();
@@ -61,7 +71,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(
     if shader_pieces.len() == 3
     {
         shader += shader_pieces[0];
-        shader += &generate_map_function_body(&bsp_tree, allowed_dyn_objects);
+        shader += &generate_map_function_body(bsp_tree, allowed_dyn_objects);
         shader += shader_pieces[2];
     }
     else
@@ -93,7 +103,7 @@ pub fn generate_raymarch_shader_with_static_bsp_tree(
         if shader_pieces.len() == 3
         {
             new_shader += shader_pieces[0];
-            new_shader += &generate_get_mats_function_body(&bsp_tree);
+            new_shader += &generate_get_mats_function_body(bsp_tree);
             new_shader += shader_pieces[2];
         }
         else
@@ -1653,7 +1663,7 @@ fn generate_find_intersections_function_body(static_data: &StaticRenderData, all
 }
 
 
-fn generate_map_function_body(bsp_tree: &Box<BSPElement>, allowed_dyn_objects: &AllowedDynamicObjectsInBspTreeTable) -> String
+fn generate_map_function_body(bsp_tree: &BSPElement, allowed_dyn_objects: &AllowedDynamicObjectsInBspTreeTable) -> String
 {
     let mut func_body = String::new();
 
@@ -1666,9 +1676,9 @@ fn generate_map_function_body(bsp_tree: &Box<BSPElement>, allowed_dyn_objects: &
 
 
 
-fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &Box<BSPElement>)
+fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &BSPElement)
 {
-    match bsp_elem.as_ref() {
+    match bsp_elem {
         BSPElement::Branches(slice, left_branch, right_branch) =>
         {
             let (axis, value) = match slice
@@ -2115,7 +2125,7 @@ fn write_bsp_tree_content_for_get_mats_func(func_body: &mut String, bsp_elem: &B
 }
 
 
-fn generate_get_mats_function_body(bsp_tree: &Box<BSPElement>) -> String
+fn generate_get_mats_function_body(bsp_tree: &BSPElement) -> String
 {
 
     let mut func_body = String::new();
@@ -2341,9 +2351,9 @@ fn calc_size_for_sphcube(size: [f32; 4], roundness: f32) -> [f32; 4]
 }
 
 
-fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &Box<BSPElement>, allowed_dyn_objects: &AllowedDynamicObjectsInBspTreeTable)
+fn write_bsp_tree_content_for_map_func(func_body: &mut String, bsp_elem: &BSPElement, allowed_dyn_objects: &AllowedDynamicObjectsInBspTreeTable)
 {
-    match bsp_elem.as_ref() {
+    match bsp_elem {
         BSPElement::Branches(slice, left_branch, right_branch) =>
         {
             let (axis, value) = match slice

@@ -99,15 +99,6 @@ struct ShapesMetadata {
 }
 
 
-struct RectTransformUniform {
-    scale: vec2<f32>,
-    translation: vec2<f32>,
-    transparency: f32,
-    empty_byte: f32,
-    rotation_around_rect_center: f32,
-    rotation_around_screen_center: f32,
-}
-
 struct PlayerProjection
 {
     position: vec4<f32>,
@@ -156,15 +147,6 @@ struct OtherDynamicData {
     additional_data_2: vec4<f32>,
 }
 
-struct PlayerForm {
-    pos: vec4<f32>,
-    empty_bytes: vec4<u32>,
-    color: vec3<f32>,
-    radius: f32,
-    rotation: mat4x4<f32>,
-    weapon_offset: vec4<f32>,
-}
-
 struct ScannerData {
     empty_byte0: u32,
     empty_byte1: u32,
@@ -174,33 +156,11 @@ struct ScannerData {
     // hits: array<vec4<f32>, 16>,
 }
 
-struct Shape {
-    pos: vec4<f32>,
-    size: vec4<f32>,
-    material: i32,
-    empty_bytes1: u32,
-    empty_bytes2: u32,
-    roundness: f32,
-}
-
-const MAX_DIST: f32 = 150.0;
-
-
-@group(0) @binding(0) var<uniform> rect_transform: RectTransformUniform;
-@group(0) @binding(1) var<uniform> dynamic_data: OtherDynamicData;
-@group(0) @binding(2) var<uniform> dyn_player_forms: array<PlayerForm, 16>;
-@group(0) @binding(3) var<uniform> scanner_data: ScannerData;
-
-@group(0) @binding(4) var<uniform> dyn_normal_shapes: array<Shape, 256>;
-@group(0) @binding(5) var<uniform> dyn_negatives_shapes: array<Shape, 256>;
-@group(0) @binding(6) var<uniform> dyn_stickiness_shapes: array<Shape, 256>;
-@group(0) @binding(7) var<uniform> dyn_neg_stickiness_shapes: array<Shape, 256>;
-
-
+@group(0) @binding(0) var<uniform> dynamic_data: OtherDynamicData;
+@group(0) @binding(1) var<uniform> scanner_data: ScannerData;
 
 struct VertexInput {
     @location(0) @interpolate(perspective) position: vec3<f32>,
-    @location(1) @interpolate(perspective) uv: vec2<f32>,
 };
 
 struct VertexOutput {
@@ -208,37 +168,14 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>
 };
 
-fn rotation_mat(angle: f32) -> mat2x2<f32> {
-    var c: f32 = cos(angle);
-    var s: f32 = sin(angle);
-
-    return mat2x2<f32>(c, -s, s, c);
-}
-
-fn sd_sphere(p: vec4<f32>, radius: f32) -> f32 {
-    return length(p) - radius;
-}
-
 @vertex
 fn vs_main(
     model: VertexInput,
 ) -> VertexOutput {
 
-    var coords = model.position;
-
-    let c = vec2(coords.x, coords.y) * rotation_mat(rect_transform.rotation_around_screen_center);
-
-    coords.x = c.x;
-    coords.y = c.y;
-    
-    coords *= vec3(rect_transform.scale, 0.0);
-
-    coords += vec3(rect_transform.translation, 0.0);
-
-
     var out: VertexOutput;
-    out.clip_position = vec4<f32>(coords, 1.0);
-    out.uv = model.uv;
+    out.clip_position = vec4(model.position, 1.0);
+    out.uv = model.position.xy * vec2(0.5, -0.5) + 0.5;
     return out;
 }
 
@@ -301,7 +238,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     col.g -= en_a;
     col.b -= en_a;
     
-    col.a *= rect_transform.transparency;
+
 
     return col;
 }

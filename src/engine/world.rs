@@ -10,6 +10,10 @@ pub mod messenger;
 pub mod time;
 pub mod physics;
 pub mod effects;
+pub mod render;
+pub mod ui;
+use self::render::WorldRenderSystem;
+use crate::engine::world::ui::UISystem;
 
 use std::sync::Arc;
 
@@ -42,6 +46,7 @@ pub struct World
     physics: PhysicsSystem,
     time: WorldTimeSystem,
     render: Option<WorldRenderSystem>,
+    pub(super) ui: UISystem,
 }
 
 
@@ -61,6 +66,8 @@ pub struct WorldRenderConfig
     pub scale: f32,
     /// 0 = paused, 1 = every render frame, N = every Nth render frame.
     pub render_rate: u32,
+    /// Override the level default for this view.
+    pub with_upscale: Option<bool>,
 }
 
 
@@ -68,6 +75,8 @@ pub struct WorldRenderConfig
 pub struct WorldContext<'a>
 {
     pub messenger: &'a mut Messenger,
+    pub render: Option<&'a mut WorldRenderSystem>,
+    pub ui: &'a mut UISystem,
     pub physics: &'a PhysicsSystem,
     pub time: &'a WorldTimeSystem,
     /// The world's main (camera) actor.
@@ -127,14 +136,16 @@ impl World
             messenger: Messenger::new(),
             physics,
             time: WorldTimeSystem::new(),
+            ui: UISystem { owner: render.as_ref().map(WorldRenderSystem::texture_id), ..Default::default() },
             render,
         };
 
-        world.messenger.add_main_actor(main_actor, &mut world.actors, &world.physics, &world.time, shared);
-        world.messenger.add_actors(actors, &mut world.actors, &world.physics, &world.time, shared);
-        world.messenger.start_world(&mut world.actors, &world.physics, &world.time, shared);
-        world.messenger.process_messages(&mut world.actors, &world.physics, &world.time, shared);
+        world.messenger.add_main_actor(main_actor, &mut world.actors, &world.physics, &world.time, &mut world.render, &mut world.ui, shared);
+        world.messenger.add_actors(actors, &mut world.actors, &world.physics, &world.time, &mut world.render, &mut world.ui, shared);
+        world.messenger.start_world(&mut world.actors, &world.physics, &world.time, &mut world.render, &mut world.ui, shared);
+        world.messenger.process_messages(&mut world.actors, &world.physics, &world.time, &mut world.render, &mut world.ui, shared);
 
+        if let Some(render) = &mut world.render { render.update(&world.actors, &mut world.ui, shared); }
         world
     }
 
@@ -150,6 +161,8 @@ impl World
                 messenger: &mut self.messenger,
                 physics: &self.physics,
                 time: &self.time,
+                render: self.render.as_mut(),
+                ui: &mut self.ui,
             };
 
             for (_, actor) in self.actors.iter_mut()
@@ -158,15 +171,15 @@ impl World
             }
         }
 
-        self.messenger.process_messages(&mut self.actors, &self.physics, &self.time, shared);
+        self.messenger.process_messages(&mut self.actors, &self.physics, &self.time, &mut self.render, &mut self.ui, shared);
 
         self.physics.process_physics(&mut self.actors, self.time.delta(), &mut self.messenger);
 
-        self.messenger.process_messages(&mut self.actors, &self.physics, &self.time, shared);
+        self.messenger.process_messages(&mut self.actors, &self.physics, &self.time, &mut self.render, &mut self.ui, shared);
 
         if let Some(render) = &mut self.render
         {
-            render.update(&self.actors, &self.time, shared);
+            render.update(&self.actors, &mut self.ui, shared);
         }
     }
 
@@ -264,4 +277,4 @@ impl World
 }
 
 
-use crate::engine::shared_systems::render::{WorldRenderSystem, WorldTextureId};
+use crate::engine::shared_systems::render::WorldTextureId;

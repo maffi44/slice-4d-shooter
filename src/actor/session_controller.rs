@@ -14,7 +14,7 @@ use crate::{
         world::effects,
         shared_systems::net::Reliability,
         shared_systems::EngineSharedSystems,
-        shared_systems::ui::{UIElementType, UISystem},
+        world::ui::{UIElementType, UISystem},
         world::{messenger::Messenger, WorldContext},
     },
     engine::transform::Transform
@@ -426,11 +426,11 @@ impl Actor for SessionController
     fn on_world_started(
         &mut self,
         world: &mut WorldContext,
-        shared: &mut EngineSharedSystems,
+        _shared: &mut EngineSharedSystems,
     )
     {
         let messenger = &mut *world.messenger;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
 
         messenger.send_broadcast_message(
             Message {
@@ -483,7 +483,7 @@ impl Actor for SessionController
         shared: &mut EngineSharedSystems,
     ) {
         let delta = world.time.delta();
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
 
         
         process_ui_animation(
@@ -552,7 +552,7 @@ impl Actor for SessionController
 
         let messenger = &mut *world.messenger;
         let audio_system = &mut shared.audio;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
 
         
         match &message.message {

@@ -61,7 +61,7 @@ use crate::{
             Reliability,
         },
         shared_systems::EngineSharedSystems,
-        shared_systems::ui::{
+        world::ui::{
             UIElementType,
             UISystem
         },
@@ -214,11 +214,11 @@ impl NetSession {
 
         let new_state = match state {
             SessionState::WaitingForUsersRequest => {
-                self.handle_waiting_for_user_input(shared)
+                self.handle_waiting_for_user_input(world.ui, shared)
             }
 
             SessionState::ConnectionFailure(timer, reason) => {
-                self.handle_connection_failure(timer, reason, world.messenger, &mut shared.ui)
+                self.handle_connection_failure(timer, reason, world.messenger, &mut *world.ui)
             }
 
             SessionState::ConnectingToMatchmakingServer { connection, request_sent, attempts_left } => {
@@ -227,6 +227,7 @@ impl NetSession {
                     request_sent,
                     attempts_left,
                     it_is_2d_3d_example,
+                    world.ui,
                     shared,
                 )
             }
@@ -318,12 +319,13 @@ impl NetSession {
 
     fn handle_waiting_for_user_input(
         &mut self,
+        ui: &mut UISystem,
         shared: &mut EngineSharedSystems,
     ) -> SessionState
     {
-        self.hide_current_ui_elem(&mut shared.ui);
+        self.hide_current_ui_elem(ui);
 
-        *shared.ui.get_mut_ui_element(&UIElementType::TitlePressPToPlayOnline)
+        *ui.get_mut_ui_element(&UIElementType::TitlePressPToPlayOnline)
             .get_ui_data_mut()
             .get_is_visible_mut() = self.connection_status_visible;
 
@@ -350,11 +352,12 @@ impl NetSession {
         mut request_sent: bool,
         attempts_left: u64,
         it_is_2d_3d_example: bool,
+        ui: &mut UISystem,
         shared: &mut EngineSharedSystems,
     ) -> SessionState
     {
-        self.hide_current_ui_elem(&mut shared.ui);
-        self.show_ui_elem(UIElementType::TitleConnectingToServer, &mut shared.ui);
+        self.hide_current_ui_elem(ui);
+        self.show_ui_elem(UIElementType::TitleConnectingToServer, ui);
 
         let connection = match connection {
             Some(connection) => connection,
@@ -459,8 +462,8 @@ impl NetSession {
         shared: &mut EngineSharedSystems,
     ) -> SessionState
     {
-        self.hide_current_ui_elem(&mut shared.ui);
-        self.show_ui_elem(UIElementType::TitleConnectingToServer, &mut shared.ui);
+        self.hide_current_ui_elem(&mut *world.ui);
+        self.show_ui_elem(UIElementType::TitleConnectingToServer, &mut *world.ui);
 
         if timeout_counter > 0 {
             timeout_counter -= 1;
@@ -556,12 +559,12 @@ impl NetSession {
         shared: &mut EngineSharedSystems,
     ) -> SessionState
     {
-        self.hide_current_ui_elem(&mut shared.ui);
+        self.hide_current_ui_elem(&mut *world.ui);
 
         if players_id.len() > 0 {
-            self.show_ui_elem(UIElementType::TitleConnectedToServer, &mut shared.ui);
+            self.show_ui_elem(UIElementType::TitleConnectedToServer, &mut *world.ui);
         } else {
-            self.show_ui_elem(UIElementType::TitleConnectedToServerAndWaitingForOthers, &mut shared.ui);
+            self.show_ui_elem(UIElementType::TitleConnectedToServerAndWaitingForOthers, &mut *world.ui);
         }
 
         // Packets that arrived before a disconnect are processed first; the error comes after them.

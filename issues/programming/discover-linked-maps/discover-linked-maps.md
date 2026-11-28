@@ -7,7 +7,7 @@
 
 ## Problem
 
-The generated [embedded asset catalog](../embedded-asset-catalog/) scans Rust markers. A final trigger declares its destination in the map's JSON. Today `resources/source.rs` repeats declarations for every shipped level, including destinations already named by another shipped map.
+The generated [embedded asset catalog](../embedded-asset-catalog/) scans Rust markers. A final trigger declares its destination in the map's JSON. Earlier releases repeated declarations for linked destinations. Since 2026-11-25 the client ships only CTF, with no linked destination. The discovery use case returns when linked levels ship again.
 
 ## Scope and decisions
 

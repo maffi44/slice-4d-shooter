@@ -117,11 +117,6 @@ impl Engine
 
     pub fn on_window_resized(&mut self, size: PhysicalSize<u32>)
     {
-        if let Some(render) = &mut self.shared.render
-        {
-            render.update_surface_aspect(size);
-        }
-
         if size.width > 0 && size.height > 0
         {
             if let Some(root_world) = &self.root_world
@@ -143,6 +138,7 @@ impl Engine
                 scale: self.shared.global_settings.user.screen_resolution_scale
                     .clamp(MIN_OUTPUT_SCALE, MAX_OUTPUT_SCALE),
                 render_rate: 1,
+                with_upscale: None,
             }
         });
 

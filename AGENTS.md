@@ -39,8 +39,8 @@ These principles come from the [refactoring context](issues/programming/engine-r
 | Location | Responsibility |
 |---|---|
 | `src/engine.rs`, `src/engine/` | Engine, main loop, Transform |
-| `src/engine/shared_systems/` | Shared input, audio, UI, settings, timing, transport, resource loading, GPU/render scheduler |
-| `src/engine/world.rs`, `src/engine/world/` | Per-world actors, messenger, physics, time, descriptor, effects |
+| `src/engine/shared_systems/` | Shared input, audio, settings, timing, transport, resource loading, GPU/render scheduler |
+| `src/engine/world.rs`, `src/engine/world/` | Per-world actors, messenger, physics, time, descriptor, effects, renderer and UI |
 | `src/actor/` | Game actors and devices; player gameplay constants in `main_player/constants.rs` |
 | `net_protocol/` | Shared wire types and byte encoding/decoding for gameplay and matchmaking |
 | `game_server/` | Game server (currently relays client-authoritative gameplay) and Matchbox signaling |
@@ -48,7 +48,7 @@ These principles come from the [refactoring context](issues/programming/engine-r
 | `matchbox_signaling_modified/` | Modified third-party crate; avoid unrelated edits |
 | `src/assets/`, `media/`, `dll/` | Maps/embedded assets, branding, WinSparkle |
 
-Document module-placement exceptions both at the module declaration and here. Current exception: `shared_systems/render/world_render_system.rs` holds the per-world renderer because it shares render-thread internals (`WorldGpu`, slots, `WorldRenderShared`) with the scheduler; moving it to `world/` would expose internals.
+Document module-placement exceptions both at the module declaration and here.
 
 Read [Engine architecture](docs/engine-architecture.md) for execution order, ownership, actor extension steps, map lookup, rendering and networking. `engine::load(level, backend, headless)` returns an `EngineLoader`, passed to `MainLoop::run`; `Engine::new` consumes completed loading data. Startup state belongs to the loader, not Engine (see [startup context](issues/programming/nonblocking-engine-startup/)). Worlds own simulations, actors may own nested worlds, shared systems live once per app. Actors message other actors through `Messenger` and access shared systems directly. Messages and commands are delivered in one FIFO sending order; state updates do not commute, so preserve that order: [message ordering](issues/programming/message-ordering/).
 
@@ -72,7 +72,7 @@ cargo run --release --bin game-client-without-autoupdate -- --headless
 - Hotkeys: `i`/`O` render scale, `P` shadows, `G` online (HUD still says P), `J`/`K` sensitivity, `N`/`M` volume. User preferences load next to the exe first, then platform config (`~/.config/slice4d/user_settings.json` on Linux); connection settings are embedded, overridable next to the exe.
 - Automated tests cover shared protocol wire compatibility, vendored Matchbox (requires local sockets), client settings-write ordering/shutdown, resource retention, shared map requests, independent actor construction and map load failure. They do not verify gameplay; the servers have no unit tests. No standalone test-suite or performance-instrumentation task was requested in the 2026-11-16 review response.
 
-Known limitations: [allocator](issues/programming/global-allocator/) documents blink-alloc direct-mode realloc problems (client excludes debug, server excludes tests); [map compatibility](issues/programming/maps-out-of-sync-with-parser/) documents maps that fail loading; [tick scheduling](issues/programming/engine-tick-rate/) documents accumulated wake-up lateness. Consult these before diagnosing related failures.
+Known limitations: [allocator](issues/programming/global-allocator/) documents blink-alloc direct-mode realloc problems (client excludes debug, server excludes tests); [tick scheduling](issues/programming/engine-tick-rate/) documents accumulated wake-up lateness. Consult these before diagnosing related failures.
 
 ## Releases
 

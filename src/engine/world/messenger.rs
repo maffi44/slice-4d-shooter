@@ -167,6 +167,8 @@ impl Messenger
         actors: &mut Actors,
         physics: &PhysicsSystem,
         time: &WorldTimeSystem,
+        render: &mut Option<super::WorldRenderSystem>,
+        ui: &mut super::UISystem,
         shared: &mut EngineSharedSystems,
     )
     {
@@ -179,6 +181,8 @@ impl Messenger
                     let mut world = WorldContext {
                         main_actor_id: actors.main_actor_id(),
                         messenger: self,
+                        render: render.as_mut(),
+                        ui,
                         physics,
                         time,
                     };
@@ -201,6 +205,8 @@ impl Messenger
                         let mut world = WorldContext {
                             main_actor_id,
                             messenger: self,
+                            render: render.as_mut(),
+                            ui,
                             physics,
                             time,
                         };
@@ -211,7 +217,7 @@ impl Messenger
 
                 Queued::Command(command) =>
                 {
-                    self.execute_command(command, actors, physics, time, shared);
+                    self.execute_command(command, actors, physics, time, render, ui, shared);
                 }
             }
         }
@@ -225,12 +231,14 @@ impl Messenger
         actors: &mut Actors,
         physics: &PhysicsSystem,
         time: &WorldTimeSystem,
+        render: &mut Option<super::WorldRenderSystem>,
+        ui: &mut super::UISystem,
         shared: &mut EngineSharedSystems,
     )
     {
         for actor in new_actors
         {
-            self.add_actor(actor, actors, physics, time, shared);
+            self.add_actor(actor, actors, physics, time, render, ui, shared);
         }
     }
 
@@ -242,10 +250,12 @@ impl Messenger
         actors: &mut Actors,
         physics: &PhysicsSystem,
         time: &WorldTimeSystem,
+        render: &mut Option<super::WorldRenderSystem>,
+        ui: &mut super::UISystem,
         shared: &mut EngineSharedSystems,
     )
     {
-        let id = self.add_actor(actor, actors, physics, time, shared);
+        let id = self.add_actor(actor, actors, physics, time, render, ui, shared);
 
         actors.set_main_actor_id(id);
     }
@@ -257,12 +267,16 @@ impl Messenger
         actors: &mut Actors,
         physics: &PhysicsSystem,
         time: &WorldTimeSystem,
+        render: &mut Option<super::WorldRenderSystem>,
+        ui: &mut super::UISystem,
         shared: &mut EngineSharedSystems,
     )
     {
         let mut world = WorldContext {
             main_actor_id: actors.main_actor_id(),
             messenger: self,
+            render: render.as_mut(),
+            ui,
             physics,
             time,
         };
@@ -280,6 +294,8 @@ impl Messenger
         actors: &mut Actors,
         physics: &PhysicsSystem,
         time: &WorldTimeSystem,
+        render: &mut Option<super::WorldRenderSystem>,
+        ui: &mut super::UISystem,
         shared: &mut EngineSharedSystems,
     ) -> ActorID
     {
@@ -288,6 +304,8 @@ impl Messenger
         let mut world = WorldContext {
             main_actor_id: actors.main_actor_id(),
             messenger: self,
+            render: render.as_mut(),
+            ui,
             physics,
             time,
         };
@@ -306,6 +324,8 @@ impl Messenger
         actors: &mut Actors,
         physics: &PhysicsSystem,
         time: &WorldTimeSystem,
+        render: &mut Option<super::WorldRenderSystem>,
+        ui: &mut super::UISystem,
         shared: &mut EngineSharedSystems,
     )
     {
@@ -313,7 +333,7 @@ impl Messenger
         {
             CommandType::SpawnActor(actor) =>
             {
-                self.add_actor(*actor, actors, physics, time, shared);
+                self.add_actor(*actor, actors, physics, time, render, ui, shared);
             }
 
             CommandType::SpawnControlledActor(actor_id) =>
@@ -331,6 +351,8 @@ impl Messenger
                                 let mut world = WorldContext {
                                     main_actor_id,
                                     messenger: self,
+                                    render: render.as_mut(),
+                                    ui,
                                     physics,
                                     time,
                                 };

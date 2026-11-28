@@ -6,13 +6,12 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 
 | Task | Priority | Complexity | Status | Created | Review |
 |---|---|---|---|---|---|
-| [Render resources for worlds and dynamic UI textures](programming/render-resources/) | High | Complex | Open — design pending | 2026-11-20 | — |
-| [Schedule scene, texture and UI passes per world](programming/world-render-passes/) | High | Complex | Open — design pending | 2026-11-24 | — |
+| [Render resources for worlds and dynamic UI textures](programming/render-resources/) | High | Complex | Implemented — awaiting author review | 2026-11-20 | — |
+| [Schedule scene, texture and UI passes per world](programming/world-render-passes/) | High | Complex | Implemented — awaiting author review | 2026-11-24 | — |
 | [Integrate Fyrox UI for world HUDs and multiple windows](programming/fyrox-ui/) | High | Very complex | Open — design pending | 2026-11-24 | — |
 | [In-world 4D screens](programming/in-world-4d-screens/) | High | Very complex | Backlog — design pending | 2026-11-12 | — |
 | [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | 12 |
 | [Engine tick scheduling](programming/engine-tick-rate/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | — |
-| [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-16 | — |
 | [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/) | Normal | Complex | Open — decision or implementation pending | 2026-11-20 | — |
 | [Research surface presentation, frame pacing and graphics menu settings](programming/vsync-research/) | Normal | Complex | Open — research pending | 2026-11-20 | — |
 | [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/) | Normal | Moderate | Open — design pending | 2026-11-20 | — |
@@ -45,7 +44,6 @@ Estimates cover the work and verification described in each task. Within each gr
 
 - [Global allocator: keep, replace or remove?](programming/global-allocator/)
 - [Engine tick scheduling](programming/engine-tick-rate/)
-- [Maps out of sync with the parser](programming/maps-out-of-sync-with-parser/)
 - [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/)
 - [Discover bundled destination maps from level JSON](programming/discover-linked-maps/)
 - [Preserve short presses and multiple input bindings](programming/input-button-state/)

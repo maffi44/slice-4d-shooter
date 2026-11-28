@@ -50,12 +50,11 @@ impl BoundingBox {
 
 pub struct RenderData {
     pub dynamic_data: DynamicRenderData,
-    pub static_data: StaticRenderData,
+    pub static_data: std::sync::Arc<StaticRenderData>,
 }
 
 impl RenderData {
-    pub fn new() -> Self {
-        let static_data = StaticRenderData::new();
+    pub fn new(static_data: std::sync::Arc<StaticRenderData>) -> Self {
         let dynamic_data = DynamicRenderData::new();
 
         RenderData {
@@ -70,7 +69,6 @@ impl RenderData {
         time: &GlobalTimeSystem,
         window_size: PhysicalSize<u32>,
         static_bounding_box: &BoundingBox,
-        for_generated_raymarch_shader: bool,
         render_quality_data: &RenderQualityData,
         stickiness_radius: f32,
     ) {
@@ -80,7 +78,6 @@ impl RenderData {
             window_size,
             static_bounding_box,
             &self.static_data,
-            for_generated_raymarch_shader,
             render_quality_data,
             stickiness_radius,
         );

@@ -185,7 +185,7 @@ The client builds only native graphics backends. Passing `-b webgpu` prints the 
 
 Both `-l` and in-game transitions prefer local map JSON over the bundled map of the same name. For example, launch `-l capture_the_flag_map` with a `capture_the_flag_map.json` in the working directory to try a local override. A broken override reports its file path. The [architecture reference](docs/engine-architecture.md#levels--assets) lists the remaining search locations.
 
-Of the bundled maps, only `capture_the_flag_map` is currently known to load; several other bundled maps are out of sync with the parser. See [map compatibility](issues/programming/maps-out-of-sync-with-parser/) before using `--level` with those maps.
+The client bundles one supported level, `capture_the_flag_map`. Earlier level files are preserved under `src/assets/maps/old_maps_archive/`.
 
 `J`/`K` lower/raise mouse sensitivity, and `N`/`M` lower/raise volume. `Esc` leaves fullscreen and releases the cursor; `Enter` returns to fullscreen and captures it.
 

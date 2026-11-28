@@ -9,7 +9,8 @@ use std::collections::{
     };
 
 use glam::Vec2;
-use wgpu::{Buffer, Queue};
+use wgpu::Queue;
+use crate::engine::shared_systems::render::uniform::Uniform;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -31,23 +32,21 @@ pub struct RectTransformUniform {
     pub rotation_around_screen_center: f32,
 }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct ScannerDataUniform {
-    empty_byte0: u32,
-    empty_byte1: u32,
-    empty_byte2: u32,
-    orientation: u32,
-}
-
 pub enum UIElement {
     Image(UIImage),
     ProgressBar(UIProgressBar),
-    ScannerDisplay(UIScannerDisplay),
+
 }
 
 impl UIElement
 {
+    fn texture_aspect(&self) -> f32 {
+        match self {
+            Self::Image(image) => image.texture_aspect,
+            Self::ProgressBar(bar) => bar.texture_aspect,
+        }.expect("prepared widget dimensions")
+    }
+
     pub fn get_ui_data_mut(&mut self) -> &mut UIData
     {
         match self
@@ -62,10 +61,6 @@ impl UIElement
                 &mut uiprogress_bar.ui_data
             }
 
-            UIElement::ScannerDisplay(uiscanner_display) =>
-            {
-                &mut uiscanner_display.ui_data
-            }
         }
     }
 
@@ -83,16 +78,13 @@ impl UIElement
                 &uiprogress_bar.ui_data
             }
 
-            UIElement::ScannerDisplay(uiscanner_display) =>
-            {
-                &uiscanner_display.ui_data
-            }
         }   
     }
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum UIElementType {
+    XwzMinimap,
     HeathBarBlue,
     HeathBarRed,
     EnergyGunBarBlue,
@@ -149,12 +141,14 @@ pub enum UIElementType {
     TitleConnectionFailedOldVersion,
     TitleConnectionFailedLostConnection,
     TutorialWindow,
+    #[allow(dead_code)] // Optional rotator HUD artwork retained for the 2D/3D mode.
     RotatorDraft,
     RotatorTutorialDraft,
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum TextureType {
+    Dynamic,
     HeathBarTexture,
     HeathBarMaskBlue,
     HeathBarMaskRed,
@@ -210,16 +204,17 @@ pub enum TextureType {
 
 
 
-pub struct UISystem {
-    pub texture_sources: HashMap<TextureType, &'static [u8]>,
+use crate::engine::shared_systems::render::{ImageSource, WorldTextureId};
 
+#[derive(Default)]
+pub struct UISystem {
     pub ui_elements: HashMap<UIElementType, UIElement>,
+    pub(crate) owner: Option<WorldTextureId>,
+    pub(crate) bindings_changed: bool,
 }
 
 impl UISystem {
-
-    pub fn new() -> UISystem {
-
+    pub(crate) fn texture_sources() -> HashMap<TextureType, &'static [u8]> {
         let mut texture_sources = HashMap::with_capacity(10);
 
         texture_sources.insert(
@@ -428,11 +423,24 @@ impl UISystem {
         );
         
 
-        let mut ui_elements = HashMap::with_capacity(10);
+        texture_sources
+    }
 
-        ui_elements.insert(
-            UIElementType::Crosshair,
-            UIElement::Image(
+    pub fn set_image(&mut self, id: UIElementType, source: impl Into<ImageSource>) -> Result<(), &'static str> {
+        let source = source.into();
+        let owner = self.owner.ok_or("UI has no rendered world")?;
+        if !source.can_sample_from(owner) { return Err("Image source belongs to an incompatible world"); }
+        let UIElement::Image(image) = self.get_mut_ui_element(&id) else { return Err("Expected an image widget"); };
+        if image.source != Some(source) {
+            image.source = Some(source);
+            self.bindings_changed = true;
+        }
+        Ok(())
+    }
+
+    fn element(id: UIElementType) -> UIElement {
+        match id {
+            UIElementType::Crosshair => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -451,11 +459,8 @@ impl UISystem {
                     ),
                     TextureType::Crosshair
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::CrosshairHitMark,
-            UIElement::Image(
+            ),
+            UIElementType::CrosshairHitMark => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -474,11 +479,8 @@ impl UISystem {
                     ),
                     TextureType::CrosshairHitMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ScannerRed,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::ScannerRed => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -501,11 +503,8 @@ impl UISystem {
                     0.07,
                     ProgressBarDirection::DownTop,
                 ),
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ScannerBlue,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::ScannerBlue => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -528,11 +527,8 @@ impl UISystem {
                     0.07,
                     ProgressBarDirection::DownTop,
                 ),
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ScannerHPointer,
-            UIElement::Image(
+            ),
+            UIElementType::ScannerHPointer => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -552,11 +548,8 @@ impl UISystem {
                     ),
                     TextureType::ScannerPointer
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ZXScannerArrow,
-            UIElement::Image(
+            ),
+            UIElementType::ZXScannerArrow => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -576,11 +569,8 @@ impl UISystem {
                     ),
                     TextureType::ScannerArrow
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ZWScannerArrow,
-            UIElement::Image(
+            ),
+            UIElementType::ZWScannerArrow => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -600,12 +590,9 @@ impl UISystem {
                     ),
                     TextureType::ScannerArrow
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::LeftScannerDisplayRed,
-            UIElement::ScannerDisplay(
-                UIScannerDisplay::new(
+            ),
+            UIElementType::LeftScannerDisplayRed => UIElement::Image(
+                UIImage::new(
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::CenterCenter,
@@ -622,14 +609,11 @@ impl UISystem {
                         false,
                         Some(UIElementType::ScannerRed),
                     ),
-                    ScannerDisplayPlaneOrientation::ZX
+                    TextureType::Dynamic
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::LeftScannerDisplayBlue,
-            UIElement::ScannerDisplay(
-                UIScannerDisplay::new(
+            ),
+            UIElementType::LeftScannerDisplayBlue => UIElement::Image(
+                UIImage::new(
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::CenterCenter,
@@ -646,14 +630,11 @@ impl UISystem {
                         false,
                         Some(UIElementType::ScannerBlue),
                     ),
-                    ScannerDisplayPlaneOrientation::ZX
+                    TextureType::Dynamic
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::RightScannerDisplayRed,
-            UIElement::ScannerDisplay(
-                UIScannerDisplay::new(
+            ),
+            UIElementType::RightScannerDisplayRed => UIElement::Image(
+                UIImage::new(
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::CenterCenter,
@@ -670,14 +651,11 @@ impl UISystem {
                         false,
                         Some(UIElementType::ScannerRed),
                     ),
-                    ScannerDisplayPlaneOrientation::ZW
+                    TextureType::Dynamic
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::RightScannerDisplayBlue,
-            UIElement::ScannerDisplay(
-                UIScannerDisplay::new(
+            ),
+            UIElementType::RightScannerDisplayBlue => UIElement::Image(
+                UIImage::new(
                     UIData::new(
                         UIRect {
                             anchor: RectAnchor::CenterCenter,
@@ -694,13 +672,10 @@ impl UISystem {
                         false,
                         Some(UIElementType::ScannerBlue),
                     ),
-                    ScannerDisplayPlaneOrientation::ZW
+                    TextureType::Dynamic
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::HeathBarRed,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::HeathBarRed => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -723,11 +698,8 @@ impl UISystem {
                     0.95,
                     ProgressBarDirection::LeftRight,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::HeathBarBlue,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::HeathBarBlue => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -750,11 +722,8 @@ impl UISystem {
                     0.95,
                     ProgressBarDirection::LeftRight,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::EnergyGunBarRed,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::EnergyGunBarRed => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -778,11 +747,8 @@ impl UISystem {
                     0.17,
                     ProgressBarDirection::RightLeft,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::EnergyGunBarBlue,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::EnergyGunBarBlue => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -806,11 +772,8 @@ impl UISystem {
                     0.17,
                     ProgressBarDirection::RightLeft,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::EnergyGunImage,
-            UIElement::Image(
+            ),
+            UIElementType::EnergyGunImage => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -829,11 +792,8 @@ impl UISystem {
                     ),
                     TextureType::EnergyGunImgTexture
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ObstacleGunBarRed,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::ObstacleGunBarRed => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -857,11 +817,8 @@ impl UISystem {
                     0.17,
                     ProgressBarDirection::RightLeft,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ObstacleGunBarBlue,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::ObstacleGunBarBlue => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -885,11 +842,8 @@ impl UISystem {
                     0.17,
                     ProgressBarDirection::RightLeft,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ObstacleGunImage,
-            UIElement::Image(
+            ),
+            UIElementType::ObstacleGunImage => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -908,11 +862,8 @@ impl UISystem {
                     ),
                     TextureType::ObstacleGunImgTexture
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::MachinegunBarRed,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::MachinegunBarRed => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -936,11 +887,8 @@ impl UISystem {
                     0.17,
                     ProgressBarDirection::RightLeft,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::MachinegunBarBlue,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::MachinegunBarBlue => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -964,11 +912,8 @@ impl UISystem {
                     0.17,
                     ProgressBarDirection::RightLeft,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::MachinegunImage,
-            UIElement::Image(
+            ),
+            UIElementType::MachinegunImage => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -987,11 +932,8 @@ impl UISystem {
                     ),
                     TextureType::MachinegunImgTexture
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ShotgunBarRed,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::ShotgunBarRed => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -1015,11 +957,8 @@ impl UISystem {
                     0.17,
                     ProgressBarDirection::RightLeft,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ShotgunBarBlue,
-            UIElement::ProgressBar(
+            ),
+            UIElementType::ShotgunBarBlue => UIElement::ProgressBar(
                 UIProgressBar::new(
                     UIData::new(
                         UIRect {
@@ -1043,11 +982,8 @@ impl UISystem {
                     0.17,
                     ProgressBarDirection::RightLeft,
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ShotgunImage,
-            UIElement::Image(
+            ),
+            UIElementType::ShotgunImage => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1066,11 +1002,8 @@ impl UISystem {
                     ),
                     TextureType::ShotgunImgTexture
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ScoreBar,
-            UIElement::Image(
+            ),
+            UIElementType::ScoreBar => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1089,11 +1022,8 @@ impl UISystem {
                     ),
                     TextureType::ScoreBar
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::RedFlagMark,
-            UIElement::Image(
+            ),
+            UIElementType::RedFlagMark => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1112,11 +1042,8 @@ impl UISystem {
                     ),
                     TextureType::RedFlagMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::BlueFlagMark,
-            UIElement::Image(
+            ),
+            UIElementType::BlueFlagMark => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1135,11 +1062,8 @@ impl UISystem {
                     ),
                     TextureType::BlueFlagMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::FirstScoreMarkRed,
-            UIElement::Image(
+            ),
+            UIElementType::FirstScoreMarkRed => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1158,11 +1082,8 @@ impl UISystem {
                     ),
                     TextureType::RedScoreMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::SecondScoreMarkRed,
-            UIElement::Image(
+            ),
+            UIElementType::SecondScoreMarkRed => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1181,11 +1102,8 @@ impl UISystem {
                     ),
                     TextureType::RedScoreMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ThirdScoreMarkRed,
-            UIElement::Image(
+            ),
+            UIElementType::ThirdScoreMarkRed => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1204,11 +1122,8 @@ impl UISystem {
                     ),
                     TextureType::RedScoreMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::FinalScoreMarkRed,
-            UIElement::Image(
+            ),
+            UIElementType::FinalScoreMarkRed => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1227,11 +1142,8 @@ impl UISystem {
                     ),
                     TextureType::RedFinalMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::FirstScoreMarkBlue,
-            UIElement::Image(
+            ),
+            UIElementType::FirstScoreMarkBlue => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1250,11 +1162,8 @@ impl UISystem {
                     ),
                     TextureType::BlueScoreMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::SecondScoreMarkBlue,
-            UIElement::Image(
+            ),
+            UIElementType::SecondScoreMarkBlue => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1273,11 +1182,8 @@ impl UISystem {
                     ),
                     TextureType::BlueScoreMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::ThirdScoreMarkBlue,
-            UIElement::Image(
+            ),
+            UIElementType::ThirdScoreMarkBlue => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1296,11 +1202,8 @@ impl UISystem {
                     ),
                     TextureType::BlueScoreMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::FinalScoreMarkBlue,
-            UIElement::Image(
+            ),
+            UIElementType::FinalScoreMarkBlue => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1319,11 +1222,8 @@ impl UISystem {
                     ),
                     TextureType::BlueFinalMark
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::RedTeamBacklight,
-            UIElement::Image(
+            ),
+            UIElementType::RedTeamBacklight => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1343,11 +1243,8 @@ impl UISystem {
                     ),
                     TextureType::BacklightRed
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::BlueTeamBacklight,
-            UIElement::Image(
+            ),
+            UIElementType::BlueTeamBacklight => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1367,11 +1264,8 @@ impl UISystem {
                     ),
                     TextureType::BacklightBlue
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::RedTeamWinTitle,
-            UIElement::Image(
+            ),
+            UIElementType::RedTeamWinTitle => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1390,11 +1284,8 @@ impl UISystem {
                     ),
                     TextureType::RedTeamWinTitle
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::BlueTeamWinTitle,
-            UIElement::Image(
+            ),
+            UIElementType::BlueTeamWinTitle => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1413,11 +1304,8 @@ impl UISystem {
                     ),
                     TextureType::BlueTeamWinTitle
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::JoinRedTeamTitle,
-            UIElement::Image(
+            ),
+            UIElementType::JoinRedTeamTitle => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1436,11 +1324,8 @@ impl UISystem {
                     ),
                     TextureType::JoinRedTeamTitle
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::JoinBlueTeamTitle,
-            UIElement::Image(
+            ),
+            UIElementType::JoinBlueTeamTitle => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1459,11 +1344,8 @@ impl UISystem {
                     ),
                     TextureType::JoinBlueTeamTitle
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::RedFlagBacklight,
-            UIElement::Image(
+            ),
+            UIElementType::RedFlagBacklight => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1483,11 +1365,8 @@ impl UISystem {
                     ),
                     TextureType::BacklightRed
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::BlueFlagBacklight,
-            UIElement::Image(
+            ),
+            UIElementType::BlueFlagBacklight => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1507,11 +1386,8 @@ impl UISystem {
                     ),
                     TextureType::BacklightBlue
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::WAimFrame,
-            UIElement::Image(
+            ),
+            UIElementType::WAimFrame => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1530,11 +1406,8 @@ impl UISystem {
                     ),
                     TextureType::WAimFrame
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::TitlePressTForTutorial,
-            UIElement::Image(
+            ),
+            UIElementType::TitlePressTForTutorial => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1553,11 +1426,8 @@ impl UISystem {
                     ),
                     TextureType::TitlePressTForTutorial
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::TitlePressPToPlayOnline,
-            UIElement::Image(
+            ),
+            UIElementType::TitlePressPToPlayOnline => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1576,11 +1446,8 @@ impl UISystem {
                     ),
                     TextureType::TitlePressPToPlayOnline
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::TitleConnectingToServer,
-            UIElement::Image(
+            ),
+            UIElementType::TitleConnectingToServer => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1599,11 +1466,8 @@ impl UISystem {
                     ),
                     TextureType::TitleConnectingToServer
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::TitleConnectedToServer,
-            UIElement::Image(
+            ),
+            UIElementType::TitleConnectedToServer => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1622,11 +1486,8 @@ impl UISystem {
                     ),
                     TextureType::TitleConnectedToServer
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::TitleConnectedToServerAndWaitingForOthers,
-            UIElement::Image(
+            ),
+            UIElementType::TitleConnectedToServerAndWaitingForOthers => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1645,12 +1506,8 @@ impl UISystem {
                     ),
                     TextureType::TitleConnectedToServerAndWaitingForOthers
                 )
-            )
-        );
-
-        ui_elements.insert(
-            UIElementType::TitleConnectionFailedServerNotFound,
-            UIElement::Image(
+            ),
+            UIElementType::TitleConnectionFailedServerNotFound => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1669,12 +1526,8 @@ impl UISystem {
                     ),
                     TextureType::TitleConnectionFailedServerNotFound
                 )
-            )
-        );
-
-        ui_elements.insert(
-            UIElementType::TitleConnectionFailedServerIsFull,
-            UIElement::Image(
+            ),
+            UIElementType::TitleConnectionFailedServerIsFull => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1693,12 +1546,8 @@ impl UISystem {
                     ),
                     TextureType::TitleConnectionFailedServerIsFull
                 )
-            )
-        );
-
-        ui_elements.insert(
-            UIElementType::TitleConnectionFailedServerError,
-            UIElement::Image(
+            ),
+            UIElementType::TitleConnectionFailedServerError => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1717,12 +1566,8 @@ impl UISystem {
                     ),
                     TextureType::TitleConnectionFailedServerError
                 )
-            )
-        );
-
-        ui_elements.insert(
-            UIElementType::TitleConnectionFailedLostConnection,
-            UIElement::Image(
+            ),
+            UIElementType::TitleConnectionFailedLostConnection => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1741,12 +1586,8 @@ impl UISystem {
                     ),
                     TextureType::TitleConnectionFailedLostConnection
                 )
-            )
-        );
-
-        ui_elements.insert(
-            UIElementType::TitleConnectionFailedOldVersion,
-            UIElement::Image(
+            ),
+            UIElementType::TitleConnectionFailedOldVersion => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1765,12 +1606,8 @@ impl UISystem {
                     ),
                     TextureType::TitleConnectionFailedOldVersion
                 )
-            )
-        );
-
-        ui_elements.insert(
-            UIElementType::TutorialWindow,
-            UIElement::Image(
+            ),
+            UIElementType::TutorialWindow => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1789,11 +1626,8 @@ impl UISystem {
                     ),
                     TextureType::TutorialWindow
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::RotatorTutorialDraft,
-            UIElement::Image(
+            ),
+            UIElementType::RotatorTutorialDraft => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1812,11 +1646,8 @@ impl UISystem {
                     ),
                     TextureType::RotatorTutorialDraft
                 )
-            )
-        );
-        ui_elements.insert(
-            UIElementType::RotatorDraft,
-            UIElement::Image(
+            ),
+            UIElementType::RotatorDraft => UIElement::Image(
                 UIImage::new(
                     UIData::new(
                         UIRect {
@@ -1835,34 +1666,29 @@ impl UISystem {
                     ),
                     TextureType::RotatorDraft
                 )
-            )
-        );
-
-
-
-        UISystem {
-            ui_elements,
-            texture_sources,
+            ),
+            UIElementType::XwzMinimap => UIElement::Image(UIImage::new(UIData::new(UIRect {
+            anchor: RectAnchor::CenterCenter, position: Vec2::new(0.55, -0.55),
+            size: RectSize::LockedBoth(0.35, 0.35), rotation_around_rect_center: 0.0,
+            transparency: 1.0, drawing_order: 0, transform_buffer: None,
+        }, true, None), TextureType::Dynamic)),
         }
-
     }
-
-
-    #[allow(dead_code)] // UI API, not used by the game yet
-    pub fn get_texture_source(&self, texture_type: &TextureType) -> &[u8] {
-        self.texture_sources
-            .get(texture_type)
-            .expect("the UI system has no source for the texture")
-    }
-
 
     pub fn get_mut_ui_element(
         &mut self,
         element: &UIElementType
     ) -> &mut UIElement {
-        self.ui_elements
-            .get_mut(element)
-            .expect("the UI element does not exist")
+        if let std::collections::hash_map::Entry::Vacant(slot) = self.ui_elements.entry(*element) {
+            let widget = Self::element(*element);
+            let parent = widget.get_ui_data().parent_ui_elem;
+            slot.insert(widget);
+            self.bindings_changed = true;
+            if let Some(parent) = parent {
+                self.get_mut_ui_element(&parent);
+            }
+        }
+        self.ui_elements.get_mut(element).unwrap()
     }
 
     pub fn get_ui_element(
@@ -1884,283 +1710,17 @@ impl UISystem {
 
 
     pub fn write_buffers_ui(&self, queue: &Queue, screen_aspect: f32) {
-
-        for (_, ui_elem) in &self.ui_elements {
-            match ui_elem {
-                UIElement::Image(elem) => {
-                    if elem.ui_data.parent_ui_elem.is_none() {
-                        continue;
-                    }
-
-                    let is_visible_coef = match elem.ui_data.is_visible
-                    {
-                        true => 1.0_f32,
-                        false => 0.0_f32,
-                    };
-
-                    let parent_transform = {
-                        match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
-                            UIElement::Image(elem) => {
-                                elem.ui_data.rect.get_rect_transform_uniform(
-                                    elem.texture_aspect.unwrap(),
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                                )
-                            },
-                            UIElement::ProgressBar(elem) => {
-                                elem.ui_data.rect.get_rect_transform_uniform(
-                                    elem.texture_aspect.unwrap(),
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                                )
-                            },
-                            UIElement::ScannerDisplay(elem) => {
-                                elem.ui_data.rect.get_rect_transform_uniform(
-                                    1.0,
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                                )
-                            }
-                        }
-                    };
-
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("the UI image has no rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    elem
-                                        .texture_aspect
-                                        .expect("the UI image has no texture aspect"),
-                                    screen_aspect,
-                                    Some(parent_transform),
-                                    is_visible_coef,
-                        )]),
-                    );
-                }
-                UIElement::ProgressBar(elem) => {
-                    if elem.ui_data.parent_ui_elem.is_none() {
-                        continue;
-                    }
-
-                    let is_visible_coef = match elem.ui_data.is_visible
-                    {
-                        true => 1.0_f32,
-                        false => 0.0_f32,
-                    };
-
-                    let parent_transform = {
-                        match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
-                            UIElement::Image(elem) => {
-                                elem.ui_data.rect.get_rect_transform_uniform(
-                                    elem.texture_aspect.unwrap(),
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                                )
-                            },
-                            UIElement::ProgressBar(elem) => {
-                                elem.ui_data.rect.get_rect_transform_uniform(
-                                    elem.texture_aspect.unwrap(),
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                                )
-                            },
-                            UIElement::ScannerDisplay(elem) => {
-                                elem.ui_data.rect.get_rect_transform_uniform(
-                                    1.0,
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                                )
-                            }
-                        }
-                    };
-
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("the UI progress bar has no rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    elem
-                                        .texture_aspect
-                                        .expect("the UI progress bar has no texture aspect"),
-                                    screen_aspect,
-                                    Some(parent_transform),
-                                    is_visible_coef,
-                        )]),
-                    );
-                    queue.write_buffer(
-                        &elem.progress_bar_value_buffer
-                            .as_ref()
-                            .expect("the UI progress bar has no value buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.get_progress_bar_uniform()
-                        ]),
-                    );
-                },
-                UIElement::ScannerDisplay(elem) => {
-                    if elem.ui_data.parent_ui_elem.is_none() {
-                        continue;
-                    }
-
-                    let is_visible_coef = match elem.ui_data.is_visible
-                    {
-                        true => 1.0_f32,
-                        false => 0.0_f32,
-                    };
-                    
-                    let parent_transform = {
-                        match self.get_ui_element(elem.ui_data.parent_ui_elem.as_ref().unwrap()) {
-                            UIElement::Image(elem) => {
-                                elem.ui_data.rect.get_rect_transform_uniform(
-                                    elem.texture_aspect.unwrap(),
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                                )
-                            },
-                            UIElement::ProgressBar(elem) => {
-                                elem.ui_data.rect.get_rect_transform_uniform(
-                                    elem.texture_aspect.unwrap(),
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                                )
-                            },
-                            UIElement::ScannerDisplay(elem) => {
-                                elem.ui_data.rect.get_rect_transform_uniform(
-                                    1.0,
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                                )
-                            }
-                        }
-                    };
-
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("the UI image has no rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    1.0,
-                                    screen_aspect,
-                                    Some(parent_transform),
-                                    is_visible_coef,
-                        )]),
-                    );
-                }
-            }
-        }
-
-        for (_, ui_elem) in &self.ui_elements {
-            match ui_elem {
-                UIElement::Image(elem) => {
-                    if elem.ui_data.parent_ui_elem.is_some() {
-                        continue;
-                    }
-
-                    let is_visible_coef = match elem.ui_data.is_visible
-                    {
-                        true => 1.0_f32,
-                        false => 0.0_f32,
-                    };
-
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("the UI image has no rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    elem
-                                        .texture_aspect
-                                        .expect("the UI image has no texture aspect"),
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                        )]),
-                    );
-                }
-                UIElement::ProgressBar(elem) => {
-                    if elem.ui_data.parent_ui_elem.is_some() {
-                        continue;
-                    }
-
-                    let is_visible_coef = match elem.ui_data.is_visible
-                    {
-                        true => 1.0_f32,
-                        false => 0.0_f32,
-                    };
-
-                    queue.write_buffer(
-                        elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("the UI progress bar has no rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    elem
-                                        .texture_aspect
-                                        .expect("the UI progress bar has no texture aspect"),
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                        )]),
-                    );
-                    queue.write_buffer(
-                        &elem.progress_bar_value_buffer
-                            .as_ref()
-                            .expect("the UI progress bar has no value buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.get_progress_bar_uniform()
-                        ]),
-                    );
-                },
-                UIElement::ScannerDisplay(elem) => {
-                    if elem.ui_data.parent_ui_elem.is_some() {
-                        continue;
-                    }
-
-                    let is_visible_coef = match elem.ui_data.is_visible
-                    {
-                        true => 1.0_f32,
-                        false => 0.0_f32,
-                    };
-
-                    queue.write_buffer(
-                        &elem.ui_data.rect.transform_buffer
-                            .as_ref()
-                            .expect("the UI image has no rect transform buffer"),
-                        0,
-                        bytemuck::cast_slice(&[
-                            elem.ui_data.rect
-                                .get_rect_transform_uniform(
-                                    1.0,
-                                    screen_aspect,
-                                    None,
-                                    is_visible_coef,
-                        )]),
-                    );
-                }
+        for element in self.ui_elements.values() {
+            let data = element.get_ui_data();
+            let visibility = if data.is_visible { 1.0 } else { 0.0 };
+            let parent = data.parent_ui_elem.map(|id| {
+                let parent = self.get_ui_element(&id);
+                parent.get_ui_data().rect.get_rect_transform_uniform(parent.texture_aspect(), screen_aspect, None, visibility)
+            });
+            let transform = data.rect.get_rect_transform_uniform(element.texture_aspect(), screen_aspect, parent, visibility);
+            data.rect.transform_buffer.as_ref().expect("prepared widget transform").write(queue, &transform);
+            if let UIElement::ProgressBar(bar) = element {
+                bar.progress_bar_value_buffer.as_ref().expect("prepared bar value").write(queue, &bar.get_progress_bar_uniform());
             }
         }
     }
@@ -2203,7 +1763,7 @@ pub struct UIRect {
     pub transparency: f32,
     pub drawing_order: usize,
 
-    pub transform_buffer: Option<Buffer>,
+    pub transform_buffer: Option<Uniform<RectTransformUniform>>,
 }
 
 impl UIRect {
@@ -2372,7 +1932,7 @@ impl UIData {
         }
     }
 
-    pub fn initialize(&mut self, rect_transform_buffer: Buffer) {
+    pub fn initialize(&mut self, rect_transform_buffer: Uniform<RectTransformUniform>) {
         self.rect.transform_buffer = Some(rect_transform_buffer);
     }
 
@@ -2413,6 +1973,7 @@ impl UIData {
 }
 
 pub struct UIImage {
+    pub(crate) source: Option<ImageSource>,
     pub ui_data: UIData,
     texture: TextureType,
 
@@ -2427,6 +1988,7 @@ impl UIImage {
     ) -> Self {
         
         UIImage {
+            source: None,
             ui_data,
             texture,
 
@@ -2443,7 +2005,7 @@ impl UIImage {
         &mut self,
         texture_size: Vec2,
         texture_aspect: f32,
-        rect_transform_buffer: Buffer,
+        rect_transform_buffer: Uniform<RectTransformUniform>,
     ) {
         self.texture_aspect = Some(texture_aspect);
         self.texture_size = Some(texture_size);
@@ -2508,7 +2070,7 @@ pub struct UIProgressBar {
     texture_aspect: Option<f32>,
     mask_texture_size: Option<Vec2>,
     mask_texture_aspect: Option<f32>,
-    progress_bar_value_buffer: Option<Buffer>,
+    progress_bar_value_buffer: Option<Uniform<ProgressBarUniform>>,
 }
 
 impl UIProgressBar {
@@ -2563,8 +2125,8 @@ impl UIProgressBar {
         texture_aspect: f32,
         mask_texture_size: Vec2,
         mask_texture_aspect: f32,
-        rect_transform_buffer: Buffer,
-        progress_bar_value_buffer: Buffer,
+        rect_transform_buffer: Uniform<RectTransformUniform>,
+        progress_bar_value_buffer: Uniform<ProgressBarUniform>,
     ) {
         self.texture_size = Some(texture_size);
         self.texture_aspect = Some(texture_aspect);
@@ -2597,66 +2159,5 @@ impl UIProgressBar {
     #[allow(dead_code)] // UI API, not used by the game yet
     pub fn set_is_visible(&mut self, is_visible: bool) {
         self.ui_data.set_is_visible(is_visible);
-    }
-}
-
-
-pub enum ScannerDisplayPlaneOrientation {
-    ZX,
-    ZW,
-}
-
-pub struct UIScannerDisplay {
-    pub ui_data: UIData,
-    orientation: ScannerDisplayPlaneOrientation,
-
-    scanner_data_buffer: Option<Buffer>,
-}
-
-impl UIScannerDisplay {
-
-    pub fn new(
-        ui_data: UIData,
-        orientation: ScannerDisplayPlaneOrientation,
-    ) -> Self {
-
-        UIScannerDisplay {
-            ui_data,
-            orientation,
-            scanner_data_buffer: None
-        }
-    }
-
-    pub fn initialize(
-        &mut self,
-        rect_transform_buffer: Buffer,
-        scanner_data_buffer: Buffer
-    ) {
-        self.ui_data.initialize(rect_transform_buffer);
-
-        self.scanner_data_buffer = Some(scanner_data_buffer);
-    }
-
-    pub fn get_scanner_data_uniform(&self) -> ScannerDataUniform {
-        match self.orientation {
-            ScannerDisplayPlaneOrientation::ZX => {
-                ScannerDataUniform {
-                    empty_byte0: 0u32,
-                    empty_byte1: 0u32,
-                    empty_byte2: 0u32,
-
-                    orientation: 0u32,
-                }
-            },
-            ScannerDisplayPlaneOrientation::ZW => {
-                ScannerDataUniform {
-                    empty_byte0: 0u32,
-                    empty_byte1: 0u32,
-                    empty_byte2: 0u32,
-                    
-                    orientation: 1u32,
-                }
-            }
-        }
     }
 }

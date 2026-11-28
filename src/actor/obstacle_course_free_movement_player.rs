@@ -24,7 +24,7 @@ use crate::{
     engine::{
         world::messenger::Messenger, shared_systems::input::ActionsFrameState, world::physics::{
             PhysicsSystem, colliders_container::PhysicalElement, kinematic_collider::KinematicColliderMessage
-        }, shared_systems::render::{VisualElement, camera::Camera}, shared_systems::ui::{UIElement, UIElementType, UISystem}, world::static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea}
+        }, shared_systems::render::{VisualElement, camera::Camera}, world::ui::{UIElement, UIElementType, UISystem}, world::static_object::{BeamVolumeArea, SphericalVolumeArea, VolumeArea}
     },
     engine::transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
 };
@@ -39,7 +39,10 @@ use super::{
 const POINTER_COLOR: Vec3 = Vec3::new(0.7, 0.0, 0.0);
 const DITHERING_EFFET_FOV: f32 = 1.1;
 
+use crate::engine::world::render::{DynamicTexture, TextureEffect};
+
 pub struct ObstacleCourseFreeMovementPlayer {
+    minimap: Option<DynamicTexture>,
     player_respawned_sound: Option<SoundBufferResource>,
 
 
@@ -142,7 +145,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
         let physic_system = world.physics;
         let messenger = &mut *world.messenger;
         let audio_system = &mut shared.audio;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
 
         let from = message.from;
 
@@ -467,7 +470,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
         let physic_system = world.physics;
         let messenger = &mut *world.messenger;
         let audio_system = &mut shared.audio;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
         let _time_system = &shared.time;
 
 
@@ -667,10 +670,15 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
         world: &mut WorldContext,
         shared: &mut EngineSharedSystems,
     ) {
+        if let Some(render) = world.render.as_deref_mut() {
+            let minimap = render.create_dynamic_texture(&mut shared.resources, TextureEffect::XwzMinimap, glam::UVec2::splat(512));
+            world.ui.set_image(UIElementType::XwzMinimap,minimap.image()).expect("minimap image in its owning world");
+            self.minimap = Some(minimap);
+        }
         let physic_system = world.physics;
         let messenger = &mut *world.messenger;
         let audio_system = &mut shared.audio;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
 
         self.respawn(physic_system, ui_system, audio_system, messenger);
     }
@@ -785,6 +793,7 @@ impl ObstacleCourseFreeMovementPlayer {
         let _dithering_effect_target = dithering_effect;
 
         ObstacleCourseFreeMovementPlayer {
+            minimap: None,
             player_respawned_sound: resources.load_media(
                 crate::embedded_asset!("sounds/player_respawned.wav"), Retention::Session,
             ),
@@ -1603,7 +1612,7 @@ impl ControlledActor for ObstacleCourseFreeMovementPlayer
     ) {
         let physics_system = world.physics;
         let messenger = &mut *world.messenger;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
         let audio_system = &mut shared.audio;
 
         self.inner_state.saved_angle_of_rotation = Vec4::ZERO;

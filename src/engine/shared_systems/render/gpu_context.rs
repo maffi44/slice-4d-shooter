@@ -14,7 +14,7 @@ use wgpu::{
     }
 };
 
-use super::{presentation::Presentation, Vertex, INDICES, INDICES_MINIMAP, VERTICES, VERTICES_MINIMAP};
+use super::{presentation::Presentation, Vertex, INDICES, VERTICES};
 
 
 /// The format of every world's output texture (and of the world pipelines' color target).
@@ -42,15 +42,11 @@ pub struct GpuContext
     pub upscale_bind_group_layout: wgpu::BindGroupLayout,
     pub upscale_sampler: wgpu::Sampler,
 
-    pub sky_box_view: wgpu::TextureView,
-    pub sky_box_sampler: wgpu::Sampler,
+    pub scanner_layout: wgpu::BindGroupLayout,
 
     pub fullscreen_vertex_buffer: wgpu::Buffer,
     pub fullscreen_index_buffer: wgpu::Buffer,
     pub fullscreen_num_indices: u32,
-    pub minimap_vertex_buffer: wgpu::Buffer,
-    pub minimap_index_buffer: wgpu::Buffer,
-    pub minimap_num_indices: u32,
 }
 
 
@@ -161,6 +157,10 @@ impl GpuContext
             color_space: wgpu::SurfaceColorSpace::Auto,
         };
 
+        (Self::from_device(device, queue), Presentation::new(surface, surface_config, adapter, size))
+    }
+
+    pub(super) fn from_device(device: wgpu::Device, queue: wgpu::Queue) -> Self {
         let uniform_buffer_entry = |binding: u32| wgpu::BindGroupLayoutEntry {
             binding,
             visibility: wgpu::ShaderStages::FRAGMENT,
@@ -258,16 +258,14 @@ impl GpuContext
             ..Default::default()
         });
 
-        let sky_box_view = load_cube_texture(&device, &queue);
-
-        let sky_box_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
-            ..Default::default()
+        let scanner_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("scanner inputs"),
+            entries: &std::array::from_fn::<_, 2, _>(|i| wgpu::BindGroupLayoutEntry {
+                binding: i as u32, visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false, min_binding_size: None },
+                count: None,
+            }),
         });
 
         let fullscreen_vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
@@ -282,21 +280,9 @@ impl GpuContext
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let minimap_vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("minimap vertex buffer"),
-            contents: bytemuck::cast_slice(VERTICES_MINIMAP),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
-        let minimap_index_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("minimap index buffer"),
-            contents: bytemuck::cast_slice(INDICES_MINIMAP),
-            usage: wgpu::BufferUsages::INDEX,
-        });
-
         log::info!("gpu context: shared layouts and resources init");
 
-        let gpu = GpuContext {
+        GpuContext {
             device,
             queue,
             output_format: WORLD_OUTPUT_FORMAT,
@@ -309,18 +295,12 @@ impl GpuContext
             upscale_bind_group_layout,
             upscale_sampler,
 
-            sky_box_view,
-            sky_box_sampler,
+            scanner_layout,
 
             fullscreen_vertex_buffer,
             fullscreen_index_buffer,
             fullscreen_num_indices: INDICES.len() as u32,
-            minimap_vertex_buffer,
-            minimap_index_buffer,
-            minimap_num_indices: INDICES_MINIMAP.len() as u32,
-        };
-
-        (gpu, Presentation::new(surface, surface_config, adapter, size))
+        }
     }
 
 
@@ -389,74 +369,4 @@ fn decode_image(texture_buffer: &[u8]) -> (ImageBuffer<Rgba<u8>, Vec<u8>>, (u32,
     let (width, height) = img.dimensions();
 
     (rgba, (width, height))
-}
-
-
-fn load_cube_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::TextureView {
-    let faces = [
-        include_bytes!("../../../assets/sky_boxes/star_sky/star_sky_right1.png").as_slice(),
-        include_bytes!("../../../assets/sky_boxes/star_sky/star_sky_left2.png").as_slice(),
-        include_bytes!("../../../assets/sky_boxes/star_sky/star_sky_top3.png").as_slice(),
-        include_bytes!("../../../assets/sky_boxes/star_sky/star_sky_bottom4.png").as_slice(),
-        include_bytes!("../../../assets/sky_boxes/star_sky/star_sky_front5.png").as_slice(),
-        include_bytes!("../../../assets/sky_boxes/star_sky/star_sky_back6.png").as_slice(),
-    ];
-
-    let mut textures_data = Vec::new();
-
-    let mut dimensions = (0_u32, 0_u32);
-    for face in &faces {
-        let (texture_rgba, dims) = decode_image(face);
-        textures_data.push(texture_rgba);
-        dimensions = dims;
-    }
-
-    let cube_texture = device.create_texture(&wgpu::TextureDescriptor {
-        label: Some("Cube Texture"),
-        view_formats: &[],
-        size: wgpu::Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
-            depth_or_array_layers: 6,
-        },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-    });
-
-    let texture_size = Extent3d {
-        width: dimensions.0,
-        height: dimensions.1,
-        depth_or_array_layers: 1,
-    };
-
-    for (i, data) in textures_data.iter().enumerate() {
-
-        queue.write_texture(
-            TexelCopyTextureInfoBase {
-                texture: &cube_texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d {
-                    x: 0,
-                    y: 0,
-                    z: i as u32,
-                },
-                aspect: wgpu::TextureAspect::All,
-            },
-            &data,
-            TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4 * dimensions.0),
-                rows_per_image: Some(dimensions.1),
-            },
-            texture_size,
-        );
-    }
-
-    cube_texture.create_view(&wgpu::TextureViewDescriptor {
-        dimension: Some(wgpu::TextureViewDimension::Cube),
-        ..Default::default()
-    })
 }

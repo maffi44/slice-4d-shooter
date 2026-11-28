@@ -64,3 +64,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     col.a *= rect_transform.transparency;
     return col;
 }
+@fragment
+fn fs_world(in: VertexOutput) -> @location(0) vec4<f32> {
+    return vec4(textureSample(texture, tex_sampler, in.uv).rgb, rect_transform.transparency);
+}

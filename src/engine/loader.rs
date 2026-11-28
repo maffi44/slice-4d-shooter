@@ -75,7 +75,7 @@ pub fn load(initial_world: String, graphic_backend: Option<wgpu::Backend>, headl
                 // UI textures/pipelines and the upscale pipeline are expensive too.
                 let frame_rate = shared.global_settings.user.target_render_frame_rate;
                 shared.render = Some(RenderScheduler::new(
-                    &gpu, instance, presentation, window, proxy, &mut shared.ui, frame_rate,
+                    &gpu, instance, presentation, window, proxy, frame_rate,
                 ));
                 shared.gpu = Some(gpu);
             }

@@ -1,6 +1,6 @@
 # Engine architecture reference
 
-Implementation reference updated 2026-11-24. For working rules see [AGENTS.md](../AGENTS.md); for task status see the [open tasks](../issues/open-tasks.md).
+Implementation reference updated 2026-11-25. For working rules see [AGENTS.md](../AGENTS.md); for task status see the [open tasks](../issues/open-tasks.md).
 
 ## Engine architecture (`src/engine.rs`, `src/engine/main_loop.rs`)
 
@@ -15,7 +15,7 @@ let loading = engine::load(start_level, args.graphic_backend, args.headless);
 MainLoop::run(loading)?;
 ```
 
-- `engine::load` returns `EngineLoader`. It starts async map/settings loading and GPU instance discovery concurrently; a dedicated loading thread prepares shared systems (including audio/input/UI), coordinates dependencies and owns intermediate handles. The loader thread uses the shared Tokio runtime to drive GPU initialization. The ready shared systems retain that runtime.
+- `engine::load` returns `EngineLoader`. It starts async map/settings loading and GPU instance discovery concurrently; a dedicated loading thread prepares shared systems (including audio and input), coordinates dependencies and owns intermediate handles. The loader thread uses the shared Tokio runtime to drive GPU initialization. The ready shared systems retain that runtime.
 - Graphical `MainLoop` owns the winit application. First `resumed` creates the window (duplicate resumes are guarded). The loader requests a surface through its result channel; only window/surface creation happens in the event-loop callback, preserving Metal's main-thread requirement. Adapter/device, shared GPU resources, UI/upscale pipelines and world pipelines are built off that thread. CPU map preparation overlaps GPU discovery; world GPU finalization requires the device.
 - Loading uses `ControlFlow::Wait`. A queued result followed by `EventLoopProxy::send_event(AppEvent::Loading)` wakes `user_event`; there are no polling simulation ticks. Results queued before the proxy/first resume are drained after window creation. The render thread can show the splash once ready; the window is initially blank.
 - On success, `Engine::new(LoadedEngine, window)` consumes the completed load and activates the root world. The loading object is dropped, simulation timing is initialized, and `WaitUntil` starts regular ticks. Latest window dimensions are applied at activation. Initial actor construction and required sound decoding have already finished when the descriptor is published.
@@ -24,7 +24,7 @@ MainLoop::run(loading)?;
 
 There is no game-mode argument. UISystem and NetSystem exist in both modes; the GPU UI renderer does not exist in headless mode.
 
-**Module layout mirrors the architecture:** `src/engine/shared_systems.rs` + `src/engine/shared_systems/` (audio, global_settings, input, net, render, resources, time, ui) hold the shared systems; `src/engine/world.rs` + `src/engine/world/` (actors, messenger, physics, time, world_descriptor, static_object, effects) hold the per-world parts; `src/engine/loader.rs` (initialization), `src/engine/main_loop.rs` (application runner) and `src/engine/transform.rs` belong to the engine as a whole. `src/game_client_main.rs` is only the entry point (args, logger, allocator, auto-updater, `engine::load(start_level, backend, headless)` + `MainLoop::run(loading)`). See [repository map and placement rules](../AGENTS.md#repository-map).
+**Module layout mirrors the architecture:** `src/engine/shared_systems.rs` + `src/engine/shared_systems/` (audio, global_settings, input, net, render, resources, time) hold the shared systems; `src/engine/world.rs` + `src/engine/world/` (actors, messenger, physics, time, world_descriptor, static_object, effects, render, ui) hold the per-world parts; `src/engine/loader.rs` (initialization), `src/engine/main_loop.rs` (application runner) and `src/engine/transform.rs` belong to the engine as a whole. `src/game_client_main.rs` is only the entry point (args, logger, allocator, auto-updater, `engine::load(start_level, backend, headless)` + `MainLoop::run(loading)`). See [repository map and placement rules](../AGENTS.md#repository-map).
 
 **`EngineSharedSystems`** (`src/engine/shared_systems.rs`), once per application, all `pub` fields:
 - `global_settings: GlobalSettings`: `user` (`user_settings.json`: sensitivity, volume, render scale, shadows, `target_render_frame_rate`; loaded next to the executable first, otherwise in the platform config dir; saved to the selected path) + `connection` (compiled in from `src/assets/settings/connection_settings.json`, overridable only by a `connection_settings.json` next to the executable)
@@ -32,7 +32,7 @@ There is no game-mode argument. UISystem and NetSystem exist in both modes; the 
 - `input: InputSystem`: collected once per tick; actors read `shared.input.actions()`
 - `net: NetSystem`: transport only (connection handles, WebSocket/WebRTC, raw packets)
 - `resources`: the actor-facing `ResourceLoader` for the application cache
-- `audio`, `ui`
+- `audio`
 - `gpu: Option<GpuContext>`, `render: Option<RenderScheduler>` (`None` in a ready headless engine; present in a ready graphical engine)
 - `runtime`: tokio, 2 async workers (networking, resource I/O and settings persistence), plus its blocking pool for CPU/native work
 
@@ -41,7 +41,7 @@ There is no game-mode argument. UISystem and NetSystem exist in both modes; the 
 - `messenger: Messenger` (`world/messenger.rs`): the message bus and the whole message pump
 - `physics: PhysicsSystem`
 - `time: WorldTimeSystem` (`world/time.rs`): the world's elapsed interval since its previous `simulate()`, subject to the simulation-time clamp
-- `render: Option<WorldRenderSystem>`
+- `ui: UISystem` and `render: Option<WorldRenderSystem>`
 
 `descriptor.give_me_world(config, &mut shared)` returns an active world. The descriptor owns parsed actor JSON, map geometry, shared pipelines and one ready set of independently constructed actors. The call synchronously constructs a replacement set from the parsed JSON, swaps it with the ready set under a short lock, then registers per-world systems and runs addition/start callbacks on the outgoing actors. The callbacks run after the lock is released. Rendering uses the caller’s current configuration. `World::simulate(&mut shared)` runs world time, actor ticks, message pump, physics, message pump and render data update.
 
@@ -72,7 +72,7 @@ Engine tick (`Engine::tick`), target 60 Hz (`GlobalTimeSystem::new(60)`). Note: 
 2. `resource_system.update(shared.time.prev_frame_duration())` advances cache expiry.
 3. `root_world.simulate(&mut shared)`, then handle the root world's `OuterWorldMessage`s (quit, replace root world, ...)
 4. render hotkeys (`i`/`O` root output scale, `P` shadows; persisted)
-5. `shared.post_simulate()`: `net.flush`, UI buffers, `input.reset_input`, `time.end_of_frame`
+5. `shared.post_simulate()`: `net.flush`, `input.reset_input`, `time.end_of_frame`
 
 Window-level hotkeys (`Esc`/`Enter`, `J`/`K` sensitivity, `N`/`M` volume, `Y`/`H` browser) are handled in `engine/main_loop.rs` and operate on `engine.shared`.
 
@@ -104,7 +104,7 @@ The capture-the-flag status identifies the carrier by its session peer ID. The f
 - Input: actors read `shared.input.actions()` directly (there is no `InputMaster`).
 
 ### Levels & assets
-- Maps are JSON files in `src/assets/maps/`. The world resource loader resolves a name like `obstacle_course_levels/level-2` by trying these paths in order:
+- Maps are JSON files in `src/assets/maps/`. The world resource loader resolves a name like `capture_the_flag_map` by trying these paths in order:
   1. `./<name>.json`
   2. `./assets/maps/<name>.json`
   3. `./src/assets/maps/<name>.json`
@@ -112,7 +112,7 @@ The capture-the-flag status identifies the carrier by its session peer ID. The f
 
   Missing files fall through to the generated embedded catalog. A present but unreadable or malformed override reports its path. CLI names and trigger destinations follow the same order. The bare level name, its `.json` spelling and its bundled marker share a cache key. Distinct logical paths retain distinct identities. To ship another bundled map, add its literal marker to `src/engine/shared_systems/resources/source.rs`.
 - WAV keys search the catalog first, then the corresponding disk path. A plain `sounds/name.wav` key and its bundled marker share a buffer.
-- `old_maps_archive/` holds unused historical maps.
+- `capture_the_flag_map` is the only bundled level. The original JSON files for historical maps live in `old_maps_archive/` and are excluded from the catalog.
 - Textures, skyboxes and shaders are embedded at compile time via `include_bytes!`/`include_str!`. Sounds go through fyrox-sound. The splash screen is `media/slice_4d_shooter_poster.png`.
 - Settings: `GlobalSettings::load` asynchronously reads configuration and creates a default file if needed. `save()` queues a small snapshot for one async writer; writes remain ordered and do not block tick/window callbacks. Normal exit queues the final save and awaits `flush()` before runtime destruction. This waits for file writes, not power-loss durability (`fsync`). Gameplay values are constants, not settings.
 
@@ -122,15 +122,31 @@ The native client enables Vulkan, DX12 and Metal in both the wgpu feature list a
 
 Asynchronous CPU/GPU preparation and the existing separate simulation/render threads remain. No single GPU owner thread, GL-only serialization, or mandatory preload of every shader was introduced.
 
-- `gpu_context.rs`: `GpuContext` (device, queue, shared layouts, sky box, shared buffers). World output textures use the fixed sRGB format `WORLD_OUTPUT_FORMAT`.
-- `render_scheduler.rs`: `RenderScheduler` runs the render loop on a dedicated OS thread (`std::thread`), stopped by a `Shutdown` message + `join()` in `Drop`. Worlds register through a channel; each `WorldSlot` holds a `Weak<WorldRenderShared>` (atomics: render rate, packed resolution+scale) and the world's GPU objects. Per frame: skip if the GPU is busy (no frame queueing) or too early (the minimum frame duration comes from the `target_render_frame_rate` user setting, default 125, read once at creation and scheduled on a fixed timeline; frames are not interpolated, so frames between ticks redraw the latest tick data), encode due worlds in reverse registration order (children first when parents register before their children), upscale the presented world (or the splash) to the surface, UI, one submit, present. On an eligible frame without a drawable, the scheduler periodically submits queued simulation uploads with an empty command list. This uses the same idle-GPU check and a 100 ms minimum interval between upload-only submissions. A drawable on the next eligible frame can be presented immediately. The same upload path handles a pending surface replacement.
+- `GpuContext` owns the device, queue, shared layouts and fullscreen geometry. World outputs use the fixed sRGB format `WORLD_OUTPUT_FORMAT`. The device stays valid across surface replacement.
+- `RenderScheduler` runs on its own thread. A rendered world reserves an empty slot before actor activation. At the end of activation and on structural changes it publishes an immutable `WorldPlan`. Each eligible frame encodes due slots in reverse registration order. One encoder and one submission cover their texture producers, scenes, optional bloom/upscale, HUDs and the final window draw. Ordinary uniform updates reuse the plan. The scheduler preserves the configured frame cap and the idle-GPU check. With no drawable surface it periodically flushes queued writes at a minimum interval of 100 ms.
 - `presentation.rs` owns the render thread’s surface, original adapter, configuration and pending size. The window thread retains the original instance and a sender for the render inbox. It forwards resizes during splash and play. On `Lost` the render thread drops the old surface and wakes winit once. The window thread creates the replacement for the current window and returns it and its physical size in the same FIFO as resizes. Before acquiring a frame, the render thread applies the latest nonzero size and checks replacement format compatibility with the existing pipelines. `Outdated` schedules reconfiguration. Close and shutdown can proceed while a request is outstanding.
 - Actors keep using the same world, device resources and connections throughout recovery. After a frame is submitted and presented on the replacement, a later loss can request another replacement. A failed replacement, loss before its first presentation, or device loss reaches `MainLoop` during loading or play. The application exits with an error and flushes settings if already running. See [lost surface recovery](../issues/programming/lost-render-surface/).
-- `world_render_system.rs`: `WorldRenderSystem` (per world, main thread) computes render data in `simulate()` and writes the buffers via `queue.write_buffer`. No application-level locks between the threads; multiple buffer writes are not an atomic snapshot (see [GPU data grouping](../issues/programming/gpu-data-grouping/)).
-- `ui_renderer.rs` draws the HUD on top of the presented world (the scanner is re-bound to the presented world's buffers).
-- WGSL shaders live in `shared_systems/render/shaders/`. Each level picks its main raymarch shader in `world_descriptor.rs`.
-- `raymarch_shader_generator.rs` (~5k lines) bakes a static BSP tree of the map's geometry into the raymarch shader **at runtime** (`WorldPreparation::finish`, maps with `generated_shader_with_bsp_tree: true`). There are no pre-generated `*_with_bsp_tree.wgsl` files any more.
-- `render_data/` splits static from dynamic GPU data.
+- `world/render.rs` owns each world's typed uniform buffers, active scene and producer registrations. Simulation collects and uploads world inputs. Multiple writes still have the existing [upload coherence limitation](../issues/programming/gpu-data-grouping/).
+- `resources/graphics.rs` loads CPU level data, device pipelines and cubemap textures. Scene and XWZ minimap requests share the parsed geometry, lazily built BSP tree and static render data. The scanner pipeline is shared across levels. GPU preparation uses blocking workers. Each instance binds its own world buffers and sky. `visual_settings_of_environment.sky_box` accepts a path to a `.cubemap` descriptor with six named face paths relative to the descriptor. `sky_box_filter` selects `linear` (default) or `nearest`.
+- `world/ui.rs` holds each world's widget state. `ui_renderer.rs` shares the PNG textures, mesh and image/bar pipelines. The XWZ minimap and the two scanner planes use ordinary image widgets. Fyrox can replace this composition backend independently.
+
+A player's activation callback attaches its scanner to two team-specific images. Repeat for the other plane. The actor keeps the returned producer for as long as it owns the effect.
+
+```rust
+if let Some(render) = world.render.as_deref_mut() {
+    let zx = render.create_dynamic_texture(&mut shared.resources,
+        TextureEffect::Scanner(ScannerPlane::Zx), UVec2::splat(256));
+    world.ui.set_image(UIElementType::LeftScannerDisplayRed, zx.image())?;
+    world.ui.set_image(UIElementType::LeftScannerDisplayBlue, zx.image())?;
+    self.zx = Some(zx);
+}
+```
+
+An image key is usable immediately. `try_ready()` polls preparation, and `ready().await` completes independently of world ticks. A failed producer returns its error. A widget skips a missing producer. The scheduler draws ready producers ahead of the HUD in the same due frame. Dropping the handle stops production at the next world publication. Dropping the world retires its slot and cancels unfinished instance preparation.
+
+To add a built-in effect, select the WGSL and binding layout in `render/pipelines.rs`, add the constructor inputs to `TextureEffect`, and bind them during instance preparation. Use `Uniform<T>` for writable shader inputs with a matching WGSL layout. A compatible replacement scene starts with `set_scene`; its old draw remains active through loading and on failure.
+
+A parent can pass `child.output_texture_id()` to a widget after obtaining the ID of the rendered child. A world-output source must have a later slot than its consumer. A local image key must belong to the consuming world. The UI skips an unready child and samples its most recent complete output between due frames. Resizing while paused takes effect on the child's next draw. The default `with_upscale: true` composes the HUD at nominal resolution after bloom. `false` composites at scene resolution. `WorldRenderConfig::with_upscale` overrides the level setting for one view. The window samples the finished output once.
 
 ### Physics (`src/engine/world/physics/`)
 SDF-based 4D colliders, one `PhysicsSystem` per world:
@@ -154,7 +170,7 @@ Math uses `glam::Vec4`. W is the 4th spatial axis.
 
 Simulation intervals over 0.35 s currently fall back to about one nominal tick; this is not an unrestricted real-time clock. See [world time semantics](../issues/programming/world-time-semantics/).
 
-World removal unregisters rendering and releases its actors’ connection handles. Connections shared with surviving owners stay registered. The output texture resolver is deferred to [in-world screens](../issues/programming/in-world-4d-screens/). At the root, `WorldFinished` is ignored and the world keeps running; only `QuitApplication` exits the application. A nested world's owner chooses its own response to `WorldFinished`: [root WorldFinished decision](../issues/programming/root-world-finished/).
+World removal unregisters rendering and releases its actors’ connection handles. Connections shared with surviving owners stay registered. UI images can sample a later-registered world by its output ID. [In-world screens](../issues/programming/in-world-4d-screens/) covers displaying it on 4D geometry. At the root, `WorldFinished` is ignored and the world keeps running; only `QuitApplication` exits the application. A nested world's owner chooses its own response to `WorldFinished`: [root WorldFinished decision](../issues/programming/root-world-finished/).
 
 The [refactoring task](../issues/programming/engine-refactoring-world-isolation/) links its historical context: Part I for rationale, §19 for discussions, §24.9 for implementation rounds. Current proposals are recorded in the linked follow-up tasks; they are not implemented architecture.
 

@@ -1,21 +1,21 @@
 # Schedule scene, texture and UI passes per world
 
-- **Status:** Open — design pending
+- **Status:** Implemented — awaiting author review
 - **Priority:** High
 - **Complexity:** Complex
 - **Created:** 2026-11-24
 - **Context:** [Initial design and implementation order](world-render-passes-context.md)
 
-## Goal
+[accepted] Implemented together with [render resources](../render-resources/) using the current HUD. [Fyrox UI](../fyrox-ui/) follows as a separate stage.
 
-Let a world produce a complete image, including its UI, before another world samples it. Keep each world's render cadence and the render thread's control over submission. Both the [dynamic texture producer](../render-resources/) and the [Fyrox UI backend](../fyrox-ui/) need a place in this order.
+## Execution and lifetime
 
-## Proposed first stage
+A rendered world reserves a slot before actor callbacks and publishes its complete plan after activation. Structural edits replace the plan at a tick boundary. Ordinary parameter writes reuse the existing passes. Each due slot encodes its local producers, scene, optional upscale/bloom and HUD into the scheduler's frame encoder. All due slots and presentation share a submission.
 
-- Group the scene pass, its local producers and UI composition under the owning world's scheduled draw. Register an effect with its world and place it before its first consumer. Encode into the scheduler's frame encoder. Keep the existing world registration and cadence where they already express the dependency.
-- Keep presentation as a consumer of the finished output. Preserve a full-resolution root HUD when the scene renders at reduced scale. Agree on the resolution and meaning of the published world output, including the extra target cost, before changing its contract.
-- Define what a consumer sees before the first draw, when a producer skips a frame or pauses, and during resize or teardown. Decide the supported dependency directions and how unsupported cycles are reported.
+A child is registered later and drawn before its parent. The parent displays the latest completed child output. Before the first draw and after teardown the corresponding widget is skipped. Pausing and resizing together preserve the old texture until the next due draw. A local texture can feed several widgets in its owning world. World-output image bindings validate registration order and follow the source texture generation.
 
-## Completion criteria
+The descriptor selects `with_upscale` and each view may override it. Upscaled worlds publish nominal-resolution output with the HUD drawn after bloom. Direct worlds publish scaled output with the HUD. The window presents the finished image. The XWZ minimap draws as a regular HUD widget.
 
-Trace two worlds at different render rates. On a child's due frame its scene and UI finish before the parent samples it. Between child draws the parent can reuse its last complete image. Check first use, pause/resume, resize, root replacement, splash and headless. Preserve bounded GPU submissions and verify that a second local pass can register without editing the frame loop. Demonstrate the stage with the current playable client and document the agreed scheduler contract.
+## Review
+
+The [offscreen regression](../../../src/engine/shared_systems/render/render_scheduler/tests.rs) reads pixels from a parent showing a child at a different cadence, checks pause/resize/resume and verifies that the stale image disappears on retirement. See the [verification log](world-render-passes-context.md) for environment limits and the [architecture reference](../../../docs/engine-architecture.md) for caller contracts. Review final CTF appearance in the window before closure.

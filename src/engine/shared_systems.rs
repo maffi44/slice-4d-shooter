@@ -10,7 +10,6 @@ pub mod net;
 pub mod resources;
 pub mod render;
 pub mod time;
-pub mod ui;
 
 use self::{
     audio::AudioSystem,
@@ -19,14 +18,13 @@ use self::{
     net::NetSystem,
     render::{GpuContext, RenderScheduler},
     time::GlobalTimeSystem,
-    ui::UISystem,
 };
 
 
 /// The systems that exist once per application and are shared by every World.
 ///
 /// Every actor callback receives `&mut EngineSharedSystems` (together with its own `WorldContext`),
-/// so any actor of any world reaches input, audio, UI, net, settings and the GPU directly,
+/// so any actor of any world reaches input, audio, net, settings and the GPU directly,
 /// and an actor that owns a nested World passes them on to its `simulate()`.
 pub struct EngineSharedSystems
 {
@@ -36,7 +34,6 @@ pub struct EngineSharedSystems
     pub net: NetSystem,
     pub resources: resources::ResourceLoader<'static>,
     pub audio: AudioSystem,
-    pub ui: UISystem,
     /// GPU infrastructure for creating GPU resources. `None` in headless mode.
     pub gpu: Option<GpuContext>,
     /// The render loop (own OS thread). `None` in headless mode.
@@ -56,8 +53,6 @@ impl EngineSharedSystems
         let time = GlobalTimeSystem::new(60_u32);
         log::info!("engine shared systems: time init");
 
-        let ui = UISystem::new();
-
         let input = InputSystem::new();
         log::info!("engine shared systems: input init");
 
@@ -75,7 +70,6 @@ impl EngineSharedSystems
             input,
             net,
             audio,
-            ui,
             gpu: None,
             render: None,
             runtime,
@@ -99,10 +93,6 @@ impl EngineSharedSystems
     {
         self.net.flush();
 
-        if let (Some(gpu), Some(render)) = (&self.gpu, &self.render)
-        {
-            self.ui.write_buffers_ui(&gpu.queue, render.surface_aspect());
-        }
 
         self.input.reset_input();
         self.time.end_of_frame();

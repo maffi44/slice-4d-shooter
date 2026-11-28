@@ -8,7 +8,7 @@ use std::{sync::{mpsc::TryRecvError, Arc}, time::Instant};
 use crate::engine::{
     Engine, EngineLoader,
     loader::{LoadEvent, WindowSurface},
-    shared_systems::{render::WindowPresentation, ui::UIElementType},
+    shared_systems::render::WindowPresentation, world::ui::UIElementType,
 };
 
 use glam::Vec2;
@@ -331,7 +331,7 @@ impl ApplicationHandler<AppEvent> for MainLoop
                         },
                         KeyCode::KeyY | KeyCode::KeyH => {
                             if event.state == ElementState::Pressed
-                                && shared.ui.get_ui_element(&UIElementType::TutorialWindow).get_ui_data().is_visible
+                                && engine.root_world.as_ref().and_then(|w| w.ui.ui_elements.get(&UIElementType::TutorialWindow)).is_some_and(|element| element.get_ui_data().is_visible)
                             {
                                 let url = if code == KeyCode::KeyY {"https://youtu.be/Pl355uSTBLc"} else {"https://slice4d.info"};
 

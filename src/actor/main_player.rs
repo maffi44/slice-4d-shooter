@@ -35,7 +35,7 @@ use crate::{
         },
         shared_systems::input::ActionsFrameState, world::physics::{
             PhysicsSystem, colliders_container::PhysicalElement, kinematic_collider::KinematicColliderMessage
-        }, shared_systems::render::{VisualElement, camera::Camera}, shared_systems::ui::{
+        }, shared_systems::render::{VisualElement, camera::Camera}, world::ui::{
             UIElement, UIElementType, UISystem
         }, world::static_object::VisualWave
     }, engine::transform::{BACKWARD, DOWN, FORWARD, LEFT, RIGHT, Transform, UP, W_DOWN, W_UP},
@@ -731,8 +731,11 @@ impl PlayerScreenEffects
 }
 
 
+use crate::engine::world::render::{DynamicTexture, TextureEffect, ScannerPlane};
+
 pub struct WScanner
 {
+    displays: Option<[DynamicTexture; 2]>,
     scanner_sound_sound: Option<SoundBufferResource>,
     anti_projection_mode_enabled_sound: Option<SoundBufferResource>,
 
@@ -753,6 +756,7 @@ impl WScanner
         let w_scanner_enemies_show_time =  SCANNER_SHOW_ENEMIES_TIME;
 
         WScanner {
+            displays: None,
             scanner_sound_sound: resources.load_media(
                 crate::embedded_asset!("sounds/scanner_sound.wav"), Retention::Session,
             ),
@@ -767,6 +771,19 @@ impl WScanner
 
             visual_wave: Vec::with_capacity(1),
         }
+    }
+
+    pub fn attach_displays(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems) {
+        let Some(render) = world.render.as_deref_mut() else { return; };
+        let [zx, zw] = [ScannerPlane::Zx, ScannerPlane::Zw].map(|plane|
+            render.create_dynamic_texture(&mut shared.resources, TextureEffect::Scanner(plane), glam::UVec2::splat(256)));
+        for (id, key) in [
+            (UIElementType::LeftScannerDisplayRed, zx.image()), (UIElementType::LeftScannerDisplayBlue, zx.image()),
+            (UIElementType::RightScannerDisplayRed, zw.image()), (UIElementType::RightScannerDisplayBlue, zw.image()),
+        ] {
+            world.ui.set_image(id,key).expect("scanner image in its owning world");
+        }
+        self.displays = Some([zx, zw]);
     }
 
     pub fn restore_scanner_values(&mut self) {
@@ -877,6 +894,10 @@ pub enum PlayerMessage {
 
 
 impl Actor for MainPlayer {
+    fn on_added_to_world(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems) {
+        self.w_scanner.attach_displays(world,shared);
+    }
+
 
     fn on_world_started(
         &mut self,
@@ -925,7 +946,7 @@ impl Actor for MainPlayer {
         let physic_system = world.physics;
         let messenger = &mut *world.messenger;
         let audio_system = &mut shared.audio;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
         let _time_system = &shared.time;
 
         let from = message.from;
@@ -1506,7 +1527,7 @@ impl Actor for MainPlayer {
         let physic_system = world.physics;
         let messenger = &mut *world.messenger;
         let audio_system = &mut shared.audio;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
         let _time_system = &shared.time;
 
 
@@ -3902,7 +3923,7 @@ impl ControlledActor for MainPlayer
     ) {
         let physics_system = world.physics;
         let messenger = &mut *world.messenger;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
         let audio_system = &mut shared.audio;
 
         let spawns: &Vec<Vec4>;

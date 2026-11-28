@@ -16,7 +16,7 @@ use rand::RngExt;
 
 use crate::{
     engine::{
-        world::messenger::Messenger, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, shared_systems::ui::UIElementType, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
+        world::messenger::Messenger, world::physics::{area::{Area, AreaMessage}, colliders_container::PhysicalElement, physics_system_data::ShapeType}, shared_systems::render::VisualElement, world::ui::UIElementType, world::static_object::{SphericalVolumeArea, VisualWave, VolumeArea}
     },
     engine::transform::Transform
 };
@@ -432,12 +432,12 @@ impl Actor for Flag
     fn tick(
         &mut self,
         world: &mut WorldContext,
-        shared: &mut EngineSharedSystems,
+        _shared: &mut EngineSharedSystems,
     )
         {
         let delta = world.time.delta();
         let messenger = &mut *world.messenger;
-        let ui_system = &mut shared.ui;
+        let ui_system = &mut *world.ui;
 
 
         match self.status
@@ -1005,6 +1005,7 @@ mod tests
         };
 
         let (mut shared, map) = headless_map();
+        let mut ui = Default::default();
         let physics = PhysicsSystem::new(&map);
         let time = WorldTimeSystem::new();
         let (mut actors, mut messenger) = world(); // A map actor already occupies OTHER.
@@ -1019,7 +1020,7 @@ mod tests
             )),
         };
         messenger.send_broadcast_message(joined);
-        messenger.process_messages(&mut actors, &physics, &time, &mut shared);
+        messenger.process_messages(&mut actors, &physics, &time, &mut None, &mut ui, &mut shared);
         assert_eq!(stored_flag(&actors).carrier_actor_id, None);
         stored_flag(&actors).request_target_position_from_carrier(&mut messenger);
         assert!(position_request_recipients(&messenger).is_empty());
@@ -1036,13 +1037,13 @@ mod tests
             sender: 0,
             command_type: CommandType::SpawnActor(Box::new(ActorWrapper::PlayersDoll(doll))),
         });
-        messenger.process_messages(&mut actors, &physics, &time, &mut shared);
+        messenger.process_messages(&mut actors, &physics, &time, &mut None, &mut ui, &mut shared);
         assert_eq!(stored_flag(&actors).carrier_actor_id, Some(OTHER));
         assert_eq!(stored_flag(&actors).target_position, Vec4::Y * 2.0);
 
         // The doll takes CARRIER from the other map actor. Its server peer ID is still OTHER.
         actors.change_id(OTHER, CARRIER, &mut messenger);
-        messenger.process_messages(&mut actors, &physics, &time, &mut shared);
+        messenger.process_messages(&mut actors, &physics, &time, &mut None, &mut ui, &mut shared);
         assert_follows(stored_flag(&actors), CARRIER, OTHER);
 
         // A fresh server capture after the doll was displaced must resolve the same peer.
@@ -1051,7 +1052,7 @@ mod tests
             let update = FlagMessage::SetFlagStatus(Team::Red, status).from_actor(0);
             messenger.send_direct_message(FLAG_ID, update);
         }
-        messenger.process_messages(&mut actors, &physics, &time, &mut shared);
+        messenger.process_messages(&mut actors, &physics, &time, &mut None, &mut ui, &mut shared);
         assert_follows(stored_flag(&actors), CARRIER, OTHER);
     }
 

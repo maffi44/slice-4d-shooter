@@ -481,7 +481,6 @@ impl DynamicRenderData {
         clip_planes: (Vec4, Vec4, Vec4, Vec4, Vec4),
         stickiness_value: f32,
 
-        for_generated_raymarch_shader: bool,
 
     ) -> ShapesArraysMetadata
     {
@@ -849,28 +848,7 @@ impl DynamicRenderData {
         neg_spheres_start = index as u32;
 
 
-        // A temporary solution, only to speed up the raymarch shader:
-        // I added a new raymarch shader with a pre-generated static BSP tree
-        // of static objects.
-        // The current version of the game doesn't use any dynamic
-        // objects except negative spheres, which is why I don't collect static negative spheres
-        // for this shader.
-        if !for_generated_raymarch_shader
-        {
-            for shape in &sd.neg_spheres {
-                if check_if_player_see_sphere(
-                    camera,
-                    Vec4::from_array(shape.pos),
-                    shape.size[0] + shape.roundness + stickiness_value*PI,
-                    clip_planes,
-                )
-                {
-                    self.dynamic_shapes_data.negative[index] = *shape;
-                    index += 1;
-                }
-            }
-        }
-        
+        // The level BSP contains static negative spheres. Actors supply live holes here.
         while let Some(shape) = self.frame_spheres_buffer.negative.pop() {
             if check_if_player_see_sphere(
                 camera,
@@ -1504,7 +1482,6 @@ impl DynamicRenderData {
         window_size: PhysicalSize<u32>,
         static_bounding_box: &BoundingBox,
         static_data: &StaticRenderData,
-        for_generated_raymarch_shader: bool,
         render_quality_data: &RenderQualityData,
         stickiness_radius: f32,
     ) {
@@ -1535,7 +1512,6 @@ impl DynamicRenderData {
             &main_camera,
             clip_planes,
             stickiness_radius,
-            for_generated_raymarch_shader,
         );
 
         let (spherical_areas_metadata, waves_start, waves_amount) =
@@ -1698,6 +1674,19 @@ pub struct OtherDynamicData {
     additional_data: [f32;4],
     additional_data_2: [f32;4],
 }
+
+// WGSL byte offsets and array strides shared by the scene, minimap and scanner shaders.
+const _: () = {
+    use std::mem::{size_of, offset_of};
+    assert!(size_of::<Shape>() == 48 && size_of::<PlayerForm>() == 128);
+    assert!(size_of::<SphericalArea>() == 32 && size_of::<BeamArea>() == 48);
+    assert!(size_of::<PlayerProjectionForShader>() == 64);
+    assert!(offset_of!(OtherDynamicData, camera_data) == 160);
+    assert!(offset_of!(OtherDynamicData, player_projections) == 384);
+    assert!(offset_of!(OtherDynamicData, w_scanner_radius) == 1408);
+    assert!(offset_of!(OtherDynamicData, additional_data) == 1456);
+    assert!(size_of::<OtherDynamicData>() == 1488);
+};
 
 impl OtherDynamicData {
     pub fn update(
