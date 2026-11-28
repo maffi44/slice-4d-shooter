@@ -6,8 +6,6 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 
 | Task | Priority | Complexity | Status | Created | Review |
 |---|---|---|---|---|---|
-| [Render resources for worlds and dynamic UI textures](programming/render-resources/) | High | Complex | Implemented — awaiting author review | 2026-11-20 | — |
-| [Schedule scene, texture and UI passes per world](programming/world-render-passes/) | High | Complex | Implemented — awaiting author review | 2026-11-24 | — |
 | [Integrate Fyrox UI for world HUDs and multiple windows](programming/fyrox-ui/) | High | Very complex | Open — design pending | 2026-11-24 | — |
 | [In-world 4D screens](programming/in-world-4d-screens/) | High | Very complex | Backlog — design pending | 2026-11-12 | — |
 | [Global allocator: keep, replace or remove?](programming/global-allocator/) | Normal | Moderate | Open — decision or implementation pending | 2026-11-13 | 12 |
@@ -16,6 +14,8 @@ Sorted by priority, then status group (awaiting review → decision pending → 
 | [Research surface presentation, frame pacing and graphics menu settings](programming/vsync-research/) | Normal | Complex | Open — research pending | 2026-11-20 | — |
 | [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/) | Normal | Moderate | Open — design pending | 2026-11-20 | — |
 | [Discover bundled destination maps from level JSON](programming/discover-linked-maps/) | Normal | Moderate | Open — design pending | 2026-11-24 | — |
+| [Clarify engine names and code layout](programming/engine-code-style/) | Normal | Moderate | Open — design pending | 2026-11-28 | — |
+| [Unify graphical and headless APIs for gameplay](programming/headless-caller-contract/) | Normal | Complex | Open — design pending | 2026-11-28 | — |
 | [Preserve short presses and multiple input bindings](programming/input-button-state/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 4 |
 | [Frame server TCP messages and bound reads](programming/server-tcp-framing/) | Normal | Complex | Open — not implemented | 2026-11-16 | 7 |
 | [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/) | Normal | Moderate | Open — not implemented | 2026-11-16 | 9 |
@@ -46,6 +46,7 @@ Estimates cover the work and verification described in each task. Within each gr
 - [Engine tick scheduling](programming/engine-tick-rate/)
 - [Define delivery of pending requests when replacing the root world](programming/root-replacement-mailbox/)
 - [Discover bundled destination maps from level JSON](programming/discover-linked-maps/)
+- [Clarify engine names and code layout](programming/engine-code-style/)
 - [Preserve short presses and multiple input bindings](programming/input-button-state/)
 - [Separate real elapsed time and simulation time if needed](programming/world-time-semantics/)
 - [Preserve user settings when the FPS field is invalid](programming/preserve-invalid-user-settings/)
@@ -54,10 +55,9 @@ Estimates cover the work and verification described in each task. Within each gr
 
 ### Complex
 
-- [Render resources for worlds and dynamic UI textures](programming/render-resources/)
-- [Schedule scene, texture and UI passes per world](programming/world-render-passes/)
 - [Do not silently ignore panics in background threads and tasks](programming/unobserved-panics/)
 - [Research surface presentation, frame pacing and graphics menu settings](programming/vsync-research/)
+- [Unify graphical and headless APIs for gameplay](programming/headless-caller-contract/)
 - [Frame server TCP messages and bound reads](programming/server-tcp-framing/)
 - [Separate development CI from release deployment](programming/ci-validation-and-release/)
 - [Split mixed responsibilities into logical submodules](programming/logical-module-splitting/)

@@ -404,8 +404,8 @@ impl FyroxResourceLoader for WorldLoader {
                     sky: loader.load::<CubemapTexture>(&level.skybox.path, Retention::WhileUsed),
                 })
             } else { None };
-            let descriptor = WorldDescriptor::prepare(key.clone(), source, gpu, resources).await
-                .map_err(|e| format!("{key}: {e}"))?;
+            let descriptor = WorldDescriptor::prepare(key, source, gpu, resources).await
+                .map_err(|e| format!("{}: {e}", level.source_origin))?;
             Ok(LoaderPayload::new(WorldResource(Some(Arc::new(
                 descriptor,
             )))))

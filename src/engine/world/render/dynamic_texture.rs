@@ -2,8 +2,8 @@
 // Copyright (C) 2023-2026  Timofei Molokov
 
 use super::{
-    texture_view, BuiltinPipeline, Draw, RenderPipelineResource, ResourceLoader, TextureDraw,
-    Uniform, WorldRenderSystem, WorldTextureId,
+    texture_view, Draw, DynamicTextureType, ResourceLoader, TextureDraw, WorldRenderSystem,
+    WorldTextureId,
 };
 use glam::UVec2;
 use std::sync::{
@@ -43,36 +43,14 @@ impl ImageSource {
     }
 }
 
-#[repr(u32)]
-pub enum ScannerPlane {
-    Zx,
-    Zw,
-}
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct ScannerParams {
-    padding: [u32; 3],
-    orientation: u32,
-}
-
-pub enum TextureEffect {
-    Scanner(ScannerPlane),
-    XwzMinimap,
-}
-
-enum TextureInputs {
-    Scanner { plane: ScannerPlane, world: Uniform<crate::engine::shared_systems::render::render_data::dynamic_render_data::OtherDynamicData> },
-    Scene(Vec<wgpu::BindGroup>),
-}
-
 type PreparedTexture = Result<Arc<TextureDraw>, String>;
-pub(super) struct EffectInstance {
+pub(super) struct DynamicTextureInstance {
     pub(super) key: LocalImageKey,
     pub(super) state: watch::Receiver<Option<PreparedTexture>>,
     task: JoinHandle<()>,
     pub(super) owned: AtomicBool,
 }
-impl Drop for EffectInstance {
+impl Drop for DynamicTextureInstance {
     fn drop(&mut self) {
         self.task.abort();
     }
@@ -81,7 +59,7 @@ impl Drop for EffectInstance {
 /// The actor owns production. Widgets only keep a non-owning image key.
 pub struct DynamicTexture {
     key: LocalImageKey,
-    instance: Weak<EffectInstance>,
+    instance: Weak<DynamicTextureInstance>,
     dirty: Arc<AtomicBool>,
 }
 impl DynamicTexture {
@@ -132,99 +110,62 @@ impl WorldRenderSystem {
     pub fn create_dynamic_texture(
         &mut self,
         loader: &mut ResourceLoader,
-        effect: TextureEffect,
+        texture_type: DynamicTextureType,
         size: UVec2,
     ) -> DynamicTexture {
-        let id = self.next_effect;
-        self.next_effect += 1;
+        let id = self.next_dynamic_texture_id;
+        self.next_dynamic_texture_id += 1;
         let key = LocalImageKey {
             owner: self.texture_id,
             id,
             size,
         };
-        let (shader, level, inputs) = match effect {
-            TextureEffect::Scanner(plane) => (
-                BuiltinPipeline::Scanner,
-                None,
-                TextureInputs::Scanner {
-                    plane,
-                    world: self.buffers.other_dynamic_data_buffer.clone(),
-                },
-            ),
-            TextureEffect::XwzMinimap => (
-                BuiltinPipeline::XwzMinimap,
-                Some(self.level_key.as_str()),
-                TextureInputs::Scene(self.scene.groups.clone()),
-            ),
-        };
-        let resource = RenderPipelineResource::request(loader, shader, level);
+        let (pipeline_resource, inputs) = texture_type.request_pipeline_and_inputs(self, loader);
         let gpu = self.gpu.clone();
         let (sender, state) = watch::channel(None);
         let dirty = self.dirty.clone();
         let task = self.runtime.spawn(async move {
             let result = async {
-                let pipeline = resource.await.map_err(|e| format!("{e:?}"))?;
-                let (draw, validation) = tokio::task::spawn_blocking(move || {
+                let prepare_target = tokio::task::spawn_blocking(move || {
                     let limit = gpu.device.limits().max_texture_dimension_2d;
                     if size.min_element() == 0 || size.max_element() > limit {
                         return Err(format!("Invalid texture size {size}"));
                     }
+
                     let scope = gpu.device.push_error_scope(wgpu::ErrorFilter::Validation);
-                    let groups = match inputs {
-                        TextureInputs::Scanner { plane, world } => {
-                            let params = Uniform::new(
-                                &gpu.device,
-                                "scanner plane",
-                                &ScannerParams {
-                                    padding: [0; 3],
-                                    orientation: plane as u32,
-                                },
-                            );
-                            vec![gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                                label: Some("scanner"),
-                                layout: &gpu.scanner_layout,
-                                entries: &[
-                                    wgpu::BindGroupEntry {
-                                        binding: 0,
-                                        resource: world.binding(),
-                                    },
-                                    wgpu::BindGroupEntry {
-                                        binding: 1,
-                                        resource: params.binding(),
-                                    },
-                                ],
-                            })]
-                        }
-                        TextureInputs::Scene(groups) => groups,
-                    };
-                    let draw = Draw {
-                        pipeline: pipeline.data_ref().value().clone(),
-                        groups,
-                    };
-                    Ok((
-                        Arc::new(TextureDraw {
-                            draw,
-                            _pipeline: pipeline,
-                            view: texture_view(&gpu, size, "dynamic image"),
-                        }),
-                        scope.pop(),
-                    ))
-                })
-                .await
-                .map_err(|e| e.to_string())??;
+                    let groups = inputs.bind(&gpu);
+                    let view = texture_view(&gpu, size, "dynamic image");
+                    Ok((groups, view, scope.pop()))
+                });
+
+                let (groups, view, validation) =
+                    prepare_target.await.map_err(|e| e.to_string())??;
                 if let Some(error) = validation.await {
                     return Err(error.to_string());
                 }
-                Ok(draw)
+
+                let pipeline = pipeline_resource.await.map_err(|e| format!("{e:?}"))?;
+                let draw = Draw {
+                    pipeline: pipeline.data_ref().value().clone(),
+                    groups,
+                };
+                Ok(Arc::new(TextureDraw {
+                    draw,
+                    _pipeline: pipeline,
+                    view,
+                }))
             }
             .await;
             if let Err(err) = &result {
                 log::error!("Dynamic texture preparation failed: {err}");
             }
+            let prepared = result.is_ok();
             sender.send_replace(Some(result));
-            dirty.store(true, Ordering::Release);
+            if prepared {
+                dirty.store(true, Ordering::Release);
+            }
         });
-        let instance = Arc::new(EffectInstance {
+        let instance = Arc::new(DynamicTextureInstance {
             key,
             state,
             task,
@@ -235,8 +176,7 @@ impl WorldRenderSystem {
             instance: Arc::downgrade(&instance),
             dirty: self.dirty.clone(),
         };
-        self.effects.push(instance);
-        self.dirty.store(true, Ordering::Release);
+        self.dynamic_textures.push(instance);
         handle
     }
 }

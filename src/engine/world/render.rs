@@ -3,11 +3,11 @@
 
 mod buffers;
 mod dynamic_texture;
+mod dynamic_texture_type;
 use buffers::WorldGpuBuffers;
-use dynamic_texture::EffectInstance;
-pub use dynamic_texture::{
-    DynamicTexture, ImageSource, LocalImageKey, ScannerPlane, TextureEffect,
-};
+use dynamic_texture::DynamicTextureInstance;
+pub use dynamic_texture::{DynamicTexture, ImageSource, LocalImageKey};
+pub use dynamic_texture_type::{DynamicTextureType, ScannerPlane};
 
 use super::{actors::Actors, ui::UISystem, world_descriptor::WorldDescriptor, WorldRenderConfig};
 use crate::engine::shared_systems::{
@@ -19,7 +19,7 @@ use crate::engine::shared_systems::{
         GpuContext, RenderQualityData, WorldTextureId,
     },
     resources::{
-        graphics::{BuiltinPipeline, CubemapTexture, RenderPipelineResource},
+        graphics::{BuiltinPipelineType, CubemapTexture, RenderPipelineResource},
         ResourceLoader,
     },
     EngineSharedSystems,
@@ -48,8 +48,8 @@ pub struct WorldRenderSystem {
     _sky: Resource<CubemapTexture>,
     pending_scene: Option<Resource<RenderPipelineResource>>,
     upscale: bool,
-    effects: Vec<Arc<EffectInstance>>,
-    next_effect: u64,
+    dynamic_textures: Vec<Arc<DynamicTextureInstance>>,
+    next_dynamic_texture_id: u64,
     dirty: Arc<AtomicBool>,
 }
 
@@ -89,8 +89,8 @@ impl WorldRenderSystem {
             _sky: descriptor_gpu.sky.clone(),
             pending_scene: None,
             upscale: config.with_upscale.unwrap_or(descriptor.with_upscale),
-            effects: Vec::new(),
-            next_effect: 0,
+            dynamic_textures: Vec::new(),
+            next_dynamic_texture_id: 0,
             dirty: Arc::new(AtomicBool::new(true)),
         })
     }
@@ -100,11 +100,11 @@ impl WorldRenderSystem {
     pub fn set_scene(
         &mut self,
         loader: &mut ResourceLoader,
-        shader: BuiltinPipeline,
+        shader: BuiltinPipelineType,
     ) -> Result<(), &'static str> {
         if matches!(
             shader,
-            BuiltinPipeline::Scanner | BuiltinPipeline::XwzMinimap
+            BuiltinPipelineType::Scanner | BuiltinPipelineType::XwzMinimap
         ) {
             return Err("Expected a scene pipeline");
         }
@@ -157,10 +157,10 @@ impl WorldRenderSystem {
 
         let aspect = resolution.x as f32 / resolution.y as f32;
         if self.dirty.swap(false, Ordering::AcqRel) || ui.bindings_changed {
-            self.effects
+            self.dynamic_textures
                 .retain(|entry| entry.owned.load(Ordering::Acquire));
             let ready: Vec<_> = self
-                .effects
+                .dynamic_textures
                 .iter()
                 .filter_map(|entry| {
                     entry

@@ -39,7 +39,7 @@ use super::{
 const POINTER_COLOR: Vec3 = Vec3::new(0.7, 0.0, 0.0);
 const DITHERING_EFFET_FOV: f32 = 1.1;
 
-use crate::engine::world::render::{DynamicTexture, TextureEffect};
+use crate::engine::world::render::{DynamicTexture, DynamicTextureType};
 
 pub struct ObstacleCourseFreeMovementPlayer {
     minimap: Option<DynamicTexture>,
@@ -671,7 +671,7 @@ impl Actor for ObstacleCourseFreeMovementPlayer {
         shared: &mut EngineSharedSystems,
     ) {
         if let Some(render) = world.render.as_deref_mut() {
-            let minimap = render.create_dynamic_texture(&mut shared.resources, TextureEffect::XwzMinimap, glam::UVec2::splat(512));
+            let minimap = render.create_dynamic_texture(&mut shared.resources, DynamicTextureType::XwzMinimap, glam::UVec2::splat(512));
             world.ui.set_image(UIElementType::XwzMinimap,minimap.image()).expect("minimap image in its owning world");
             self.minimap = Some(minimap);
         }

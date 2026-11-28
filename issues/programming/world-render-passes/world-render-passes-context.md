@@ -92,3 +92,11 @@ Release workspace build and Windows GNU bins check passed. The headless client l
 ### CTF framebuffer comparison
 
 Compared the working tree with `d97ac5e` using separate offscreen capture harnesses and the same llvmpipe adapter, scene, viewport and output format. With 160×120 output and 0.5 scene scale, 19,197 of 19,200 RGBA pixels matched exactly. The three differences were on the same row near the top. At scale 1 with the red scanner displays visible and the same radius and intensity uploaded to both renderers, 19,126 pixels matched exactly. Eight pixels differed by more than two channel levels. These captures exercise the scanner and composition path at a small viewport; they do not measure frame latency or replace a windowed playthrough. The capture runs used Mesa's `GALLIVM_PERF=nopt` to reduce software shader compilation time.
+
+## 2026-11-28 — Publication after review
+
+[accepted] Creating a pending local texture adds no drawable pass. Previously it marked the world plan dirty on registration and again on completion. Only successful preparation adds a draw and requests publication. Dropping an instance still requests cleanup. Widget binding changes continue to request publication independently. The [Fyrox migration](../fyrox-ui/) tracks the cost of rebuilding existing HUD resources and the layout and blending findings.
+
+### 2026-11-28 — Review closed
+
+[accepted] The author accepted the publication fix and approved closure. The [Fyrox UI task](../fyrox-ui/) owns the remaining checks for child-image aspect ratio on resize, HUD resource reuse and scanner alpha during fades. The [headless API task](../headless-caller-contract/) covers invisible HUD work and preservation of widget state observable by gameplay, in coordination with the Fyrox migration.

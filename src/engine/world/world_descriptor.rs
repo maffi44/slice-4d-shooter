@@ -9,7 +9,7 @@ use fyrox_core::parking_lot::Mutex;
 use crate::engine::shared_systems::resources::{ResourceSystem, ResourceLoader};
 use std::sync::{Arc, OnceLock};
 use fyrox_resource::Resource;
-use crate::engine::shared_systems::resources::graphics::{CubemapTexture, LevelResource, RenderPipelineResource, BuiltinPipeline, Skybox};
+use crate::engine::shared_systems::resources::graphics::{CubemapTexture, LevelResource, RenderPipelineResource, BuiltinPipelineType, Skybox};
 use std::collections::HashMap;
 
 use crate::{
@@ -58,7 +58,8 @@ pub struct DefaultStaticObjectSettings {
 
 /// Immutable parsed level, shared by world preparation and geometry-specialized shaders.
 pub struct LevelData {
-    pub shader: BuiltinPipeline,
+    pub(in crate::engine) source_origin: String,
+    pub shader: BuiltinPipelineType,
     pub skybox: Skybox,
     pub with_upscale: bool,
     pub allowed_dyn_objects: AllowedDynamicObjectsInBspTreeTable,
@@ -155,7 +156,7 @@ impl WorldDescriptor {
     }
 }
 
-pub(in crate::engine) fn parse_json_level(json: Value) -> LevelData
+pub(in crate::engine) fn parse_json_level(json: Value, source_origin: String) -> LevelData
 {
     let json_level = json
     .as_object()
@@ -271,16 +272,16 @@ pub(in crate::engine) fn parse_json_level(json: Value) -> LevelData
         parse_allowed_dynamic_objects_in_bsp_tree(&allowed_dynamic_objects_in_bsp_tree)
     };
 
-    let shader = BuiltinPipeline::parse(json_level.get("main_shader").and_then(Value::as_str)
+    let shader = BuiltinPipelineType::parse(json_level.get("main_shader").and_then(Value::as_str)
         .expect("Wrong JSON map format: main_shader must be a string"))
-        .filter(|kind| matches!(kind, BuiltinPipeline::Slice | BuiltinPipeline::Obstacle | BuiltinPipeline::DitheredObstacle))
+        .filter(|kind| matches!(kind, BuiltinPipelineType::Slice | BuiltinPipelineType::Obstacle | BuiltinPipelineType::DitheredObstacle))
         .expect("Wrong JSON map format: unknown main_shader");
     let skybox = Skybox::parse(&json_level["visual_settings_of_environment"])
         .unwrap_or_else(|err| panic!("Wrong JSON map format: {err}"));
     let with_upscale = json_level.get("with_upscale").map(|v| v.as_bool()
         .expect("Wrong JSON map format: with_upscale must be a boolean")).unwrap_or(true);
     LevelData {
-        shader, skybox, with_upscale, allowed_dyn_objects,
+        source_origin, shader, skybox, with_upscale, allowed_dyn_objects,
         bsp: OnceLock::new(), static_data: OnceLock::new(),
         name: level_name,
         static_objects,

@@ -731,7 +731,7 @@ impl PlayerScreenEffects
 }
 
 
-use crate::engine::world::render::{DynamicTexture, TextureEffect, ScannerPlane};
+use crate::engine::world::render::{DynamicTexture, DynamicTextureType, ScannerPlane};
 
 pub struct WScanner
 {
@@ -776,7 +776,7 @@ impl WScanner
     pub fn attach_displays(&mut self, world: &mut WorldContext, shared: &mut EngineSharedSystems) {
         let Some(render) = world.render.as_deref_mut() else { return; };
         let [zx, zw] = [ScannerPlane::Zx, ScannerPlane::Zw].map(|plane|
-            render.create_dynamic_texture(&mut shared.resources, TextureEffect::Scanner(plane), glam::UVec2::splat(256)));
+            render.create_dynamic_texture(&mut shared.resources, DynamicTextureType::Scanner(plane), glam::UVec2::splat(256)));
         for (id, key) in [
             (UIElementType::LeftScannerDisplayRed, zx.image()), (UIElementType::LeftScannerDisplayBlue, zx.image()),
             (UIElementType::RightScannerDisplayRed, zw.image()), (UIElementType::RightScannerDisplayBlue, zw.image()),

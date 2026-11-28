@@ -24,3 +24,12 @@ At the author's request, all dependencies were updated, and Fyrox core, resource
 ## 2026-11-24 — GPU texture path checked
 
 The separate research task [GPU textures in Fyrox UI](../fyrox-ui-gpu-textures/) analyzed `fyrox-ui` 1.0.1 and ran an isolated wgpu probe outside the repository. In 1.0.1, `UserInterface::update` fills the public `drawing_context` instead of `draw` returning a borrowed context. An `Image` with `TextureResource::new_render_target` displayed a texture produced only on the GPU, clipped next to text, through a key-to-view registry. Content updates and target recreation did not copy pixels through the CPU. The image-to-texture part of the first experiment proposed above is covered. Gradients, clipping geometry, sRGB handling and the render-thread handoff are still open.
+
+## 2026-11-28 — Checks carried over from the world renderer review
+
+[accepted] Trace these four cases across the producer, world publication and widget backend during migration. Fix a defect at the layer that owns it if it persists with Fyrox.
+
+- **World image aspect ratio.** The current widget uses its stock image dimensions or a 1×1 fallback. Switching to a resized world view refreshes the binding alone. Display a 16:9 child in a height-constrained image, change the child's aspect ratio while paused, then resume it. Check the layout against the dimensions of the actual sampled output both before and after the new generation arrives.
+- **HUD preparation cost.** A newly ready scanner plane or one inserted widget currently causes the simulation thread to prepare all images and bars again, allocating their uniform buffers and bind groups. The report did not measure tick latency. Trace allocations and verify an unrelated existing widget retains its GPU resources when one producer or widget changes.
+- **Headless HUD state.** CTF opacity updates lazily create widgets and parents, including in worlds without a renderer. Define the observable widget hierarchy with the [headless caller contract](../headless-caller-contract/). Exercise hierarchy queries and scanner messages with rendering disabled.
+- **Scanner fade.** Overlapping marks can sum to alpha 2. The current sRGB RGBA8 target clamps it to 1 before the widget multiplies by 0.5, yielding 0.5 where the original shader could yield 1. Compare overlapping marks during fade and agree on the intended result. Check both the scanner output format and the compositor's opacity arithmetic.

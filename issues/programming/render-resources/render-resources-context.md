@@ -71,3 +71,21 @@ Cache the cube by asset path. The world descriptor supplies sampling settings, d
 ### Verification
 
 Uncommitted Linux x86_64 build based on `d97ac5e`, 2026-11-25. The opt-in `offscreen_worlds_and_dynamic_images` test runs the real CTF level and pipeline loaders on Mesa llvmpipe (LLVM 15). It checks shared scanner requests and alias normalization, a second sky bound with the same scene pipeline, BSP minimap preparation, invalid dimensions, cancellation before device publication and world-local key rejection. Compile-time assertions check the scene and scanner uniform offsets and array element strides. The [scheduler verification](../world-render-passes/) covers the image consumer. A byte-for-byte comparison against Git confirmed all 24 relocated levels.
+
+## 2026-11-28 — Author review
+
+[accepted] `BuiltinPipelineType` identifies a compiled pipeline variant. `DynamicTextureType` owns the choice of pipeline, level dependency and per-instance binding inputs. The world owns each `DynamicTextureInstance`. The factory manages readiness, cancellation and lifetime uniformly for scanner and minimap.
+
+The resource manager starts a shared load when requested. Awaiting its handle yielded the task, but starting target and binding creation only after that await serialized independent driver work. Start that work on a blocking worker while the resource loads. Invalid dimensions can now fail even while a pipeline is pending. Both the pipeline and validated instance inputs must be ready before publishing a draw.
+
+Level parsing retained the logical resource key but discarded the selected file path before constructing actors. Retain the resolved disk or embedded origin with the parsed level and attach it to world-preparation errors. Cache identity and lookup order stay the same.
+
+### Review verification
+
+On Linux x86_64 with the uncommitted review changes over `c40c8e2`, the release workspace build, native workspace bins check and Windows GNU bins check passed. The offscreen test passed on Vulkan llvmpipe, including an invalid target whose shared pipeline was deliberately kept pending. A headless CTF client reached `engine: ready`. From an isolated working directory, a bad main actor in `assets/maps/review-level.json` produced the resolved path `./assets/maps/review-level.json` and the offending actor type in the final startup diagnostic.
+
+The full workspace suite had 51 socket-bind failures with `EPERM` (24 Matchbox and nine transport tests in each client binary). The other executed tests passed. Windowed startup stopped at `XOpenDisplayFailed`; live HUD appearance remains for graphical review.
+
+### 2026-11-28 — Review closed
+
+[accepted] The author reviewed the revised texture factory and accepted closure. The fixes above cover naming, per-type bindings, parallel preparation and level-origin diagnostics. The naming preference now appears in `AGENTS.md`. The broader [engine code style review](../engine-code-style/) remains a separate task.

@@ -1,9 +1,10 @@
 # Schedule scene, texture and UI passes per world
 
-- **Status:** Implemented — awaiting author review
+- **Status:** Closed
 - **Priority:** High
-- **Complexity:** Complex
 - **Created:** 2026-11-24
+- **Closed:** 2026-11-28
+- **Resolution:** Done
 - **Context:** [Initial design and implementation order](world-render-passes-context.md)
 
 [accepted] Implemented together with [render resources](../render-resources/) using the current HUD. [Fyrox UI](../fyrox-ui/) follows as a separate stage.
@@ -18,4 +19,4 @@ The descriptor selects `with_upscale` and each view may override it. Upscaled wo
 
 ## Review
 
-The [offscreen regression](../../../src/engine/shared_systems/render/render_scheduler/tests.rs) reads pixels from a parent showing a child at a different cadence, checks pause/resize/resume and verifies that the stale image disappears on retirement. See the [verification log](world-render-passes-context.md) for environment limits and the [architecture reference](../../../docs/engine-architecture.md) for caller contracts. Review final CTF appearance in the window before closure.
+The [offscreen regression](../../../src/engine/shared_systems/render/render_scheduler/tests.rs) reads pixels from a parent showing a child at a different cadence, checks pause/resize/resume and verifies that the stale image disappears on retirement. See the [verification log](world-render-passes-context.md) for environment limits and the [architecture reference](../../../docs/engine-architecture.md) for caller contracts. The author accepted the revised implementation on 2026-11-28.

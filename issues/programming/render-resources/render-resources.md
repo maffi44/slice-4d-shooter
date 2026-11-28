@@ -1,9 +1,10 @@
 # Render resources for worlds and dynamic UI textures
 
-- **Status:** Implemented — awaiting author review
+- **Status:** Closed
 - **Priority:** High
-- **Complexity:** Complex
 - **Created:** 2026-11-20
+- **Closed:** 2026-11-28
+- **Resolution:** Done
 - **Context:** [Scanner ownership and data flow](render-resources-context.md)
 
 [accepted] Implemented together with [per-world scheduling](../world-render-passes/). The current HUD is the first consumer. The next stage is [Fyrox UI](../fyrox-ui/).
@@ -17,4 +18,4 @@
 
 ## Review
 
-Review the scanner's appearance in a graphical CTF session at full and reduced resolution. The dedicated offscreen Vulkan test exercises shared pipeline requests, per-world skies, a generated minimap, local-key validation, preparation failure and teardown.
+The author accepted the changes after the second review. The dedicated offscreen Vulkan test exercises shared pipeline requests, per-world skies, a generated minimap, local-key validation, preparation failure and teardown. See the [review record](render-resources-context.md) for verification limits.

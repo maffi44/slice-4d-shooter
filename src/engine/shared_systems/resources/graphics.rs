@@ -5,7 +5,7 @@ use super::*;
 use crate::engine::shared_systems::render::pipelines;
 use crate::engine::world::world_descriptor::{parse_json_level, LevelData};
 use fyrox_resource::loader::ResourceLoadersContainer;
-pub use pipelines::BuiltinPipeline;
+pub use pipelines::BuiltinPipelineType;
 use serde::Deserialize;
 
 macro_rules! runtime_asset {
@@ -81,8 +81,8 @@ impl Asset for RenderPipelineResource {
             let (map, shader) = specialization
                 .rsplit_once('.')
                 .ok_or("Missing level pipeline variant")?;
-            let shader = BuiltinPipeline::parse(shader)
-                .filter(|s| *s != BuiltinPipeline::Scanner)
+            let shader = BuiltinPipelineType::parse(shader)
+                .filter(|s| *s != BuiltinPipelineType::Scanner)
                 .ok_or("Unknown level pipeline")?;
             let path = WorldResource::manager_path(map)?.with_extension("json");
             let map = path.to_str().ok_or("Invalid level path")?;
@@ -90,7 +90,7 @@ impl Asset for RenderPipelineResource {
                 "{map}.{}.bsp.pipeline",
                 shader.name()
             ))))
-        } else if key == BuiltinPipeline::Scanner.name() {
+        } else if key == BuiltinPipelineType::Scanner.name() {
             Ok(Cow::Borrowed(Path::new("scanner.pipeline")))
         } else {
             Err(format!("Pipeline {key} requires level geometry"))
@@ -111,7 +111,7 @@ impl Asset for CubemapTexture {
 impl RenderPipelineResource {
     pub fn request(
         loader: &mut ResourceLoader,
-        shader: BuiltinPipeline,
+        shader: BuiltinPipelineType,
         level: Option<&str>,
     ) -> Resource<Self> {
         let key = match level {
@@ -151,7 +151,7 @@ impl FyroxResourceLoader for LevelLoader {
                 let json = serde_json::from_slice(&source.bytes)
                     .map_err(|e| format!("{}: Wrong JSON map format: {e}", source.origin))?;
                 Ok(LoaderPayload::new(LevelResource(Some(Arc::new(
-                    parse_json_level(json),
+                    parse_json_level(json, source.origin),
                 )))))
             })
             .await
@@ -201,7 +201,7 @@ impl FyroxResourceLoader for PipelineLoader {
             } else {
                 (None, key)
             };
-            let shader = BuiltinPipeline::parse(shader)
+            let shader = BuiltinPipelineType::parse(shader)
                 .ok_or_else(|| format!("Unknown render pipeline {key}"))?;
             let gpu = device(gpu).await?;
             let (pipeline, validation) = tokio::task::spawn_blocking(move || {

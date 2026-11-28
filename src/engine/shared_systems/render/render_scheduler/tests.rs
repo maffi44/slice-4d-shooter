@@ -5,13 +5,15 @@ use super::*;
 use crate::engine::{
     shared_systems::{
         resources::{
-            graphics::{BuiltinPipeline, CubemapTexture, LevelResource, RenderPipelineResource},
+            graphics::{
+                BuiltinPipelineType, CubemapTexture, LevelResource, RenderPipelineResource,
+            },
             ResourceSystem, Retention, WorldResource,
         },
         EngineSharedSystems,
     },
     world::{
-        render::{ScannerPlane, TextureEffect, WorldRenderSystem},
+        render::{DynamicTextureType, ScannerPlane, WorldRenderSystem},
         ui::UIElementType,
         world_descriptor::{WorldDescriptor, WorldDescriptorGpu},
         WorldConfig,
@@ -92,7 +94,7 @@ fn offscreen_worlds_and_dynamic_images() {
         .load::<LevelResource>(level_key, Retention::WhileUsed);
     let main = RenderPipelineResource::request(
         &mut shared.resources,
-        BuiltinPipeline::Slice,
+        BuiltinPipelineType::Slice,
         Some(level_key),
     );
     assert_eq!(main.key(), descriptor.gpu.as_ref().unwrap().main.key());
@@ -135,14 +137,16 @@ fn offscreen_worlds_and_dynamic_images() {
         )
         .is_err());
 
-    let p1 = RenderPipelineResource::request(&mut shared.resources, BuiltinPipeline::Scanner, None);
-    let p2 = RenderPipelineResource::request(&mut shared.resources, BuiltinPipeline::Scanner, None);
+    let p1 =
+        RenderPipelineResource::request(&mut shared.resources, BuiltinPipelineType::Scanner, None);
+    let p2 =
+        RenderPipelineResource::request(&mut shared.resources, BuiltinPipelineType::Scanner, None);
     assert_eq!(p1.key(), p2.key());
     shared.runtime.block_on(p1).unwrap();
-    let mut effects = WorldRenderSystem::new(&descriptor, config, &mut shared).unwrap();
-    let minimap = effects.create_dynamic_texture(
+    let mut texture_world = WorldRenderSystem::new(&descriptor, config, &mut shared).unwrap();
+    let minimap = texture_world.create_dynamic_texture(
         &mut shared.resources,
-        TextureEffect::XwzMinimap,
+        DynamicTextureType::XwzMinimap,
         UVec2::splat(8),
     );
     shared.runtime.block_on(minimap.ready()).unwrap();
@@ -151,22 +155,31 @@ fn offscreen_worlds_and_dynamic_images() {
         .ui
         .set_image(UIElementType::Crosshair, minimap.image())
         .is_err());
-    let bad_size = effects.create_dynamic_texture(
-        &mut shared.resources,
-        TextureEffect::Scanner(ScannerPlane::Zx),
-        UVec2::ZERO,
-    );
-    assert!(shared.runtime.block_on(bad_size.ready()).is_err());
     let (device_sender, pending_device) = tokio::sync::watch::channel(None);
     let waiting_system = ResourceSystem::new(shared.runtime.handle().clone(), Some(pending_device));
     let mut pending_loader = waiting_system.loader();
-    let cancelled = effects.create_dynamic_texture(
+    // Invalid instance inputs must finish validation even while the pipeline waits for a device.
+    let bad_size = texture_world.create_dynamic_texture(
         &mut pending_loader,
-        TextureEffect::Scanner(ScannerPlane::Zw),
+        DynamicTextureType::Scanner(ScannerPlane::Zx),
+        UVec2::ZERO,
+    );
+    let size_error = shared
+        .runtime
+        .block_on(async {
+            tokio::time::timeout(Duration::from_secs(5), bad_size.ready())
+                .await
+                .unwrap()
+        })
+        .unwrap_err();
+    assert!(size_error.contains("Invalid texture size"));
+    let cancelled = texture_world.create_dynamic_texture(
+        &mut pending_loader,
+        DynamicTextureType::Scanner(ScannerPlane::Zw),
         UVec2::ONE,
     );
     assert!(cancelled.try_ready().is_none());
-    drop(effects);
+    drop(texture_world);
     drop(device_sender);
     assert!(shared.runtime.block_on(cancelled.ready()).is_err());
     let mut slots: Vec<WorldSlot> = Vec::new();

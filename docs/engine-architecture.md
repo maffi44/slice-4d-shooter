@@ -135,7 +135,7 @@ A player's activation callback attaches its scanner to two team-specific images.
 ```rust
 if let Some(render) = world.render.as_deref_mut() {
     let zx = render.create_dynamic_texture(&mut shared.resources,
-        TextureEffect::Scanner(ScannerPlane::Zx), UVec2::splat(256));
+        DynamicTextureType::Scanner(ScannerPlane::Zx), UVec2::splat(256));
     world.ui.set_image(UIElementType::LeftScannerDisplayRed, zx.image())?;
     world.ui.set_image(UIElementType::LeftScannerDisplayBlue, zx.image())?;
     self.zx = Some(zx);
@@ -144,7 +144,7 @@ if let Some(render) = world.render.as_deref_mut() {
 
 An image key is usable immediately. `try_ready()` polls preparation, and `ready().await` completes independently of world ticks. A failed producer returns its error. A widget skips a missing producer. The scheduler draws ready producers ahead of the HUD in the same due frame. Dropping the handle stops production at the next world publication. Dropping the world retires its slot and cancels unfinished instance preparation.
 
-To add a built-in effect, select the WGSL and binding layout in `render/pipelines.rs`, add the constructor inputs to `TextureEffect`, and bind them during instance preparation. Use `Uniform<T>` for writable shader inputs with a matching WGSL layout. A compatible replacement scene starts with `set_scene`; its old draw remains active through loading and on failure.
+To add a dynamic texture type, select its WGSL and pipeline layout in `render/pipelines.rs`. In `world/render/dynamic_texture_type.rs`, add the variant, select its pipeline and optional level, and bind the world or instance inputs it needs. The resource loader starts the pipeline request immediately. The world prepares the target and bindings independently on a blocking worker. A successful preparation marks the plan for publication on the next world update. Use `Uniform<T>` for writable shader inputs with a matching WGSL layout. A compatible replacement scene starts with `set_scene`; its old draw remains active through loading and on failure.
 
 A parent can pass `child.output_texture_id()` to a widget after obtaining the ID of the rendered child. A world-output source must have a later slot than its consumer. A local image key must belong to the consuming world. The UI skips an unready child and samples its most recent complete output between due frames. Resizing while paused takes effect on the child's next draw. The default `with_upscale: true` composes the HUD at nominal resolution after bloom. `false` composites at scene resolution. `WorldRenderConfig::with_upscale` overrides the level setting for one view. The window samples the finished output once.
 

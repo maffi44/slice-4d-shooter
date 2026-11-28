@@ -7,7 +7,7 @@ use std::borrow::Cow;
 
 /// Built-in pipelines that draw a scene or a world-local image.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum BuiltinPipeline {
+pub enum BuiltinPipelineType {
     Slice,
     Obstacle,
     DitheredObstacle,
@@ -15,7 +15,7 @@ pub enum BuiltinPipeline {
     XwzMinimap,
 }
 
-impl BuiltinPipeline {
+impl BuiltinPipelineType {
     pub fn name(self) -> &'static str {
         match self {
             Self::Slice => "raymarch_shader_slice_4d",
@@ -40,17 +40,17 @@ impl BuiltinPipeline {
 
 pub fn compile(
     gpu: &GpuContext,
-    kind: BuiltinPipeline,
+    kind: BuiltinPipelineType,
     level: Option<&LevelData>,
 ) -> wgpu::RenderPipeline {
     let template = match kind {
-        BuiltinPipeline::Slice => include_str!("shaders/raymarch_shader.wgsl"),
-        BuiltinPipeline::Obstacle => include_str!("shaders/raymarch_shader_obstacle_course.wgsl"),
-        BuiltinPipeline::DitheredObstacle => {
+        BuiltinPipelineType::Slice => include_str!("shaders/raymarch_shader.wgsl"),
+        BuiltinPipelineType::Obstacle => include_str!("shaders/raymarch_shader_obstacle_course.wgsl"),
+        BuiltinPipelineType::DitheredObstacle => {
             include_str!("shaders/raymarch_shader_obstacle_course_dithered.wgsl")
         }
-        BuiltinPipeline::Scanner => include_str!("shaders/scanner_shader.wgsl"),
-        BuiltinPipeline::XwzMinimap => include_str!("shaders/xwz_minimap_shader.wgsl"),
+        BuiltinPipelineType::Scanner => include_str!("shaders/scanner_shader.wgsl"),
+        BuiltinPipelineType::XwzMinimap => include_str!("shaders/xwz_minimap_shader.wgsl"),
     };
     let source = match level {
         Some(level) => Cow::Owned(generate_raymarch_shader_with_static_bsp_tree(
@@ -67,7 +67,7 @@ pub fn compile(
         label: Some(kind.name()),
         source: wgpu::ShaderSource::Wgsl(source),
     };
-    let shader = if kind == BuiltinPipeline::Scanner {
+    let shader = if kind == BuiltinPipelineType::Scanner {
         gpu.device.create_shader_module(desc)
     } else {
         unsafe {
@@ -76,7 +76,7 @@ pub fn compile(
         }
     };
     let scanner_layout;
-    let layout = if kind == BuiltinPipeline::Scanner {
+    let layout = if kind == BuiltinPipelineType::Scanner {
         scanner_layout = gpu
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
